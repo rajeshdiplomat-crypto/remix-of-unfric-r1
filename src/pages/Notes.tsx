@@ -6,10 +6,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, FileText, Lightbulb, Palette, Lock, Trash2, Mic, MicOff, Pencil, Type, Search } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, FileText, Lightbulb, Palette, Lock, Trash2, Mic, MicOff, Pencil, Type, Search, ListChecks, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+
+interface ChecklistItem {
+  id: string;
+  text: string;
+  checked: boolean;
+}
 
 interface Note {
   id: string;
@@ -17,6 +25,8 @@ interface Note {
   content: string | null;
   category: string;
   tags: string[];
+  skin: string;
+  has_checklist: boolean;
   scribble_data: string | null;
   voice_transcript: string | null;
   created_at: string;
@@ -27,6 +37,14 @@ const categories = [
   { id: "thoughts", label: "Thoughts/Ideas", icon: Lightbulb },
   { id: "creative", label: "Creative Space", icon: Palette },
   { id: "private", label: "Private Notes", icon: Lock },
+];
+
+const skins = [
+  { id: "default", label: "Default", bg: "bg-card" },
+  { id: "lined", label: "Lined Paper", bg: "bg-[linear-gradient(#e5e5e5_1px,transparent_1px)] bg-[size:100%_28px]" },
+  { id: "grid", label: "Grid", bg: "bg-[linear-gradient(#e5e5e5_1px,transparent_1px),linear-gradient(90deg,#e5e5e5_1px,transparent_1px)] bg-[size:20px_20px]" },
+  { id: "cream", label: "Cream", bg: "bg-amber-50 dark:bg-amber-950/20" },
+  { id: "blue", label: "Blue Tint", bg: "bg-blue-50 dark:bg-blue-950/20" },
 ];
 
 export default function Notes() {
@@ -43,6 +61,10 @@ export default function Notes() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [tags, setTags] = useState("");
+  const [skin, setSkin] = useState("default");
+  const [hasChecklist, setHasChecklist] = useState(false);
+  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
+  const [newChecklistItem, setNewChecklistItem] = useState("");
   const [inputMode, setInputMode] = useState<"type" | "voice" | "scribble">("type");
   const [saving, setSaving] = useState(false);
 
@@ -83,17 +105,55 @@ export default function Notes() {
       setTitle(note.title);
       setContent(note.content || "");
       setTags(note.tags?.join(", ") || "");
+      setSkin(note.skin || "default");
+      setHasChecklist(note.has_checklist || false);
       setVoiceTranscript(note.voice_transcript || "");
       setActiveCategory(note.category);
+      
+      // Parse checklist from content if exists
+      if (note.has_checklist && note.content) {
+        try {
+          const parsed = JSON.parse(note.content);
+          if (Array.isArray(parsed)) {
+            setChecklistItems(parsed);
+          }
+        } catch {
+          setChecklistItems([]);
+        }
+      }
     } else {
       setSelectedNote(null);
       setTitle("");
       setContent("");
       setTags("");
+      setSkin("default");
+      setHasChecklist(false);
+      setChecklistItems([]);
       setVoiceTranscript("");
       setInputMode("type");
     }
     setDialogOpen(true);
+  };
+
+  const addChecklistItem = () => {
+    if (!newChecklistItem.trim()) return;
+    setChecklistItems([
+      ...checklistItems,
+      { id: crypto.randomUUID(), text: newChecklistItem, checked: false },
+    ]);
+    setNewChecklistItem("");
+  };
+
+  const toggleChecklistItem = (id: string) => {
+    setChecklistItems(
+      checklistItems.map((item) =>
+        item.id === id ? { ...item, checked: !item.checked } : item
+      )
+    );
+  };
+
+  const removeChecklistItem = (id: string) => {
+    setChecklistItems(checklistItems.filter((item) => item.id !== id));
   };
 
   const saveNote = async () => {
@@ -103,11 +163,15 @@ export default function Notes() {
     const tagsList = tags.split(",").map((t) => t.trim()).filter(Boolean);
     const canvasData = canvasRef.current?.toDataURL() || null;
 
+    const noteContent = hasChecklist ? JSON.stringify(checklistItems) : content;
+
     const noteData = {
       title: title || "Untitled",
-      content,
+      content: noteContent,
       category: activeCategory,
       tags: tagsList,
+      skin,
+      has_checklist: hasChecklist,
       scribble_data: inputMode === "scribble" ? canvasData : selectedNote?.scribble_data,
       voice_transcript: voiceTranscript || selectedNote?.voice_transcript,
     };
@@ -165,9 +229,6 @@ export default function Notes() {
       };
 
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        // For now, we'll add a placeholder for voice transcription
-        // In production, this would call an edge function with Whisper API
         setVoiceTranscript("Voice note recorded. Transcription will be available soon.");
         toast({ title: "Recorded!", description: "Your voice note has been captured" });
       };
@@ -191,10 +252,8 @@ export default function Notes() {
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
     setIsDrawing(true);
     const rect = canvas.getBoundingClientRect();
     ctx.beginPath();
@@ -203,13 +262,10 @@ export default function Notes() {
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
-
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
     const rect = canvas.getBoundingClientRect();
     ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
     ctx.strokeStyle = "hsl(var(--foreground))";
@@ -218,17 +274,13 @@ export default function Notes() {
     ctx.stroke();
   };
 
-  const stopDrawing = () => {
-    setIsDrawing(false);
-  };
+  const stopDrawing = () => setIsDrawing(false);
 
   const clearCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
 
@@ -242,7 +294,9 @@ export default function Notes() {
     return matchesCategory && matchesSearch;
   });
 
-  const CategoryIcon = categories.find((c) => c.id === activeCategory)?.icon || FileText;
+  const getSkinClass = (skinId: string) => {
+    return skins.find((s) => s.id === skinId)?.bg || "bg-card";
+  };
 
   if (loading) {
     return (
@@ -309,15 +363,38 @@ export default function Notes() {
                 {filteredNotes.map((note) => (
                   <Card
                     key={note.id}
-                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    className={`cursor-pointer hover:shadow-md transition-shadow ${getSkinClass(note.skin)}`}
                     onClick={() => openDialog(note)}
                   >
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-base line-clamp-1">{note.title}</CardTitle>
+                      <div className="flex items-center gap-2">
+                        {note.has_checklist && <ListChecks className="h-4 w-4 text-primary" />}
+                        <CardTitle className="text-base line-clamp-1">{note.title}</CardTitle>
+                      </div>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                      {note.content && (
-                        <p className="text-sm text-muted-foreground line-clamp-3">{note.content}</p>
+                      {note.has_checklist ? (
+                        <div className="space-y-1">
+                          {(() => {
+                            try {
+                              const items = JSON.parse(note.content || "[]") as ChecklistItem[];
+                              return items.slice(0, 3).map((item) => (
+                                <div key={item.id} className="flex items-center gap-2 text-sm">
+                                  <Checkbox checked={item.checked} disabled className="h-3 w-3" />
+                                  <span className={item.checked ? "line-through text-muted-foreground" : ""}>
+                                    {item.text}
+                                  </span>
+                                </div>
+                              ));
+                            } catch {
+                              return null;
+                            }
+                          })()}
+                        </div>
+                      ) : (
+                        note.content && (
+                          <p className="text-sm text-muted-foreground line-clamp-3">{note.content}</p>
+                        )
                       )}
                       {note.scribble_data && (
                         <div className="text-xs text-muted-foreground flex items-center gap-1">
@@ -350,7 +427,7 @@ export default function Notes() {
       </Tabs>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className={`max-w-2xl max-h-[90vh] overflow-y-auto ${getSkinClass(skin)}`}>
           <DialogHeader>
             <DialogTitle>{selectedNote ? "Edit Note" : "New Note"}</DialogTitle>
           </DialogHeader>
@@ -360,15 +437,15 @@ export default function Notes() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Note title..."
-                className="text-lg font-medium"
+                className="text-lg font-medium bg-transparent"
               />
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant={inputMode === "type" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setInputMode("type")}
+                onClick={() => { setInputMode("type"); setHasChecklist(false); }}
               >
                 <Type className="h-4 w-4 mr-1" />
                 Type
@@ -376,7 +453,7 @@ export default function Notes() {
               <Button
                 variant={inputMode === "voice" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setInputMode("voice")}
+                onClick={() => { setInputMode("voice"); setHasChecklist(false); }}
               >
                 <Mic className="h-4 w-4 mr-1" />
                 Voice
@@ -384,24 +461,81 @@ export default function Notes() {
               <Button
                 variant={inputMode === "scribble" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setInputMode("scribble")}
+                onClick={() => { setInputMode("scribble"); setHasChecklist(false); }}
               >
                 <Pencil className="h-4 w-4 mr-1" />
                 Scribble
               </Button>
+              <Button
+                variant={hasChecklist ? "default" : "outline"}
+                size="sm"
+                onClick={() => { setHasChecklist(!hasChecklist); setInputMode("type"); }}
+              >
+                <ListChecks className="h-4 w-4 mr-1" />
+                Checklist
+              </Button>
             </div>
 
-            {inputMode === "type" && (
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="text-sm font-medium mb-2 block">Page Skin</label>
+                <Select value={skin} onValueChange={setSkin}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {skins.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {hasChecklist ? (
+              <div className="space-y-3">
+                {checklistItems.map((item) => (
+                  <div key={item.id} className="flex items-center gap-3">
+                    <Checkbox
+                      checked={item.checked}
+                      onCheckedChange={() => toggleChecklistItem(item.id)}
+                    />
+                    <span className={`flex-1 ${item.checked ? "line-through text-muted-foreground" : ""}`}>
+                      {item.text}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeChecklistItem(item.id)}
+                      className="h-6 w-6"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <div className="flex gap-2">
+                  <Input
+                    value={newChecklistItem}
+                    onChange={(e) => setNewChecklistItem(e.target.value)}
+                    placeholder="Add item..."
+                    onKeyDown={(e) => e.key === "Enter" && addChecklistItem()}
+                  />
+                  <Button onClick={addChecklistItem} size="sm">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : inputMode === "type" ? (
               <Textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Write your thoughts..."
                 rows={10}
-                className="resize-none"
+                className="resize-none bg-transparent"
               />
-            )}
-
-            {inputMode === "voice" && (
+            ) : inputMode === "voice" ? (
               <div className="space-y-4">
                 <div className="flex justify-center">
                   <Button
@@ -410,11 +544,7 @@ export default function Notes() {
                     onClick={isRecording ? stopRecording : startRecording}
                     className="h-20 w-20 rounded-full"
                   >
-                    {isRecording ? (
-                      <MicOff className="h-8 w-8" />
-                    ) : (
-                      <Mic className="h-8 w-8" />
-                    )}
+                    {isRecording ? <MicOff className="h-8 w-8" /> : <Mic className="h-8 w-8" />}
                   </Button>
                 </div>
                 <p className="text-center text-sm text-muted-foreground">
@@ -426,9 +556,7 @@ export default function Notes() {
                   </div>
                 )}
               </div>
-            )}
-
-            {inputMode === "scribble" && (
+            ) : (
               <div className="space-y-2">
                 <div className="border border-border rounded-lg overflow-hidden bg-card">
                   <canvas
@@ -462,10 +590,7 @@ export default function Notes() {
                 {saving ? "Saving..." : selectedNote ? "Update Note" : "Create Note"}
               </Button>
               {selectedNote && (
-                <Button
-                  variant="destructive"
-                  onClick={() => deleteNote(selectedNote.id)}
-                >
+                <Button variant="destructive" onClick={() => deleteNote(selectedNote.id)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
