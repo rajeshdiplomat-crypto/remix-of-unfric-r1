@@ -1,19 +1,12 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Type, Mic, MicOff, Pencil, Image, Settings, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Type, Mic, MicOff, Pencil, Image, Settings, X, Move } from "lucide-react";
 import { JournalScribbleCanvas } from "./JournalScribbleCanvas";
+import { JournalSettingsDialog, DIARY_SKINS, JournalSettings, DiarySkin } from "./JournalSettingsDialog";
+import { JournalTextToolbar, TextFormatting } from "./JournalTextToolbar";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 interface JournalDiaryPageProps {
   selectedDate: Date;
@@ -29,20 +22,67 @@ interface JournalDiaryPageProps {
   hasEntry: boolean;
 }
 
-// Diary skin presets
-const DIARY_SKINS = [
-  { id: "classic", name: "Classic", bg: "hsl(45, 30%, 96%)", lineColor: "hsl(200, 70%, 80%)", marginColor: "hsl(0, 70%, 70%)" },
-  { id: "cream", name: "Cream", bg: "hsl(40, 40%, 94%)", lineColor: "hsl(30, 20%, 80%)", marginColor: "hsl(30, 50%, 60%)" },
-  { id: "dark", name: "Dark Mode", bg: "hsl(222, 47%, 11%)", lineColor: "hsl(222, 30%, 25%)", marginColor: "hsl(200, 70%, 50%)" },
-  { id: "pink", name: "Soft Pink", bg: "hsl(350, 50%, 96%)", lineColor: "hsl(350, 40%, 85%)", marginColor: "hsl(350, 60%, 70%)" },
-  { id: "green", name: "Sage Green", bg: "hsl(120, 20%, 95%)", lineColor: "hsl(120, 30%, 80%)", marginColor: "hsl(120, 40%, 50%)" },
-  { id: "kraft", name: "Kraft Paper", bg: "hsl(35, 35%, 85%)", lineColor: "hsl(35, 25%, 70%)", marginColor: "hsl(0, 60%, 50%)" },
-];
+interface InsertedImage {
+  id: string;
+  src: string;
+  x: number;
+  y: number;
+  width: number;
+  section: "feeling" | "gratitude" | "kindness" | "general";
+}
 
 // Line height for proper diary alignment
 const LINE_HEIGHT = 24;
-const TOP_MARGIN = 48; // Blank space at top like real diary
-const LEFT_MARGIN = 60; // Red margin line position
+const TOP_MARGIN = 48;
+const LEFT_MARGIN = 60;
+
+// Page size ratios
+const PAGE_SIZES = {
+  a5: { ratio: 148 / 210, maxWidth: 420 },
+  a4: { ratio: 210 / 297, maxWidth: 500 },
+  letter: { ratio: 8.5 / 11, maxWidth: 480 },
+  custom: { ratio: 1 / 1.4, maxWidth: 450 },
+};
+
+const defaultSectionSettings = (header: string, prompt: string) => ({
+  header,
+  prompts: [prompt],
+  headerStyle: {
+    fontSize: 12,
+    bold: true,
+    italic: false,
+    underline: false,
+    color: "default",
+  },
+  promptStyle: {
+    fontSize: 11,
+    bold: false,
+    italic: true,
+    underline: false,
+    color: "default",
+  },
+});
+
+const defaultSettings: JournalSettings = {
+  skin: DIARY_SKINS[0],
+  pageSize: "a5",
+  zoom: 100,
+  sections: {
+    feeling: defaultSectionSettings("My Feelings", "How are you feeling today? What emotions came up?"),
+    gratitude: defaultSectionSettings("Gratitude", "What are you grateful for today? List 3 things."),
+    kindness: defaultSectionSettings("Kindness", "What act of kindness did you do or receive today?"),
+  },
+};
+
+const defaultTextFormatting: TextFormatting = {
+  fontSize: 12,
+  fontFamily: "serif",
+  bold: false,
+  italic: false,
+  underline: false,
+  color: "hsl(222, 47%, 11%)",
+  alignment: "left",
+};
 
 export function JournalDiaryPage({
   selectedDate,
@@ -61,22 +101,39 @@ export function JournalDiaryPage({
   const [inputMode, setInputMode] = useState<"type" | "voice" | "scribble">("type");
   const [isRecording, setIsRecording] = useState(false);
   const [activeField, setActiveField] = useState<"feeling" | "gratitude" | "kindness">("feeling");
-  const [selectedSkin, setSelectedSkin] = useState(DIARY_SKINS[0]);
   const [pageFlip, setPageFlip] = useState<"none" | "left" | "right">("none");
-  const [showPromptsDialog, setShowPromptsDialog] = useState(false);
-  const [prompts, setPrompts] = useState({
-    feeling: "How are you feeling today? What emotions came up?",
-    gratitude: "What are you grateful for today? List 3 things.",
-    kindness: "What act of kindness did you do or receive today?",
-  });
-  const [images, setImages] = useState<{ id: string; src: string; top: number }[]>([]);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settings, setSettings] = useState<JournalSettings>(defaultSettings);
+  const [textFormatting, setTextFormatting] = useState<TextFormatting>(defaultTextFormatting);
+  const [images, setImages] = useState<InsertedImage[]>([]);
+  const [draggingImage, setDraggingImage] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
 
   const dayName = format(selectedDate, "EEEE").toUpperCase();
   const dayNumber = format(selectedDate, "d");
   const monthName = format(selectedDate, "MMMM").toUpperCase();
   const year = format(selectedDate, "yyyy");
+
+  const selectedSkin = settings.skin;
+  const pageSize = PAGE_SIZES[settings.pageSize];
+  const zoomScale = settings.zoom / 100;
+
+  // Update text color based on skin
+  useEffect(() => {
+    if (selectedSkin.id === "dark") {
+      setTextFormatting((prev) => ({
+        ...prev,
+        color: "hsl(210, 40%, 96%)",
+      }));
+    } else {
+      setTextFormatting((prev) => ({
+        ...prev,
+        color: "hsl(222, 47%, 11%)",
+      }));
+    }
+  }, [selectedSkin.id]);
 
   // Page flip animation handler
   const handleNavigate = (direction: "prev" | "next") => {
@@ -84,7 +141,7 @@ export function JournalDiaryPage({
     setTimeout(() => {
       onNavigate(direction);
       setPageFlip("none");
-    }, 300);
+    }, 400);
   };
 
   // Voice recording functions
@@ -123,15 +180,21 @@ export function JournalDiaryPage({
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        const newImage = {
+        const newImage: InsertedImage = {
           id: Date.now().toString(),
           src: event.target?.result as string,
-          top: 200,
+          x: 70,
+          y: 100,
+          width: 120,
+          section: activeField,
         };
         setImages([...images, newImage]);
-        toast({ title: "Image added!", description: "You can position it on the page" });
+        toast({ title: "Image added!", description: "Drag to position it on the page" });
       };
       reader.readAsDataURL(file);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -139,12 +202,102 @@ export function JournalDiaryPage({
     setImages(images.filter((img) => img.id !== id));
   };
 
-  // Calculate text area height based on content (auto-expand like Notion)
+  // Image drag handling
+  const handleImageDragStart = (id: string) => {
+    setDraggingImage(id);
+  };
+
+  const handleImageDrag = useCallback(
+    (e: React.MouseEvent | React.TouchEvent) => {
+      if (!draggingImage || !pageRef.current) return;
+
+      const pageRect = pageRef.current.getBoundingClientRect();
+      let clientX: number, clientY: number;
+
+      if ("touches" in e) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
+
+      const x = Math.max(LEFT_MARGIN, Math.min(clientX - pageRect.left, pageRect.width - 50));
+      const y = Math.max(TOP_MARGIN, Math.min(clientY - pageRect.top, pageRect.height - 50));
+
+      setImages((prev) =>
+        prev.map((img) =>
+          img.id === draggingImage ? { ...img, x, y } : img
+        )
+      );
+    },
+    [draggingImage]
+  );
+
+  const handleImageDragEnd = () => {
+    setDraggingImage(null);
+  };
+
+  // Calculate text area height based on content
   const calculateTextHeight = (text: string) => {
     const lines = text.split("\n").length;
-    const charLines = Math.ceil(text.length / 50); // Approximate chars per line
+    const charLines = Math.ceil(text.length / 40);
     return Math.max(lines, charLines, 2) * LINE_HEIGHT;
   };
+
+  // Get style for section header
+  const getHeaderStyle = (section: "feeling" | "gratitude" | "kindness") => {
+    const style = settings.sections[section].headerStyle;
+    const color =
+      style.color === "default"
+        ? selectedSkin.id === "dark"
+          ? "hsl(210, 40%, 80%)"
+          : "hsl(222, 47%, 30%)"
+        : style.color;
+
+    return {
+      fontSize: `${style.fontSize}px`,
+      fontWeight: style.bold ? "bold" : "600",
+      fontStyle: style.italic ? "italic" : "normal",
+      textDecoration: style.underline ? "underline" : "none",
+      color,
+      lineHeight: `${LINE_HEIGHT}px`,
+    };
+  };
+
+  // Get style for prompts
+  const getPromptStyle = (section: "feeling" | "gratitude" | "kindness") => {
+    const style = settings.sections[section].promptStyle;
+    const color =
+      style.color === "default"
+        ? selectedSkin.id === "dark"
+          ? "hsl(210, 40%, 70%)"
+          : "hsl(222, 30%, 50%)"
+        : style.color;
+
+    return {
+      fontSize: `${style.fontSize}px`,
+      fontWeight: style.bold ? "bold" : "normal",
+      fontStyle: style.italic ? "italic" : "normal",
+      textDecoration: style.underline ? "underline" : "none",
+      color,
+      lineHeight: `${LINE_HEIGHT}px`,
+      opacity: 0.8,
+    };
+  };
+
+  // Get textarea style from formatting
+  const getTextareaStyle = () => ({
+    fontSize: `${textFormatting.fontSize}px`,
+    fontFamily: textFormatting.fontFamily,
+    fontWeight: textFormatting.bold ? "bold" : "normal",
+    fontStyle: textFormatting.italic ? "italic" : "normal",
+    textDecoration: textFormatting.underline ? "underline" : "none",
+    color: textFormatting.color,
+    textAlign: textFormatting.alignment as React.CSSProperties["textAlign"],
+    lineHeight: `${LINE_HEIGHT}px`,
+    minHeight: `${LINE_HEIGHT * 2}px`,
+  });
 
   const renderInputArea = (
     value: string,
@@ -152,6 +305,9 @@ export function JournalDiaryPage({
     placeholder: string,
     field: "feeling" | "gratitude" | "kindness"
   ) => {
+    const baseTextareaClass =
+      "w-full resize-none bg-transparent border-0 focus:outline-none focus:ring-0 p-0 overflow-hidden";
+
     if (inputMode === "voice") {
       return (
         <div className="flex items-start gap-3">
@@ -169,13 +325,12 @@ export function JournalDiaryPage({
           <textarea
             value={value}
             onChange={(e) => onChange(e.target.value)}
+            onFocus={() => setActiveField(field)}
             placeholder={placeholder}
-            className="flex-1 resize-none bg-transparent border-0 focus:outline-none focus:ring-0 font-serif text-sm p-0 overflow-hidden"
+            className={baseTextareaClass}
             style={{
-              lineHeight: `${LINE_HEIGHT}px`,
-              minHeight: `${LINE_HEIGHT * 2}px`,
+              ...getTextareaStyle(),
               height: `${calculateTextHeight(value)}px`,
-              color: selectedSkin.id === "dark" ? "hsl(210, 40%, 96%)" : "hsl(222, 47%, 11%)",
             }}
           />
         </div>
@@ -186,23 +341,69 @@ export function JournalDiaryPage({
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setActiveField(field)}
         placeholder={placeholder}
-        className="w-full resize-none bg-transparent border-0 focus:outline-none focus:ring-0 font-serif text-sm p-0 overflow-hidden"
+        className={baseTextareaClass}
         style={{
-          lineHeight: `${LINE_HEIGHT}px`,
-          minHeight: `${LINE_HEIGHT * 2}px`,
+          ...getTextareaStyle(),
           height: `${calculateTextHeight(value)}px`,
-          color: selectedSkin.id === "dark" ? "hsl(210, 40%, 96%)" : "hsl(222, 47%, 11%)",
         }}
       />
     );
   };
 
-  // Get animation class for page flip
-  const getPageFlipClass = () => {
-    if (pageFlip === "left") return "animate-[flip-left_0.3s_ease-in-out]";
-    if (pageFlip === "right") return "animate-[flip-right_0.3s_ease-in-out]";
-    return "";
+  // Get background style for skin
+  const getBackgroundStyle = () => {
+    const skin = selectedSkin;
+    if (skin.lineStyle === "blank") {
+      return {};
+    }
+    if (skin.lineStyle === "grid") {
+      return {
+        backgroundImage: `
+          linear-gradient(${skin.lineColor} 1px, transparent 1px),
+          linear-gradient(90deg, ${skin.lineColor} 1px, transparent 1px)
+        `,
+        backgroundSize: `${LINE_HEIGHT}px ${LINE_HEIGHT}px`,
+        backgroundPosition: `${LEFT_MARGIN}px ${TOP_MARGIN}px`,
+      };
+    }
+    if (skin.lineStyle === "dotted") {
+      return {
+        backgroundImage: `radial-gradient(circle, ${skin.lineColor} 1px, transparent 1px)`,
+        backgroundSize: `${LINE_HEIGHT}px ${LINE_HEIGHT}px`,
+        backgroundPosition: `${LEFT_MARGIN}px ${TOP_MARGIN}px`,
+      };
+    }
+    // Default lined
+    return {
+      backgroundImage: `linear-gradient(${skin.lineColor} 1px, transparent 1px)`,
+      backgroundSize: `100% ${LINE_HEIGHT}px`,
+      backgroundPosition: `0 ${TOP_MARGIN}px`,
+    };
+  };
+
+  const renderSection = (
+    section: "feeling" | "gratitude" | "kindness",
+    value: string,
+    onChange: (val: string) => void,
+    placeholder: string
+  ) => {
+    const sectionSettings = settings.sections[section];
+
+    return (
+      <div className="mb-4">
+        <h3 style={getHeaderStyle(section)} className="mb-1">
+          {sectionSettings.header}
+        </h3>
+        {sectionSettings.prompts.map((prompt, index) => (
+          <p key={index} style={getPromptStyle(section)} className="mb-1">
+            {prompt}
+          </p>
+        ))}
+        {renderInputArea(value, onChange, placeholder, section)}
+      </div>
+    );
   };
 
   return (
@@ -224,346 +425,265 @@ export function JournalDiaryPage({
         <ChevronRight className="h-5 w-5 text-foreground" />
       </button>
 
-      {/* Diary Page - Proportions similar to A5 notebook (148mm x 210mm ratio) */}
+      {/* Text Formatting Toolbar - Only show in type mode */}
+      {inputMode === "type" && (
+        <div className="mb-3">
+          <JournalTextToolbar
+            formatting={textFormatting}
+            onChange={setTextFormatting}
+            skinBgColor={selectedSkin.bg}
+          />
+        </div>
+      )}
+
+      {/* Diary Page Container with zoom */}
       <div
-        className={cn(
-          "relative mx-auto shadow-2xl overflow-hidden transition-transform duration-300",
-          getPageFlipClass()
-        )}
-        style={{
-          width: "100%",
-          maxWidth: "420px",
-          aspectRatio: "148 / 210", // A5 ratio
-          backgroundColor: selectedSkin.bg,
-          borderRadius: "4px",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.15), inset 0 0 60px rgba(0,0,0,0.03)",
-        }}
+        className="flex justify-center"
+        style={{ transform: `scale(${zoomScale})`, transformOrigin: "top center" }}
       >
-        {/* Lined paper background with proper spacing */}
+        {/* Diary Page */}
         <div
-          className="absolute inset-0"
+          ref={pageRef}
+          className={cn(
+            "relative shadow-2xl overflow-hidden transition-all duration-500",
+            pageFlip === "left" && "animate-page-flip-left",
+            pageFlip === "right" && "animate-page-flip-right"
+          )}
           style={{
-            backgroundImage: `
-              linear-gradient(
-                ${selectedSkin.lineColor} 1px,
-                transparent 1px
-              )
-            `,
-            backgroundSize: `100% ${LINE_HEIGHT}px`,
-            backgroundPosition: `0 ${TOP_MARGIN}px`,
+            width: "100%",
+            maxWidth: `${pageSize.maxWidth}px`,
+            aspectRatio: pageSize.ratio.toString(),
+            backgroundColor: selectedSkin.bg,
+            borderRadius: "4px",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.15), inset 0 0 60px rgba(0,0,0,0.03)",
+            transformStyle: "preserve-3d",
           }}
-        />
+          onMouseMove={draggingImage ? handleImageDrag : undefined}
+          onMouseUp={handleImageDragEnd}
+          onMouseLeave={handleImageDragEnd}
+          onTouchMove={draggingImage ? handleImageDrag : undefined}
+          onTouchEnd={handleImageDragEnd}
+        >
+          {/* Background pattern */}
+          <div className="absolute inset-0" style={getBackgroundStyle()} />
 
-        {/* Red margin line */}
-        <div
-          className="absolute top-0 bottom-0"
-          style={{
-            left: `${LEFT_MARGIN}px`,
-            width: "1px",
-            backgroundColor: selectedSkin.marginColor,
-          }}
-        />
-
-        {/* Ring binder holes */}
-        <div className="absolute left-3 top-0 bottom-0 flex flex-col justify-evenly py-8">
-          {[...Array(5)].map((_, i) => (
+          {/* Red margin line */}
+          {selectedSkin.lineStyle !== "blank" && (
             <div
-              key={i}
-              className="w-3 h-3 rounded-full"
+              className="absolute top-0 bottom-0"
               style={{
-                backgroundColor: selectedSkin.id === "dark" ? "hsl(222, 30%, 20%)" : "hsl(0, 0%, 90%)",
-                border: `1px solid ${selectedSkin.id === "dark" ? "hsl(222, 30%, 30%)" : "hsl(0, 0%, 80%)"}`,
+                left: `${LEFT_MARGIN}px`,
+                width: "1px",
+                backgroundColor: selectedSkin.marginColor,
               }}
             />
-          ))}
-        </div>
+          )}
 
-        {/* Page Content */}
-        <div
-          className="relative h-full flex flex-col"
-          style={{ paddingLeft: `${LEFT_MARGIN + 12}px`, paddingRight: "16px" }}
-        >
-          {/* Top blank margin - Date Header */}
-          <div
-            className="flex justify-end items-start pt-3"
-            style={{ minHeight: `${TOP_MARGIN}px` }}
-          >
-            <div className="text-right">
-              <p
-                className="text-[10px] font-semibold tracking-widest"
-                style={{ color: selectedSkin.marginColor }}
-              >
-                {dayName}
-              </p>
-              <p
-                className="text-2xl font-bold leading-none"
-                style={{ color: selectedSkin.marginColor }}
-              >
-                {dayNumber}
-              </p>
-              <p
-                className="text-[10px] font-semibold tracking-widest"
-                style={{ color: selectedSkin.marginColor }}
-              >
-                {monthName} {year}
-              </p>
-            </div>
+          {/* Ring binder holes */}
+          <div className="absolute left-3 top-0 bottom-0 flex flex-col justify-evenly py-8">
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                className="w-3 h-3 rounded-full"
+                style={{
+                  backgroundColor: selectedSkin.id === "dark" ? "hsl(222, 30%, 20%)" : "hsl(0, 0%, 90%)",
+                  border: `1px solid ${selectedSkin.id === "dark" ? "hsl(222, 30%, 30%)" : "hsl(0, 0%, 80%)"}`,
+                }}
+              />
+            ))}
           </div>
 
-          {/* Scrollable content area for scribble mode or regular content */}
-          <div className="flex-1 overflow-y-auto pb-16">
-            {inputMode === "scribble" ? (
-              <div className="pt-2">
-                <JournalScribbleCanvas
-                  height={500}
-                  bgColor={selectedSkin.bg}
-                  lineColor={selectedSkin.lineColor}
-                  lineHeight={LINE_HEIGHT}
-                />
+          {/* Page Content */}
+          <div
+            className="relative h-full flex flex-col"
+            style={{ paddingLeft: `${LEFT_MARGIN + 12}px`, paddingRight: "16px" }}
+          >
+            {/* Top blank margin - Date Header */}
+            <div
+              className="flex justify-end items-start pt-3"
+              style={{ minHeight: `${TOP_MARGIN}px` }}
+            >
+              <div className="text-right">
+                <p
+                  className="text-[10px] font-semibold tracking-widest"
+                  style={{ color: selectedSkin.marginColor }}
+                >
+                  {dayName}
+                </p>
+                <p
+                  className="text-2xl font-bold leading-none"
+                  style={{ color: selectedSkin.marginColor }}
+                >
+                  {dayNumber}
+                </p>
+                <p
+                  className="text-[10px] font-semibold tracking-widest"
+                  style={{ color: selectedSkin.marginColor }}
+                >
+                  {monthName} {year}
+                </p>
               </div>
-            ) : (
-              <>
-                {/* My Feelings Section */}
-                <div className="mb-4">
-                  <h3
-                    className="font-semibold text-xs mb-1"
-                    style={{
-                      lineHeight: `${LINE_HEIGHT}px`,
-                      color: selectedSkin.id === "dark" ? "hsl(210, 40%, 80%)" : "hsl(222, 47%, 30%)",
-                    }}
-                  >
-                    My Feelings
-                  </h3>
-                  <p
-                    className="text-[11px] italic mb-1 opacity-70"
-                    style={{
-                      lineHeight: `${LINE_HEIGHT}px`,
-                      color: selectedSkin.id === "dark" ? "hsl(210, 40%, 70%)" : "hsl(222, 30%, 50%)",
-                    }}
-                  >
-                    {prompts.feeling}
-                  </p>
-                  {renderInputArea(dailyFeeling, onFeelingChange, "Today I felt...", "feeling")}
-                </div>
+            </div>
 
-                {/* Gratitude Section */}
-                <div className="mb-4">
-                  <h3
-                    className="font-semibold text-xs mb-1"
-                    style={{
-                      lineHeight: `${LINE_HEIGHT}px`,
-                      color: selectedSkin.id === "dark" ? "hsl(210, 40%, 80%)" : "hsl(222, 47%, 30%)",
-                    }}
-                  >
-                    Gratitude
-                  </h3>
-                  <p
-                    className="text-[11px] italic mb-1 opacity-70"
-                    style={{
-                      lineHeight: `${LINE_HEIGHT}px`,
-                      color: selectedSkin.id === "dark" ? "hsl(210, 40%, 70%)" : "hsl(222, 30%, 50%)",
-                    }}
-                  >
-                    {prompts.gratitude}
-                  </p>
-                  {renderInputArea(dailyGratitude, onGratitudeChange, "1. I'm grateful for...", "gratitude")}
-                </div>
+            {/* Content area */}
+            <div className="flex-1 overflow-y-auto pb-16 relative">
+              {/* Sections - Always visible regardless of mode */}
+              {renderSection("feeling", dailyFeeling, onFeelingChange, "Today I felt...")}
+              {renderSection("gratitude", dailyGratitude, onGratitudeChange, "1. I'm grateful for...")}
+              {renderSection("kindness", dailyKindness, onKindnessChange, "Today I...")}
 
-                {/* Kindness Section */}
-                <div className="mb-4">
-                  <h3
-                    className="font-semibold text-xs mb-1"
-                    style={{
-                      lineHeight: `${LINE_HEIGHT}px`,
-                      color: selectedSkin.id === "dark" ? "hsl(210, 40%, 80%)" : "hsl(222, 47%, 30%)",
-                    }}
-                  >
-                    Kindness
-                  </h3>
-                  <p
-                    className="text-[11px] italic mb-1 opacity-70"
-                    style={{
-                      lineHeight: `${LINE_HEIGHT}px`,
-                      color: selectedSkin.id === "dark" ? "hsl(210, 40%, 70%)" : "hsl(222, 30%, 50%)",
-                    }}
-                  >
-                    {prompts.kindness}
-                  </p>
-                  {renderInputArea(dailyKindness, onKindnessChange, "Today I...", "kindness")}
+              {/* Scribble Canvas Overlay when in scribble mode */}
+              {inputMode === "scribble" && (
+                <div className="absolute inset-0 z-10">
+                  <JournalScribbleCanvas
+                    height={600}
+                    bgColor="transparent"
+                    lineColor="transparent"
+                    lineHeight={LINE_HEIGHT}
+                  />
                 </div>
+              )}
 
-                {/* Inserted Images */}
-                {images.map((img) => (
-                  <div key={img.id} className="relative my-3 group">
-                    <img
-                      src={img.src}
-                      alt="Journal attachment"
-                      className="max-w-full rounded shadow-sm"
-                      style={{ maxHeight: "150px" }}
-                    />
+              {/* Draggable Images */}
+              {images.map((img) => (
+                <div
+                  key={img.id}
+                  className={cn(
+                    "absolute group cursor-move",
+                    draggingImage === img.id && "opacity-75"
+                  )}
+                  style={{
+                    left: img.x,
+                    top: img.y,
+                    width: img.width,
+                    zIndex: draggingImage === img.id ? 100 : 20,
+                  }}
+                  onMouseDown={() => handleImageDragStart(img.id)}
+                  onTouchStart={() => handleImageDragStart(img.id)}
+                >
+                  <img
+                    src={img.src}
+                    alt="Journal attachment"
+                    className="w-full rounded shadow-sm pointer-events-none"
+                    draggable={false}
+                  />
+                  <div className="absolute -top-2 -right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                      onClick={() => removeImage(img.id)}
-                      className="absolute top-1 right-1 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeImage(img.id);
+                      }}
+                      className="p-1 bg-destructive text-destructive-foreground rounded-full"
                     >
                       <X className="h-3 w-3" />
                     </button>
                   </div>
-                ))}
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Bottom Toolbar - Fixed at bottom */}
-        <div
-          className="absolute bottom-0 left-0 right-0 px-3 py-2 flex items-center justify-between"
-          style={{
-            backgroundColor: selectedSkin.id === "dark" ? "hsl(222, 47%, 15%)" : "hsl(0, 0%, 97%)",
-            borderTop: `1px solid ${selectedSkin.lineColor}`,
-          }}
-        >
-          <div className="flex gap-1">
-            <Button
-              variant={inputMode === "type" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setInputMode("type")}
-              className="h-7 w-7 p-0"
-            >
-              <Type className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant={inputMode === "voice" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setInputMode("voice")}
-              className="h-7 w-7 p-0"
-            >
-              <Mic className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant={inputMode === "scribble" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setInputMode("scribble")}
-              className="h-7 w-7 p-0"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
-
-            {/* Image Insert */}
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleImageInsert}
-              accept="image/*"
-              className="hidden"
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              className="h-7 w-7 p-0"
-            >
-              <Image className="h-3.5 w-3.5" />
-            </Button>
-
-            {/* Skin & Prompts Settings */}
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                  <Settings className="h-3.5 w-3.5" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Journal Settings</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  {/* Skin Selection */}
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">Page Skin</Label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {DIARY_SKINS.map((skin) => (
-                        <button
-                          key={skin.id}
-                          onClick={() => setSelectedSkin(skin)}
-                          className={cn(
-                            "p-2 rounded-lg border-2 transition-all text-xs",
-                            selectedSkin.id === skin.id
-                              ? "border-primary"
-                              : "border-transparent hover:border-muted"
-                          )}
-                          style={{ backgroundColor: skin.bg }}
-                        >
-                          <div
-                            className="h-8 rounded mb-1"
-                            style={{
-                              backgroundImage: `linear-gradient(${skin.lineColor} 1px, transparent 1px)`,
-                              backgroundSize: "100% 8px",
-                            }}
-                          />
-                          <span
-                            style={{
-                              color: skin.id === "dark" ? "hsl(210, 40%, 90%)" : "hsl(222, 47%, 20%)",
-                            }}
-                          >
-                            {skin.name}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Custom Prompts */}
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">Customize Prompts</Label>
-                    <div className="space-y-3">
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Feelings Prompt</Label>
-                        <Input
-                          value={prompts.feeling}
-                          onChange={(e) => setPrompts({ ...prompts, feeling: e.target.value })}
-                          className="text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Gratitude Prompt</Label>
-                        <Input
-                          value={prompts.gratitude}
-                          onChange={(e) => setPrompts({ ...prompts, gratitude: e.target.value })}
-                          className="text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Kindness Prompt</Label>
-                        <Input
-                          value={prompts.kindness}
-                          onChange={(e) => setPrompts({ ...prompts, kindness: e.target.value })}
-                          className="text-sm"
-                        />
-                      </div>
-                    </div>
+                  <div className="absolute -bottom-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Move className="h-3 w-3 text-muted-foreground" />
                   </div>
                 </div>
-              </DialogContent>
-            </Dialog>
+              ))}
+            </div>
           </div>
 
-          <Button onClick={onSave} disabled={saving} size="sm" className="h-7 text-xs px-3">
-            {saving ? "Saving..." : hasEntry ? "Update" : "Save"}
-          </Button>
+          {/* Bottom Toolbar */}
+          <div
+            className="absolute bottom-0 left-0 right-0 px-3 py-2 flex items-center justify-between"
+            style={{
+              backgroundColor: selectedSkin.id === "dark" ? "hsl(222, 47%, 15%)" : "hsl(0, 0%, 97%)",
+              borderTop: `1px solid ${selectedSkin.lineColor}`,
+            }}
+          >
+            <div className="flex gap-1">
+              <Button
+                variant={inputMode === "type" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setInputMode("type")}
+                className="h-7 w-7 p-0"
+              >
+                <Type className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant={inputMode === "voice" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setInputMode("voice")}
+                className="h-7 w-7 p-0"
+              >
+                <Mic className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant={inputMode === "scribble" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setInputMode("scribble")}
+                className="h-7 w-7 p-0"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+
+              {/* Image Insert */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageInsert}
+                accept="image/*"
+                className="hidden"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                className="h-7 w-7 p-0"
+              >
+                <Image className="h-3.5 w-3.5" />
+              </Button>
+
+              {/* Settings */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSettingsOpen(true)}
+                className="h-7 w-7 p-0"
+              >
+                <Settings className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+
+            <Button onClick={onSave} disabled={saving} size="sm" className="h-7 text-xs px-3">
+              {saving ? "Saving..." : hasEntry ? "Update" : "Save"}
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Page flip animation keyframes */}
+      {/* Settings Dialog */}
+      <JournalSettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        settings={settings}
+        onSave={setSettings}
+      />
+
+      {/* Page flip animation styles */}
       <style>{`
-        @keyframes flip-left {
-          0% { transform: perspective(1000px) rotateY(0deg); }
-          50% { transform: perspective(1000px) rotateY(-15deg); }
-          100% { transform: perspective(1000px) rotateY(0deg); }
+        @keyframes page-flip-left {
+          0% { transform: perspective(1500px) rotateY(0deg); }
+          25% { transform: perspective(1500px) rotateY(-5deg) translateX(-2%); }
+          50% { transform: perspective(1500px) rotateY(-25deg) translateX(-5%); box-shadow: 20px 0 60px rgba(0,0,0,0.3); }
+          75% { transform: perspective(1500px) rotateY(-5deg) translateX(-2%); }
+          100% { transform: perspective(1500px) rotateY(0deg); }
         }
-        @keyframes flip-right {
-          0% { transform: perspective(1000px) rotateY(0deg); }
-          50% { transform: perspective(1000px) rotateY(15deg); }
-          100% { transform: perspective(1000px) rotateY(0deg); }
+        @keyframes page-flip-right {
+          0% { transform: perspective(1500px) rotateY(0deg); }
+          25% { transform: perspective(1500px) rotateY(5deg) translateX(2%); }
+          50% { transform: perspective(1500px) rotateY(25deg) translateX(5%); box-shadow: -20px 0 60px rgba(0,0,0,0.3); }
+          75% { transform: perspective(1500px) rotateY(5deg) translateX(2%); }
+          100% { transform: perspective(1500px) rotateY(0deg); }
+        }
+        .animate-page-flip-left {
+          animation: page-flip-left 0.5s ease-in-out;
+        }
+        .animate-page-flip-right {
+          animation: page-flip-right 0.5s ease-in-out;
         }
       `}</style>
     </div>
