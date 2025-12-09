@@ -1,16 +1,23 @@
 import { useEffect, useState } from "react";
-import { format } from "date-fns";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { format, formatDistanceToNow } from "date-fns";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Textarea } from "@/components/ui/textarea";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Heart, PenLine, Sparkles, BarChart3, FileText, CheckSquare, MessageCircle, Share2, Smile, Send } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import { Heart, PenLine, Sparkles, BarChart3, FileText, CheckSquare, MessageCircle, Share2, ThumbsUp, Send, MoreHorizontal, Globe } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import type { LucideIcon } from "lucide-react";
+
+interface Comment {
+  text: string;
+  timestamp: Date;
+}
 
 interface DiaryEntry {
   id: string;
@@ -19,12 +26,12 @@ interface DiaryEntry {
   preview: string;
   question?: string;
   date: string;
-  icon: typeof Heart;
+  icon: LucideIcon;
   reactions: string[];
   comments: string[];
 }
 
-const typeConfig = {
+const typeConfig: Record<string, { icon: LucideIcon; label: string; color: string; question: string }> = {
   emotion: { icon: Heart, label: "Emotion", color: "bg-pink-500/10 text-pink-500", question: "How are you feeling?" },
   journal: { icon: PenLine, label: "Journal", color: "bg-blue-500/10 text-blue-500", question: "" },
   manifest: { icon: Sparkles, label: "Manifest", color: "bg-purple-500/10 text-purple-500", question: "What are you manifesting?" },
@@ -33,15 +40,16 @@ const typeConfig = {
   task: { icon: CheckSquare, label: "Task", color: "bg-cyan-500/10 text-cyan-500", question: "" },
 };
 
-const reactionEmojis = ["👍", "❤️", "😊", "🎉", "🙏", "💪"];
+const reactionEmojis = ["👍", "❤️", "😂", "😮", "😢", "😡"];
 
 export default function Diary() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [localReactions, setLocalReactions] = useState<Record<string, string[]>>({});
-  const [localComments, setLocalComments] = useState<Record<string, string[]>>({});
+  const [userReaction, setUserReaction] = useState<Record<string, string | null>>({});
+  const [reactionCounts, setReactionCounts] = useState<Record<string, Record<string, number>>>({});
+  const [localComments, setLocalComments] = useState<Record<string, Comment[]>>({});
   const [commentText, setCommentText] = useState<Record<string, string>>({});
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
 
@@ -197,24 +205,54 @@ export default function Diary() {
     fetchAllEntries();
   }, [user]);
 
-  const addReaction = (entryId: string, emoji: string) => {
-    setLocalReactions((prev) => ({
-      ...prev,
-      [entryId]: [...(prev[entryId] || []), emoji],
-    }));
-    toast({ title: "Reaction added!", description: `You reacted with ${emoji}` });
+  const toggleReaction = (entryId: string, emoji: string) => {
+    setUserReaction((prev) => {
+      const currentReaction = prev[entryId];
+      const newReaction = currentReaction === emoji ? null : emoji;
+      
+      // Update counts
+      setReactionCounts((prevCounts) => {
+        const entryCounts = { ...(prevCounts[entryId] || {}) };
+        
+        // Remove old reaction count
+        if (currentReaction) {
+          entryCounts[currentReaction] = Math.max(0, (entryCounts[currentReaction] || 1) - 1);
+          if (entryCounts[currentReaction] === 0) delete entryCounts[currentReaction];
+        }
+        
+        // Add new reaction count
+        if (newReaction) {
+          entryCounts[newReaction] = (entryCounts[newReaction] || 0) + 1;
+        }
+        
+        return { ...prevCounts, [entryId]: entryCounts };
+      });
+      
+      return { ...prev, [entryId]: newReaction };
+    });
   };
 
   const addComment = (entryId: string) => {
     const text = commentText[entryId];
     if (!text?.trim()) return;
 
+    const newComment: Comment = {
+      text: text.trim(),
+      timestamp: new Date(),
+    };
+
     setLocalComments((prev) => ({
       ...prev,
-      [entryId]: [...(prev[entryId] || []), text],
+      [entryId]: [...(prev[entryId] || []), newComment],
     }));
     setCommentText((prev) => ({ ...prev, [entryId]: "" }));
-    toast({ title: "Comment added!" });
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent, entryId: string) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      addComment(entryId);
+    }
   };
 
   const shareEntry = (entry: DiaryEntry) => {
@@ -229,6 +267,19 @@ export default function Diary() {
     }
   };
 
+  const getTotalReactions = (entryId: string) => {
+    const counts = reactionCounts[entryId] || {};
+    return Object.values(counts).reduce((a, b) => a + b, 0);
+  };
+
+  const getTopReactions = (entryId: string) => {
+    const counts = reactionCounts[entryId] || {};
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([emoji]) => emoji);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -238,8 +289,8 @@ export default function Diary() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <div>
+    <div className="max-w-2xl mx-auto space-y-4">
+      <div className="mb-6">
         <h1 className="text-3xl font-bold text-foreground">Your Diary</h1>
         <p className="text-muted-foreground mt-1">
           A timeline of all your entries across modules
@@ -262,63 +313,110 @@ export default function Diary() {
             {entries.map((entry) => {
               const config = typeConfig[entry.type];
               const IconComponent = config.icon;
-              const entryReactions = localReactions[entry.id] || [];
               const entryComments = localComments[entry.id] || [];
+              const currentReaction = userReaction[entry.id];
+              const totalReactions = getTotalReactions(entry.id);
+              const topReactions = getTopReactions(entry.id);
+              const isExpanded = expandedComments[entry.id];
 
               return (
-                <Card key={entry.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
+                <Card key={entry.id} className="overflow-hidden">
+                  {/* Post Header */}
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
                         <div className={`h-10 w-10 rounded-full flex items-center justify-center ${config.color}`}>
                           <IconComponent className="h-5 w-5" />
                         </div>
                         <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="secondary" className={config.color}>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm text-foreground">{entry.title}</span>
+                            <Badge variant="secondary" className={`${config.color} text-xs px-1.5 py-0`}>
                               {config.label}
                             </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {entry.title} | {format(new Date(entry.date), "d MMM yy")}
-                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <span>{formatDistanceToNow(new Date(entry.date), { addSuffix: true })}</span>
+                            <span>·</span>
+                            <Globe className="h-3 w-3" />
                           </div>
                         </div>
                       </div>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                        <MoreHorizontal className="h-5 w-5" />
+                      </Button>
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+
+                  <CardContent className="pt-0 space-y-3">
+                    {/* Post Content */}
                     {entry.question && (
-                      <p className="text-xs text-muted-foreground italic border-l-2 border-primary/30 pl-3">
+                      <p className="text-xs text-muted-foreground italic">
                         {entry.question}
                       </p>
                     )}
-                    <p className="text-sm text-foreground">{entry.preview}</p>
+                    <p className="text-sm text-foreground leading-relaxed">{entry.preview}</p>
 
-                    {/* Reactions Display */}
-                    {entryReactions.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {entryReactions.map((emoji, i) => (
-                          <span key={i} className="text-lg">{emoji}</span>
-                        ))}
+                    {/* Reactions & Comments Count */}
+                    {(totalReactions > 0 || entryComments.length > 0) && (
+                      <div className="flex items-center justify-between text-xs text-muted-foreground py-1">
+                        <div className="flex items-center gap-1">
+                          {topReactions.length > 0 && (
+                            <>
+                              <div className="flex -space-x-1">
+                                {topReactions.map((emoji, i) => (
+                                  <span key={i} className="text-sm bg-muted rounded-full p-0.5">{emoji}</span>
+                                ))}
+                              </div>
+                              <span className="ml-1">{totalReactions}</span>
+                            </>
+                          )}
+                        </div>
+                        {entryComments.length > 0 && (
+                          <button 
+                            onClick={() => setExpandedComments((prev) => ({ ...prev, [entry.id]: !prev[entry.id] }))}
+                            className="hover:underline"
+                          >
+                            {entryComments.length} comment{entryComments.length !== 1 ? 's' : ''}
+                          </button>
+                        )}
                       </div>
                     )}
 
+                    <Separator />
+
                     {/* Action Buttons */}
-                    <div className="flex items-center justify-between pt-2 border-t border-border">
+                    <div className="flex items-center justify-between py-1">
                       <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-                            <Smile className="h-4 w-4 mr-1" />
-                            React
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className={`flex-1 gap-2 ${currentReaction ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                          >
+                            {currentReaction ? (
+                              <span className="text-lg">{currentReaction}</span>
+                            ) : (
+                              <ThumbsUp className="h-5 w-5" />
+                            )}
+                            <span className="font-medium">
+                              {currentReaction ? reactionEmojis.includes(currentReaction) ? 
+                                (currentReaction === "👍" ? "Like" : 
+                                 currentReaction === "❤️" ? "Love" : 
+                                 currentReaction === "😂" ? "Haha" : 
+                                 currentReaction === "😮" ? "Wow" : 
+                                 currentReaction === "😢" ? "Sad" : "Angry") 
+                                : "Like" : "Like"}
+                            </span>
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-2">
+                        <PopoverContent className="w-auto p-2" side="top">
                           <div className="flex gap-1">
                             {reactionEmojis.map((emoji) => (
                               <button
                                 key={emoji}
-                                onClick={() => addReaction(entry.id, emoji)}
-                                className="text-2xl hover:scale-125 transition-transform p-1"
+                                onClick={() => toggleReaction(entry.id, emoji)}
+                                className={`text-2xl hover:scale-125 transition-transform p-1 rounded ${currentReaction === emoji ? 'bg-primary/20' : ''}`}
                               >
                                 {emoji}
                               </button>
@@ -330,48 +428,78 @@ export default function Diary() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-muted-foreground hover:text-foreground"
+                        className="flex-1 gap-2 text-muted-foreground hover:text-foreground"
                         onClick={() => setExpandedComments((prev) => ({ ...prev, [entry.id]: !prev[entry.id] }))}
                       >
-                        <MessageCircle className="h-4 w-4 mr-1" />
-                        Comment {entryComments.length > 0 && `(${entryComments.length})`}
+                        <MessageCircle className="h-5 w-5" />
+                        <span className="font-medium">Comment</span>
                       </Button>
 
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-muted-foreground hover:text-foreground"
+                        className="flex-1 gap-2 text-muted-foreground hover:text-foreground"
                         onClick={() => shareEntry(entry)}
                       >
-                        <Share2 className="h-4 w-4 mr-1" />
-                        Share
+                        <Share2 className="h-5 w-5" />
+                        <span className="font-medium">Share</span>
                       </Button>
                     </div>
 
-                    {/* Collapsible Comments Section */}
-                    <Collapsible open={expandedComments[entry.id]}>
-                      <CollapsibleContent className="space-y-3 pt-3">
+                    {/* Comments Section */}
+                    {isExpanded && (
+                      <div className="space-y-3 pt-2">
+                        <Separator />
+                        
+                        {/* Comments List */}
                         {entryComments.map((comment, i) => (
-                          <div key={i} className="text-sm bg-muted p-2 rounded">
-                            {comment}
+                          <div key={i} className="flex gap-2">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="text-xs bg-muted">You</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <div className="bg-muted rounded-2xl px-3 py-2">
+                                <p className="text-xs font-semibold text-foreground">You</p>
+                                <p className="text-sm text-foreground">{comment.text}</p>
+                              </div>
+                              <div className="flex items-center gap-3 mt-1 ml-3 text-xs text-muted-foreground">
+                                <button className="font-semibold hover:underline">Like</button>
+                                <button className="font-semibold hover:underline">Reply</button>
+                                <span>{formatDistanceToNow(comment.timestamp, { addSuffix: true })}</span>
+                              </div>
+                            </div>
                           </div>
                         ))}
-                        <div className="flex gap-2">
-                          <Textarea
-                            value={commentText[entry.id] || ""}
-                            onChange={(e) =>
-                              setCommentText((prev) => ({ ...prev, [entry.id]: e.target.value }))
-                            }
-                            placeholder="Add a comment..."
-                            rows={2}
-                            className="resize-none text-sm flex-1"
-                          />
-                          <Button size="icon" onClick={() => addComment(entry.id)}>
-                            <Send className="h-4 w-4" />
-                          </Button>
+
+                        {/* Comment Input */}
+                        <div className="flex gap-2 items-center">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="text-xs bg-muted">You</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 relative">
+                            <Input
+                              value={commentText[entry.id] || ""}
+                              onChange={(e) =>
+                                setCommentText((prev) => ({ ...prev, [entry.id]: e.target.value }))
+                              }
+                              onKeyDown={(e) => handleKeyPress(e, entry.id)}
+                              placeholder="Write a comment..."
+                              className="rounded-full pr-10 bg-muted border-0 text-sm"
+                            />
+                            {commentText[entry.id]?.trim() && (
+                              <Button 
+                                size="icon" 
+                                variant="ghost"
+                                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-primary"
+                                onClick={() => addComment(entry.id)}
+                              >
+                                <Send className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                      </CollapsibleContent>
-                    </Collapsible>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               );
