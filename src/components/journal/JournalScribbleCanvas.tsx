@@ -7,6 +7,9 @@ interface JournalScribbleCanvasProps {
   onSave?: (dataUrl: string) => void;
   initialData?: string;
   height?: number;
+  bgColor?: string;
+  lineColor?: string;
+  lineHeight?: number;
 }
 
 const COLORS = [
@@ -17,9 +20,16 @@ const COLORS = [
   { name: "Purple", value: "hsl(270, 50%, 50%)" },
 ];
 
-const STROKE_WIDTHS = [2, 4, 6, 8];
+const STROKE_WIDTHS = [1, 2, 3, 4];
 
-export function JournalScribbleCanvas({ onSave, initialData, height = 200 }: JournalScribbleCanvasProps) {
+export function JournalScribbleCanvas({
+  onSave,
+  initialData,
+  height = 400,
+  bgColor = "transparent",
+  lineColor,
+  lineHeight = 24,
+}: JournalScribbleCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState<"pencil" | "eraser">("pencil");
@@ -33,9 +43,8 @@ export function JournalScribbleCanvas({ onSave, initialData, height = 200 }: Jou
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Set canvas background
-    ctx.fillStyle = "transparent";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Clear and set transparent background
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Load initial data if provided
     if (initialData) {
@@ -76,7 +85,7 @@ export function JournalScribbleCanvas({ onSave, initialData, height = 200 }: Jou
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     if (!isDrawing || !lastPosRef.current) return;
-    
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -87,17 +96,17 @@ export function JournalScribbleCanvas({ onSave, initialData, height = 200 }: Jou
     ctx.beginPath();
     ctx.moveTo(lastPosRef.current.x, lastPosRef.current.y);
     ctx.lineTo(pos.x, pos.y);
-    
+
     if (tool === "eraser") {
       ctx.globalCompositeOperation = "destination-out";
       ctx.strokeStyle = "rgba(0,0,0,1)";
-      ctx.lineWidth = strokeWidth * 3;
+      ctx.lineWidth = strokeWidth * 4;
     } else {
       ctx.globalCompositeOperation = "source-over";
       ctx.strokeStyle = color;
       ctx.lineWidth = strokeWidth;
     }
-    
+
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.stroke();
@@ -108,7 +117,7 @@ export function JournalScribbleCanvas({ onSave, initialData, height = 200 }: Jou
   const stopDrawing = () => {
     setIsDrawing(false);
     lastPosRef.current = null;
-    
+
     if (onSave && canvasRef.current) {
       onSave(canvasRef.current.toDataURL());
     }
@@ -120,35 +129,41 @@ export function JournalScribbleCanvas({ onSave, initialData, height = 200 }: Jou
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+
     if (onSave) {
       onSave("");
     }
   };
 
   return (
-    <div className="space-y-3">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-3 p-2 bg-muted/30 rounded-lg">
+    <div className="relative">
+      {/* Single Common Toolbar - Fixed at top of scribble area */}
+      <div
+        className="sticky top-0 z-10 flex flex-wrap items-center gap-2 p-2 mb-2 rounded-lg"
+        style={{ backgroundColor: "hsl(var(--muted) / 0.9)" }}
+      >
         {/* Tools */}
         <div className="flex gap-1">
           <Button
             variant={tool === "pencil" ? "default" : "ghost"}
             size="sm"
             onClick={() => setTool("pencil")}
-            className="h-8 w-8 p-0"
+            className="h-7 w-7 p-0"
           >
-            <Pencil className="h-4 w-4" />
+            <Pencil className="h-3.5 w-3.5" />
           </Button>
           <Button
             variant={tool === "eraser" ? "default" : "ghost"}
             size="sm"
             onClick={() => setTool("eraser")}
-            className="h-8 w-8 p-0"
+            className="h-7 w-7 p-0"
           >
-            <Eraser className="h-4 w-4" />
+            <Eraser className="h-3.5 w-3.5" />
           </Button>
         </div>
+
+        {/* Divider */}
+        <div className="w-px h-5 bg-border" />
 
         {/* Colors */}
         <div className="flex gap-1">
@@ -160,14 +175,17 @@ export function JournalScribbleCanvas({ onSave, initialData, height = 200 }: Jou
                 setTool("pencil");
               }}
               className={cn(
-                "h-6 w-6 rounded-full border-2 transition-transform hover:scale-110",
-                color === c.value && tool === "pencil" ? "border-foreground scale-110" : "border-transparent"
+                "h-5 w-5 rounded-full border transition-transform hover:scale-110",
+                color === c.value && tool === "pencil" ? "border-foreground scale-110 ring-1 ring-foreground" : "border-muted-foreground/30"
               )}
               style={{ backgroundColor: c.value }}
               title={c.name}
             />
           ))}
         </div>
+
+        {/* Divider */}
+        <div className="w-px h-5 bg-border" />
 
         {/* Stroke Width */}
         <div className="flex gap-1 items-center">
@@ -176,28 +194,36 @@ export function JournalScribbleCanvas({ onSave, initialData, height = 200 }: Jou
               key={sw}
               onClick={() => setStrokeWidth(sw)}
               className={cn(
-                "flex items-center justify-center h-6 w-6 rounded transition-colors",
-                strokeWidth === sw ? "bg-primary/20" : "hover:bg-muted"
+                "flex items-center justify-center h-5 w-5 rounded transition-colors",
+                strokeWidth === sw ? "bg-primary/20 ring-1 ring-primary" : "hover:bg-muted"
               )}
               title={`${sw}px`}
             >
               <div
                 className="rounded-full bg-foreground"
-                style={{ width: sw + 2, height: sw + 2 }}
+                style={{ width: sw + 1, height: sw + 1 }}
               />
             </button>
           ))}
         </div>
 
         {/* Clear */}
-        <Button variant="ghost" size="sm" onClick={clearCanvas} className="h-8 px-2 ml-auto">
-          <Trash2 className="h-4 w-4 mr-1" />
+        <Button variant="ghost" size="sm" onClick={clearCanvas} className="h-7 px-2 ml-auto text-xs">
+          <Trash2 className="h-3.5 w-3.5 mr-1" />
           Clear
         </Button>
       </div>
 
-      {/* Canvas */}
-      <div className="border border-dashed border-border rounded-lg overflow-hidden bg-card">
+      {/* Canvas with lined background */}
+      <div
+        className="relative overflow-hidden rounded"
+        style={{
+          backgroundImage: lineColor
+            ? `linear-gradient(${lineColor} 1px, transparent 1px)`
+            : undefined,
+          backgroundSize: lineColor ? `100% ${lineHeight}px` : undefined,
+        }}
+      >
         <canvas
           ref={canvasRef}
           width={800}
@@ -210,7 +236,10 @@ export function JournalScribbleCanvas({ onSave, initialData, height = 200 }: Jou
           onTouchMove={draw}
           onTouchEnd={stopDrawing}
           className="w-full cursor-crosshair touch-none"
-          style={{ height: `${height}px` }}
+          style={{
+            height: `${height}px`,
+            backgroundColor: "transparent",
+          }}
         />
       </div>
     </div>
