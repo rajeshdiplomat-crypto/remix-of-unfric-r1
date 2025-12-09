@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { Heart, PenLine, Sparkles, BarChart3, FileText, CheckSquare, MessageCircle, Share2, ThumbsUp, Smile, Send } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Heart, PenLine, Sparkles, BarChart3, FileText, CheckSquare, MessageCircle, Share2, Smile, Send } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -42,6 +43,7 @@ export default function Diary() {
   const [localReactions, setLocalReactions] = useState<Record<string, string[]>>({});
   const [localComments, setLocalComments] = useState<Record<string, string[]>>({});
   const [commentText, setCommentText] = useState<Record<string, string>>({});
+  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!user) return;
@@ -272,15 +274,16 @@ export default function Diary() {
                           <IconComponent className="h-5 w-5" />
                         </div>
                         <div>
-                          <Badge variant="secondary" className={`${config.color} mb-1`}>
-                            {config.label}
-                          </Badge>
-                          <CardTitle className="text-base">{entry.title}</CardTitle>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="secondary" className={config.color}>
+                              {config.label}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {entry.title} | {format(new Date(entry.date), "d MMM yy")}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(entry.date), "MMM d, h:mm a")}
-                      </p>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -290,9 +293,6 @@ export default function Diary() {
                       </p>
                     )}
                     <p className="text-sm text-foreground">{entry.preview}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(entry.date), "EEEE, MMMM d, yyyy")}
-                    </p>
 
                     {/* Reactions Display */}
                     {entryReactions.length > 0 && (
@@ -304,7 +304,7 @@ export default function Diary() {
                     )}
 
                     {/* Action Buttons */}
-                    <div className="flex items-center gap-2 pt-2 border-t border-border">
+                    <div className="flex items-center justify-between pt-2 border-t border-border">
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
@@ -327,37 +327,15 @@ export default function Diary() {
                         </PopoverContent>
                       </Popover>
 
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-                            <MessageCircle className="h-4 w-4 mr-1" />
-                            Comment {entryComments.length > 0 && `(${entryComments.length})`}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-80">
-                          <div className="space-y-3">
-                            {entryComments.map((comment, i) => (
-                              <div key={i} className="text-sm bg-muted p-2 rounded">
-                                {comment}
-                              </div>
-                            ))}
-                            <div className="flex gap-2">
-                              <Textarea
-                                value={commentText[entry.id] || ""}
-                                onChange={(e) =>
-                                  setCommentText((prev) => ({ ...prev, [entry.id]: e.target.value }))
-                                }
-                                placeholder="Add a comment..."
-                                rows={2}
-                                className="resize-none text-sm"
-                              />
-                              <Button size="icon" onClick={() => addComment(entry.id)}>
-                                <Send className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground hover:text-foreground"
+                        onClick={() => setExpandedComments((prev) => ({ ...prev, [entry.id]: !prev[entry.id] }))}
+                      >
+                        <MessageCircle className="h-4 w-4 mr-1" />
+                        Comment {entryComments.length > 0 && `(${entryComments.length})`}
+                      </Button>
 
                       <Button
                         variant="ghost"
@@ -369,6 +347,31 @@ export default function Diary() {
                         Share
                       </Button>
                     </div>
+
+                    {/* Collapsible Comments Section */}
+                    <Collapsible open={expandedComments[entry.id]}>
+                      <CollapsibleContent className="space-y-3 pt-3">
+                        {entryComments.map((comment, i) => (
+                          <div key={i} className="text-sm bg-muted p-2 rounded">
+                            {comment}
+                          </div>
+                        ))}
+                        <div className="flex gap-2">
+                          <Textarea
+                            value={commentText[entry.id] || ""}
+                            onChange={(e) =>
+                              setCommentText((prev) => ({ ...prev, [entry.id]: e.target.value }))
+                            }
+                            placeholder="Add a comment..."
+                            rows={2}
+                            className="resize-none text-sm flex-1"
+                          />
+                          <Button size="icon" onClick={() => addComment(entry.id)}>
+                            <Send className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
                   </CardContent>
                 </Card>
               );
