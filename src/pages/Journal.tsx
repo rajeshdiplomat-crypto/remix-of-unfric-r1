@@ -214,6 +214,7 @@ export default function Journal() {
         onSave={saveEntry}
         saving={saving}
         hasEntry={!!entryId}
+        entryId={entryId}
       />
 
       {/* Journal Feed Dialog */}
