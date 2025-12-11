@@ -7,6 +7,8 @@ import { JournalSettingsDialog, DIARY_SKINS, JournalSettings, DiarySkin, SaveSco
 import { JournalTextToolbar, TextFormatting } from "./JournalTextToolbar";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface JournalDiaryPageProps {
   selectedDate: Date;
@@ -20,6 +22,7 @@ interface JournalDiaryPageProps {
   onSave: () => void;
   saving: boolean;
   hasEntry: boolean;
+  entryId?: string | null;
 }
 
 interface InsertedImage {
@@ -103,8 +106,10 @@ export function JournalDiaryPage({
   onSave,
   saving,
   hasEntry,
+  entryId,
 }: JournalDiaryPageProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [inputMode, setInputMode] = useState<"type" | "voice" | "scribble">("type");
   const [isRecording, setIsRecording] = useState(false);
   const [activeField, setActiveField] = useState<"feeling" | "gratitude" | "kindness">("feeling");
@@ -117,9 +122,12 @@ export function JournalDiaryPage({
   const [resizingImage, setResizingImage] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryState[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [scribbleData, setScribbleData] = useState<string>("");
+  const [selectedText, setSelectedText] = useState<{ field: string; start: number; end: number } | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pageRef = useRef<HTMLDivElement>(null);
+  const textareaRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
 
   const dayName = format(selectedDate, "EEEE").toUpperCase();
   const dayNumber = format(selectedDate, "d");
@@ -129,6 +137,114 @@ export function JournalDiaryPage({
   const selectedSkin = settings.skin;
   const pageSize = PAGE_SIZES[settings.pageSize];
   const zoomScale = settings.zoom / 100;
+
+  // Load settings from database
+  useEffect(() => {
+    if (!user) return;
+    loadSettings();
+  }, [user]);
+
+  // Load scribble data for current entry
+  useEffect(() => {
+    if (entryId) {
+      loadScribbleData();
+    } else {
+      setScribbleData("");
+    }
+  }, [entryId]);
+
+  const loadSettings = async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from("journal_settings")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (data) {
+      const skin = DIARY_SKINS.find(s => s.id === data.skin_id) || DIARY_SKINS[0];
+      const sectionsConfig = data.sections_config as any;
+      const textFormattingData = data.text_formatting as any;
+      
+      setSettings({
+        skin,
+        pageSize: data.page_size as any,
+        zoom: data.zoom,
+        sections: sectionsConfig || defaultSettings.sections,
+      });
+      
+      if (textFormattingData) {
+        setTextFormatting(textFormattingData);
+      }
+    }
+  };
+
+  const loadScribbleData = async () => {
+    if (!entryId) return;
+    
+    const { data } = await supabase
+      .from("journal_entries")
+      .select("scribble_data, images_data")
+      .eq("id", entryId)
+      .maybeSingle();
+
+    if (data) {
+      setScribbleData(data.scribble_data || "");
+      if (data.images_data && Array.isArray(data.images_data)) {
+        setImages(data.images_data as unknown as InsertedImage[]);
+      }
+    }
+  };
+
+  const saveSettingsToDb = async (newSettings: JournalSettings, newFormatting: TextFormatting) => {
+    if (!user) return;
+
+    // Check if settings exist
+    const { data: existing } = await supabase
+      .from("journal_settings")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from("journal_settings")
+        .update({
+          skin_id: newSettings.skin.id,
+          page_size: newSettings.pageSize,
+          zoom: newSettings.zoom,
+          sections_config: JSON.parse(JSON.stringify(newSettings.sections)),
+          text_formatting: JSON.parse(JSON.stringify(newFormatting)),
+        })
+        .eq("user_id", user.id);
+    } else {
+      await supabase
+        .from("journal_settings")
+        .insert({
+          user_id: user.id,
+          skin_id: newSettings.skin.id,
+          page_size: newSettings.pageSize,
+          zoom: newSettings.zoom,
+          sections_config: JSON.parse(JSON.stringify(newSettings.sections)),
+          text_formatting: JSON.parse(JSON.stringify(newFormatting)),
+        });
+    }
+  };
+
+  const saveScribbleData = async (data: string) => {
+    setScribbleData(data);
+    
+    if (entryId) {
+      await supabase
+        .from("journal_entries")
+        .update({ 
+          scribble_data: data, 
+          images_data: JSON.parse(JSON.stringify(images))
+        })
+        .eq("id", entryId);
+    }
+  };
 
   // Initialize history
   useEffect(() => {
@@ -159,7 +275,7 @@ export function JournalDiaryPage({
     const newState = { feeling: dailyFeeling, gratitude: dailyGratitude, kindness: dailyKindness };
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push(newState);
-    if (newHistory.length > 50) newHistory.shift(); // Limit history
+    if (newHistory.length > 50) newHistory.shift();
     setHistory(newHistory);
     setHistoryIndex(newHistory.length - 1);
   }, [dailyFeeling, dailyGratitude, dailyKindness, history, historyIndex]);
@@ -186,7 +302,7 @@ export function JournalDiaryPage({
     }
   };
 
-  // Page flip animation handler - only affects the diary page
+  // Page flip animation handler
   const handleNavigate = (direction: "prev" | "next") => {
     setPageFlip(direction === "prev" ? "left" : "right");
     setTimeout(() => {
@@ -360,12 +476,23 @@ export function JournalDiaryPage({
     minHeight: `${LINE_HEIGHT * 2}px`,
   });
 
+  // Handle text selection for formatting
+  const handleTextSelect = (field: "feeling" | "gratitude" | "kindness") => {
+    const textarea = textareaRefs.current[field];
+    if (textarea && textarea.selectionStart !== textarea.selectionEnd) {
+      setSelectedText({
+        field,
+        start: textarea.selectionStart,
+        end: textarea.selectionEnd,
+      });
+    }
+  };
+
   const handleTextChange = (
     value: string,
     onChange: (val: string) => void
   ) => {
     onChange(value);
-    // Debounced history save
     setTimeout(saveToHistory, 500);
   };
 
@@ -393,9 +520,11 @@ export function JournalDiaryPage({
             {isRecording && activeField === field ? <MicOff className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
           </Button>
           <textarea
+            ref={(el) => (textareaRefs.current[field] = el)}
             value={value}
             onChange={(e) => handleTextChange(e.target.value, onChange)}
             onFocus={() => setActiveField(field)}
+            onSelect={() => handleTextSelect(field)}
             placeholder={placeholder}
             className={baseTextareaClass}
             style={{
@@ -409,9 +538,11 @@ export function JournalDiaryPage({
 
     return (
       <textarea
+        ref={(el) => (textareaRefs.current[field] = el)}
         value={value}
         onChange={(e) => handleTextChange(e.target.value, onChange)}
         onFocus={() => setActiveField(field)}
+        onSelect={() => handleTextSelect(field)}
         placeholder={placeholder}
         className={baseTextareaClass}
         style={{
@@ -445,7 +576,6 @@ export function JournalDiaryPage({
         backgroundPosition: `${LEFT_MARGIN}px ${TOP_MARGIN}px`,
       };
     }
-    // Default lined
     return {
       backgroundImage: `linear-gradient(${skin.lineColor} 1px, transparent 1px)`,
       backgroundSize: `100% ${LINE_HEIGHT}px`,
@@ -472,7 +602,6 @@ export function JournalDiaryPage({
             <p style={getPromptStyle(section)} className="mb-0.5">
               {prompt}
             </p>
-            {/* Each prompt gets its own writing space - for now use main value for first prompt */}
             {index === 0 ? (
               renderInputArea(value, onChange, placeholder, section)
             ) : (
@@ -493,8 +622,9 @@ export function JournalDiaryPage({
     );
   };
 
-  const handleSettingsSave = (newSettings: JournalSettings, scope: SaveScope) => {
+  const handleSettingsSave = async (newSettings: JournalSettings, scope: SaveScope) => {
     setSettings(newSettings);
+    await saveSettingsToDb(newSettings, textFormatting);
     toast({
       title: "Settings saved!",
       description: scope === "current" 
@@ -505,10 +635,35 @@ export function JournalDiaryPage({
     });
   };
 
+  const handleFormattingChange = (newFormatting: TextFormatting) => {
+    setTextFormatting(newFormatting);
+    saveSettingsToDb(settings, newFormatting);
+  };
+
   return (
     <div className="relative">
-      {/* Translucent Undo/Redo Buttons - Fixed at top */}
-      <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex gap-1 bg-background/60 backdrop-blur-sm rounded-full px-2 py-1 border border-border/50 shadow-sm">
+      {/* Text Toolbar - Outside diary page at top */}
+      {inputMode === "type" && (
+        <div className="mb-3 flex justify-center">
+          <JournalTextToolbar
+            formatting={textFormatting}
+            onChange={handleFormattingChange}
+            skinBgColor={selectedSkin.bg}
+          />
+        </div>
+      )}
+
+      {/* Scribble Toolbar - Outside diary page at top when in scribble mode */}
+      {inputMode === "scribble" && (
+        <div className="mb-3 flex justify-center">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/80 border border-border">
+            <span className="text-xs text-muted-foreground">Scribble mode active - draw anywhere on the page</span>
+          </div>
+        </div>
+      )}
+
+      {/* Translucent Undo/Redo Buttons */}
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex gap-1 bg-background/60 backdrop-blur-sm rounded-full px-2 py-1 border border-border/50 shadow-sm" style={{ top: inputMode === "type" || inputMode === "scribble" ? "60px" : "8px" }}>
         <Button
           variant="ghost"
           size="sm"
@@ -550,7 +705,7 @@ export function JournalDiaryPage({
 
       {/* Diary Page Container with zoom */}
       <div
-        className="flex justify-center pt-8"
+        className="flex justify-center pt-2"
         style={{ transform: `scale(${zoomScale})`, transformOrigin: "top center" }}
       >
         {/* Diary Page */}
@@ -664,6 +819,8 @@ export function JournalDiaryPage({
                     bgColor="transparent"
                     lineColor="transparent"
                     lineHeight={LINE_HEIGHT}
+                    initialData={scribbleData}
+                    onSave={saveScribbleData}
                   />
                 </div>
               )}
@@ -755,25 +912,6 @@ export function JournalDiaryPage({
               >
                 <Pencil className="h-3 w-3" />
               </Button>
-
-              {/* Text toolbar when typing OR scribble toolbar when scribbling */}
-              {inputMode === "type" && (
-                <div className="ml-1">
-                  <JournalTextToolbar
-                    formatting={textFormatting}
-                    onChange={setTextFormatting}
-                    skinBgColor={selectedSkin.bg}
-                    compact
-                  />
-                </div>
-              )}
-
-              {/* Scribble toolbar inline when scribble is selected */}
-              {inputMode === "scribble" && (
-                <div className="ml-1 flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted/80">
-                  <span className="text-[9px] text-muted-foreground mr-1">Draw on page</span>
-                </div>
-              )}
             </div>
 
             <div className="flex gap-0.5 items-center">

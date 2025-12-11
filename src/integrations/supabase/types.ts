@@ -114,6 +114,8 @@ export type Database = {
           daily_kindness: string | null
           entry_date: string
           id: string
+          images_data: Json | null
+          scribble_data: string | null
           updated_at: string
           user_id: string
         }
@@ -124,6 +126,8 @@ export type Database = {
           daily_kindness?: string | null
           entry_date?: string
           id?: string
+          images_data?: Json | null
+          scribble_data?: string | null
           updated_at?: string
           user_id: string
         }
@@ -134,6 +138,8 @@ export type Database = {
           daily_kindness?: string | null
           entry_date?: string
           id?: string
+          images_data?: Json | null
+          scribble_data?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -163,6 +169,42 @@ export type Database = {
           prompt_text?: string
           segment?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      journal_settings: {
+        Row: {
+          created_at: string
+          id: string
+          page_size: string
+          sections_config: Json
+          skin_id: string
+          text_formatting: Json
+          updated_at: string
+          user_id: string
+          zoom: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          page_size?: string
+          sections_config?: Json
+          skin_id?: string
+          text_formatting?: Json
+          updated_at?: string
+          user_id: string
+          zoom?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          page_size?: string
+          sections_config?: Json
+          skin_id?: string
+          text_formatting?: Json
+          updated_at?: string
+          user_id?: string
+          zoom?: number
         }
         Relationships: []
       }
