@@ -115,7 +115,9 @@ export type Database = {
           entry_date: string
           id: string
           images_data: Json | null
+          page_settings: Json | null
           scribble_data: string | null
+          text_formatting: Json | null
           updated_at: string
           user_id: string
         }
@@ -127,7 +129,9 @@ export type Database = {
           entry_date?: string
           id?: string
           images_data?: Json | null
+          page_settings?: Json | null
           scribble_data?: string | null
+          text_formatting?: Json | null
           updated_at?: string
           user_id: string
         }
@@ -139,7 +143,9 @@ export type Database = {
           entry_date?: string
           id?: string
           images_data?: Json | null
+          page_settings?: Json | null
           scribble_data?: string | null
+          text_formatting?: Json | null
           updated_at?: string
           user_id?: string
         }
