@@ -78,9 +78,14 @@ export function JournalTextToolbar({
   onApplyToSelection,
 }: JournalTextToolbarProps) {
   const update = (updates: Partial<TextFormatting>) => {
-    onChange({ ...formatting, ...updates });
+    // Only apply to selection if text is selected, otherwise apply globally
     if (hasSelection && onApplyToSelection) {
+      // Update formatting state first, then apply to selection
+      onChange({ ...formatting, ...updates });
       onApplyToSelection();
+    } else {
+      // Apply globally when no selection
+      onChange({ ...formatting, ...updates });
     }
   };
 
