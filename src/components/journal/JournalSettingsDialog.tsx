@@ -3,9 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +35,7 @@ export interface DiarySkin {
 export interface SectionSettings {
   header: string;
   prompts: string[];
+  promptAnswers?: { [promptIndex: number]: string };
   headerStyle: {
     fontSize: number;
     bold: boolean;
@@ -62,18 +63,22 @@ export interface JournalSettings {
   };
 }
 
+export type SaveScope = "current" | "all" | "future";
+
 // Diary skin presets with line styles
 export const DIARY_SKINS: DiarySkin[] = [
-  { id: "classic", name: "Classic", bg: "hsl(45, 30%, 96%)", lineColor: "hsl(200, 70%, 80%)", marginColor: "hsl(0, 70%, 70%)", lineStyle: "lined" },
-  { id: "cream", name: "Cream", bg: "hsl(40, 40%, 94%)", lineColor: "hsl(30, 20%, 80%)", marginColor: "hsl(30, 50%, 60%)", lineStyle: "lined" },
+  { id: "classic", name: "Classic", bg: "hsl(45, 30%, 96%)", lineColor: "hsl(200, 70%, 85%)", marginColor: "hsl(0, 70%, 70%)", lineStyle: "lined" },
+  { id: "cream", name: "Cream", bg: "hsl(40, 40%, 94%)", lineColor: "hsl(30, 20%, 85%)", marginColor: "hsl(30, 50%, 60%)", lineStyle: "lined" },
   { id: "dark", name: "Dark Mode", bg: "hsl(222, 47%, 11%)", lineColor: "hsl(222, 30%, 25%)", marginColor: "hsl(200, 70%, 50%)", lineStyle: "lined" },
-  { id: "pink", name: "Soft Pink", bg: "hsl(350, 50%, 96%)", lineColor: "hsl(350, 40%, 85%)", marginColor: "hsl(350, 60%, 70%)", lineStyle: "lined" },
-  { id: "green", name: "Sage Green", bg: "hsl(120, 20%, 95%)", lineColor: "hsl(120, 30%, 80%)", marginColor: "hsl(120, 40%, 50%)", lineStyle: "lined" },
-  { id: "kraft", name: "Kraft Paper", bg: "hsl(35, 35%, 85%)", lineColor: "hsl(35, 25%, 70%)", marginColor: "hsl(0, 60%, 50%)", lineStyle: "lined" },
-  { id: "grid", name: "Graph Paper", bg: "hsl(0, 0%, 98%)", lineColor: "hsl(200, 50%, 85%)", marginColor: "hsl(200, 70%, 60%)", lineStyle: "grid" },
-  { id: "dotted", name: "Dot Grid", bg: "hsl(40, 20%, 97%)", lineColor: "hsl(0, 0%, 70%)", marginColor: "hsl(0, 60%, 50%)", lineStyle: "dotted" },
+  { id: "pink", name: "Soft Pink", bg: "hsl(350, 50%, 96%)", lineColor: "hsl(350, 40%, 88%)", marginColor: "hsl(350, 60%, 70%)", lineStyle: "lined" },
+  { id: "green", name: "Sage Green", bg: "hsl(120, 20%, 95%)", lineColor: "hsl(120, 30%, 85%)", marginColor: "hsl(120, 40%, 50%)", lineStyle: "lined" },
+  { id: "kraft", name: "Kraft Paper", bg: "hsl(35, 35%, 85%)", lineColor: "hsl(35, 25%, 75%)", marginColor: "hsl(0, 60%, 50%)", lineStyle: "lined" },
+  { id: "grid", name: "Graph Paper", bg: "hsl(0, 0%, 98%)", lineColor: "hsl(200, 50%, 88%)", marginColor: "hsl(200, 70%, 60%)", lineStyle: "grid" },
+  { id: "dotted", name: "Dot Grid", bg: "hsl(40, 20%, 97%)", lineColor: "hsl(0, 0%, 75%)", marginColor: "hsl(0, 60%, 50%)", lineStyle: "dotted" },
   { id: "blank", name: "Blank", bg: "hsl(0, 0%, 100%)", lineColor: "transparent", marginColor: "hsl(0, 70%, 70%)", lineStyle: "blank" },
-  { id: "vintage", name: "Vintage", bg: "hsl(45, 40%, 90%)", lineColor: "hsl(30, 30%, 75%)", marginColor: "hsl(20, 60%, 50%)", lineStyle: "lined" },
+  { id: "vintage", name: "Vintage", bg: "hsl(45, 40%, 90%)", lineColor: "hsl(30, 30%, 80%)", marginColor: "hsl(20, 60%, 50%)", lineStyle: "lined" },
+  { id: "blue-grid", name: "Blue Grid", bg: "hsl(210, 40%, 98%)", lineColor: "hsl(210, 50%, 85%)", marginColor: "hsl(210, 70%, 50%)", lineStyle: "grid" },
+  { id: "sepia", name: "Sepia", bg: "hsl(35, 45%, 88%)", lineColor: "hsl(35, 30%, 75%)", marginColor: "hsl(20, 50%, 45%)", lineStyle: "lined" },
 ];
 
 const DEFAULT_COLORS = [
@@ -89,7 +94,7 @@ interface JournalSettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   settings: JournalSettings;
-  onSave: (settings: JournalSettings) => void;
+  onSave: (settings: JournalSettings, scope: SaveScope) => void;
 }
 
 export function JournalSettingsDialog({
@@ -99,6 +104,7 @@ export function JournalSettingsDialog({
   onSave,
 }: JournalSettingsDialogProps) {
   const [tempSettings, setTempSettings] = useState<JournalSettings>(settings);
+  const [saveScope, setSaveScope] = useState<SaveScope>("current");
 
   const updateSection = (
     section: "feeling" | "gratitude" | "kindness",
@@ -115,7 +121,7 @@ export function JournalSettingsDialog({
 
   const addPrompt = (section: "feeling" | "gratitude" | "kindness") => {
     const currentPrompts = tempSettings.sections[section].prompts;
-    updateSection(section, { prompts: [...currentPrompts, ""] });
+    updateSection(section, { prompts: [...currentPrompts, "New prompt..."] });
   };
 
   const updatePrompt = (
@@ -134,7 +140,7 @@ export function JournalSettingsDialog({
   };
 
   const handleSave = () => {
-    onSave(tempSettings);
+    onSave(tempSettings, saveScope);
     onOpenChange(false);
   };
 
@@ -262,7 +268,7 @@ export function JournalSettingsDialog({
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <Label className="text-sm font-medium">Prompts</Label>
+            <Label className="text-sm font-medium">Prompts (each gets its own writing space)</Label>
             <Button
               type="button"
               variant="outline"
@@ -309,7 +315,7 @@ export function JournalSettingsDialog({
           <DialogTitle>Journal Settings</DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="max-h-[60vh] pr-4">
+        <ScrollArea className="max-h-[55vh] pr-4">
           <Tabs defaultValue="page" className="w-full">
             <TabsList className="w-full">
               <TabsTrigger value="page" className="flex-1 text-xs">Page</TabsTrigger>
@@ -350,14 +356,14 @@ export function JournalSettingsDialog({
                   onValueChange={([v]) => setTempSettings({ ...tempSettings, zoom: v })}
                   min={50}
                   max={150}
-                  step={10}
+                  step={5}
                 />
               </div>
 
               {/* Skin Selection */}
               <div>
                 <Label className="text-sm font-medium mb-2 block">Page Skin</Label>
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {DIARY_SKINS.map((skin) => (
                     <button
                       key={skin.id}
@@ -419,6 +425,25 @@ export function JournalSettingsDialog({
             </TabsContent>
           </Tabs>
         </ScrollArea>
+
+        {/* Save Scope Options */}
+        <div className="border-t pt-4">
+          <Label className="text-sm font-medium mb-2 block">Apply changes to:</Label>
+          <RadioGroup value={saveScope} onValueChange={(v) => setSaveScope(v as SaveScope)}>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="current" id="current" />
+              <Label htmlFor="current" className="text-sm font-normal cursor-pointer">Current page only</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="all" id="all" />
+              <Label htmlFor="all" className="text-sm font-normal cursor-pointer">All existing pages</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="future" id="future" />
+              <Label htmlFor="future" className="text-sm font-normal cursor-pointer">All future pages (default template)</Label>
+            </div>
+          </RadioGroup>
+        </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

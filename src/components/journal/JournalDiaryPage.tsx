@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Type, Mic, MicOff, Pencil, Image, Settings, X, Move } from "lucide-react";
+import { ChevronLeft, ChevronRight, Type, Mic, MicOff, Pencil, Image, Settings, X, Move, Undo2, Redo2, GripVertical } from "lucide-react";
 import { JournalScribbleCanvas } from "./JournalScribbleCanvas";
-import { JournalSettingsDialog, DIARY_SKINS, JournalSettings, DiarySkin } from "./JournalSettingsDialog";
+import { JournalSettingsDialog, DIARY_SKINS, JournalSettings, DiarySkin, SaveScope } from "./JournalSettingsDialog";
 import { JournalTextToolbar, TextFormatting } from "./JournalTextToolbar";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -31,31 +31,38 @@ interface InsertedImage {
   section: "feeling" | "gratitude" | "kindness" | "general";
 }
 
-// Line height for proper diary alignment
-const LINE_HEIGHT = 24;
-const TOP_MARGIN = 48;
-const LEFT_MARGIN = 60;
+interface HistoryState {
+  feeling: string;
+  gratitude: string;
+  kindness: string;
+}
 
-// Page size ratios
+// Reduced line spacing for diary
+const LINE_HEIGHT = 20;
+const TOP_MARGIN = 32;
+const LEFT_MARGIN = 45;
+
+// Page size ratios - adjusted for better fit
 const PAGE_SIZES = {
-  a5: { ratio: 148 / 210, maxWidth: 420 },
-  a4: { ratio: 210 / 297, maxWidth: 500 },
-  letter: { ratio: 8.5 / 11, maxWidth: 480 },
-  custom: { ratio: 1 / 1.4, maxWidth: 450 },
+  a5: { ratio: 148 / 210, maxWidth: 380 },
+  a4: { ratio: 210 / 297, maxWidth: 420 },
+  letter: { ratio: 8.5 / 11, maxWidth: 400 },
+  custom: { ratio: 1 / 1.4, maxWidth: 380 },
 };
 
 const defaultSectionSettings = (header: string, prompt: string) => ({
   header,
   prompts: [prompt],
+  promptAnswers: {},
   headerStyle: {
-    fontSize: 12,
+    fontSize: 11,
     bold: true,
     italic: false,
     underline: false,
     color: "default",
   },
   promptStyle: {
-    fontSize: 11,
+    fontSize: 10,
     bold: false,
     italic: true,
     underline: false,
@@ -75,7 +82,7 @@ const defaultSettings: JournalSettings = {
 };
 
 const defaultTextFormatting: TextFormatting = {
-  fontSize: 12,
+  fontSize: 11,
   fontFamily: "serif",
   bold: false,
   italic: false,
@@ -107,6 +114,9 @@ export function JournalDiaryPage({
   const [textFormatting, setTextFormatting] = useState<TextFormatting>(defaultTextFormatting);
   const [images, setImages] = useState<InsertedImage[]>([]);
   const [draggingImage, setDraggingImage] = useState<string | null>(null);
+  const [resizingImage, setResizingImage] = useState<string | null>(null);
+  const [history, setHistory] = useState<HistoryState[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pageRef = useRef<HTMLDivElement>(null);
@@ -119,6 +129,15 @@ export function JournalDiaryPage({
   const selectedSkin = settings.skin;
   const pageSize = PAGE_SIZES[settings.pageSize];
   const zoomScale = settings.zoom / 100;
+
+  // Initialize history
+  useEffect(() => {
+    if (history.length === 0) {
+      const initialState = { feeling: dailyFeeling, gratitude: dailyGratitude, kindness: dailyKindness };
+      setHistory([initialState]);
+      setHistoryIndex(0);
+    }
+  }, []);
 
   // Update text color based on skin
   useEffect(() => {
@@ -135,7 +154,39 @@ export function JournalDiaryPage({
     }
   }, [selectedSkin.id]);
 
-  // Page flip animation handler
+  // Save state to history
+  const saveToHistory = useCallback(() => {
+    const newState = { feeling: dailyFeeling, gratitude: dailyGratitude, kindness: dailyKindness };
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newState);
+    if (newHistory.length > 50) newHistory.shift(); // Limit history
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  }, [dailyFeeling, dailyGratitude, dailyKindness, history, historyIndex]);
+
+  // Undo function
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const prevState = history[historyIndex - 1];
+      onFeelingChange(prevState.feeling);
+      onGratitudeChange(prevState.gratitude);
+      onKindnessChange(prevState.kindness);
+      setHistoryIndex(historyIndex - 1);
+    }
+  };
+
+  // Redo function
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const nextState = history[historyIndex + 1];
+      onFeelingChange(nextState.feeling);
+      onGratitudeChange(nextState.gratitude);
+      onKindnessChange(nextState.kindness);
+      setHistoryIndex(historyIndex + 1);
+    }
+  };
+
+  // Page flip animation handler - only affects the diary page
   const handleNavigate = (direction: "prev" | "next") => {
     setPageFlip(direction === "prev" ? "left" : "right");
     setTimeout(() => {
@@ -157,6 +208,7 @@ export function JournalDiaryPage({
         else if (activeField === "gratitude") onGratitudeChange(dailyGratitude + " " + transcript);
         else onKindnessChange(dailyKindness + " " + transcript);
         toast({ title: "Recorded!", description: "Your voice note has been captured" });
+        saveToHistory();
       };
 
       mediaRecorder.start();
@@ -183,13 +235,13 @@ export function JournalDiaryPage({
         const newImage: InsertedImage = {
           id: Date.now().toString(),
           src: event.target?.result as string,
-          x: 70,
-          y: 100,
-          width: 120,
+          x: LEFT_MARGIN + 20,
+          y: TOP_MARGIN + 60,
+          width: 100,
           section: activeField,
         };
         setImages([...images, newImage]);
-        toast({ title: "Image added!", description: "Drag to position it on the page" });
+        toast({ title: "Image added!", description: "Drag to position, drag corner to resize" });
       };
       reader.readAsDataURL(file);
     }
@@ -209,8 +261,7 @@ export function JournalDiaryPage({
 
   const handleImageDrag = useCallback(
     (e: React.MouseEvent | React.TouchEvent) => {
-      if (!draggingImage || !pageRef.current) return;
-
+      if (!pageRef.current) return;
       const pageRect = pageRef.current.getBoundingClientRect();
       let clientX: number, clientY: number;
 
@@ -222,26 +273,36 @@ export function JournalDiaryPage({
         clientY = e.clientY;
       }
 
-      const x = Math.max(LEFT_MARGIN, Math.min(clientX - pageRect.left, pageRect.width - 50));
-      const y = Math.max(TOP_MARGIN, Math.min(clientY - pageRect.top, pageRect.height - 50));
+      if (draggingImage) {
+        const x = Math.max(LEFT_MARGIN, Math.min(clientX - pageRect.left, pageRect.width - 50));
+        const y = Math.max(TOP_MARGIN, Math.min(clientY - pageRect.top, pageRect.height - 50));
+        setImages((prev) =>
+          prev.map((img) => (img.id === draggingImage ? { ...img, x, y } : img))
+        );
+      }
 
-      setImages((prev) =>
-        prev.map((img) =>
-          img.id === draggingImage ? { ...img, x, y } : img
-        )
-      );
+      if (resizingImage) {
+        const img = images.find((i) => i.id === resizingImage);
+        if (img) {
+          const newWidth = Math.max(40, Math.min(300, clientX - pageRect.left - img.x + 10));
+          setImages((prev) =>
+            prev.map((i) => (i.id === resizingImage ? { ...i, width: newWidth } : i))
+          );
+        }
+      }
     },
-    [draggingImage]
+    [draggingImage, resizingImage, images]
   );
 
   const handleImageDragEnd = () => {
     setDraggingImage(null);
+    setResizingImage(null);
   };
 
   // Calculate text area height based on content
   const calculateTextHeight = (text: string) => {
     const lines = text.split("\n").length;
-    const charLines = Math.ceil(text.length / 40);
+    const charLines = Math.ceil(text.length / 35);
     return Math.max(lines, charLines, 2) * LINE_HEIGHT;
   };
 
@@ -282,7 +343,7 @@ export function JournalDiaryPage({
       textDecoration: style.underline ? "underline" : "none",
       color,
       lineHeight: `${LINE_HEIGHT}px`,
-      opacity: 0.8,
+      opacity: 0.85,
     };
   };
 
@@ -299,6 +360,15 @@ export function JournalDiaryPage({
     minHeight: `${LINE_HEIGHT * 2}px`,
   });
 
+  const handleTextChange = (
+    value: string,
+    onChange: (val: string) => void
+  ) => {
+    onChange(value);
+    // Debounced history save
+    setTimeout(saveToHistory, 500);
+  };
+
   const renderInputArea = (
     value: string,
     onChange: (val: string) => void,
@@ -310,7 +380,7 @@ export function JournalDiaryPage({
 
     if (inputMode === "voice") {
       return (
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-2">
           <Button
             size="sm"
             variant={isRecording && activeField === field ? "destructive" : "outline"}
@@ -318,13 +388,13 @@ export function JournalDiaryPage({
               setActiveField(field);
               isRecording ? stopRecording() : startRecording();
             }}
-            className="h-8 w-8 rounded-full p-0 flex-shrink-0 mt-1"
+            className="h-6 w-6 rounded-full p-0 flex-shrink-0 mt-0.5"
           >
             {isRecording && activeField === field ? <MicOff className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
           </Button>
           <textarea
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => handleTextChange(e.target.value, onChange)}
             onFocus={() => setActiveField(field)}
             placeholder={placeholder}
             className={baseTextareaClass}
@@ -340,7 +410,7 @@ export function JournalDiaryPage({
     return (
       <textarea
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => handleTextChange(e.target.value, onChange)}
         onFocus={() => setActiveField(field)}
         placeholder={placeholder}
         className={baseTextareaClass}
@@ -383,6 +453,7 @@ export function JournalDiaryPage({
     };
   };
 
+  // Render each prompt with its own writing space
   const renderSection = (
     section: "feeling" | "gratitude" | "kindness",
     value: string,
@@ -392,53 +463,94 @@ export function JournalDiaryPage({
     const sectionSettings = settings.sections[section];
 
     return (
-      <div className="mb-4">
-        <h3 style={getHeaderStyle(section)} className="mb-1">
+      <div className="mb-3">
+        <h3 style={getHeaderStyle(section)} className="mb-0.5">
           {sectionSettings.header}
         </h3>
         {sectionSettings.prompts.map((prompt, index) => (
-          <p key={index} style={getPromptStyle(section)} className="mb-1">
-            {prompt}
-          </p>
+          <div key={index} className="mb-2">
+            <p style={getPromptStyle(section)} className="mb-0.5">
+              {prompt}
+            </p>
+            {/* Each prompt gets its own writing space - for now use main value for first prompt */}
+            {index === 0 ? (
+              renderInputArea(value, onChange, placeholder, section)
+            ) : (
+              <textarea
+                className="w-full resize-none bg-transparent border-0 focus:outline-none focus:ring-0 p-0 overflow-hidden"
+                placeholder={`Write your response...`}
+                style={{
+                  ...getTextareaStyle(),
+                  height: `${LINE_HEIGHT * 2}px`,
+                  minHeight: `${LINE_HEIGHT * 2}px`,
+                }}
+                onFocus={() => setActiveField(section)}
+              />
+            )}
+          </div>
         ))}
-        {renderInputArea(value, onChange, placeholder, section)}
       </div>
     );
   };
 
+  const handleSettingsSave = (newSettings: JournalSettings, scope: SaveScope) => {
+    setSettings(newSettings);
+    toast({
+      title: "Settings saved!",
+      description: scope === "current" 
+        ? "Applied to current page" 
+        : scope === "all" 
+        ? "Applied to all pages" 
+        : "Applied as default for future pages"
+    });
+  };
+
   return (
     <div className="relative">
+      {/* Translucent Undo/Redo Buttons - Fixed at top */}
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex gap-1 bg-background/60 backdrop-blur-sm rounded-full px-2 py-1 border border-border/50 shadow-sm">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleUndo}
+          disabled={historyIndex <= 0}
+          className="h-6 w-6 p-0 opacity-70 hover:opacity-100"
+          title="Undo"
+        >
+          <Undo2 className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleRedo}
+          disabled={historyIndex >= history.length - 1}
+          className="h-6 w-6 p-0 opacity-70 hover:opacity-100"
+          title="Redo"
+        >
+          <Redo2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+
       {/* Page Navigation Arrows */}
       <button
         onClick={() => handleNavigate("prev")}
-        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 z-10 p-2 rounded-full bg-card shadow-lg border border-border hover:bg-muted transition-colors"
+        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 p-1.5 rounded-full bg-card shadow-lg border border-border hover:bg-muted transition-colors"
         aria-label="Previous date"
       >
-        <ChevronLeft className="h-5 w-5 text-foreground" />
+        <ChevronLeft className="h-4 w-4 text-foreground" />
       </button>
 
       <button
         onClick={() => handleNavigate("next")}
-        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-6 z-10 p-2 rounded-full bg-card shadow-lg border border-border hover:bg-muted transition-colors"
+        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 p-1.5 rounded-full bg-card shadow-lg border border-border hover:bg-muted transition-colors"
         aria-label="Next date"
       >
-        <ChevronRight className="h-5 w-5 text-foreground" />
+        <ChevronRight className="h-4 w-4 text-foreground" />
       </button>
-
-      {/* Text Formatting Toolbar - Only show in type mode */}
-      {inputMode === "type" && (
-        <div className="mb-3">
-          <JournalTextToolbar
-            formatting={textFormatting}
-            onChange={setTextFormatting}
-            skinBgColor={selectedSkin.bg}
-          />
-        </div>
-      )}
 
       {/* Diary Page Container with zoom */}
       <div
-        className="flex justify-center"
+        className="flex justify-center pt-8"
         style={{ transform: `scale(${zoomScale})`, transformOrigin: "top center" }}
       >
         {/* Diary Page */}
@@ -458,14 +570,26 @@ export function JournalDiaryPage({
             boxShadow: "0 4px 20px rgba(0,0,0,0.15), inset 0 0 60px rgba(0,0,0,0.03)",
             transformStyle: "preserve-3d",
           }}
-          onMouseMove={draggingImage ? handleImageDrag : undefined}
+          onMouseMove={draggingImage || resizingImage ? handleImageDrag : undefined}
           onMouseUp={handleImageDragEnd}
           onMouseLeave={handleImageDragEnd}
-          onTouchMove={draggingImage ? handleImageDrag : undefined}
+          onTouchMove={draggingImage || resizingImage ? handleImageDrag : undefined}
           onTouchEnd={handleImageDragEnd}
         >
           {/* Background pattern */}
           <div className="absolute inset-0" style={getBackgroundStyle()} />
+
+          {/* Top horizontal margin line */}
+          {selectedSkin.lineStyle !== "blank" && (
+            <div
+              className="absolute left-0 right-0"
+              style={{
+                top: `${TOP_MARGIN}px`,
+                height: "1px",
+                backgroundColor: selectedSkin.lineColor,
+              }}
+            />
+          )}
 
           {/* Red margin line */}
           {selectedSkin.lineStyle !== "blank" && (
@@ -480,11 +604,11 @@ export function JournalDiaryPage({
           )}
 
           {/* Ring binder holes */}
-          <div className="absolute left-3 top-0 bottom-0 flex flex-col justify-evenly py-8">
-            {[...Array(5)].map((_, i) => (
+          <div className="absolute left-2 top-0 bottom-0 flex flex-col justify-evenly py-6">
+            {[...Array(4)].map((_, i) => (
               <div
                 key={i}
-                className="w-3 h-3 rounded-full"
+                className="w-2.5 h-2.5 rounded-full"
                 style={{
                   backgroundColor: selectedSkin.id === "dark" ? "hsl(222, 30%, 20%)" : "hsl(0, 0%, 90%)",
                   border: `1px solid ${selectedSkin.id === "dark" ? "hsl(222, 30%, 30%)" : "hsl(0, 0%, 80%)"}`,
@@ -496,28 +620,28 @@ export function JournalDiaryPage({
           {/* Page Content */}
           <div
             className="relative h-full flex flex-col"
-            style={{ paddingLeft: `${LEFT_MARGIN + 12}px`, paddingRight: "16px" }}
+            style={{ paddingLeft: `${LEFT_MARGIN + 8}px`, paddingRight: "12px" }}
           >
             {/* Top blank margin - Date Header */}
             <div
-              className="flex justify-end items-start pt-3"
+              className="flex justify-end items-start pt-2"
               style={{ minHeight: `${TOP_MARGIN}px` }}
             >
-              <div className="text-right">
+              <div className="text-right pr-1">
                 <p
-                  className="text-[10px] font-semibold tracking-widest"
+                  className="text-[8px] font-semibold tracking-widest"
                   style={{ color: selectedSkin.marginColor }}
                 >
                   {dayName}
                 </p>
                 <p
-                  className="text-2xl font-bold leading-none"
+                  className="text-lg font-bold leading-none"
                   style={{ color: selectedSkin.marginColor }}
                 >
                   {dayNumber}
                 </p>
                 <p
-                  className="text-[10px] font-semibold tracking-widest"
+                  className="text-[8px] font-semibold tracking-widest"
                   style={{ color: selectedSkin.marginColor }}
                 >
                   {monthName} {year}
@@ -526,17 +650,17 @@ export function JournalDiaryPage({
             </div>
 
             {/* Content area */}
-            <div className="flex-1 overflow-y-auto pb-16 relative">
+            <div className="flex-1 overflow-y-auto pb-12 relative">
               {/* Sections - Always visible regardless of mode */}
               {renderSection("feeling", dailyFeeling, onFeelingChange, "Today I felt...")}
               {renderSection("gratitude", dailyGratitude, onGratitudeChange, "1. I'm grateful for...")}
               {renderSection("kindness", dailyKindness, onKindnessChange, "Today I...")}
 
-              {/* Scribble Canvas Overlay when in scribble mode */}
+              {/* Scribble Canvas Overlay when in scribble mode - covers entire page */}
               {inputMode === "scribble" && (
-                <div className="absolute inset-0 z-10">
+                <div className="absolute inset-0 z-10 pointer-events-auto">
                   <JournalScribbleCanvas
-                    height={600}
+                    height={500}
                     bgColor="transparent"
                     lineColor="transparent"
                     lineHeight={LINE_HEIGHT}
@@ -575,11 +699,22 @@ export function JournalDiaryPage({
                       }}
                       className="p-1 bg-destructive text-destructive-foreground rounded-full"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-2.5 w-2.5" />
                     </button>
                   </div>
-                  <div className="absolute -bottom-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Move className="h-3 w-3 text-muted-foreground" />
+                  {/* Resize handle */}
+                  <div
+                    className="absolute -bottom-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-se-resize p-1 bg-muted rounded"
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                      setResizingImage(img.id);
+                    }}
+                    onTouchStart={(e) => {
+                      e.stopPropagation();
+                      setResizingImage(img.id);
+                    }}
+                  >
+                    <GripVertical className="h-2.5 w-2.5 text-muted-foreground rotate-45" />
                   </div>
                 </div>
               ))}
@@ -588,38 +723,60 @@ export function JournalDiaryPage({
 
           {/* Bottom Toolbar */}
           <div
-            className="absolute bottom-0 left-0 right-0 px-3 py-2 flex items-center justify-between"
+            className="absolute bottom-0 left-0 right-0 px-2 py-1.5 flex items-center justify-between gap-1"
             style={{
               backgroundColor: selectedSkin.id === "dark" ? "hsl(222, 47%, 15%)" : "hsl(0, 0%, 97%)",
               borderTop: `1px solid ${selectedSkin.lineColor}`,
             }}
           >
-            <div className="flex gap-1">
+            <div className="flex gap-0.5 items-center">
+              {/* Type/Voice/Scribble buttons */}
               <Button
                 variant={inputMode === "type" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setInputMode("type")}
-                className="h-7 w-7 p-0"
+                className="h-6 w-6 p-0"
               >
-                <Type className="h-3.5 w-3.5" />
+                <Type className="h-3 w-3" />
               </Button>
               <Button
                 variant={inputMode === "voice" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setInputMode("voice")}
-                className="h-7 w-7 p-0"
+                className="h-6 w-6 p-0"
               >
-                <Mic className="h-3.5 w-3.5" />
+                <Mic className="h-3 w-3" />
               </Button>
               <Button
                 variant={inputMode === "scribble" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setInputMode("scribble")}
-                className="h-7 w-7 p-0"
+                className="h-6 w-6 p-0"
               >
-                <Pencil className="h-3.5 w-3.5" />
+                <Pencil className="h-3 w-3" />
               </Button>
 
+              {/* Text toolbar when typing OR scribble toolbar when scribbling */}
+              {inputMode === "type" && (
+                <div className="ml-1">
+                  <JournalTextToolbar
+                    formatting={textFormatting}
+                    onChange={setTextFormatting}
+                    skinBgColor={selectedSkin.bg}
+                    compact
+                  />
+                </div>
+              )}
+
+              {/* Scribble toolbar inline when scribble is selected */}
+              {inputMode === "scribble" && (
+                <div className="ml-1 flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted/80">
+                  <span className="text-[9px] text-muted-foreground mr-1">Draw on page</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-0.5 items-center">
               {/* Image Insert */}
               <input
                 type="file"
@@ -632,9 +789,9 @@ export function JournalDiaryPage({
                 variant="ghost"
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
-                className="h-7 w-7 p-0"
+                className="h-6 w-6 p-0"
               >
-                <Image className="h-3.5 w-3.5" />
+                <Image className="h-3 w-3" />
               </Button>
 
               {/* Settings */}
@@ -642,15 +799,15 @@ export function JournalDiaryPage({
                 variant="ghost"
                 size="sm"
                 onClick={() => setSettingsOpen(true)}
-                className="h-7 w-7 p-0"
+                className="h-6 w-6 p-0"
               >
-                <Settings className="h-3.5 w-3.5" />
+                <Settings className="h-3 w-3" />
+              </Button>
+
+              <Button onClick={onSave} disabled={saving} size="sm" className="h-6 text-[10px] px-2 ml-1">
+                {saving ? "..." : hasEntry ? "Update" : "Save"}
               </Button>
             </div>
-
-            <Button onClick={onSave} disabled={saving} size="sm" className="h-7 text-xs px-3">
-              {saving ? "Saving..." : hasEntry ? "Update" : "Save"}
-            </Button>
           </div>
         </div>
       </div>
@@ -660,10 +817,10 @@ export function JournalDiaryPage({
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         settings={settings}
-        onSave={setSettings}
+        onSave={handleSettingsSave}
       />
 
-      {/* Page flip animation styles */}
+      {/* Page flip animation styles - Only affects the diary page element */}
       <style>{`
         @keyframes page-flip-left {
           0% { transform: perspective(1500px) rotateY(0deg); }
