@@ -432,15 +432,24 @@ export function JournalSettingsDialog({
           <RadioGroup value={saveScope} onValueChange={(v) => setSaveScope(v as SaveScope)}>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="current" id="current" />
-              <Label htmlFor="current" className="text-sm font-normal cursor-pointer">Current page only</Label>
+              <Label htmlFor="current" className="text-sm font-normal cursor-pointer">
+                <span className="font-medium">Current page only</span>
+                <span className="text-xs text-muted-foreground ml-1">- apply changes to this date only</span>
+              </Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="all" id="all" />
-              <Label htmlFor="all" className="text-sm font-normal cursor-pointer">All existing pages</Label>
+              <Label htmlFor="all" className="text-sm font-normal cursor-pointer">
+                <span className="font-medium">All existing pages</span>
+                <span className="text-xs text-muted-foreground ml-1">- apply changes to all dates</span>
+              </Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="future" id="future" />
-              <Label htmlFor="future" className="text-sm font-normal cursor-pointer">All future pages (default template)</Label>
+              <Label htmlFor="future" className="text-sm font-normal cursor-pointer">
+                <span className="font-medium">All future pages (default template)</span>
+                <span className="text-xs text-muted-foreground ml-1">- current + future dates, exclude past</span>
+              </Label>
             </div>
           </RadioGroup>
         </div>

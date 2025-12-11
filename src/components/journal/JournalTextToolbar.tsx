@@ -38,6 +38,8 @@ interface JournalTextToolbarProps {
   onChange: (formatting: TextFormatting) => void;
   skinBgColor?: string;
   compact?: boolean;
+  hasSelection?: boolean;
+  onApplyToSelection?: () => void;
 }
 
 const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24];
@@ -72,9 +74,14 @@ export function JournalTextToolbar({
   onChange,
   skinBgColor,
   compact = false,
+  hasSelection = false,
+  onApplyToSelection,
 }: JournalTextToolbarProps) {
   const update = (updates: Partial<TextFormatting>) => {
     onChange({ ...formatting, ...updates });
+    if (hasSelection && onApplyToSelection) {
+      onApplyToSelection();
+    }
   };
 
   return (
