@@ -42,8 +42,8 @@ interface HistoryState {
 
 // Reduced line spacing for diary
 const LINE_HEIGHT = 20;
-const TOP_MARGIN = 56; // Increased top margin - positioned below date
-const LEFT_MARGIN = 45;
+const TOP_MARGIN = 0;
+const LEFT_MARGIN = 0;
 
 // Page size ratios - adjusted for better fit
 const PAGE_SIZES = {
@@ -672,20 +672,13 @@ export function JournalDiaryPage({
       {/* Text Toolbar - Outside diary page at top */}
       {inputMode === "type" && (
         <div className="mb-3 flex justify-center">
-          <div className="flex items-center gap-2">
-            <JournalTextToolbar
-              formatting={textFormatting}
-              onChange={handleFormattingChange}
-              skinBgColor={selectedSkin.bg}
-              hasSelection={!!selectedText}
-              onApplyToSelection={applyFormattingToSelection}
-            />
-            {selectedText && (
-              <div className="text-xs text-muted-foreground bg-primary/10 px-2 py-1 rounded">
-                Selection active - changes apply to selected text
-              </div>
-            )}
-          </div>
+          <JournalTextToolbar
+            formatting={textFormatting}
+            onChange={handleFormattingChange}
+            skinBgColor={selectedSkin.bg}
+            hasSelection={!!selectedText}
+            onApplyToSelection={applyFormattingToSelection}
+          />
         </div>
       )}
 
@@ -770,54 +763,17 @@ export function JournalDiaryPage({
           {/* Background pattern */}
           <div className="absolute inset-0" style={getBackgroundStyle()} />
 
-          {/* Top horizontal margin line - same color and thickness as vertical margin */}
-          {selectedSkin.lineStyle !== "blank" && (
-            <div
-              className="absolute left-0 right-0"
-              style={{
-                top: `${TOP_MARGIN}px`,
-                height: "2px",
-                backgroundColor: selectedSkin.marginColor,
-              }}
-            />
-          )}
 
-          {/* Red vertical margin line */}
-          {selectedSkin.lineStyle !== "blank" && (
-            <div
-              className="absolute bottom-0"
-              style={{
-                left: `${LEFT_MARGIN}px`,
-                top: `${TOP_MARGIN}px`,
-                width: "2px",
-                backgroundColor: selectedSkin.marginColor,
-              }}
-            />
-          )}
-
-          {/* Ring binder holes */}
-          <div className="absolute left-2 top-0 bottom-0 flex flex-col justify-evenly py-6">
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="w-2.5 h-2.5 rounded-full"
-                style={{
-                  backgroundColor: selectedSkin.id === "dark" ? "hsl(222, 30%, 20%)" : "hsl(0, 0%, 90%)",
-                  border: `1px solid ${selectedSkin.id === "dark" ? "hsl(222, 30%, 30%)" : "hsl(0, 0%, 80%)"}`,
-                }}
-              />
-            ))}
-          </div>
 
           {/* Page Content */}
           <div
             className="relative h-full flex flex-col"
-            style={{ paddingLeft: `${LEFT_MARGIN + 8}px`, paddingRight: "12px" }}
+            style={{ paddingLeft: "16px", paddingRight: "16px" }}
           >
-            {/* Top blank margin - Date Header */}
+            {/* Date Header */}
             <div
               className="flex justify-end items-start pt-2"
-              style={{ minHeight: `${TOP_MARGIN}px` }}
+              style={{ minHeight: "48px" }}
             >
               <div className="text-right pr-1">
                 <p
