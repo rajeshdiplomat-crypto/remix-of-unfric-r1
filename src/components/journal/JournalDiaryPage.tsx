@@ -138,22 +138,25 @@ export function JournalDiaryPage({
   const pageSize = PAGE_SIZES[settings.pageSize];
   const zoomScale = settings.zoom / 100;
 
-  // Load settings from database
+  // Load default settings from database
   useEffect(() => {
     if (!user) return;
-    loadSettings();
+    loadDefaultSettings();
   }, [user]);
 
-  // Load scribble data for current entry
+  // Load per-page settings when entry changes
   useEffect(() => {
     if (entryId) {
-      loadScribbleData();
+      loadEntryData();
     } else {
       setScribbleData("");
+      setImages([]);
+      // Reset to default settings when no entry
+      loadDefaultSettings();
     }
   }, [entryId]);
 
-  const loadSettings = async () => {
+  const loadDefaultSettings = async () => {
     if (!user) return;
     
     const { data } = await supabase
@@ -180,12 +183,12 @@ export function JournalDiaryPage({
     }
   };
 
-  const loadScribbleData = async () => {
+  const loadEntryData = async () => {
     if (!entryId) return;
     
     const { data } = await supabase
       .from("journal_entries")
-      .select("scribble_data, images_data")
+      .select("scribble_data, images_data, page_settings, text_formatting")
       .eq("id", entryId)
       .maybeSingle();
 
@@ -194,47 +197,101 @@ export function JournalDiaryPage({
       if (data.images_data && Array.isArray(data.images_data)) {
         setImages(data.images_data as unknown as InsertedImage[]);
       }
+      
+      // Load per-page settings if they exist, otherwise use defaults
+      if (data.page_settings) {
+        const pageSettings = data.page_settings as any;
+        const skin = DIARY_SKINS.find(s => s.id === pageSettings.skin?.id) || pageSettings.skin || settings.skin;
+        setSettings({
+          skin,
+          pageSize: pageSettings.pageSize || settings.pageSize,
+          zoom: pageSettings.zoom || settings.zoom,
+          sections: pageSettings.sections || settings.sections,
+        });
+      }
+      
+      if (data.text_formatting) {
+        setTextFormatting(data.text_formatting as unknown as TextFormatting);
+      }
     }
   };
 
   const saveSettingsToDb = async (
-    updatedSettings?: Partial<JournalSettings>, 
-    updatedFormatting?: Partial<TextFormatting>
+    updatedSettings: JournalSettings, 
+    updatedFormatting: TextFormatting,
+    scope: SaveScope
   ) => {
     if (!user) return;
 
-    // Get existing settings to merge with
+    const pageSettingsData = JSON.parse(JSON.stringify(updatedSettings));
+    const textFormattingData = JSON.parse(JSON.stringify(updatedFormatting));
+
+    if (scope === "current") {
+      // Save only to current entry
+      if (entryId) {
+        await supabase
+          .from("journal_entries")
+          .update({ 
+            page_settings: pageSettingsData,
+            text_formatting: textFormattingData
+          })
+          .eq("id", entryId);
+      }
+    } else if (scope === "all") {
+      // Save to all existing entries
+      await supabase
+        .from("journal_entries")
+        .update({ 
+          page_settings: pageSettingsData,
+          text_formatting: textFormattingData
+        })
+        .eq("user_id", user.id);
+      
+      // Also update default template
+      await saveDefaultTemplate(updatedSettings, updatedFormatting);
+    } else if (scope === "future") {
+      // Save as default template for future pages + current page
+      await saveDefaultTemplate(updatedSettings, updatedFormatting);
+      
+      // Also save to current entry
+      if (entryId) {
+        await supabase
+          .from("journal_entries")
+          .update({ 
+            page_settings: pageSettingsData,
+            text_formatting: textFormattingData
+          })
+          .eq("id", entryId);
+      }
+    }
+  };
+
+  const saveDefaultTemplate = async (updatedSettings: JournalSettings, updatedFormatting: TextFormatting) => {
+    if (!user) return;
+
+    const templateData = {
+      skin_id: updatedSettings.skin.id,
+      page_size: updatedSettings.pageSize,
+      zoom: updatedSettings.zoom,
+      sections_config: JSON.parse(JSON.stringify(updatedSettings.sections)),
+      text_formatting: JSON.parse(JSON.stringify(updatedFormatting)),
+    };
+
     const { data: existing } = await supabase
       .from("journal_settings")
-      .select("*")
+      .select("id")
       .eq("user_id", user.id)
       .maybeSingle();
-
-    // Merge new settings with existing ones
-    const mergedSettings = {
-      skin_id: updatedSettings?.skin?.id ?? existing?.skin_id ?? settings.skin.id,
-      page_size: updatedSettings?.pageSize ?? existing?.page_size ?? settings.pageSize,
-      zoom: updatedSettings?.zoom ?? existing?.zoom ?? settings.zoom,
-      sections_config: updatedSettings?.sections 
-        ? JSON.parse(JSON.stringify(updatedSettings.sections))
-        : existing?.sections_config ?? JSON.parse(JSON.stringify(settings.sections)),
-      text_formatting: updatedFormatting 
-        ? JSON.parse(JSON.stringify({ ...textFormatting, ...updatedFormatting }))
-        : existing?.text_formatting ?? JSON.parse(JSON.stringify(textFormatting)),
-    };
 
     if (existing) {
       await supabase
         .from("journal_settings")
-        .update(mergedSettings)
+        .update(templateData)
         .eq("user_id", user.id);
     } else {
       await supabase
         .from("journal_settings")
-        .insert({
-          user_id: user.id,
-          ...mergedSettings,
-        });
+        .insert({ user_id: user.id, ...templateData });
     }
   };
 
@@ -657,7 +714,7 @@ export function JournalDiaryPage({
 
   const handleSettingsSave = async (newSettings: JournalSettings, scope: SaveScope) => {
     setSettings(newSettings);
-    await saveSettingsToDb(newSettings);
+    await saveSettingsToDb(newSettings, textFormatting, scope);
     toast({
       title: "Settings saved!",
       description: scope === "current" 
@@ -670,7 +727,8 @@ export function JournalDiaryPage({
 
   const handleFormattingChange = (newFormatting: TextFormatting) => {
     setTextFormatting(newFormatting);
-    saveSettingsToDb(undefined, newFormatting);
+    // Text formatting changes apply to current page
+    saveSettingsToDb(settings, newFormatting, "current");
   };
 
   return (
