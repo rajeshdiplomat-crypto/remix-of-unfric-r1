@@ -197,37 +197,43 @@ export function JournalDiaryPage({
     }
   };
 
-  const saveSettingsToDb = async (newSettings: JournalSettings, newFormatting: TextFormatting) => {
+  const saveSettingsToDb = async (
+    updatedSettings?: Partial<JournalSettings>, 
+    updatedFormatting?: Partial<TextFormatting>
+  ) => {
     if (!user) return;
 
-    // Check if settings exist
+    // Get existing settings to merge with
     const { data: existing } = await supabase
       .from("journal_settings")
-      .select("id")
+      .select("*")
       .eq("user_id", user.id)
       .maybeSingle();
+
+    // Merge new settings with existing ones
+    const mergedSettings = {
+      skin_id: updatedSettings?.skin?.id ?? existing?.skin_id ?? settings.skin.id,
+      page_size: updatedSettings?.pageSize ?? existing?.page_size ?? settings.pageSize,
+      zoom: updatedSettings?.zoom ?? existing?.zoom ?? settings.zoom,
+      sections_config: updatedSettings?.sections 
+        ? JSON.parse(JSON.stringify(updatedSettings.sections))
+        : existing?.sections_config ?? JSON.parse(JSON.stringify(settings.sections)),
+      text_formatting: updatedFormatting 
+        ? JSON.parse(JSON.stringify({ ...textFormatting, ...updatedFormatting }))
+        : existing?.text_formatting ?? JSON.parse(JSON.stringify(textFormatting)),
+    };
 
     if (existing) {
       await supabase
         .from("journal_settings")
-        .update({
-          skin_id: newSettings.skin.id,
-          page_size: newSettings.pageSize,
-          zoom: newSettings.zoom,
-          sections_config: JSON.parse(JSON.stringify(newSettings.sections)),
-          text_formatting: JSON.parse(JSON.stringify(newFormatting)),
-        })
+        .update(mergedSettings)
         .eq("user_id", user.id);
     } else {
       await supabase
         .from("journal_settings")
         .insert({
           user_id: user.id,
-          skin_id: newSettings.skin.id,
-          page_size: newSettings.pageSize,
-          zoom: newSettings.zoom,
-          sections_config: JSON.parse(JSON.stringify(newSettings.sections)),
-          text_formatting: JSON.parse(JSON.stringify(newFormatting)),
+          ...mergedSettings,
         });
     }
   };
@@ -651,7 +657,7 @@ export function JournalDiaryPage({
 
   const handleSettingsSave = async (newSettings: JournalSettings, scope: SaveScope) => {
     setSettings(newSettings);
-    await saveSettingsToDb(newSettings, textFormatting);
+    await saveSettingsToDb(newSettings);
     toast({
       title: "Settings saved!",
       description: scope === "current" 
@@ -664,7 +670,7 @@ export function JournalDiaryPage({
 
   const handleFormattingChange = (newFormatting: TextFormatting) => {
     setTextFormatting(newFormatting);
-    saveSettingsToDb(settings, newFormatting);
+    saveSettingsToDb(undefined, newFormatting);
   };
 
   return (
