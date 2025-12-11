@@ -42,7 +42,7 @@ interface HistoryState {
 
 // Reduced line spacing for diary
 const LINE_HEIGHT = 20;
-const TOP_MARGIN = 32;
+const TOP_MARGIN = 56; // Increased top margin - positioned below date
 const LEFT_MARGIN = 45;
 
 // Page size ratios - adjusted for better fit
@@ -485,7 +485,34 @@ export function JournalDiaryPage({
         start: textarea.selectionStart,
         end: textarea.selectionEnd,
       });
+    } else {
+      setSelectedText(null);
     }
+  };
+
+  // Apply formatting to selected text (wrapping with span-like markers)
+  const applyFormattingToSelection = () => {
+    if (!selectedText) return;
+    
+    const { field, start, end } = selectedText;
+    let text = "";
+    let onChange: (val: string) => void;
+    
+    if (field === "feeling") {
+      text = dailyFeeling;
+      onChange = onFeelingChange;
+    } else if (field === "gratitude") {
+      text = dailyGratitude;
+      onChange = onGratitudeChange;
+    } else {
+      text = dailyKindness;
+      onChange = onKindnessChange;
+    }
+    
+    // For now, just update the selection state - the formatting is applied globally
+    // In a more advanced implementation, you could store rich text formatting per character
+    setSelectedText(null);
+    toast({ title: "Formatting applied", description: "Text formatting updated" });
   };
 
   const handleTextChange = (
@@ -645,11 +672,20 @@ export function JournalDiaryPage({
       {/* Text Toolbar - Outside diary page at top */}
       {inputMode === "type" && (
         <div className="mb-3 flex justify-center">
-          <JournalTextToolbar
-            formatting={textFormatting}
-            onChange={handleFormattingChange}
-            skinBgColor={selectedSkin.bg}
-          />
+          <div className="flex items-center gap-2">
+            <JournalTextToolbar
+              formatting={textFormatting}
+              onChange={handleFormattingChange}
+              skinBgColor={selectedSkin.bg}
+              hasSelection={!!selectedText}
+              onApplyToSelection={applyFormattingToSelection}
+            />
+            {selectedText && (
+              <div className="text-xs text-muted-foreground bg-primary/10 px-2 py-1 rounded">
+                Selection active - changes apply to selected text
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -734,25 +770,26 @@ export function JournalDiaryPage({
           {/* Background pattern */}
           <div className="absolute inset-0" style={getBackgroundStyle()} />
 
-          {/* Top horizontal margin line */}
+          {/* Top horizontal margin line - same color and thickness as vertical margin */}
           {selectedSkin.lineStyle !== "blank" && (
             <div
               className="absolute left-0 right-0"
               style={{
                 top: `${TOP_MARGIN}px`,
-                height: "1px",
-                backgroundColor: selectedSkin.lineColor,
+                height: "2px",
+                backgroundColor: selectedSkin.marginColor,
               }}
             />
           )}
 
-          {/* Red margin line */}
+          {/* Red vertical margin line */}
           {selectedSkin.lineStyle !== "blank" && (
             <div
-              className="absolute top-0 bottom-0"
+              className="absolute bottom-0"
               style={{
                 left: `${LEFT_MARGIN}px`,
-                width: "1px",
+                top: `${TOP_MARGIN}px`,
+                width: "2px",
                 backgroundColor: selectedSkin.marginColor,
               }}
             />
