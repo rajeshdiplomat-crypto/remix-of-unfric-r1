@@ -37,6 +37,7 @@ interface JournalTextToolbarProps {
   formatting: TextFormatting;
   onChange: (formatting: TextFormatting) => void;
   skinBgColor?: string;
+  compact?: boolean;
 }
 
 const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24];
@@ -45,6 +46,13 @@ const FONT_FAMILIES = [
   { name: "Sans-serif", value: "sans-serif" },
   { name: "Cursive", value: "cursive" },
   { name: "Monospace", value: "monospace" },
+  // Handwriting fonts
+  { name: "Caveat", value: "'Caveat', cursive" },
+  { name: "Dancing Script", value: "'Dancing Script', cursive" },
+  { name: "Indie Flower", value: "'Indie Flower', cursive" },
+  { name: "Shadows Into Light", value: "'Shadows Into Light', cursive" },
+  { name: "Patrick Hand", value: "'Patrick Hand', cursive" },
+  { name: "Architects Daughter", value: "'Architects Daughter', cursive" },
 ];
 
 const TEXT_COLORS = [
@@ -63,6 +71,7 @@ export function JournalTextToolbar({
   formatting,
   onChange,
   skinBgColor,
+  compact = false,
 }: JournalTextToolbarProps) {
   const update = (updates: Partial<TextFormatting>) => {
     onChange({ ...formatting, ...updates });
@@ -70,7 +79,10 @@ export function JournalTextToolbar({
 
   return (
     <div
-      className="flex flex-wrap items-center gap-1 p-1.5 rounded-lg"
+      className={cn(
+        "flex flex-wrap items-center gap-1 rounded-lg",
+        compact ? "p-1" : "p-1.5"
+      )}
       style={{
         backgroundColor: skinBgColor
           ? `color-mix(in srgb, ${skinBgColor} 70%, hsl(var(--muted)))`
@@ -82,7 +94,7 @@ export function JournalTextToolbar({
         value={formatting.fontSize.toString()}
         onValueChange={(v) => update({ fontSize: parseInt(v) })}
       >
-        <SelectTrigger className="w-14 h-7 text-xs">
+        <SelectTrigger className={cn("h-7 text-xs", compact ? "w-12" : "w-14")}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -99,7 +111,7 @@ export function JournalTextToolbar({
         value={formatting.fontFamily}
         onValueChange={(v) => update({ fontFamily: v })}
       >
-        <SelectTrigger className="w-24 h-7 text-xs">
+        <SelectTrigger className={cn("h-7 text-xs", compact ? "w-20" : "w-28")}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -174,43 +186,47 @@ export function JournalTextToolbar({
         </PopoverContent>
       </Popover>
 
-      <div className="w-px h-5 bg-border mx-0.5" />
+      {!compact && (
+        <>
+          <div className="w-px h-5 bg-border mx-0.5" />
 
-      {/* Alignment */}
-      <div className="flex">
-        <Button
-          variant={formatting.alignment === "left" ? "default" : "ghost"}
-          size="sm"
-          onClick={() => update({ alignment: "left" })}
-          className="h-7 w-7 p-0"
-        >
-          <AlignLeft className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          variant={formatting.alignment === "center" ? "default" : "ghost"}
-          size="sm"
-          onClick={() => update({ alignment: "center" })}
-          className="h-7 w-7 p-0"
-        >
-          <AlignCenter className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          variant={formatting.alignment === "right" ? "default" : "ghost"}
-          size="sm"
-          onClick={() => update({ alignment: "right" })}
-          className="h-7 w-7 p-0"
-        >
-          <AlignRight className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          variant={formatting.alignment === "justify" ? "default" : "ghost"}
-          size="sm"
-          onClick={() => update({ alignment: "justify" })}
-          className="h-7 w-7 p-0"
-        >
-          <AlignJustify className="h-3.5 w-3.5" />
-        </Button>
-      </div>
+          {/* Alignment */}
+          <div className="flex">
+            <Button
+              variant={formatting.alignment === "left" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => update({ alignment: "left" })}
+              className="h-7 w-7 p-0"
+            >
+              <AlignLeft className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant={formatting.alignment === "center" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => update({ alignment: "center" })}
+              className="h-7 w-7 p-0"
+            >
+              <AlignCenter className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant={formatting.alignment === "right" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => update({ alignment: "right" })}
+              className="h-7 w-7 p-0"
+            >
+              <AlignRight className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant={formatting.alignment === "justify" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => update({ alignment: "justify" })}
+              className="h-7 w-7 p-0"
+            >
+              <AlignJustify className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

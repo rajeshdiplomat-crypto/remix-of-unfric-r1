@@ -1,15 +1,20 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { CalendarIcon, Heart, Sparkles, HandHeart } from "lucide-react";
+import { CalendarIcon, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { JournalDiaryPage } from "@/components/journal/JournalDiaryPage";
+import { JournalFeedDialog } from "@/components/journal/JournalFeedDialog";
+
+// Add Google Fonts for handwriting
+const fontLink = document.createElement("link");
+fontLink.href = "https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&family=Indie+Flower&family=Patrick+Hand&family=Shadows+Into+Light&display=swap";
+fontLink.rel = "stylesheet";
+document.head.appendChild(fontLink);
 
 interface JournalEntry {
   id: string;
@@ -33,6 +38,7 @@ export default function Journal() {
   const [allEntries, setAllEntries] = useState<JournalEntry[]>([]);
   const [entriesWithDates, setEntriesWithDates] = useState<string[]>([]);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [feedOpen, setFeedOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -154,32 +160,45 @@ export default function Journal() {
           <p className="text-muted-foreground mt-1">Reflect on your day</p>
         </div>
 
-        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="icon" className="relative">
-              <CalendarIcon className="h-5 w-5" />
-              {entriesWithDates.length > 0 && (
-                <span className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full" />
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="end">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => {
-                if (date) setSelectedDate(date);
-                setCalendarOpen(false);
-              }}
-              modifiers={{
-                hasEntry: (date) => entriesWithDates.includes(format(date, "yyyy-MM-dd")),
-              }}
-              modifiersStyles={{
-                hasEntry: { backgroundColor: "hsl(142 76% 36% / 0.3)", borderRadius: "50%" },
-              }}
-            />
-          </PopoverContent>
-        </Popover>
+        <div className="flex gap-2">
+          {/* Journal Feed Button */}
+          <Button variant="outline" size="icon" onClick={() => setFeedOpen(true)} className="relative">
+            <BookOpen className="h-5 w-5" />
+            {allEntries.length > 0 && (
+              <span className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full text-[8px] text-primary-foreground flex items-center justify-center">
+                {allEntries.length > 9 ? "9+" : allEntries.length}
+              </span>
+            )}
+          </Button>
+
+          {/* Calendar */}
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="icon" className="relative">
+                <CalendarIcon className="h-5 w-5" />
+                {entriesWithDates.length > 0 && (
+                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full" />
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => {
+                  if (date) setSelectedDate(date);
+                  setCalendarOpen(false);
+                }}
+                modifiers={{
+                  hasEntry: (date) => entriesWithDates.includes(format(date, "yyyy-MM-dd")),
+                }}
+                modifiersStyles={{
+                  hasEntry: { backgroundColor: "hsl(142 76% 36% / 0.3)", borderRadius: "50%" },
+                }}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
 
       {/* Diary Page Component */}
@@ -197,41 +216,13 @@ export default function Journal() {
         hasEntry={!!entryId}
       />
 
-      {/* Previous Entries */}
-      {allEntries.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Previous Entries</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-64">
-              <div className="space-y-4">
-                {allEntries.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
-                    onClick={() => setSelectedDate(new Date(entry.entry_date))}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-foreground">
-                        {format(new Date(entry.entry_date), "EEEE, MMMM d, yyyy")}
-                      </span>
-                      <div className="flex gap-2">
-                        {entry.daily_feeling && <Heart className="h-4 w-4 text-pink-500" />}
-                        {entry.daily_gratitude && <Sparkles className="h-4 w-4 text-yellow-500" />}
-                        {entry.daily_kindness && <HandHeart className="h-4 w-4 text-green-500" />}
-                      </div>
-                    </div>
-                    {entry.daily_feeling && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">{entry.daily_feeling}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      )}
+      {/* Journal Feed Dialog */}
+      <JournalFeedDialog
+        open={feedOpen}
+        onOpenChange={setFeedOpen}
+        entries={allEntries}
+        onSelectDate={setSelectedDate}
+      />
     </div>
   );
 }
