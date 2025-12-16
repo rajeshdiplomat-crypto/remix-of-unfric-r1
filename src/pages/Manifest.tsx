@@ -10,7 +10,7 @@ import { Plus, Sparkles, Target, Heart, Check, Trash2, Flame, BookOpen, ChevronD
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { format, subDays, isSameDay, parseISO, startOfWeek, addDays, isToday, differenceInDays } from "date-fns";
+import { format, subDays, isSameDay, parseISO, startOfWeek, addDays, isToday, differenceInDays, subWeeks, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 
 interface ManifestGoal {
   id: string;
@@ -184,6 +184,39 @@ export default function Manifest() {
       : 0;
 
     return { totalGoals, todayCompleted, avgCompletionRate, bestStreak };
+  };
+
+  // Get 7-day sparkline data for a goal
+  const getSparklineData = (goalId: string): number[] => {
+    const data: number[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const day = subDays(new Date(), i);
+      const hasEntry = hasEntryOnDate(goalId, day);
+      data.push(hasEntry ? 1 : 0);
+    }
+    return data;
+  };
+
+  // Get monthly trend data (last 4 weeks)
+  const getMonthlyTrendData = () => {
+    const data: { week: string; entries: number; rate: number }[] = [];
+    for (let i = 3; i >= 0; i--) {
+      const weekStart = subWeeks(startOfWeek(new Date(), { weekStartsOn: 1 }), i);
+      const weekEnd = addDays(weekStart, 6);
+      const weekLabel = format(weekStart, "MMM d");
+      
+      const weekEntries = journalEntries.filter(e => {
+        const entryDate = parseISO(e.entry_date);
+        return entryDate >= weekStart && entryDate <= weekEnd;
+      }).length;
+      
+      const activeGoals = goals.filter(g => !g.is_completed).length;
+      const maxPossible = activeGoals * 7;
+      const rate = maxPossible > 0 ? Math.round((weekEntries / maxPossible) * 100) : 0;
+      
+      data.push({ week: weekLabel, entries: weekEntries, rate });
+    }
+    return data;
   };
 
   const weekDays = Array.from({ length: 7 }, (_, i) =>
@@ -515,6 +548,55 @@ export default function Manifest() {
               </div>
             </div>
           </Card>
+
+          {/* Monthly Trend Line Chart */}
+          <Card className="p-4 md:col-span-2">
+            <h3 className="text-sm font-medium text-foreground mb-3">Monthly Visualization Consistency</h3>
+            <div className="h-40">
+              <div className="flex items-end justify-between h-32 gap-4">
+                {getMonthlyTrendData().map((weekData, index, arr) => {
+                  const maxRate = Math.max(...arr.map(d => d.rate), 1);
+                  const height = (weekData.rate / maxRate) * 100;
+                  return (
+                    <div key={weekData.week} className="flex-1 flex flex-col items-center">
+                      <span className="text-xs text-muted-foreground mb-1">{weekData.rate}%</span>
+                      <div className="w-full flex flex-col items-center relative">
+                        <div 
+                          className="w-full max-w-16 bg-primary/80 rounded-t transition-all"
+                          style={{ height: `${Math.max(height, 8)}%`, minHeight: '8px' }}
+                        />
+                        {index < arr.length - 1 && (
+                          <svg 
+                            className="absolute top-0 left-1/2 w-full h-full pointer-events-none" 
+                            style={{ transform: 'translateX(50%)' }}
+                            viewBox="0 0 100 100"
+                            preserveAspectRatio="none"
+                          >
+                            <line 
+                              x1="0" 
+                              y1={100 - height} 
+                              x2="100" 
+                              y2={100 - (arr[index + 1].rate / maxRate) * 100} 
+                              className="stroke-primary" 
+                              strokeWidth="2"
+                              strokeDasharray="4 2"
+                            />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex justify-between mt-2">
+                {getMonthlyTrendData().map(weekData => (
+                  <div key={weekData.week} className="flex-1 text-center">
+                    <span className="text-xs text-muted-foreground">{weekData.week}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
         </div>
       )}
 
@@ -742,6 +824,7 @@ export default function Manifest() {
                 const todayDone = hasTodayEntry(goal.id);
                 const recentEntries = getGoalEntries(goal.id);
                 const isExpanded = expandedGoalId === goal.id;
+                const sparklineData = getSparklineData(goal.id);
 
                 return (
                   <Card
@@ -795,6 +878,36 @@ export default function Manifest() {
                           <span className="text-muted-foreground line-clamp-2">
                             {goal.feeling_when_achieved}
                           </span>
+                        </div>
+                      )}
+
+                      {/* 7-Day Sparkline Chart */}
+                      {!goal.is_completed && (
+                        <div className="py-2">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs text-muted-foreground">Last 7 days</span>
+                            <span className="text-xs text-muted-foreground">
+                              {sparklineData.filter(d => d === 1).length}/7
+                            </span>
+                          </div>
+                          <div className="flex items-end gap-1 h-8">
+                            {sparklineData.map((value, i) => (
+                              <div 
+                                key={i}
+                                className={`flex-1 rounded-sm transition-all ${
+                                  value === 1 ? 'bg-primary' : 'bg-muted/50'
+                                }`}
+                                style={{ height: value === 1 ? '100%' : '20%' }}
+                              />
+                            ))}
+                          </div>
+                          <div className="flex justify-between mt-1">
+                            {sparklineData.map((_, i) => (
+                              <span key={i} className="flex-1 text-center text-[10px] text-muted-foreground">
+                                {format(subDays(new Date(), 6 - i), "E")[0]}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       )}
 
