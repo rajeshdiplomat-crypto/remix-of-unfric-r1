@@ -437,53 +437,81 @@ export default function Manifest() {
         </DialogContent>
       </Dialog>
 
-      {/* Insights Cards */}
+      {/* Graphical Insights Dashboard */}
       {goals.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Weekly Progress Chart */}
           <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                <Target className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{insights.todayCompleted}/{insights.totalGoals}</p>
-                <p className="text-xs text-muted-foreground">Visualized Today</p>
-              </div>
+            <h3 className="text-sm font-medium text-foreground mb-3">Weekly Progress</h3>
+            <div className="flex items-end justify-between h-32 gap-2">
+              {weekDays.map((day) => {
+                const dayEntries = journalEntries.filter(e => 
+                  isSameDay(parseISO(e.entry_date), day)
+                ).length;
+                const maxEntries = Math.max(...weekDays.map(d => 
+                  journalEntries.filter(e => isSameDay(parseISO(e.entry_date), d)).length
+                ), 1);
+                const height = (dayEntries / maxEntries) * 100;
+                return (
+                  <div key={day.toString()} className="flex flex-col items-center flex-1">
+                    <div className="w-full flex flex-col items-center">
+                      <span className="text-xs text-muted-foreground mb-1">{dayEntries}</span>
+                      <div 
+                        className={`w-full rounded-t transition-all ${
+                          isToday(day) ? 'bg-primary' : 'bg-primary/60'
+                        }`}
+                        style={{ height: `${Math.max(height, 8)}%`, minHeight: '4px' }}
+                      />
+                    </div>
+                    <span className={`text-xs mt-2 ${isToday(day) ? 'font-bold text-primary' : 'text-muted-foreground'}`}>
+                      {format(day, "EEE")}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </Card>
 
+          {/* Goal Completion Donut */}
           <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
-                <Flame className="h-5 w-5 text-orange-500" />
+            <h3 className="text-sm font-medium text-foreground mb-3">Today's Progress</h3>
+            <div className="flex items-center justify-center gap-6">
+              <div className="relative w-24 h-24">
+                <svg className="w-24 h-24 -rotate-90" viewBox="0 0 36 36">
+                  <circle
+                    cx="18" cy="18" r="15.5"
+                    fill="none"
+                    className="stroke-muted"
+                    strokeWidth="3"
+                  />
+                  <circle
+                    cx="18" cy="18" r="15.5"
+                    fill="none"
+                    className="stroke-primary"
+                    strokeWidth="3"
+                    strokeDasharray={`${(insights.todayCompleted / Math.max(insights.totalGoals, 1)) * 97.5} 97.5`}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-xl font-bold text-foreground">
+                    {insights.todayCompleted}/{insights.totalGoals}
+                  </span>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{insights.bestStreak}</p>
-                <p className="text-xs text-muted-foreground">Best Streak</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-green-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{insights.avgCompletionRate}%</p>
-                <p className="text-xs text-muted-foreground">Avg Rate</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                <Zap className="h-5 w-5 text-purple-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{journalEntries.length}</p>
-                <p className="text-xs text-muted-foreground">Total Entries</p>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <Flame className="h-4 w-4 text-orange-500" />
+                  <span className="text-muted-foreground">Best: <span className="font-medium text-foreground">{insights.bestStreak} days</span></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-green-500" />
+                  <span className="text-muted-foreground">Avg: <span className="font-medium text-foreground">{insights.avgCompletionRate}%</span></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-purple-500" />
+                  <span className="text-muted-foreground">Total: <span className="font-medium text-foreground">{journalEntries.length}</span></span>
+                </div>
               </div>
             </div>
           </Card>
@@ -525,9 +553,15 @@ export default function Manifest() {
           <TabsContent value="daily" className="space-y-4">
             <Card>
               <CardHeader className="pb-2">
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-lg">This Week</CardTitle>
-                  <div className="flex gap-1">
+                <CardTitle className="text-lg">This Week</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {/* Header Row with Day Labels */}
+                <div className="flex items-center py-2 border-b border-border">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-muted-foreground text-sm">Goal</p>
+                  </div>
+                  <div className="flex items-center gap-1">
                     {weekDays.map((day) => (
                       <div
                         key={day.toString()}
@@ -539,47 +573,43 @@ export default function Manifest() {
                         <div>{format(day, "d")}</div>
                       </div>
                     ))}
+                    <div className="w-10" /> {/* Spacer for action button */}
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
+                {/* Goal Rows */}
                 {goals.filter((g) => !g.is_completed).map((goal) => (
-                  <div key={goal.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                    <div className="flex items-center gap-3">
-                      <div>
-                        <p className="font-medium text-foreground">{goal.title}</p>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Flame className="h-3 w-3 text-orange-500" />
-                          <span>{getStreakForGoal(goal.id)} day streak</span>
-                        </div>
+                  <div key={goal.id} className="flex items-center py-2 border-b border-border last:border-0">
+                    <div className="flex-1 min-w-0 pr-4">
+                      <p className="font-medium text-foreground truncate">{goal.title}</p>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Flame className="h-3 w-3 text-orange-500" />
+                        <span>{getStreakForGoal(goal.id)} day streak</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex gap-1">
-                        {weekDays.map((day) => {
-                          const hasEntry = hasEntryOnDate(goal.id, day);
-                          return (
-                            <button
-                              key={day.toString()}
-                              onClick={() => openJournalDialog(goal)}
-                              className={`w-10 h-10 rounded-lg transition-all ${
-                                hasEntry
-                                  ? "bg-primary text-primary-foreground"
-                                  : isToday(day)
-                                  ? "bg-muted ring-1 ring-primary"
-                                  : "bg-muted/50 hover:bg-muted"
-                              }`}
-                            >
-                              {hasEntry && "✓"}
-                            </button>
-                          );
-                        })}
-                      </div>
+                    <div className="flex items-center gap-1">
+                      {weekDays.map((day) => {
+                        const hasEntry = hasEntryOnDate(goal.id, day);
+                        return (
+                          <button
+                            key={day.toString()}
+                            onClick={() => openJournalDialog(goal)}
+                            className={`w-10 h-10 rounded-lg transition-all flex items-center justify-center ${
+                              hasEntry
+                                ? "bg-primary text-primary-foreground"
+                                : isToday(day)
+                                ? "bg-muted ring-1 ring-primary"
+                                : "bg-muted/50 hover:bg-muted"
+                            }`}
+                          >
+                            {hasEntry && <Check className="h-4 w-4" />}
+                          </button>
+                        );
+                      })}
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => openJournalDialog(goal)}
-                        className="text-primary hover:text-primary"
+                        className="text-primary hover:text-primary w-10"
                       >
                         <BookOpen className="h-4 w-4" />
                       </Button>
@@ -638,17 +668,17 @@ export default function Manifest() {
                       </div>
                     </div>
 
-                    {/* Heatmap Grid */}
+                    {/* Heatmap Grid with aligned day labels */}
                     <div className="space-y-2">
-                      <div className="flex gap-0.5 text-xs text-muted-foreground mb-1">
-                        <span className="w-8">Mon</span>
-                        <span className="w-8">Tue</span>
-                        <span className="w-8">Wed</span>
-                        <span className="w-8">Thu</span>
-                        <span className="w-8">Fri</span>
-                        <span className="w-8">Sat</span>
-                        <span className="w-8">Sun</span>
+                      {/* Day labels row */}
+                      <div className="grid grid-cols-7 gap-1 mb-1">
+                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                          <div key={day} className="text-xs text-muted-foreground text-center">
+                            {day}
+                          </div>
+                        ))}
                       </div>
+                      {/* Heatmap cells aligned under day labels */}
                       <div className="grid grid-cols-7 gap-1">
                         {heatmapDays.map((day, index) => {
                           const hasEntry = hasEntryOnDate(goal.id, day);
@@ -657,7 +687,7 @@ export default function Manifest() {
                               key={index}
                               onClick={() => openJournalDialog(goal)}
                               title={format(day, "MMM d, yyyy")}
-                              className={`aspect-square w-full max-w-8 rounded-sm transition-all hover:ring-1 hover:ring-primary/50 ${
+                              className={`aspect-square w-full max-w-8 mx-auto rounded-sm transition-all hover:ring-1 hover:ring-primary/50 ${
                                 hasEntry
                                   ? "bg-primary"
                                   : isToday(day)
