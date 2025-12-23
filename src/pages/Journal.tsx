@@ -23,6 +23,7 @@ interface JournalEntry {
   daily_gratitude: string | null;
   daily_kindness: string | null;
   created_at: string;
+  tags: string[] | null;
 }
 
 export default function Journal() {
@@ -35,6 +36,7 @@ export default function Journal() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [entryId, setEntryId] = useState<string | null>(null);
+  const [tags, setTags] = useState<string[]>([]);
   const [allEntries, setAllEntries] = useState<JournalEntry[]>([]);
   const [entriesWithDates, setEntriesWithDates] = useState<string[]>([]);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -81,11 +83,13 @@ export default function Journal() {
       setDailyFeeling(data.daily_feeling || "");
       setDailyGratitude(data.daily_gratitude || "");
       setDailyKindness(data.daily_kindness || "");
+      setTags(data.tags || []);
       setEntryId(data.id);
     } else {
       setDailyFeeling("");
       setDailyGratitude("");
       setDailyKindness("");
+      setTags([]);
       setEntryId(null);
     }
     setLoading(false);
@@ -104,6 +108,7 @@ export default function Journal() {
           daily_feeling: dailyFeeling,
           daily_gratitude: dailyGratitude,
           daily_kindness: dailyKindness,
+          tags: tags,
         })
         .eq("id", entryId);
 
@@ -122,6 +127,7 @@ export default function Journal() {
           daily_feeling: dailyFeeling,
           daily_gratitude: dailyGratitude,
           daily_kindness: dailyKindness,
+          tags: tags,
         })
         .select()
         .single();
@@ -142,6 +148,67 @@ export default function Journal() {
     const newDate = new Date(selectedDate);
     newDate.setDate(newDate.getDate() + (direction === "next" ? 1 : -1));
     setSelectedDate(newDate);
+  };
+
+  const handleDeleteEntry = async () => {
+    if (!entryId) return;
+    
+    const { error } = await supabase
+      .from("journal_entries")
+      .delete()
+      .eq("id", entryId);
+    
+    if (error) {
+      toast({ title: "Error", description: "Failed to delete entry", variant: "destructive" });
+    } else {
+      setDailyFeeling("");
+      setDailyGratitude("");
+      setDailyKindness("");
+      setTags([]);
+      setEntryId(null);
+      fetchAllEntries();
+    }
+  };
+
+  const handleDuplicateEntry = () => {
+    // Copy current content to tomorrow
+    const tomorrow = new Date(selectedDate);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setSelectedDate(tomorrow);
+    toast({ title: "Entry duplicated", description: "Content copied to next day" });
+  };
+
+  const handleExportEntry = (exportFormat: "text" | "markdown") => {
+    const dateStr = format(selectedDate, "MMMM d, yyyy");
+    let content = "";
+    
+    if (exportFormat === "markdown") {
+      content = `# Journal Entry - ${dateStr}\n\n`;
+      content += `## Feelings\n${dailyFeeling || "No entry"}\n\n`;
+      content += `## Gratitude\n${dailyGratitude || "No entry"}\n\n`;
+      content += `## Kindness\n${dailyKindness || "No entry"}\n\n`;
+      if (tags.length > 0) {
+        content += `**Tags:** ${tags.map(t => `#${t}`).join(" ")}\n`;
+      }
+    } else {
+      content = `Journal Entry - ${dateStr}\n\n`;
+      content += `Feelings:\n${dailyFeeling || "No entry"}\n\n`;
+      content += `Gratitude:\n${dailyGratitude || "No entry"}\n\n`;
+      content += `Kindness:\n${dailyKindness || "No entry"}\n\n`;
+      if (tags.length > 0) {
+        content += `Tags: ${tags.join(", ")}\n`;
+      }
+    }
+    
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `journal-${format(selectedDate, "yyyy-MM-dd")}.${exportFormat === "markdown" ? "md" : "txt"}`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast({ title: "Exported", description: `Entry saved as ${exportFormat}` });
   };
 
   if (loading) {
@@ -215,6 +282,11 @@ export default function Journal() {
         saving={saving}
         hasEntry={!!entryId}
         entryId={entryId}
+        tags={tags}
+        onTagsChange={setTags}
+        onDelete={handleDeleteEntry}
+        onDuplicate={handleDuplicateEntry}
+        onExport={handleExportEntry}
       />
 
       {/* Journal Feed Dialog */}

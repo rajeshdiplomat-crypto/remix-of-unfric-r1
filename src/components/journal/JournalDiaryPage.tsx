@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Type, Mic, MicOff, Pencil, Image, Settings, X, Move, Undo2, Redo2, GripVertical } from "lucide-react";
+import { ChevronLeft, ChevronRight, Type, Mic, MicOff, Pencil, Image, Settings, X, Undo2, Redo2, GripVertical } from "lucide-react";
 import { JournalScribbleCanvas } from "./JournalScribbleCanvas";
 import { JournalSettingsDialog, DIARY_SKINS, JournalSettings, DiarySkin, SaveScope } from "./JournalSettingsDialog";
 import { JournalTextToolbar, TextFormatting } from "./JournalTextToolbar";
+import { JournalRichTextEditor } from "./JournalRichTextEditor";
+import { JournalActionMenu } from "./JournalActionMenu";
+import { JournalTagInput } from "./JournalTagInput";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +26,11 @@ interface JournalDiaryPageProps {
   saving: boolean;
   hasEntry: boolean;
   entryId?: string | null;
+  tags?: string[];
+  onTagsChange?: (tags: string[]) => void;
+  onDelete?: () => void;
+  onDuplicate?: () => void;
+  onExport?: (format: "text" | "markdown") => void;
 }
 
 interface InsertedImage {
@@ -107,6 +115,11 @@ export function JournalDiaryPage({
   saving,
   hasEntry,
   entryId,
+  tags = [],
+  onTagsChange,
+  onDelete,
+  onDuplicate,
+  onExport,
 }: JournalDiaryPageProps) {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -124,6 +137,7 @@ export function JournalDiaryPage({
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [scribbleData, setScribbleData] = useState<string>("");
   const [selectedText, setSelectedText] = useState<{ field: string; start: number; end: number } | null>(null);
+  const [aiProcessing, setAiProcessing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pageRef = useRef<HTMLDivElement>(null);
@@ -586,6 +600,26 @@ export function JournalDiaryPage({
     setTimeout(saveToHistory, 500);
   };
 
+  // Handle AI actions for selected text
+  const handleAIAction = async (action: "rewrite" | "expand" | "summarize", text: string) => {
+    if (!text.trim()) {
+      toast({ title: "No text selected", description: "Please select some text first", variant: "destructive" });
+      return;
+    }
+    
+    setAiProcessing(true);
+    toast({ title: "AI Processing...", description: `${action.charAt(0).toUpperCase() + action.slice(1)}ing your text` });
+    
+    // Placeholder for AI integration - for now just show a message
+    setTimeout(() => {
+      setAiProcessing(false);
+      toast({ 
+        title: "AI Feature", 
+        description: "AI text assistance is being prepared. Select text and try again soon!" 
+      });
+    }, 1000);
+  };
+
   const renderInputArea = (
     value: string,
     onChange: (val: string) => void,
@@ -626,19 +660,21 @@ export function JournalDiaryPage({
       );
     }
 
+    // Use rich text editor for type mode
     return (
-      <textarea
-        ref={(el) => (textareaRefs.current[field] = el)}
+      <JournalRichTextEditor
         value={value}
-        onChange={(e) => handleTextChange(e.target.value, onChange)}
-        onFocus={() => setActiveField(field)}
-        onSelect={() => handleTextSelect(field)}
+        onChange={(newValue) => handleTextChange(newValue, onChange)}
         placeholder={placeholder}
-        className={baseTextareaClass}
-        style={{
-          ...getTextareaStyle(),
-          height: `${calculateTextHeight(value)}px`,
+        onFocus={() => setActiveField(field)}
+        formatting={{
+          fontSize: textFormatting.fontSize,
+          fontFamily: textFormatting.fontFamily,
+          color: textFormatting.color,
+          alignment: textFormatting.alignment,
         }}
+        onAIAction={handleAIAction}
+        showAI={!aiProcessing}
       />
     );
   };
@@ -834,11 +870,23 @@ export function JournalDiaryPage({
             className="relative h-full flex flex-col"
             style={{ paddingLeft: "16px", paddingRight: "16px" }}
           >
-            {/* Date Header */}
+            {/* Date Header with Actions */}
             <div
-              className="flex justify-end items-start pt-2"
+              className="flex justify-between items-start pt-2"
               style={{ minHeight: "48px" }}
             >
+              {/* Action Menu */}
+              <div className="pt-1">
+                <JournalActionMenu
+                  onDelete={onDelete}
+                  onDuplicate={onDuplicate}
+                  onExport={onExport}
+                  entryDate={format(selectedDate, "MMMM d, yyyy")}
+                  hasEntry={hasEntry}
+                />
+              </div>
+              
+              {/* Date Display */}
               <div className="text-right pr-1">
                 <p
                   className="text-[8px] font-semibold tracking-widest"
@@ -932,6 +980,17 @@ export function JournalDiaryPage({
                   </div>
                 </div>
               ))}
+              
+              {/* Tags at bottom of content area */}
+              {onTagsChange && (
+                <div className="mt-4 pt-2 border-t border-border/30">
+                  <JournalTagInput
+                    tags={tags}
+                    onChange={onTagsChange}
+                    placeholder="Add tags..."
+                  />
+                </div>
+              )}
             </div>
           </div>
 
