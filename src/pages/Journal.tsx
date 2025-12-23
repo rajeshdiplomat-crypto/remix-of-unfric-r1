@@ -1,14 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { JournalDiaryPage } from "@/components/journal/JournalDiaryPage";
-import { JournalFeedDialog } from "@/components/journal/JournalFeedDialog";
+import { JournalEditorToolbar } from "@/components/journal/JournalEditorToolbar";
+import { JournalEditor } from "@/components/journal/JournalEditor";
+import { JournalSidebar } from "@/components/journal/JournalSidebar";
+import { JournalActionMenu } from "@/components/journal/JournalActionMenu";
+import { Button } from "@/components/ui/button";
+import { Send, MoreVertical } from "lucide-react";
 
 // Add Google Fonts for handwriting
 const fontLink = document.createElement("link");
@@ -30,17 +30,20 @@ export default function Journal() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [dailyFeeling, setDailyFeeling] = useState("");
-  const [dailyGratitude, setDailyGratitude] = useState("");
-  const [dailyKindness, setDailyKindness] = useState("");
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [mood, setMood] = useState<string | null>(null);
+  const [tags, setTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [entryId, setEntryId] = useState<string | null>(null);
-  const [tags, setTags] = useState<string[]>([]);
   const [allEntries, setAllEntries] = useState<JournalEntry[]>([]);
-  const [entriesWithDates, setEntriesWithDates] = useState<string[]>([]);
-  const [calendarOpen, setCalendarOpen] = useState(false);
-  const [feedOpen, setFeedOpen] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [activeFormats, setActiveFormats] = useState<string[]>([]);
+  const [promptToUse, setPromptToUse] = useState<string>("");
+  const [isRecording, setIsRecording] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -51,6 +54,16 @@ export default function Journal() {
     if (!user) return;
     fetchEntry();
   }, [user, selectedDate]);
+
+  // Auto-save debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (user && (title || content)) {
+        saveEntry(true);
+      }
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [title, content, mood, tags]);
 
   const fetchAllEntries = async () => {
     if (!user) return;
@@ -64,7 +77,6 @@ export default function Journal() {
 
     if (data) {
       setAllEntries(data);
-      setEntriesWithDates(data.map(e => e.entry_date));
     }
   };
 
@@ -80,63 +92,78 @@ export default function Journal() {
       .maybeSingle();
 
     if (data) {
-      setDailyFeeling(data.daily_feeling || "");
-      setDailyGratitude(data.daily_gratitude || "");
-      setDailyKindness(data.daily_kindness || "");
+      // Parse title from first line if stored in feeling
+      const feeling = data.daily_feeling || "";
+      const lines = feeling.split("\n");
+      if (lines[0] && !lines[0].startsWith("•") && lines[0].length < 100) {
+        setTitle(lines[0]);
+        setContent(lines.slice(1).join("\n").trim());
+      } else {
+        setTitle("");
+        setContent(feeling);
+      }
+      setMood(data.daily_gratitude || null); // Using gratitude field for mood
       setTags(data.tags || []);
       setEntryId(data.id);
     } else {
-      setDailyFeeling("");
-      setDailyGratitude("");
-      setDailyKindness("");
+      setTitle("");
+      setContent("");
+      setMood(null);
       setTags([]);
       setEntryId(null);
     }
     setLoading(false);
   };
 
-  const saveEntry = async () => {
+  const saveEntry = async (silent = false) => {
     if (!user) return;
 
     setSaving(true);
     const dateStr = format(selectedDate, "yyyy-MM-dd");
+    
+    // Combine title and content for storage
+    const combinedContent = title ? `${title}\n${content}` : content;
 
     if (entryId) {
       const { error } = await supabase
         .from("journal_entries")
         .update({
-          daily_feeling: dailyFeeling,
-          daily_gratitude: dailyGratitude,
-          daily_kindness: dailyKindness,
+          daily_feeling: combinedContent,
+          daily_gratitude: mood,
           tags: tags,
         })
         .eq("id", entryId);
 
-      if (error) {
+      if (error && !silent) {
         toast({ title: "Error", description: "Failed to update journal", variant: "destructive" });
       } else {
-        toast({ title: "Saved!", description: "Your journal entry has been updated" });
+        setLastSaved(new Date());
+        if (!silent) {
+          toast({ title: "Saved!", description: "Your journal entry has been updated" });
+        }
         fetchAllEntries();
       }
-    } else {
+    } else if (combinedContent.trim()) {
       const { data, error } = await supabase
         .from("journal_entries")
         .insert({
           user_id: user.id,
           entry_date: dateStr,
-          daily_feeling: dailyFeeling,
-          daily_gratitude: dailyGratitude,
-          daily_kindness: dailyKindness,
+          daily_feeling: combinedContent,
+          daily_gratitude: mood,
           tags: tags,
         })
         .select()
         .single();
 
-      if (error) {
+      if (error && !silent) {
         toast({ title: "Error", description: "Failed to save journal", variant: "destructive" });
-      } else {
+      } else if (data) {
         setEntryId(data.id);
-        toast({ title: "Saved!", description: "Your journal entry has been saved" });
+        setLastSaved(new Date());
+        if (!silent) {
+          toast({ title: "Saved!", description: "Your journal entry has been saved" });
+        }
         fetchAllEntries();
       }
     }
@@ -144,10 +171,8 @@ export default function Journal() {
     setSaving(false);
   };
 
-  const navigateDate = (direction: "prev" | "next") => {
-    const newDate = new Date(selectedDate);
-    newDate.setDate(newDate.getDate() + (direction === "next" ? 1 : -1));
-    setSelectedDate(newDate);
+  const handlePublish = async () => {
+    await saveEntry(false);
   };
 
   const handleDeleteEntry = async () => {
@@ -161,17 +186,17 @@ export default function Journal() {
     if (error) {
       toast({ title: "Error", description: "Failed to delete entry", variant: "destructive" });
     } else {
-      setDailyFeeling("");
-      setDailyGratitude("");
-      setDailyKindness("");
+      setTitle("");
+      setContent("");
+      setMood(null);
       setTags([]);
       setEntryId(null);
       fetchAllEntries();
+      toast({ title: "Deleted", description: "Entry has been removed" });
     }
   };
 
   const handleDuplicateEntry = () => {
-    // Copy current content to tomorrow
     const tomorrow = new Date(selectedDate);
     tomorrow.setDate(tomorrow.getDate() + 1);
     setSelectedDate(tomorrow);
@@ -180,27 +205,23 @@ export default function Journal() {
 
   const handleExportEntry = (exportFormat: "text" | "markdown") => {
     const dateStr = format(selectedDate, "MMMM d, yyyy");
-    let content = "";
+    let exportContent = "";
     
     if (exportFormat === "markdown") {
-      content = `# Journal Entry - ${dateStr}\n\n`;
-      content += `## Feelings\n${dailyFeeling || "No entry"}\n\n`;
-      content += `## Gratitude\n${dailyGratitude || "No entry"}\n\n`;
-      content += `## Kindness\n${dailyKindness || "No entry"}\n\n`;
+      exportContent = `# ${title || "Journal Entry"} - ${dateStr}\n\n`;
+      exportContent += content || "No content";
       if (tags.length > 0) {
-        content += `**Tags:** ${tags.map(t => `#${t}`).join(" ")}\n`;
+        exportContent += `\n\n**Tags:** ${tags.map(t => `#${t}`).join(" ")}`;
       }
     } else {
-      content = `Journal Entry - ${dateStr}\n\n`;
-      content += `Feelings:\n${dailyFeeling || "No entry"}\n\n`;
-      content += `Gratitude:\n${dailyGratitude || "No entry"}\n\n`;
-      content += `Kindness:\n${dailyKindness || "No entry"}\n\n`;
+      exportContent = `${title || "Journal Entry"} - ${dateStr}\n\n`;
+      exportContent += content || "No content";
       if (tags.length > 0) {
-        content += `Tags: ${tags.join(", ")}\n`;
+        exportContent += `\n\nTags: ${tags.join(", ")}`;
       }
     }
     
-    const blob = new Blob([content], { type: "text/plain" });
+    const blob = new Blob([exportContent], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -209,6 +230,50 @@ export default function Journal() {
     URL.revokeObjectURL(url);
     
     toast({ title: "Exported", description: `Entry saved as ${exportFormat}` });
+  };
+
+  const handleFormat = (formatType: string) => {
+    setActiveFormats(prev => 
+      prev.includes(formatType) 
+        ? prev.filter(f => f !== formatType)
+        : [...prev, formatType]
+    );
+  };
+
+  const handleImageInsert = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      toast({ title: "Image", description: "Image upload coming soon!" });
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleVoiceRecord = async () => {
+    if (isRecording) {
+      mediaRecorderRef.current?.stop();
+      mediaRecorderRef.current?.stream.getTracks().forEach(track => track.stop());
+      setIsRecording(false);
+      toast({ title: "Recording stopped", description: "Transcription coming soon!" });
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        mediaRecorder.start();
+        setIsRecording(true);
+        toast({ title: "Recording...", description: "Click again to stop" });
+      } catch {
+        toast({ title: "Error", description: "Could not access microphone", variant: "destructive" });
+      }
+    }
+  };
+
+  const handleUsePrompt = (prompt: string) => {
+    setPromptToUse(prompt);
   };
 
   if (loading) {
@@ -220,82 +285,76 @@ export default function Journal() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 px-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">My Journal</h1>
-          <p className="text-muted-foreground mt-1">Reflect on your day</p>
+    <div className="min-h-screen">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageSelected}
+        className="hidden"
+      />
+
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-6 py-3 border-b border-border/30 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="text-sm text-muted-foreground">
+          {lastSaved ? `Last saved: ${format(lastSaved, "h:mm a")}` : saving ? "Saving..." : "Not saved yet"}
         </div>
-
-        <div className="flex gap-2">
-          {/* Journal Feed Button */}
-          <Button variant="outline" size="icon" onClick={() => setFeedOpen(true)} className="relative">
-            <BookOpen className="h-5 w-5" />
-            {allEntries.length > 0 && (
-              <span className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full text-[8px] text-primary-foreground flex items-center justify-center">
-                {allEntries.length > 9 ? "9+" : allEntries.length}
-              </span>
-            )}
+        <div className="flex items-center gap-2">
+          <Button 
+            onClick={handlePublish}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+            disabled={saving}
+          >
+            Publish Entry
+            <Send className="h-4 w-4" />
           </Button>
-
-          {/* Calendar */}
-          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="icon" className="relative">
-                <CalendarIcon className="h-5 w-5" />
-                {entriesWithDates.length > 0 && (
-                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full" />
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => {
-                  if (date) setSelectedDate(date);
-                  setCalendarOpen(false);
-                }}
-                modifiers={{
-                  hasEntry: (date) => entriesWithDates.includes(format(date, "yyyy-MM-dd")),
-                }}
-                modifiersStyles={{
-                  hasEntry: { backgroundColor: "hsl(142 76% 36% / 0.3)", borderRadius: "50%" },
-                }}
-              />
-            </PopoverContent>
-          </Popover>
+          <JournalActionMenu
+            onDelete={handleDeleteEntry}
+            onDuplicate={handleDuplicateEntry}
+            onExport={handleExportEntry}
+            entryDate={format(selectedDate, "MMMM d, yyyy")}
+            hasEntry={!!entryId}
+          />
         </div>
       </div>
 
-      {/* Diary Page Component */}
-      <JournalDiaryPage
-        selectedDate={selectedDate}
-        onNavigate={navigateDate}
-        dailyFeeling={dailyFeeling}
-        dailyGratitude={dailyGratitude}
-        dailyKindness={dailyKindness}
-        onFeelingChange={setDailyFeeling}
-        onGratitudeChange={setDailyGratitude}
-        onKindnessChange={setDailyKindness}
-        onSave={saveEntry}
-        saving={saving}
-        hasEntry={!!entryId}
-        entryId={entryId}
-        tags={tags}
-        onTagsChange={setTags}
-        onDelete={handleDeleteEntry}
-        onDuplicate={handleDuplicateEntry}
-        onExport={handleExportEntry}
-      />
+      {/* Main content */}
+      <div className="px-6 py-6">
+        {/* Toolbar */}
+        <div className="mb-6">
+          <JournalEditorToolbar
+            activeFormats={activeFormats}
+            onFormat={handleFormat}
+            onImageInsert={handleImageInsert}
+            onVoiceRecord={handleVoiceRecord}
+            isRecording={isRecording}
+          />
+        </div>
 
-      {/* Journal Feed Dialog */}
-      <JournalFeedDialog
-        open={feedOpen}
-        onOpenChange={setFeedOpen}
-        entries={allEntries}
-        onSelectDate={setSelectedDate}
-      />
+        {/* Editor + Sidebar layout */}
+        <div className="flex gap-8 justify-center">
+          <JournalEditor
+            selectedDate={selectedDate}
+            title={title}
+            content={content}
+            mood={mood}
+            tags={tags}
+            onTitleChange={setTitle}
+            onContentChange={setContent}
+            onMoodChange={setMood}
+            onTagsChange={setTags}
+            onPromptUse={promptToUse}
+          />
+
+          <JournalSidebar
+            entries={allEntries}
+            currentDate={selectedDate}
+            onSelectDate={setSelectedDate}
+            onUsePrompt={handleUsePrompt}
+          />
+        </div>
+      </div>
     </div>
   );
 }
