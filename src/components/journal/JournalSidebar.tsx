@@ -65,8 +65,8 @@ export function JournalSidebar({
     if (firstLine && firstLine.length > 3 && firstLine.length < 50) {
       return firstLine;
     }
-    // Default to date-based title
-    return format(new Date(entry.entry_date), "EEEE Reflection");
+    // Default to date-based title - escape literal text with single quotes
+    return format(new Date(entry.entry_date), "EEEE") + " Reflection";
   };
 
   const recentEntries = entries.slice(0, 5);
