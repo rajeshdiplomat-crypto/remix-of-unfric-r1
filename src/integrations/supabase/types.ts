@@ -117,6 +117,7 @@ export type Database = {
           images_data: Json | null
           page_settings: Json | null
           scribble_data: string | null
+          tags: string[] | null
           text_formatting: Json | null
           updated_at: string
           user_id: string
@@ -131,6 +132,7 @@ export type Database = {
           images_data?: Json | null
           page_settings?: Json | null
           scribble_data?: string | null
+          tags?: string[] | null
           text_formatting?: Json | null
           updated_at?: string
           user_id: string
@@ -145,6 +147,7 @@ export type Database = {
           images_data?: Json | null
           page_settings?: Json | null
           scribble_data?: string | null
+          tags?: string[] | null
           text_formatting?: Json | null
           updated_at?: string
           user_id?: string
