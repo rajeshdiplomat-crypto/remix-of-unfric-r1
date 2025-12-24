@@ -55,6 +55,7 @@ const App = () => (
               <Route path="/trackers" element={<ProtectedRoute><Trackers /></ProtectedRoute>} />
               <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
               <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+              <Route path="/tasks/focus/:taskId" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>

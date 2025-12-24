@@ -1,47 +1,44 @@
 import { useState } from "react";
-import { Plus, GripVertical, Play, AlertTriangle } from "lucide-react";
+import { Plus, GripVertical, Play, CheckCircle, AlertTriangle, Calendar, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { QuadrantTask, QuadrantMode, QUADRANT_MODES } from "./types";
+import { QuadrantTask, BOARD_COLUMNS, computeTaskStatus } from "./types";
 
 interface BoardViewProps {
-  mode: QuadrantMode;
+  mode: string;
   tasks: QuadrantTask[];
   onTaskClick: (task: QuadrantTask) => void;
   onDragStart: (e: React.DragEvent, task: QuadrantTask) => void;
   onDrop: (columnId: string) => void;
   onQuickAdd: (title: string, columnId: string) => void;
+  onStartTask?: (task: QuadrantTask) => void;
+  onCompleteTask?: (task: QuadrantTask) => void;
 }
 
-export function BoardView({ mode, tasks, onTaskClick, onDragStart, onDrop, onQuickAdd }: BoardViewProps) {
+export function BoardView({ 
+  mode, 
+  tasks, 
+  onTaskClick, 
+  onDragStart, 
+  onDrop, 
+  onQuickAdd,
+  onStartTask,
+  onCompleteTask,
+}: BoardViewProps) {
   const [addingToColumn, setAddingToColumn] = useState<string | null>(null);
   const [quickAddValue, setQuickAddValue] = useState("");
-  const [wipLimits, setWipLimits] = useState<Record<string, number | null>>({});
 
-  const modeConfig = QUADRANT_MODES[mode];
+  // Always use status-based columns
+  const columns = BOARD_COLUMNS;
 
   const getTasksForColumn = (columnId: string): QuadrantTask[] => {
     return tasks.filter(task => {
-      if (!task.quadrant_assigned) return false;
-      
-      switch (mode) {
-        case 'urgent-important':
-          if (columnId === 'urgent-important') return task.urgency === 'high' && task.importance === 'high';
-          if (columnId === 'urgent-not-important') return task.urgency === 'high' && task.importance === 'low';
-          if (columnId === 'not-urgent-important') return task.urgency === 'low' && task.importance === 'high';
-          if (columnId === 'not-urgent-not-important') return task.urgency === 'low' && task.importance === 'low';
-          break;
-        case 'status':
-          return task.status === columnId;
-        case 'date':
-          return task.date_bucket === columnId;
-        case 'time':
-          return task.time_of_day === columnId;
-      }
-      return false;
+      const status = computeTaskStatus(task);
+      return status === columnId;
     });
   };
 
@@ -62,26 +59,32 @@ export function BoardView({ mode, tasks, onTaskClick, onDragStart, onDrop, onQui
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const Column = ({ column, index }: { column: typeof modeConfig.quadrants[0]; index: number }) => {
+  const getColumnIcon = (columnId: string) => {
+    switch (columnId) {
+      case 'overdue': return <AlertTriangle className="h-4 w-4 text-destructive" />;
+      case 'upcoming': return <Calendar className="h-4 w-4 text-primary" />;
+      case 'ongoing': return <Play className="h-4 w-4 text-chart-1" />;
+      case 'completed': return <CheckCircle className="h-4 w-4 text-muted-foreground" />;
+      default: return null;
+    }
+  };
+
+  const Column = ({ column, index }: { column: typeof columns[0]; index: number }) => {
     const columnTasks = getTasksForColumn(column.id);
     const completedCount = columnTasks.filter(t => t.is_completed).length;
     const progress = columnTasks.length > 0 ? (completedCount / columnTasks.length) * 100 : 0;
-    const wipLimit = wipLimits[column.id];
-    const isOverWip = wipLimit && columnTasks.length > wipLimit;
 
     return (
       <div
         onDragOver={handleDragOver}
         onDrop={() => onDrop(column.id)}
-        className={cn(
-          "flex flex-col min-w-[280px] max-w-[320px] bg-card/50 rounded-2xl border",
-          isOverWip ? "border-destructive/50" : "border-border/50"
-        )}
+        className="flex flex-col min-w-[280px] max-w-[320px] bg-card/50 rounded-2xl border border-border/50"
       >
         {/* Column Header */}
         <div className="p-4 border-b border-border/30">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
+              {getColumnIcon(column.id)}
               <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">
                 {column.title}
               </h3>
@@ -89,19 +92,8 @@ export function BoardView({ mode, tasks, onTaskClick, onDragStart, onDrop, onQui
                 {columnTasks.length}
               </Badge>
             </div>
-            {isOverWip && (
-              <AlertTriangle className="h-4 w-4 text-destructive" />
-            )}
           </div>
-          <Progress value={progress} className="h-1" />
-          {wipLimit && (
-            <p className={cn(
-              "text-xs mt-1",
-              isOverWip ? "text-destructive" : "text-muted-foreground"
-            )}>
-              WIP Limit: {columnTasks.length}/{wipLimit}
-            </p>
-          )}
+          {column.id !== 'completed' && <Progress value={progress} className="h-1" />}
         </div>
 
         {/* Task List */}
@@ -111,7 +103,6 @@ export function BoardView({ mode, tasks, onTaskClick, onDragStart, onDrop, onQui
               key={task.id}
               draggable
               onDragStart={(e) => onDragStart(e, task)}
-              onClick={() => onTaskClick(task)}
               className={cn(
                 "group p-3 bg-background rounded-xl border border-border/30",
                 "hover:shadow-md hover:border-border transition-all cursor-pointer",
@@ -120,43 +111,56 @@ export function BoardView({ mode, tasks, onTaskClick, onDragStart, onDrop, onQui
             >
               <div className="flex items-start gap-2">
                 <GripVertical className="h-4 w-4 text-muted-foreground/40 opacity-0 group-hover:opacity-100 mt-0.5 cursor-grab" />
-                <div className="flex-1 min-w-0">
+                
+                {/* Complete checkbox for non-completed */}
+                {column.id !== 'completed' && (
+                  <Checkbox
+                    checked={task.is_completed}
+                    onCheckedChange={() => onCompleteTask?.(task)}
+                    className="mt-0.5"
+                  />
+                )}
+                
+                <div className="flex-1 min-w-0" onClick={() => onTaskClick(task)}>
                   <p className={cn(
                     "text-sm font-medium text-foreground",
                     task.is_completed && "line-through"
                   )}>
                     {task.title}
                   </p>
-                  {task.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {task.tags.slice(0, 2).map((tag) => (
-                        <Badge key={tag} variant="outline" className="text-[10px] px-1.5 py-0">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
                   <div className="flex items-center gap-1.5 mt-2">
-                    {task.priority === 'high' && (
-                      <Badge className="text-[10px] px-1.5 py-0 bg-destructive/10 text-destructive border-destructive/30">
-                        High
-                      </Badge>
-                    )}
-                    {task.date_bucket === 'today' && (
+                    {task.due_date && (
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                        Today
+                        {new Date(task.due_date).toLocaleDateString()}
                       </Badge>
                     )}
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">
+                      {task.time_of_day}
+                    </Badge>
                   </div>
                 </div>
-                <Play className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary transition-colors flex-shrink-0" />
+                
+                {/* Start button for upcoming tasks */}
+                {column.id === 'upcoming' && onStartTask && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 opacity-0 group-hover:opacity-100"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onStartTask(task);
+                    }}
+                  >
+                    <Play className="h-3.5 w-3.5" />
+                  </Button>
+                )}
               </div>
             </div>
           ))}
 
           {columnTasks.length === 0 && (
             <div className="flex items-center justify-center h-20 text-muted-foreground/60 text-sm italic">
-              Drop tasks here
+              No {column.title.toLowerCase()} tasks
             </div>
           )}
 
@@ -177,13 +181,15 @@ export function BoardView({ mode, tasks, onTaskClick, onDragStart, onDrop, onQui
               />
             </div>
           ) : (
-            <button
-              onClick={() => setAddingToColumn(column.id)}
-              className="flex items-center gap-2 w-full p-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-lg transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              Add task
-            </button>
+            column.id !== 'overdue' && column.id !== 'completed' && (
+              <button
+                onClick={() => setAddingToColumn(column.id)}
+                className="flex items-center gap-2 w-full p-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-lg transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                Add task
+              </button>
+            )
           )}
         </div>
       </div>
@@ -193,7 +199,7 @@ export function BoardView({ mode, tasks, onTaskClick, onDragStart, onDrop, onQui
   return (
     <div className="h-full overflow-x-auto">
       <div className="flex gap-4 h-full pb-4">
-        {modeConfig.quadrants.map((column, index) => (
+        {columns.map((column, index) => (
           <Column key={column.id} column={column} index={index} />
         ))}
       </div>
