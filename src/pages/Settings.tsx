@@ -8,6 +8,7 @@ import { User, Download, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ThemeSelector } from "@/components/settings/ThemeSelector";
 
 export default function Settings() {
   const { user, signOut } = useAuth();
@@ -99,6 +100,9 @@ export default function Settings() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Theme Selector */}
+      <ThemeSelector />
 
       <Card>
         <CardHeader>
