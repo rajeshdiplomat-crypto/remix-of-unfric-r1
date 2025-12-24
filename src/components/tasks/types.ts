@@ -11,10 +11,17 @@ export interface QuadrantTask {
   title: string;
   description: string | null;
   due_date: string | null;
+  due_time: string | null;
   priority: string;
   is_completed: boolean;
   completed_at: string | null;
   created_at: string;
+  started_at: string | null;
+  // Reminder & Alarm
+  reminder_at: string | null;
+  alarm_enabled: boolean;
+  // Focus tracking
+  total_focus_minutes: number;
   // Extended fields for quadrant
   urgency: Urgency;
   importance: Importance;
@@ -38,6 +45,27 @@ export interface QuadrantConfig {
   icon: string;
   color: string;
   description?: string;
+}
+
+// Compute task status based on fields
+export function computeTaskStatus(task: QuadrantTask): Status {
+  if (task.completed_at || task.is_completed) return 'completed';
+  if (task.due_date) {
+    const dueDate = new Date(task.due_date);
+    dueDate.setHours(23, 59, 59, 999);
+    if (new Date() > dueDate) return 'overdue';
+  }
+  if (task.started_at) return 'ongoing';
+  return 'upcoming';
+}
+
+export function suggestTimeOfDay(dueTime: string | null): TimeOfDay {
+  if (!dueTime) return 'morning';
+  const [hours] = dueTime.split(':').map(Number);
+  if (hours >= 5 && hours < 12) return 'morning';
+  if (hours >= 12 && hours < 17) return 'afternoon';
+  if (hours >= 17 && hours < 21) return 'evening';
+  return 'night';
 }
 
 export const QUADRANT_MODES: Record<QuadrantMode, { label: string; quadrants: QuadrantConfig[] }> = {
@@ -78,3 +106,36 @@ export const QUADRANT_MODES: Record<QuadrantMode, { label: string; quadrants: Qu
     ],
   },
 };
+
+export const BOARD_COLUMNS: QuadrantConfig[] = [
+  { id: 'overdue', title: 'OVERDUE', icon: 'alert-triangle', color: 'hsl(var(--destructive))' },
+  { id: 'upcoming', title: 'UPCOMING', icon: 'calendar', color: 'hsl(var(--primary))' },
+  { id: 'ongoing', title: 'ONGOING', icon: 'play', color: 'hsl(var(--chart-1))' },
+  { id: 'completed', title: 'COMPLETED', icon: 'check-circle', color: 'hsl(var(--muted))' },
+];
+
+// Default task template
+export const createDefaultTask = (overrides?: Partial<QuadrantTask>): QuadrantTask => ({
+  id: `new-${Date.now()}`,
+  title: '',
+  description: null,
+  due_date: null,
+  due_time: null,
+  priority: 'medium',
+  is_completed: false,
+  completed_at: null,
+  created_at: new Date().toISOString(),
+  started_at: null,
+  reminder_at: null,
+  alarm_enabled: false,
+  total_focus_minutes: 0,
+  urgency: 'low',
+  importance: 'low',
+  status: 'upcoming',
+  time_of_day: 'morning',
+  date_bucket: 'today',
+  tags: [],
+  subtasks: [],
+  quadrant_assigned: false,
+  ...overrides,
+});
