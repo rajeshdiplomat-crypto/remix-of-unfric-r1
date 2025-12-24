@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { ChevronDown, ChevronUp, TrendingUp, CheckCircle, AlertTriangle, Clock, Flame } from "lucide-react";
+import { useState, useMemo } from "react";
+import { ChevronDown, ChevronUp, TrendingUp, CheckCircle, AlertTriangle, Clock, Flame, Calendar } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { QuadrantTask } from "./types";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, LineChart, Line, CartesianGrid } from "recharts";
+import { QuadrantTask, computeTaskStatus } from "./types";
+import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar, Line, ComposedChart } from "recharts";
+import { format, subDays, addDays, startOfDay, isSameDay } from "date-fns";
 
 interface TasksInsightsProps {
   tasks: QuadrantTask[];
@@ -15,39 +16,80 @@ export function TasksInsights({ tasks }: TasksInsightsProps) {
   const [expanded, setExpanded] = useState(true);
 
   // Calculate KPIs
-  const totalTasks = tasks.length;
-  const completedToday = tasks.filter(t => t.is_completed && t.date_bucket === 'today').length;
-  const overdueTasks = tasks.filter(t => t.status === 'overdue' && !t.is_completed).length;
-  const completedTasks = tasks.filter(t => t.is_completed).length;
-  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-  const deepFocusMinutes = Math.floor(Math.random() * 120) + 30; // Placeholder
+  const today = startOfDay(new Date());
+  
+  const todayTasks = tasks.filter(t => {
+    if (!t.due_date) return false;
+    return isSameDay(new Date(t.due_date), today);
+  });
+  
+  const plannedToday = todayTasks.length;
+  const completedToday = todayTasks.filter(t => t.is_completed || t.completed_at).length;
+  
+  const allTasksWithStatus = tasks.map(t => ({ ...t, computedStatus: computeTaskStatus(t) }));
+  const overdueTasks = allTasksWithStatus.filter(t => t.computedStatus === 'overdue').length;
+  const completionRate = plannedToday > 0 ? Math.round((completedToday / plannedToday) * 100) : 0;
+  const totalFocusMinutes = tasks.reduce((sum, t) => sum + (t.total_focus_minutes || 0), 0);
+
+  // Past 7 days Plan vs Actual data
+  const past7DaysData = useMemo(() => {
+    const data = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = subDays(today, i);
+      const dayStart = startOfDay(date);
+      
+      // Plan = tasks with due_date on this day
+      const planned = tasks.filter(t => {
+        if (!t.due_date) return false;
+        return isSameDay(new Date(t.due_date), dayStart);
+      }).length;
+      
+      // Actual = tasks completed on this day
+      const actual = tasks.filter(t => {
+        if (!t.completed_at) return false;
+        return isSameDay(new Date(t.completed_at), dayStart);
+      }).length;
+      
+      data.push({
+        date: format(date, 'EEE'),
+        fullDate: format(date, 'MMM d'),
+        plan: planned,
+        actual: actual,
+      });
+    }
+    return data;
+  }, [tasks, today]);
+
+  // Future 7 days upcoming tasks
+  const future7DaysData = useMemo(() => {
+    const data = [];
+    for (let i = 0; i < 7; i++) {
+      const date = addDays(today, i);
+      const dayStart = startOfDay(date);
+      
+      // Count tasks due on this day that are NOT completed
+      const upcoming = tasks.filter(t => {
+        if (!t.due_date) return false;
+        if (t.is_completed || t.completed_at) return false;
+        return isSameDay(new Date(t.due_date), dayStart);
+      }).length;
+      
+      data.push({
+        date: i === 0 ? 'Today' : format(date, 'EEE'),
+        fullDate: format(date, 'MMM d'),
+        tasks: upcoming,
+      });
+    }
+    return data;
+  }, [tasks, today]);
 
   // Quadrant distribution
-  const quadrantData = [
+  const quadrantData = useMemo(() => [
     { name: 'Urgent & Important', value: tasks.filter(t => t.urgency === 'high' && t.importance === 'high').length, color: 'hsl(var(--destructive))' },
     { name: 'Urgent & Not Important', value: tasks.filter(t => t.urgency === 'high' && t.importance === 'low').length, color: 'hsl(var(--chart-1))' },
     { name: 'Not Urgent & Important', value: tasks.filter(t => t.urgency === 'low' && t.importance === 'high').length, color: 'hsl(var(--primary))' },
     { name: 'Not Urgent & Not Important', value: tasks.filter(t => t.urgency === 'low' && t.importance === 'low').length, color: 'hsl(var(--muted))' },
-  ].filter(d => d.value > 0);
-
-  // Time of day distribution
-  const timeData = [
-    { name: 'Morning', value: tasks.filter(t => t.time_of_day === 'morning').length },
-    { name: 'Afternoon', value: tasks.filter(t => t.time_of_day === 'afternoon').length },
-    { name: 'Evening', value: tasks.filter(t => t.time_of_day === 'evening').length },
-    { name: 'Night', value: tasks.filter(t => t.time_of_day === 'night').length },
-  ];
-
-  // Mock trend data (7 days)
-  const trendData = [
-    { day: 'Mon', completed: 4 },
-    { day: 'Tue', completed: 6 },
-    { day: 'Wed', completed: 3 },
-    { day: 'Thu', completed: 8 },
-    { day: 'Fri', completed: 5 },
-    { day: 'Sat', completed: 2 },
-    { day: 'Sun', completed: 7 },
-  ];
+  ].filter(d => d.value > 0), [tasks]);
 
   if (!expanded) {
     return (
@@ -86,11 +128,11 @@ export function TasksInsights({ tasks }: TasksInsightsProps) {
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
               <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Flame className="h-4 w-4 text-primary" />
+                <Calendar className="h-4 w-4 text-primary" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-foreground">{totalTasks}</p>
-            <p className="text-xs text-muted-foreground">Total Tasks</p>
+            <p className="text-2xl font-bold text-foreground">{plannedToday}</p>
+            <p className="text-xs text-muted-foreground">Planned Today</p>
           </CardContent>
         </Card>
 
@@ -126,7 +168,7 @@ export function TasksInsights({ tasks }: TasksInsightsProps) {
               </div>
             </div>
             <p className="text-2xl font-bold text-foreground">{completionRate}%</p>
-            <p className="text-xs text-muted-foreground">Completion</p>
+            <p className="text-xs text-muted-foreground">Today Rate</p>
           </CardContent>
         </Card>
 
@@ -137,7 +179,7 @@ export function TasksInsights({ tasks }: TasksInsightsProps) {
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-foreground">{deepFocusMinutes}m</p>
+            <p className="text-2xl font-bold text-foreground">{totalFocusMinutes}m</p>
             <p className="text-xs text-muted-foreground">Focus Time</p>
           </CardContent>
         </Card>
@@ -145,60 +187,24 @@ export function TasksInsights({ tasks }: TasksInsightsProps) {
 
       {/* Charts Row */}
       <div className="grid grid-cols-3 gap-4">
-        {/* Trend Line */}
+        {/* Plan vs Actual (Past 7 Days) */}
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
             <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-              7-Day Trend
+              Plan vs Actual (7 Days)
             </h4>
-            <div className="h-[100px]">
+            <div className="h-[120px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trendData}>
+                <ComposedChart data={past7DaysData}>
+                  <defs>
+                    <linearGradient id="planGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
                   <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      background: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="completed" 
-                    stroke="hsl(var(--primary))" 
-                    strokeWidth={2}
-                    dot={{ fill: 'hsl(var(--primary))', strokeWidth: 0, r: 3 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quadrant Distribution Donut */}
-        <Card className="bg-card/50 border-border/50">
-          <CardContent className="p-4">
-            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-              By Quadrant
-            </h4>
-            <div className="h-[100px] flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={quadrantData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={25}
-                    outerRadius={40}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {quadrantData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
                   <Tooltip 
                     contentStyle={{ 
                       background: 'hsl(var(--card))', 
@@ -206,34 +212,108 @@ export function TasksInsights({ tasks }: TasksInsightsProps) {
                       borderRadius: '8px',
                       fontSize: '12px'
                     }}
+                    formatter={(value: number, name: string) => [value, name === 'plan' ? 'Planned' : 'Completed']}
+                    labelFormatter={(label, payload) => payload?.[0]?.payload?.fullDate || label}
                   />
-                </PieChart>
+                  <Area 
+                    type="monotone" 
+                    dataKey="plan" 
+                    stroke="hsl(var(--primary))" 
+                    fill="url(#planGradient)"
+                    strokeWidth={2}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="actual" 
+                    stroke="hsl(var(--chart-1))" 
+                    strokeWidth={2}
+                    dot={{ fill: 'hsl(var(--chart-1))', strokeWidth: 0, r: 3 }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex justify-center gap-4 mt-2">
+              <div className="flex items-center gap-1">
+                <div className="h-2 w-2 rounded-full bg-primary" />
+                <span className="text-xs text-muted-foreground">Plan</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="h-2 w-2 rounded-full bg-chart-1" />
+                <span className="text-xs text-muted-foreground">Actual</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Future 7 Days */}
+        <Card className="bg-card/50 border-border/50">
+          <CardContent className="p-4">
+            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+              Upcoming (7 Days)
+            </h4>
+            <div className="h-[120px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={future7DaysData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+                  <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      background: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      fontSize: '12px'
+                    }}
+                    formatter={(value: number) => [value, 'Tasks Due']}
+                    labelFormatter={(label, payload) => payload?.[0]?.payload?.fullDate || label}
+                  />
+                  <Bar 
+                    dataKey="tasks" 
+                    fill="hsl(var(--primary))" 
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
 
-        {/* Time of Day Bar */}
+        {/* Quadrant Distribution */}
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
             <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-              By Time of Day
+              By Quadrant
             </h4>
-            <div className="h-[100px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={timeData} layout="vertical">
-                  <XAxis type="number" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
-                  <YAxis dataKey="name" type="category" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} width={60} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      background: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
-                  />
-                  <Bar dataKey="value" fill="hsl(var(--chart-1))" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="h-[120px] flex items-center justify-center">
+              {quadrantData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={quadrantData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={30}
+                      outerRadius={50}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {quadrantData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ 
+                        background: 'hsl(var(--card))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        fontSize: '12px'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-xs text-muted-foreground">No data</p>
+              )}
             </div>
           </CardContent>
         </Card>
