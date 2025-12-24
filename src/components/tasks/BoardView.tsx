@@ -13,7 +13,7 @@ interface BoardViewProps {
   tasks: QuadrantTask[];
   onTaskClick: (task: QuadrantTask) => void;
   onDragStart: (e: React.DragEvent, task: QuadrantTask) => void;
-  onDrop: (columnId: string) => void;
+  onDrop: (columnId: string, task: QuadrantTask) => void;
   onQuickAdd: (title: string, columnId: string) => void;
   onStartTask?: (task: QuadrantTask) => void;
   onCompleteTask?: (task: QuadrantTask) => void;
@@ -77,7 +77,13 @@ export function BoardView({
     return (
       <div
         onDragOver={handleDragOver}
-        onDrop={() => onDrop(column.id)}
+        onDrop={(e) => {
+          const taskData = e.dataTransfer.getData('task');
+          if (taskData) {
+            const task = JSON.parse(taskData) as QuadrantTask;
+            onDrop(column.id, task);
+          }
+        }}
         className="flex flex-col min-w-[280px] max-w-[320px] bg-card/50 rounded-2xl border border-border/50"
       >
         {/* Column Header */}
@@ -102,7 +108,10 @@ export function BoardView({
             <div
               key={task.id}
               draggable
-              onDragStart={(e) => onDragStart(e, task)}
+              onDragStart={(e) => {
+                e.dataTransfer.setData('task', JSON.stringify(task));
+                onDragStart(e, task);
+              }}
               className={cn(
                 "group p-3 bg-background rounded-xl border border-border/30",
                 "hover:shadow-md hover:border-border transition-all cursor-pointer",
