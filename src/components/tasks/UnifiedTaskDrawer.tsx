@@ -12,8 +12,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { QuadrantTask, Urgency, Importance, TimeOfDay, Subtask, suggestTimeOfDay } from "./types";
+
+const TIME_OF_DAY_DEFAULTS: Record<TimeOfDay, string> = {
+  morning: '09:00',
+  afternoon: '14:00',
+  evening: '18:00',
+  night: '21:00',
+};
 
 interface UnifiedTaskDrawerProps {
   task: QuadrantTask | null;
@@ -62,6 +70,8 @@ export function UnifiedTaskDrawer({
 }: UnifiedTaskDrawerProps) {
   const [formData, setFormData] = useState<Partial<QuadrantTask>>(DEFAULT_TASK);
   const [newSubtask, setNewSubtask] = useState("");
+  const [showTimePrompt, setShowTimePrompt] = useState(false);
+  const [pendingTimeOfDay, setPendingTimeOfDay] = useState<TimeOfDay | null>(null);
 
   useEffect(() => {
     if (task) {
@@ -73,6 +83,8 @@ export function UnifiedTaskDrawer({
         created_at: new Date().toISOString(),
       });
     }
+    setShowTimePrompt(false);
+    setPendingTimeOfDay(null);
   }, [task, open]);
 
   const updateField = <K extends keyof QuadrantTask>(field: K, value: QuadrantTask[K]) => {
@@ -86,6 +98,29 @@ export function UnifiedTaskDrawer({
       
       return updated;
     });
+  };
+
+  const handleTimeOfDayChange = (newTimeOfDay: TimeOfDay) => {
+    if (formData.due_time) {
+      // Prompt user to update time
+      setPendingTimeOfDay(newTimeOfDay);
+      setShowTimePrompt(true);
+    } else {
+      // Auto-set due time to default
+      updateField('time_of_day', newTimeOfDay);
+      updateField('due_time', TIME_OF_DAY_DEFAULTS[newTimeOfDay]);
+    }
+  };
+
+  const confirmTimeUpdate = (updateTime: boolean) => {
+    if (pendingTimeOfDay) {
+      updateField('time_of_day', pendingTimeOfDay);
+      if (updateTime) {
+        updateField('due_time', TIME_OF_DAY_DEFAULTS[pendingTimeOfDay]);
+      }
+    }
+    setShowTimePrompt(false);
+    setPendingTimeOfDay(null);
   };
 
   const handleAddSubtask = () => {
@@ -175,6 +210,57 @@ export function UnifiedTaskDrawer({
               />
             </div>
 
+            {/* Subtasks - Now right after Description */}
+            <div>
+              <Label className="text-sm font-medium">Subtasks</Label>
+              <div className="mt-2 space-y-2">
+                {(formData.subtasks || []).map((subtask) => (
+                  <div key={subtask.id} className="flex items-center gap-3 group">
+                    <Checkbox
+                      checked={subtask.completed}
+                      onCheckedChange={() => handleToggleSubtask(subtask.id)}
+                    />
+                    <span className={cn(
+                      "flex-1 text-sm",
+                      subtask.completed && "line-through text-muted-foreground"
+                    )}>
+                      {subtask.title}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                      onClick={() => handleDeleteSubtask(subtask.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-foreground"
+                    onClick={handleAddSubtask}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add subtask
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Plus className="h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={newSubtask}
+                    onChange={(e) => setNewSubtask(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddSubtask()}
+                    placeholder="Type and press Enter"
+                    className="h-8 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Due Date & Time */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -217,23 +303,35 @@ export function UnifiedTaskDrawer({
               </div>
             </div>
 
-            {/* Time of Day */}
+            {/* Time of Day with auto-update prompt */}
             <div>
               <Label className="text-sm font-medium">Time of Day *</Label>
               <Select
                 value={formData.time_of_day}
-                onValueChange={(v) => updateField('time_of_day', v as TimeOfDay)}
+                onValueChange={(v) => handleTimeOfDayChange(v as TimeOfDay)}
               >
                 <SelectTrigger className="mt-1.5">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="morning">🌅 Morning</SelectItem>
-                  <SelectItem value="afternoon">☀️ Afternoon</SelectItem>
-                  <SelectItem value="evening">🌆 Evening</SelectItem>
-                  <SelectItem value="night">🌙 Night</SelectItem>
+                  <SelectItem value="morning">🌅 Morning (9:00 AM)</SelectItem>
+                  <SelectItem value="afternoon">☀️ Afternoon (2:00 PM)</SelectItem>
+                  <SelectItem value="evening">🌆 Evening (6:00 PM)</SelectItem>
+                  <SelectItem value="night">🌙 Night (9:00 PM)</SelectItem>
                 </SelectContent>
               </Select>
+              
+              {showTimePrompt && pendingTimeOfDay && (
+                <Alert className="mt-2 bg-primary/5 border-primary/20">
+                  <AlertDescription className="flex items-center justify-between">
+                    <span className="text-sm">Update time to {TIME_OF_DAY_DEFAULTS[pendingTimeOfDay]}?</span>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => confirmTimeUpdate(false)}>No</Button>
+                      <Button size="sm" onClick={() => confirmTimeUpdate(true)}>Yes</Button>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
 
             {/* Quadrant Assignment */}
@@ -270,43 +368,71 @@ export function UnifiedTaskDrawer({
               </div>
             </div>
 
-            {/* Subtasks */}
-            <div>
-              <Label className="text-sm font-medium">Subtasks</Label>
-              <div className="mt-2 space-y-2">
-                {(formData.subtasks || []).map((subtask) => (
-                  <div key={subtask.id} className="flex items-center gap-3 group">
-                    <Checkbox
-                      checked={subtask.completed}
-                      onCheckedChange={() => handleToggleSubtask(subtask.id)}
-                    />
-                    <span className={cn(
-                      "flex-1 text-sm",
-                      subtask.completed && "line-through text-muted-foreground"
-                    )}>
-                      {subtask.title}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                      onClick={() => handleDeleteSubtask(subtask.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
+            {/* Reminder & Alarm */}
+            <div className="space-y-4 p-4 bg-muted/30 rounded-xl">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Plus className="h-4 w-4 text-muted-foreground" />
+                  <Bell className="h-4 w-4 text-muted-foreground" />
+                  <Label className="text-sm font-medium">Reminder</Label>
+                </div>
+                <Switch
+                  checked={!!formData.reminder_at}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      const reminderDate = formData.due_date
+                        ? new Date(new Date(formData.due_date).getTime() - 60 * 60 * 1000)
+                        : new Date(Date.now() + 60 * 60 * 1000);
+                      updateField('reminder_at', reminderDate.toISOString());
+                    } else {
+                      updateField('reminder_at', null);
+                    }
+                  }}
+                />
+              </div>
+
+              {formData.reminder_at && (
+                <div className="grid grid-cols-2 gap-2">
                   <Input
-                    value={newSubtask}
-                    onChange={(e) => setNewSubtask(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddSubtask()}
-                    placeholder="Add subtask (Enter)"
-                    className="h-8 text-sm"
+                    type="date"
+                    value={formData.reminder_at ? format(new Date(formData.reminder_at), 'yyyy-MM-dd') : ''}
+                    onChange={(e) => {
+                      const current = formData.reminder_at ? new Date(formData.reminder_at) : new Date();
+                      const newDate = new Date(e.target.value);
+                      newDate.setHours(current.getHours(), current.getMinutes());
+                      updateField('reminder_at', newDate.toISOString());
+                    }}
+                    className="text-sm"
+                  />
+                  <Input
+                    type="time"
+                    value={formData.reminder_at ? format(new Date(formData.reminder_at), 'HH:mm') : ''}
+                    onChange={(e) => {
+                      const current = formData.reminder_at ? new Date(formData.reminder_at) : new Date();
+                      const [h, m] = e.target.value.split(':').map(Number);
+                      current.setHours(h, m);
+                      updateField('reminder_at', current.toISOString());
+                    }}
+                    className="text-sm"
                   />
                 </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Volume2 className="h-4 w-4 text-muted-foreground" />
+                  <Label className="text-sm font-medium">Alarm Sound</Label>
+                </div>
+                <Switch
+                  checked={formData.alarm_enabled || false}
+                  onCheckedChange={(checked) => updateField('alarm_enabled', checked)}
+                />
               </div>
+
+              {formData.alarm_enabled && (
+                <p className="text-xs text-muted-foreground">
+                  Alarm will play a sound and show a persistent notification when triggered.
+                </p>
+              )}
             </div>
 
             {/* Reminder & Alarm */}

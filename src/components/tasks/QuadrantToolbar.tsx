@@ -20,7 +20,7 @@ export function QuadrantToolbar({
     <div className="flex items-center justify-between gap-4 p-4 bg-card/50 rounded-xl border border-border/50">
       {/* Left - Mode Dropdown */}
       <div className="flex items-center gap-3">
-        <span className="text-sm text-muted-foreground whitespace-nowrap">Quadrant mode</span>
+        <span className="text-sm text-muted-foreground whitespace-nowrap">View mode</span>
         <Select value={mode} onValueChange={(v) => onModeChange(v as QuadrantMode)}>
           <SelectTrigger className="w-48 bg-background/50">
             <SelectValue />

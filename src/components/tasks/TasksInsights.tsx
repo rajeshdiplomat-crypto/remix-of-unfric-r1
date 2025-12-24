@@ -198,8 +198,8 @@ export function TasksInsights({ tasks }: TasksInsightsProps) {
                 <ComposedChart data={past7DaysData}>
                   <defs>
                     <linearGradient id="planGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.05}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -218,28 +218,29 @@ export function TasksInsights({ tasks }: TasksInsightsProps) {
                   <Area 
                     type="monotone" 
                     dataKey="plan" 
-                    stroke="hsl(var(--primary))" 
-                    fill="url(#planGradient)"
+                    stroke="#3b82f6" 
                     strokeWidth={2}
+                    fill="url(#planGradient)"
+                    dot={{ fill: '#3b82f6', strokeWidth: 0, r: 4 }}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="actual" 
-                    stroke="hsl(var(--chart-1))" 
-                    strokeWidth={2}
-                    dot={{ fill: 'hsl(var(--chart-1))', strokeWidth: 0, r: 3 }}
+                    stroke="#22c55e" 
+                    strokeWidth={3}
+                    dot={{ fill: '#22c55e', strokeWidth: 0, r: 4 }}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
             <div className="flex justify-center gap-4 mt-2">
               <div className="flex items-center gap-1">
-                <div className="h-2 w-2 rounded-full bg-primary" />
-                <span className="text-xs text-muted-foreground">Plan</span>
+                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: '#3b82f6' }} />
+                <span className="text-xs text-muted-foreground font-medium">Plan</span>
               </div>
               <div className="flex items-center gap-1">
-                <div className="h-2 w-2 rounded-full bg-chart-1" />
-                <span className="text-xs text-muted-foreground">Actual</span>
+                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: '#22c55e' }} />
+                <span className="text-xs text-muted-foreground font-medium">Actual</span>
               </div>
             </div>
           </CardContent>
