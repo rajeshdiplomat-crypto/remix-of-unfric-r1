@@ -1,7 +1,5 @@
-import { Search, Flag, User } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { QuadrantMode, QUADRANT_MODES } from "./types";
 
@@ -10,15 +8,13 @@ interface QuadrantToolbarProps {
   onModeChange: (mode: QuadrantMode) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  onNewTask: () => void;
 }
 
 export function QuadrantToolbar({ 
   mode, 
   onModeChange, 
   searchQuery, 
-  onSearchChange, 
-  onNewTask 
+  onSearchChange,
 }: QuadrantToolbarProps) {
   return (
     <div className="flex items-center justify-between gap-4 p-4 bg-card/50 rounded-xl border border-border/50">
@@ -61,32 +57,14 @@ export function QuadrantToolbar({
           <Input
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search tasks across…"
+            placeholder="Search tasks…"
             className="pl-9 bg-background/50 border-border/50"
           />
         </div>
       </div>
 
-      {/* Right - Filters & New Task */}
-      <div className="flex items-center gap-2">
-        <Badge 
-          variant="outline" 
-          className="cursor-pointer hover:bg-muted/50 transition-colors px-3 py-1.5"
-        >
-          <Flag className="h-3 w-3 mr-1.5" />
-          Priority
-        </Badge>
-        <Badge 
-          variant="outline" 
-          className="cursor-pointer hover:bg-muted/50 transition-colors px-3 py-1.5"
-        >
-          <User className="h-3 w-3 mr-1.5" />
-          Assignee
-        </Badge>
-        <Button onClick={onNewTask} className="ml-2">
-          + New Task
-        </Button>
-      </div>
+      {/* Right - Empty (removed Priority/Assignee/New Task) */}
+      <div className="w-4" />
     </div>
   );
 }

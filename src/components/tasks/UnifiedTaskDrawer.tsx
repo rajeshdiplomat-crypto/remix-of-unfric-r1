@@ -41,8 +41,10 @@ const DEFAULT_TASK: Omit<QuadrantTask, 'id' | 'created_at'> = {
   total_focus_minutes: 0,
   urgency: 'low',
   importance: 'low',
+  status: 'upcoming',
   time_of_day: 'morning',
   date_bucket: 'today',
+  quadrant_assigned: false,
   tags: [],
   subtasks: [],
 };
