@@ -38,8 +38,7 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
 
   const getTasksForQuadrant = (quadrantId: string): QuadrantTask[] => {
     return tasks.filter(task => {
-      if (!task.quadrant_assigned) return false;
-      
+      // All tasks should appear in quadrant view based on their properties
       switch (mode) {
         case 'urgent-important':
           if (quadrantId === 'urgent-important') return task.urgency === 'high' && task.importance === 'high';

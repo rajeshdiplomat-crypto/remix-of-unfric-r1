@@ -86,6 +86,11 @@ export function UnifiedTaskDrawer({
         updated.time_of_day = suggestTimeOfDay(value as string);
       }
       
+      // Auto-assign to quadrant when urgency or importance is set
+      if (field === 'urgency' || field === 'importance') {
+        updated.quadrant_assigned = true;
+      }
+      
       return updated;
     });
   };
@@ -113,7 +118,14 @@ export function UnifiedTaskDrawer({
 
   const handleSave = () => {
     if (!formData.title?.trim()) return;
-    onSave(formData as QuadrantTask);
+    
+    // Ensure quadrant_assigned is true so task shows in all views
+    const taskToSave = {
+      ...formData,
+      quadrant_assigned: true, // Always assign to quadrant so it's visible everywhere
+    } as QuadrantTask;
+    
+    onSave(taskToSave);
     onClose();
   };
 
