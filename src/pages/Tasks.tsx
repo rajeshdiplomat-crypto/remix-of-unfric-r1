@@ -14,6 +14,8 @@ import { BoardView } from "@/components/tasks/BoardView";
 import { SummaryStrip } from "@/components/tasks/SummaryStrip";
 import { TasksInsights } from "@/components/tasks/TasksInsights";
 import { UnifiedTaskDrawer } from "@/components/tasks/UnifiedTaskDrawer";
+import { AllTasksList } from "@/components/tasks/AllTasksList";
+import { DeepFocusPrompt } from "@/components/tasks/DeepFocusPrompt";
 import DeepFocus from "@/pages/DeepFocus";
 import { 
   QuadrantTask, 
@@ -27,7 +29,7 @@ import {
   createDefaultTask,
 } from "@/components/tasks/types";
 
-// Sample data for demo - all tasks have required fields
+// Sample data
 const SAMPLE_TASKS: QuadrantTask[] = [
   {
     id: 'sample-1',
@@ -48,11 +50,10 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     status: "ongoing",
     time_of_day: "afternoon",
     date_bucket: "today",
-    tags: ["Launch", "Website redesign"],
+    tags: ["Launch"],
     subtasks: [
       { id: "1", title: "Confirm final designs", completed: true },
       { id: "2", title: "Sync with engineering", completed: false },
-      { id: "3", title: "QA main user flows", completed: false },
     ],
     quadrant_assigned: true,
   },
@@ -81,29 +82,6 @@ const SAMPLE_TASKS: QuadrantTask[] = [
   },
   {
     id: 'sample-3',
-    title: "Respond to client feedback",
-    description: "Address client concerns",
-    due_date: new Date(Date.now() - 86400000).toISOString(),
-    due_time: "18:00",
-    priority: "high",
-    is_completed: false,
-    completed_at: null,
-    created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
-    started_at: null,
-    reminder_at: null,
-    alarm_enabled: false,
-    total_focus_minutes: 0,
-    urgency: "high",
-    importance: "high",
-    status: "overdue",
-    time_of_day: "evening",
-    date_bucket: "yesterday",
-    tags: ["Client"],
-    subtasks: [],
-    quadrant_assigned: true,
-  },
-  {
-    id: 'sample-4',
     title: "Review marketing assets",
     description: "Review and approve marketing materials",
     due_date: new Date().toISOString(),
@@ -126,30 +104,7 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     quadrant_assigned: true,
   },
   {
-    id: 'sample-5',
-    title: "Reply to Slack messages",
-    description: "Clear Slack backlog",
-    due_date: new Date().toISOString(),
-    due_time: "17:00",
-    priority: "low",
-    is_completed: false,
-    completed_at: null,
-    created_at: new Date().toISOString(),
-    started_at: null,
-    reminder_at: null,
-    alarm_enabled: false,
-    total_focus_minutes: 0,
-    urgency: "high",
-    importance: "low",
-    status: "upcoming",
-    time_of_day: "evening",
-    date_bucket: "today",
-    tags: ["Communication"],
-    subtasks: [],
-    quadrant_assigned: true,
-  },
-  {
-    id: 'sample-6',
+    id: 'sample-4',
     title: "Draft Q4 objectives",
     description: "Plan next quarter goals",
     due_date: new Date(Date.now() + 86400000 * 3).toISOString(),
@@ -172,7 +127,7 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     quadrant_assigned: true,
   },
   {
-    id: 'sample-7',
+    id: 'sample-5',
     title: "Weekly team sync prep",
     description: "Prepare agenda for team meeting",
     due_date: new Date(Date.now() + 86400000).toISOString(),
@@ -195,8 +150,8 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     quadrant_assigned: true,
   },
   {
-    id: 'sample-8',
-    title: "Explore new automation tools",
+    id: 'sample-6',
+    title: "Explore automation tools",
     description: "Research automation options",
     due_date: new Date(Date.now() + 86400000 * 5).toISOString(),
     due_time: null,
@@ -217,29 +172,6 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     subtasks: [],
     quadrant_assigned: true,
   },
-  {
-    id: 'sample-9',
-    title: "Organize inspiration board",
-    description: "Curate design inspiration",
-    due_date: null,
-    due_time: null,
-    priority: "low",
-    is_completed: false,
-    completed_at: null,
-    created_at: new Date().toISOString(),
-    started_at: null,
-    reminder_at: null,
-    alarm_enabled: false,
-    total_focus_minutes: 0,
-    urgency: "low",
-    importance: "low",
-    status: "upcoming",
-    time_of_day: "night",
-    date_bucket: "week",
-    tags: ["Design"],
-    subtasks: [],
-    quadrant_assigned: true,
-  },
 ];
 
 export default function Tasks() {
@@ -249,26 +181,25 @@ export default function Tasks() {
   const location = useLocation();
   const { taskId } = useParams();
   
-  // Check if we're in focus mode
   const isFocusMode = location.pathname.includes('/focus/');
   
-  // View state
   const [view, setView] = useState<'board' | 'quadrant'>('quadrant');
   const [quadrantMode, setQuadrantMode] = useState<QuadrantMode>('urgent-important');
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Task state
   const [tasks, setTasks] = useState<QuadrantTask[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<QuadrantTask | null>(null);
   const [isNewTask, setIsNewTask] = useState(false);
+  
+  // Deep Focus prompt state
+  const [focusPromptOpen, setFocusPromptOpen] = useState(false);
+  const [focusPromptTask, setFocusPromptTask] = useState<QuadrantTask | null>(null);
 
   useEffect(() => {
     if (!user) {
-      // Load sample data for demo
       setTasks(SAMPLE_TASKS);
       setLoading(false);
       return;
@@ -276,20 +207,18 @@ export default function Tasks() {
     fetchTasks();
   }, [user]);
 
-  // Recompute status for all tasks periodically
   useEffect(() => {
     const interval = setInterval(() => {
       setTasks(prev => prev.map(t => ({
         ...t,
         status: computeTaskStatus(t),
       })));
-    }, 60000); // Every minute
+    }, 60000);
     return () => clearInterval(interval);
   }, []);
 
   const fetchTasks = async () => {
     if (!user) return;
-    
     setLoading(true);
     const { data, error } = await supabase
       .from("tasks")
@@ -319,11 +248,7 @@ export default function Tasks() {
         return task;
       });
       
-      if (quadrantTasks.length === 0) {
-        setTasks(SAMPLE_TASKS);
-      } else {
-        setTasks(quadrantTasks);
-      }
+      setTasks(quadrantTasks.length === 0 ? SAMPLE_TASKS : quadrantTasks);
     }
     setLoading(false);
   };
@@ -341,7 +266,6 @@ export default function Tasks() {
   };
 
   const handleSaveTask = (task: QuadrantTask) => {
-    // Compute status
     task.status = computeTaskStatus(task);
     
     if (isNewTask) {
@@ -363,12 +287,16 @@ export default function Tasks() {
   const handleStartTask = (task: QuadrantTask) => {
     const updated: QuadrantTask = {
       ...task,
-      started_at: new Date().toISOString(),
+      started_at: task.started_at || new Date().toISOString(),
       status: 'ongoing',
     };
     setTasks(prev => prev.map(t => t.id === task.id ? updated : t));
     setSelectedTask(updated);
     toast({ title: "Started!", description: "Task moved to Ongoing" });
+    
+    // Show Deep Focus prompt
+    setFocusPromptTask(updated);
+    setFocusPromptOpen(true);
   };
 
   const handleCompleteTask = (task: QuadrantTask) => {
@@ -384,7 +312,6 @@ export default function Tasks() {
   };
 
   const handleStartFocus = (task: QuadrantTask) => {
-    // Start the task if not started
     if (!task.started_at) {
       const updated: QuadrantTask = {
         ...task,
@@ -394,6 +321,7 @@ export default function Tasks() {
       setTasks(prev => prev.map(t => t.id === task.id ? updated : t));
     }
     setDrawerOpen(false);
+    setFocusPromptOpen(false);
     navigate(`/tasks/focus/${task.id}`);
   };
 
@@ -413,7 +341,6 @@ export default function Tasks() {
   const handleBoardDrop = (columnId: string, task: QuadrantTask) => {
     const updated: QuadrantTask = { ...task };
     
-    // Update based on column
     if (columnId === 'ongoing') {
       updated.started_at = updated.started_at || new Date().toISOString();
       updated.is_completed = false;
@@ -432,52 +359,6 @@ export default function Tasks() {
     toast({ title: "Task updated" });
   };
 
-  const handleQuadrantDrop = (quadrantId: string, task: QuadrantTask) => {
-    const updated: QuadrantTask = { ...task, quadrant_assigned: true };
-    
-    switch (quadrantMode) {
-      case 'urgent-important':
-        if (quadrantId === 'urgent-important') {
-          updated.urgency = 'high';
-          updated.importance = 'high';
-        } else if (quadrantId === 'urgent-not-important') {
-          updated.urgency = 'high';
-          updated.importance = 'low';
-        } else if (quadrantId === 'not-urgent-important') {
-          updated.urgency = 'low';
-          updated.importance = 'high';
-        } else {
-          updated.urgency = 'low';
-          updated.importance = 'low';
-        }
-        break;
-      case 'status':
-        updated.status = quadrantId as Status;
-        if (quadrantId === 'ongoing') updated.started_at = updated.started_at || new Date().toISOString();
-        if (quadrantId === 'completed') {
-          updated.is_completed = true;
-          updated.completed_at = new Date().toISOString();
-        }
-        break;
-      case 'date':
-        updated.date_bucket = quadrantId as DateBucket;
-        const now = new Date();
-        if (quadrantId === 'yesterday') updated.due_date = new Date(now.getTime() - 86400000).toISOString();
-        else if (quadrantId === 'today') updated.due_date = now.toISOString();
-        else if (quadrantId === 'tomorrow') updated.due_date = new Date(now.getTime() + 86400000).toISOString();
-        else updated.due_date = new Date(now.getTime() + 86400000 * 3).toISOString();
-        break;
-      case 'time':
-        updated.time_of_day = quadrantId as TimeOfDay;
-        break;
-    }
-    
-    updated.status = computeTaskStatus(updated);
-    setTasks(prev => prev.map(t => t.id === task.id ? updated : t));
-    toast({ title: "Task updated" });
-  };
-
-  // Filter tasks by search
   const filteredTasks = tasks.filter(t => 
     t.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -490,7 +371,6 @@ export default function Tasks() {
     );
   }
 
-  // If in focus mode, render the Deep Focus component
   if (isFocusMode) {
     return (
       <DeepFocus
@@ -521,7 +401,7 @@ export default function Tasks() {
         </div>
       </div>
 
-      {/* Quadrant Toolbar (without Priority/Assignee) */}
+      {/* Toolbar */}
       <QuadrantToolbar
         mode={quadrantMode}
         onModeChange={setQuadrantMode}
@@ -535,32 +415,44 @@ export default function Tasks() {
       {/* Insights Panel */}
       <TasksInsights tasks={filteredTasks} />
 
-      {view === 'quadrant' && (
-        <div className="flex-1 pb-8">
-          <QuadrantGrid
-            mode={quadrantMode}
+      {/* Main Content - Left List + Right View */}
+      <div className="flex-1 flex gap-4 min-h-0">
+        {/* Left - All Tasks List */}
+        <div className="w-[320px] flex-shrink-0">
+          <AllTasksList
             tasks={filteredTasks}
             onTaskClick={openTaskDetail}
-            onDrop={(quadrantId) => {}}
-            onDragOver={(e) => e.preventDefault()}
-          />
-        </div>
-      )}
-
-      {view === 'board' && (
-        <div className="flex-1 min-h-0">
-          <BoardView
-            mode="status"
-            tasks={filteredTasks}
-            onTaskClick={openTaskDetail}
-            onDragStart={() => {}}
-            onDrop={(columnId) => {}}
-            onQuickAdd={handleBoardQuickAdd}
             onStartTask={handleStartTask}
             onCompleteTask={handleCompleteTask}
           />
         </div>
-      )}
+
+        {/* Right - Quadrant or Board */}
+        <div className="flex-1 min-w-0">
+          {view === 'quadrant' && (
+            <QuadrantGrid
+              mode={quadrantMode}
+              tasks={filteredTasks}
+              onTaskClick={openTaskDetail}
+              onStartTask={handleStartTask}
+              onCompleteTask={handleCompleteTask}
+            />
+          )}
+
+          {view === 'board' && (
+            <BoardView
+              mode="status"
+              tasks={filteredTasks}
+              onTaskClick={openTaskDetail}
+              onDragStart={() => {}}
+              onDrop={handleBoardDrop}
+              onQuickAdd={handleBoardQuickAdd}
+              onStartTask={handleStartTask}
+              onCompleteTask={handleCompleteTask}
+            />
+          )}
+        </div>
+      </div>
 
       {/* Unified Task Drawer */}
       <UnifiedTaskDrawer
@@ -573,6 +465,15 @@ export default function Tasks() {
         onStartFocus={handleStartFocus}
         onStartTask={handleStartTask}
         onCompleteTask={handleCompleteTask}
+      />
+
+      {/* Deep Focus Prompt */}
+      <DeepFocusPrompt
+        open={focusPromptOpen}
+        task={focusPromptTask}
+        onClose={() => setFocusPromptOpen(false)}
+        onStartFocus={() => focusPromptTask && handleStartFocus(focusPromptTask)}
+        onSkip={() => setFocusPromptOpen(false)}
       />
     </div>
   );
