@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Plus, CalendarIcon, Trash2, Clock, Bell } from "lucide-react";
+import { Plus, CalendarIcon, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -18,8 +17,10 @@ import { ViewSwitcher } from "@/components/tasks/ViewSwitcher";
 import { QuadrantToolbar } from "@/components/tasks/QuadrantToolbar";
 import { TaskInbox } from "@/components/tasks/TaskInbox";
 import { QuadrantGrid } from "@/components/tasks/QuadrantGrid";
+import { BoardView } from "@/components/tasks/BoardView";
 import { TaskDetailDrawer } from "@/components/tasks/TaskDetailDrawer";
 import { SummaryStrip } from "@/components/tasks/SummaryStrip";
+import { TasksInsights } from "@/components/tasks/TasksInsights";
 import { 
   QuadrantTask, 
   QuadrantMode, 
@@ -182,8 +183,8 @@ const SAMPLE_TASKS: Omit<QuadrantTask, 'id' | 'created_at'>[] = [
   },
   // Unassigned tasks
   {
-    title: "Explore automation tools",
-    description: "Check new tools",
+    title: "Research AI tools",
+    description: "Check new AI tools",
     due_date: null,
     priority: "low",
     is_completed: false,
@@ -198,7 +199,7 @@ const SAMPLE_TASKS: Omit<QuadrantTask, 'id' | 'created_at'>[] = [
     quadrant_assigned: false,
   },
   {
-    title: "Organize inspiration board",
+    title: "Update portfolio site",
     description: "Collect references",
     due_date: null,
     priority: "low",
@@ -415,6 +416,61 @@ export default function Tasks() {
     toast({ title: "Task added", description: "Drag it to a quadrant to prioritize" });
   };
 
+  const handleBoardQuickAdd = (taskTitle: string, columnId: string) => {
+    const newTask: QuadrantTask = {
+      id: `board-${Date.now()}`,
+      title: taskTitle,
+      description: null,
+      due_date: null,
+      priority: 'medium',
+      is_completed: false,
+      completed_at: null,
+      created_at: new Date().toISOString(),
+      urgency: 'low',
+      importance: 'low',
+      status: 'upcoming',
+      time_of_day: 'morning',
+      date_bucket: 'today',
+      tags: [],
+      subtasks: [],
+      quadrant_assigned: true,
+    };
+
+    // Update based on column/mode
+    updateTaskForColumn(newTask, columnId);
+    setTasks(prev => [newTask, ...prev]);
+    toast({ title: "Task added" });
+  };
+
+  const updateTaskForColumn = (task: QuadrantTask, columnId: string) => {
+    switch (quadrantMode) {
+      case 'urgent-important':
+        if (columnId === 'urgent-important') {
+          task.urgency = 'high';
+          task.importance = 'high';
+        } else if (columnId === 'urgent-not-important') {
+          task.urgency = 'high';
+          task.importance = 'low';
+        } else if (columnId === 'not-urgent-important') {
+          task.urgency = 'low';
+          task.importance = 'high';
+        } else {
+          task.urgency = 'low';
+          task.importance = 'low';
+        }
+        break;
+      case 'status':
+        task.status = columnId as Status;
+        break;
+      case 'date':
+        task.date_bucket = columnId as DateBucket;
+        break;
+      case 'time':
+        task.time_of_day = columnId as TimeOfDay;
+        break;
+    }
+  };
+
   const handleDragStart = (e: React.DragEvent, task: QuadrantTask) => {
     setDraggedTask(task);
     e.dataTransfer.effectAllowed = 'move';
@@ -454,6 +510,17 @@ export default function Tasks() {
           break;
         case 'date':
           updated.date_bucket = quadrantId as DateBucket;
+          // Update due_date based on bucket
+          const now = new Date();
+          if (quadrantId === 'yesterday') {
+            updated.due_date = new Date(now.getTime() - 86400000).toISOString();
+          } else if (quadrantId === 'today') {
+            updated.due_date = now.toISOString();
+          } else if (quadrantId === 'tomorrow') {
+            updated.due_date = new Date(now.getTime() + 86400000).toISOString();
+          } else {
+            updated.due_date = new Date(now.getTime() + 86400000 * 3).toISOString();
+          }
           break;
         case 'time':
           updated.time_of_day = quadrantId as TimeOfDay;
@@ -465,7 +532,7 @@ export default function Tasks() {
 
     toast({ 
       title: "Task updated", 
-      description: "Urgency & importance applied" 
+      description: "Task has been moved" 
     });
     setDraggedTask(null);
   };
@@ -510,27 +577,36 @@ export default function Tasks() {
             Organize your tasks by focus and see what truly matters today.
           </p>
         </div>
-        <ViewSwitcher view={view} onViewChange={setView} />
+        <div className="flex items-center gap-3">
+          <ViewSwitcher view={view} onViewChange={setView} />
+          <Button onClick={() => openDialog()}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Task
+          </Button>
+        </div>
       </div>
+
+      {/* Quadrant Toolbar */}
+      <QuadrantToolbar
+        mode={quadrantMode}
+        onModeChange={setQuadrantMode}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onNewTask={() => openDialog()}
+      />
+
+      {/* Summary Strip */}
+      <SummaryStrip tasks={filteredTasks} />
 
       {view === 'quadrant' && (
         <>
-          {/* Quadrant Toolbar */}
-          <QuadrantToolbar
-            mode={quadrantMode}
-            onModeChange={setQuadrantMode}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            onNewTask={() => openDialog()}
-          />
+          {/* Insights Panel */}
+          <TasksInsights tasks={filteredTasks} />
 
-          {/* Summary Strip */}
-          <SummaryStrip tasks={filteredTasks} />
-
-          {/* Main Content - Dual Pane */}
-          <div className="flex-1 flex gap-6 min-h-0">
-            {/* Left - Task Inbox */}
-            <div className="w-[400px] flex-shrink-0">
+          {/* Main Content - Dual Pane with Quadrant as Hero */}
+          <div className="flex-1 flex gap-4 min-h-0">
+            {/* Left - Task Inbox (Narrower) */}
+            <div className="w-[300px] flex-shrink-0">
               <TaskInbox
                 tasks={filteredTasks}
                 onQuickAdd={handleQuickAdd}
@@ -539,7 +615,7 @@ export default function Tasks() {
               />
             </div>
 
-            {/* Right - Quadrant Grid */}
+            {/* Right - Quadrant Grid (Hero - Takes most space) */}
             <div className="flex-1 pb-8">
               <QuadrantGrid
                 mode={quadrantMode}
@@ -554,9 +630,22 @@ export default function Tasks() {
       )}
 
       {view === 'board' && (
-        <div className="flex-1 flex items-center justify-center text-muted-foreground">
-          Board view coming soon...
-        </div>
+        <>
+          {/* Insights Panel */}
+          <TasksInsights tasks={filteredTasks} />
+
+          {/* Board View */}
+          <div className="flex-1 min-h-0">
+            <BoardView
+              mode={quadrantMode}
+              tasks={filteredTasks}
+              onTaskClick={setDetailTask}
+              onDragStart={handleDragStart}
+              onDrop={handleDrop}
+              onQuickAdd={handleBoardQuickAdd}
+            />
+          </div>
+        </>
       )}
 
       {/* Task Detail Drawer */}
