@@ -1,65 +1,261 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus, CalendarIcon, Trash2, Clock, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
-import { Plus, CalendarIcon, Trash2, CheckSquare, Clock, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-interface Task {
-  id: string;
-  title: string;
-  description: string | null;
-  due_date: string | null;
-  priority: string;
-  is_completed: boolean;
-  completed_at: string | null;
-  created_at: string;
-}
+import { ViewSwitcher } from "@/components/tasks/ViewSwitcher";
+import { QuadrantToolbar } from "@/components/tasks/QuadrantToolbar";
+import { TaskInbox } from "@/components/tasks/TaskInbox";
+import { QuadrantGrid } from "@/components/tasks/QuadrantGrid";
+import { TaskDetailDrawer } from "@/components/tasks/TaskDetailDrawer";
+import { SummaryStrip } from "@/components/tasks/SummaryStrip";
+import { 
+  QuadrantTask, 
+  QuadrantMode, 
+  Urgency, 
+  Importance, 
+  Status, 
+  TimeOfDay, 
+  DateBucket 
+} from "@/components/tasks/types";
 
-const priorityColors = {
-  low: "bg-green-500/20 text-green-600",
-  medium: "bg-yellow-500/20 text-yellow-600",
-  high: "bg-red-500/20 text-red-600",
-};
-
-const reminderOptions = [
-  { value: "0", label: "At time of event" },
-  { value: "5", label: "5 minutes before" },
-  { value: "15", label: "15 minutes before" },
-  { value: "30", label: "30 minutes before" },
-  { value: "60", label: "1 hour before" },
-  { value: "1440", label: "1 day before" },
+// Sample data for demo
+const SAMPLE_TASKS: Omit<QuadrantTask, 'id' | 'created_at'>[] = [
+  {
+    title: "Prepare launch checklist",
+    description: "Complete all pre-launch requirements",
+    due_date: new Date().toISOString(),
+    priority: "high",
+    is_completed: false,
+    completed_at: null,
+    urgency: "high",
+    importance: "high",
+    status: "ongoing",
+    time_of_day: "afternoon",
+    date_bucket: "today",
+    tags: ["Launch", "Website redesign"],
+    subtasks: [
+      { id: "1", title: "Confirm final designs", completed: true },
+      { id: "2", title: "Sync with engineering", completed: false },
+      { id: "3", title: "QA main user flows", completed: false },
+    ],
+    quadrant_assigned: true,
+  },
+  {
+    title: "Q3 report analysis",
+    description: "Analyze quarterly performance metrics",
+    due_date: new Date(Date.now() - 86400000).toISOString(),
+    priority: "high",
+    is_completed: false,
+    completed_at: null,
+    urgency: "high",
+    importance: "high",
+    status: "overdue",
+    time_of_day: "morning",
+    date_bucket: "yesterday",
+    tags: ["Reports"],
+    subtasks: [],
+    quadrant_assigned: true,
+  },
+  {
+    title: "Respond to client feedback",
+    description: "Address client concerns",
+    due_date: new Date(Date.now() - 86400000).toISOString(),
+    priority: "high",
+    is_completed: false,
+    completed_at: null,
+    urgency: "high",
+    importance: "high",
+    status: "overdue",
+    time_of_day: "evening",
+    date_bucket: "yesterday",
+    tags: ["Client"],
+    subtasks: [],
+    quadrant_assigned: true,
+  },
+  {
+    title: "Review marketing assets",
+    description: "Review and approve marketing materials",
+    due_date: new Date().toISOString(),
+    priority: "medium",
+    is_completed: false,
+    completed_at: null,
+    urgency: "high",
+    importance: "low",
+    status: "ongoing",
+    time_of_day: "morning",
+    date_bucket: "today",
+    tags: ["Marketing"],
+    subtasks: [],
+    quadrant_assigned: true,
+  },
+  {
+    title: "Reply to Slack messages",
+    description: "Clear Slack backlog",
+    due_date: new Date().toISOString(),
+    priority: "low",
+    is_completed: false,
+    completed_at: null,
+    urgency: "high",
+    importance: "low",
+    status: "ongoing",
+    time_of_day: "evening",
+    date_bucket: "today",
+    tags: ["Communication"],
+    subtasks: [],
+    quadrant_assigned: true,
+  },
+  {
+    title: "Draft Q4 objectives",
+    description: "Plan next quarter goals",
+    due_date: new Date(Date.now() + 86400000 * 3).toISOString(),
+    priority: "medium",
+    is_completed: false,
+    completed_at: null,
+    urgency: "low",
+    importance: "high",
+    status: "upcoming",
+    time_of_day: "night",
+    date_bucket: "week",
+    tags: ["Planning"],
+    subtasks: [],
+    quadrant_assigned: true,
+  },
+  {
+    title: "Weekly team sync prep",
+    description: "Prepare agenda for team meeting",
+    due_date: new Date(Date.now() + 86400000).toISOString(),
+    priority: "medium",
+    is_completed: false,
+    completed_at: null,
+    urgency: "low",
+    importance: "high",
+    status: "upcoming",
+    time_of_day: "morning",
+    date_bucket: "tomorrow",
+    tags: ["Team"],
+    subtasks: [],
+    quadrant_assigned: true,
+  },
+  {
+    title: "Explore new automation tools",
+    description: "Research automation options",
+    due_date: null,
+    priority: "low",
+    is_completed: false,
+    completed_at: null,
+    urgency: "low",
+    importance: "low",
+    status: "upcoming",
+    time_of_day: "afternoon",
+    date_bucket: "week",
+    tags: ["Research"],
+    subtasks: [],
+    quadrant_assigned: true,
+  },
+  {
+    title: "Organize inspiration board",
+    description: "Curate design inspiration",
+    due_date: null,
+    priority: "low",
+    is_completed: false,
+    completed_at: null,
+    urgency: "low",
+    importance: "low",
+    status: "upcoming",
+    time_of_day: "night",
+    date_bucket: "week",
+    tags: ["Design"],
+    subtasks: [],
+    quadrant_assigned: true,
+  },
+  // Unassigned tasks
+  {
+    title: "Explore automation tools",
+    description: "Check new tools",
+    due_date: null,
+    priority: "low",
+    is_completed: false,
+    completed_at: null,
+    urgency: "low",
+    importance: "low",
+    status: "upcoming",
+    time_of_day: "night",
+    date_bucket: "week",
+    tags: [],
+    subtasks: [],
+    quadrant_assigned: false,
+  },
+  {
+    title: "Organize inspiration board",
+    description: "Collect references",
+    due_date: null,
+    priority: "low",
+    is_completed: false,
+    completed_at: null,
+    urgency: "low",
+    importance: "low",
+    status: "upcoming",
+    time_of_day: "night",
+    date_bucket: "week",
+    tags: [],
+    subtasks: [],
+    quadrant_assigned: false,
+  },
+  {
+    title: "Clean downloads folder",
+    description: "Organize files",
+    due_date: null,
+    priority: "low",
+    is_completed: false,
+    completed_at: null,
+    urgency: "low",
+    importance: "low",
+    status: "upcoming",
+    time_of_day: "night",
+    date_bucket: "week",
+    tags: [],
+    subtasks: [],
+    quadrant_assigned: false,
+  },
 ];
 
 export default function Tasks() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [tasks, setTasks] = useState<Task[]>([]);
+  
+  // View state
+  const [view, setView] = useState<'board' | 'quadrant'>('quadrant');
+  const [quadrantMode, setQuadrantMode] = useState<QuadrantMode>('urgent-important');
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Task state
+  const [tasks, setTasks] = useState<QuadrantTask[]>([]);
   const [loading, setLoading] = useState(true);
+  const [draggedTask, setDraggedTask] = useState<QuadrantTask | null>(null);
+  
+  // Dialog/Drawer state
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
-
+  const [selectedTask, setSelectedTask] = useState<QuadrantTask | null>(null);
+  const [detailTask, setDetailTask] = useState<QuadrantTask | null>(null);
+  
   // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const [dueTime, setDueTime] = useState("");
   const [priority, setPriority] = useState<string>("medium");
-  const [reminderEnabled, setReminderEnabled] = useState(false);
-  const [reminderMinutes, setReminderMinutes] = useState("15");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -67,34 +263,20 @@ export default function Tasks() {
     fetchTasks();
   }, [user]);
 
-  // Check for upcoming tasks and show reminders
-  useEffect(() => {
-    const checkReminders = () => {
-      const now = new Date();
-      tasks.forEach((task) => {
-        if (task.due_date && !task.is_completed) {
-          const dueTime = new Date(task.due_date);
-          const timeDiff = dueTime.getTime() - now.getTime();
-          const minutesDiff = Math.floor(timeDiff / 60000);
-
-          if (minutesDiff > 0 && minutesDiff <= 15) {
-            toast({
-              title: "⏰ Upcoming Task",
-              description: `"${task.title}" is due in ${minutesDiff} minutes!`,
-            });
-          }
-        }
-      });
-    };
-
-    const interval = setInterval(checkReminders, 60000);
-    return () => clearInterval(interval);
-  }, [tasks, toast]);
-
   const fetchTasks = async () => {
-    if (!user) return;
+    if (!user) {
+      // Load sample data for demo
+      const sampleWithIds = SAMPLE_TASKS.map((t, i) => ({
+        ...t,
+        id: `sample-${i}`,
+        created_at: new Date().toISOString(),
+      }));
+      setTasks(sampleWithIds);
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
-
     const { data, error } = await supabase
       .from("tasks")
       .select("*")
@@ -102,12 +284,35 @@ export default function Tasks() {
       .order("created_at", { ascending: false });
 
     if (!error && data) {
-      setTasks(data);
+      // Transform database tasks to QuadrantTask
+      const quadrantTasks: QuadrantTask[] = data.map(t => ({
+        ...t,
+        urgency: t.priority === 'high' ? 'high' : 'low' as Urgency,
+        importance: t.priority === 'high' ? 'high' : 'low' as Importance,
+        status: t.is_completed ? 'completed' : 'ongoing' as Status,
+        time_of_day: 'morning' as TimeOfDay,
+        date_bucket: 'today' as DateBucket,
+        tags: [],
+        subtasks: [],
+        quadrant_assigned: false,
+      }));
+      
+      // If no tasks, use sample data
+      if (quadrantTasks.length === 0) {
+        const sampleWithIds = SAMPLE_TASKS.map((t, i) => ({
+          ...t,
+          id: `sample-${i}`,
+          created_at: new Date().toISOString(),
+        }));
+        setTasks(sampleWithIds);
+      } else {
+        setTasks(quadrantTasks);
+      }
     }
     setLoading(false);
   };
 
-  const openDialog = (task?: Task) => {
+  const openDialog = (task?: QuadrantTask) => {
     if (task) {
       setSelectedTask(task);
       setTitle(task.title);
@@ -128,15 +333,12 @@ export default function Tasks() {
       setDueDate(undefined);
       setDueTime("");
       setPriority("medium");
-      setReminderEnabled(false);
-      setReminderMinutes("15");
     }
     setDialogOpen(true);
   };
 
   const saveTask = async () => {
-    if (!user || !title.trim()) return;
-
+    if (!title.trim()) return;
     setSaving(true);
 
     let fullDueDate: string | undefined;
@@ -149,83 +351,146 @@ export default function Tasks() {
       fullDueDate = date.toISOString();
     }
 
-    const taskData = {
+    const newTask: QuadrantTask = {
+      id: `new-${Date.now()}`,
       title,
       description,
-      due_date: fullDueDate,
+      due_date: fullDueDate || null,
       priority,
+      is_completed: false,
+      completed_at: null,
+      created_at: new Date().toISOString(),
+      urgency: priority === 'high' ? 'high' : 'low',
+      importance: priority === 'high' ? 'high' : 'low',
+      status: 'upcoming',
+      time_of_day: 'morning',
+      date_bucket: 'today',
+      tags: [],
+      subtasks: [],
+      quadrant_assigned: false,
     };
 
-    if (selectedTask) {
-      const { error } = await supabase
-        .from("tasks")
-        .update(taskData)
-        .eq("id", selectedTask.id);
-
-      if (error) {
-        toast({ title: "Error", description: "Failed to update task", variant: "destructive" });
-      } else {
-        toast({ title: "Updated!", description: "Your task has been updated" });
-        fetchTasks();
-        setDialogOpen(false);
-      }
-    } else {
+    if (user) {
       const { error } = await supabase.from("tasks").insert({
         user_id: user.id,
-        ...taskData,
+        title,
+        description,
+        due_date: fullDueDate,
+        priority,
       });
 
       if (error) {
         toast({ title: "Error", description: "Failed to create task", variant: "destructive" });
-      } else {
-        toast({ title: "Created!", description: "Your task has been created" });
-        if (reminderEnabled && dueDate) {
-          toast({ title: "Reminder Set", description: `You'll be reminded ${reminderOptions.find(r => r.value === reminderMinutes)?.label}` });
-        }
-        fetchTasks();
-        setDialogOpen(false);
+        setSaving(false);
+        return;
       }
     }
 
+    setTasks(prev => [newTask, ...prev]);
+    toast({ title: "Created!", description: "Your task has been created" });
+    setDialogOpen(false);
     setSaving(false);
   };
 
-  const toggleComplete = async (task: Task) => {
-    const { error } = await supabase
-      .from("tasks")
-      .update({
-        is_completed: !task.is_completed,
-        completed_at: !task.is_completed ? new Date().toISOString() : null,
-      })
-      .eq("id", task.id);
-
-    if (!error) {
-      fetchTasks();
-    }
+  const handleQuickAdd = (taskTitle: string) => {
+    const newTask: QuadrantTask = {
+      id: `quick-${Date.now()}`,
+      title: taskTitle,
+      description: null,
+      due_date: null,
+      priority: 'medium',
+      is_completed: false,
+      completed_at: null,
+      created_at: new Date().toISOString(),
+      urgency: 'low',
+      importance: 'low',
+      status: 'upcoming',
+      time_of_day: 'morning',
+      date_bucket: 'today',
+      tags: [],
+      subtasks: [],
+      quadrant_assigned: false,
+    };
+    setTasks(prev => [newTask, ...prev]);
+    toast({ title: "Task added", description: "Drag it to a quadrant to prioritize" });
   };
 
-  const deleteTask = async (id: string) => {
-    const { error } = await supabase.from("tasks").delete().eq("id", id);
-    if (!error) {
-      fetchTasks();
-      toast({ title: "Deleted", description: "Task has been removed" });
-      setDialogOpen(false);
-    }
+  const handleDragStart = (e: React.DragEvent, task: QuadrantTask) => {
+    setDraggedTask(task);
+    e.dataTransfer.effectAllowed = 'move';
   };
 
-  const filteredTasks = tasks.filter((task) => {
-    if (filter === "pending") return !task.is_completed;
-    if (filter === "completed") return task.is_completed;
-    return true;
-  });
-
-  const pendingCount = tasks.filter((t) => !t.is_completed).length;
-  const completedCount = tasks.filter((t) => t.is_completed).length;
-
-  const isOverdue = (dueDate: string | null) => {
-    if (!dueDate) return false;
-    return new Date(dueDate) < new Date();
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
   };
+
+  const handleDrop = (quadrantId: string) => {
+    if (!draggedTask) return;
+
+    setTasks(prev => prev.map(t => {
+      if (t.id !== draggedTask.id) return t;
+      
+      const updated = { ...t, quadrant_assigned: true };
+      
+      switch (quadrantMode) {
+        case 'urgent-important':
+          if (quadrantId === 'urgent-important') {
+            updated.urgency = 'high';
+            updated.importance = 'high';
+          } else if (quadrantId === 'urgent-not-important') {
+            updated.urgency = 'high';
+            updated.importance = 'low';
+          } else if (quadrantId === 'not-urgent-important') {
+            updated.urgency = 'low';
+            updated.importance = 'high';
+          } else {
+            updated.urgency = 'low';
+            updated.importance = 'low';
+          }
+          break;
+        case 'status':
+          updated.status = quadrantId as Status;
+          break;
+        case 'date':
+          updated.date_bucket = quadrantId as DateBucket;
+          break;
+        case 'time':
+          updated.time_of_day = quadrantId as TimeOfDay;
+          break;
+      }
+      
+      return updated;
+    }));
+
+    toast({ 
+      title: "Task updated", 
+      description: "Urgency & importance applied" 
+    });
+    setDraggedTask(null);
+  };
+
+  const handleTaskUpdate = (updatedTask: QuadrantTask) => {
+    setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+    setDetailTask(updatedTask);
+  };
+
+  const handleSubtaskToggle = (taskId: string, subtaskId: string) => {
+    setTasks(prev => prev.map(t => {
+      if (t.id !== taskId) return t;
+      return {
+        ...t,
+        subtasks: t.subtasks.map(st => 
+          st.id === subtaskId ? { ...st, completed: !st.completed } : st
+        ),
+      };
+    }));
+  };
+
+  // Filter tasks by search
+  const filteredTasks = tasks.filter(t => 
+    t.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (loading) {
     return (
@@ -236,250 +501,156 @@ export default function Tasks() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="h-full flex flex-col gap-4 px-2">
+      {/* Page Header */}
+      <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Tasks</h1>
           <p className="text-muted-foreground mt-1">
-            {pendingCount} pending, {completedCount} completed
+            Organize your tasks by focus and see what truly matters today.
           </p>
         </div>
+        <ViewSwitcher view={view} onViewChange={setView} />
+      </div>
 
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => openDialog()}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Task
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{selectedTask ? "Edit Task" : "Create New Task"}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pt-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Task Title</label>
-                <Input
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="What needs to be done?"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Description (optional)</label>
-                <Textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Add more details..."
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Due Date</label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !dueDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {dueDate ? format(dueDate, "PPP") : "Pick a date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={dueDate}
-                        onSelect={setDueDate}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Due Time</label>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="time"
-                      value={dueTime}
-                      onChange={(e) => setDueTime(e.target.value)}
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Priority</label>
-                <Select value={priority} onValueChange={setPriority}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+      {view === 'quadrant' && (
+        <>
+          {/* Quadrant Toolbar */}
+          <QuadrantToolbar
+            mode={quadrantMode}
+            onModeChange={setQuadrantMode}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onNewTask={() => openDialog()}
+          />
 
-              {/* Reminder Settings */}
-              <div className="space-y-3 p-4 rounded-lg bg-muted/50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Bell className="h-4 w-4 text-muted-foreground" />
-                    <label className="text-sm font-medium">Reminder</label>
-                  </div>
-                  <Switch
-                    checked={reminderEnabled}
-                    onCheckedChange={setReminderEnabled}
-                  />
-                </div>
-                {reminderEnabled && (
-                  <Select value={reminderMinutes} onValueChange={setReminderMinutes}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {reminderOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
+          {/* Summary Strip */}
+          <SummaryStrip tasks={filteredTasks} />
 
-              <div className="flex gap-2">
-                <Button onClick={saveTask} disabled={saving || !title.trim()} className="flex-1">
-                  {saving ? "Saving..." : selectedTask ? "Update Task" : "Create Task"}
-                </Button>
-                {selectedTask && (
-                  <Button variant="destructive" onClick={() => deleteTask(selectedTask.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
+          {/* Main Content - Dual Pane */}
+          <div className="flex-1 flex gap-6 min-h-0">
+            {/* Left - Task Inbox */}
+            <div className="w-[400px] flex-shrink-0">
+              <TaskInbox
+                tasks={filteredTasks}
+                onQuickAdd={handleQuickAdd}
+                onTaskClick={setDetailTask}
+                onDragStart={handleDragStart}
+              />
             </div>
-          </DialogContent>
-        </Dialog>
-      </div>
 
-      <div className="flex gap-2">
-        <Button
-          variant={filter === "all" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFilter("all")}
-        >
-          All ({tasks.length})
-        </Button>
-        <Button
-          variant={filter === "pending" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFilter("pending")}
-        >
-          Pending ({pendingCount})
-        </Button>
-        <Button
-          variant={filter === "completed" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFilter("completed")}
-        >
-          Completed ({completedCount})
-        </Button>
-      </div>
-
-      {filteredTasks.length === 0 ? (
-        <Card className="p-12 text-center">
-          <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            <CheckSquare className="h-6 w-6 text-primary" />
+            {/* Right - Quadrant Grid */}
+            <div className="flex-1 pb-8">
+              <QuadrantGrid
+                mode={quadrantMode}
+                tasks={filteredTasks}
+                onTaskClick={setDetailTask}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+              />
+            </div>
           </div>
-          <h3 className="text-lg font-medium text-foreground">
-            {filter === "all" ? "No tasks yet" : `No ${filter} tasks`}
-          </h3>
-          <p className="text-muted-foreground mt-1 mb-4">
-            {filter === "all" ? "Create your first task to get started." : `You don't have any ${filter} tasks.`}
-          </p>
-          {filter === "all" && (
-            <Button onClick={() => openDialog()}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Task
-            </Button>
-          )}
-        </Card>
-      ) : (
-        <div className="space-y-2">
-          {filteredTasks.map((task) => (
-            <Card
-              key={task.id}
-              className={cn(
-                "transition-all hover:shadow-sm",
-                task.is_completed && "opacity-60",
-                !task.is_completed && isOverdue(task.due_date) && "border-red-500/50"
-              )}
-            >
-              <CardContent className="flex items-center gap-4 p-4">
-                <Checkbox
-                  checked={task.is_completed}
-                  onCheckedChange={() => toggleComplete(task)}
-                  className="h-5 w-5"
-                />
-                <div
-                  className="flex-1 cursor-pointer"
-                  onClick={() => openDialog(task)}
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        "font-medium",
-                        task.is_completed && "line-through text-muted-foreground"
-                      )}
-                    >
-                      {task.title}
-                    </span>
-                    <Badge
-                      className={cn("text-xs", priorityColors[task.priority as keyof typeof priorityColors])}
-                    >
-                      {task.priority}
-                    </Badge>
-                    {!task.is_completed && isOverdue(task.due_date) && (
-                      <Badge variant="destructive" className="text-xs">
-                        Overdue
-                      </Badge>
-                    )}
-                  </div>
-                  {task.description && (
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
-                      {task.description}
-                    </p>
-                  )}
-                  {task.due_date && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                      <CalendarIcon className="h-3 w-3" />
-                      {format(new Date(task.due_date), "PPP")}
-                      <Clock className="h-3 w-3 ml-2" />
-                      {format(new Date(task.due_date), "h:mm a")}
-                    </div>
-                  )}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => deleteTask(task.id)}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+        </>
+      )}
+
+      {view === 'board' && (
+        <div className="flex-1 flex items-center justify-center text-muted-foreground">
+          Board view coming soon...
         </div>
       )}
+
+      {/* Task Detail Drawer */}
+      {detailTask && (
+        <TaskDetailDrawer
+          task={detailTask}
+          onClose={() => setDetailTask(null)}
+          onUpdate={handleTaskUpdate}
+          onSubtaskToggle={handleSubtaskToggle}
+        />
+      )}
+
+      {/* New Task Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedTask ? "Edit Task" : "Create New Task"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Task Title</label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="What needs to be done?"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Description (optional)</label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Add more details..."
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Due Date</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !dueDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dueDate ? format(dueDate, "PPP") : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={dueDate}
+                      onSelect={setDueDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Due Time</label>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="time"
+                    value={dueTime}
+                    onChange={(e) => setDueTime(e.target.value)}
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Priority</label>
+              <Select value={priority} onValueChange={setPriority}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={saveTask} disabled={saving || !title.trim()} className="w-full">
+              {saving ? "Saving..." : selectedTask ? "Update Task" : "Create Task"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
