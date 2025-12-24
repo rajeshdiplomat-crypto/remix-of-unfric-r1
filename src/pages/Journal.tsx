@@ -55,6 +55,14 @@ export default function Journal() {
     fetchEntry();
   }, [user, selectedDate]);
 
+  const handleDateChange = (date: Date) => {
+    // Auto-save before switching if there's content
+    if (title || content) {
+      saveEntry(true);
+    }
+    setSelectedDate(date);
+  };
+
   // Auto-save debounce
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -344,6 +352,7 @@ export default function Journal() {
             onContentChange={setContent}
             onMoodChange={setMood}
             onTagsChange={setTags}
+            onDateChange={handleDateChange}
             onPromptUse={promptToUse}
           />
 
