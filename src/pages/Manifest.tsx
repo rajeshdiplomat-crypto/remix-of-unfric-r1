@@ -1,17 +1,22 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Target, Home, Heart, Sparkles, DollarSign, TrendingUp, Award, Pin, Check, ChevronRight } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Plus, Target, Heart, Sparkles, DollarSign, TrendingUp, Award, 
+  Search, SlidersHorizontal, Home, ArrowUpDown, Calendar
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { format, subDays, isSameDay, parseISO, startOfWeek, addDays, isToday } from "date-fns";
+import { format, subDays, isSameDay, parseISO, startOfWeek, addDays } from "date-fns";
+import { ManifestGoalCard } from "@/components/manifest/ManifestGoalCard";
+import { ManifestAssistantPanel } from "@/components/manifest/ManifestAssistantPanel";
+import { ManifestCreateDialog } from "@/components/manifest/ManifestCreateDialog";
+import { ManifestGoalDashboard } from "@/components/manifest/ManifestGoalDashboard";
 
 interface ManifestGoal {
   id: string;
@@ -22,6 +27,11 @@ interface ManifestGoal {
   is_completed: boolean;
   created_at: string;
   category?: string;
+  cover_image?: string;
+  target_date?: string;
+  visualization_images?: string[];
+  milestones?: Array<{ id: string; title: string; completed: boolean }>;
+  action_steps?: Array<{ id: string; title: string; completed: boolean; taskId?: string }>;
 }
 
 interface ManifestJournalEntry {
@@ -34,18 +44,19 @@ interface ManifestJournalEntry {
 }
 
 const CATEGORIES = [
-  { id: "all", label: "All", icon: Target },
+  { id: "all", label: "All Goals", icon: Target },
   { id: "wealth", label: "Wealth", icon: DollarSign },
   { id: "health", label: "Health", icon: Heart },
   { id: "love", label: "Love", icon: Home },
+  { id: "growth", label: "Growth", icon: Target },
 ];
 
-const CATEGORY_ICONS: Record<string, typeof Target> = {
-  wealth: DollarSign,
-  health: Heart,
-  love: Home,
-  default: Target,
-};
+const SORT_OPTIONS = [
+  { id: "recent", label: "Most Recent" },
+  { id: "progress", label: "By Progress" },
+  { id: "target", label: "By Target Date" },
+  { id: "name", label: "Alphabetical" },
+];
 
 export default function Manifest() {
   const { user } = useAuth();
@@ -53,22 +64,14 @@ export default function Manifest() {
   const [goals, setGoals] = useState<ManifestGoal[]>([]);
   const [journalEntries, setJournalEntries] = useState<ManifestJournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedGoal, setSelectedGoal] = useState<ManifestGoal | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editGoal, setEditGoal] = useState<ManifestGoal | null>(null);
+  const [dashboardGoal, setDashboardGoal] = useState<ManifestGoal | null>(null);
   const [rightPanelGoal, setRightPanelGoal] = useState<ManifestGoal | null>(null);
   const [activeFilter, setActiveFilter] = useState("all");
-
-  // Form state
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [feeling, setFeeling] = useState("");
-  const [affirmations, setAffirmations] = useState("");
-  const [category, setCategory] = useState("wealth");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("recent");
   const [saving, setSaving] = useState(false);
-
-  // Daily affirmation state
-  const [dailyAffirmationRepeated, setDailyAffirmationRepeated] = useState(false);
-  const [visualizationDone, setVisualizationDone] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -76,7 +79,6 @@ export default function Manifest() {
   }, [user]);
 
   useEffect(() => {
-    // Auto-select first goal for right panel
     if (goals.length > 0 && !rightPanelGoal) {
       setRightPanelGoal(goals.find(g => !g.is_completed) || goals[0]);
     }
@@ -108,43 +110,23 @@ export default function Manifest() {
     setLoading(false);
   };
 
-  const getWeekDays = () => {
-    return Array.from({ length: 7 }, (_, i) =>
-      addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), i)
-    );
-  };
-
-  const weekDays = getWeekDays();
-
-  const hasEntryOnDate = (goalId: string, date: Date): boolean => {
-    return journalEntries.some(
-      (e) => e.goal_id === goalId && isSameDay(parseISO(e.entry_date), date)
-    );
-  };
-
-  const getVisualizationStreak = (): number => {
-    if (journalEntries.length === 0) return 0;
-    
-    let streak = 0;
-    let currentDate = new Date();
-    currentDate.setHours(0, 0, 0, 0);
-
-    for (let i = 0; i < 365; i++) {
-      const checkDate = subDays(currentDate, i);
-      const hasEntry = journalEntries.some(e => isSameDay(parseISO(e.entry_date), checkDate));
-      if (hasEntry) {
-        streak++;
-      } else if (i > 0) {
-        break;
-      }
-    }
-    return streak;
-  };
-
   const getGoalProgress = (goalId: string): number => {
     const totalDays = 30;
     const entries = journalEntries.filter(e => e.goal_id === goalId).length;
     return Math.min(Math.round((entries / totalDays) * 100), 100);
+  };
+
+  const getVisualizationStreak = (): number => {
+    if (journalEntries.length === 0) return 0;
+    let streak = 0;
+    let currentDate = new Date();
+    for (let i = 0; i < 365; i++) {
+      const checkDate = subDays(currentDate, i);
+      const hasEntry = journalEntries.some(e => isSameDay(parseISO(e.entry_date), checkDate));
+      if (hasEntry) streak++;
+      else if (i > 0) break;
+    }
+    return streak;
   };
 
   const toggleWeeklyCheckIn = async (goalId: string, date: Date) => {
@@ -156,71 +138,58 @@ export default function Manifest() {
     );
 
     if (existingEntry) {
-      // Remove entry
       await supabase.from("manifest_journal").delete().eq("id", existingEntry.id);
     } else {
-      // Add entry
       await supabase.from("manifest_journal").insert({
         user_id: user.id,
         goal_id: goalId,
         entry_date: dateStr,
-        gratitude: "Quick visualization check-in",
-        visualization: "Completed daily visualization",
+        gratitude: "Daily check-in",
+        visualization: "Completed visualization",
       });
     }
     fetchData();
   };
 
-  const openDialog = (goal?: ManifestGoal) => {
-    if (goal) {
-      setSelectedGoal(goal);
-      setTitle(goal.title);
-      setDescription(goal.description || "");
-      setFeeling(goal.feeling_when_achieved || "");
-      setAffirmations(goal.affirmations?.join("\n") || "");
-      setCategory((goal as any).category || "wealth");
-    } else {
-      setSelectedGoal(null);
-      setTitle("");
-      setDescription("");
-      setFeeling("");
-      setAffirmations("");
-      setCategory("wealth");
-    }
-    setDialogOpen(true);
-  };
-
-  const saveGoal = async () => {
-    if (!user || !title.trim()) return;
-
+  const handleSaveGoal = async (data: {
+    title: string;
+    description: string;
+    category: string;
+    affirmations: string[];
+    feeling: string;
+    targetDate: Date | null;
+    coverImage: string | null;
+    visualizationImages: string[];
+  }) => {
+    if (!user) return;
     setSaving(true);
-    const affirmationsList = affirmations.split("\n").map((a) => a.trim()).filter(Boolean);
 
-    if (selectedGoal) {
+    if (editGoal) {
       const { error } = await supabase
         .from("manifest_goals")
         .update({
-          title,
-          description,
-          feeling_when_achieved: feeling,
-          affirmations: affirmationsList,
+          title: data.title,
+          description: data.description,
+          feeling_when_achieved: data.feeling,
+          affirmations: data.affirmations,
         })
-        .eq("id", selectedGoal.id);
+        .eq("id", editGoal.id);
 
       if (error) {
         toast({ title: "Error", description: "Failed to update goal", variant: "destructive" });
       } else {
         toast({ title: "Updated!", description: "Your goal has been updated" });
         fetchData();
-        setDialogOpen(false);
+        setCreateDialogOpen(false);
+        setEditGoal(null);
       }
     } else {
-      const { data, error } = await supabase.from("manifest_goals").insert({
+      const { data: newGoal, error } = await supabase.from("manifest_goals").insert({
         user_id: user.id,
-        title,
-        description,
-        feeling_when_achieved: feeling,
-        affirmations: affirmationsList,
+        title: data.title,
+        description: data.description,
+        feeling_when_achieved: data.feeling,
+        affirmations: data.affirmations,
       }).select().single();
 
       if (error) {
@@ -228,301 +197,270 @@ export default function Manifest() {
       } else {
         toast({ title: "Created!", description: "Your manifestation goal has been created" });
         fetchData();
-        setDialogOpen(false);
-        if (data) setRightPanelGoal(data);
+        setCreateDialogOpen(false);
+        if (newGoal) setRightPanelGoal(newGoal);
       }
     }
     setSaving(false);
   };
 
+  const handleDeleteGoal = async (goalId: string) => {
+    await supabase.from("manifest_journal").delete().eq("goal_id", goalId);
+    await supabase.from("manifest_goals").delete().eq("id", goalId);
+    toast({ title: "Deleted", description: "Goal has been removed" });
+    setDashboardGoal(null);
+    fetchData();
+  };
+
+  const handleMarkAchieved = async (goalId: string) => {
+    await supabase.from("manifest_goals").update({ is_completed: true }).eq("id", goalId);
+    toast({ title: "Congratulations! 🎉", description: "You've manifested your goal!" });
+    fetchData();
+  };
+
+  const handleAddJournalEntry = async (goalId: string, entry: { gratitude: string; visualization: string }) => {
+    if (!user) return;
+    await supabase.from("manifest_journal").insert({
+      user_id: user.id,
+      goal_id: goalId,
+      entry_date: format(new Date(), "yyyy-MM-dd"),
+      gratitude: entry.gratitude,
+      visualization: entry.visualization,
+    });
+    toast({ title: "Entry saved", description: "Your reflection has been recorded" });
+    fetchData();
+  };
+
+  // Filter and sort goals
+  const filteredGoals = goals
+    .filter(goal => {
+      const matchesFilter = activeFilter === "all" || (goal as any).category === activeFilter;
+      const matchesSearch = !searchQuery || 
+        goal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        goal.affirmations?.some(a => a.toLowerCase().includes(searchQuery.toLowerCase()));
+      return matchesFilter && matchesSearch;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "progress":
+          return getGoalProgress(b.id) - getGoalProgress(a.id);
+        case "target":
+          if (!a.target_date) return 1;
+          if (!b.target_date) return -1;
+          return new Date(a.target_date).getTime() - new Date(b.target_date).getTime();
+        case "name":
+          return a.title.localeCompare(b.title);
+        default:
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+    });
+
   const activeGoals = goals.filter(g => !g.is_completed);
   const completedGoals = goals.filter(g => g.is_completed);
-  const filteredGoals = activeFilter === "all" 
-    ? goals 
-    : goals.filter(g => (g as any).category === activeFilter);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-pulse text-muted-foreground">Loading goals...</div>
+        <div className="animate-pulse text-muted-foreground">Loading your manifestations...</div>
       </div>
     );
   }
 
   return (
     <div className="flex gap-6 h-[calc(100vh-100px)]">
-      {/* Main Content - Center */}
+      {/* Main Content */}
       <div className="flex-1 overflow-auto">
-        <div className="max-w-3xl mx-auto space-y-6 pb-8">
+        <div className="max-w-4xl mx-auto space-y-6 pb-8 px-1">
           {/* Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Manifestation Board</h1>
-              <p className="text-muted-foreground mt-1">Visualize and track your dreams into reality.</p>
+              <h1 className="text-3xl font-bold text-foreground tracking-tight">
+                Manifestation Board
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Visualize your dreams and watch them become reality
+              </p>
             </div>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => openDialog()}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Goal
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-lg">
-                <DialogHeader>
-                  <DialogTitle>{selectedGoal ? "Edit Goal" : "Create Manifestation Goal"}</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 pt-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Goal Name</label>
-                    <Input
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="What do you want to manifest?"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Category</label>
-                    <div className="flex gap-2">
-                      {CATEGORIES.filter(c => c.id !== "all").map(cat => (
-                        <Button
-                          key={cat.id}
-                          variant={category === cat.id ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setCategory(cat.id)}
-                        >
-                          <cat.icon className="h-4 w-4 mr-1" />
-                          {cat.label}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Affirmation</label>
-                    <Textarea
-                      value={affirmations}
-                      onChange={(e) => setAffirmations(e.target.value)}
-                      placeholder="I am worthy of abundance..."
-                      rows={2}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Visualization Script (Optional)</label>
-                    <Textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Describe your goal in vivid detail..."
-                      rows={4}
-                    />
-                  </div>
-                  <Button onClick={saveGoal} disabled={saving || !title.trim()} className="w-full">
-                    {saving ? "Saving..." : selectedGoal ? "Update Goal" : "Create Goal"}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              New Goal
+            </Button>
           </div>
 
-          {/* KPI Cards */}
+          {/* Stats Cards */}
           <div className="grid grid-cols-3 gap-4">
-            <Card className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Target className="h-5 w-5 text-primary" />
+            <Card className="p-5 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center">
+                  <Target className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-foreground">{activeGoals.length}</p>
-                  <p className="text-xs text-muted-foreground">Active Goals</p>
+                  <p className="text-3xl font-bold text-foreground">{activeGoals.length}</p>
+                  <p className="text-sm text-muted-foreground">Active Goals</p>
                 </div>
               </div>
             </Card>
-            <Card className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                  <Award className="h-5 w-5 text-green-500" />
+            <Card className="p-5 bg-gradient-to-br from-green-500/5 to-green-500/10 border-green-500/20">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-xl bg-green-500/20 flex items-center justify-center">
+                  <Award className="h-6 w-6 text-green-500" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-foreground">{completedGoals.length}</p>
-                  <p className="text-xs text-muted-foreground">Total Manifested</p>
+                  <p className="text-3xl font-bold text-foreground">{completedGoals.length}</p>
+                  <p className="text-sm text-muted-foreground">Manifested</p>
                 </div>
               </div>
             </Card>
-            <Card className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-orange-500/10 flex items-center justify-center">
-                  <TrendingUp className="h-5 w-5 text-orange-500" />
+            <Card className="p-5 bg-gradient-to-br from-orange-500/5 to-orange-500/10 border-orange-500/20">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-orange-500" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-foreground">{getVisualizationStreak()}</p>
-                  <p className="text-xs text-muted-foreground">Visualization Streak</p>
+                  <p className="text-3xl font-bold text-foreground">{getVisualizationStreak()}</p>
+                  <p className="text-sm text-muted-foreground">Day Streak</p>
                 </div>
               </div>
             </Card>
           </div>
 
-          {/* Filter Pills */}
-          <div className="flex gap-2">
-            {CATEGORIES.map(cat => (
-              <Button
-                key={cat.id}
-                variant={activeFilter === cat.id ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveFilter(cat.id)}
-                className="rounded-full"
-              >
-                {cat.label}
-              </Button>
-            ))}
+          {/* Search & Filters */}
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search goals..."
+                className="pl-10"
+              />
+            </div>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-40">
+                <ArrowUpDown className="h-4 w-4 mr-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SORT_OPTIONS.map(option => (
+                  <SelectItem key={option.id} value={option.id}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+
+          {/* Category Filter Pills */}
+          <ScrollArea className="w-full">
+            <div className="flex items-center gap-2 pb-1">
+              {CATEGORIES.map(cat => (
+                <Button
+                  key={cat.id}
+                  variant={activeFilter === cat.id ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveFilter(cat.id)}
+                  className="rounded-full gap-2 shrink-0"
+                >
+                  <cat.icon className="h-4 w-4" />
+                  {cat.label}
+                </Button>
+              ))}
+            </div>
+          </ScrollArea>
 
           {/* Goals List */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             {filteredGoals.length === 0 ? (
-              <Card className="p-8 text-center">
-                <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-foreground">No goals yet</h3>
-                <p className="text-muted-foreground mt-1">Create your first manifestation goal to get started.</p>
+              <Card className="p-12 text-center">
+                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <Sparkles className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-2">
+                  {searchQuery ? "No goals found" : "Start Your Manifestation Journey"}
+                </h3>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                  {searchQuery 
+                    ? "Try adjusting your search or filters"
+                    : "Create your first manifestation goal and begin visualizing your dreams into reality."
+                  }
+                </p>
+                {!searchQuery && (
+                  <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create Your First Goal
+                  </Button>
+                )}
               </Card>
             ) : (
-              filteredGoals.map(goal => {
-                const CategoryIcon = CATEGORY_ICONS[(goal as any).category || "default"] || Target;
-                const progress = getGoalProgress(goal.id);
-                const isSelected = rightPanelGoal?.id === goal.id;
-                
-                return (
-                  <Card 
-                    key={goal.id} 
-                    className={`p-4 cursor-pointer transition-all hover:shadow-md ${isSelected ? 'ring-2 ring-primary' : ''}`}
-                    onClick={() => setRightPanelGoal(goal)}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <CategoryIcon className="h-6 w-6 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-foreground">{goal.title}</h3>
-                          {goal.is_completed && (
-                            <Badge variant="secondary" className="bg-green-500/10 text-green-500">Manifested</Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground italic mb-3">
-                          {goal.affirmations?.[0] || "I am manifesting this goal into reality"}
-                        </p>
-                        <div className="mb-2">
-                          <Progress value={progress} className="h-1.5" />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">{progress}% complete</span>
-                          {/* Weekly Check-in */}
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs text-muted-foreground mr-2">THIS WEEK</span>
-                            {weekDays.map((day, i) => {
-                              const hasEntry = hasEntryOnDate(goal.id, day);
-                              return (
-                                <button
-                                  key={i}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleWeeklyCheckIn(goal.id, day);
-                                  }}
-                                  className={`h-5 w-5 rounded transition-colors ${
-                                    hasEntry 
-                                      ? 'bg-primary' 
-                                      : 'bg-muted hover:bg-muted-foreground/20'
-                                  }`}
-                                  title={format(day, "EEEE")}
-                                />
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                    </div>
-                  </Card>
-                );
-              })
+              filteredGoals.map(goal => (
+                <ManifestGoalCard
+                  key={goal.id}
+                  goal={goal}
+                  progress={getGoalProgress(goal.id)}
+                  isSelected={rightPanelGoal?.id === goal.id}
+                  journalEntries={journalEntries}
+                  onClick={() => setRightPanelGoal(goal)}
+                  onEdit={() => {
+                    setEditGoal(goal);
+                    setCreateDialogOpen(true);
+                  }}
+                  onOpenDashboard={() => setDashboardGoal(goal)}
+                  onArchive={() => handleDeleteGoal(goal.id)}
+                  onCheckIn={(date) => toggleWeeklyCheckIn(goal.id, date)}
+                />
+              ))
             )}
           </div>
         </div>
       </div>
 
-      {/* Right Sidebar - Sticky */}
-      <div className="w-80 flex-shrink-0 space-y-4 overflow-auto pb-8">
-        {/* Manifestation Assistant */}
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Manifestation</p>
-              <p className="font-semibold text-foreground">Assistant</p>
-            </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <Pin className="h-4 w-4" />
-            </Button>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Gentle guidance for your selected goal
-          </p>
-        </Card>
-
-        {/* Selected Goal */}
-        {rightPanelGoal && (
-          <Card className="p-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Selected Goal</p>
-            <h3 className="font-semibold text-foreground mb-3 line-clamp-2">{rightPanelGoal.title}</h3>
-            <Progress value={getGoalProgress(rightPanelGoal.id)} className="h-2 mb-2" />
-            <p className="text-sm text-muted-foreground">{getGoalProgress(rightPanelGoal.id)}% complete</p>
-          </Card>
-        )}
-
-        {/* Daily Affirmation */}
-        {rightPanelGoal && (
-          <Card className="p-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-3">Daily Affirmation</p>
-            <div className="bg-muted/50 rounded-lg p-3 mb-3">
-              <p className="text-sm text-foreground italic">
-                {rightPanelGoal.affirmations?.[0] || "I am worthy of achieving all my dreams"}
-              </p>
-            </div>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input 
-                type="checkbox" 
-                checked={dailyAffirmationRepeated}
-                onChange={(e) => setDailyAffirmationRepeated(e.target.checked)}
-                className="rounded border-border"
-              />
-              <span className="text-sm text-muted-foreground">Mark as repeated today</span>
-            </label>
-          </Card>
-        )}
-
-        {/* Visualization */}
-        {rightPanelGoal && (
-          <Card className="p-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-3">Visualization</p>
-            <div className="space-y-2 mb-3">
-              <p className="text-sm text-foreground">1. Close your eyes and breathe deeply</p>
-              <p className="text-sm text-foreground">2. Picture yourself achieving this goal</p>
-              <p className="text-sm text-foreground">3. Feel the emotions of success</p>
-              <p className="text-sm text-foreground">4. Express gratitude for this reality</p>
-            </div>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input 
-                type="checkbox" 
-                checked={visualizationDone}
-                onChange={(e) => {
-                  setVisualizationDone(e.target.checked);
-                  if (e.target.checked && rightPanelGoal) {
-                    toggleWeeklyCheckIn(rightPanelGoal.id, new Date());
-                  }
-                }}
-                className="rounded border-border"
-              />
-              <span className="text-sm text-muted-foreground">Done today</span>
-            </label>
-          </Card>
-        )}
+      {/* Right Sidebar - Assistant Panel */}
+      <div className="w-80 flex-shrink-0 border-l border-border bg-muted/30">
+        <ManifestAssistantPanel
+          selectedGoal={rightPanelGoal}
+          progress={rightPanelGoal ? getGoalProgress(rightPanelGoal.id) : 0}
+          onCheckInToday={() => {
+            if (rightPanelGoal) toggleWeeklyCheckIn(rightPanelGoal.id, new Date());
+          }}
+        />
       </div>
+
+      {/* Create/Edit Dialog */}
+      <ManifestCreateDialog
+        open={createDialogOpen}
+        onOpenChange={(open) => {
+          setCreateDialogOpen(open);
+          if (!open) setEditGoal(null);
+        }}
+        onSave={handleSaveGoal}
+        editGoal={editGoal}
+        saving={saving}
+      />
+
+      {/* Goal Dashboard Modal */}
+      {dashboardGoal && (
+        <ManifestGoalDashboard
+          open={!!dashboardGoal}
+          onOpenChange={(open) => !open && setDashboardGoal(null)}
+          goal={dashboardGoal}
+          journalEntries={journalEntries}
+          onEdit={() => {
+            setEditGoal(dashboardGoal);
+            setCreateDialogOpen(true);
+          }}
+          onDuplicate={() => {
+            toast({ title: "Coming soon", description: "Duplicate feature is under development" });
+          }}
+          onArchive={() => handleDeleteGoal(dashboardGoal.id)}
+          onDelete={() => handleDeleteGoal(dashboardGoal.id)}
+          onMarkAchieved={() => handleMarkAchieved(dashboardGoal.id)}
+          onCheckIn={(date) => toggleWeeklyCheckIn(dashboardGoal.id, date)}
+          onAddAction={(title) => {
+            toast({ title: "Action added", description: title });
+          }}
+          onAddJournalEntry={(entry) => handleAddJournalEntry(dashboardGoal.id, entry)}
+        />
+      )}
     </div>
   );
 }
