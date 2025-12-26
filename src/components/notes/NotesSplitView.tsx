@@ -3,8 +3,9 @@ import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit2, Share2, MoreHorizontal, X, Clock } from "lucide-react";
-import { NotesEditor } from "./NotesEditor";
+import { Plus, Edit2, Share2, MoreHorizontal, X, Clock, Trash2 } from "lucide-react";
+import { NotesRichEditor } from "./NotesRichEditor";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 
 interface NotesSplitViewProps {
@@ -59,6 +60,9 @@ export function NotesSplitView({
     setLastSaved(new Date());
   };
 
+  // Sort groups by sortOrder
+  const sortedGroups = [...groups].sort((a, b) => a.sortOrder - b.sortOrder);
+
   return (
     <div className="flex h-[calc(100vh-120px)] border border-border rounded-lg overflow-hidden bg-card">
       {/* Left Panel - Notes List */}
@@ -71,13 +75,17 @@ export function NotesSplitView({
         </div>
         <ScrollArea className="flex-1">
           <div className="p-2 space-y-4">
-            {groups.map((group) => {
+            {sortedGroups.map((group) => {
               const groupNotes = getNotesByGroup(group.id);
               if (groupNotes.length === 0) return null;
 
               return (
                 <div key={group.id}>
-                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                    <div 
+                      className="h-2 w-2 rounded-full" 
+                      style={{ backgroundColor: group.color }} 
+                    />
                     {group.name}
                   </div>
                   <div className="space-y-1">
@@ -142,14 +150,24 @@ export function NotesSplitView({
               </div>
               <div className="flex items-center gap-1">
                 <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Edit2 className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
                   <Share2 className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem 
+                      className="text-destructive"
+                      onClick={() => onDeleteNote(selectedNote.id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Note
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onBack}>
                   <X className="h-4 w-4" />
                 </Button>
@@ -157,8 +175,8 @@ export function NotesSplitView({
             </div>
 
             {/* Editor Content */}
-            <div className="flex-1 overflow-auto p-6">
-              <NotesEditor
+            <div className="flex-1 overflow-auto">
+              <NotesRichEditor
                 note={selectedNote}
                 groups={groups}
                 onSave={handleSave}
