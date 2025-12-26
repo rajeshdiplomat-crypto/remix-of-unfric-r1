@@ -39,21 +39,33 @@ function ColorInput({ label, value, onChange }: ColorInputProps) {
   );
 }
 
+const DEFAULT_COLORS = {
+  background: '#f4f6f8',
+  card: '#fafbfc',
+  foreground: '#1a2332',
+  mutedForeground: '#6b7280',
+  primary: '#0891b2',
+  accent: '#8b5cf6',
+  border: '#d1d5db',
+};
+
 export function ThemeSelector() {
   const { themeId, setTheme } = useTheme();
   const { customColors, setCustomColors, isCustomTheme } = useCustomTheme();
   const [showCustom, setShowCustom] = useState(isCustomTheme);
-  const [localColors, setLocalColors] = useState(customColors);
+  const [localColors, setLocalColors] = useState(customColors || DEFAULT_COLORS);
 
   const handleToggleCustom = (enabled: boolean) => {
     setShowCustom(enabled);
     if (!enabled) {
       setCustomColors(null);
+    } else if (!localColors) {
+      setLocalColors(DEFAULT_COLORS);
     }
   };
 
-  const updateColor = (key: keyof typeof localColors, value: string) => {
-    setLocalColors(prev => ({ ...prev, [key]: value }));
+  const updateColor = (key: keyof typeof DEFAULT_COLORS, value: string) => {
+    setLocalColors(prev => prev ? { ...prev, [key]: value } : { ...DEFAULT_COLORS, [key]: value });
   };
 
   const handleApply = () => {
@@ -61,16 +73,7 @@ export function ThemeSelector() {
   };
 
   const handleReset = () => {
-    const defaults = {
-      background: '#f4f6f8',
-      card: '#fafbfc',
-      foreground: '#1a2332',
-      mutedForeground: '#6b7280',
-      primary: '#0891b2',
-      accent: '#8b5cf6',
-      border: '#d1d5db',
-    };
-    setLocalColors(defaults);
+    setLocalColors(DEFAULT_COLORS);
     setCustomColors(null);
   };
 

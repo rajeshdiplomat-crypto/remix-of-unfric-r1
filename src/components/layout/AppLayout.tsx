@@ -1,11 +1,9 @@
 import { ReactNode, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { ThemeCustomizer } from "@/components/settings/ThemeCustomizer";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, Palette } from "lucide-react";
+import { Menu } from "lucide-react";
 import { MobileNav } from "./MobileNav";
 
 interface AppLayoutProps {
@@ -16,14 +14,14 @@ function LayoutContent({ children }: AppLayoutProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex w-full bg-background">
+    <div className="min-h-screen flex w-full bg-background overflow-x-hidden">
       {/* Desktop Sidebar - hidden on mobile */}
-      <div className="hidden md:block">
+      <div className="hidden md:block flex-shrink-0">
         <AppSidebar />
       </div>
       
-      <main className="flex-1 flex flex-col w-full">
-        <header className="h-14 border-b border-border flex items-center justify-between px-4 bg-card sticky top-0 z-40">
+      <main className="flex-1 flex flex-col w-full min-w-0">
+        <header className="h-14 border-b border-border flex items-center justify-between px-4 bg-card sticky top-0 z-40 flex-shrink-0">
           <div className="flex items-center gap-2">
             {/* Mobile menu trigger */}
             <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
@@ -40,13 +38,6 @@ function LayoutContent({ children }: AppLayoutProps) {
             {/* Desktop sidebar trigger */}
             <div className="hidden md:block">
               <SidebarTrigger />
-            </div>
-          </div>
-          
-          {/* Header right actions */}
-          <div className="flex items-center gap-2">
-            <div className="hidden sm:block">
-              <ThemeCustomizer />
             </div>
           </div>
         </header>
