@@ -33,7 +33,7 @@ interface TimerState {
 export function CompactTimerClock() {
   const { toast } = useToast();
   const [time, setTime] = useState(new Date());
-  const [clockDisplay, setClockDisplay] = useState<ClockDisplay>('digital');
+  const [clockDisplay, setClockDisplay] = useState<ClockDisplay>('analog'); // Default to analog
   const [isExpanded, setIsExpanded] = useState(false);
   
   // Timer/Stopwatch state
@@ -272,6 +272,42 @@ export function CompactTimerClock() {
 
   const isActive = stopwatchRunning || timerRunning;
 
+  // Analog clock calculations
+  const hours = time.getHours() % 12;
+  const minutes = time.getMinutes();
+  const seconds = time.getSeconds();
+  const hourDeg = (hours * 30) + (minutes * 0.5);
+  const minuteDeg = (minutes * 6) + (seconds * 0.1);
+  const secondDeg = seconds * 6;
+
+  // Mini analog clock for pill button
+  const MiniAnalogClock = () => (
+    <div className="relative w-5 h-5 rounded-full border border-border/50 bg-card flex-shrink-0">
+      {/* Hour hand */}
+      <div
+        className="absolute w-[1px] h-[5px] bg-foreground rounded-full"
+        style={{
+          left: '50%',
+          bottom: '50%',
+          transformOrigin: '50% 100%',
+          transform: `translateX(-50%) rotate(${hourDeg}deg)`,
+        }}
+      />
+      {/* Minute hand */}
+      <div
+        className="absolute w-[0.5px] h-[7px] bg-foreground rounded-full"
+        style={{
+          left: '50%',
+          bottom: '50%',
+          transformOrigin: '50% 100%',
+          transform: `translateX(-50%) rotate(${minuteDeg}deg)`,
+        }}
+      />
+      {/* Center dot */}
+      <div className="absolute top-1/2 left-1/2 w-[2px] h-[2px] rounded-full bg-primary -translate-x-1/2 -translate-y-1/2" />
+    </div>
+  );
+
   return (
     <Popover open={isExpanded} onOpenChange={setIsExpanded}>
       <PopoverTrigger asChild>
@@ -284,7 +320,7 @@ export function CompactTimerClock() {
               : "border-border/50 bg-card text-foreground"
           )}
         >
-          <Clock className="h-3.5 w-3.5" />
+          {clockDisplay === 'analog' ? <MiniAnalogClock /> : <Clock className="h-3.5 w-3.5" />}
           <span className="tabular-nums">{currentTime}</span>
           {isActive && (
             <span className="flex items-center gap-1 text-xs text-primary">
@@ -297,12 +333,94 @@ export function CompactTimerClock() {
       
       <PopoverContent className="w-80 p-4" align="center">
         <div className="space-y-4">
-          {/* Clock Display */}
+          {/* Clock Display with Toggle */}
           <div className="text-center">
-            <div className="text-3xl font-light tabular-nums text-foreground">
-              {currentTime}
+            {/* Display Toggle */}
+            <div className="flex justify-center mb-3">
+              <div className="flex p-0.5 bg-muted/30 rounded-full text-xs">
+                <button
+                  onClick={() => setClockDisplay('digital')}
+                  className={cn(
+                    "px-2 py-0.5 rounded-full transition-all",
+                    clockDisplay === 'digital' ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"
+                  )}
+                >
+                  Digital
+                </button>
+                <button
+                  onClick={() => setClockDisplay('analog')}
+                  className={cn(
+                    "px-2 py-0.5 rounded-full transition-all",
+                    clockDisplay === 'analog' ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"
+                  )}
+                >
+                  Analog
+                </button>
+              </div>
             </div>
-            <div className="text-xs text-muted-foreground mt-1">
+
+            {clockDisplay === 'digital' ? (
+              <div className="text-3xl font-light tabular-nums text-foreground">
+                {currentTime}
+              </div>
+            ) : (
+              <div className="relative w-24 h-24 mx-auto">
+                {/* Outer ring */}
+                <div className="absolute inset-0 rounded-full border-2 border-border bg-card shadow-sm">
+                  {/* Hour markers */}
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="absolute w-0.5 h-1.5 bg-muted-foreground/50"
+                      style={{
+                        left: '50%',
+                        top: '3px',
+                        transformOrigin: '50% 45px',
+                        transform: `translateX(-50%) rotate(${i * 30}deg)`,
+                      }}
+                    />
+                  ))}
+                  
+                  {/* Hour hand */}
+                  <div
+                    className="absolute w-1 h-6 bg-foreground rounded-full"
+                    style={{
+                      left: '50%',
+                      bottom: '50%',
+                      transformOrigin: '50% 100%',
+                      transform: `translateX(-50%) rotate(${hourDeg}deg)`,
+                    }}
+                  />
+                  
+                  {/* Minute hand */}
+                  <div
+                    className="absolute w-0.5 h-8 bg-foreground rounded-full"
+                    style={{
+                      left: '50%',
+                      bottom: '50%',
+                      transformOrigin: '50% 100%',
+                      transform: `translateX(-50%) rotate(${minuteDeg}deg)`,
+                    }}
+                  />
+                  
+                  {/* Second hand */}
+                  <div
+                    className="absolute w-px h-9 bg-primary rounded-full"
+                    style={{
+                      left: '50%',
+                      bottom: '50%',
+                      transformOrigin: '50% 100%',
+                      transform: `translateX(-50%) rotate(${secondDeg}deg)`,
+                    }}
+                  />
+                  
+                  {/* Center dot */}
+                  <div className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full bg-primary -translate-x-1/2 -translate-y-1/2" />
+                </div>
+              </div>
+            )}
+
+            <div className="text-xs text-muted-foreground mt-2">
               {time.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
             </div>
           </div>
