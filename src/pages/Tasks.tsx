@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { format } from "date-fns";
 import { Plus } from "lucide-react";
+import { LuxuryClock } from "@/components/tasks/LuxuryClock";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -383,18 +384,23 @@ export default function Tasks() {
   }
 
   return (
-    <div className="h-full flex flex-col gap-4 px-2">
+    <div className="h-full flex flex-col gap-4 px-2 md:px-4">
+      {/* Luxury Clock Widget */}
+      <div className="flex justify-center py-4 border-b border-border/30">
+        <LuxuryClock />
+      </div>
+
       {/* Page Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col md:flex-row items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Tasks</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Tasks</h1>
+          <p className="text-muted-foreground text-sm mt-1">
             Organize your tasks by focus and see what truly matters today.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full md:w-auto">
           <ViewSwitcher view={view} onViewChange={setView} />
-          <Button onClick={openNewTaskDrawer}>
+          <Button onClick={openNewTaskDrawer} className="flex-1 md:flex-none">
             <Plus className="h-4 w-4 mr-2" />
             New Task
           </Button>
@@ -416,9 +422,9 @@ export default function Tasks() {
       <TasksInsights tasks={filteredTasks} />
 
       {/* Main Content - Left List + Right View */}
-      <div className="flex-1 flex gap-4 min-h-0">
+      <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0 overflow-hidden">
         {/* Left - All Tasks List */}
-        <div className="w-[320px] flex-shrink-0">
+        <div className="w-full lg:w-[320px] flex-shrink-0 order-2 lg:order-1">
           <AllTasksList
             tasks={filteredTasks}
             onTaskClick={openTaskDetail}
@@ -428,7 +434,7 @@ export default function Tasks() {
         </div>
 
         {/* Right - Quadrant or Board */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 order-1 lg:order-2 overflow-x-auto">
           {view === 'quadrant' && (
             <QuadrantGrid
               mode={quadrantMode}
@@ -440,16 +446,18 @@ export default function Tasks() {
           )}
 
           {view === 'board' && (
-            <BoardView
-              mode="status"
-              tasks={filteredTasks}
-              onTaskClick={openTaskDetail}
-              onDragStart={() => {}}
-              onDrop={handleBoardDrop}
-              onQuickAdd={handleBoardQuickAdd}
-              onStartTask={handleStartTask}
-              onCompleteTask={handleCompleteTask}
-            />
+            <div className="min-w-[900px]">
+              <BoardView
+                mode="status"
+                tasks={filteredTasks}
+                onTaskClick={openTaskDetail}
+                onDragStart={() => {}}
+                onDrop={handleBoardDrop}
+                onQuickAdd={handleBoardQuickAdd}
+                onStartTask={handleStartTask}
+                onCompleteTask={handleCompleteTask}
+              />
+            </div>
           )}
         </div>
       </div>
