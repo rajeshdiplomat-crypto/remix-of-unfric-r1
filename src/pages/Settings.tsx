@@ -11,7 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import { ThemeSelector } from "@/components/settings/ThemeSelector";
 import { FontSelector } from "@/components/settings/FontSelector";
 import { MotionToggle } from "@/components/settings/MotionToggle";
-import { ThemeCustomizer } from "@/components/settings/ThemeCustomizer";
 
 export default function Settings() {
   const { user, signOut } = useAuth();
@@ -62,13 +61,12 @@ export default function Settings() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-          <p className="text-muted-foreground mt-1">Manage your account and preferences</p>
-        </div>
-        <ThemeCustomizer />
+    <div className="max-w-2xl mx-auto space-y-6 px-4">
+      <div>
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
+          Settings
+        </h1>
+        <p className="text-muted-foreground mt-1">Manage your account and preferences</p>
       </div>
 
       <Card>
