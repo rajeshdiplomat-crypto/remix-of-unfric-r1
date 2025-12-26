@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { format, addDays, startOfWeek, isToday, isBefore, isAfter, parseISO, differenceInDays } from "date-fns";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState, useMemo } from "react";
+import { format, addDays, startOfWeek, isToday, isBefore, isAfter, parseISO, differenceInDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, subDays } from "date-fns";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -9,9 +9,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, MoreVertical, Target, TrendingUp, Calendar, CheckCircle2, Flame, Activity, LayoutGrid, List } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Checkbox } from "@/components/ui/checkbox";
+import { 
+  Plus, MoreVertical, Target, TrendingUp, Calendar as CalendarIcon, CheckCircle2, 
+  Flame, Activity, LayoutGrid, List, ChevronLeft, ChevronRight, Download,
+  Lightbulb, Clock, Zap, BarChart2
+} from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface ActivityItem {
   id: string;
@@ -19,24 +27,26 @@ interface ActivityItem {
   category: string;
   priority: string;
   description: string;
-  frequencyPattern: boolean[]; // M T W T F S S
+  frequencyPattern: boolean[];
   numberOfDays: number;
   startDate: string;
-  completions: Record<string, boolean>; // date string -> completed
+  completions: Record<string, boolean>;
   createdAt: string;
+  notes?: Record<string, string>;
+  reminders?: { time: string; days: number[] };
 }
 
 const CATEGORIES = [
-  { id: "health", label: "Health & Wellness", color: "hsl(142, 71%, 45%)" },
-  { id: "growth", label: "Personal Growth", color: "hsl(262, 83%, 58%)" },
-  { id: "career", label: "Career", color: "hsl(221, 83%, 53%)" },
-  { id: "education", label: "Education", color: "hsl(25, 95%, 53%)" },
-  { id: "wellbeing", label: "Wellbeing", color: "hsl(339, 81%, 51%)" },
+  { id: "health", label: "Health & Wellness", color: "142 71% 45%" },
+  { id: "growth", label: "Personal Growth", color: "262 83% 58%" },
+  { id: "career", label: "Career", color: "221 83% 53%" },
+  { id: "education", label: "Education", color: "25 95% 53%" },
+  { id: "wellbeing", label: "Wellbeing", color: "339 81% 51%" },
 ];
 
 const PRIORITIES = ["Low", "Medium", "High"];
-
 const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
+const FULL_DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const SAMPLE_ACTIVITIES: ActivityItem[] = [
   {
@@ -70,7 +80,7 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
     numberOfDays: 30,
     startDate: format(addDays(new Date(), -30), "yyyy-MM-dd"),
     completions: Object.fromEntries(
-      Array.from({ length: 30 }, (_, i) => [
+      Array.from({ length: 28 }, (_, i) => [
         format(addDays(new Date(), -30 + i), "yyyy-MM-dd"),
         true,
       ])
@@ -97,8 +107,10 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
     description: "No social media after 8pm",
     frequencyPattern: [true, true, true, true, true, true, true],
     numberOfDays: 7,
-    startDate: format(addDays(new Date(), -3), "yyyy-MM-dd"),
+    startDate: format(addDays(new Date(), -5), "yyyy-MM-dd"),
     completions: {
+      [format(addDays(new Date(), -5), "yyyy-MM-dd")]: true,
+      [format(addDays(new Date(), -4), "yyyy-MM-dd")]: true,
       [format(addDays(new Date(), -3), "yyyy-MM-dd")]: true,
       [format(addDays(new Date(), -2), "yyyy-MM-dd")]: true,
       [format(addDays(new Date(), -1), "yyyy-MM-dd")]: true,
@@ -108,7 +120,7 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
   },
 ];
 
-type ViewMode = "week" | "compact";
+type ViewMode = "week" | "compact" | "heatmap";
 
 export default function Trackers() {
   const { toast } = useToast();
@@ -118,6 +130,9 @@ export default function Trackers() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingActivity, setEditingActivity] = useState<ActivityItem | null>(null);
+  const [selectedWeekStart, setSelectedWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [selectedActivities, setSelectedActivities] = useState<Set<string>>(new Set());
+  const [detailActivity, setDetailActivity] = useState<ActivityItem | null>(null);
 
   // Form state
   const [formName, setFormName] = useState("");
@@ -126,6 +141,7 @@ export default function Trackers() {
   const [formDescription, setFormDescription] = useState("");
   const [formFrequency, setFormFrequency] = useState([true, true, true, true, true, false, false]);
   const [formDays, setFormDays] = useState(30);
+  const [formStartDate, setFormStartDate] = useState<Date>(new Date());
 
   const getEndDate = (activity: ActivityItem) => {
     return addDays(parseISO(activity.startDate), activity.numberOfDays - 1);
@@ -137,10 +153,8 @@ export default function Trackers() {
     const endDate = getEndDate(activity);
 
     if (isBefore(today, startDate)) return "upcoming";
-
     const completionPercent = getCompletionPercent(activity);
     if (completionPercent >= 100 || isAfter(today, endDate)) return "completed";
-
     return "active";
   };
 
@@ -149,7 +163,7 @@ export default function Trackers() {
     const startDate = parseISO(activity.startDate);
     for (let i = 0; i < activity.numberOfDays; i++) {
       const date = addDays(startDate, i);
-      const dayOfWeek = (date.getDay() + 6) % 7; // Convert to Mon=0
+      const dayOfWeek = (date.getDay() + 6) % 7;
       if (activity.frequencyPattern[dayOfWeek]) count++;
     }
     return count;
@@ -165,9 +179,106 @@ export default function Trackers() {
     return Math.round((getCompletedDays(activity) / planned) * 100);
   };
 
+  // Streak calculations
+  const getCurrentStreak = (activity: ActivityItem) => {
+    let streak = 0;
+    let checkDate = new Date();
+    
+    while (true) {
+      const dateStr = format(checkDate, "yyyy-MM-dd");
+      const dayOfWeek = (checkDate.getDay() + 6) % 7;
+      const isPlanned = activity.frequencyPattern[dayOfWeek];
+      
+      if (isPlanned) {
+        if (activity.completions[dateStr]) {
+          streak++;
+        } else if (!isToday(checkDate)) {
+          break;
+        }
+      }
+      
+      checkDate = subDays(checkDate, 1);
+      if (isBefore(checkDate, parseISO(activity.startDate))) break;
+    }
+    
+    return streak;
+  };
+
+  const getLongestStreak = (activity: ActivityItem) => {
+    let longest = 0;
+    let current = 0;
+    const startDate = parseISO(activity.startDate);
+    
+    for (let i = 0; i < activity.numberOfDays; i++) {
+      const date = addDays(startDate, i);
+      const dateStr = format(date, "yyyy-MM-dd");
+      const dayOfWeek = (date.getDay() + 6) % 7;
+      
+      if (activity.frequencyPattern[dayOfWeek]) {
+        if (activity.completions[dateStr]) {
+          current++;
+          longest = Math.max(longest, current);
+        } else {
+          current = 0;
+        }
+      }
+    }
+    
+    return longest;
+  };
+
+  // Insights calculations
+  const getInsights = (activity: ActivityItem) => {
+    const dayCompletions = [0, 0, 0, 0, 0, 0, 0];
+    const dayPlanned = [0, 0, 0, 0, 0, 0, 0];
+    
+    Object.entries(activity.completions).forEach(([dateStr, completed]) => {
+      if (completed) {
+        const date = parseISO(dateStr);
+        const dayOfWeek = (date.getDay() + 6) % 7;
+        dayCompletions[dayOfWeek]++;
+      }
+    });
+    
+    const startDate = parseISO(activity.startDate);
+    for (let i = 0; i < activity.numberOfDays; i++) {
+      const date = addDays(startDate, i);
+      if (isAfter(date, new Date())) break;
+      const dayOfWeek = (date.getDay() + 6) % 7;
+      if (activity.frequencyPattern[dayOfWeek]) {
+        dayPlanned[dayOfWeek]++;
+      }
+    }
+    
+    let bestDay = 0;
+    let worstDay = 0;
+    let bestRate = 0;
+    let worstRate = 100;
+    
+    for (let i = 0; i < 7; i++) {
+      if (dayPlanned[i] > 0) {
+        const rate = (dayCompletions[i] / dayPlanned[i]) * 100;
+        if (rate > bestRate) {
+          bestRate = rate;
+          bestDay = i;
+        }
+        if (rate < worstRate) {
+          worstRate = rate;
+          worstDay = i;
+        }
+      }
+    }
+    
+    return {
+      bestDay: FULL_DAY_LABELS[bestDay],
+      worstDay: FULL_DAY_LABELS[worstDay],
+      bestRate: Math.round(bestRate),
+      worstRate: Math.round(worstRate),
+    };
+  };
+
   const getWeekDays = () => {
-    const start = startOfWeek(new Date(), { weekStartsOn: 1 });
-    return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+    return Array.from({ length: 7 }, (_, i) => addDays(selectedWeekStart, i));
   };
 
   const isPlannedForDate = (activity: ActivityItem, date: Date) => {
@@ -200,6 +311,7 @@ export default function Trackers() {
     setFormDescription("");
     setFormFrequency([true, true, true, true, true, false, false]);
     setFormDays(30);
+    setFormStartDate(new Date());
     setDialogOpen(true);
   };
 
@@ -211,6 +323,7 @@ export default function Trackers() {
     setFormDescription(activity.description);
     setFormFrequency([...activity.frequencyPattern]);
     setFormDays(activity.numberOfDays);
+    setFormStartDate(parseISO(activity.startDate));
     setDialogOpen(true);
   };
 
@@ -228,6 +341,7 @@ export default function Trackers() {
               description: formDescription,
               frequencyPattern: formFrequency,
               numberOfDays: formDays,
+              startDate: format(formStartDate, "yyyy-MM-dd"),
             }
           : a
       ));
@@ -241,7 +355,7 @@ export default function Trackers() {
         description: formDescription,
         frequencyPattern: formFrequency,
         numberOfDays: formDays,
-        startDate: format(new Date(), "yyyy-MM-dd"),
+        startDate: format(formStartDate, "yyyy-MM-dd"),
         completions: {},
         createdAt: new Date().toISOString(),
       };
@@ -253,7 +367,45 @@ export default function Trackers() {
 
   const handleDelete = (activityId: string) => {
     setActivities(activities.filter((a) => a.id !== activityId));
+    setSelectedActivities(prev => {
+      const next = new Set(prev);
+      next.delete(activityId);
+      return next;
+    });
     toast({ title: "Activity deleted" });
+  };
+
+  const handleBulkComplete = (date: Date) => {
+    const dateStr = format(date, "yyyy-MM-dd");
+    setActivities(activities.map((a) => {
+      if (!selectedActivities.has(a.id)) return a;
+      if (!isPlannedForDate(a, date)) return a;
+      return { ...a, completions: { ...a.completions, [dateStr]: true } };
+    }));
+    toast({ title: `Marked ${selectedActivities.size} activities complete` });
+  };
+
+  const handleExport = () => {
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      activities: activities.map(a => ({
+        ...a,
+        currentStreak: getCurrentStreak(a),
+        longestStreak: getLongestStreak(a),
+        completionPercent: getCompletionPercent(a),
+      })),
+    };
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `activity-tracker-${format(new Date(), "yyyy-MM-dd")}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({ title: "Exported successfully" });
   };
 
   const filteredActivities = activities.filter((a) => {
@@ -264,8 +416,9 @@ export default function Trackers() {
 
   // Dashboard KPIs
   const activeCount = activities.filter((a) => getStatus(a) === "active").length;
+  const totalStreak = activities.reduce((sum, a) => sum + getCurrentStreak(a), 0);
+  const weekDays = getWeekDays();
   const completedThisWeek = (() => {
-    const weekDays = getWeekDays();
     let count = 0;
     activities.forEach((a) => {
       weekDays.forEach((day) => {
@@ -276,7 +429,6 @@ export default function Trackers() {
     return count;
   })();
   const plannedThisWeek = (() => {
-    const weekDays = getWeekDays();
     let count = 0;
     activities.forEach((a) => {
       weekDays.forEach((day) => {
@@ -286,288 +438,429 @@ export default function Trackers() {
     return count;
   })();
   const completionRate = plannedThisWeek > 0 ? Math.round((completedThisWeek / plannedThisWeek) * 100) : 0;
-  const upcomingCount = activities.filter((a) => getStatus(a) === "upcoming").length;
 
   const getCategoryInfo = (categoryId: string) => {
     return CATEGORIES.find((c) => c.id === categoryId) || CATEGORIES[0];
   };
 
-  const weekDays = getWeekDays();
+  // Heatmap data for current month
+  const getHeatmapData = (activity: ActivityItem) => {
+    const start = startOfMonth(new Date());
+    const end = endOfMonth(new Date());
+    const days = eachDayOfInterval({ start, end });
+    
+    return days.map(day => ({
+      date: day,
+      completed: activity.completions[format(day, "yyyy-MM-dd")] || false,
+      planned: isPlannedForDate(activity, day),
+    }));
+  };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Activity Tracker</h1>
-          <p className="text-muted-foreground text-sm">Monitor your long-term goals and daily commitments.</p>
+          <h1 className="text-xl md:text-2xl font-bold text-foreground">Activity Tracker</h1>
+          <p className="text-muted-foreground text-xs md:text-sm">Monitor your long-term goals and daily commitments.</p>
         </div>
-        <Button className="bg-primary hover:bg-primary/90" onClick={openCreateDialog}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Activity
-        </Button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button variant="outline" size="sm" onClick={handleExport} className="gap-1.5">
+            <Download className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Export</span>
+          </Button>
+          <Button className="flex-1 sm:flex-none" size="sm" onClick={openCreateDialog}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            New Activity
+          </Button>
+        </div>
       </div>
 
       {/* Dashboard KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center">
-              <Activity className="h-5 w-5 text-primary" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <Card className="p-3 md:p-4">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg bg-primary/20 flex items-center justify-center">
+              <Activity className="h-4 w-4 md:h-5 md:w-5 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">{activeCount}</p>
-              <p className="text-xs text-muted-foreground">Active Activities</p>
+              <p className="text-xl md:text-2xl font-bold text-foreground">{activeCount}</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Active</p>
             </div>
           </div>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-              <TrendingUp className="h-5 w-5 text-green-500" />
+        <Card className="p-3 md:p-4">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
+              <Flame className="h-4 w-4 md:h-5 md:w-5 text-orange-500" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">{completionRate}%</p>
-              <p className="text-xs text-muted-foreground">Completion This Week</p>
+              <p className="text-xl md:text-2xl font-bold text-foreground">{totalStreak}</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Total Streak</p>
             </div>
           </div>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
-              <CheckCircle2 className="h-5 w-5 text-orange-500" />
+        <Card className="p-3 md:p-4">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+              <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">{completedThisWeek}/{plannedThisWeek}</p>
-              <p className="text-xs text-muted-foreground">Done This Week</p>
+              <p className="text-xl md:text-2xl font-bold text-foreground">{completionRate}%</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">This Week</p>
             </div>
           </div>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
-              <Calendar className="h-5 w-5 text-purple-500" />
+        <Card className="p-3 md:p-4">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+              <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-purple-500" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">{upcomingCount}</p>
-              <p className="text-xs text-muted-foreground">Upcoming</p>
+              <p className="text-xl md:text-2xl font-bold text-foreground">{completedThisWeek}/{plannedThisWeek}</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Done</p>
             </div>
           </div>
         </Card>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      {/* Week Navigation + Filters */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        {/* Week Navigator */}
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Activity group</span>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8"
+            onClick={() => setSelectedWeekStart(addDays(selectedWeekStart, -7))}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs md:text-sm">
+                <CalendarIcon className="h-3.5 w-3.5" />
+                {format(selectedWeekStart, "MMM d")} - {format(addDays(selectedWeekStart, 6), "MMM d, yyyy")}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={selectedWeekStart}
+                onSelect={(date) => date && setSelectedWeekStart(startOfWeek(date, { weekStartsOn: 1 }))}
+                className="pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8"
+            onClick={() => setSelectedWeekStart(addDays(selectedWeekStart, 7))}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className="text-xs"
+            onClick={() => setSelectedWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}
+          >
+            Today
+          </Button>
+        </div>
+
+        {/* Filters */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <ScrollArea className="w-full md:w-auto">
+            <div className="flex gap-1">
+              <Button
+                variant={categoryFilter === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCategoryFilter("all")}
+                className="rounded-full text-xs h-7 px-2.5"
+              >
+                All
+              </Button>
+              {CATEGORIES.map((cat) => (
+                <Button
+                  key={cat.id}
+                  variant={categoryFilter === cat.id ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCategoryFilter(cat.id)}
+                  className="rounded-full text-xs h-7 px-2.5 whitespace-nowrap"
+                >
+                  {cat.label.split(" ")[0]}
+                </Button>
+              ))}
+            </div>
+          </ScrollArea>
           <div className="flex gap-1">
             <Button
-              variant={categoryFilter === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setCategoryFilter("all")}
-              className="rounded-full"
+              variant={viewMode === "week" ? "default" : "outline"}
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setViewMode("week")}
             >
-              All
+              <LayoutGrid className="h-3.5 w-3.5" />
             </Button>
-            {CATEGORIES.slice(0, 3).map((cat) => (
-              <Button
-                key={cat.id}
-                variant={categoryFilter === cat.id ? "default" : "outline"}
-                size="sm"
-                onClick={() => setCategoryFilter(cat.id)}
-                className="rounded-full"
-              >
-                {cat.label.split(" ")[0]}
-              </Button>
-            ))}
+            <Button
+              variant={viewMode === "heatmap" ? "default" : "outline"}
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setViewMode("heatmap")}
+            >
+              <BarChart2 className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant={viewMode === "compact" ? "default" : "outline"}
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setViewMode("compact")}
+            >
+              <List className="h-3.5 w-3.5" />
+            </Button>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Status</span>
-          <div className="flex gap-1">
-            {["all", "active", "completed", "upcoming"].map((status) => (
-              <Button
-                key={status}
-                variant={statusFilter === status ? "default" : "outline"}
-                size="sm"
-                onClick={() => setStatusFilter(status)}
-                className="rounded-full capitalize"
-              >
-                {status}
-              </Button>
-            ))}
-          </div>
-        </div>
-        <div className="flex gap-1">
-          <Button
-            variant={viewMode === "week" ? "default" : "outline"}
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setViewMode("week")}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={viewMode === "compact" ? "default" : "outline"}
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setViewMode("compact")}
-          >
-            <List className="h-4 w-4" />
-          </Button>
         </div>
       </div>
 
-      {/* Activity Table */}
-      <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">ACTIVITY</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">TIMELINE</th>
-                <th className="text-center p-3 text-sm font-medium text-muted-foreground">
-                  {viewMode === "week" ? "DAILY TRACKER (THIS WEEK)" : "ALL DAYS"}
-                </th>
-                <th className="text-center p-3 text-sm font-medium text-muted-foreground">STATUS</th>
-                <th className="text-center p-3 text-sm font-medium text-muted-foreground">ACTION</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredActivities.map((activity) => {
-                const category = getCategoryInfo(activity.category);
-                const status = getStatus(activity);
-                const completedDays = getCompletedDays(activity);
-                const plannedDays = getPlannedDays(activity);
-                const percent = getCompletionPercent(activity);
+      {/* Bulk Actions */}
+      {selectedActivities.size > 0 && (
+        <Card className="p-3 bg-primary/5 border-primary/20">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">{selectedActivities.size} selected</span>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => handleBulkComplete(new Date())}>
+                Mark Today Complete
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedActivities(new Set())}>
+                Clear
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
 
-                return (
-                  <tr key={activity.id} className="border-b border-border/50 hover:bg-muted/30">
-                    <td className="p-3">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="h-10 w-10 rounded-lg flex items-center justify-center"
-                          style={{ backgroundColor: `${category.color}20` }}
-                        >
-                          <Target className="h-5 w-5" style={{ color: category.color }} />
-                        </div>
-                        <div>
-                          <p className="font-medium text-foreground">{activity.name}</p>
-                          <p className="text-xs text-muted-foreground">{category.label}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <div className="text-sm">
-                        <p className="font-medium text-foreground">
-                          {format(parseISO(activity.startDate), "MMM d, yyyy")}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          to {format(getEndDate(activity), "MMM d, yyyy")}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {completedDays} / {plannedDays} days by {percent}% complete
-                        </p>
-                        <Progress value={percent} className="h-1 mt-1" />
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex justify-center gap-1">
-                        {viewMode === "week" ? (
-                          <>
-                            {weekDays.map((day, idx) => {
-                              const isPlanned = isPlannedForDate(activity, day);
-                              const isCompleted = activity.completions[format(day, "yyyy-MM-dd")];
-                              return (
-                                <div key={idx} className="flex flex-col items-center">
-                                  <span className="text-xs text-muted-foreground mb-1">
-                                    {DAY_LABELS[idx]}
-                                  </span>
-                                  <button
-                                    onClick={() => isPlanned && toggleCompletion(activity.id, day)}
-                                    disabled={!isPlanned}
-                                    className={`h-7 w-7 rounded ${
-                                      isCompleted
-                                        ? "bg-green-500"
-                                        : isPlanned
-                                        ? "bg-muted hover:bg-muted-foreground/20"
-                                        : "bg-transparent"
-                                    }`}
-                                  />
-                                </div>
-                              );
-                            })}
-                          </>
-                        ) : (
-                          <ScrollArea className="w-[200px]">
-                            <div className="flex gap-0.5">
-                              {Array.from({ length: Math.min(activity.numberOfDays, 30) }, (_, i) => {
-                                const day = addDays(parseISO(activity.startDate), i);
-                                const isPlanned = isPlannedForDate(activity, day);
-                                const isCompleted = activity.completions[format(day, "yyyy-MM-dd")];
-                                return (
-                                  <button
-                                    key={i}
-                                    onClick={() => isPlanned && toggleCompletion(activity.id, day)}
-                                    disabled={!isPlanned}
-                                    className={`h-4 w-4 rounded-sm flex-shrink-0 ${
-                                      isCompleted
-                                        ? "bg-green-500"
-                                        : isPlanned
-                                        ? "bg-muted"
-                                        : "bg-transparent"
-                                    }`}
-                                    title={format(day, "MMM d")}
-                                  />
-                                );
-                              })}
-                            </div>
-                          </ScrollArea>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-3 text-center">
-                      <Badge
+      {/* Activity Cards/Table */}
+      <div className="space-y-3">
+        {filteredActivities.map((activity) => {
+          const category = getCategoryInfo(activity.category);
+          const status = getStatus(activity);
+          const currentStreak = getCurrentStreak(activity);
+          const longestStreak = getLongestStreak(activity);
+          const percent = getCompletionPercent(activity);
+          const insights = getInsights(activity);
+
+          return (
+            <Card key={activity.id} className="overflow-hidden">
+              <div className="p-3 md:p-4">
+                {/* Header Row */}
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    checked={selectedActivities.has(activity.id)}
+                    onCheckedChange={(checked) => {
+                      setSelectedActivities(prev => {
+                        const next = new Set(prev);
+                        if (checked) next.add(activity.id);
+                        else next.delete(activity.id);
+                        return next;
+                      });
+                    }}
+                    className="mt-1"
+                  />
+                  
+                  <div
+                    className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: `hsl(${category.color} / 0.2)` }}
+                  >
+                    <Target className="h-5 w-5" style={{ color: `hsl(${category.color})` }} />
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-semibold text-foreground">{activity.name}</h3>
+                      <Badge variant="secondary" className="text-[10px] h-5">
+                        {category.label.split(" ")[0]}
+                      </Badge>
+                      {currentStreak > 0 && (
+                        <Badge variant="outline" className="text-[10px] h-5 gap-1">
+                          <Flame className="h-3 w-3 text-orange-500" />
+                          {currentStreak}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">{activity.description}</p>
+                    
+                    {/* Timeline & Progress */}
+                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                      <span>{format(parseISO(activity.startDate), "MMM d")} → {format(getEndDate(activity), "MMM d")}</span>
+                      <span>{percent}% complete</span>
+                      <Badge 
                         variant="secondary"
-                        className={`capitalize ${
-                          status === "active"
-                            ? "bg-green-500/20 text-green-600"
-                            : status === "completed"
-                            ? "bg-primary/20 text-primary"
-                            : "bg-orange-500/20 text-orange-600"
-                        }`}
+                        className={cn("text-[10px] h-5", {
+                          "bg-green-500/20 text-green-600": status === "active",
+                          "bg-primary/20 text-primary": status === "completed",
+                          "bg-orange-500/20 text-orange-600": status === "upcoming",
+                        })}
                       >
                         {status}
                       </Badge>
-                    </td>
-                    <td className="p-3 text-center">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEditDialog(activity)}>
-                            Edit Activity
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDelete(activity.id)} className="text-destructive">
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+                    </div>
+                    <Progress value={percent} className="h-1 mt-2" />
+                  </div>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setDetailActivity(activity)}>
+                        View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openEditDialog(activity)}>
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => handleDelete(activity.id)} className="text-destructive">
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                {/* Tracker Grid */}
+                <div className="mt-4 pl-10 md:pl-14">
+                  {viewMode === "week" && (
+                    <div className="flex gap-1.5 md:gap-2">
+                      {weekDays.map((day, idx) => {
+                        const isPlanned = isPlannedForDate(activity, day);
+                        const isCompleted = activity.completions[format(day, "yyyy-MM-dd")];
+                        const isFuture = isAfter(day, new Date());
+                        
+                        return (
+                          <div key={idx} className="flex flex-col items-center flex-1">
+                            <span className="text-[10px] text-muted-foreground mb-1 hidden md:block">
+                              {format(day, "EEE")}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground mb-1 md:hidden">
+                              {DAY_LABELS[idx]}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground mb-1 hidden md:block">
+                              {format(day, "d")}
+                            </span>
+                            <button
+                              onClick={() => isPlanned && !isFuture && toggleCompletion(activity.id, day)}
+                              disabled={!isPlanned || isFuture}
+                              className={cn(
+                                "h-5 w-full max-w-[32px] rounded-sm transition-all",
+                                isCompleted 
+                                  ? "bg-green-500" 
+                                  : isPlanned 
+                                    ? isFuture 
+                                      ? "bg-muted/50" 
+                                      : "bg-muted hover:bg-muted-foreground/30 cursor-pointer" 
+                                    : "bg-transparent",
+                                isToday(day) && "ring-2 ring-primary ring-offset-1"
+                              )}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {viewMode === "heatmap" && (
+                    <div className="grid grid-cols-7 gap-0.5">
+                      {getHeatmapData(activity).map((day, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => day.planned && !isAfter(day.date, new Date()) && toggleCompletion(activity.id, day.date)}
+                          disabled={!day.planned || isAfter(day.date, new Date())}
+                          className={cn(
+                            "h-3.5 w-full rounded-sm transition-all",
+                            day.completed 
+                              ? "bg-green-500" 
+                              : day.planned 
+                                ? "bg-muted/80" 
+                                : "bg-transparent",
+                            isToday(day.date) && "ring-1 ring-primary"
+                          )}
+                          title={format(day.date, "MMM d")}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {viewMode === "compact" && (
+                    <ScrollArea className="w-full">
+                      <div className="flex gap-0.5">
+                        {Array.from({ length: Math.min(activity.numberOfDays, 60) }, (_, i) => {
+                          const day = addDays(parseISO(activity.startDate), i);
+                          const isPlanned = isPlannedForDate(activity, day);
+                          const isCompleted = activity.completions[format(day, "yyyy-MM-dd")];
+                          const isFuture = isAfter(day, new Date());
+                          
+                          return (
+                            <button
+                              key={i}
+                              onClick={() => isPlanned && !isFuture && toggleCompletion(activity.id, day)}
+                              disabled={!isPlanned || isFuture}
+                              className={cn(
+                                "h-3 w-3 rounded-sm flex-shrink-0 transition-all",
+                                isCompleted 
+                                  ? "bg-green-500" 
+                                  : isPlanned 
+                                    ? "bg-muted hover:bg-muted-foreground/30" 
+                                    : "bg-transparent"
+                              )}
+                              title={format(day, "EEE, MMM d")}
+                            />
+                          );
+                        })}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </div>
+
+                {/* Quick Stats Row */}
+                <div className="flex items-center gap-4 mt-3 pl-10 md:pl-14 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Flame className="h-3 w-3 text-orange-500" />
+                    <span>Streak: {currentStreak}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Zap className="h-3 w-3 text-yellow-500" />
+                    <span>Best: {longestStreak}</span>
+                  </div>
+                  <div className="flex items-center gap-1 hidden sm:flex">
+                    <Lightbulb className="h-3 w-3 text-primary" />
+                    <span>Best on {insights.bestDay}</span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Empty State */}
+      {filteredActivities.length === 0 && (
+        <Card className="p-8 text-center">
+          <Activity className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+          <h3 className="font-medium text-foreground mb-1">No activities found</h3>
+          <p className="text-sm text-muted-foreground mb-4">Create your first activity to start tracking</p>
+          <Button onClick={openCreateDialog}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Activity
+          </Button>
+        </Card>
+      )}
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingActivity ? "Edit Activity" : "Create New Activity"}</DialogTitle>
           </DialogHeader>
@@ -612,15 +905,36 @@ export default function Trackers() {
                 </Select>
               </div>
             </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">No. of Days</label>
-              <Input
-                type="number"
-                min={1}
-                max={365}
-                value={formDays}
-                onChange={(e) => setFormDays(parseInt(e.target.value) || 30)}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Start Date</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {format(formStartDate, "PPP")}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formStartDate}
+                      onSelect={(date) => date && setFormStartDate(date)}
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Duration (Days)</label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={formDays}
+                  onChange={(e) => setFormDays(parseInt(e.target.value) || 30)}
+                />
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Description</label>
@@ -628,7 +942,7 @@ export default function Trackers() {
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
                 placeholder="Why is this activity important to you?"
-                rows={3}
+                rows={2}
               />
             </div>
             <div>
@@ -643,11 +957,12 @@ export default function Trackers() {
                       newPattern[idx] = !newPattern[idx];
                       setFormFrequency(newPattern);
                     }}
-                    className={`h-10 w-10 rounded-full font-medium transition-colors ${
+                    className={cn(
+                      "h-9 w-9 rounded-full font-medium text-sm transition-colors",
                       formFrequency[idx]
-                        ? "bg-destructive text-destructive-foreground"
-                        : "bg-muted text-muted-foreground"
-                    }`}
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-muted-foreground/20"
+                    )}
                   >
                     {day}
                   </button>
@@ -663,6 +978,90 @@ export default function Trackers() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Activity Detail Dialog */}
+      <Dialog open={!!detailActivity} onOpenChange={() => setDetailActivity(null)}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          {detailActivity && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{detailActivity.name}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <p className="text-sm text-muted-foreground">{detailActivity.description}</p>
+                
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  <Card className="p-3">
+                    <p className="text-xs text-muted-foreground">Current Streak</p>
+                    <p className="text-2xl font-bold text-foreground flex items-center gap-1">
+                      <Flame className="h-5 w-5 text-orange-500" />
+                      {getCurrentStreak(detailActivity)}
+                    </p>
+                  </Card>
+                  <Card className="p-3">
+                    <p className="text-xs text-muted-foreground">Longest Streak</p>
+                    <p className="text-2xl font-bold text-foreground flex items-center gap-1">
+                      <Zap className="h-5 w-5 text-yellow-500" />
+                      {getLongestStreak(detailActivity)}
+                    </p>
+                  </Card>
+                  <Card className="p-3">
+                    <p className="text-xs text-muted-foreground">Completion</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {getCompletionPercent(detailActivity)}%
+                    </p>
+                  </Card>
+                  <Card className="p-3">
+                    <p className="text-xs text-muted-foreground">Days Done</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {getCompletedDays(detailActivity)}/{getPlannedDays(detailActivity)}
+                    </p>
+                  </Card>
+                </div>
+
+                {/* Insights */}
+                <Card className="p-4">
+                  <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                    <Lightbulb className="h-4 w-4 text-primary" />
+                    Insights
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <p className="text-muted-foreground">
+                      You're most consistent on <span className="font-medium text-foreground">{getInsights(detailActivity).bestDay}</span> ({getInsights(detailActivity).bestRate}% completion)
+                    </p>
+                    <p className="text-muted-foreground">
+                      You tend to miss <span className="font-medium text-foreground">{getInsights(detailActivity).worstDay}</span> ({getInsights(detailActivity).worstRate}% completion)
+                    </p>
+                  </div>
+                </Card>
+
+                {/* Heatmap */}
+                <Card className="p-4">
+                  <h4 className="font-medium text-foreground mb-3">This Month</h4>
+                  <div className="grid grid-cols-7 gap-1">
+                    {getHeatmapData(detailActivity).map((day, idx) => (
+                      <div
+                        key={idx}
+                        className={cn(
+                          "h-6 w-full rounded-sm",
+                          day.completed 
+                            ? "bg-green-500" 
+                            : day.planned 
+                              ? "bg-muted" 
+                              : "bg-transparent",
+                          isToday(day.date) && "ring-2 ring-primary"
+                        )}
+                        title={`${format(day.date, "MMM d")}: ${day.completed ? "Completed" : day.planned ? "Missed" : "Not planned"}`}
+                      />
+                    ))}
+                  </div>
+                </Card>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>
