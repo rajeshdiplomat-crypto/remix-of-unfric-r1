@@ -426,76 +426,72 @@ export default function Notes() {
           />
         </div>
 
-        {/* Folders Section (when a group is selected) */}
-        {selectedGroup !== "all" && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Folders</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setNewFolderGroupId(selectedGroup);
-                  setNewFolderDialogOpen(true);
-                }}
-              >
-                <FolderPlus className="h-4 w-4 mr-1" />
-                Add
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {getFoldersByGroup(selectedGroup).length === 0 ? (
-                <p className="text-sm text-muted-foreground">No folders yet. Create one to organize your notes.</p>
-              ) : (
-                getFoldersByGroup(selectedGroup).map((folder) => (
-                  <Button
-                    key={folder.id}
-                    variant={selectedFolder === folder.id ? "secondary" : "outline"}
-                    size="sm"
-                    onClick={() => handleFolderClick(folder.id)}
-                    className="gap-2"
-                  >
-                    {selectedFolder === folder.id ? (
-                      <FolderOpen className="h-4 w-4" />
-                    ) : (
-                      <Folder className="h-4 w-4" />
-                    )}
-                    {folder.name}
-                    <Badge variant="secondary" className="ml-1 h-5 px-1.5">
-                      {notes.filter(n => n.folderId === folder.id).length}
-                    </Badge>
-                  </Button>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Notes Grid by Group */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Notes Grid by Group - dynamic columns based on group count */}
+        <div 
+          className="grid gap-6"
+          style={{
+            gridTemplateColumns: `repeat(${Math.max(4, sortedGroups.filter((g) => selectedGroup === "all" || g.id === selectedGroup).length)}, minmax(220px, 1fr))`
+          }}
+        >
           {sortedGroups.filter((g) => selectedGroup === "all" || g.id === selectedGroup).map((group) => {
             const groupNotes = getNotesByGroup(group.id);
-            if (selectedGroup !== "all" && groupNotes.length === 0) return null;
+            const groupFolders = getFoldersByGroup(group.id);
             
             return (
-              <div key={group.id} className="space-y-3">
+              <div key={group.id} className="space-y-3 min-w-0">
                 {/* Group Header */}
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-sm text-foreground uppercase tracking-wide">
                     {group.name}
                   </span>
                   <div
-                    className="h-2 w-2 rounded-full"
+                    className="h-2 w-2 rounded-full shrink-0"
                     style={{ backgroundColor: group.color }}
                   />
-                  <span className="text-xs text-muted-foreground">
-                    {groupNotes.length} {groupNotes.length === 1 ? "note" : "notes"}
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    {groupFolders.length} {groupFolders.length === 1 ? "folder" : "folders"} · {groupNotes.length} {groupNotes.length === 1 ? "note" : "notes"}
                   </span>
                 </div>
 
-                {/* Note Cards */}
+                {/* Folder and Note Cards */}
                 <div className="space-y-3">
-                  {groupNotes.slice(0, 4).map((note) => (
+                  {/* Folder Cards - displayed like notes */}
+                  {groupFolders.map((folder) => (
+                    <Card
+                      key={folder.id}
+                      className={`cursor-pointer hover:shadow-md transition-shadow p-4 ${selectedFolder === folder.id ? 'ring-2 ring-primary' : ''}`}
+                      onClick={() => handleFolderClick(folder.id)}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        {selectedFolder === folder.id ? (
+                          <FolderOpen className="h-5 w-5" style={{ color: group.color }} />
+                        ) : (
+                          <Folder className="h-5 w-5" style={{ color: group.color }} />
+                        )}
+                        <h3 className="font-medium text-foreground text-sm line-clamp-1">
+                          {folder.name}
+                        </h3>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {notes.filter(n => n.folderId === folder.id).length} notes inside
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <Badge
+                          variant="secondary"
+                          className="text-xs px-2 py-0"
+                          style={{ backgroundColor: `${group.color}20`, color: group.color }}
+                        >
+                          Folder
+                        </Badge>
+                      </div>
+                    </Card>
+                  ))}
+
+                  {/* Note Cards */}
+                  {groupNotes
+                    .filter(note => selectedFolder === null || note.folderId === selectedFolder)
+                    .slice(0, 4)
+                    .map((note) => (
                     <Card
                       key={note.id}
                       className="cursor-pointer hover:shadow-md transition-shadow p-4"
