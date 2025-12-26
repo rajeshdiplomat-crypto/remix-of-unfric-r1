@@ -1,88 +1,116 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
-export type FontId = 'manrope' | 'plus-jakarta' | 'space-grotesk' | 'dm-sans';
+export type FontPairId = 'classic' | 'modern' | 'geometric' | 'elegant';
 
-export interface FontConfig {
-  id: FontId;
+export interface FontPairConfig {
+  id: FontPairId;
   name: string;
-  cssFamily: string;
-  googleUrl: string;
+  description: string;
+  headingFamily: string;
+  bodyFamily: string;
+  headingUrl: string;
+  bodyUrl: string;
 }
 
-export const FONTS: FontConfig[] = [
+export const FONT_PAIRS: FontPairConfig[] = [
   {
-    id: 'manrope',
-    name: 'Manrope',
-    cssFamily: "'Manrope', sans-serif",
-    googleUrl: 'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap',
+    id: 'classic',
+    name: 'Classic Elegance',
+    description: 'Playfair Display + Inter',
+    headingFamily: "'Playfair Display', Georgia, serif",
+    bodyFamily: "'Inter', system-ui, sans-serif",
+    headingUrl: 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap',
+    bodyUrl: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
   },
   {
-    id: 'plus-jakarta',
-    name: 'Plus Jakarta Sans',
-    cssFamily: "'Plus Jakarta Sans', sans-serif",
-    googleUrl: 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap',
+    id: 'modern',
+    name: 'Modern Serif',
+    description: 'Fraunces + Plus Jakarta Sans',
+    headingFamily: "'Fraunces', Georgia, serif",
+    bodyFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+    headingUrl: 'https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600;700&display=swap',
+    bodyUrl: 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap',
   },
   {
-    id: 'space-grotesk',
-    name: 'Space Grotesk',
-    cssFamily: "'Space Grotesk', sans-serif",
-    googleUrl: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap',
+    id: 'geometric',
+    name: 'Geometric',
+    description: 'Space Grotesk + Manrope',
+    headingFamily: "'Space Grotesk', system-ui, sans-serif",
+    bodyFamily: "'Manrope', system-ui, sans-serif",
+    headingUrl: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap',
+    bodyUrl: 'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap',
   },
   {
-    id: 'dm-sans',
-    name: 'DM Sans',
-    cssFamily: "'DM Sans', sans-serif",
-    googleUrl: 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap',
+    id: 'elegant',
+    name: 'Elegant Sans',
+    description: 'DM Serif Display + DM Sans',
+    headingFamily: "'DM Serif Display', Georgia, serif",
+    bodyFamily: "'DM Sans', system-ui, sans-serif",
+    headingUrl: 'https://fonts.googleapis.com/css2?family=DM+Serif+Display:wght@400&display=swap',
+    bodyUrl: 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap',
   },
 ];
 
 interface FontContextValue {
-  font: FontConfig;
-  fontId: FontId;
-  setFont: (fontId: FontId) => void;
+  fontPair: FontPairConfig;
+  fontPairId: FontPairId;
+  setFontPair: (id: FontPairId) => void;
 }
 
 const FontContext = createContext<FontContextValue | null>(null);
 
-const STORAGE_KEY = 'mindflow-font';
+const STORAGE_KEY = 'mindflow-font-pair';
+
+// Track loaded fonts to avoid duplicates
+const loadedFonts = new Set<string>();
+
+function loadFont(url: string) {
+  if (loadedFonts.has(url)) return;
+  loadedFonts.add(url);
+  
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = url;
+  document.head.appendChild(link);
+}
+
+function applyFontPair(fontPair: FontPairConfig) {
+  // Load fonts
+  loadFont(fontPair.headingUrl);
+  loadFont(fontPair.bodyUrl);
+  
+  const root = document.documentElement;
+  root.style.setProperty('--font-heading', fontPair.headingFamily);
+  root.style.setProperty('--font-body', fontPair.bodyFamily);
+  root.style.setProperty('--font-sans', fontPair.bodyFamily);
+  root.style.setProperty('--font-serif', fontPair.headingFamily);
+  
+  // Apply to body
+  document.body.style.fontFamily = fontPair.bodyFamily;
+}
 
 export function FontProvider({ children }: { children: ReactNode }) {
-  const [fontId, setFontId] = useState<FontId>(() => {
+  const [fontPairId, setFontPairId] = useState<FontPairId>(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return (stored as FontId) || 'manrope';
+    return (stored as FontPairId) || 'elegant';
   });
 
-  const font = FONTS.find(f => f.id === fontId) || FONTS[0];
+  const fontPair = FONT_PAIRS.find(f => f.id === fontPairId) || FONT_PAIRS[3];
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, fontId);
-    applyFont(font);
-  }, [fontId, font]);
+    localStorage.setItem(STORAGE_KEY, fontPairId);
+    applyFontPair(fontPair);
+  }, [fontPairId, fontPair]);
 
-  const setFont = (newFontId: FontId) => {
-    setFontId(newFontId);
+  const setFontPair = (id: FontPairId) => {
+    setFontPairId(id);
   };
 
   return (
-    <FontContext.Provider value={{ font, fontId, setFont }}>
+    <FontContext.Provider value={{ fontPair, fontPairId, setFontPair }}>
       {children}
     </FontContext.Provider>
   );
-}
-
-function applyFont(font: FontConfig) {
-  // Load font if not already loaded
-  const existingLink = document.querySelector(`link[href="${font.googleUrl}"]`);
-  if (!existingLink) {
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = font.googleUrl;
-    document.head.appendChild(link);
-  }
-
-  // Apply font to root
-  document.documentElement.style.setProperty('--font-sans', font.cssFamily);
-  document.body.style.fontFamily = font.cssFamily;
 }
 
 export function useFont() {
