@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { format } from "date-fns";
 import { Plus } from "lucide-react";
-import { LuxuryClock } from "@/components/tasks/LuxuryClock";
+import { CompactTimerClock } from "@/components/tasks/CompactTimerClock";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -384,12 +384,7 @@ export default function Tasks() {
   }
 
   return (
-    <div className="h-full flex flex-col gap-4 px-2 md:px-4">
-      {/* Luxury Clock Widget */}
-      <div className="flex justify-center py-4 border-b border-border/30">
-        <LuxuryClock />
-      </div>
-
+    <div className="h-full flex flex-col gap-4 px-2 md:px-4 overflow-x-hidden">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row items-start justify-between gap-4">
         <div>
@@ -415,8 +410,13 @@ export default function Tasks() {
         onSearchChange={setSearchQuery}
       />
 
-      {/* Summary Strip */}
-      <SummaryStrip tasks={filteredTasks} />
+      {/* Summary Strip with Clock in center */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <SummaryStrip tasks={filteredTasks} />
+        <div className="flex items-center gap-3">
+          <CompactTimerClock />
+        </div>
+      </div>
 
       {/* Insights Panel */}
       <TasksInsights tasks={filteredTasks} />
@@ -433,20 +433,20 @@ export default function Tasks() {
           />
         </div>
 
-        {/* Right - Quadrant or Board */}
+        {/* Right - Quadrant or Board - Fixed container to prevent shifts */}
         <div className="flex-1 min-w-0 order-1 lg:order-2 overflow-x-auto">
-          {view === 'quadrant' && (
-            <QuadrantGrid
-              mode={quadrantMode}
-              tasks={filteredTasks}
-              onTaskClick={openTaskDetail}
-              onStartTask={handleStartTask}
-              onCompleteTask={handleCompleteTask}
-            />
-          )}
+          <div className="min-w-[900px] w-full">
+            {view === 'quadrant' && (
+              <QuadrantGrid
+                mode={quadrantMode}
+                tasks={filteredTasks}
+                onTaskClick={openTaskDetail}
+                onStartTask={handleStartTask}
+                onCompleteTask={handleCompleteTask}
+              />
+            )}
 
-          {view === 'board' && (
-            <div className="min-w-[900px]">
+            {view === 'board' && (
               <BoardView
                 mode="status"
                 tasks={filteredTasks}
@@ -457,8 +457,8 @@ export default function Tasks() {
                 onStartTask={handleStartTask}
                 onCompleteTask={handleCompleteTask}
               />
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
