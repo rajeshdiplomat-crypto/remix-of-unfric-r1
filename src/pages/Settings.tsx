@@ -9,6 +9,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ThemeSelector } from "@/components/settings/ThemeSelector";
+import { FontSelector } from "@/components/settings/FontSelector";
+import { MotionToggle } from "@/components/settings/MotionToggle";
+import { ThemeCustomizer } from "@/components/settings/ThemeCustomizer";
 
 export default function Settings() {
   const { user, signOut } = useAuth();
@@ -60,9 +63,12 @@ export default function Settings() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-        <p className="text-muted-foreground mt-1">Manage your account and preferences</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Settings</h1>
+          <p className="text-muted-foreground mt-1">Manage your account and preferences</p>
+        </div>
+        <ThemeCustomizer />
       </div>
 
       <Card>
@@ -101,8 +107,14 @@ export default function Settings() {
         </CardContent>
       </Card>
 
+      {/* Font Selector */}
+      <FontSelector />
+
       {/* Theme Selector */}
       <ThemeSelector />
+
+      {/* Motion Toggle */}
+      <MotionToggle />
 
       <Card>
         <CardHeader>
