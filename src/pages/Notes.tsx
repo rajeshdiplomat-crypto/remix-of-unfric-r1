@@ -7,13 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, Filter, Settings, FolderPlus, FileText, ChevronDown, X, ArrowLeft, Edit2, Share2, MoreHorizontal, Clock, Tag } from "lucide-react";
+import { Plus, Search, Settings, FolderPlus, FileText, ChevronDown, Folder, FolderOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { NotesEditor } from "@/components/notes/NotesEditor";
 import { NotesSplitView } from "@/components/notes/NotesSplitView";
 import { NotesGroupSettings } from "@/components/notes/NotesGroupSettings";
+import { NotesFilterPanel, type NotesFilters } from "@/components/notes/NotesFilterPanel";
+import { NotesNewNoteDialog } from "@/components/notes/NotesNewNoteDialog";
 
 export interface NoteGroup {
   id: string;
@@ -42,6 +43,10 @@ export interface Note {
   isPinned: boolean;
   isArchived: boolean;
 }
+
+const STORAGE_KEY_GROUPS = "notes-groups";
+const STORAGE_KEY_FOLDERS = "notes-folders";
+const STORAGE_KEY_NOTES = "notes-data";
 
 const DEFAULT_GROUPS: NoteGroup[] = [
   { id: "work", name: "Work", color: "hsl(221, 83%, 53%)", sortOrder: 0 },
@@ -136,32 +141,94 @@ type ViewMode = "grid" | "split" | "editor";
 export default function Notes() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [notes, setNotes] = useState<Note[]>(SAMPLE_NOTES);
-  const [groups, setGroups] = useState<NoteGroup[]>(DEFAULT_GROUPS);
-  const [folders, setFolders] = useState<NoteFolder[]>([]);
+  
+  // Load from localStorage or use defaults
+  const [notes, setNotes] = useState<Note[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_NOTES);
+    return saved ? JSON.parse(saved) : SAMPLE_NOTES;
+  });
+  
+  const [groups, setGroups] = useState<NoteGroup[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_GROUPS);
+    return saved ? JSON.parse(saved) : DEFAULT_GROUPS;
+  });
+  
+  const [folders, setFolders] = useState<NoteFolder[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_FOLDERS);
+    return saved ? JSON.parse(saved) : [];
+  });
+  
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<string>("all");
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [newFolderDialogOpen, setNewFolderDialogOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderGroupId, setNewFolderGroupId] = useState("");
-
-  const filteredNotes = notes.filter((note) => {
-    if (note.isArchived) return false;
-    const matchesGroup = selectedGroup === "all" || note.groupId === selectedGroup;
-    const matchesSearch = searchQuery
-      ? note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        note.plainText.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        note.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-      : true;
-    return matchesGroup && matchesSearch;
+  const [newNoteDialogOpen, setNewNoteDialogOpen] = useState(false);
+  
+  const [filters, setFilters] = useState<NotesFilters>({
+    groupId: "all",
+    folderId: "all",
+    sortBy: "updatedAt",
+    sortOrder: "desc",
+    tag: "all",
   });
+
+  // Persist to localStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_NOTES, JSON.stringify(notes));
+  }, [notes]);
+  
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_GROUPS, JSON.stringify(groups));
+  }, [groups]);
+  
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_FOLDERS, JSON.stringify(folders));
+  }, [folders]);
+
+  // Get all unique tags
+  const allTags = Array.from(new Set(notes.flatMap(n => n.tags)));
+
+  // Filter and sort notes
+  const filteredNotes = notes
+    .filter((note) => {
+      if (note.isArchived) return false;
+      
+      const matchesGroup = selectedGroup === "all" || note.groupId === selectedGroup;
+      const matchesFolder = selectedFolder === null || note.folderId === selectedFolder;
+      const matchesFilterGroup = filters.groupId === "all" || note.groupId === filters.groupId;
+      const matchesFilterFolder = filters.folderId === "all" || note.folderId === filters.folderId;
+      const matchesTag = filters.tag === "all" || note.tags.includes(filters.tag);
+      const matchesSearch = searchQuery
+        ? note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          note.plainText.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          note.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+        : true;
+      
+      return matchesGroup && matchesFolder && matchesFilterGroup && matchesFilterFolder && matchesTag && matchesSearch;
+    })
+    .sort((a, b) => {
+      if (filters.sortBy === "title") {
+        return filters.sortOrder === "asc" 
+          ? a.title.localeCompare(b.title)
+          : b.title.localeCompare(a.title);
+      }
+      const dateA = new Date(a[filters.sortBy]).getTime();
+      const dateB = new Date(b[filters.sortBy]).getTime();
+      return filters.sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+    });
 
   const getNotesByGroup = (groupId: string) => {
     return filteredNotes.filter((note) => note.groupId === groupId);
+  };
+
+  const getFoldersByGroup = (groupId: string) => {
+    return folders.filter((folder) => folder.groupId === groupId).sort((a, b) => a.sortOrder - b.sortOrder);
   };
 
   const getGroupColor = (groupId: string) => {
@@ -186,15 +253,19 @@ export default function Notes() {
     }
   };
 
-  const handleCreateNote = () => {
+  const handleOpenNewNoteDialog = () => {
+    setNewNoteDialogOpen(true);
+  };
+
+  const handleCreateNote = (groupId: string, folderId: string | null, tags: string[]) => {
     const newNote: Note = {
       id: crypto.randomUUID(),
-      groupId: selectedGroup === "all" ? "work" : selectedGroup,
-      folderId: null,
+      groupId,
+      folderId,
       title: "Untitled Note",
       contentRich: "",
       plainText: "",
-      tags: [],
+      tags,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       isPinned: false,
@@ -203,6 +274,12 @@ export default function Notes() {
     setNotes([newNote, ...notes]);
     setSelectedNote(newNote);
     setViewMode("split");
+  };
+
+  const handleQuickCreateNote = () => {
+    // Quick create without dialog - uses current selection
+    const groupId = selectedGroup === "all" ? "work" : selectedGroup;
+    handleCreateNote(groupId, selectedFolder, []);
   };
 
   const handleCreateFolder = () => {
@@ -240,10 +317,21 @@ export default function Notes() {
     setViewMode("split");
   };
 
+  const handleFolderClick = (folderId: string) => {
+    setSelectedFolder(selectedFolder === folderId ? null : folderId);
+  };
+
   const handleBackToGrid = () => {
     setViewMode("grid");
     setSelectedNote(null);
   };
+
+  const handleGroupsChange = (newGroups: NoteGroup[]) => {
+    setGroups(newGroups);
+  };
+
+  // Sort groups by sortOrder
+  const sortedGroups = [...groups].sort((a, b) => a.sortOrder - b.sortOrder);
 
   // Grid View (All Notes Overview)
   if (viewMode === "grid") {
@@ -262,9 +350,13 @@ export default function Notes() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleCreateNote}>
+                <DropdownMenuItem onClick={handleOpenNewNoteDialog}>
                   <FileText className="h-4 w-4 mr-2" />
-                  New Note
+                  New Note (with options)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleQuickCreateNote}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Quick Note
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => {
                   setNewFolderGroupId(selectedGroup === "all" ? "work" : selectedGroup);
@@ -275,41 +367,53 @@ export default function Notes() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="outline" size="icon">
-              <Filter className="h-4 w-4" />
-            </Button>
+            <NotesFilterPanel
+              groups={groups}
+              folders={folders}
+              tags={allTags}
+              filters={filters}
+              onFiltersChange={setFilters}
+            />
             <Button variant="outline" size="icon" onClick={() => setSettingsOpen(true)}>
               <Settings className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        {/* Group Filter Chips */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            variant={selectedGroup === "all" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setSelectedGroup("all")}
-            className="rounded-full"
-          >
-            All
-          </Button>
-          {groups.map((group) => (
+        {/* Group Filter Chips - scrollable */}
+        <ScrollArea className="w-full">
+          <div className="flex items-center gap-2 pb-2">
             <Button
-              key={group.id}
-              variant={selectedGroup === group.id ? "default" : "outline"}
+              variant={selectedGroup === "all" ? "default" : "outline"}
               size="sm"
-              onClick={() => setSelectedGroup(group.id)}
-              className="rounded-full"
-              style={{
-                backgroundColor: selectedGroup === group.id ? group.color : undefined,
-                borderColor: selectedGroup === group.id ? group.color : undefined,
+              onClick={() => {
+                setSelectedGroup("all");
+                setSelectedFolder(null);
               }}
+              className="rounded-full shrink-0"
             >
-              {group.name}
+              All
             </Button>
-          ))}
-        </div>
+            {sortedGroups.map((group) => (
+              <Button
+                key={group.id}
+                variant={selectedGroup === group.id ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setSelectedGroup(group.id);
+                  setSelectedFolder(null);
+                }}
+                className="rounded-full shrink-0"
+                style={{
+                  backgroundColor: selectedGroup === group.id ? group.color : undefined,
+                  borderColor: selectedGroup === group.id ? group.color : undefined,
+                }}
+              >
+                {group.name}
+              </Button>
+            ))}
+          </div>
+        </ScrollArea>
 
         {/* Search */}
         <div className="relative">
@@ -322,9 +426,54 @@ export default function Notes() {
           />
         </div>
 
+        {/* Folders Section (when a group is selected) */}
+        {selectedGroup !== "all" && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Folders</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setNewFolderGroupId(selectedGroup);
+                  setNewFolderDialogOpen(true);
+                }}
+              >
+                <FolderPlus className="h-4 w-4 mr-1" />
+                Add
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {getFoldersByGroup(selectedGroup).length === 0 ? (
+                <p className="text-sm text-muted-foreground">No folders yet. Create one to organize your notes.</p>
+              ) : (
+                getFoldersByGroup(selectedGroup).map((folder) => (
+                  <Button
+                    key={folder.id}
+                    variant={selectedFolder === folder.id ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => handleFolderClick(folder.id)}
+                    className="gap-2"
+                  >
+                    {selectedFolder === folder.id ? (
+                      <FolderOpen className="h-4 w-4" />
+                    ) : (
+                      <Folder className="h-4 w-4" />
+                    )}
+                    {folder.name}
+                    <Badge variant="secondary" className="ml-1 h-5 px-1.5">
+                      {notes.filter(n => n.folderId === folder.id).length}
+                    </Badge>
+                  </Button>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Notes Grid by Group */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {groups.filter((g) => selectedGroup === "all" || g.id === selectedGroup).map((group) => {
+          {sortedGroups.filter((g) => selectedGroup === "all" || g.id === selectedGroup).map((group) => {
             const groupNotes = getNotesByGroup(group.id);
             if (selectedGroup !== "all" && groupNotes.length === 0) return null;
             
@@ -378,6 +527,17 @@ export default function Notes() {
           })}
         </div>
 
+        {/* New Note Dialog */}
+        <NotesNewNoteDialog
+          open={newNoteDialogOpen}
+          onOpenChange={setNewNoteDialogOpen}
+          groups={groups}
+          folders={folders}
+          defaultGroupId={selectedGroup === "all" ? undefined : selectedGroup}
+          defaultFolderId={selectedFolder}
+          onCreate={handleCreateNote}
+        />
+
         {/* New Folder Dialog */}
         <Dialog open={newFolderDialogOpen} onOpenChange={setNewFolderDialogOpen}>
           <DialogContent className="max-w-sm">
@@ -428,7 +588,7 @@ export default function Notes() {
           open={settingsOpen}
           onOpenChange={setSettingsOpen}
           groups={groups}
-          onGroupsChange={setGroups}
+          onGroupsChange={handleGroupsChange}
           folders={folders}
           onFoldersChange={setFolders}
         />
@@ -447,7 +607,7 @@ export default function Notes() {
       onSaveNote={handleSaveNote}
       onDeleteNote={handleDeleteNote}
       onBack={handleBackToGrid}
-      onCreateNote={handleCreateNote}
+      onCreateNote={handleQuickCreateNote}
     />
   );
 }
