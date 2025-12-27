@@ -7,16 +7,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Plus, Target, Heart, Sparkles, DollarSign, TrendingUp, Award, 
-  Search, SlidersHorizontal, Home, ArrowUpDown, Calendar
+  Search, Home, ArrowUpDown
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { format, subDays, isSameDay, parseISO, startOfWeek, addDays } from "date-fns";
+import { format, subDays, isSameDay, parseISO } from "date-fns";
 import { ManifestGoalCard } from "@/components/manifest/ManifestGoalCard";
-import { ManifestAssistantPanel } from "@/components/manifest/ManifestAssistantPanel";
-import { ManifestCreateDialog } from "@/components/manifest/ManifestCreateDialog";
-import { ManifestGoalDashboard } from "@/components/manifest/ManifestGoalDashboard";
+import { GoalDetailPanel } from "@/components/manifest/GoalDetailPanel";
+import { GoalCreateWizard } from "@/components/manifest/GoalCreateWizard";
 
 interface ManifestGoal {
   id: string;
@@ -32,6 +31,9 @@ interface ManifestGoal {
   visualization_images?: string[];
   milestones?: Array<{ id: string; title: string; completed: boolean }>;
   action_steps?: Array<{ id: string; title: string; completed: boolean; taskId?: string }>;
+  woop?: { wish: string; outcome: string; obstacle: string; plan: string };
+  if_then_triggers?: Array<{ id: string; if_part: string; then_part: string }>;
+  micro_step?: string;
 }
 
 interface ManifestJournalEntry {
@@ -41,6 +43,7 @@ interface ManifestJournalEntry {
   visualization: string | null;
   entry_date: string;
   created_at: string;
+  note?: string;
 }
 
 const CATEGORIES = [
@@ -58,6 +61,22 @@ const SORT_OPTIONS = [
   { id: "name", label: "Alphabetical" },
 ];
 
+// Local storage helpers for extended goal data
+function saveGoalExtras(goalId: string, data: Partial<ManifestGoal>) {
+  const stored = JSON.parse(localStorage.getItem("manifest_goal_extras") || "{}");
+  stored[goalId] = { ...stored[goalId], ...data };
+  localStorage.setItem("manifest_goal_extras", JSON.stringify(stored));
+}
+
+function loadGoalExtras(goalId: string): Partial<ManifestGoal> {
+  const stored = JSON.parse(localStorage.getItem("manifest_goal_extras") || "{}");
+  return stored[goalId] || {};
+}
+
+function loadAllGoalExtras(): Record<string, Partial<ManifestGoal>> {
+  return JSON.parse(localStorage.getItem("manifest_goal_extras") || "{}");
+}
+
 export default function Manifest() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -66,8 +85,7 @@ export default function Manifest() {
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editGoal, setEditGoal] = useState<ManifestGoal | null>(null);
-  const [dashboardGoal, setDashboardGoal] = useState<ManifestGoal | null>(null);
-  const [rightPanelGoal, setRightPanelGoal] = useState<ManifestGoal | null>(null);
+  const [selectedGoal, setSelectedGoal] = useState<ManifestGoal | null>(null);
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("recent");
@@ -79,8 +97,8 @@ export default function Manifest() {
   }, [user]);
 
   useEffect(() => {
-    if (goals.length > 0 && !rightPanelGoal) {
-      setRightPanelGoal(goals.find(g => !g.is_completed) || goals[0]);
+    if (goals.length > 0 && !selectedGoal) {
+      setSelectedGoal(goals.find(g => !g.is_completed) || goals[0]);
     }
   }, [goals]);
 
@@ -102,7 +120,13 @@ export default function Manifest() {
     ]);
 
     if (!goalsResult.error && goalsResult.data) {
-      setGoals(goalsResult.data);
+      // Merge with local storage extras
+      const extras = loadAllGoalExtras();
+      const mergedGoals = goalsResult.data.map(g => ({
+        ...g,
+        ...extras[g.id],
+      }));
+      setGoals(mergedGoals);
     }
     if (!journalResult.error && journalResult.data) {
       setJournalEntries(journalResult.data);
@@ -160,6 +184,10 @@ export default function Manifest() {
     targetDate: Date | null;
     coverImage: string | null;
     visualizationImages: string[];
+    woop: { wish: string; outcome: string; obstacle: string; plan: string };
+    checkInFrequency: string;
+    reminderTime: string;
+    gratitudePrompt: string;
   }) => {
     if (!user) return;
     setSaving(true);
@@ -178,6 +206,12 @@ export default function Manifest() {
       if (error) {
         toast({ title: "Error", description: "Failed to update goal", variant: "destructive" });
       } else {
+        // Save extras to localStorage
+        saveGoalExtras(editGoal.id, {
+          cover_image: data.coverImage || undefined,
+          category: data.category,
+          woop: data.woop,
+        });
         toast({ title: "Updated!", description: "Your goal has been updated" });
         fetchData();
         setCreateDialogOpen(false);
@@ -195,10 +229,21 @@ export default function Manifest() {
       if (error) {
         toast({ title: "Error", description: "Failed to create goal", variant: "destructive" });
       } else {
+        // Save extras to localStorage
+        if (newGoal) {
+          saveGoalExtras(newGoal.id, {
+            cover_image: data.coverImage || undefined,
+            category: data.category,
+            woop: data.woop,
+          });
+        }
         toast({ title: "Created!", description: "Your manifestation goal has been created" });
         fetchData();
         setCreateDialogOpen(false);
-        if (newGoal) setRightPanelGoal(newGoal);
+        if (newGoal) {
+          const fullGoal = { ...newGoal, ...loadGoalExtras(newGoal.id) };
+          setSelectedGoal(fullGoal as ManifestGoal);
+        }
       }
     }
     setSaving(false);
@@ -208,33 +253,65 @@ export default function Manifest() {
     await supabase.from("manifest_journal").delete().eq("goal_id", goalId);
     await supabase.from("manifest_goals").delete().eq("id", goalId);
     toast({ title: "Deleted", description: "Goal has been removed" });
-    setDashboardGoal(null);
+    if (selectedGoal?.id === goalId) setSelectedGoal(null);
     fetchData();
   };
 
-  const handleMarkAchieved = async (goalId: string) => {
-    await supabase.from("manifest_goals").update({ is_completed: true }).eq("id", goalId);
-    toast({ title: "Congratulations! 🎉", description: "You've manifested your goal!" });
-    fetchData();
-  };
-
-  const handleAddJournalEntry = async (goalId: string, entry: { gratitude: string; visualization: string }) => {
-    if (!user) return;
+  const handleAddNote = async (note: string) => {
+    if (!user || !selectedGoal) return;
     await supabase.from("manifest_journal").insert({
       user_id: user.id,
-      goal_id: goalId,
+      goal_id: selectedGoal.id,
       entry_date: format(new Date(), "yyyy-MM-dd"),
-      gratitude: entry.gratitude,
-      visualization: entry.visualization,
+      gratitude: note,
+      visualization: "",
     });
-    toast({ title: "Entry saved", description: "Your reflection has been recorded" });
+    toast({ title: "Note added", description: "Your reflection has been saved" });
     fetchData();
+  };
+
+  const handleImageChange = (goalId: string, imageUrl: string | null) => {
+    saveGoalExtras(goalId, { cover_image: imageUrl || undefined });
+    setGoals(prev => prev.map(g => g.id === goalId ? { ...g, cover_image: imageUrl || undefined } : g));
+    if (selectedGoal?.id === goalId) {
+      setSelectedGoal(prev => prev ? { ...prev, cover_image: imageUrl || undefined } : null);
+    }
+  };
+
+  const handleUpdateWoop = (goalId: string, woop: ManifestGoal["woop"]) => {
+    saveGoalExtras(goalId, { woop });
+    setGoals(prev => prev.map(g => g.id === goalId ? { ...g, woop } : g));
+    if (selectedGoal?.id === goalId) {
+      setSelectedGoal(prev => prev ? { ...prev, woop } : null);
+    }
+    toast({ title: "WOOP saved", description: "Your plan has been updated" });
+  };
+
+  const handleAddIfThen = (goalId: string, trigger: { if_part: string; then_part: string }) => {
+    const goal = goals.find(g => g.id === goalId);
+    const existing = goal?.if_then_triggers || [];
+    const updated = [...existing, { id: crypto.randomUUID(), ...trigger }];
+    saveGoalExtras(goalId, { if_then_triggers: updated });
+    setGoals(prev => prev.map(g => g.id === goalId ? { ...g, if_then_triggers: updated } : g));
+    if (selectedGoal?.id === goalId) {
+      setSelectedGoal(prev => prev ? { ...prev, if_then_triggers: updated } : null);
+    }
+    toast({ title: "Trigger added", description: "Implementation intention saved" });
+  };
+
+  const handleUpdateMicroStep = (goalId: string, step: string) => {
+    saveGoalExtras(goalId, { micro_step: step });
+    setGoals(prev => prev.map(g => g.id === goalId ? { ...g, micro_step: step } : g));
+    if (selectedGoal?.id === goalId) {
+      setSelectedGoal(prev => prev ? { ...prev, micro_step: step } : null);
+    }
+    toast({ title: "Micro-step set", description: "Your next action is ready" });
   };
 
   // Filter and sort goals
   const filteredGoals = goals
     .filter(goal => {
-      const matchesFilter = activeFilter === "all" || (goal as any).category === activeFilter;
+      const matchesFilter = activeFilter === "all" || goal.category === activeFilter;
       const matchesSearch = !searchQuery || 
         goal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         goal.affirmations?.some(a => a.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -267,10 +344,10 @@ export default function Manifest() {
   }
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-100px)]">
-      {/* Main Content */}
+    <div className="flex gap-0 h-[calc(100vh-100px)] w-full">
+      {/* Main Content - Left */}
       <div className="flex-1 overflow-auto">
-        <div className="max-w-4xl mx-auto space-y-6 pb-8 px-1">
+        <div className="max-w-4xl mx-auto space-y-6 pb-8 px-4">
           {/* Header */}
           <div className="flex items-start justify-between">
             <div>
@@ -397,14 +474,14 @@ export default function Manifest() {
                   key={goal.id}
                   goal={goal}
                   progress={getGoalProgress(goal.id)}
-                  isSelected={rightPanelGoal?.id === goal.id}
+                  isSelected={selectedGoal?.id === goal.id}
                   journalEntries={journalEntries}
-                  onClick={() => setRightPanelGoal(goal)}
+                  onClick={() => setSelectedGoal(goal)}
                   onEdit={() => {
                     setEditGoal(goal);
                     setCreateDialogOpen(true);
                   }}
-                  onOpenDashboard={() => setDashboardGoal(goal)}
+                  onOpenDashboard={() => setSelectedGoal(goal)}
                   onArchive={() => handleDeleteGoal(goal.id)}
                   onCheckIn={(date) => toggleWeeklyCheckIn(goal.id, date)}
                 />
@@ -414,19 +491,28 @@ export default function Manifest() {
         </div>
       </div>
 
-      {/* Right Sidebar - Assistant Panel */}
-      <div className="w-80 flex-shrink-0 border-l border-border bg-muted/30">
-        <ManifestAssistantPanel
-          selectedGoal={rightPanelGoal}
-          progress={rightPanelGoal ? getGoalProgress(rightPanelGoal.id) : 0}
-          onCheckInToday={() => {
-            if (rightPanelGoal) toggleWeeklyCheckIn(rightPanelGoal.id, new Date());
-          }}
-        />
-      </div>
+      {/* Right Panel - Goal Dashboard */}
+      <GoalDetailPanel
+        selectedGoal={selectedGoal}
+        journalEntries={journalEntries}
+        onCheckInToday={() => {
+          if (selectedGoal) toggleWeeklyCheckIn(selectedGoal.id, new Date());
+        }}
+        onEdit={() => {
+          if (selectedGoal) {
+            setEditGoal(selectedGoal);
+            setCreateDialogOpen(true);
+          }
+        }}
+        onAddNote={handleAddNote}
+        onImageChange={handleImageChange}
+        onUpdateWoop={handleUpdateWoop}
+        onAddIfThen={handleAddIfThen}
+        onUpdateMicroStep={handleUpdateMicroStep}
+      />
 
-      {/* Create/Edit Dialog */}
-      <ManifestCreateDialog
+      {/* Create/Edit Wizard */}
+      <GoalCreateWizard
         open={createDialogOpen}
         onOpenChange={(open) => {
           setCreateDialogOpen(open);
@@ -436,31 +522,6 @@ export default function Manifest() {
         editGoal={editGoal}
         saving={saving}
       />
-
-      {/* Goal Dashboard Modal */}
-      {dashboardGoal && (
-        <ManifestGoalDashboard
-          open={!!dashboardGoal}
-          onOpenChange={(open) => !open && setDashboardGoal(null)}
-          goal={dashboardGoal}
-          journalEntries={journalEntries}
-          onEdit={() => {
-            setEditGoal(dashboardGoal);
-            setCreateDialogOpen(true);
-          }}
-          onDuplicate={() => {
-            toast({ title: "Coming soon", description: "Duplicate feature is under development" });
-          }}
-          onArchive={() => handleDeleteGoal(dashboardGoal.id)}
-          onDelete={() => handleDeleteGoal(dashboardGoal.id)}
-          onMarkAchieved={() => handleMarkAchieved(dashboardGoal.id)}
-          onCheckIn={(date) => toggleWeeklyCheckIn(dashboardGoal.id, date)}
-          onAddAction={(title) => {
-            toast({ title: "Action added", description: title });
-          }}
-          onAddJournalEntry={(entry) => handleAddJournalEntry(dashboardGoal.id, entry)}
-        />
-      )}
     </div>
   );
 }
