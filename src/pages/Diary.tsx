@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { PenLine, Search, Image, Phone, ChevronDown } from "lucide-react";
+import { PenLine, Search, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,18 +56,21 @@ export default function Diary() {
 
   // Seed feed events from existing data on mount
   useEffect(() => {
-    if (!user?.id || events.length > 0) return;
+    if (!user?.id) return;
 
     const seedFeedEvents = async () => {
-      // Fetch recent activities and create feed events
-      const [tasksRes, journalRes, notesRes] = await Promise.all([
-        supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
-        supabase.from("journal_entries").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
-        supabase.from("notes").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
+      // Fetch all module data
+      const [tasksRes, journalRes, notesRes, habitsRes, goalsRes] = await Promise.all([
+        supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+        supabase.from("journal_entries").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+        supabase.from("notes").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+        supabase.from("habits").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+        supabase.from("manifest_goals").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
       ]);
 
       const feedEvents: any[] = [];
 
+      // Tasks
       tasksRes.data?.forEach(task => {
         feedEvents.push({
           user_id: user.id,
@@ -82,20 +85,28 @@ export default function Diary() {
         });
       });
 
+      // Journal - use actual content
       journalRes.data?.forEach(entry => {
+        const contentParts = [];
+        if (entry.daily_feeling) contentParts.push(entry.daily_feeling);
+        if (entry.daily_gratitude) contentParts.push(entry.daily_gratitude);
+        if (entry.daily_kindness) contentParts.push(entry.daily_kindness);
+        const content = contentParts.join('\n\n') || 'Journal entry for ' + format(new Date(entry.entry_date), 'MMM d, yyyy');
+        
         feedEvents.push({
           user_id: user.id,
           type: 'publish',
           source_module: 'journal',
           source_id: entry.id,
-          title: `Reflecting on challenges`,
+          title: `Journal Entry - ${format(new Date(entry.entry_date), 'MMMM d, yyyy')}`,
           summary: 'Wrote a journal entry',
-          content_preview: entry.daily_feeling || entry.daily_gratitude || 'Today was challenging but I learned a lot. I completed my project after facing a few hurdles, and it feels really rewarding... 😊',
-          metadata: { tags: ['Mindset', 'Persistence'] },
+          content_preview: content.substring(0, 300),
+          metadata: { tags: entry.tags || [], entry_date: entry.entry_date },
           created_at: entry.created_at,
         });
       });
 
+      // Notes
       notesRes.data?.forEach(note => {
         feedEvents.push({
           user_id: user.id,
@@ -110,9 +121,40 @@ export default function Diary() {
         });
       });
 
-      // Insert all at once
+      // Trackers (Habits)
+      habitsRes.data?.forEach(habit => {
+        feedEvents.push({
+          user_id: user.id,
+          type: 'create',
+          source_module: 'trackers',
+          source_id: habit.id,
+          title: habit.name,
+          summary: 'Created a habit tracker',
+          content_preview: habit.description,
+          metadata: { frequency: habit.frequency },
+          created_at: habit.created_at,
+        });
+      });
+
+      // Manifest Goals
+      goalsRes.data?.forEach(goal => {
+        feedEvents.push({
+          user_id: user.id,
+          type: goal.is_completed ? 'complete' : 'create',
+          source_module: 'manifest',
+          source_id: goal.id,
+          title: goal.title,
+          summary: goal.is_completed ? 'Achieved a goal!' : 'Set a new manifestation goal',
+          content_preview: goal.description,
+          metadata: { affirmations: goal.affirmations, feeling: goal.feeling_when_achieved },
+          created_at: goal.created_at,
+        });
+      });
+
+      // Delete existing feed events first to avoid duplicates, then insert fresh
       if (feedEvents.length > 0) {
-        await supabase.from("feed_events").upsert(feedEvents, { onConflict: 'id' });
+        await supabase.from("feed_events").delete().eq("user_id", user.id);
+        await supabase.from("feed_events").insert(feedEvents);
         refetch();
       }
     };
@@ -172,24 +214,16 @@ export default function Diary() {
           <p className="text-muted-foreground text-sm mt-0.5">A timeline of everything you do in MindFlow</p>
         </div>
 
-        {/* Search/Composer Bar */}
+        {/* Search Bar */}
         <div className="mb-4">
           <div className="flex items-center gap-2 bg-card border border-border/40 rounded-lg px-3 py-2">
             <Search className="h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Share an update..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="border-0 bg-transparent focus-visible:ring-0 px-0 h-8 text-sm placeholder:text-muted-foreground"
             />
-            <div className="flex items-center gap-1 shrink-0">
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
-                <Image className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
-                <Phone className="h-4 w-4" />
-              </Button>
-            </div>
           </div>
         </div>
 

@@ -11,7 +11,7 @@ import { TopFocusBar } from "@/components/tasks/TopFocusBar";
 import { AllTasksList } from "@/components/tasks/AllTasksList";
 import { QuadrantGrid } from "@/components/tasks/QuadrantGrid";
 import { BoardView } from "@/components/tasks/BoardView";
-import { CompactTimerWidget } from "@/components/tasks/CompactTimerWidget";
+import { LargeClockWidget } from "@/components/tasks/LargeClockWidget";
 import { UnifiedTaskDrawer } from "@/components/tasks/UnifiedTaskDrawer";
 import { DeepFocusPrompt } from "@/components/tasks/DeepFocusPrompt";
 import PremiumDeepFocus from "@/pages/PremiumDeepFocus";
@@ -373,8 +373,15 @@ export default function Tasks() {
     return (
       <PremiumDeepFocus
         tasks={tasks}
-        onUpdateTask={(updated) => {
+        onUpdateTask={async (updated) => {
           setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
+          // Persist to database
+          if (user) {
+            await supabase.from("tasks").update({
+              is_completed: updated.is_completed,
+              completed_at: updated.completed_at,
+            }).eq("id", updated.id).eq("user_id", user.id);
+          }
         }}
       />
     );
@@ -382,7 +389,7 @@ export default function Tasks() {
 
   return (
     <div className="h-full flex flex-col gap-4 px-4 py-2 overflow-x-hidden bg-background">
-      {/* Header */}
+      {/* Header - Remove timer widget from here */}
       <TasksHeader
         view={view}
         onViewChange={setView}
@@ -391,13 +398,17 @@ export default function Tasks() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onNewTask={openNewTaskDrawer}
-        timerWidget={<CompactTimerWidget />}
       />
 
       {/* Summary Strip */}
       <SummaryStrip tasks={filteredTasks} />
 
-      {/* Insights Panel - Full Width */}
+      {/* Clock Widget Row - Larger */}
+      <div className="w-full">
+        <LargeClockWidget />
+      </div>
+
+      {/* Insights Panel Row - Below Clock */}
       <InsightsPanel tasks={filteredTasks} />
 
       {/* Top Focus Bar */}

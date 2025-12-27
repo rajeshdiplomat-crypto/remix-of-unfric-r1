@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ViewSwitcher } from "./ViewSwitcher";
 import { QuadrantMode } from "./types";
-import { ReactNode } from "react";
+
 
 interface TasksHeaderProps {
   view: 'board' | 'quadrant';
@@ -14,7 +14,6 @@ interface TasksHeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onNewTask: () => void;
-  timerWidget?: ReactNode;
 }
 
 export function TasksHeader({
@@ -25,7 +24,6 @@ export function TasksHeader({
   searchQuery,
   onSearchChange,
   onNewTask,
-  timerWidget,
 }: TasksHeaderProps) {
   return (
     <div className="flex flex-col gap-4">
@@ -86,9 +84,6 @@ export function TasksHeader({
 
           {/* View Switcher */}
           <ViewSwitcher view={view} onViewChange={onViewChange} />
-
-          {/* Timer Widget - inline with controls */}
-          {timerWidget}
 
           {/* New Task Button */}
           <Button onClick={onNewTask} className="bg-primary text-primary-foreground">
