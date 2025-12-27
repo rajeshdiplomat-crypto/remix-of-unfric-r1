@@ -1,9 +1,12 @@
-import { useState, useMemo, useRef, useCallback } from "react";
-import { FileText, ZoomIn, ZoomOut, RotateCcw, Minimize2, Maximize2 } from "lucide-react";
+import { useState, useMemo } from "react";
+import { FileText, Search, Plus, FolderOpen, ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { NotesActivityDot, getMostRecentUpdate } from "./NotesActivityDot";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
 
 interface NotesMindMapViewProps {
   groups: NoteGroup[];
@@ -15,11 +18,6 @@ interface NotesMindMapViewProps {
   onAddFolder: (groupId: string, folderName: string) => void;
 }
 
-interface Position {
-  x: number;
-  y: number;
-}
-
 export function NotesMindMapView({
   groups,
   folders,
@@ -29,576 +27,308 @@ export function NotesMindMapView({
   onAddNote,
   onAddFolder,
 }: NotesMindMapViewProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
-  
-  // Pan and zoom state
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState<Position>({ x: 0, y: 0 });
-  const [isPanning, setIsPanning] = useState(false);
-  const lastMousePos = useRef<Position>({ x: 0, y: 0 });
+  const [selectedGroup, setSelectedGroup] = useState<NoteGroup | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const sortedGroups = [...groups].sort((a, b) => a.sortOrder - b.sortOrder);
+  const totalNotes = notes.length;
 
-  // Canvas dimensions
-  const canvasWidth = 1200;
-  const canvasHeight = 800;
-  const centerX = canvasWidth / 2;
-  const centerY = canvasHeight / 2;
-
-  // Radius for each level
-  const level1Radius = 180; // Groups
-  const level2Radius = 110; // Folders from group
-  const level3Radius = 80;  // Notes from folder
-
-  // Calculate group positions in a circle around center
+  // Calculate positions for groups in a circular ring
   const groupPositions = useMemo(() => {
-    const positions: Record<string, Position> = {};
     const count = sortedGroups.length;
-    sortedGroups.forEach((group, index) => {
+    const radius = 180;
+    const centerX = 300;
+    const centerY = 250;
+
+    return sortedGroups.map((group, index) => {
       const angle = (index * 2 * Math.PI / count) - Math.PI / 2;
-      positions[group.id] = {
-        x: centerX + level1Radius * Math.cos(angle),
-        y: centerY + level1Radius * Math.sin(angle),
+      return {
+        group,
+        x: centerX + radius * Math.cos(angle),
+        y: centerY + radius * Math.sin(angle),
+        angle,
       };
     });
-    return positions;
-  }, [sortedGroups, centerX, centerY]);
+  }, [sortedGroups]);
 
-  // Handle zoom
-  const handleZoomIn = () => setZoom(z => Math.min(z + 0.2, 2.5));
-  const handleZoomOut = () => setZoom(z => Math.max(z - 0.2, 0.4));
-  const handleResetView = () => {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
-    setExpandedGroups(new Set());
-    setExpandedFolders(new Set());
-  };
-  const handleExpandAll = () => {
-    setExpandedGroups(new Set(sortedGroups.map(g => g.id)));
-    setExpandedFolders(new Set(folders.map(f => f.id)));
-  };
-  const handleCollapseAll = () => {
-    setExpandedGroups(new Set());
-    setExpandedFolders(new Set());
-  };
+  // Get folders and notes for selected group
+  const selectedGroupFolders = useMemo(() => {
+    if (!selectedGroup) return [];
+    return folders.filter(f => f.groupId === selectedGroup.id);
+  }, [selectedGroup, folders]);
 
-  // Handle pan
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button !== 0) return;
-    setIsPanning(true);
-    lastMousePos.current = { x: e.clientX, y: e.clientY };
-  }, []);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isPanning) return;
-    const dx = e.clientX - lastMousePos.current.x;
-    const dy = e.clientY - lastMousePos.current.y;
-    setPan(p => ({ x: p.x + dx, y: p.y + dy }));
-    lastMousePos.current = { x: e.clientX, y: e.clientY };
-  }, [isPanning]);
-
-  const handleMouseUp = useCallback(() => {
-    setIsPanning(false);
-  }, []);
-
-  // Handle wheel zoom
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    setZoom(z => Math.max(0.4, Math.min(2.5, z + delta)));
-  }, []);
-
-  const toggleGroup = (groupId: string) => {
-    setExpandedGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(groupId)) {
-        next.delete(groupId);
-        // Also collapse child folders
-        setExpandedFolders(pf => {
-          const nf = new Set(pf);
-          folders.filter(f => f.groupId === groupId).forEach(f => nf.delete(f.id));
-          return nf;
-        });
-      } else {
-        next.add(groupId);
-      }
-      return next;
-    });
-  };
-
-  const toggleFolder = (folderId: string) => {
-    setExpandedFolders(prev => {
-      const next = new Set(prev);
-      if (next.has(folderId)) next.delete(folderId);
-      else next.add(folderId);
-      return next;
-    });
-  };
-
-  // Calculate folder positions around a group
-  const getFolderPositions = (groupPos: Position, folderCount: number, groupAngle: number) => {
-    const positions: Position[] = [];
-    const spreadAngle = Math.PI * 0.7;
-    
-    for (let i = 0; i < folderCount; i++) {
-      const offset = (i - (folderCount - 1) / 2) * (spreadAngle / Math.max(folderCount - 1, 1));
-      const angle = groupAngle + offset;
-      positions.push({
-        x: groupPos.x + level2Radius * Math.cos(angle),
-        y: groupPos.y + level2Radius * Math.sin(angle),
-      });
+  const selectedGroupNotes = useMemo(() => {
+    if (!selectedGroup) return [];
+    const groupNotes = notes.filter(n => n.groupId === selectedGroup.id);
+    if (searchQuery) {
+      return groupNotes.filter(n => 
+        n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        n.plainText?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
-    return positions;
+    return groupNotes;
+  }, [selectedGroup, notes, searchQuery]);
+
+  const getNotesForFolder = (folderId: string) => {
+    return notes.filter(n => n.folderId === folderId);
   };
 
-  // Calculate note positions around a folder or group
-  const getNotePositions = (parentPos: Position, noteCount: number, parentAngle: number) => {
-    const positions: Position[] = [];
-    const spreadAngle = Math.PI * 0.6;
-    const displayCount = Math.min(noteCount, 6);
-    
-    for (let i = 0; i < displayCount; i++) {
-      const offset = (i - (displayCount - 1) / 2) * (spreadAngle / Math.max(displayCount - 1, 1));
-      const angle = parentAngle + offset;
-      positions.push({
-        x: parentPos.x + level3Radius * Math.cos(angle),
-        y: parentPos.y + level3Radius * Math.sin(angle),
-      });
+  const getDirectNotes = () => {
+    if (!selectedGroup) return [];
+    return notes.filter(n => n.groupId === selectedGroup.id && !n.folderId);
+  };
+
+  const handleAddNewNote = () => {
+    if (selectedGroup) {
+      onAddNote(selectedGroup.id, null);
     }
-    return positions;
   };
 
-  // Convert canvas coords to screen coords
-  const toScreen = (pos: Position) => ({
-    x: (pos.x - canvasWidth / 2) * zoom + pan.x,
-    y: (pos.y - canvasHeight / 2) * zoom + pan.y,
-  });
+  const handleAddNewSection = () => {
+    if (selectedGroup) {
+      onAddFolder(selectedGroup.id, "New Section");
+    }
+  };
 
   return (
-    <div className="relative w-full h-[650px] overflow-hidden rounded-xl bg-gradient-to-br from-muted/30 via-background to-muted/20 border border-border/30">
-      {/* Controls */}
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-1 bg-card/95 backdrop-blur-sm border border-border/50 rounded-lg p-1 shadow-sm">
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleZoomIn} title="Zoom In">
-          <ZoomIn className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleZoomOut} title="Zoom Out">
-          <ZoomOut className="h-4 w-4" />
-        </Button>
-        <div className="w-px h-4 bg-border/50" />
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleExpandAll} title="Expand All">
-          <Maximize2 className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleCollapseAll} title="Collapse All">
-          <Minimize2 className="h-4 w-4" />
-        </Button>
-        <div className="w-px h-4 bg-border/50" />
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleResetView} title="Reset View">
-          <RotateCcw className="h-4 w-4" />
-        </Button>
-        <span className="text-xs text-muted-foreground px-2 tabular-nums">{Math.round(zoom * 100)}%</span>
-      </div>
-
-      {/* Legend */}
-      <div className="absolute bottom-4 left-4 z-20 flex items-center gap-4 bg-card/90 backdrop-blur-sm border border-border/50 rounded-lg px-3 py-2 text-xs text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-primary" />
-          <span>Groups</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-primary/60" />
-          <span>Folders</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-primary/30" />
-          <span>Notes</span>
-        </div>
-      </div>
-
+    <div className="relative w-full h-[650px] flex">
       {/* Mind Map Canvas */}
-      <div
-        ref={containerRef}
-        className="w-full h-full cursor-grab active:cursor-grabbing"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onWheel={handleWheel}
+      <div 
+        className={cn(
+          "relative flex-1 overflow-hidden transition-all duration-300",
+          selectedGroup ? "mr-[380px]" : ""
+        )}
       >
+        {/* Dotted Background */}
+        <div 
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `radial-gradient(circle, hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px)`,
+            backgroundSize: '20px 20px',
+          }}
+        />
+
         {/* SVG for connection lines */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none">
-          {/* Level 1: Center to Groups */}
-          {sortedGroups.map((group) => {
-            const pos = groupPositions[group.id];
-            const screenCenter = toScreen({ x: centerX, y: centerY });
-            const screenGroup = toScreen(pos);
-            
-            return (
-              <line
-                key={`center-to-${group.id}`}
-                x1={screenCenter.x + canvasWidth / 2}
-                y1={screenCenter.y + canvasHeight / 2}
-                x2={screenGroup.x + canvasWidth / 2}
-                y2={screenGroup.y + canvasHeight / 2}
-                stroke="hsl(var(--primary))"
-                strokeWidth={2}
-                strokeOpacity={0.3}
-                className="transition-all duration-300"
-              />
-            );
-          })}
-
-          {/* Level 2: Groups to Folders */}
-          {sortedGroups.map((group) => {
-            if (!expandedGroups.has(group.id)) return null;
-            const groupPos = groupPositions[group.id];
-            const groupAngle = Math.atan2(groupPos.y - centerY, groupPos.x - centerX);
-            const groupFolders = folders.filter(f => f.groupId === group.id);
-            const folderPositions = getFolderPositions(groupPos, groupFolders.length, groupAngle);
-            
-            return groupFolders.map((folder, i) => {
-              const folderPos = folderPositions[i];
-              if (!folderPos) return null;
-              const screenGroup = toScreen(groupPos);
-              const screenFolder = toScreen(folderPos);
-              
-              return (
-                <g key={`group-to-folder-${folder.id}`}>
-                  <line
-                    x1={screenGroup.x + canvasWidth / 2}
-                    y1={screenGroup.y + canvasHeight / 2}
-                    x2={screenFolder.x + canvasWidth / 2}
-                    y2={screenFolder.y + canvasHeight / 2}
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={1.5}
-                    strokeOpacity={0.25}
-                    className="transition-all duration-300"
-                  />
-                  
-                  {/* Level 3: Folders to Notes */}
-                  {expandedFolders.has(folder.id) && (
-                    <>
-                      {notes
-                        .filter(n => n.folderId === folder.id)
-                        .slice(0, 6)
-                        .map((note, ni) => {
-                          const folderAngle = Math.atan2(folderPos.y - groupPos.y, folderPos.x - groupPos.x);
-                          const notePositions = getNotePositions(folderPos, notes.filter(n => n.folderId === folder.id).length, folderAngle);
-                          const notePos = notePositions[ni];
-                          if (!notePos) return null;
-                          const screenNote = toScreen(notePos);
-                          
-                          return (
-                            <line
-                              key={`folder-to-note-${note.id}`}
-                              x1={screenFolder.x + canvasWidth / 2}
-                              y1={screenFolder.y + canvasHeight / 2}
-                              x2={screenNote.x + canvasWidth / 2}
-                              y2={screenNote.y + canvasHeight / 2}
-                              stroke="hsl(var(--primary))"
-                              strokeWidth={1}
-                              strokeOpacity={0.15}
-                              className="transition-all duration-300"
-                            />
-                          );
-                        })}
-                    </>
-                  )}
-                </g>
-              );
-            });
-          })}
-
-          {/* Direct notes from group (no folder) */}
-          {sortedGroups.map((group) => {
-            if (!expandedGroups.has(group.id)) return null;
-            const groupPos = groupPositions[group.id];
-            const groupAngle = Math.atan2(groupPos.y - centerY, groupPos.x - centerX);
-            const directNotes = notes.filter(n => n.groupId === group.id && !n.folderId);
-            const groupFolders = folders.filter(f => f.groupId === group.id);
-            const angleOffset = groupFolders.length > 0 ? Math.PI * 0.4 : 0;
-            const notePositions = getNotePositions(groupPos, directNotes.length, groupAngle + angleOffset);
-            
-            return directNotes.slice(0, 6).map((note, ni) => {
-              const notePos = notePositions[ni];
-              if (!notePos) return null;
-              const screenGroup = toScreen(groupPos);
-              const screenNote = toScreen(notePos);
-              
-              return (
-                <line
-                  key={`group-to-note-${note.id}`}
-                  x1={screenGroup.x + canvasWidth / 2}
-                  y1={screenGroup.y + canvasHeight / 2}
-                  x2={screenNote.x + canvasWidth / 2}
-                  y2={screenNote.y + canvasHeight / 2}
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={1}
-                  strokeOpacity={0.15}
-                  className="transition-all duration-300"
-                />
-              );
-            });
-          })}
+          {groupPositions.map(({ group, x, y }) => (
+            <line
+              key={`line-${group.id}`}
+              x1={300}
+              y1={250}
+              x2={x}
+              y2={y}
+              stroke={selectedGroup?.id === group.id ? group.color : "hsl(var(--muted-foreground))"}
+              strokeWidth={selectedGroup?.id === group.id ? 2 : 1}
+              strokeOpacity={selectedGroup?.id === group.id ? 0.8 : 0.3}
+              className="transition-all duration-300"
+            />
+          ))}
         </svg>
 
-        {/* Center Node - Darkest */}
-        <div
-          className="absolute pointer-events-none"
+        {/* Center Node */}
+        <div 
+          className="absolute"
           style={{
-            left: `calc(50% + ${toScreen({ x: centerX, y: centerY }).x}px)`,
-            top: `calc(50% + ${toScreen({ x: centerX, y: centerY }).y}px)`,
-            transform: `translate(-50%, -50%) scale(${zoom})`,
+            left: 300,
+            top: 250,
+            transform: 'translate(-50%, -50%)',
           }}
         >
-          <div className="w-28 h-28 rounded-full bg-primary flex items-center justify-center shadow-xl shadow-primary/30 pointer-events-auto">
+          <div className="w-28 h-28 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 border-2 border-primary/30 flex items-center justify-center shadow-lg">
             <div className="text-center">
-              <span className="text-base font-bold text-primary-foreground">Notes</span>
-              <span className="block text-xs text-primary-foreground/80">{notes.length} total</span>
+              <span className="text-base font-bold text-foreground">Notes</span>
+              <span className="block text-xs text-muted-foreground">{totalNotes} total</span>
             </div>
           </div>
         </div>
 
-        {/* Level 1: Group Nodes - Dark bubbles */}
-        {sortedGroups.map((group) => {
-          const pos = groupPositions[group.id];
-          const screenPos = toScreen(pos);
+        {/* Group Nodes */}
+        {groupPositions.map(({ group, x, y }) => {
           const groupNotes = notes.filter(n => n.groupId === group.id);
-          const isExpanded = expandedGroups.has(group.id);
+          const isSelected = selectedGroup?.id === group.id;
 
           return (
             <div
               key={group.id}
-              className="absolute pointer-events-auto transition-all duration-300"
+              className="absolute cursor-pointer transition-all duration-300"
               style={{
-                left: `calc(50% + ${screenPos.x}px)`,
-                top: `calc(50% + ${screenPos.y}px)`,
-                transform: `translate(-50%, -50%) scale(${zoom})`,
-                zIndex: isExpanded ? 20 : 10,
+                left: x,
+                top: y,
+                transform: 'translate(-50%, -50%)',
+                zIndex: isSelected ? 20 : 10,
               }}
+              onClick={() => setSelectedGroup(isSelected ? null : group)}
             >
-              <button
-                onClick={() => toggleGroup(group.id)}
+              <div 
                 className={cn(
-                  "w-20 h-20 rounded-full flex flex-col items-center justify-center transition-all duration-300",
-                  "shadow-lg hover:shadow-xl",
-                  isExpanded ? "scale-110 ring-4 ring-primary-foreground/20" : "hover:scale-105"
+                  "flex items-center gap-2 px-4 py-2 rounded-full border bg-card/95 backdrop-blur-sm transition-all duration-300",
+                  isSelected 
+                    ? "border-2 shadow-lg scale-105" 
+                    : "border-border/50 hover:border-border hover:shadow-md"
                 )}
-                style={{ 
-                  backgroundColor: group.color,
-                  boxShadow: `0 8px 32px ${group.color}40`
+                style={{
+                  borderColor: isSelected ? group.color : undefined,
+                  boxShadow: isSelected ? `0 0 20px ${group.color}40` : undefined,
                 }}
               >
-                <span className="text-xs font-semibold text-white truncate max-w-[60px] px-1">
+                {/* Colored Dot */}
+                <div 
+                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: group.color }}
+                />
+                {/* Label */}
+                <span className="text-sm font-medium text-foreground whitespace-nowrap">
                   {group.name}
                 </span>
-                <span className="text-[10px] text-white/80 mt-0.5">
-                  ({groupNotes.length})
+                {/* Count Badge */}
+                <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                  {groupNotes.length}
                 </span>
-              </button>
+              </div>
             </div>
           );
         })}
 
-        {/* Level 2: Folder Nodes - Medium bubbles */}
-        {sortedGroups.map((group) => {
-          if (!expandedGroups.has(group.id)) return null;
-          const groupPos = groupPositions[group.id];
-          const groupAngle = Math.atan2(groupPos.y - centerY, groupPos.x - centerX);
-          const groupFolders = folders.filter(f => f.groupId === group.id);
-          const folderPositions = getFolderPositions(groupPos, groupFolders.length, groupAngle);
-
-          return groupFolders.map((folder, i) => {
-            const folderPos = folderPositions[i];
-            if (!folderPos) return null;
-            const screenPos = toScreen(folderPos);
-            const folderNotes = notes.filter(n => n.folderId === folder.id);
-            const isExpanded = expandedFolders.has(folder.id);
-
-            return (
-              <div
-                key={folder.id}
-                className="absolute pointer-events-auto transition-all duration-300"
-                style={{
-                  left: `calc(50% + ${screenPos.x}px)`,
-                  top: `calc(50% + ${screenPos.y}px)`,
-                  transform: `translate(-50%, -50%) scale(${zoom})`,
-                  zIndex: isExpanded ? 25 : 15,
-                }}
-              >
-                <button
-                  onClick={() => toggleFolder(folder.id)}
-                  className={cn(
-                    "w-16 h-16 rounded-full flex flex-col items-center justify-center transition-all duration-300",
-                    "shadow-md hover:shadow-lg",
-                    isExpanded ? "scale-110 ring-2 ring-white/30" : "hover:scale-105"
-                  )}
-                  style={{ 
-                    backgroundColor: `${group.color}99`,
-                    boxShadow: `0 4px 16px ${group.color}30`
-                  }}
-                >
-                  <span className="text-[10px] font-medium text-white truncate max-w-[50px] px-1">
-                    {folder.name}
-                  </span>
-                  <span className="text-[9px] text-white/80">
-                    ({folderNotes.length})
-                  </span>
-                </button>
-              </div>
-            );
-          });
-        })}
-
-        {/* Level 3: Note Nodes from Folders - Light bubbles */}
-        {sortedGroups.map((group) => {
-          if (!expandedGroups.has(group.id)) return null;
-          const groupPos = groupPositions[group.id];
-          const groupAngle = Math.atan2(groupPos.y - centerY, groupPos.x - centerX);
-          const groupFolders = folders.filter(f => f.groupId === group.id);
-          const folderPositions = getFolderPositions(groupPos, groupFolders.length, groupAngle);
-
-          return groupFolders.map((folder, fi) => {
-            if (!expandedFolders.has(folder.id)) return null;
-            const folderPos = folderPositions[fi];
-            if (!folderPos) return null;
-            const folderAngle = Math.atan2(folderPos.y - groupPos.y, folderPos.x - groupPos.x);
-            const folderNotes = notes.filter(n => n.folderId === folder.id);
-            const notePositions = getNotePositions(folderPos, folderNotes.length, folderAngle);
-
-            return folderNotes.slice(0, 6).map((note, ni) => {
-              const notePos = notePositions[ni];
-              if (!notePos) return null;
-              const screenPos = toScreen(notePos);
-              const isSelected = note.id === selectedNoteId;
-
-              return (
-                <div
-                  key={note.id}
-                  className="absolute pointer-events-auto transition-all duration-300"
-                  style={{
-                    left: `calc(50% + ${screenPos.x}px)`,
-                    top: `calc(50% + ${screenPos.y}px)`,
-                    transform: `translate(-50%, -50%) scale(${zoom})`,
-                    zIndex: 30,
-                  }}
-                >
-                  <button
-                    onClick={() => onNoteClick(note)}
-                    className={cn(
-                      "w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300",
-                      "shadow-sm hover:shadow-md hover:scale-110",
-                      isSelected && "ring-2 ring-primary"
-                    )}
-                    style={{ 
-                      backgroundColor: `${group.color}40`,
-                      border: `1px solid ${group.color}60`
-                    }}
-                    title={note.title}
-                  >
-                    <FileText className="h-4 w-4" style={{ color: group.color }} />
-                  </button>
-                </div>
-              );
-            });
-          });
-        })}
-
-        {/* Direct Notes from Groups (no folder) - Light bubbles */}
-        {sortedGroups.map((group) => {
-          if (!expandedGroups.has(group.id)) return null;
-          const groupPos = groupPositions[group.id];
-          const groupAngle = Math.atan2(groupPos.y - centerY, groupPos.x - centerX);
-          const directNotes = notes.filter(n => n.groupId === group.id && !n.folderId);
-          const groupFolders = folders.filter(f => f.groupId === group.id);
-          const angleOffset = groupFolders.length > 0 ? Math.PI * 0.4 : 0;
-          const notePositions = getNotePositions(groupPos, directNotes.length, groupAngle + angleOffset);
-
-          return directNotes.slice(0, 6).map((note, ni) => {
-            const notePos = notePositions[ni];
-            if (!notePos) return null;
-            const screenPos = toScreen(notePos);
-            const isSelected = note.id === selectedNoteId;
-
-            return (
-              <div
-                key={note.id}
-                className="absolute pointer-events-auto transition-all duration-300"
-                style={{
-                  left: `calc(50% + ${screenPos.x}px)`,
-                  top: `calc(50% + ${screenPos.y}px)`,
-                  transform: `translate(-50%, -50%) scale(${zoom})`,
-                  zIndex: 30,
-                }}
-              >
-                <button
-                  onClick={() => onNoteClick(note)}
-                  className={cn(
-                    "w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300",
-                    "shadow-sm hover:shadow-md hover:scale-110",
-                    isSelected && "ring-2 ring-primary"
-                  )}
-                  style={{ 
-                    backgroundColor: `${group.color}40`,
-                    border: `1px solid ${group.color}60`
-                  }}
-                  title={note.title}
-                >
-                  <FileText className="h-4 w-4" style={{ color: group.color }} />
-                </button>
-              </div>
-            );
-          });
-        })}
-
-        {/* Overflow indicator for notes */}
-        {sortedGroups.map((group) => {
-          if (!expandedGroups.has(group.id)) return null;
-          const groupPos = groupPositions[group.id];
-          const groupAngle = Math.atan2(groupPos.y - centerY, groupPos.x - centerX);
-          const groupFolders = folders.filter(f => f.groupId === group.id);
-          const folderPositions = getFolderPositions(groupPos, groupFolders.length, groupAngle);
-
-          return groupFolders.map((folder, fi) => {
-            if (!expandedFolders.has(folder.id)) return null;
-            const folderPos = folderPositions[fi];
-            if (!folderPos) return null;
-            const folderNotes = notes.filter(n => n.folderId === folder.id);
-            if (folderNotes.length <= 6) return null;
-
-            const folderAngle = Math.atan2(folderPos.y - groupPos.y, folderPos.x - groupPos.x);
-            const overflowPos = {
-              x: folderPos.x + (level3Radius + 40) * Math.cos(folderAngle),
-              y: folderPos.y + (level3Radius + 40) * Math.sin(folderAngle),
-            };
-            const screenPos = toScreen(overflowPos);
-
-            return (
-              <div
-                key={`overflow-${folder.id}`}
-                className="absolute pointer-events-auto"
-                style={{
-                  left: `calc(50% + ${screenPos.x}px)`,
-                  top: `calc(50% + ${screenPos.y}px)`,
-                  transform: `translate(-50%, -50%) scale(${zoom})`,
-                  zIndex: 25,
-                }}
-              >
-                <span 
-                  className="text-[10px] font-medium px-2 py-1 rounded-full"
-                  style={{ 
-                    backgroundColor: `${group.color}30`,
-                    color: group.color
-                  }}
-                >
-                  +{folderNotes.length - 6}
-                </span>
-              </div>
-            );
-          });
-        })}
+        {/* Help text */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-muted-foreground">
+          Click a section or note to view details
+        </div>
       </div>
+
+      {/* Right Side Panel */}
+      {selectedGroup && (
+        <div className="absolute right-0 top-0 h-full w-[380px] bg-card border-l border-border shadow-lg animate-in slide-in-from-right-5 duration-300">
+          <div className="flex flex-col h-full">
+            {/* Panel Header */}
+            <div className="p-4 border-b border-border">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>Notes</span>
+                  <ChevronRight className="h-3 w-3" />
+                  <span>Mind Map</span>
+                  <ChevronRight className="h-3 w-3" />
+                  <span className="text-foreground font-medium">{selectedGroup.name}</span>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7"
+                  onClick={() => setSelectedGroup(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search in this group..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 h-9 text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Content */}
+            <ScrollArea className="flex-1">
+              <div className="p-4 space-y-4">
+                {/* Folders/Sections */}
+                {selectedGroupFolders.map((folder) => {
+                  const folderNotes = getNotesForFolder(folder.id);
+                  const recentUpdate = folderNotes.length > 0 
+                    ? getMostRecentUpdate(folderNotes) 
+                    : null;
+
+                  return (
+                    <div
+                      key={folder.id}
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer group"
+                      onClick={() => {
+                        if (folderNotes.length > 0) {
+                          onNoteClick(folderNotes[0]);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <FolderOpen className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">
+                            {folder.name}
+                          </p>
+                          {recentUpdate && (
+                            <p className="text-xs text-muted-foreground">
+                              Updated {formatDistanceToNow(new Date(recentUpdate), { addSuffix: false })} ago
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {folderNotes.length}
+                      </span>
+                    </div>
+                  );
+                })}
+
+                {/* Direct Notes (not in folders) */}
+                {getDirectNotes().map((note) => (
+                  <div
+                    key={note.id}
+                    className={cn(
+                      "flex items-center justify-between p-3 rounded-lg transition-colors cursor-pointer",
+                      selectedNoteId === note.id 
+                        ? "bg-primary/10 border border-primary/20" 
+                        : "bg-muted/30 hover:bg-muted/50"
+                    )}
+                    onClick={() => onNoteClick(note)}
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {note.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Updated {formatDistanceToNow(new Date(note.updatedAt), { addSuffix: false })} ago
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {selectedGroupFolders.length === 0 && getDirectNotes().length === 0 && (
+                  <div className="text-center py-8">
+                    <FileText className="h-10 w-10 text-muted-foreground/50 mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">No notes in this group</p>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+
+            {/* Panel Footer - Actions */}
+            <div className="p-4 border-t border-border space-y-2">
+              <Button 
+                className="w-full gap-2" 
+                size="sm"
+                onClick={handleAddNewNote}
+              >
+                <Plus className="h-4 w-4" />
+                New Note
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full gap-2" 
+                size="sm"
+                onClick={handleAddNewSection}
+              >
+                <FolderOpen className="h-4 w-4" />
+                New Section
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
