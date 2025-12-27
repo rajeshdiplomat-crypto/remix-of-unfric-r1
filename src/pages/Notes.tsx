@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, Settings, FileText, ChevronDown, Zap, Filter, ArrowUpDown } from "lucide-react";
+import { Plus, Search, Settings, FileText, ChevronDown, Zap, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { NotesSplitView } from "@/components/notes/NotesSplitView";
 import { NotesGroupSettings } from "@/components/notes/NotesGroupSettings";
@@ -12,7 +12,6 @@ import { NotesViewSwitcher, NotesViewType } from "@/components/notes/NotesViewSw
 import { NotesBoardView } from "@/components/notes/NotesBoardView";
 import { NotesMindMapView } from "@/components/notes/NotesMindMapView";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export interface NoteGroup {
   id: string;
@@ -350,7 +349,38 @@ export default function Notes() {
           <NotesViewSwitcher currentView={notesView} onViewChange={setNotesView} />
         </div>
 
-        {/* Search + Filter Bar */}
+        {/* Group Filter Chips - Above Search */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setFilterGroupId("all")}
+            className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
+              filterGroupId === "all"
+                ? "bg-primary/10 text-primary border border-primary/30"
+                : "bg-muted/30 text-foreground/70 hover:bg-muted/50 border border-transparent"
+            }`}
+          >
+            All
+          </button>
+          {sortedGroups.map((group) => (
+            <button
+              key={group.id}
+              onClick={() => setFilterGroupId(group.id)}
+              className={`px-3 py-1.5 rounded-full text-sm flex items-center gap-2 transition-colors ${
+                filterGroupId === group.id
+                  ? "bg-primary/10 text-primary border border-primary/30"
+                  : "bg-muted/30 text-foreground/70 hover:bg-muted/50 border border-transparent"
+              }`}
+            >
+              <div 
+                className="h-2 w-2 rounded-full" 
+                style={{ backgroundColor: group.color }} 
+              />
+              {group.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Search + Sort Bar */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -363,36 +393,6 @@ export default function Notes() {
           </div>
           
           <div className="flex gap-2">
-            {/* Filter by Group */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Filter className="h-4 w-4" />
-                  {filterGroupId === "all" ? "All Groups" : getGroupName(filterGroupId)}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-48 p-2">
-                <div className="space-y-1">
-                  <button
-                    onClick={() => setFilterGroupId("all")}
-                    className={`w-full text-left px-2 py-1.5 rounded text-sm ${filterGroupId === "all" ? "bg-primary/10 text-primary" : "hover:bg-muted"}`}
-                  >
-                    All Groups
-                  </button>
-                  {sortedGroups.map((group) => (
-                    <button
-                      key={group.id}
-                      onClick={() => setFilterGroupId(group.id)}
-                      className={`w-full text-left px-2 py-1.5 rounded text-sm flex items-center gap-2 ${filterGroupId === group.id ? "bg-primary/10 text-primary" : "hover:bg-muted"}`}
-                    >
-                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: group.color }} />
-                      {group.name}
-                    </button>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
-
             {/* Sort */}
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
               <SelectTrigger className="w-[140px]">
@@ -436,6 +436,7 @@ export default function Notes() {
             selectedNoteId={selectedNote?.id}
             onNoteClick={handleNoteClick}
             onAddNote={handleCreateNote}
+            onAddFolder={handleCreateFolder}
           />
         )}
 
@@ -446,6 +447,8 @@ export default function Notes() {
             notes={filteredNotes}
             selectedNoteId={selectedNote?.id}
             onNoteClick={handleNoteClick}
+            onAddNote={handleCreateNote}
+            onAddFolder={handleCreateFolder}
           />
         )}
 
