@@ -50,55 +50,52 @@ export function NotesGroupSection({
   };
 
   return (
-    <div className="border border-border/50 rounded-lg overflow-hidden bg-card/30">
-      {/* Group Header */}
+    <div className="group/section">
+      {/* Group Header - Section title style, not card */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center gap-3 p-4 hover:bg-muted/20 transition-colors"
+        className="w-full flex items-center gap-3 py-3 px-1 hover:bg-muted/10 transition-colors rounded-md"
       >
         {isExpanded ? (
-          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+          <ChevronDown className="h-4 w-4 text-muted-foreground/60" />
         ) : (
-          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
         )}
         
         <div
-          className="h-3 w-3 rounded-full shrink-0"
+          className="h-2.5 w-2.5 rounded-full shrink-0 opacity-80"
           style={{ backgroundColor: group.color }}
         />
         
-        <h2 className="font-semibold text-foreground">{group.name}</h2>
+        <h2 className="text-base font-medium text-foreground/90">{group.name}</h2>
         
-        <span className="text-sm text-muted-foreground ml-auto">
+        <span className="text-xs text-muted-foreground/70 ml-auto">
           {allGroupNotes.length} {allGroupNotes.length === 1 ? "note" : "notes"}
-          {groupFolders.length > 0 && ` · ${groupFolders.length} ${groupFolders.length === 1 ? "folder" : "folders"}`}
+          {groupFolders.length > 0 && ` · ${groupFolders.length} ${groupFolders.length === 1 ? "section" : "sections"}`}
         </span>
       </button>
 
-      {/* Expanded Content */}
+      {/* Expanded Content - flows under header */}
       {isExpanded && (
-        <div className="px-4 pb-4 space-y-2">
+        <div className="pl-8 pr-1 pb-6 pt-2 space-y-1">
           {/* Empty State */}
           {allGroupNotes.length === 0 && groupFolders.length === 0 && (
             <div className="py-6 text-center">
-              <p className="text-sm text-muted-foreground mb-3">This group is empty</p>
-              <div className="flex justify-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
+              <p className="text-sm text-muted-foreground/70 mb-4">This group is empty</p>
+              <div className="flex justify-center gap-3">
+                <button
                   onClick={() => onAddNote(group.id, null)}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add your first note
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
+                  + Add your first note
+                </button>
+                <span className="text-muted-foreground/40">·</span>
+                <button
                   onClick={() => setIsAddingFolder(true)}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <FolderPlus className="h-4 w-4 mr-1" />
-                  Create a section
-                </Button>
+                  + Create a section
+                </button>
               </div>
             </div>
           )}
@@ -118,10 +115,10 @@ export function NotesGroupSection({
 
           {/* Direct Notes (not in any folder) */}
           {directNotes.length > 0 && (
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {groupFolders.length > 0 && (
-                <p className="text-xs text-muted-foreground px-2 pt-2 uppercase tracking-wide">
-                  Ungrouped Notes
+                <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider pt-3 pb-1">
+                  Ungrouped
                 </p>
               )}
               {directNotes.map((note) => (
@@ -136,29 +133,23 @@ export function NotesGroupSection({
             </div>
           )}
 
-          {/* Inline Add Actions */}
+          {/* Inline Add Actions - text style */}
           {(allGroupNotes.length > 0 || groupFolders.length > 0) && (
-            <div className="flex items-center gap-2 pt-2 border-t border-border/30">
-              <Button
-                variant="ghost"
-                size="sm"
+            <div className="flex items-center gap-4 pt-4">
+              <button
                 onClick={() => onAddNote(group.id, null)}
-                className="text-muted-foreground hover:text-foreground"
+                className="text-sm text-muted-foreground/60 hover:text-foreground transition-colors"
               >
-                <Plus className="h-4 w-4 mr-1" />
-                Add note
-              </Button>
+                + Add note
+              </button>
               
               {!isAddingFolder ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <button
                   onClick={() => setIsAddingFolder(true)}
-                  className="text-muted-foreground hover:text-foreground"
+                  className="text-sm text-muted-foreground/60 hover:text-foreground transition-colors"
                 >
-                  <FolderPlus className="h-4 w-4 mr-1" />
-                  Add section
-                </Button>
+                  + Add section
+                </button>
               ) : (
                 <div className="flex items-center gap-2">
                   <Input
@@ -166,7 +157,7 @@ export function NotesGroupSection({
                     value={newFolderName}
                     onChange={(e) => setNewFolderName(e.target.value)}
                     placeholder="Section name..."
-                    className="h-8 w-40 text-sm"
+                    className="h-7 w-36 text-sm bg-transparent border-muted-foreground/20"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") handleCreateFolder();
                       if (e.key === "Escape") {
@@ -175,26 +166,27 @@ export function NotesGroupSection({
                       }
                     }}
                   />
-                  <Button size="sm" className="h-8" onClick={handleCreateFolder}>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={handleCreateFolder}>
                     Add
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8"
+                  <button
+                    className="text-xs text-muted-foreground hover:text-foreground"
                     onClick={() => {
                       setIsAddingFolder(false);
                       setNewFolderName("");
                     }}
                   >
                     Cancel
-                  </Button>
+                  </button>
                 </div>
               )}
             </div>
           )}
         </div>
       )}
+
+      {/* Divider between groups */}
+      <div className="border-b border-border/30 mt-2" />
     </div>
   );
 }
