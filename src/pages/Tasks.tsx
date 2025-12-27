@@ -1,24 +1,20 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { format } from "date-fns";
-import { Plus } from "lucide-react";
-import { AmbientClock } from "@/components/tasks/AmbientClock";
-import { TimeToolsPanel } from "@/components/tasks/TimeToolsPanel";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
-import { ViewSwitcher } from "@/components/tasks/ViewSwitcher";
-import { QuadrantToolbar } from "@/components/tasks/QuadrantToolbar";
+import { TasksHeader } from "@/components/tasks/TasksHeader";
+import { SummaryStrip } from "@/components/tasks/SummaryStrip";
+import { InsightsPanel } from "@/components/tasks/InsightsPanel";
+import { TopFocusBar } from "@/components/tasks/TopFocusBar";
+import { AllTasksList } from "@/components/tasks/AllTasksList";
 import { QuadrantGrid } from "@/components/tasks/QuadrantGrid";
 import { BoardView } from "@/components/tasks/BoardView";
-import { SummaryStrip } from "@/components/tasks/SummaryStrip";
-import { TasksInsights } from "@/components/tasks/TasksInsights";
+import { CompactTimerWidget } from "@/components/tasks/CompactTimerWidget";
 import { UnifiedTaskDrawer } from "@/components/tasks/UnifiedTaskDrawer";
-import { AllTasksList } from "@/components/tasks/AllTasksList";
 import { DeepFocusPrompt } from "@/components/tasks/DeepFocusPrompt";
-import DeepFocus from "@/pages/DeepFocus";
+import PremiumDeepFocus from "@/pages/PremiumDeepFocus";
 import { 
   QuadrantTask, 
   QuadrantMode, 
@@ -375,7 +371,7 @@ export default function Tasks() {
 
   if (isFocusMode) {
     return (
-      <DeepFocus
+      <PremiumDeepFocus
         tasks={tasks}
         onUpdateTask={(updated) => {
           setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
@@ -385,46 +381,35 @@ export default function Tasks() {
   }
 
   return (
-    <div className="h-full flex flex-col gap-4 px-2 md:px-4 overflow-x-hidden">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Tasks</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Organize your tasks by focus and see what truly matters today.
-          </p>
-        </div>
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <ViewSwitcher view={view} onViewChange={setView} />
-          <Button onClick={openNewTaskDrawer} className="flex-1 md:flex-none">
-            <Plus className="h-4 w-4 mr-2" />
-            New Task
-          </Button>
-        </div>
-      </div>
-
-      {/* Toolbar */}
-      <QuadrantToolbar
-        mode={quadrantMode}
-        onModeChange={setQuadrantMode}
+    <div className="h-full flex flex-col gap-4 px-4 py-2 overflow-x-hidden bg-background">
+      {/* Header */}
+      <TasksHeader
+        view={view}
+        onViewChange={setView}
+        quadrantMode={quadrantMode}
+        onQuadrantModeChange={setQuadrantMode}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        onNewTask={openNewTaskDrawer}
       />
 
       {/* Summary Strip */}
       <SummaryStrip tasks={filteredTasks} />
 
-      {/* Main Layout: Content + Ambient Right Column */}
+      {/* Main Content Area */}
       <div className="flex-1 flex gap-4 min-h-0 overflow-hidden">
-        {/* Main Content Area */}
+        {/* Left Content */}
         <div className="flex-1 flex flex-col gap-4 min-w-0 overflow-y-auto">
           {/* Insights Panel */}
-          <TasksInsights tasks={filteredTasks} />
+          <InsightsPanel tasks={filteredTasks} />
 
-          {/* Task Views - Left List + Right Quadrant/Board */}
-          <div className="flex flex-col lg:flex-row gap-4 min-h-0">
-            {/* Left - All Tasks List */}
-            <div className="w-full lg:w-[320px] flex-shrink-0 order-2 lg:order-1">
+          {/* Top Focus Bar */}
+          <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
+
+          {/* Task Views */}
+          <div className="flex flex-col lg:flex-row gap-4 flex-1">
+            {/* All Tasks List */}
+            <div className="w-full lg:w-[340px] flex-shrink-0">
               <AllTasksList
                 tasks={filteredTasks}
                 onTaskClick={openTaskDetail}
@@ -433,9 +418,9 @@ export default function Tasks() {
               />
             </div>
 
-            {/* Right - Quadrant or Board */}
-            <div className="flex-1 min-w-0 order-1 lg:order-2 overflow-x-auto">
-              <div className="min-w-[900px] w-full">
+            {/* Quadrant/Board View */}
+            <div className="flex-1 min-w-0 overflow-x-auto">
+              <div className="min-w-[700px] w-full">
                 {view === 'quadrant' && (
                   <QuadrantGrid
                     mode={quadrantMode}
@@ -463,13 +448,9 @@ export default function Tasks() {
           </div>
         </div>
 
-        {/* Ambient Right Column - Clock & Tools */}
-        <div className="hidden xl:flex flex-col w-[200px] flex-shrink-0">
-          {/* Ambient Clock - Always visible, non-interactive */}
-          <AmbientClock />
-          
-          {/* Time Tools - Collapsible */}
-          <TimeToolsPanel />
+        {/* Right Column - Timer Widget */}
+        <div className="hidden xl:flex flex-col w-[260px] flex-shrink-0">
+          <CompactTimerWidget />
         </div>
       </div>
 
