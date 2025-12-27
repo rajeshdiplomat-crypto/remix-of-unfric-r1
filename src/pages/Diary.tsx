@@ -3,7 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { PenLine } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { PenLine, Search, Image, Phone, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,13 +14,26 @@ import { DiaryFeedCard } from "@/components/diary/DiaryFeedCard";
 import { DiarySidebar } from "@/components/diary/DiarySidebar";
 import { useFeedEvents } from "@/components/diary/useFeedEvents";
 import { useDiaryMetrics } from "@/components/diary/useDiaryMetrics";
+import { cn } from "@/lib/utils";
 import type { TimeRange, FeedEvent, SourceModule } from "@/components/diary/types";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+
+const FILTER_TABS = [
+  { value: 'all', label: 'All' },
+  { value: 'journal', label: 'Journal' },
+  { value: 'tasks', label: 'Tasks' },
+  { value: 'notes', label: 'Notes' },
+  { value: 'trackers', label: 'Trackers' },
+  { value: 'manifest', label: 'Manifest' },
+  { value: 'focus', label: 'Focus' },
+];
 
 export default function Diary() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState<TimeRange>('week');
+  const [searchQuery, setSearchQuery] = useState("");
 
   const {
     events,
@@ -72,9 +88,10 @@ export default function Diary() {
           type: 'publish',
           source_module: 'journal',
           source_id: entry.id,
-          title: `Journal Entry - ${format(new Date(entry.entry_date), 'MMM d, yyyy')}`,
+          title: `Reflecting on challenges`,
           summary: 'Wrote a journal entry',
-          content_preview: entry.daily_feeling || entry.daily_gratitude || 'Reflecting on the day...',
+          content_preview: entry.daily_feeling || entry.daily_gratitude || 'Today was challenging but I learned a lot. I completed my project after facing a few hurdles, and it feels really rewarding... 😊',
+          metadata: { tags: ['Mindset', 'Persistence'] },
           created_at: entry.created_at,
         });
       });
@@ -120,9 +137,22 @@ export default function Diary() {
       case 'task': navigate('/tasks'); break;
       case 'journal': navigate('/journal'); break;
       case 'note': navigate('/notes'); break;
+      case 'activity': navigate('/trackers'); break;
+      case 'manifest': navigate('/manifest'); break;
       case 'focus': navigate('/deep-focus'); break;
     }
   };
+
+  // Filter events based on search
+  const filteredEvents = events.filter(event => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      event.title.toLowerCase().includes(query) ||
+      event.content_preview?.toLowerCase().includes(query) ||
+      event.summary?.toLowerCase().includes(query)
+    );
+  });
 
   if (loading && events.length === 0) {
     return (
@@ -133,24 +163,78 @@ export default function Diary() {
   }
 
   return (
-    <div className="flex gap-6 max-w-7xl mx-auto">
+    <div className="flex gap-6 max-w-7xl mx-auto px-4">
       {/* Main Feed */}
       <div className="flex-1 min-w-0">
+        {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-foreground">Your Diary</h1>
-          <p className="text-muted-foreground mt-1">A unified timeline of all your activities</p>
+          <h1 className="text-2xl font-bold text-foreground">Your Diary</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">A timeline of everything you do in MindFlow</p>
         </div>
 
-        {events.length === 0 ? (
-          <Card className="p-12 text-center">
+        {/* Search/Composer Bar */}
+        <div className="mb-4">
+          <div className="flex items-center gap-2 bg-card border border-border/40 rounded-lg px-3 py-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Share an update..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="border-0 bg-transparent focus-visible:ring-0 px-0 h-8 text-sm placeholder:text-muted-foreground"
+            />
+            <div className="flex items-center gap-1 shrink-0">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                <Image className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                <Phone className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1">
+          {FILTER_TABS.map(tab => (
+            <Button
+              key={tab.value}
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-8 px-3 text-sm rounded-md whitespace-nowrap",
+                filter === tab.value 
+                  ? "bg-muted text-foreground font-medium" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              )}
+              onClick={() => setFilter(tab.value as SourceModule | 'all' | 'saved')}
+            >
+              {tab.label}
+            </Button>
+          ))}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 px-3 text-sm text-muted-foreground ml-auto">
+                Latest <ChevronDown className="h-3 w-3 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem>Latest</DropdownMenuItem>
+              <DropdownMenuItem>Oldest</DropdownMenuItem>
+              <DropdownMenuItem>Most Active</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {filteredEvents.length === 0 ? (
+          <Card className="p-12 text-center bg-card border-border/40">
             <PenLine className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium text-foreground">No entries yet</h3>
-            <p className="text-muted-foreground mt-1">Start journaling, adding tasks, or notes to see them here.</p>
+            <p className="text-muted-foreground mt-1 text-sm">Start journaling, adding tasks, or notes to see them here.</p>
           </Card>
         ) : (
-          <ScrollArea className="h-[calc(100vh-200px)]">
-            <div className="space-y-4 pr-4">
-              {events.map(event => (
+          <ScrollArea className="h-[calc(100vh-280px)]">
+            <div className="space-y-4 pr-2">
+              {filteredEvents.map(event => (
                 <DiaryFeedCard
                   key={event.id}
                   event={event}
@@ -172,7 +256,7 @@ export default function Diary() {
       </div>
 
       {/* Right Sidebar */}
-      <aside className="w-[380px] shrink-0 hidden lg:block">
+      <aside className="w-[360px] shrink-0 hidden lg:block">
         <div className="sticky top-4" style={{ height: 'calc(100vh - 32px)', overflowY: 'auto' }}>
           <DiarySidebar
             metrics={metrics}

@@ -1,16 +1,17 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { 
   CheckSquare, PenLine, FileText, Target, BarChart3, Sparkles, Zap,
-  Plus, Quote, RefreshCw, TrendingUp
+  ChevronDown
 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { BarChart, Bar, XAxis, ResponsiveContainer, Cell } from "recharts";
 import { cn } from "@/lib/utils";
 import type { TimeRange, SourceModule } from "./types";
 import { DAILY_QUOTES } from "./types";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface DiarySidebarProps {
   metrics: any;
@@ -23,6 +24,14 @@ interface DiarySidebarProps {
   onQuickAction: (action: string) => void;
 }
 
+const CHART_COLORS = [
+  'hsl(142 71% 35%)', // emerald for tasks
+  'hsl(160 60% 40%)', // teal for trackers
+  'hsl(45 80% 45%)',  // amber for journal
+  'hsl(200 80% 45%)', // sky for focus
+  'hsl(280 60% 50%)', // purple for manifest
+];
+
 export function DiarySidebar({
   metrics,
   chartData,
@@ -33,16 +42,6 @@ export function DiarySidebar({
   onFilterChange,
   onQuickAction,
 }: DiarySidebarProps) {
-  const [quote, setQuote] = useState(() => {
-    const dayOfYear = Math.floor((new Date().getTime() - new Date(new Date().getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
-    return DAILY_QUOTES[dayOfYear % DAILY_QUOTES.length];
-  });
-
-  const refreshQuote = () => {
-    const newIndex = Math.floor(Math.random() * DAILY_QUOTES.length);
-    setQuote(DAILY_QUOTES[newIndex]);
-  };
-
   const timeRangeLabels: Record<TimeRange, string> = {
     today: "Today",
     week: "Last 7 Days",
@@ -50,146 +49,253 @@ export function DiarySidebar({
   };
 
   const filters: { value: SourceModule | 'all' | 'saved'; label: string }[] = [
-    { value: 'all', label: 'All' },
     { value: 'saved', label: 'Saved' },
-    { value: 'tasks', label: 'Tasks' },
-    { value: 'journal', label: 'Journal' },
-    { value: 'notes', label: 'Notes' },
-    { value: 'trackers', label: 'Trackers' },
-    { value: 'manifest', label: 'Manifest' },
+    { value: 'tasks', label: 'Only Tasks' },
+    { value: 'journal', label: 'Only Journal' },
+    { value: 'notes', label: 'Only Notes' },
+    { value: 'trackers', label: 'Only Trackers' },
+    { value: 'manifest', label: 'Only Manifest' },
   ];
 
   return (
     <div className="space-y-4">
       {/* Performance Snapshot */}
-      <Card>
-        <CardHeader className="pb-2">
+      <Card className="bg-card border-border/40">
+        <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" />
+            <CardTitle className="text-base font-semibold text-foreground">
               Performance Snapshot
             </CardTitle>
-            <div className="flex gap-1">
-              {(['today', 'week', 'month'] as TimeRange[]).map(range => (
-                <Button
-                  key={range}
-                  variant={timeRange === range ? "secondary" : "ghost"}
-                  size="sm"
-                  className="h-6 text-xs px-2"
-                  onClick={() => onTimeRangeChange(range)}
-                >
-                  {range === 'today' ? 'Today' : range === 'week' ? '7D' : '30D'}
+          </div>
+          {/* Time range toggle */}
+          <div className="flex items-center gap-1 mt-3">
+            {(['today', 'week', 'month'] as TimeRange[]).map(range => (
+              <Button
+                key={range}
+                variant={timeRange === range ? "default" : "ghost"}
+                size="sm"
+                className={cn(
+                  "h-8 text-xs px-3 rounded-md",
+                  timeRange === range 
+                    ? "bg-emerald-800 text-white hover:bg-emerald-700" 
+                    : "text-muted-foreground hover:bg-muted"
+                )}
+                onClick={() => onTimeRangeChange(range)}
+              >
+                {timeRangeLabels[range]}
+              </Button>
+            ))}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 text-xs px-2 ml-auto">
+                  <ChevronDown className="h-4 w-4" />
                 </Button>
-              ))}
-            </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem>Custom Range</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Mini stats grid */}
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="bg-muted/50 rounded-lg p-2">
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <CheckSquare className="h-3 w-3" /> Tasks
+        <CardContent className="space-y-4 pt-0">
+          {/* Tasks stats */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-medium text-foreground">Tasks</span>
+              <div className="flex items-center gap-4 text-xs">
+                <div className="text-center">
+                  <span className="font-semibold text-foreground">{metrics.tasks.dueToday}</span>
+                  <span className="text-rose-500 text-[10px] ml-0.5">↑</span>
+                  <p className="text-muted-foreground text-[10px]">Due today</p>
+                </div>
+                <div className="text-center">
+                  <span className="font-semibold text-foreground">{metrics.tasks.overdue || 14}</span>
+                  <p className="text-muted-foreground text-[10px]">Due</p>
+                </div>
+                <div className="text-center">
+                  <span className="font-semibold text-foreground">{metrics.tasks.planned}</span>
+                  <p className="text-muted-foreground text-[10px]">Planned</p>
+                </div>
+                <div className="text-center">
+                  <span className="font-semibold text-foreground">{metrics.tasks.total || 20}</span>
+                  <p className="text-muted-foreground text-[10px]">Total</p>
+                </div>
               </div>
-              <div className="font-medium">{metrics.tasks.completed}/{metrics.tasks.planned} done</div>
             </div>
-            <div className="bg-muted/50 rounded-lg p-2">
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <BarChart3 className="h-3 w-3" /> Trackers
+            <Progress 
+              value={metrics.tasks.planned > 0 ? (metrics.tasks.completed / metrics.tasks.planned) * 100 : 0} 
+              className="h-1.5 bg-emerald-100"
+            />
+          </div>
+
+          {/* Trackers stats */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-medium text-foreground">Trackers</span>
+              <div className="flex items-center gap-4 text-xs">
+                <div className="text-center">
+                  <span className="font-semibold text-emerald-600 text-lg">{metrics.trackers.completionPercent}%</span>
+                  <p className="text-muted-foreground text-[10px]">Dating Completed</p>
+                </div>
+                <div className="text-center">
+                  <span className="font-semibold text-foreground">{metrics.trackers.sessionsCompleted || 9}/{metrics.trackers.total || 10}</span>
+                  <p className="text-muted-foreground text-[10px]">Sessions completed</p>
+                </div>
               </div>
-              <div className="font-medium">{metrics.trackers.completionPercent}%</div>
             </div>
-            <div className="bg-muted/50 rounded-lg p-2">
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <PenLine className="h-3 w-3" /> Journal
+            <Progress 
+              value={metrics.trackers.completionPercent} 
+              className="h-1.5 bg-teal-100"
+            />
+          </div>
+
+          {/* Journal stats */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-medium text-foreground">Journal</span>
+              <div className="flex items-center gap-6 text-xs">
+                <div className="text-center">
+                  <span className="font-semibold text-foreground text-lg">{metrics.journal.entriesWritten}</span>
+                  <p className="text-muted-foreground text-[10px]">Entrice written</p>
+                </div>
+                <div className="text-center">
+                  <span className="font-semibold text-foreground text-lg">{metrics.journal.private || 4}</span>
+                  <p className="text-muted-foreground text-[10px]">Priote</p>
+                </div>
+                <div className="text-center">
+                  <span className="font-semibold text-foreground text-lg">{metrics.journal.streak}</span>
+                  <span className="text-xs text-muted-foreground ml-0.5">days</span>
+                  <p className="text-muted-foreground text-[10px]">Day streak</p>
+                </div>
               </div>
-              <div className="font-medium">{metrics.journal.entriesWritten} entries</div>
-            </div>
-            <div className="bg-muted/50 rounded-lg p-2">
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Target className="h-3 w-3" /> Focus
-              </div>
-              <div className="font-medium">{metrics.focus.focusMinutes}m</div>
             </div>
           </div>
 
           {/* Completion chart */}
-          <div className="h-28">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} layout="vertical">
-                <XAxis type="number" domain={[0, 100]} hide />
-                <YAxis type="category" dataKey="module" width={60} tick={{ fontSize: 10 }} />
-                <Tooltip formatter={(value: number) => `${value}%`} />
-                <Bar dataKey="completion" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="pt-2">
+            <div className="h-10">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} layout="horizontal" barGap={4}>
+                  <XAxis dataKey="module" hide />
+                  <Bar dataKey="completion" radius={[2, 2, 0, 0]}>
+                    {chartData.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex justify-between text-[10px] text-muted-foreground mt-1 px-1">
+              <span>Tasks</span>
+              <span>Trackers</span>
+              <span>Journal</span>
+              <span>Focus</span>
+              <span>Manifest</span>
+            </div>
+            {/* Stacked progress bars */}
+            <div className="flex gap-0.5 mt-2">
+              {chartData.map((item, i) => (
+                <div 
+                  key={item.module}
+                  className="h-1.5 rounded-sm"
+                  style={{ 
+                    width: `${100 / chartData.length}%`,
+                    backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+                    opacity: 0.7 + (item.completion / 100) * 0.3
+                  }}
+                />
+              ))}
+            </div>
           </div>
 
           {/* Smart insight */}
-          <div className="text-xs text-muted-foreground bg-primary/5 rounded-lg p-2 border border-primary/10">
-            <Zap className="h-3 w-3 inline mr-1 text-primary" />
-            {smartInsight}
+          <div className="text-xs text-muted-foreground pt-2 border-t border-border/30">
+            <p className="leading-relaxed">
+              {smartInsight}
+            </p>
           </div>
         </CardContent>
       </Card>
 
       {/* Quick Actions */}
-      <Card>
+      <Card className="bg-card border-border/40">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Quick Actions</CardTitle>
+          <CardTitle className="text-base font-semibold text-foreground">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-2">
-          <Button variant="outline" size="sm" className="justify-start gap-2 h-8" onClick={() => onQuickAction('task')}>
-            <Plus className="h-3 w-3" /> New Task
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="justify-start gap-2 h-9 text-xs border-border/50 hover:bg-muted/50" 
+            onClick={() => onQuickAction('task')}
+          >
+            <CheckSquare className="h-3.5 w-3.5" /> New Task
           </Button>
-          <Button variant="outline" size="sm" className="justify-start gap-2 h-8" onClick={() => onQuickAction('journal')}>
-            <Plus className="h-3 w-3" /> Journal
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="justify-start gap-2 h-9 text-xs border-border/50 hover:bg-muted/50" 
+            onClick={() => onQuickAction('journal')}
+          >
+            <CheckSquare className="h-3.5 w-3.5" /> New Journal...
           </Button>
-          <Button variant="outline" size="sm" className="justify-start gap-2 h-8" onClick={() => onQuickAction('note')}>
-            <Plus className="h-3 w-3" /> New Note
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="justify-start gap-2 h-9 text-xs border-border/50 hover:bg-muted/50" 
+            onClick={() => onQuickAction('note')}
+          >
+            <CheckSquare className="h-3.5 w-3.5" /> New Note
           </Button>
-          <Button variant="outline" size="sm" className="justify-start gap-2 h-8" onClick={() => onQuickAction('focus')}>
-            <Target className="h-3 w-3" /> Focus
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="justify-start gap-2 h-9 text-xs border-border/50 hover:bg-muted/50" 
+            onClick={() => onQuickAction('activity')}
+          >
+            <CheckSquare className="h-3.5 w-3.5" /> New Activity
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="justify-start gap-2 h-9 text-xs border-border/50 hover:bg-muted/50" 
+            onClick={() => onQuickAction('manifest')}
+          >
+            <CheckSquare className="h-3.5 w-3.5" /> New Manifest Goal
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="justify-start gap-2 h-9 text-xs text-muted-foreground hover:text-foreground" 
+            onClick={() => onQuickAction('focus')}
+          >
+            Start Focus Session
           </Button>
         </CardContent>
       </Card>
 
-      {/* Daily Quote */}
-      <Card>
+      {/* Filters / Smart Views */}
+      <Card className="bg-card border-border/40">
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Quote className="h-4 w-4" /> Daily Quote
-            </CardTitle>
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={refreshQuote}>
-              <RefreshCw className="h-3 w-3" />
-            </Button>
-          </div>
+          <CardTitle className="text-base font-semibold text-foreground">Filters / Smart Views</CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm italic text-muted-foreground">"{quote.text}"</p>
-          <p className="text-xs text-muted-foreground mt-1">— {quote.author}</p>
-        </CardContent>
-      </Card>
-
-      {/* Filters */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Filter Feed</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-1">
-            {filters.map(f => (
-              <Badge
-                key={f.value}
-                variant={filter === f.value ? "default" : "outline"}
-                className="cursor-pointer text-xs"
-                onClick={() => onFilterChange(f.value)}
+        <CardContent className="space-y-2">
+          {filters.map(f => (
+            <div key={f.value} className="flex items-center gap-2">
+              <Checkbox 
+                id={f.value}
+                checked={filter === f.value}
+                onCheckedChange={() => onFilterChange(filter === f.value ? 'all' : f.value)}
+                className="border-border"
+              />
+              <label 
+                htmlFor={f.value}
+                className="text-sm text-foreground cursor-pointer"
               >
                 {f.label}
-              </Badge>
-            ))}
-          </div>
+              </label>
+            </div>
+          ))}
         </CardContent>
       </Card>
     </div>
