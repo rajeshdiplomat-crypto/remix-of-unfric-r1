@@ -21,6 +21,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line, Tooltip } from "recharts";
+import { ActivityImageUpload, loadActivityImage, saveActivityImage, loadAllActivityImages } from "@/components/trackers/ActivityImageUpload";
+import { ActivityAssistantPanel } from "@/components/trackers/ActivityAssistantPanel";
+import { ActivityDetailsDrawer } from "@/components/trackers/ActivityDetailsDrawer";
 
 interface ActivityItem {
   id: string;
