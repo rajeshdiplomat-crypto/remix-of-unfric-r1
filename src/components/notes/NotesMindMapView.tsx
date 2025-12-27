@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from "react";
-import { FileText, Plus, FolderPlus, ZoomIn, ZoomOut, RotateCcw, Minimize2, Maximize2 } from "lucide-react";
+import { FileText, ZoomIn, ZoomOut, RotateCcw, Minimize2, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotesActivityDot, getMostRecentUpdate } from "./NotesActivityDot";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
@@ -18,79 +18,6 @@ interface NotesMindMapViewProps {
 interface Position {
   x: number;
   y: number;
-}
-
-// Bubble node component for consistent styling
-function BubbleNode({
-  label,
-  count,
-  color,
-  isExpanded,
-  onClick,
-  size = "medium",
-  isActive,
-  activityDot,
-  onAdd,
-}: {
-  label: string;
-  count?: number;
-  color?: string;
-  isExpanded?: boolean;
-  onClick: () => void;
-  size?: "small" | "medium" | "large";
-  isActive?: boolean;
-  activityDot?: React.ReactNode;
-  onAdd?: () => void;
-}) {
-  const sizeClasses = {
-    small: "min-w-[80px] px-3 py-1.5 text-xs",
-    medium: "min-w-[100px] px-4 py-2 text-sm",
-    large: "min-w-[120px] px-5 py-3 text-base font-semibold",
-  };
-
-  return (
-    <div className="flex items-center gap-1">
-      <button
-        onClick={onClick}
-        className={cn(
-          "rounded-full transition-all duration-300 border-2 shadow-md hover:shadow-lg flex items-center gap-2 justify-center",
-          sizeClasses[size],
-          isExpanded
-            ? "bg-card shadow-lg scale-105 ring-2 ring-primary/20"
-            : "bg-card/90 hover:bg-card hover:scale-102",
-          isActive && "ring-2 ring-primary/50"
-        )}
-        style={{ borderColor: color || "hsl(var(--border))" }}
-      >
-        {color && (
-          <div
-            className="h-2.5 w-2.5 rounded-full shrink-0"
-            style={{ backgroundColor: color }}
-          />
-        )}
-        <span className="text-foreground whitespace-nowrap truncate max-w-[100px]">
-          {label}
-        </span>
-        {count !== undefined && (
-          <span className="text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full text-[10px]">
-            {count}
-          </span>
-        )}
-        {activityDot}
-      </button>
-      {onAdd && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onAdd();
-          }}
-          className="p-1 rounded-full bg-card/80 border border-border/50 hover:bg-primary/10 transition-colors"
-        >
-          <Plus className="h-3 w-3 text-muted-foreground" />
-        </button>
-      )}
-    </div>
-  );
 }
 
 export function NotesMindMapView({
@@ -121,9 +48,9 @@ export function NotesMindMapView({
   const centerY = canvasHeight / 2;
 
   // Radius for each level
-  const level1Radius = 200; // Groups
-  const level2Radius = 100; // Folders from group
-  const level3Radius = 70;  // Notes from folder
+  const level1Radius = 180; // Groups
+  const level2Radius = 110; // Folders from group
+  const level3Radius = 80;  // Notes from folder
 
   // Calculate group positions in a circle around center
   const groupPositions = useMemo(() => {
@@ -213,7 +140,7 @@ export function NotesMindMapView({
   // Calculate folder positions around a group
   const getFolderPositions = (groupPos: Position, folderCount: number, groupAngle: number) => {
     const positions: Position[] = [];
-    const spreadAngle = Math.PI * 0.6;
+    const spreadAngle = Math.PI * 0.7;
     
     for (let i = 0; i < folderCount; i++) {
       const offset = (i - (folderCount - 1) / 2) * (spreadAngle / Math.max(folderCount - 1, 1));
@@ -229,7 +156,7 @@ export function NotesMindMapView({
   // Calculate note positions around a folder or group
   const getNotePositions = (parentPos: Position, noteCount: number, parentAngle: number) => {
     const positions: Position[] = [];
-    const spreadAngle = Math.PI * 0.5;
+    const spreadAngle = Math.PI * 0.6;
     const displayCount = Math.min(noteCount, 6);
     
     for (let i = 0; i < displayCount; i++) {
@@ -250,7 +177,7 @@ export function NotesMindMapView({
   });
 
   return (
-    <div className="relative w-full h-[650px] overflow-hidden rounded-xl bg-gradient-to-br from-muted/20 via-background to-muted/10 border border-border/30">
+    <div className="relative w-full h-[650px] overflow-hidden rounded-xl bg-gradient-to-br from-muted/30 via-background to-muted/20 border border-border/30">
       {/* Controls */}
       <div className="absolute top-4 right-4 z-20 flex items-center gap-1 bg-card/95 backdrop-blur-sm border border-border/50 rounded-lg p-1 shadow-sm">
         <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleZoomIn} title="Zoom In">
@@ -274,12 +201,19 @@ export function NotesMindMapView({
       </div>
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 z-20 flex items-center gap-3 bg-card/90 backdrop-blur-sm border border-border/50 rounded-lg px-3 py-2 text-xs text-muted-foreground">
-        <span className="font-medium">Click to expand</span>
-        <span>•</span>
-        <span>Drag to pan</span>
-        <span>•</span>
-        <span>Scroll to zoom</span>
+      <div className="absolute bottom-4 left-4 z-20 flex items-center gap-4 bg-card/90 backdrop-blur-sm border border-border/50 rounded-lg px-3 py-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded-full bg-primary" />
+          <span>Groups</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-primary/60" />
+          <span>Folders</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-primary/30" />
+          <span>Notes</span>
+        </div>
       </div>
 
       {/* Mind Map Canvas */}
@@ -294,13 +228,6 @@ export function NotesMindMapView({
       >
         {/* SVG for connection lines */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none">
-          <defs>
-            <pattern id="mindmap-dots" width="24" height="24" patternUnits="userSpaceOnUse">
-              <circle cx="12" cy="12" r="0.8" fill="currentColor" className="text-muted-foreground/8" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#mindmap-dots)" />
-          
           {/* Level 1: Center to Groups */}
           {sortedGroups.map((group) => {
             const pos = groupPositions[group.id];
@@ -314,10 +241,9 @@ export function NotesMindMapView({
                 y1={screenCenter.y + canvasHeight / 2}
                 x2={screenGroup.x + canvasWidth / 2}
                 y2={screenGroup.y + canvasHeight / 2}
-                stroke={group.color}
+                stroke="hsl(var(--primary))"
                 strokeWidth={2}
-                strokeOpacity={0.25}
-                strokeDasharray="8 4"
+                strokeOpacity={0.3}
                 className="transition-all duration-300"
               />
             );
@@ -344,9 +270,9 @@ export function NotesMindMapView({
                     y1={screenGroup.y + canvasHeight / 2}
                     x2={screenFolder.x + canvasWidth / 2}
                     y2={screenFolder.y + canvasHeight / 2}
-                    stroke={group.color}
+                    stroke="hsl(var(--primary))"
                     strokeWidth={1.5}
-                    strokeOpacity={0.35}
+                    strokeOpacity={0.25}
                     className="transition-all duration-300"
                   />
                   
@@ -370,9 +296,9 @@ export function NotesMindMapView({
                               y1={screenFolder.y + canvasHeight / 2}
                               x2={screenNote.x + canvasWidth / 2}
                               y2={screenNote.y + canvasHeight / 2}
-                              stroke={group.color}
+                              stroke="hsl(var(--primary))"
                               strokeWidth={1}
-                              strokeOpacity={0.25}
+                              strokeOpacity={0.15}
                               className="transition-all duration-300"
                             />
                           );
@@ -407,9 +333,9 @@ export function NotesMindMapView({
                   y1={screenGroup.y + canvasHeight / 2}
                   x2={screenNote.x + canvasWidth / 2}
                   y2={screenNote.y + canvasHeight / 2}
-                  stroke={group.color}
+                  stroke="hsl(var(--primary))"
                   strokeWidth={1}
-                  strokeOpacity={0.25}
+                  strokeOpacity={0.15}
                   className="transition-all duration-300"
                 />
               );
@@ -417,7 +343,7 @@ export function NotesMindMapView({
           })}
         </svg>
 
-        {/* Center Node */}
+        {/* Center Node - Darkest */}
         <div
           className="absolute pointer-events-none"
           style={{
@@ -426,20 +352,19 @@ export function NotesMindMapView({
             transform: `translate(-50%, -50%) scale(${zoom})`,
           }}
         >
-          <div className="w-28 h-28 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border-2 border-primary/40 flex items-center justify-center shadow-lg shadow-primary/10 pointer-events-auto">
+          <div className="w-28 h-28 rounded-full bg-primary flex items-center justify-center shadow-xl shadow-primary/30 pointer-events-auto">
             <div className="text-center">
-              <span className="text-base font-semibold text-primary">Notes</span>
-              <span className="block text-xs text-muted-foreground">{notes.length} total</span>
+              <span className="text-base font-bold text-primary-foreground">Notes</span>
+              <span className="block text-xs text-primary-foreground/80">{notes.length} total</span>
             </div>
           </div>
         </div>
 
-        {/* Level 1: Group Nodes */}
+        {/* Level 1: Group Nodes - Dark bubbles */}
         {sortedGroups.map((group) => {
           const pos = groupPositions[group.id];
           const screenPos = toScreen(pos);
           const groupNotes = notes.filter(n => n.groupId === group.id);
-          const mostRecentUpdate = getMostRecentUpdate(groupNotes);
           const isExpanded = expandedGroups.has(group.id);
 
           return (
@@ -453,20 +378,30 @@ export function NotesMindMapView({
                 zIndex: isExpanded ? 20 : 10,
               }}
             >
-              <BubbleNode
-                label={group.name}
-                count={groupNotes.length}
-                color={group.color}
-                isExpanded={isExpanded}
+              <button
                 onClick={() => toggleGroup(group.id)}
-                size="medium"
-                activityDot={mostRecentUpdate && <NotesActivityDot updatedAt={mostRecentUpdate} size="sm" />}
-              />
+                className={cn(
+                  "w-20 h-20 rounded-full flex flex-col items-center justify-center transition-all duration-300",
+                  "shadow-lg hover:shadow-xl",
+                  isExpanded ? "scale-110 ring-4 ring-primary-foreground/20" : "hover:scale-105"
+                )}
+                style={{ 
+                  backgroundColor: group.color,
+                  boxShadow: `0 8px 32px ${group.color}40`
+                }}
+              >
+                <span className="text-xs font-semibold text-white truncate max-w-[60px] px-1">
+                  {group.name}
+                </span>
+                <span className="text-[10px] text-white/80 mt-0.5">
+                  ({groupNotes.length})
+                </span>
+              </button>
             </div>
           );
         })}
 
-        {/* Level 2: Folder Nodes (when group expanded) */}
+        {/* Level 2: Folder Nodes - Medium bubbles */}
         {sortedGroups.map((group) => {
           if (!expandedGroups.has(group.id)) return null;
           const groupPos = groupPositions[group.id];
@@ -479,7 +414,6 @@ export function NotesMindMapView({
             if (!folderPos) return null;
             const screenPos = toScreen(folderPos);
             const folderNotes = notes.filter(n => n.folderId === folder.id);
-            const mostRecentUpdate = getMostRecentUpdate(folderNotes);
             const isExpanded = expandedFolders.has(folder.id);
 
             return (
@@ -493,22 +427,31 @@ export function NotesMindMapView({
                   zIndex: isExpanded ? 25 : 15,
                 }}
               >
-                <BubbleNode
-                  label={folder.name}
-                  count={folderNotes.length}
-                  color={group.color}
-                  isExpanded={isExpanded}
+                <button
                   onClick={() => toggleFolder(folder.id)}
-                  size="small"
-                  activityDot={mostRecentUpdate && <NotesActivityDot updatedAt={mostRecentUpdate} size="sm" />}
-                  onAdd={() => onAddNote(group.id, folder.id)}
-                />
+                  className={cn(
+                    "w-16 h-16 rounded-full flex flex-col items-center justify-center transition-all duration-300",
+                    "shadow-md hover:shadow-lg",
+                    isExpanded ? "scale-110 ring-2 ring-white/30" : "hover:scale-105"
+                  )}
+                  style={{ 
+                    backgroundColor: `${group.color}99`,
+                    boxShadow: `0 4px 16px ${group.color}30`
+                  }}
+                >
+                  <span className="text-[10px] font-medium text-white truncate max-w-[50px] px-1">
+                    {folder.name}
+                  </span>
+                  <span className="text-[9px] text-white/80">
+                    ({folderNotes.length})
+                  </span>
+                </button>
               </div>
             );
           });
         })}
 
-        {/* Level 3: Note Nodes from Folders */}
+        {/* Level 3: Note Nodes from Folders - Light bubbles */}
         {sortedGroups.map((group) => {
           if (!expandedGroups.has(group.id)) return null;
           const groupPos = groupPositions[group.id];
@@ -544,15 +487,17 @@ export function NotesMindMapView({
                   <button
                     onClick={() => onNoteClick(note)}
                     className={cn(
-                      "flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs transition-all",
-                      "border shadow-sm hover:shadow-md bg-card/95 hover:bg-card",
-                      isSelected
-                        ? "border-primary ring-2 ring-primary/30"
-                        : "border-border/50 hover:border-border"
+                      "w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300",
+                      "shadow-sm hover:shadow-md hover:scale-110",
+                      isSelected && "ring-2 ring-primary"
                     )}
+                    style={{ 
+                      backgroundColor: `${group.color}40`,
+                      border: `1px solid ${group.color}60`
+                    }}
+                    title={note.title}
                   >
-                    <FileText className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-foreground truncate max-w-[80px]">{note.title}</span>
+                    <FileText className="h-4 w-4" style={{ color: group.color }} />
                   </button>
                 </div>
               );
@@ -560,7 +505,7 @@ export function NotesMindMapView({
           });
         })}
 
-        {/* Direct Notes from Groups (no folder) */}
+        {/* Direct Notes from Groups (no folder) - Light bubbles */}
         {sortedGroups.map((group) => {
           if (!expandedGroups.has(group.id)) return null;
           const groupPos = groupPositions[group.id];
@@ -590,15 +535,17 @@ export function NotesMindMapView({
                 <button
                   onClick={() => onNoteClick(note)}
                   className={cn(
-                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs transition-all",
-                    "border shadow-sm hover:shadow-md bg-card/95 hover:bg-card",
-                    isSelected
-                      ? "border-primary ring-2 ring-primary/30"
-                      : "border-border/50 hover:border-border"
+                    "w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300",
+                    "shadow-sm hover:shadow-md hover:scale-110",
+                    isSelected && "ring-2 ring-primary"
                   )}
+                  style={{ 
+                    backgroundColor: `${group.color}40`,
+                    border: `1px solid ${group.color}60`
+                  }}
+                  title={note.title}
                 >
-                  <FileText className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-foreground truncate max-w-[80px]">{note.title}</span>
+                  <FileText className="h-4 w-4" style={{ color: group.color }} />
                 </button>
               </div>
             );
@@ -622,8 +569,8 @@ export function NotesMindMapView({
 
             const folderAngle = Math.atan2(folderPos.y - groupPos.y, folderPos.x - groupPos.x);
             const overflowPos = {
-              x: folderPos.x + (level3Radius + 30) * Math.cos(folderAngle),
-              y: folderPos.y + (level3Radius + 30) * Math.sin(folderAngle),
+              x: folderPos.x + (level3Radius + 40) * Math.cos(folderAngle),
+              y: folderPos.y + (level3Radius + 40) * Math.sin(folderAngle),
             };
             const screenPos = toScreen(overflowPos);
 
@@ -638,8 +585,14 @@ export function NotesMindMapView({
                   zIndex: 25,
                 }}
               >
-                <span className="text-xs text-muted-foreground bg-muted/80 px-2 py-1 rounded-full">
-                  +{folderNotes.length - 6} more
+                <span 
+                  className="text-[10px] font-medium px-2 py-1 rounded-full"
+                  style={{ 
+                    backgroundColor: `${group.color}30`,
+                    color: group.color
+                  }}
+                >
+                  +{folderNotes.length - 6}
                 </span>
               </div>
             );
