@@ -22,8 +22,8 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line, Tooltip } from "recharts";
 import { ActivityImageUpload, loadActivityImage, saveActivityImage, loadAllActivityImages } from "@/components/trackers/ActivityImageUpload";
-import { ActivityAssistantPanel } from "@/components/trackers/ActivityAssistantPanel";
-import { ActivityDetailsDrawer } from "@/components/trackers/ActivityDetailsDrawer";
+import { ActivityDetailPanel } from "@/components/trackers/ActivityDetailPanel";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface ActivityItem {
   id: string;
@@ -136,9 +136,7 @@ export default function Trackers() {
   const [editingActivity, setEditingActivity] = useState<ActivityItem | null>(null);
   const [selectedWeekStart, setSelectedWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [selectedActivities, setSelectedActivities] = useState<Set<string>>(new Set());
-  const [detailActivity, setDetailActivity] = useState<ActivityItem | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedForPanel, setSelectedForPanel] = useState<ActivityItem | null>(null);
+  const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
 
   // Form state
   const [formName, setFormName] = useState("");
@@ -450,9 +448,10 @@ export default function Trackers() {
     setDialogOpen(true);
   };
 
-  const openActivityDrawer = (activity: ActivityItem) => {
-    setDetailActivity(activity);
-    setDrawerOpen(true);
+  const selectActivity = (activity: ActivityItem) => {
+    // Keep the reference updated with the latest from activities array
+    const current = activities.find(a => a.id === activity.id);
+    setSelectedActivity(current || activity);
   };
 
   const handleSkipDay = (activityId: string, date: Date) => {
@@ -607,8 +606,16 @@ export default function Trackers() {
 
   const todayCompletion = getTodayCompletion();
 
+  // Keep selected activity synced with latest data
+  const currentSelectedActivity = selectedActivity 
+    ? activities.find(a => a.id === selectedActivity.id) || null 
+    : null;
+
   return (
-    <div className="w-full max-w-[1600px] mx-auto space-y-4 md:space-y-6 px-4">
+    <TooltipProvider>
+    <div className="w-full max-w-[1600px] mx-auto flex gap-6 px-4">
+      {/* Left content area */}
+      <div className="flex-1 min-w-0 space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -883,8 +890,13 @@ export default function Trackers() {
           return (
             <Card 
               key={activity.id} 
-              className="overflow-hidden cursor-pointer hover:border-primary/50 transition-colors"
-              onClick={() => openActivityDrawer(activity)}
+              className={cn(
+                "overflow-hidden cursor-pointer transition-colors",
+                selectedActivity?.id === activity.id 
+                  ? "border-primary ring-1 ring-primary" 
+                  : "hover:border-primary/50"
+              )}
+              onClick={() => selectActivity(activity)}
             >
               <div className="p-3 md:p-4" onClick={(e) => e.stopPropagation()}>
                 {/* Header Row */}
@@ -913,7 +925,7 @@ export default function Trackers() {
                     className="flex-1 min-w-0 cursor-pointer"
                     onClick={(e) => {
                       e.stopPropagation();
-                      openActivityDrawer(activity);
+                      selectActivity(activity);
                     }}
                   >
                     <div className="flex items-center gap-2 flex-wrap">
@@ -970,7 +982,7 @@ export default function Trackers() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setDetailActivity(activity)}>
+                      <DropdownMenuItem onClick={() => selectActivity(activity)}>
                         View Details
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openEditDialog(activity)}>
@@ -1259,132 +1271,17 @@ export default function Trackers() {
         </DialogContent>
       </Dialog>
 
-      {/* Activity Detail Dialog */}
-      <Dialog open={!!detailActivity} onOpenChange={() => setDetailActivity(null)}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          {detailActivity && (
-            <>
-              <DialogHeader>
-                <DialogTitle>{detailActivity.name}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-4">
-                <p className="text-sm text-muted-foreground">{detailActivity.description}</p>
-                
-                {/* Duration Info */}
-                <Card className="p-4 bg-muted/30">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Duration</p>
-                      <p className="font-semibold text-foreground">{detailActivity.numberOfDays} calendar days</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Days Left</p>
-                      <p className="font-semibold text-foreground">{getDaysLeft(detailActivity)} days</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Date Range</p>
-                      <p className="font-semibold text-foreground">
-                        {format(parseISO(detailActivity.startDate), "MMM d")} → {format(getEndDate(detailActivity), "MMM d")}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Sessions</p>
-                      <p className="font-semibold text-foreground">
-                        {getCompletedSessions(detailActivity)}/{getScheduledSessions(detailActivity)} ({getSessionsLeft(detailActivity)} left)
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-                
-                {/* Stats Grid */}
-                <div className="grid grid-cols-2 gap-3">
-                  <Card className="p-3">
-                    <p className="text-xs text-muted-foreground">Current Streak</p>
-                    <p className="text-2xl font-bold text-foreground flex items-center gap-1">
-                      <Flame className="h-5 w-5 text-orange-500" />
-                      {getCurrentStreak(detailActivity)}
-                    </p>
-                  </Card>
-                  <Card className="p-3">
-                    <p className="text-xs text-muted-foreground">Longest Streak</p>
-                    <p className="text-2xl font-bold text-foreground flex items-center gap-1">
-                      <Zap className="h-5 w-5 text-yellow-500" />
-                      {getLongestStreak(detailActivity)}
-                    </p>
-                  </Card>
-                  <Card className="p-3">
-                    <p className="text-xs text-muted-foreground">Completion</p>
-                    <p className="text-2xl font-bold text-foreground">
-                      {getCompletionPercent(detailActivity)}%
-                    </p>
-                  </Card>
-                  <Card className="p-3">
-                    <p className="text-xs text-muted-foreground">Sessions Done</p>
-                    <p className="text-2xl font-bold text-foreground">
-                      {getCompletedSessions(detailActivity)}/{getScheduledSessions(detailActivity)}
-                    </p>
-                  </Card>
-                </div>
+      </div>
 
-                {/* Insights */}
-                <Card className="p-4">
-                  <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
-                    <Lightbulb className="h-4 w-4 text-primary" />
-                    Insights
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    <p className="text-muted-foreground">
-                      You're most consistent on <span className="font-medium text-foreground">{getInsights(detailActivity).bestDay}</span> ({getInsights(detailActivity).bestRate}% completion)
-                    </p>
-                    <p className="text-muted-foreground">
-                      You tend to miss <span className="font-medium text-foreground">{getInsights(detailActivity).worstDay}</span> ({getInsights(detailActivity).worstRate}% completion)
-                    </p>
-                  </div>
-                </Card>
-
-                {/* Heatmap */}
-                <Card className="p-4">
-                  <h4 className="font-medium text-foreground mb-3">This Month</h4>
-                  <div className="grid grid-cols-7 gap-1">
-                    {getHeatmapData(detailActivity).map((day, idx) => (
-                      <div
-                        key={idx}
-                        className={cn(
-                          "h-6 w-full rounded-sm",
-                          day.completed 
-                            ? "bg-green-500" 
-                            : day.planned 
-                              ? "bg-muted" 
-                              : "bg-transparent",
-                          isToday(day.date) && "ring-2 ring-primary"
-                        )}
-                        title={`${format(day.date, "MMM d")}: ${day.completed ? "Completed" : day.planned ? "Missed" : "Not planned"}`}
-                      />
-                    ))}
-                  </div>
-                </Card>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Activity Details Drawer */}
-      <ActivityDetailsDrawer
-        activity={detailActivity}
-        open={drawerOpen}
-        onClose={() => {
-          setDrawerOpen(false);
-          setDetailActivity(null);
-        }}
-        onEdit={(activity) => {
-          setDrawerOpen(false);
-          openEditDialog(activity);
-        }}
+      {/* Right panel - Activity Details */}
+      <ActivityDetailPanel
+        activity={currentSelectedActivity}
+        onEdit={openEditDialog}
         onToggleCompletion={toggleCompletion}
         onSkipDay={handleSkipDay}
         onImageChange={handleImageChange}
       />
     </div>
+    </TooltipProvider>
   );
 }
