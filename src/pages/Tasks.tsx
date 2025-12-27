@@ -382,75 +382,68 @@ export default function Tasks() {
 
   return (
     <div className="h-full flex flex-col gap-4 px-4 py-2 overflow-x-hidden bg-background">
-      {/* Header */}
-      <TasksHeader
-        view={view}
-        onViewChange={setView}
-        quadrantMode={quadrantMode}
-        onQuadrantModeChange={setQuadrantMode}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onNewTask={openNewTaskDrawer}
-      />
+      {/* Header with Timer */}
+      <div className="relative">
+        <TasksHeader
+          view={view}
+          onViewChange={setView}
+          quadrantMode={quadrantMode}
+          onQuadrantModeChange={setQuadrantMode}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onNewTask={openNewTaskDrawer}
+        />
+        {/* Compact Timer - positioned in header area */}
+        <div className="absolute top-0 right-32">
+          <CompactTimerWidget />
+        </div>
+      </div>
 
       {/* Summary Strip */}
       <SummaryStrip tasks={filteredTasks} />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex gap-4 min-h-0 overflow-hidden">
-        {/* Left Content */}
-        <div className="flex-1 flex flex-col gap-4 min-w-0 overflow-y-auto">
-          {/* Insights Panel */}
-          <InsightsPanel tasks={filteredTasks} />
+      {/* Insights Panel - Full Width */}
+      <InsightsPanel tasks={filteredTasks} />
 
-          {/* Top Focus Bar */}
-          <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
+      {/* Top Focus Bar */}
+      <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
 
-          {/* Task Views */}
-          <div className="flex flex-col lg:flex-row gap-4 flex-1">
-            {/* All Tasks List */}
-            <div className="w-full lg:w-[340px] flex-shrink-0">
-              <AllTasksList
-                tasks={filteredTasks}
-                onTaskClick={openTaskDetail}
-                onStartTask={handleStartTask}
-                onCompleteTask={handleCompleteTask}
-              />
-            </div>
-
-            {/* Quadrant/Board View */}
-            <div className="flex-1 min-w-0 overflow-x-auto">
-              <div className="min-w-[700px] w-full">
-                {view === 'quadrant' && (
-                  <QuadrantGrid
-                    mode={quadrantMode}
-                    tasks={filteredTasks}
-                    onTaskClick={openTaskDetail}
-                    onStartTask={handleStartTask}
-                    onCompleteTask={handleCompleteTask}
-                  />
-                )}
-
-                {view === 'board' && (
-                  <BoardView
-                    mode="status"
-                    tasks={filteredTasks}
-                    onTaskClick={openTaskDetail}
-                    onDragStart={() => {}}
-                    onDrop={handleBoardDrop}
-                    onQuickAdd={handleBoardQuickAdd}
-                    onStartTask={handleStartTask}
-                    onCompleteTask={handleCompleteTask}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
+      {/* Task Views - Full Width Grid */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4 min-h-0">
+        {/* All Tasks List */}
+        <div className="min-h-0 overflow-y-auto">
+          <AllTasksList
+            tasks={filteredTasks}
+            onTaskClick={openTaskDetail}
+            onStartTask={handleStartTask}
+            onCompleteTask={handleCompleteTask}
+          />
         </div>
 
-        {/* Right Column - Timer Widget */}
-        <div className="hidden xl:flex flex-col w-[260px] flex-shrink-0">
-          <CompactTimerWidget />
+        {/* Quadrant/Board View - Takes remaining space */}
+        <div className="min-h-0 overflow-auto">
+          {view === 'quadrant' && (
+            <QuadrantGrid
+              mode={quadrantMode}
+              tasks={filteredTasks}
+              onTaskClick={openTaskDetail}
+              onStartTask={handleStartTask}
+              onCompleteTask={handleCompleteTask}
+            />
+          )}
+
+          {view === 'board' && (
+            <BoardView
+              mode="status"
+              tasks={filteredTasks}
+              onTaskClick={openTaskDetail}
+              onDragStart={() => {}}
+              onDrop={handleBoardDrop}
+              onQuickAdd={handleBoardQuickAdd}
+              onStartTask={handleStartTask}
+              onCompleteTask={handleCompleteTask}
+            />
+          )}
         </div>
       </div>
 
