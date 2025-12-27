@@ -382,22 +382,17 @@ export default function Tasks() {
 
   return (
     <div className="h-full flex flex-col gap-4 px-4 py-2 overflow-x-hidden bg-background">
-      {/* Header with Timer */}
-      <div className="relative">
-        <TasksHeader
-          view={view}
-          onViewChange={setView}
-          quadrantMode={quadrantMode}
-          onQuadrantModeChange={setQuadrantMode}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onNewTask={openNewTaskDrawer}
-        />
-        {/* Compact Timer - positioned in header area */}
-        <div className="absolute top-0 right-32">
-          <CompactTimerWidget />
-        </div>
-      </div>
+      {/* Header */}
+      <TasksHeader
+        view={view}
+        onViewChange={setView}
+        quadrantMode={quadrantMode}
+        onQuadrantModeChange={setQuadrantMode}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onNewTask={openNewTaskDrawer}
+        timerWidget={<CompactTimerWidget />}
+      />
 
       {/* Summary Strip */}
       <SummaryStrip tasks={filteredTasks} />
@@ -408,8 +403,8 @@ export default function Tasks() {
       {/* Top Focus Bar */}
       <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
 
-      {/* Task Views - Full Width Grid */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4 min-h-0">
+      {/* Task Views - Full Width */}
+      <div className="flex-1 grid grid-cols-1 xl:grid-cols-[280px_1fr] gap-4 min-h-0">
         {/* All Tasks List */}
         <div className="min-h-0 overflow-y-auto">
           <AllTasksList
@@ -420,8 +415,8 @@ export default function Tasks() {
           />
         </div>
 
-        {/* Quadrant/Board View - Takes remaining space */}
-        <div className="min-h-0 overflow-auto">
+        {/* Quadrant/Board View - Full remaining width */}
+        <div className="min-h-0 overflow-auto w-full">
           {view === 'quadrant' && (
             <QuadrantGrid
               mode={quadrantMode}

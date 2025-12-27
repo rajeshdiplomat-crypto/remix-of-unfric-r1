@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ViewSwitcher } from "./ViewSwitcher";
 import { QuadrantMode } from "./types";
+import { ReactNode } from "react";
 
 interface TasksHeaderProps {
   view: 'board' | 'quadrant';
@@ -13,6 +14,7 @@ interface TasksHeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onNewTask: () => void;
+  timerWidget?: ReactNode;
 }
 
 export function TasksHeader({
@@ -23,13 +25,14 @@ export function TasksHeader({
   searchQuery,
   onSearchChange,
   onNewTask,
+  timerWidget,
 }: TasksHeaderProps) {
   return (
     <div className="flex flex-col gap-4">
       {/* Top Row */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         {/* Left - Title & Description */}
-        <div>
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-foreground">Tasks</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Organize your tasks by focus and see what truly matters today.
@@ -37,12 +40,12 @@ export function TasksHeader({
         </div>
 
         {/* Right - Controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           {/* View Mode Dropdown */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground whitespace-nowrap">View mode</span>
+            <span className="text-sm text-muted-foreground whitespace-nowrap hidden sm:inline">View mode</span>
             <Select value={quadrantMode} onValueChange={(v) => onQuadrantModeChange(v as QuadrantMode)}>
-              <SelectTrigger className="w-44 bg-background border-border">
+              <SelectTrigger className="w-40 bg-background border-border">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -71,7 +74,7 @@ export function TasksHeader({
           </div>
 
           {/* Search */}
-          <div className="relative w-56">
+          <div className="relative w-48">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               value={searchQuery}
@@ -83,6 +86,9 @@ export function TasksHeader({
 
           {/* View Switcher */}
           <ViewSwitcher view={view} onViewChange={onViewChange} />
+
+          {/* Timer Widget - inline with controls */}
+          {timerWidget}
 
           {/* New Task Button */}
           <Button onClick={onNewTask} className="bg-primary text-primary-foreground">

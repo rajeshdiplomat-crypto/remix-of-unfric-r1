@@ -2,7 +2,6 @@ import { useState, useMemo } from "react";
 import { ChevronUp, Calendar, CheckCircle, AlertTriangle, Clock, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { QuadrantTask, computeTaskStatus } from "./types";
 import { TasksClockCard } from "./TasksClockCard";
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar, Line, ComposedChart } from "recharts";
@@ -88,7 +87,7 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
@@ -105,8 +104,8 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
         </Button>
       </div>
 
-      {/* KPI Row with Clock - Clock is wider */}
-      <div className="grid grid-cols-[1fr_1fr_1.5fr_1fr_1fr] gap-3">
+      {/* KPI Row with Clock - Responsive Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {/* Planned Today */}
         <Card className="bg-card border-border/50">
           <CardContent className="p-3">
@@ -129,9 +128,9 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
           </CardContent>
         </Card>
 
-        {/* Clock Card - Center & Wider */}
-        <Card className="bg-card border-border/50">
-          <CardContent className="p-3 flex items-center justify-center">
+        {/* Clock Card - Center & Larger */}
+        <Card className="bg-card border-border/50 col-span-2 sm:col-span-1 lg:col-span-1 row-span-1 sm:row-span-2 lg:row-span-1">
+          <CardContent className="p-4 flex items-center justify-center h-full min-h-[120px]">
             <TasksClockCard />
           </CardContent>
         </Card>
@@ -159,8 +158,8 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
         </Card>
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-3 gap-4">
+      {/* Charts Row - Full Width */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Plan vs Actual */}
         <Card className="bg-card border-border/50">
           <CardContent className="p-4">

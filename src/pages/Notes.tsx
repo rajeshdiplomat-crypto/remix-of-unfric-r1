@@ -302,7 +302,7 @@ export default function Notes() {
   // Overview (Life Atlas Layout)
   if (viewMode === "overview") {
     return (
-      <div className="max-w-3xl mx-auto space-y-8 pb-20">
+      <div className="w-full max-w-[1600px] mx-auto px-4 space-y-6 pb-20">
         {/* Header - calmer, journal-like */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="flex-1">
