@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { FileText, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { NotesActivityDot } from "./NotesActivityDot";
 import type { Note, NoteGroup } from "@/pages/Notes";
 
 interface NotesNoteRowProps {
@@ -9,6 +10,7 @@ interface NotesNoteRowProps {
   isIndented?: boolean;
   isSelected?: boolean;
   onClick: () => void;
+  showActivityDot?: boolean;
 }
 
 export function NotesNoteRow({
@@ -17,6 +19,7 @@ export function NotesNoteRow({
   isIndented = false,
   isSelected = false,
   onClick,
+  showActivityDot = false,
 }: NotesNoteRowProps) {
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -47,9 +50,15 @@ export function NotesNoteRow({
       <FileText className="h-3.5 w-3.5 mt-0.5 text-muted-foreground/40 shrink-0" />
       
       <div className="flex-1 min-w-0">
-        <h4 className="text-sm text-foreground/90 truncate">
-          {note.title || "Untitled Note"}
-        </h4>
+        <div className="flex items-center gap-1.5">
+          <h4 className="text-sm text-foreground/90 truncate">
+            {note.title || "Untitled Note"}
+          </h4>
+          {/* Very subtle activity dot on note level */}
+          {showActivityDot && (
+            <NotesActivityDot updatedAt={note.updatedAt} size="sm" className="opacity-60" />
+          )}
+        </div>
         {note.plainText && (
           <p className="text-xs text-muted-foreground/50 line-clamp-1 mt-0.5">
             {note.plainText}

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NotesFolderSection } from "./NotesFolderSection";
 import { NotesNoteRow } from "./NotesNoteRow";
+import { NotesActivityDot, getMostRecentUpdate } from "./NotesActivityDot";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 
 interface NotesGroupSectionProps {
@@ -14,6 +15,8 @@ interface NotesGroupSectionProps {
   onNoteClick: (note: Note) => void;
   onAddNote: (groupId: string, folderId: string | null) => void;
   onAddFolder: (groupId: string, folderName: string) => void;
+  isInFocusMode?: boolean;
+  isFocusedGroup?: boolean;
 }
 
 export function NotesGroupSection({
@@ -24,16 +27,28 @@ export function NotesGroupSection({
   onNoteClick,
   onAddNote,
   onAddFolder,
+  isInFocusMode = false,
+  isFocusedGroup = false,
 }: NotesGroupSectionProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(isFocusedGroup);
   const [isAddingFolder, setIsAddingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const folderInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-expand when this becomes the focused group
+  useEffect(() => {
+    if (isFocusedGroup) {
+      setIsExpanded(true);
+    }
+  }, [isFocusedGroup]);
 
   // Filter data for this group
   const groupFolders = folders.filter((f) => f.groupId === group.id);
   const directNotes = notes.filter((n) => n.groupId === group.id && !n.folderId);
   const allGroupNotes = notes.filter((n) => n.groupId === group.id);
+
+  // Get most recent update for activity dot
+  const mostRecentUpdate = getMostRecentUpdate(allGroupNotes);
 
   useEffect(() => {
     if (isAddingFolder && folderInputRef.current) {
@@ -49,8 +64,13 @@ export function NotesGroupSection({
     }
   };
 
+  // In focus mode, dim non-focused groups
+  const focusModeClasses = isInFocusMode && !isFocusedGroup 
+    ? "opacity-40 pointer-events-none" 
+    : "";
+
   return (
-    <div className="group/section">
+    <div className={`group/section ${focusModeClasses}`}>
       {/* Group Header - Section title style, not card */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
@@ -68,6 +88,11 @@ export function NotesGroupSection({
         />
         
         <h2 className="text-base font-medium text-foreground/90">{group.name}</h2>
+        
+        {/* Activity Dot */}
+        {mostRecentUpdate && (
+          <NotesActivityDot updatedAt={mostRecentUpdate} size="md" />
+        )}
         
         <span className="text-xs text-muted-foreground/70 ml-auto">
           {allGroupNotes.length} {allGroupNotes.length === 1 ? "note" : "notes"}
@@ -128,6 +153,7 @@ export function NotesGroupSection({
                   group={group}
                   isSelected={selectedNoteId === note.id}
                   onClick={() => onNoteClick(note)}
+                  showActivityDot
                 />
               ))}
             </div>
