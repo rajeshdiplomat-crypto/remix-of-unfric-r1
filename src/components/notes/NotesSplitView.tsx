@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit2, Share2, MoreHorizontal, X, Clock, Trash2 } from "lucide-react";
+import { Plus, Share2, MoreHorizontal, X, Clock, Trash2, ChevronRight, FileText, Folder, FolderOpen, ChevronDown } from "lucide-react";
 import { NotesRichEditor } from "./NotesRichEditor";
+import { NotesActivityDot, getMostRecentUpdate } from "./NotesActivityDot";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 
 interface NotesSplitViewProps {
@@ -31,11 +33,69 @@ export function NotesSplitView({
   onBack,
   onCreateNote,
 }: NotesSplitViewProps) {
+  const { toast } = useToast();
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [showCreationToast, setShowCreationToast] = useState(false);
+  
+  // Focus mode state - track which groups/folders were expanded before editing
+  const [preEditExpandedState, setPreEditExpandedState] = useState<{
+    groups: Set<string>;
+    folders: Set<string>;
+  } | null>(null);
+  
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  
+  // Track if note was just created (for confirmation message)
+  const [isNewNote, setIsNewNote] = useState(false);
+  const prevNoteId = useRef<string | null>(null);
 
-  const getNotesByGroup = (groupId: string) => {
-    return notes.filter((note) => note.groupId === groupId);
-  };
+  // Enter focus mode when a note is selected
+  useEffect(() => {
+    if (selectedNote) {
+      // Save current expansion state before entering focus mode
+      if (!preEditExpandedState) {
+        setPreEditExpandedState({
+          groups: new Set(expandedGroups),
+          folders: new Set(expandedFolders),
+        });
+      }
+      
+      // Focus mode: only show current note's group expanded
+      setExpandedGroups(new Set([selectedNote.groupId]));
+      if (selectedNote.folderId) {
+        setExpandedFolders(new Set([selectedNote.folderId]));
+      } else {
+        setExpandedFolders(new Set());
+      }
+      
+      // Check if this is a new note (different ID, empty title)
+      if (prevNoteId.current !== selectedNote.id && !selectedNote.title) {
+        setIsNewNote(true);
+      } else {
+        setIsNewNote(false);
+      }
+      prevNoteId.current = selectedNote.id;
+    }
+  }, [selectedNote?.id]);
+
+  // Show creation confirmation toast
+  useEffect(() => {
+    if (isNewNote && selectedNote) {
+      const groupName = groups.find(g => g.id === selectedNote.groupId)?.name || "Unknown";
+      const folderName = selectedNote.folderId 
+        ? folders.find(f => f.id === selectedNote.folderId)?.name 
+        : null;
+      
+      const location = folderName ? `${groupName} › ${folderName}` : groupName;
+      
+      toast({
+        title: `Note created in ${location}`,
+        duration: 3000,
+      });
+      setIsNewNote(false);
+    }
+  }, [isNewNote, selectedNote]);
 
   const getGroupColor = (groupId: string) => {
     return groups.find((g) => g.id === groupId)?.color || "hsl(215, 20%, 65%)";
@@ -60,67 +120,187 @@ export function NotesSplitView({
     setLastSaved(new Date());
   };
 
+  const handleBack = () => {
+    // Restore pre-edit expansion state
+    if (preEditExpandedState) {
+      setExpandedGroups(preEditExpandedState.groups);
+      setExpandedFolders(preEditExpandedState.folders);
+      setPreEditExpandedState(null);
+    }
+    onBack();
+  };
+
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      return next;
+    });
+  };
+
+  const toggleFolder = (folderId: string) => {
+    setExpandedFolders(prev => {
+      const next = new Set(prev);
+      if (next.has(folderId)) {
+        next.delete(folderId);
+      } else {
+        next.add(folderId);
+      }
+      return next;
+    });
+  };
+
   // Sort groups by sortOrder
   const sortedGroups = [...groups].sort((a, b) => a.sortOrder - b.sortOrder);
 
+  // Determine if we're in focus mode
+  const isInFocusMode = !!selectedNote;
+
   return (
     <div className="flex h-[calc(100vh-120px)] border border-border rounded-lg overflow-hidden bg-card">
-      {/* Left Panel - Notes List */}
+      {/* Left Panel - Notes List with Focus Mode */}
       <div className="w-72 border-r border-border flex flex-col">
         <div className="p-3 border-b border-border flex items-center justify-between">
-          <h2 className="font-semibold text-sm text-foreground">Notes</h2>
+          <h2 className="font-semibold text-sm text-foreground">
+            {isInFocusMode ? "Context" : "Notes"}
+          </h2>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onCreateNote}>
             <Plus className="h-4 w-4" />
           </Button>
         </div>
         <ScrollArea className="flex-1">
-          <div className="p-2 space-y-4">
+          <div className="p-2 space-y-1">
             {sortedGroups.map((group) => {
-              const groupNotes = getNotesByGroup(group.id);
-              if (groupNotes.length === 0) return null;
+              const groupNotes = notes.filter((note) => note.groupId === group.id);
+              const groupFolders = folders.filter((f) => f.groupId === group.id);
+              const isGroupExpanded = expandedGroups.has(group.id);
+              const isFocusedGroup = selectedNote?.groupId === group.id;
+              const mostRecentUpdate = getMostRecentUpdate(groupNotes);
+
+              // In focus mode, dim non-focused groups
+              const focusModeClass = isInFocusMode && !isFocusedGroup 
+                ? "opacity-40" 
+                : "";
 
               return (
-                <div key={group.id}>
-                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                <div key={group.id} className={focusModeClass}>
+                  {/* Group Header */}
+                  <button
+                    onClick={() => toggleGroup(group.id)}
+                    className="w-full px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2 hover:bg-muted/20 rounded transition-colors"
+                  >
+                    {isGroupExpanded ? (
+                      <ChevronDown className="h-3 w-3" />
+                    ) : (
+                      <ChevronRight className="h-3 w-3" />
+                    )}
                     <div 
                       className="h-2 w-2 rounded-full" 
                       style={{ backgroundColor: group.color }} 
                     />
-                    {group.name}
-                  </div>
-                  <div className="space-y-1">
-                    {groupNotes.map((note) => (
-                      <div
-                        key={note.id}
-                        className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                          selectedNote?.id === note.id
-                            ? "bg-primary/10 border border-primary/30"
-                            : "hover:bg-muted/50"
-                        }`}
-                        onClick={() => onSelectNote(note)}
-                      >
-                        <h3 className="font-medium text-sm text-foreground line-clamp-1 mb-1">
-                          {note.title}
-                        </h3>
-                        <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
-                          {note.plainText || "No content"}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            {formatDate(note.updatedAt)}
+                    <span className="flex-1 text-left">{group.name}</span>
+                    {mostRecentUpdate && (
+                      <NotesActivityDot updatedAt={mostRecentUpdate} size="sm" />
+                    )}
+                    <span className="text-muted-foreground/50">{groupNotes.length}</span>
+                  </button>
+                  
+                  {/* Expanded Group Content */}
+                  {isGroupExpanded && (
+                    <div className="space-y-0.5 ml-4">
+                      {/* Folders in this group */}
+                      {groupFolders.map((folder) => {
+                        const folderNotes = groupNotes.filter((n) => n.folderId === folder.id);
+                        const isFolderExpanded = expandedFolders.has(folder.id);
+                        const isFocusedFolder = selectedNote?.folderId === folder.id;
+                        const folderMostRecent = getMostRecentUpdate(folderNotes);
+
+                        // In focus mode with a folder selected, dim other folders
+                        const folderFocusClass = isInFocusMode && selectedNote?.folderId && !isFocusedFolder
+                          ? "opacity-50"
+                          : "";
+
+                        return (
+                          <div key={folder.id} className={folderFocusClass}>
+                            <button
+                              onClick={() => toggleFolder(folder.id)}
+                              className="w-full flex items-center gap-2 px-2 py-1 text-xs text-muted-foreground hover:bg-muted/20 rounded transition-colors"
+                            >
+                              {isFolderExpanded ? (
+                                <ChevronDown className="h-2.5 w-2.5" />
+                              ) : (
+                                <ChevronRight className="h-2.5 w-2.5" />
+                              )}
+                              {isFolderExpanded ? (
+                                <FolderOpen className="h-3 w-3" />
+                              ) : (
+                                <Folder className="h-3 w-3" />
+                              )}
+                              <span className="flex-1 text-left">{folder.name}</span>
+                              {folderMostRecent && (
+                                <NotesActivityDot updatedAt={folderMostRecent} size="sm" />
+                              )}
+                              <span className="text-muted-foreground/40">{folderNotes.length}</span>
+                            </button>
+
+                            {isFolderExpanded && (
+                              <div className="ml-5 space-y-0.5">
+                                {folderNotes.map((note) => (
+                                  <div
+                                    key={note.id}
+                                    className={`p-2 rounded cursor-pointer transition-colors flex items-start gap-2 ${
+                                      selectedNote?.id === note.id
+                                        ? "bg-primary/10 border border-primary/30"
+                                        : "hover:bg-muted/30"
+                                    }`}
+                                    onClick={() => onSelectNote(note)}
+                                  >
+                                    <FileText className="h-3 w-3 mt-0.5 text-muted-foreground/50 shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                      <h3 className="text-sm text-foreground line-clamp-1">
+                                        {note.title || "Untitled"}
+                                      </h3>
+                                    </div>
+                                    <NotesActivityDot updatedAt={note.updatedAt} size="sm" />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                          <Badge
-                            variant="secondary"
-                            className="text-xs px-1.5 py-0"
-                            style={{ backgroundColor: `${group.color}20`, color: group.color }}
+                        );
+                      })}
+
+                      {/* Notes directly in group (no folder) */}
+                      {groupNotes
+                        .filter((n) => !n.folderId)
+                        .map((note) => (
+                          <div
+                            key={note.id}
+                            className={`p-2 rounded cursor-pointer transition-colors flex items-start gap-2 ${
+                              selectedNote?.id === note.id
+                                ? "bg-primary/10 border border-primary/30"
+                                : "hover:bg-muted/30"
+                            }`}
+                            onClick={() => onSelectNote(note)}
                           >
-                            {group.name}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                            <FileText className="h-3 w-3 mt-0.5 text-muted-foreground/50 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-sm text-foreground line-clamp-1">
+                                {note.title || "Untitled"}
+                              </h3>
+                              <p className="text-xs text-muted-foreground line-clamp-1">
+                                {note.plainText || "No content"}
+                              </p>
+                            </div>
+                            <NotesActivityDot updatedAt={note.updatedAt} size="sm" />
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -144,14 +324,19 @@ export function NotesSplitView({
                 >
                   {groups.find((g) => g.id === selectedNote.groupId)?.name}
                 </Badge>
-                <span className="text-xs text-muted-foreground">
+                {selectedNote.folderId && (
+                  <>
+                    <ChevronRight className="h-3 w-3 text-muted-foreground/50" />
+                    <span className="text-xs text-muted-foreground">
+                      {folders.find(f => f.id === selectedNote.folderId)?.name}
+                    </span>
+                  </>
+                )}
+                <span className="text-xs text-muted-foreground ml-2">
                   Last edited {format(new Date(selectedNote.updatedAt), "MMM d 'at' h:mm a")}
                 </span>
               </div>
               <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Share2 className="h-4 w-4" />
-                </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -168,7 +353,7 @@ export function NotesSplitView({
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onBack}>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleBack}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -179,9 +364,11 @@ export function NotesSplitView({
               <NotesRichEditor
                 note={selectedNote}
                 groups={groups}
+                folders={folders}
                 onSave={handleSave}
-                onBack={onBack}
+                onBack={handleBack}
                 lastSaved={lastSaved}
+                showBreadcrumb={true}
               />
             </div>
           </>

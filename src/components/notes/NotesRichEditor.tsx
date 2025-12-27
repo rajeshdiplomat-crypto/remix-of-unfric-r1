@@ -7,17 +7,19 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
   ArrowLeft, Tag, Undo2, Redo2, Bold, Italic, Underline, AlignLeft, AlignCenter, 
-  AlignRight, List, ListOrdered, CheckSquare, Link2, Image, Pencil, X 
+  AlignRight, List, ListOrdered, CheckSquare, Link2, Image, Pencil, X, ChevronRight
 } from "lucide-react";
-import type { Note, NoteGroup } from "@/pages/Notes";
+import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 import { NotesScribbleCanvas } from "./NotesScribbleCanvas";
 
 interface NotesRichEditorProps {
   note: Note;
   groups: NoteGroup[];
+  folders?: NoteFolder[];
   onSave: (note: Note) => void;
   onBack: () => void;
   lastSaved?: Date | null;
+  showBreadcrumb?: boolean;
 }
 
 const FONTS = [
@@ -29,7 +31,15 @@ const FONTS = [
 
 const FONT_SIZES = ["12", "14", "16", "18", "20", "24", "28", "32"];
 
-export function NotesRichEditor({ note, groups, onSave, onBack, lastSaved }: NotesRichEditorProps) {
+export function NotesRichEditor({ 
+  note, 
+  groups, 
+  folders = [], 
+  onSave, 
+  onBack, 
+  lastSaved, 
+  showBreadcrumb = true 
+}: NotesRichEditorProps) {
   const [title, setTitle] = useState(note.title);
   const [tags, setTags] = useState<string[]>(note.tags);
   const [newTag, setNewTag] = useState("");
@@ -41,8 +51,10 @@ export function NotesRichEditor({ note, groups, onSave, onBack, lastSaved }: Not
   const [linkText, setLinkText] = useState("");
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
+  const [resizingImage, setResizingImage] = useState<HTMLImageElement | null>(null);
   
   const editorRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
   const [currentFont, setCurrentFont] = useState(FONTS[0].value);
   const [currentSize, setCurrentSize] = useState("16");
   
@@ -50,10 +62,20 @@ export function NotesRichEditor({ note, groups, onSave, onBack, lastSaved }: Not
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
+  const [isBulletList, setIsBulletList] = useState(false);
+  const [isNumberedList, setIsNumberedList] = useState(false);
 
   // Undo/Redo history
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const isUndoRedo = useRef(false);
+
+  // Auto-focus title for new notes
+  useEffect(() => {
+    if (!note.title && titleRef.current) {
+      titleRef.current.focus();
+    }
+  }, [note.id]);
 
   useEffect(() => {
     setTitle(note.title);
@@ -68,12 +90,15 @@ export function NotesRichEditor({ note, groups, onSave, onBack, lastSaved }: Not
 
   // Save to history on content change
   const saveToHistory = useCallback(() => {
-    if (!editorRef.current) return;
+    if (!editorRef.current || isUndoRedo.current) return;
     const content = editorRef.current.innerHTML;
     setHistory(prev => {
       const newHistory = prev.slice(0, historyIndex + 1);
-      newHistory.push(content);
-      return newHistory.slice(-50); // Keep last 50 states
+      // Only add if different from last
+      if (newHistory[newHistory.length - 1] !== content) {
+        newHistory.push(content);
+      }
+      return newHistory.slice(-50);
     });
     setHistoryIndex(prev => Math.min(prev + 1, 49));
   }, [historyIndex]);
@@ -83,6 +108,8 @@ export function NotesRichEditor({ note, groups, onSave, onBack, lastSaved }: Not
     setIsBold(document.queryCommandState("bold"));
     setIsItalic(document.queryCommandState("italic"));
     setIsUnderline(document.queryCommandState("underline"));
+    setIsBulletList(document.queryCommandState("insertUnorderedList"));
+    setIsNumberedList(document.queryCommandState("insertOrderedList"));
   }, []);
 
   useEffect(() => {
@@ -120,17 +147,21 @@ export function NotesRichEditor({ note, groups, onSave, onBack, lastSaved }: Not
 
   const handleUndo = () => {
     if (historyIndex > 0 && editorRef.current) {
+      isUndoRedo.current = true;
       const newIndex = historyIndex - 1;
       setHistoryIndex(newIndex);
       editorRef.current.innerHTML = history[newIndex];
+      isUndoRedo.current = false;
     }
   };
 
   const handleRedo = () => {
     if (historyIndex < history.length - 1 && editorRef.current) {
+      isUndoRedo.current = true;
       const newIndex = historyIndex + 1;
       setHistoryIndex(newIndex);
       editorRef.current.innerHTML = history[newIndex];
+      isUndoRedo.current = false;
     }
   };
 
@@ -141,7 +172,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack, lastSaved }: Not
 
   const handleSizeChange = (size: string) => {
     setCurrentSize(size);
-    // Use fontSize command (1-7) or wrap in span with style
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
@@ -149,6 +179,47 @@ export function NotesRichEditor({ note, groups, onSave, onBack, lastSaved }: Not
       span.style.fontSize = `${size}px`;
       range.surroundContents(span);
       saveToHistory();
+    }
+  };
+
+  // Handle bullet list with proper Enter/Backspace behavior
+  const handleBulletList = () => {
+    execCommand("insertUnorderedList");
+  };
+
+  // Handle numbered list with proper Enter/Backspace behavior
+  const handleNumberedList = () => {
+    execCommand("insertOrderedList");
+  };
+
+  // Handle Tab for list nesting
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      if (isBulletList || isNumberedList) {
+        if (e.shiftKey) {
+          execCommand("outdent");
+        } else {
+          execCommand("indent");
+        }
+      }
+    }
+    
+    // Handle Backspace on empty list item
+    if (e.key === "Backspace") {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const li = range.startContainer.parentElement?.closest("li");
+        if (li && li.textContent === "") {
+          e.preventDefault();
+          if (isBulletList) {
+            execCommand("insertUnorderedList");
+          } else if (isNumberedList) {
+            execCommand("insertOrderedList");
+          }
+        }
+      }
     }
   };
 
@@ -174,9 +245,67 @@ export function NotesRichEditor({ note, groups, onSave, onBack, lastSaved }: Not
 
   const handleInsertImage = () => {
     if (!imageUrl) return;
-    execCommand("insertHTML", `<img src="${imageUrl}" alt="Image" class="max-w-full h-auto rounded-lg my-2" />`);
+    insertImageWithResize(imageUrl);
     setImageDialogOpen(false);
     setImageUrl("");
+  };
+
+  const insertImageWithResize = (src: string) => {
+    const imgHtml = `<div class="note-image-wrapper" contenteditable="false" style="position: relative; display: inline-block; max-width: 100%;">
+      <img src="${src}" alt="Image" class="note-image" style="max-width: 100%; height: auto; display: block; cursor: pointer;" />
+      <div class="resize-handle" style="position: absolute; right: 0; bottom: 0; width: 12px; height: 12px; background: hsl(var(--primary)); cursor: se-resize; border-radius: 2px; opacity: 0;" />
+    </div><br/>`;
+    execCommand("insertHTML", imgHtml);
+    setupImageResizing();
+  };
+
+  const setupImageResizing = () => {
+    setTimeout(() => {
+      if (!editorRef.current) return;
+      const images = editorRef.current.querySelectorAll(".note-image-wrapper");
+      images.forEach((wrapper) => {
+        const img = wrapper.querySelector("img") as HTMLImageElement;
+        const handle = wrapper.querySelector(".resize-handle") as HTMLDivElement;
+        
+        if (!img || !handle) return;
+        
+        // Show handle on hover
+        wrapper.addEventListener("mouseenter", () => {
+          handle.style.opacity = "1";
+        });
+        wrapper.addEventListener("mouseleave", () => {
+          if (!resizingImage) handle.style.opacity = "0";
+        });
+        
+        // Handle resize
+        handle.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          setResizingImage(img);
+          const startX = e.clientX;
+          const startWidth = img.offsetWidth;
+          
+          const onMouseMove = (moveEvent: MouseEvent) => {
+            const newWidth = Math.min(
+              Math.max(100, startWidth + (moveEvent.clientX - startX)),
+              editorRef.current?.offsetWidth || 800
+            );
+            img.style.width = `${newWidth}px`;
+            img.style.height = "auto";
+          };
+          
+          const onMouseUp = () => {
+            setResizingImage(null);
+            handle.style.opacity = "0";
+            saveToHistory();
+            document.removeEventListener("mousemove", onMouseMove);
+            document.removeEventListener("mouseup", onMouseUp);
+          };
+          
+          document.addEventListener("mousemove", onMouseMove);
+          document.addEventListener("mouseup", onMouseUp);
+        });
+      });
+    }, 100);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -186,7 +315,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack, lastSaved }: Not
     const reader = new FileReader();
     reader.onload = (event) => {
       const dataUrl = event.target?.result as string;
-      execCommand("insertHTML", `<img src="${dataUrl}" alt="Image" class="max-w-full h-auto rounded-lg my-2" />`);
+      insertImageWithResize(dataUrl);
     };
     reader.readAsDataURL(file);
     setImageDialogOpen(false);
@@ -194,7 +323,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack, lastSaved }: Not
 
   const handleSaveScribble = (dataUrl: string) => {
     setScribbleData(dataUrl);
-    execCommand("insertHTML", `<img src="${dataUrl}" alt="Scribble" class="max-w-full h-auto rounded-lg my-2 border border-border" />`);
+    insertImageWithResize(dataUrl);
     setScribbleOpen(false);
   };
 
@@ -208,6 +337,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack, lastSaved }: Not
   };
 
   const group = groups.find((g) => g.id === note.groupId);
+  const folder = folders.find((f) => f.id === note.folderId);
 
   const formatLastSaved = () => {
     if (!lastSaved) return "Not saved";
@@ -220,19 +350,39 @@ export function NotesRichEditor({ note, groups, onSave, onBack, lastSaved }: Not
 
   const handleContentInput = () => {
     saveToHistory();
+    setupImageResizing();
   };
 
   return (
     <div className="flex flex-col h-full">
-      {/* Top Bar */}
+      {/* Top Bar with Breadcrumb */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-border/30">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Notes
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              handleSave();
+              onBack();
+            }}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Done
+          </button>
+          
+          {/* Persistent Breadcrumb */}
+          {showBreadcrumb && group && (
+            <div className="flex items-center gap-1 text-sm text-muted-foreground/70 ml-4">
+              <span style={{ color: group.color }}>{group.name}</span>
+              {folder && (
+                <>
+                  <ChevronRight className="h-3 w-3" />
+                  <span>{folder.name}</span>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+        
         <div className="flex items-center gap-4">
           <span className="text-sm text-muted-foreground">{formatLastSaved()}</span>
           <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
@@ -273,9 +423,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack, lastSaved }: Not
               </div>
             </PopoverContent>
           </Popover>
-          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={handleSave}>
-            Done
-          </Button>
         </div>
       </div>
 
@@ -288,6 +435,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack, lastSaved }: Not
             className="h-8 w-8" 
             onClick={handleUndo}
             disabled={historyIndex <= 0}
+            title="Undo"
           >
             <Undo2 className="h-4 w-4" />
           </Button>
@@ -297,6 +445,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack, lastSaved }: Not
             className="h-8 w-8" 
             onClick={handleRedo}
             disabled={historyIndex >= history.length - 1}
+            title="Redo"
           >
             <Redo2 className="h-4 w-4" />
           </Button>
@@ -333,6 +482,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack, lastSaved }: Not
             size="icon" 
             className="h-8 w-8" 
             onClick={() => execCommand("bold")}
+            title="Bold"
           >
             <Bold className="h-4 w-4" />
           </Button>
@@ -341,6 +491,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack, lastSaved }: Not
             size="icon" 
             className="h-8 w-8" 
             onClick={() => execCommand("italic")}
+            title="Italic"
           >
             <Italic className="h-4 w-4" />
           </Button>
@@ -349,43 +500,56 @@ export function NotesRichEditor({ note, groups, onSave, onBack, lastSaved }: Not
             size="icon" 
             className="h-8 w-8" 
             onClick={() => execCommand("underline")}
+            title="Underline"
           >
             <Underline className="h-4 w-4" />
           </Button>
           
           <div className="w-px h-6 bg-border mx-1" />
           
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand("justifyLeft")}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand("justifyLeft")} title="Align Left">
             <AlignLeft className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand("justifyCenter")}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand("justifyCenter")} title="Align Center">
             <AlignCenter className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand("justifyRight")}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand("justifyRight")} title="Align Right">
             <AlignRight className="h-4 w-4" />
           </Button>
           
           <div className="w-px h-6 bg-border mx-1" />
           
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand("insertUnorderedList")}>
+          <Button 
+            variant={isBulletList ? "secondary" : "ghost"} 
+            size="icon" 
+            className="h-8 w-8" 
+            onClick={handleBulletList}
+            title="Bullet List (Tab to nest, Shift+Tab to outdent)"
+          >
             <List className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand("insertOrderedList")}>
+          <Button 
+            variant={isNumberedList ? "secondary" : "ghost"} 
+            size="icon" 
+            className="h-8 w-8" 
+            onClick={handleNumberedList}
+            title="Numbered List (Tab to nest, Shift+Tab to outdent)"
+          >
             <ListOrdered className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={insertChecklist}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={insertChecklist} title="Checklist">
             <CheckSquare className="h-4 w-4" />
           </Button>
           
           <div className="w-px h-6 bg-border mx-1" />
           
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setImageDialogOpen(true)}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setImageDialogOpen(true)} title="Insert Image">
             <Image className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setLinkDialogOpen(true)}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setLinkDialogOpen(true)} title="Insert Link">
             <Link2 className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setScribbleOpen(true)}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setScribbleOpen(true)} title="Draw">
             <Pencil className="h-4 w-4" />
           </Button>
         </div>
@@ -394,29 +558,20 @@ export function NotesRichEditor({ note, groups, onSave, onBack, lastSaved }: Not
       {/* Editor Content */}
       <div className="flex-1 overflow-auto">
         <div className="max-w-3xl mx-auto px-6 py-8">
-          {/* Group Badge */}
-          {group && (
-            <div className="flex items-center gap-2 mb-4">
-              <Badge
-                variant="secondary"
-                style={{ backgroundColor: `${group.color}20`, color: group.color }}
-              >
-                {group.name}
-              </Badge>
-              {tags.length > 0 && (
-                <div className="flex gap-1">
-                  {tags.map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-xs">
-                      #{tag}
-                    </Badge>
-                  ))}
-                </div>
-              )}
+          {/* Tags Display */}
+          {tags.length > 0 && (
+            <div className="flex gap-1 mb-4">
+              {tags.map((tag) => (
+                <Badge key={tag} variant="outline" className="text-xs">
+                  #{tag}
+                </Badge>
+              ))}
             </div>
           )}
 
           {/* Title */}
           <Input
+            ref={titleRef}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Untitled Note"
@@ -430,7 +585,8 @@ export function NotesRichEditor({ note, groups, onSave, onBack, lastSaved }: Not
             suppressContentEditableWarning
             onInput={handleContentInput}
             onBlur={handleSave}
-            className="min-h-[400px] outline-none text-foreground leading-relaxed prose prose-sm max-w-none focus:outline-none empty:before:content-['Start_typing_here...'] empty:before:text-muted-foreground"
+            onKeyDown={handleKeyDown}
+            className="min-h-[400px] outline-none text-foreground leading-relaxed focus:outline-none [&_ul]:list-disc [&_ul]:ml-6 [&_ol]:list-decimal [&_ol]:ml-6 [&_li]:my-1 [&_ul_ul]:list-circle [&_ol_ol]:list-lower-alpha"
             style={{ fontFamily: currentFont, fontSize: `${currentSize}px` }}
             data-placeholder="Start typing here..."
           />

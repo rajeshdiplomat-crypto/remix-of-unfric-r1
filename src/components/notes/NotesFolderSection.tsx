@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronRight, ChevronDown, Folder, FolderOpen } from "lucide-react";
 import { NotesNoteRow } from "./NotesNoteRow";
+import { NotesActivityDot, getMostRecentUpdate } from "./NotesActivityDot";
 import type { Note, NoteFolder, NoteGroup } from "@/pages/Notes";
 
 interface NotesFolderSectionProps {
@@ -23,6 +24,7 @@ export function NotesFolderSection({
   const [isExpanded, setIsExpanded] = useState(false);
 
   const folderNotes = notes.filter((n) => n.folderId === folder.id);
+  const mostRecentUpdate = getMostRecentUpdate(folderNotes);
 
   return (
     <div className="ml-2">
@@ -42,7 +44,13 @@ export function NotesFolderSection({
           <Folder className="h-3.5 w-3.5 text-muted-foreground/60" />
         )}
         <span className="text-sm text-foreground/70">{folder.name}</span>
-        <span className="text-[10px] text-muted-foreground/50 ml-1">
+        
+        {/* Activity Dot */}
+        {mostRecentUpdate && (
+          <NotesActivityDot updatedAt={mostRecentUpdate} size="sm" />
+        )}
+        
+        <span className="text-[10px] text-muted-foreground/50 ml-auto">
           {folderNotes.length}
         </span>
       </button>
@@ -70,6 +78,7 @@ export function NotesFolderSection({
                   isIndented
                   isSelected={selectedNoteId === note.id}
                   onClick={() => onNoteClick(note)}
+                  showActivityDot
                 />
               ))}
               <button

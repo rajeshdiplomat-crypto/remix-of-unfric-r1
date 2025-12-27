@@ -8,6 +8,9 @@ import { NotesSplitView } from "@/components/notes/NotesSplitView";
 import { NotesGroupSettings } from "@/components/notes/NotesGroupSettings";
 import { NotesGroupSection } from "@/components/notes/NotesGroupSection";
 import { NotesLocationPicker } from "@/components/notes/NotesLocationPicker";
+import { NotesViewSwitcher, NotesViewType } from "@/components/notes/NotesViewSwitcher";
+import { NotesBoardView } from "@/components/notes/NotesBoardView";
+import { NotesMindMapView } from "@/components/notes/NotesMindMapView";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -161,6 +164,7 @@ export default function Notes() {
   const [sortBy, setSortBy] = useState<SortOption>("updatedAt");
   const [filterGroupId, setFilterGroupId] = useState<string>("all");
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
+  const [notesView, setNotesView] = useState<NotesViewType>("atlas");
 
   // Persist to localStorage
   useEffect(() => {
@@ -341,6 +345,11 @@ export default function Notes() {
           </div>
         </div>
 
+        {/* View Switcher */}
+        <div className="flex justify-end">
+          <NotesViewSwitcher currentView={notesView} onViewChange={setNotesView} />
+        </div>
+
         {/* Search + Filter Bar */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
@@ -399,23 +408,46 @@ export default function Notes() {
           </div>
         </div>
 
-        {/* Groups - Vertical Stacked Layout */}
-        <div className="space-y-4">
-          {sortedGroups
-            .filter((g) => filterGroupId === "all" || g.id === filterGroupId)
-            .map((group) => (
-              <NotesGroupSection
-                key={group.id}
-                group={group}
-                folders={folders}
-                notes={filteredNotes}
-                selectedNoteId={selectedNote?.id}
-                onNoteClick={handleNoteClick}
-                onAddNote={handleCreateNote}
-                onAddFolder={handleCreateFolder}
-              />
-            ))}
-        </div>
+        {/* Notes View Content */}
+        {notesView === "atlas" && (
+          <div className="space-y-4">
+            {sortedGroups
+              .filter((g) => filterGroupId === "all" || g.id === filterGroupId)
+              .map((group) => (
+                <NotesGroupSection
+                  key={group.id}
+                  group={group}
+                  folders={folders}
+                  notes={filteredNotes}
+                  selectedNoteId={selectedNote?.id}
+                  onNoteClick={handleNoteClick}
+                  onAddNote={handleCreateNote}
+                  onAddFolder={handleCreateFolder}
+                />
+              ))}
+          </div>
+        )}
+
+        {notesView === "board" && (
+          <NotesBoardView
+            groups={sortedGroups.filter((g) => filterGroupId === "all" || g.id === filterGroupId)}
+            folders={folders}
+            notes={filteredNotes}
+            selectedNoteId={selectedNote?.id}
+            onNoteClick={handleNoteClick}
+            onAddNote={handleCreateNote}
+          />
+        )}
+
+        {notesView === "mindmap" && (
+          <NotesMindMapView
+            groups={sortedGroups.filter((g) => filterGroupId === "all" || g.id === filterGroupId)}
+            folders={folders}
+            notes={filteredNotes}
+            selectedNoteId={selectedNote?.id}
+            onNoteClick={handleNoteClick}
+          />
+        )}
 
         {/* Empty State */}
         {sortedGroups.length === 0 && (
