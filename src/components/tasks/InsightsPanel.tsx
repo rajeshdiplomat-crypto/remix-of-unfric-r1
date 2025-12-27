@@ -3,7 +3,6 @@ import { ChevronUp, Calendar, CheckCircle, AlertTriangle, Clock, TrendingUp } fr
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { QuadrantTask, computeTaskStatus } from "./types";
-import { TasksClockCard } from "./TasksClockCard";
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar, Line, ComposedChart } from "recharts";
 import { format, subDays, addDays, startOfDay, isSameDay } from "date-fns";
 
@@ -104,8 +103,8 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
         </Button>
       </div>
 
-      {/* KPI Row with Clock - Responsive Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      {/* KPI Row - 4 cards without clock */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {/* Planned Today */}
         <Card className="bg-card border-border/50">
           <CardContent className="p-3">
@@ -125,13 +124,6 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
             </div>
             <p className="text-2xl font-bold text-foreground">{completedToday}</p>
             <p className="text-xs text-muted-foreground">Done Today</p>
-          </CardContent>
-        </Card>
-
-        {/* Clock Card - Center & Larger */}
-        <Card className="bg-card border-border/50 col-span-2 sm:col-span-1 lg:col-span-1 row-span-1 sm:row-span-2 lg:row-span-1">
-          <CardContent className="p-4 flex items-center justify-center h-full min-h-[120px]">
-            <TasksClockCard />
           </CardContent>
         </Card>
 
