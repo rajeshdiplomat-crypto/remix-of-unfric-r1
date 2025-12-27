@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { format, addDays, startOfWeek, isToday, isBefore, isAfter, parseISO, differenceInDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, subDays } from "date-fns";
+import { format, addDays, startOfWeek, isToday, isBefore, isAfter, parseISO, differenceInDays, startOfMonth, endOfMonth, eachDayOfInterval, subDays } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,11 +15,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Plus, MoreVertical, Target, TrendingUp, Calendar as CalendarIcon, CheckCircle2, 
   Flame, Activity, LayoutGrid, List, ChevronLeft, ChevronRight, Download,
-  Lightbulb, Clock, Zap, BarChart2
+  Lightbulb, Clock, Zap, BarChart2, CalendarDays, Timer
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line, Tooltip } from "recharts";
 
 interface ActivityItem {
   id: string;
@@ -28,7 +29,7 @@ interface ActivityItem {
   priority: string;
   description: string;
   frequencyPattern: boolean[];
-  numberOfDays: number;
+  numberOfDays: number; // Calendar duration in days
   startDate: string;
   completions: Record<string, boolean>;
   createdAt: string;
@@ -143,8 +144,16 @@ export default function Trackers() {
   const [formDays, setFormDays] = useState(30);
   const [formStartDate, setFormStartDate] = useState<Date>(new Date());
 
+  // FIXED: Calendar-based end date calculation
   const getEndDate = (activity: ActivityItem) => {
     return addDays(parseISO(activity.startDate), activity.numberOfDays - 1);
+  };
+
+  // Days left until end (calendar days)
+  const getDaysLeft = (activity: ActivityItem) => {
+    const endDate = getEndDate(activity);
+    const today = new Date();
+    return Math.max(0, differenceInDays(endDate, today));
   };
 
   const getStatus = (activity: ActivityItem): "active" | "completed" | "upcoming" => {
@@ -153,30 +162,60 @@ export default function Trackers() {
     const endDate = getEndDate(activity);
 
     if (isBefore(today, startDate)) return "upcoming";
-    const completionPercent = getCompletionPercent(activity);
-    if (completionPercent >= 100 || isAfter(today, endDate)) return "completed";
+    if (isAfter(today, endDate)) return "completed";
     return "active";
   };
 
-  const getPlannedDays = (activity: ActivityItem) => {
+  // FIXED: Calculate scheduled sessions (only selected weekdays within date range)
+  const getScheduledSessions = (activity: ActivityItem) => {
     let count = 0;
     const startDate = parseISO(activity.startDate);
-    for (let i = 0; i < activity.numberOfDays; i++) {
-      const date = addDays(startDate, i);
-      const dayOfWeek = (date.getDay() + 6) % 7;
-      if (activity.frequencyPattern[dayOfWeek]) count++;
+    const endDate = getEndDate(activity);
+    const today = new Date();
+    
+    let currentDate = startDate;
+    while (!isAfter(currentDate, endDate)) {
+      const dayOfWeek = (currentDate.getDay() + 6) % 7; // Mon=0, Sun=6
+      if (activity.frequencyPattern[dayOfWeek]) {
+        count++;
+      }
+      currentDate = addDays(currentDate, 1);
     }
     return count;
   };
 
-  const getCompletedDays = (activity: ActivityItem) => {
+  // Get past scheduled sessions (for completion calculation)
+  const getPastScheduledSessions = (activity: ActivityItem) => {
+    let count = 0;
+    const startDate = parseISO(activity.startDate);
+    const today = new Date();
+    const endDate = getEndDate(activity);
+    const effectiveEnd = isBefore(today, endDate) ? today : endDate;
+    
+    let currentDate = startDate;
+    while (!isAfter(currentDate, effectiveEnd)) {
+      const dayOfWeek = (currentDate.getDay() + 6) % 7;
+      if (activity.frequencyPattern[dayOfWeek]) {
+        count++;
+      }
+      currentDate = addDays(currentDate, 1);
+    }
+    return count;
+  };
+
+  const getCompletedSessions = (activity: ActivityItem) => {
     return Object.values(activity.completions).filter(Boolean).length;
   };
 
+  const getSessionsLeft = (activity: ActivityItem) => {
+    return Math.max(0, getScheduledSessions(activity) - getCompletedSessions(activity));
+  };
+
+  // FIXED: Completion % based on scheduled vs completed sessions
   const getCompletionPercent = (activity: ActivityItem) => {
-    const planned = getPlannedDays(activity);
-    if (planned === 0) return 0;
-    return Math.round((getCompletedDays(activity) / planned) * 100);
+    const scheduled = getPastScheduledSessions(activity);
+    if (scheduled === 0) return 0;
+    return Math.round((getCompletedSessions(activity) / scheduled) * 100);
   };
 
   // Streak calculations
@@ -208,11 +247,12 @@ export default function Trackers() {
     let longest = 0;
     let current = 0;
     const startDate = parseISO(activity.startDate);
+    const endDate = getEndDate(activity);
     
-    for (let i = 0; i < activity.numberOfDays; i++) {
-      const date = addDays(startDate, i);
-      const dateStr = format(date, "yyyy-MM-dd");
-      const dayOfWeek = (date.getDay() + 6) % 7;
+    let checkDate = startDate;
+    while (!isAfter(checkDate, endDate)) {
+      const dateStr = format(checkDate, "yyyy-MM-dd");
+      const dayOfWeek = (checkDate.getDay() + 6) % 7;
       
       if (activity.frequencyPattern[dayOfWeek]) {
         if (activity.completions[dateStr]) {
@@ -222,10 +262,84 @@ export default function Trackers() {
           current = 0;
         }
       }
+      checkDate = addDays(checkDate, 1);
     }
     
     return longest;
   };
+
+  // Today's completion for graphs
+  const getTodayCompletion = () => {
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    const todayDayOfWeek = (new Date().getDay() + 6) % 7;
+    
+    let scheduledToday = 0;
+    let completedToday = 0;
+    
+    activities.forEach(a => {
+      const startDate = parseISO(a.startDate);
+      const endDate = getEndDate(a);
+      const today = new Date();
+      
+      if (!isBefore(today, startDate) && !isAfter(today, endDate)) {
+        if (a.frequencyPattern[todayDayOfWeek]) {
+          scheduledToday++;
+          if (a.completions[todayStr]) {
+            completedToday++;
+          }
+        }
+      }
+    });
+    
+    return scheduledToday > 0 ? Math.round((completedToday / scheduledToday) * 100) : 100;
+  };
+
+  // Last 7 days trend data
+  const getLast7DaysTrend = useMemo(() => {
+    const data = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = subDays(new Date(), i);
+      const dateStr = format(date, "yyyy-MM-dd");
+      const dayOfWeek = (date.getDay() + 6) % 7;
+      
+      let scheduled = 0;
+      let completed = 0;
+      
+      activities.forEach(a => {
+        const startDate = parseISO(a.startDate);
+        const endDate = getEndDate(a);
+        
+        if (!isBefore(date, startDate) && !isAfter(date, endDate)) {
+          if (a.frequencyPattern[dayOfWeek]) {
+            scheduled++;
+            if (a.completions[dateStr]) {
+              completed++;
+            }
+          }
+        }
+      });
+      
+      data.push({
+        day: format(date, "EEE"),
+        date: format(date, "MMM d"),
+        completion: scheduled > 0 ? Math.round((completed / scheduled) * 100) : 100,
+        completed,
+        scheduled,
+      });
+    }
+    return data;
+  }, [activities]);
+
+  // Weekly stats
+  const weeklyStats = useMemo(() => {
+    const last7Days = getLast7DaysTrend;
+    const avgCompletion = Math.round(last7Days.reduce((sum, d) => sum + d.completion, 0) / 7);
+    const totalCompleted = last7Days.reduce((sum, d) => sum + d.completed, 0);
+    const totalScheduled = last7Days.reduce((sum, d) => sum + d.scheduled, 0);
+    const missedDays = last7Days.filter(d => d.scheduled > 0 && d.completion < 100).length;
+    
+    return { avgCompletion, totalCompleted, totalScheduled, missedDays };
+  }, [getLast7DaysTrend]);
 
   // Insights calculations
   const getInsights = (activity: ActivityItem) => {
@@ -241,13 +355,14 @@ export default function Trackers() {
     });
     
     const startDate = parseISO(activity.startDate);
-    for (let i = 0; i < activity.numberOfDays; i++) {
-      const date = addDays(startDate, i);
-      if (isAfter(date, new Date())) break;
-      const dayOfWeek = (date.getDay() + 6) % 7;
+    const endDate = getEndDate(activity);
+    let checkDate = startDate;
+    while (!isAfter(checkDate, endDate) && !isAfter(checkDate, new Date())) {
+      const dayOfWeek = (checkDate.getDay() + 6) % 7;
       if (activity.frequencyPattern[dayOfWeek]) {
         dayPlanned[dayOfWeek]++;
       }
+      checkDate = addDays(checkDate, 1);
     }
     
     let bestDay = 0;
@@ -330,37 +445,36 @@ export default function Trackers() {
   const handleSave = () => {
     if (!formName.trim()) return;
 
+    // Calculate scheduled sessions for preview
+    const tempActivity: ActivityItem = {
+      id: editingActivity?.id || crypto.randomUUID(),
+      name: formName,
+      category: formCategory,
+      priority: formPriority,
+      description: formDescription,
+      frequencyPattern: formFrequency,
+      numberOfDays: formDays,
+      startDate: format(formStartDate, "yyyy-MM-dd"),
+      completions: editingActivity?.completions || {},
+      createdAt: editingActivity?.createdAt || new Date().toISOString(),
+    };
+
+    const scheduledSessions = getScheduledSessions(tempActivity);
+
     if (editingActivity) {
       setActivities(activities.map((a) =>
-        a.id === editingActivity.id
-          ? {
-              ...a,
-              name: formName,
-              category: formCategory,
-              priority: formPriority,
-              description: formDescription,
-              frequencyPattern: formFrequency,
-              numberOfDays: formDays,
-              startDate: format(formStartDate, "yyyy-MM-dd"),
-            }
-          : a
+        a.id === editingActivity.id ? tempActivity : a
       ));
-      toast({ title: "Activity updated" });
+      toast({ 
+        title: "Activity updated",
+        description: `${scheduledSessions} sessions scheduled over ${formDays} days`,
+      });
     } else {
-      const newActivity: ActivityItem = {
-        id: crypto.randomUUID(),
-        name: formName,
-        category: formCategory,
-        priority: formPriority,
-        description: formDescription,
-        frequencyPattern: formFrequency,
-        numberOfDays: formDays,
-        startDate: format(formStartDate, "yyyy-MM-dd"),
-        completions: {},
-        createdAt: new Date().toISOString(),
-      };
-      setActivities([newActivity, ...activities]);
-      toast({ title: "Activity created" });
+      setActivities([tempActivity, ...activities]);
+      toast({ 
+        title: "Activity created",
+        description: `${scheduledSessions} sessions scheduled over ${formDays} days`,
+      });
     }
     setDialogOpen(false);
   };
@@ -393,6 +507,9 @@ export default function Trackers() {
         currentStreak: getCurrentStreak(a),
         longestStreak: getLongestStreak(a),
         completionPercent: getCompletionPercent(a),
+        scheduledSessions: getScheduledSessions(a),
+        sessionsLeft: getSessionsLeft(a),
+        daysLeft: getDaysLeft(a),
       })),
     };
     
@@ -437,7 +554,6 @@ export default function Trackers() {
     });
     return count;
   })();
-  const completionRate = plannedThisWeek > 0 ? Math.round((completedThisWeek / plannedThisWeek) * 100) : 0;
 
   const getCategoryInfo = (categoryId: string) => {
     return CATEGORIES.find((c) => c.id === categoryId) || CATEGORIES[0];
@@ -456,8 +572,10 @@ export default function Trackers() {
     }));
   };
 
+  const todayCompletion = getTodayCompletion();
+
   return (
-    <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
+    <div className="w-full max-w-[1600px] mx-auto space-y-4 md:space-y-6 px-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -476,8 +594,8 @@ export default function Trackers() {
         </div>
       </div>
 
-      {/* Dashboard KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+      {/* Dashboard KPIs + Graphs Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 md:gap-4">
         <Card className="p-3 md:p-4">
           <div className="flex items-center gap-2 md:gap-3">
             <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg bg-primary/20 flex items-center justify-center">
@@ -506,8 +624,8 @@ export default function Trackers() {
               <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
             </div>
             <div>
-              <p className="text-xl md:text-2xl font-bold text-foreground">{completionRate}%</p>
-              <p className="text-[10px] md:text-xs text-muted-foreground">This Week</p>
+              <p className="text-xl md:text-2xl font-bold text-foreground">{weeklyStats.avgCompletion}%</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Weekly Avg</p>
             </div>
           </div>
         </Card>
@@ -518,7 +636,81 @@ export default function Trackers() {
             </div>
             <div>
               <p className="text-xl md:text-2xl font-bold text-foreground">{completedThisWeek}/{plannedThisWeek}</p>
-              <p className="text-[10px] md:text-xs text-muted-foreground">Done</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">This Week</p>
+            </div>
+          </div>
+        </Card>
+        
+        {/* Today's Completion Graph */}
+        <Card className="p-3 md:p-4 col-span-2 lg:col-span-1">
+          <div className="flex flex-col h-full">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] md:text-xs text-muted-foreground font-medium">Today</p>
+              <p className="text-lg font-bold text-foreground">{todayCompletion}%</p>
+            </div>
+            <div className="flex-1 flex items-end">
+              <div className="w-full bg-muted rounded-full h-2">
+                <div 
+                  className="h-full rounded-full bg-gradient-to-r from-primary to-green-500 transition-all duration-500"
+                  style={{ width: `${todayCompletion}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Last 7 Days Trend */}
+        <Card className="p-3 md:p-4 col-span-2 lg:col-span-1">
+          <div className="flex flex-col h-full">
+            <p className="text-[10px] md:text-xs text-muted-foreground font-medium mb-2">7-Day Trend</p>
+            <div className="flex-1 min-h-[40px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={getLast7DaysTrend} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                  <Bar dataKey="completion" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Summary Cards Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card className="p-3 bg-primary/5 border-primary/20">
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-yellow-500" />
+            <div>
+              <p className="text-xs text-muted-foreground">Best Streak</p>
+              <p className="text-lg font-bold text-foreground">
+                {Math.max(...activities.map(a => getLongestStreak(a)), 0)}
+              </p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-3 bg-green-500/5 border-green-500/20">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <div>
+              <p className="text-xs text-muted-foreground">Weekly Done</p>
+              <p className="text-lg font-bold text-foreground">{weeklyStats.totalCompleted}</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-3 bg-orange-500/5 border-orange-500/20">
+          <div className="flex items-center gap-2">
+            <Timer className="h-4 w-4 text-orange-500" />
+            <div>
+              <p className="text-xs text-muted-foreground">Missed Days</p>
+              <p className="text-lg font-bold text-foreground">{weeklyStats.missedDays}</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-3 bg-purple-500/5 border-purple-500/20">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-purple-500" />
+            <div>
+              <p className="text-xs text-muted-foreground">Scheduled</p>
+              <p className="text-lg font-bold text-foreground">{weeklyStats.totalScheduled}</p>
             </div>
           </div>
         </Card>
@@ -641,7 +833,7 @@ export default function Trackers() {
         </Card>
       )}
 
-      {/* Activity Cards/Table */}
+      {/* Activity Cards */}
       <div className="space-y-3">
         {filteredActivities.map((activity) => {
           const category = getCategoryInfo(activity.category);
@@ -650,6 +842,10 @@ export default function Trackers() {
           const longestStreak = getLongestStreak(activity);
           const percent = getCompletionPercent(activity);
           const insights = getInsights(activity);
+          const scheduledSessions = getScheduledSessions(activity);
+          const sessionsLeft = getSessionsLeft(activity);
+          const daysLeft = getDaysLeft(activity);
+          const completedSessions = getCompletedSessions(activity);
 
           return (
             <Card key={activity.id} className="overflow-hidden">
@@ -691,10 +887,13 @@ export default function Trackers() {
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">{activity.description}</p>
                     
-                    {/* Timeline & Progress */}
-                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                      <span>{format(parseISO(activity.startDate), "MMM d")} → {format(getEndDate(activity), "MMM d")}</span>
-                      <span>{percent}% complete</span>
+                    {/* FIXED: Duration & Sessions Info */}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <CalendarDays className="h-3 w-3" />
+                        {format(parseISO(activity.startDate), "MMM d")} → {format(getEndDate(activity), "MMM d")} ({activity.numberOfDays} days)
+                      </span>
+                      <span className="font-medium text-foreground">{daysLeft} days left</span>
                       <Badge 
                         variant="secondary"
                         className={cn("text-[10px] h-5", {
@@ -706,7 +905,19 @@ export default function Trackers() {
                         {status}
                       </Badge>
                     </div>
-                    <Progress value={percent} className="h-1 mt-2" />
+                    
+                    {/* Sessions Info */}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs">
+                      <span className="text-muted-foreground">
+                        <span className="font-medium text-foreground">{completedSessions}</span>/{scheduledSessions} sessions
+                      </span>
+                      <span className="text-muted-foreground">
+                        <span className="font-medium text-foreground">{sessionsLeft}</span> sessions left
+                      </span>
+                      <span className="font-medium text-foreground">{percent}% complete</span>
+                    </div>
+                    
+                    <Progress value={percent} className="h-1.5 mt-2" />
                   </div>
                   
                   <DropdownMenu>
@@ -926,7 +1137,7 @@ export default function Trackers() {
                 </Popover>
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Duration (Days)</label>
+                <label className="text-sm font-medium mb-2 block">Duration (Calendar Days)</label>
                 <Input
                   type="number"
                   min={1}
@@ -934,6 +1145,9 @@ export default function Trackers() {
                   value={formDays}
                   onChange={(e) => setFormDays(parseInt(e.target.value) || 30)}
                 />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  End: {format(addDays(formStartDate, formDays - 1), "MMM d, yyyy")}
+                </p>
               </div>
             </div>
             <div>
@@ -968,6 +1182,19 @@ export default function Trackers() {
                   </button>
                 ))}
               </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {formFrequency.filter(Boolean).length} days/week × {Math.ceil(formDays / 7)} weeks ≈ {
+                  (() => {
+                    let count = 0;
+                    for (let i = 0; i < formDays; i++) {
+                      const date = addDays(formStartDate, i);
+                      const dayOfWeek = (date.getDay() + 6) % 7;
+                      if (formFrequency[dayOfWeek]) count++;
+                    }
+                    return count;
+                  })()
+                } scheduled sessions
+              </p>
             </div>
             <div className="flex gap-2 pt-4">
               <Button variant="outline" className="flex-1" onClick={() => setDialogOpen(false)}>
@@ -992,6 +1219,32 @@ export default function Trackers() {
               <div className="space-y-4 pt-4">
                 <p className="text-sm text-muted-foreground">{detailActivity.description}</p>
                 
+                {/* Duration Info */}
+                <Card className="p-4 bg-muted/30">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Duration</p>
+                      <p className="font-semibold text-foreground">{detailActivity.numberOfDays} calendar days</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Days Left</p>
+                      <p className="font-semibold text-foreground">{getDaysLeft(detailActivity)} days</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Date Range</p>
+                      <p className="font-semibold text-foreground">
+                        {format(parseISO(detailActivity.startDate), "MMM d")} → {format(getEndDate(detailActivity), "MMM d")}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Sessions</p>
+                      <p className="font-semibold text-foreground">
+                        {getCompletedSessions(detailActivity)}/{getScheduledSessions(detailActivity)} ({getSessionsLeft(detailActivity)} left)
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+                
                 {/* Stats Grid */}
                 <div className="grid grid-cols-2 gap-3">
                   <Card className="p-3">
@@ -1015,9 +1268,9 @@ export default function Trackers() {
                     </p>
                   </Card>
                   <Card className="p-3">
-                    <p className="text-xs text-muted-foreground">Days Done</p>
+                    <p className="text-xs text-muted-foreground">Sessions Done</p>
                     <p className="text-2xl font-bold text-foreground">
-                      {getCompletedDays(detailActivity)}/{getPlannedDays(detailActivity)}
+                      {getCompletedSessions(detailActivity)}/{getScheduledSessions(detailActivity)}
                     </p>
                   </Card>
                 </div>
