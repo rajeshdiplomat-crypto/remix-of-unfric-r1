@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Plus, Search, Settings, FileText, ChevronDown, FolderPlus, Zap, Filter, ArrowUpDown } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Plus, Search, Settings, FileText, ChevronDown, Zap, Filter, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { NotesSplitView } from "@/components/notes/NotesSplitView";
 import { NotesGroupSettings } from "@/components/notes/NotesGroupSettings";
 import { NotesGroupSection } from "@/components/notes/NotesGroupSection";
+import { NotesLocationPicker } from "@/components/notes/NotesLocationPicker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -41,7 +42,6 @@ export interface Note {
 const STORAGE_KEY_GROUPS = "notes-groups";
 const STORAGE_KEY_FOLDERS = "notes-folders";
 const STORAGE_KEY_NOTES = "notes-data";
-const STORAGE_KEY_LAST_LOCATION = "notes-last-location";
 
 const DEFAULT_GROUPS: NoteGroup[] = [
   { id: "inbox", name: "Inbox", color: "hsl(215, 20%, 65%)", sortOrder: 0 },
@@ -154,17 +154,13 @@ export default function Notes() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [lastLocation, setLastLocation] = useState<{ groupId: string; folderId: string | null }>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_LAST_LOCATION);
-    return saved ? JSON.parse(saved) : { groupId: "inbox", folderId: null };
-  });
-  
   const [viewMode, setViewMode] = useState<ViewMode>("overview");
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("updatedAt");
   const [filterGroupId, setFilterGroupId] = useState<string>("all");
+  const [locationPickerOpen, setLocationPickerOpen] = useState(false);
 
   // Persist to localStorage
   useEffect(() => {
@@ -179,9 +175,6 @@ export default function Notes() {
     localStorage.setItem(STORAGE_KEY_FOLDERS, JSON.stringify(folders));
   }, [folders]);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_LAST_LOCATION, JSON.stringify(lastLocation));
-  }, [lastLocation]);
 
   // Filter and sort notes
   const getFilteredNotes = () => {
@@ -237,18 +230,27 @@ export default function Notes() {
     };
     setNotes([newNote, ...notes]);
     setSelectedNote(newNote);
-    setLastLocation({ groupId, folderId });
     setViewMode("editor");
   };
 
-  // Quick note - goes to Inbox
+  // Quick note - goes to Inbox (ensure inbox exists)
   const handleQuickNote = () => {
+    // Ensure Inbox group exists
+    if (!groups.find((g) => g.id === "inbox")) {
+      const inboxGroup: NoteGroup = {
+        id: "inbox",
+        name: "Inbox",
+        color: "hsl(215, 20%, 65%)",
+        sortOrder: -1, // Always first
+      };
+      setGroups([inboxGroup, ...groups]);
+    }
     handleCreateNote("inbox", null);
   };
 
-  // New note with options - uses last location
+  // New note with location picker - no defaults
   const handleNewNoteWithOptions = () => {
-    handleCreateNote(lastLocation.groupId, lastLocation.folderId);
+    setLocationPickerOpen(true);
   };
 
   // Create folder inline
@@ -279,7 +281,6 @@ export default function Notes() {
 
   const handleNoteClick = (note: Note) => {
     setSelectedNote(note);
-    setLastLocation({ groupId: note.groupId, folderId: note.folderId });
     setViewMode("editor");
   };
 
@@ -295,58 +296,46 @@ export default function Notes() {
   // Sort groups by sortOrder
   const sortedGroups = [...groups].sort((a, b) => a.sortOrder - b.sortOrder);
 
-  // Get last location display text
-  const getLastLocationText = () => {
-    const groupName = getGroupName(lastLocation.groupId);
-    const folderName = getFolderName(lastLocation.folderId);
-    return folderName ? `${groupName} ▸ ${folderName}` : groupName;
-  };
-
   // Overview (Life Atlas Layout)
   if (viewMode === "overview") {
     return (
-      <div className="max-w-4xl mx-auto space-y-6 pb-20">
-        {/* Header */}
+      <div className="max-w-3xl mx-auto space-y-8 pb-20">
+        {/* Header - calmer, journal-like */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-foreground">Notes</h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <h1 className="text-xl font-medium text-foreground/90">Notes</h1>
+            <p className="text-sm text-muted-foreground/60 mt-0.5">
               Your life atlas — everything in one calm view
             </p>
           </div>
           
           <div className="flex items-center gap-2">
-            {/* New Note Dropdown */}
+            {/* New Note Dropdown - less dominant */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                  <Plus className="h-4 w-4 mr-2" />
+                <Button variant="outline" size="sm" className="text-muted-foreground hover:text-foreground">
+                  <Plus className="h-4 w-4 mr-1.5" />
                   New note
-                  <ChevronDown className="h-4 w-4 ml-2" />
+                  <ChevronDown className="h-3.5 w-3.5 ml-1.5 opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem onClick={handleNewNoteWithOptions}>
-                  <FileText className="h-4 w-4 mr-2" />
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem onClick={handleNewNoteWithOptions} className="py-2.5">
+                  <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
                   <div className="flex flex-col">
-                    <span>New Note (with options)</span>
-                    <span className="text-xs text-muted-foreground">Creating in: {getLastLocationText()}</span>
+                    <span className="text-sm">New Note</span>
+                    <span className="text-xs text-muted-foreground/60">Choose where to save</span>
                   </div>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleQuickNote}>
-                  <Zap className="h-4 w-4 mr-2" />
-                  Quick Note
-                  <span className="ml-auto text-xs text-muted-foreground">→ Inbox</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
-                  <FolderPlus className="h-4 w-4 mr-2" />
-                  Manage Groups & Sections
+                <DropdownMenuItem onClick={handleQuickNote} className="py-2.5">
+                  <Zap className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <span className="text-sm">Quick Note</span>
+                  <span className="ml-auto text-xs text-muted-foreground/50">→ Inbox</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             
-            <Button variant="outline" size="icon" onClick={() => setSettingsOpen(true)}>
+            <Button variant="ghost" size="icon" className="text-muted-foreground/60 hover:text-foreground" onClick={() => setSettingsOpen(true)}>
               <Settings className="h-4 w-4" />
             </Button>
           </div>
@@ -447,6 +436,15 @@ export default function Notes() {
           onGroupsChange={handleGroupsChange}
           folders={folders}
           onFoldersChange={setFolders}
+        />
+
+        {/* Location Picker Dialog */}
+        <NotesLocationPicker
+          open={locationPickerOpen}
+          onOpenChange={setLocationPickerOpen}
+          groups={groups}
+          folders={folders}
+          onConfirm={handleCreateNote}
         />
       </div>
     );

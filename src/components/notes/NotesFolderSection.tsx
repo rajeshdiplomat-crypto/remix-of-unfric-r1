@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { ChevronRight, ChevronDown, Folder, FolderOpen, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ChevronRight, ChevronDown, Folder, FolderOpen } from "lucide-react";
 import { NotesNoteRow } from "./NotesNoteRow";
 import type { Note, NoteFolder, NoteGroup } from "@/pages/Notes";
 
@@ -26,43 +25,40 @@ export function NotesFolderSection({
   const folderNotes = notes.filter((n) => n.folderId === folder.id);
 
   return (
-    <div className="ml-4">
-      {/* Folder Header */}
+    <div className="ml-2">
+      {/* Folder Header - lighter than group */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center gap-2 py-2 px-2 rounded-md hover:bg-muted/30 transition-colors group"
+        className="w-full flex items-center gap-2 py-1.5 px-1 rounded hover:bg-muted/10 transition-colors group"
       >
         {isExpanded ? (
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/50" />
         ) : (
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
         )}
         {isExpanded ? (
-          <FolderOpen className="h-4 w-4" style={{ color: group.color }} />
+          <FolderOpen className="h-3.5 w-3.5 text-muted-foreground/60" />
         ) : (
-          <Folder className="h-4 w-4" style={{ color: group.color }} />
+          <Folder className="h-3.5 w-3.5 text-muted-foreground/60" />
         )}
-        <span className="text-sm font-medium text-foreground/80">{folder.name}</span>
-        <span className="text-xs text-muted-foreground ml-1">
-          ({folderNotes.length})
+        <span className="text-sm text-foreground/70">{folder.name}</span>
+        <span className="text-[10px] text-muted-foreground/50 ml-1">
+          {folderNotes.length}
         </span>
       </button>
 
       {/* Folder Content (Notes) */}
       {isExpanded && (
-        <div className="mt-1 space-y-1">
+        <div className="ml-5 mt-0.5 space-y-0.5">
           {folderNotes.length === 0 ? (
-            <div className="ml-6 py-3 text-center">
-              <p className="text-sm text-muted-foreground mb-2">No notes yet</p>
-              <Button
-                variant="ghost"
-                size="sm"
+            <div className="py-4 text-center">
+              <p className="text-xs text-muted-foreground/50 mb-2">No notes yet</p>
+              <button
                 onClick={() => onAddNote(folder.id)}
-                className="text-xs"
+                className="text-xs text-muted-foreground/50 hover:text-foreground transition-colors"
               >
-                <Plus className="h-3 w-3 mr-1" />
-                Add note
-              </Button>
+                + Add note
+              </button>
             </div>
           ) : (
             <>
@@ -76,15 +72,12 @@ export function NotesFolderSection({
                   onClick={() => onNoteClick(note)}
                 />
               ))}
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
                 onClick={() => onAddNote(folder.id)}
-                className="ml-6 text-xs text-muted-foreground hover:text-foreground"
+                className="text-xs text-muted-foreground/40 hover:text-foreground transition-colors py-1"
               >
-                <Plus className="h-3 w-3 mr-1" />
-                Add note
-              </Button>
+                + Add note
+              </button>
             </>
           )}
         </div>
