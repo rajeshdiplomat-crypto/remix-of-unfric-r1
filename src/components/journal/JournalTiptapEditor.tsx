@@ -32,6 +32,8 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, JournalTiptapEdit
       extensions: [
         StarterKit.configure({
           heading: { levels: [1, 2, 3] },
+          // Disable built-in extensions we're replacing with custom configs
+          strike: false,
         }),
         Placeholder.configure({
           placeholder: ({ node }) => {
