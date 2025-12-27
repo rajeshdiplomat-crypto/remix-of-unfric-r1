@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { format } from "date-fns";
 import { Plus } from "lucide-react";
-import { CompactTimerClock } from "@/components/tasks/CompactTimerClock";
+import { AmbientClock } from "@/components/tasks/AmbientClock";
+import { TimeToolsPanel } from "@/components/tasks/TimeToolsPanel";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -410,55 +411,65 @@ export default function Tasks() {
         onSearchChange={setSearchQuery}
       />
 
-      {/* Summary Strip with Clock in center */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <SummaryStrip tasks={filteredTasks} />
-        <div className="flex items-center gap-3">
-          <CompactTimerClock />
-        </div>
-      </div>
+      {/* Summary Strip */}
+      <SummaryStrip tasks={filteredTasks} />
 
-      {/* Insights Panel */}
-      <TasksInsights tasks={filteredTasks} />
+      {/* Main Layout: Content + Ambient Right Column */}
+      <div className="flex-1 flex gap-4 min-h-0 overflow-hidden">
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col gap-4 min-w-0 overflow-y-auto">
+          {/* Insights Panel */}
+          <TasksInsights tasks={filteredTasks} />
 
-      {/* Main Content - Left List + Right View */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0 overflow-hidden">
-        {/* Left - All Tasks List */}
-        <div className="w-full lg:w-[320px] flex-shrink-0 order-2 lg:order-1">
-          <AllTasksList
-            tasks={filteredTasks}
-            onTaskClick={openTaskDetail}
-            onStartTask={handleStartTask}
-            onCompleteTask={handleCompleteTask}
-          />
-        </div>
-
-        {/* Right - Quadrant or Board - Fixed container to prevent shifts */}
-        <div className="flex-1 min-w-0 order-1 lg:order-2 overflow-x-auto">
-          <div className="min-w-[900px] w-full">
-            {view === 'quadrant' && (
-              <QuadrantGrid
-                mode={quadrantMode}
+          {/* Task Views - Left List + Right Quadrant/Board */}
+          <div className="flex flex-col lg:flex-row gap-4 min-h-0">
+            {/* Left - All Tasks List */}
+            <div className="w-full lg:w-[320px] flex-shrink-0 order-2 lg:order-1">
+              <AllTasksList
                 tasks={filteredTasks}
                 onTaskClick={openTaskDetail}
                 onStartTask={handleStartTask}
                 onCompleteTask={handleCompleteTask}
               />
-            )}
+            </div>
 
-            {view === 'board' && (
-              <BoardView
-                mode="status"
-                tasks={filteredTasks}
-                onTaskClick={openTaskDetail}
-                onDragStart={() => {}}
-                onDrop={handleBoardDrop}
-                onQuickAdd={handleBoardQuickAdd}
-                onStartTask={handleStartTask}
-                onCompleteTask={handleCompleteTask}
-              />
-            )}
+            {/* Right - Quadrant or Board */}
+            <div className="flex-1 min-w-0 order-1 lg:order-2 overflow-x-auto">
+              <div className="min-w-[900px] w-full">
+                {view === 'quadrant' && (
+                  <QuadrantGrid
+                    mode={quadrantMode}
+                    tasks={filteredTasks}
+                    onTaskClick={openTaskDetail}
+                    onStartTask={handleStartTask}
+                    onCompleteTask={handleCompleteTask}
+                  />
+                )}
+
+                {view === 'board' && (
+                  <BoardView
+                    mode="status"
+                    tasks={filteredTasks}
+                    onTaskClick={openTaskDetail}
+                    onDragStart={() => {}}
+                    onDrop={handleBoardDrop}
+                    onQuickAdd={handleBoardQuickAdd}
+                    onStartTask={handleStartTask}
+                    onCompleteTask={handleCompleteTask}
+                  />
+                )}
+              </div>
+            </div>
           </div>
+        </div>
+
+        {/* Ambient Right Column - Clock & Tools */}
+        <div className="hidden xl:flex flex-col w-[200px] flex-shrink-0">
+          {/* Ambient Clock - Always visible, non-interactive */}
+          <AmbientClock />
+          
+          {/* Time Tools - Collapsible */}
+          <TimeToolsPanel />
         </div>
       </div>
 
