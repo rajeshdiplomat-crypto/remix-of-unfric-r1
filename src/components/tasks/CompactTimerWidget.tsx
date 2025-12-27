@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { Timer, Play, Pause, RotateCcw, Clock, X, ChevronDown } from "lucide-react";
+import { Timer, Play, Pause, RotateCcw, Clock, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 const TIMER_PRESETS = [
@@ -22,7 +23,7 @@ interface TimerState {
 }
 
 export function CompactTimerWidget() {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<'stopwatch' | 'timer'>('timer');
   const [timerMinutes, setTimerMinutes] = useState(25);
   const [timerRemaining, setTimerRemaining] = useState(25 * 60 * 1000);
@@ -139,117 +140,109 @@ export function CompactTimerWidget() {
 
   const currentTime = mode === 'stopwatch' ? stopwatchElapsed : timerRemaining;
 
-  // Collapsed state - small floating pill
-  if (!isExpanded) {
-    return (
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setIsExpanded(true)}
-        className={cn(
-          "gap-2 h-8 px-3 bg-card border-border/50 hover:bg-accent/50",
-          isRunning && "border-primary/50 bg-primary/5"
-        )}
-      >
-        <Timer className="h-3.5 w-3.5 text-primary" />
-        <span className="text-xs font-medium">
-          {isRunning ? formatTime(currentTime) : "Timer"}
-        </span>
-        {isRunning && (
-          <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-        )}
-      </Button>
-    );
-  }
-
-  // Expanded state - compact panel
   return (
-    <div className="absolute top-12 right-0 z-50 w-64 bg-card border border-border/50 rounded-xl shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
-        <div className="flex gap-1">
-          <Button
-            variant={mode === 'stopwatch' ? 'secondary' : 'ghost'}
-            size="sm"
-            className="h-6 px-2 text-xs"
-            onClick={() => { setMode('stopwatch'); setIsRunning(false); }}
-          >
-            <Clock className="h-3 w-3 mr-1" />
-            Stopwatch
-          </Button>
-          <Button
-            variant={mode === 'timer' ? 'secondary' : 'ghost'}
-            size="sm"
-            className="h-6 px-2 text-xs"
-            onClick={() => { setMode('timer'); setIsRunning(false); }}
-          >
-            <Timer className="h-3 w-3 mr-1" />
-            Timer
-          </Button>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6"
-          onClick={() => setIsExpanded(false)}
-        >
-          <X className="h-3.5 w-3.5" />
-        </Button>
-      </div>
-
-      {/* Timer Presets (Timer mode only) */}
-      {mode === 'timer' && !isRunning && (
-        <div className="flex justify-center gap-1.5 px-3 pt-3">
-          {TIMER_PRESETS.map((preset) => (
-            <Button
-              key={preset.minutes}
-              variant={timerMinutes === preset.minutes ? "default" : "outline"}
-              size="sm"
-              className="h-7 w-10 text-xs p-0"
-              onClick={() => handlePresetClick(preset.minutes)}
-            >
-              {preset.label}
-            </Button>
-          ))}
-        </div>
-      )}
-
-      {/* Time Display */}
-      <div className="text-center py-4">
-        <p className="text-3xl font-mono font-bold text-foreground tracking-wider">
-          {formatTime(currentTime)}
-        </p>
-      </div>
-
-      {/* Controls */}
-      <div className="flex justify-center gap-2 px-3 pb-3">
-        <Button
-          variant={isRunning ? "outline" : "default"}
-          size="sm"
-          onClick={() => setIsRunning(!isRunning)}
-          className="gap-1.5 h-8 flex-1"
-        >
-          {isRunning ? (
-            <>
-              <Pause className="h-3.5 w-3.5" />
-              Pause
-            </>
-          ) : (
-            <>
-              <Play className="h-3.5 w-3.5" />
-              Start
-            </>
-          )}
-        </Button>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
         <Button
           variant="outline"
           size="sm"
-          onClick={handleReset}
-          className="h-8 w-8 p-0"
+          className={cn(
+            "gap-2 h-9 px-3 bg-card border-border/50 hover:bg-accent/50",
+            isRunning && "border-primary/50 bg-primary/5"
+          )}
         >
-          <RotateCcw className="h-3.5 w-3.5" />
+          <Timer className="h-3.5 w-3.5 text-primary" />
+          <span className="text-xs font-medium">
+            {isRunning ? formatTime(currentTime) : "Timer"}
+          </span>
+          {isRunning && (
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+          )}
         </Button>
-      </div>
-    </div>
+      </PopoverTrigger>
+      <PopoverContent 
+        className="w-64 p-0 bg-card border-border/50" 
+        align="end"
+        sideOffset={8}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
+          <div className="flex gap-1">
+            <Button
+              variant={mode === 'stopwatch' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-6 px-2 text-xs"
+              onClick={() => { setMode('stopwatch'); setIsRunning(false); }}
+            >
+              <Clock className="h-3 w-3 mr-1" />
+              Stopwatch
+            </Button>
+            <Button
+              variant={mode === 'timer' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-6 px-2 text-xs"
+              onClick={() => { setMode('timer'); setIsRunning(false); }}
+            >
+              <Timer className="h-3 w-3 mr-1" />
+              Timer
+            </Button>
+          </div>
+        </div>
+
+        {/* Timer Presets (Timer mode only) */}
+        {mode === 'timer' && !isRunning && (
+          <div className="flex justify-center gap-1.5 px-3 pt-3">
+            {TIMER_PRESETS.map((preset) => (
+              <Button
+                key={preset.minutes}
+                variant={timerMinutes === preset.minutes ? "default" : "outline"}
+                size="sm"
+                className="h-7 w-10 text-xs p-0"
+                onClick={() => handlePresetClick(preset.minutes)}
+              >
+                {preset.label}
+              </Button>
+            ))}
+          </div>
+        )}
+
+        {/* Time Display */}
+        <div className="text-center py-4">
+          <p className="text-3xl font-mono font-bold text-foreground tracking-wider">
+            {formatTime(currentTime)}
+          </p>
+        </div>
+
+        {/* Controls */}
+        <div className="flex justify-center gap-2 px-3 pb-3">
+          <Button
+            variant={isRunning ? "outline" : "default"}
+            size="sm"
+            onClick={() => setIsRunning(!isRunning)}
+            className="gap-1.5 h-8 flex-1"
+          >
+            {isRunning ? (
+              <>
+                <Pause className="h-3.5 w-3.5" />
+                Pause
+              </>
+            ) : (
+              <>
+                <Play className="h-3.5 w-3.5" />
+                Start
+              </>
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleReset}
+            className="h-8 w-8 p-0"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
