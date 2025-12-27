@@ -11,19 +11,14 @@ export function NotesActivityDot({ updatedAt, size = "md", className = "" }: Not
     const now = new Date();
     const updated = new Date(updatedAt);
     const diffMs = now.getTime() - updated.getTime();
-    const diffHours = diffMs / (1000 * 60 * 60);
+    const diffMinutes = diffMs / (1000 * 60);
     
-    // Very recent (< 30 minutes) = green
-    if (diffHours < 0.5) {
+    // Only show green dot for activity within 2 minutes
+    if (diffMinutes < 2) {
       return { show: true, color: "bg-emerald-500" };
     }
     
-    // Recent (< 2 hours) = yellow/amber
-    if (diffHours < 2) {
-      return { show: true, color: "bg-amber-400" };
-    }
-    
-    // Older = no dot
+    // No dot for older activity
     return { show: false, color: "" };
   }, [updatedAt]);
 
