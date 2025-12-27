@@ -44,6 +44,157 @@ export type Database = {
         }
         Relationships: []
       }
+      feed_comments: {
+        Row: {
+          created_at: string
+          feed_event_id: string
+          id: string
+          is_edited: boolean | null
+          parent_comment_id: string | null
+          text: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feed_event_id: string
+          id?: string
+          is_edited?: boolean | null
+          parent_comment_id?: string | null
+          text: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feed_event_id?: string
+          id?: string
+          is_edited?: boolean | null
+          parent_comment_id?: string | null
+          text?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_comments_feed_event_id_fkey"
+            columns: ["feed_event_id"]
+            isOneToOne: false
+            referencedRelation: "feed_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "feed_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feed_events: {
+        Row: {
+          content_preview: string | null
+          created_at: string
+          id: string
+          media: Json | null
+          metadata: Json | null
+          source_id: string | null
+          source_module: string
+          summary: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          content_preview?: string | null
+          created_at?: string
+          id?: string
+          media?: Json | null
+          metadata?: Json | null
+          source_id?: string | null
+          source_module: string
+          summary?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          content_preview?: string | null
+          created_at?: string
+          id?: string
+          media?: Json | null
+          metadata?: Json | null
+          source_id?: string | null
+          source_module?: string
+          summary?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      feed_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          feed_event_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          feed_event_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          feed_event_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_reactions_feed_event_id_fkey"
+            columns: ["feed_event_id"]
+            isOneToOne: false
+            referencedRelation: "feed_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feed_saves: {
+        Row: {
+          created_at: string
+          feed_event_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feed_event_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feed_event_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_saves_feed_event_id_fkey"
+            columns: ["feed_event_id"]
+            isOneToOne: false
+            referencedRelation: "feed_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       habit_completions: {
         Row: {
           completed_date: string
