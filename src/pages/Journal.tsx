@@ -1,14 +1,19 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { JournalEditorToolbar } from "@/components/journal/JournalEditorToolbar";
-import { JournalEditor } from "@/components/journal/JournalEditor";
-import { JournalSidebar } from "@/components/journal/JournalSidebar";
+import { JournalBlockEditor, JournalBlock, blocksToText, textToBlocks, PresetQuestion } from "@/components/journal/JournalBlockEditor";
+import { JournalRichToolbar } from "@/components/journal/JournalRichToolbar";
+import { JournalNewSidebar } from "@/components/journal/JournalNewSidebar";
+import { JournalNewSettingsDialog, JournalSettingsData, JOURNAL_SKINS } from "@/components/journal/JournalNewSettingsDialog";
 import { JournalActionMenu } from "@/components/journal/JournalActionMenu";
+import { JournalTagInput } from "@/components/journal/JournalTagInput";
 import { Button } from "@/components/ui/button";
-import { Send, MoreVertical } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Send, Settings, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
+import { addDays, subDays } from "date-fns";
 
 // Add Google Fonts for handwriting
 const fontLink = document.createElement("link");
@@ -26,24 +31,48 @@ interface JournalEntry {
   tags: string[] | null;
 }
 
+const STORAGE_KEY = "journal_settings";
+
+const DEFAULT_SETTINGS: JournalSettingsData = {
+  presetQuestions: [
+    { id: "q1", text: "How are you feeling today?" },
+    { id: "q2", text: "What are you grateful for?" },
+    { id: "q3", text: "What act of kindness did you do or receive?" },
+  ],
+  enablePresetOnNewEntry: true,
+  selectedSkin: "minimal-light",
+};
+
 export default function Journal() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [mood, setMood] = useState<string | null>(null);
+  const [blocks, setBlocks] = useState<JournalBlock[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [entryId, setEntryId] = useState<string | null>(null);
   const [allEntries, setAllEntries] = useState<JournalEntry[]>([]);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [activeFormats, setActiveFormats] = useState<string[]>([]);
-  const [promptToUse, setPromptToUse] = useState<string>("");
-  const [isRecording, setIsRecording] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  
+  // Editor settings
+  const [fontFamily, setFontFamily] = useState("Inter");
+  const [fontSize, setFontSize] = useState(16);
+  const [settings, setSettings] = useState<JournalSettingsData>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : DEFAULT_SETTINGS;
+  });
+  
+  // Undo/Redo
+  const [history, setHistory] = useState<JournalBlock[][]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+
+  // Get current skin
+  const currentSkin = JOURNAL_SKINS.find(s => s.id === settings.selectedSkin) || JOURNAL_SKINS[0];
 
   useEffect(() => {
     if (!user) return;
@@ -55,23 +84,27 @@ export default function Journal() {
     fetchEntry();
   }, [user, selectedDate]);
 
-  const handleDateChange = (date: Date) => {
-    // Auto-save before switching if there's content
-    if (title || content) {
-      saveEntry(true);
-    }
-    setSelectedDate(date);
-  };
+  // Save settings to localStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  }, [settings]);
 
   // Auto-save debounce
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (user && (title || content)) {
+      if (user && blocks.length > 0) {
         saveEntry(true);
       }
     }, 2000);
     return () => clearTimeout(timer);
-  }, [title, content, mood, tags]);
+  }, [blocks, tags]);
+
+  const handleDateChange = (date: Date) => {
+    if (blocks.length > 0) {
+      saveEntry(true);
+    }
+    setSelectedDate(date);
+  };
 
   const fetchAllEntries = async () => {
     if (!user) return;
@@ -100,25 +133,24 @@ export default function Journal() {
       .maybeSingle();
 
     if (data) {
-      // Parse title from first line if stored in feeling
-      const feeling = data.daily_feeling || "";
-      const lines = feeling.split("\n");
-      if (lines[0] && !lines[0].startsWith("•") && lines[0].length < 100) {
-        setTitle(lines[0]);
-        setContent(lines.slice(1).join("\n").trim());
-      } else {
-        setTitle("");
-        setContent(feeling);
-      }
-      setMood(data.daily_gratitude || null); // Using gratitude field for mood
+      const content = data.daily_feeling || "";
+      const parsedBlocks = textToBlocks(content, settings.presetQuestions);
+      setBlocks(parsedBlocks.length > 0 ? parsedBlocks : []);
       setTags(data.tags || []);
       setEntryId(data.id);
+      setHistory([parsedBlocks]);
+      setHistoryIndex(0);
     } else {
-      setTitle("");
-      setContent("");
-      setMood(null);
+      // New entry - initialize with preset questions if enabled
+      if (settings.enablePresetOnNewEntry) {
+        setBlocks([]); // Will be initialized by JournalBlockEditor
+      } else {
+        setBlocks([{ id: "initial", type: "paragraph", content: "" }]);
+      }
       setTags([]);
       setEntryId(null);
+      setHistory([]);
+      setHistoryIndex(-1);
     }
     setLoading(false);
   };
@@ -128,16 +160,13 @@ export default function Journal() {
 
     setSaving(true);
     const dateStr = format(selectedDate, "yyyy-MM-dd");
-    
-    // Combine title and content for storage
-    const combinedContent = title ? `${title}\n${content}` : content;
+    const content = blocksToText(blocks);
 
     if (entryId) {
       const { error } = await supabase
         .from("journal_entries")
         .update({
-          daily_feeling: combinedContent,
-          daily_gratitude: mood,
+          daily_feeling: content,
           tags: tags,
         })
         .eq("id", entryId);
@@ -151,14 +180,13 @@ export default function Journal() {
         }
         fetchAllEntries();
       }
-    } else if (combinedContent.trim()) {
+    } else if (content.trim()) {
       const { data, error } = await supabase
         .from("journal_entries")
         .insert({
           user_id: user.id,
           entry_date: dateStr,
-          daily_feeling: combinedContent,
-          daily_gratitude: mood,
+          daily_feeling: content,
           tags: tags,
         })
         .select()
@@ -185,18 +213,16 @@ export default function Journal() {
 
   const handleDeleteEntry = async () => {
     if (!entryId) return;
-    
+
     const { error } = await supabase
       .from("journal_entries")
       .delete()
       .eq("id", entryId);
-    
+
     if (error) {
       toast({ title: "Error", description: "Failed to delete entry", variant: "destructive" });
     } else {
-      setTitle("");
-      setContent("");
-      setMood(null);
+      setBlocks([]);
       setTags([]);
       setEntryId(null);
       fetchAllEntries();
@@ -213,22 +239,21 @@ export default function Journal() {
 
   const handleExportEntry = (exportFormat: "text" | "markdown") => {
     const dateStr = format(selectedDate, "MMMM d, yyyy");
+    const content = blocksToText(blocks);
     let exportContent = "";
-    
+
     if (exportFormat === "markdown") {
-      exportContent = `# ${title || "Journal Entry"} - ${dateStr}\n\n`;
-      exportContent += content || "No content";
+      exportContent = `# Journal - ${dateStr}\n\n${content}`;
       if (tags.length > 0) {
-        exportContent += `\n\n**Tags:** ${tags.map(t => `#${t}`).join(" ")}`;
+        exportContent += `\n\n**Tags:** ${tags.map((t) => `#${t}`).join(" ")}`;
       }
     } else {
-      exportContent = `${title || "Journal Entry"} - ${dateStr}\n\n`;
-      exportContent += content || "No content";
+      exportContent = `Journal - ${dateStr}\n\n${content}`;
       if (tags.length > 0) {
         exportContent += `\n\nTags: ${tags.join(", ")}`;
       }
     }
-    
+
     const blob = new Blob([exportContent], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -236,19 +261,42 @@ export default function Journal() {
     a.download = `journal-${format(selectedDate, "yyyy-MM-dd")}.${exportFormat === "markdown" ? "md" : "txt"}`;
     a.click();
     URL.revokeObjectURL(url);
-    
+
     toast({ title: "Exported", description: `Entry saved as ${exportFormat}` });
   };
 
-  const handleFormat = (formatType: string) => {
-    setActiveFormats(prev => 
-      prev.includes(formatType) 
-        ? prev.filter(f => f !== formatType)
-        : [...prev, formatType]
-    );
+  const handleBlocksChange = useCallback((newBlocks: JournalBlock[]) => {
+    setBlocks(newBlocks);
+    // Add to history for undo
+    setHistory(prev => [...prev.slice(0, historyIndex + 1), newBlocks]);
+    setHistoryIndex(prev => prev + 1);
+  }, [historyIndex]);
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      setHistoryIndex(prev => prev - 1);
+      setBlocks(history[historyIndex - 1]);
+    }
   };
 
-  const handleImageInsert = () => {
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      setHistoryIndex(prev => prev + 1);
+      setBlocks(history[historyIndex + 1]);
+    }
+  };
+
+  const handleInsertList = (type: "bullet" | "number" | "checklist") => {
+    const newBlock: JournalBlock = {
+      id: Math.random().toString(36).substr(2, 9),
+      type,
+      content: "",
+      checked: type === "checklist" ? false : undefined,
+    };
+    setBlocks([...blocks, newBlock]);
+  };
+
+  const handleInsertImage = () => {
     fileInputRef.current?.click();
   };
 
@@ -260,28 +308,19 @@ export default function Journal() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleVoiceRecord = async () => {
-    if (isRecording) {
-      mediaRecorderRef.current?.stop();
-      mediaRecorderRef.current?.stream.getTracks().forEach(track => track.stop());
-      setIsRecording(false);
-      toast({ title: "Recording stopped", description: "Transcription coming soon!" });
-    } else {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const mediaRecorder = new MediaRecorder(stream);
-        mediaRecorderRef.current = mediaRecorder;
-        mediaRecorder.start();
-        setIsRecording(true);
-        toast({ title: "Recording...", description: "Click again to stop" });
-      } catch {
-        toast({ title: "Error", description: "Could not access microphone", variant: "destructive" });
-      }
-    }
+  const handleSaveSettings = (newSettings: JournalSettingsData) => {
+    setSettings(newSettings);
+    toast({ title: "Settings saved", description: "Your journal settings have been updated" });
   };
 
   const handleUsePrompt = (prompt: string) => {
-    setPromptToUse(prompt);
+    // Add prompt as a new paragraph block
+    const newBlock: JournalBlock = {
+      id: Math.random().toString(36).substr(2, 9),
+      type: "paragraph",
+      content: prompt,
+    };
+    setBlocks([...blocks, newBlock]);
   };
 
   if (loading) {
@@ -293,7 +332,10 @@ export default function Journal() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div 
+      className="min-h-screen transition-colors"
+      style={{ backgroundColor: currentSkin.bg }}
+    >
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
@@ -304,12 +346,74 @@ export default function Journal() {
       />
 
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-border/30 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="text-sm text-muted-foreground">
-          {lastSaved ? `Last saved: ${format(lastSaved, "h:mm a")}` : saving ? "Saving..." : "Not saved yet"}
+      <div 
+        className="flex items-center justify-between px-6 py-3 border-b backdrop-blur-sm sticky top-0 z-20"
+        style={{ 
+          backgroundColor: `${currentSkin.cardBg}ee`,
+          borderColor: currentSkin.borderColor,
+        }}
+      >
+        <div className="flex items-center gap-4">
+          {/* Date Navigation */}
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handleDateChange(subDays(selectedDate, 1))}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <button className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground px-2 py-1 transition-colors text-sm">
+                  <CalendarIcon className="h-4 w-4" />
+                  <span>{format(selectedDate, "MMMM d, yyyy")}</span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => {
+                    if (date) {
+                      handleDateChange(date);
+                      setCalendarOpen(false);
+                    }
+                  }}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handleDateChange(addDays(selectedDate, 1))}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="text-sm text-muted-foreground">
+            {lastSaved ? `Saved ${format(lastSaved, "h:mm a")}` : saving ? "Saving..." : ""}
+          </div>
         </div>
+
         <div className="flex items-center gap-2">
-          <Button 
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSettingsOpen(true)}
+            className="h-8 w-8"
+            title="Journal Settings"
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+          <Button
             onClick={handlePublish}
             className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
             disabled={saving}
@@ -330,33 +434,60 @@ export default function Journal() {
       {/* Main content */}
       <div className="px-6 py-6">
         {/* Toolbar */}
-        <div className="mb-6">
-          <JournalEditorToolbar
-            activeFormats={activeFormats}
-            onFormat={handleFormat}
-            onImageInsert={handleImageInsert}
-            onVoiceRecord={handleVoiceRecord}
-            isRecording={isRecording}
+        <div className="mb-6 max-w-3xl mx-auto">
+          <JournalRichToolbar
+            fontFamily={fontFamily}
+            fontSize={fontSize}
+            onFontFamilyChange={setFontFamily}
+            onFontSizeChange={setFontSize}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            canUndo={historyIndex > 0}
+            canRedo={historyIndex < history.length - 1}
+            onBulletList={() => handleInsertList("bullet")}
+            onNumberList={() => handleInsertList("number")}
+            onChecklist={() => handleInsertList("checklist")}
+            onInsertImage={handleInsertImage}
           />
         </div>
 
         {/* Editor + Sidebar layout */}
         <div className="flex gap-8 justify-center">
-          <JournalEditor
-            selectedDate={selectedDate}
-            title={title}
-            content={content}
-            mood={mood}
-            tags={tags}
-            onTitleChange={setTitle}
-            onContentChange={setContent}
-            onMoodChange={setMood}
-            onTagsChange={setTags}
-            onDateChange={handleDateChange}
-            onPromptUse={promptToUse}
-          />
+          <div className="flex-1 max-w-3xl">
+            <div 
+              className="rounded-2xl border overflow-hidden"
+              style={{
+                backgroundColor: currentSkin.cardBg,
+                borderColor: currentSkin.borderColor,
+                boxShadow: currentSkin.shadowIntensity === "light" 
+                  ? "0 1px 3px rgba(0,0,0,0.05)"
+                  : currentSkin.shadowIntensity === "medium"
+                  ? "0 4px 12px rgba(0,0,0,0.1)"
+                  : "none",
+              }}
+            >
+              {/* Block Editor */}
+              <JournalBlockEditor
+                blocks={blocks}
+                onChange={handleBlocksChange}
+                presetQuestions={settings.presetQuestions}
+                fontFamily={fontFamily}
+                fontSize={fontSize}
+                skin={{
+                  id: currentSkin.id,
+                  bg: currentSkin.cardBg,
+                  borderColor: currentSkin.borderColor,
+                }}
+              />
 
-          <JournalSidebar
+              {/* Tags */}
+              <div className="px-6 py-4 border-t" style={{ borderColor: currentSkin.borderColor }}>
+                <JournalTagInput tags={tags} onChange={setTags} />
+              </div>
+            </div>
+          </div>
+
+          <JournalNewSidebar
             entries={allEntries}
             currentDate={selectedDate}
             onSelectDate={setSelectedDate}
@@ -364,6 +495,14 @@ export default function Journal() {
           />
         </div>
       </div>
+
+      {/* Settings Dialog */}
+      <JournalNewSettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        settings={settings}
+        onSave={handleSaveSettings}
+      />
     </div>
   );
 }
