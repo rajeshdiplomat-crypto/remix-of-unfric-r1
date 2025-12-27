@@ -137,6 +137,8 @@ export default function Trackers() {
   const [selectedWeekStart, setSelectedWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [selectedActivities, setSelectedActivities] = useState<Set<string>>(new Set());
   const [detailActivity, setDetailActivity] = useState<ActivityItem | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedForPanel, setSelectedForPanel] = useState<ActivityItem | null>(null);
 
   // Form state
   const [formName, setFormName] = useState("");
@@ -146,6 +148,7 @@ export default function Trackers() {
   const [formFrequency, setFormFrequency] = useState([true, true, true, true, true, false, false]);
   const [formDays, setFormDays] = useState(30);
   const [formStartDate, setFormStartDate] = useState<Date>(new Date());
+  const [formImageUrl, setFormImageUrl] = useState<string | null>(null);
 
   // FIXED: Calendar-based end date calculation
   const getEndDate = (activity: ActivityItem) => {
@@ -430,6 +433,7 @@ export default function Trackers() {
     setFormFrequency([true, true, true, true, true, false, false]);
     setFormDays(30);
     setFormStartDate(new Date());
+    setFormImageUrl(null);
     setDialogOpen(true);
   };
 
@@ -442,7 +446,28 @@ export default function Trackers() {
     setFormFrequency([...activity.frequencyPattern]);
     setFormDays(activity.numberOfDays);
     setFormStartDate(parseISO(activity.startDate));
+    setFormImageUrl(loadActivityImage(activity.id));
     setDialogOpen(true);
+  };
+
+  const openActivityDrawer = (activity: ActivityItem) => {
+    setDetailActivity(activity);
+    setDrawerOpen(true);
+  };
+
+  const handleSkipDay = (activityId: string, date: Date) => {
+    const dateStr = format(date, "yyyy-MM-dd");
+    setActivities(activities.map((a) => {
+      if (a.id !== activityId) return a;
+      const currentSkipped = (a as any).skipped || {};
+      const skipped = { ...currentSkipped, [dateStr]: true };
+      return { ...a, skipped };
+    }));
+    toast({ title: "Day skipped" });
+  };
+
+  const handleImageChange = (activityId: string, imageUrl: string | null) => {
+    saveActivityImage(activityId, imageUrl);
   };
 
   const handleSave = () => {
@@ -463,6 +488,11 @@ export default function Trackers() {
     };
 
     const scheduledSessions = getScheduledSessions(tempActivity);
+
+    // Save image if provided
+    if (formImageUrl) {
+      saveActivityImage(tempActivity.id, formImageUrl);
+    }
 
     if (editingActivity) {
       setActivities(activities.map((a) =>
@@ -851,8 +881,12 @@ export default function Trackers() {
           const completedSessions = getCompletedSessions(activity);
 
           return (
-            <Card key={activity.id} className="overflow-hidden">
-              <div className="p-3 md:p-4">
+            <Card 
+              key={activity.id} 
+              className="overflow-hidden cursor-pointer hover:border-primary/50 transition-colors"
+              onClick={() => openActivityDrawer(activity)}
+            >
+              <div className="p-3 md:p-4" onClick={(e) => e.stopPropagation()}>
                 {/* Header Row */}
                 <div className="flex items-start gap-3">
                   <Checkbox
@@ -875,9 +909,15 @@ export default function Trackers() {
                     <Target className="h-5 w-5" style={{ color: `hsl(${category.color})` }} />
                   </div>
                   
-                  <div className="flex-1 min-w-0">
+                  <div 
+                    className="flex-1 min-w-0 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openActivityDrawer(activity);
+                    }}
+                  >
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold text-foreground">{activity.name}</h3>
+                      <h3 className="font-semibold text-foreground hover:text-primary transition-colors">{activity.name}</h3>
                       <Badge variant="secondary" className="text-[10px] h-5">
                         {category.label.split(" ")[0]}
                       </Badge>
@@ -1163,6 +1203,14 @@ export default function Trackers() {
               />
             </div>
             <div>
+              <label className="text-sm font-medium mb-2 block">Cover Image (optional)</label>
+              <ActivityImageUpload
+                imageUrl={formImageUrl}
+                onImageChange={setFormImageUrl}
+                compact
+              />
+            </div>
+            <div>
               <label className="text-sm font-medium mb-2 block">Frequency Pattern</label>
               <p className="text-xs text-muted-foreground mb-2">Select the days you plan to perform this activity.</p>
               <div className="flex gap-2">
@@ -1320,6 +1368,23 @@ export default function Trackers() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Activity Details Drawer */}
+      <ActivityDetailsDrawer
+        activity={detailActivity}
+        open={drawerOpen}
+        onClose={() => {
+          setDrawerOpen(false);
+          setDetailActivity(null);
+        }}
+        onEdit={(activity) => {
+          setDrawerOpen(false);
+          openEditDialog(activity);
+        }}
+        onToggleCompletion={toggleCompletion}
+        onSkipDay={handleSkipDay}
+        onImageChange={handleImageChange}
+      />
     </div>
   );
 }
