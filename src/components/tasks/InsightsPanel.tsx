@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { QuadrantTask, computeTaskStatus } from "./types";
 import { TasksClockCard } from "./TasksClockCard";
-import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar, Line, ComposedChart, Legend } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar, Line, ComposedChart } from "recharts";
 import { format, subDays, addDays, startOfDay, isSameDay } from "date-fns";
 
 interface InsightsPanelProps {
@@ -105,55 +105,55 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
         </Button>
       </div>
 
-      {/* KPI Row with Clock */}
-      <div className="grid grid-cols-5 gap-3">
+      {/* KPI Row with Clock - Clock is wider */}
+      <div className="grid grid-cols-[1fr_1fr_1.5fr_1fr_1fr] gap-3">
         {/* Planned Today */}
         <Card className="bg-card border-border/50">
-          <CardContent className="p-4">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center mb-2">
-              <Calendar className="h-4 w-4 text-primary" />
+          <CardContent className="p-3">
+            <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center mb-2">
+              <Calendar className="h-3.5 w-3.5 text-primary" />
             </div>
-            <p className="text-3xl font-bold text-foreground">{plannedToday}</p>
+            <p className="text-2xl font-bold text-foreground">{plannedToday}</p>
             <p className="text-xs text-muted-foreground">Planned Today</p>
           </CardContent>
         </Card>
 
         {/* Done Today */}
         <Card className="bg-card border-border/50">
-          <CardContent className="p-4">
-            <div className="h-8 w-8 rounded-lg bg-chart-1/10 flex items-center justify-center mb-2">
-              <CheckCircle className="h-4 w-4 text-chart-1" />
+          <CardContent className="p-3">
+            <div className="h-7 w-7 rounded-lg bg-chart-1/10 flex items-center justify-center mb-2">
+              <CheckCircle className="h-3.5 w-3.5 text-chart-1" />
             </div>
-            <p className="text-3xl font-bold text-foreground">{completedToday}</p>
+            <p className="text-2xl font-bold text-foreground">{completedToday}</p>
             <p className="text-xs text-muted-foreground">Done Today</p>
           </CardContent>
         </Card>
 
-        {/* Clock Card - Center */}
+        {/* Clock Card - Center & Wider */}
         <Card className="bg-card border-border/50">
-          <CardContent className="p-4 flex items-center justify-center">
+          <CardContent className="p-3 flex items-center justify-center">
             <TasksClockCard />
           </CardContent>
         </Card>
 
         {/* Overdue */}
         <Card className="bg-card border-border/50">
-          <CardContent className="p-4">
-            <div className="h-8 w-8 rounded-lg bg-destructive/10 flex items-center justify-center mb-2">
-              <AlertTriangle className="h-4 w-4 text-destructive" />
+          <CardContent className="p-3">
+            <div className="h-7 w-7 rounded-lg bg-destructive/10 flex items-center justify-center mb-2">
+              <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
             </div>
-            <p className="text-3xl font-bold text-foreground">{overdueTasks}</p>
+            <p className="text-2xl font-bold text-foreground">{overdueTasks}</p>
             <p className="text-xs text-muted-foreground">Overdue</p>
           </CardContent>
         </Card>
 
         {/* Focus Time */}
         <Card className="bg-card border-border/50">
-          <CardContent className="p-4">
-            <div className="h-8 w-8 rounded-lg bg-muted/20 flex items-center justify-center mb-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
+          <CardContent className="p-3">
+            <div className="h-7 w-7 rounded-lg bg-muted/20 flex items-center justify-center mb-2">
+              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
             </div>
-            <p className="text-3xl font-bold text-foreground">{totalFocusMinutes}m</p>
+            <p className="text-2xl font-bold text-foreground">{totalFocusMinutes}m</p>
             <p className="text-xs text-muted-foreground">Focus Time</p>
           </CardContent>
         </Card>
@@ -170,7 +170,7 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
                 PLAN VS ACTUAL (7 DAYS)
               </h4>
             </div>
-            <div className="h-[120px]">
+            <div className="h-[100px]">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={past7DaysData}>
                   <defs>
@@ -181,7 +181,7 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={20} />
                   <Tooltip 
                     contentStyle={{ 
                       background: 'hsl(var(--card))', 
@@ -196,25 +196,25 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
                     stroke="hsl(var(--primary))" 
                     strokeWidth={2}
                     fill="url(#planGradient)"
-                    dot={{ fill: 'hsl(var(--primary))', strokeWidth: 0, r: 3 }}
+                    dot={{ fill: 'hsl(var(--primary))', strokeWidth: 0, r: 2.5 }}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="actual" 
-                    stroke="#22c55e" 
+                    stroke="hsl(var(--chart-1))" 
                     strokeWidth={2}
-                    dot={{ fill: '#22c55e', strokeWidth: 0, r: 3 }}
+                    dot={{ fill: 'hsl(var(--chart-1))', strokeWidth: 0, r: 2.5 }}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
             <div className="flex justify-center gap-4 mt-2">
               <div className="flex items-center gap-1">
-                <div className="h-2.5 w-2.5 rounded-full bg-primary" />
+                <div className="h-2 w-2 rounded-full bg-primary" />
                 <span className="text-xs text-muted-foreground">Plan</span>
               </div>
               <div className="flex items-center gap-1">
-                <div className="h-2.5 w-2.5 rounded-full bg-[#22c55e]" />
+                <div className="h-2 w-2 rounded-full bg-chart-1" />
                 <span className="text-xs text-muted-foreground">Actual</span>
               </div>
             </div>
@@ -230,12 +230,12 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
                 UPCOMING (7 DAYS)
               </h4>
             </div>
-            <div className="h-[120px]">
+            <div className="h-[100px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={future7DaysData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={20} />
                   <Tooltip 
                     contentStyle={{ 
                       background: 'hsl(var(--card))', 
@@ -264,7 +264,7 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
                 BY QUADRANT
               </h4>
             </div>
-            <div className="h-[120px] flex items-center justify-center">
+            <div className="h-[100px] flex items-center justify-center">
               {quadrantData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -272,8 +272,8 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
                       data={quadrantData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={30}
-                      outerRadius={50}
+                      innerRadius={25}
+                      outerRadius={42}
                       paddingAngle={2}
                       dataKey="value"
                     >
