@@ -42,7 +42,11 @@ function LayoutContent({ children }: AppLayoutProps) {
           </div>
         </header>
         
-        <div className="flex-1 overflow-auto p-3 sm:p-4 md:p-6">{children}</div>
+        <div className="flex-1 overflow-auto p-3 sm:p-4 md:p-6">
+          <div className="w-full max-w-[1800px] mx-auto 2xl:px-4">
+            {children}
+          </div>
+        </div>
       </main>
     </div>
   );

@@ -388,7 +388,7 @@ export default function Tasks() {
   }
 
   return (
-    <div className="h-full flex flex-col gap-4 px-4 2xl:px-8 py-2 overflow-x-hidden bg-background w-full max-w-[1800px] mx-auto">
+    <div className="h-full flex flex-col gap-4 py-2 overflow-x-hidden bg-background w-full flex-1">
       {/* Header - Remove timer widget from here */}
       <TasksHeader
         view={view}

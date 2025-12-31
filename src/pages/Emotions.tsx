@@ -292,7 +292,7 @@ export default function Emotions() {
   };
 
   return (
-    <div className="w-full max-w-[1800px] mx-auto space-y-6 px-4 2xl:px-8">
+    <div className="w-full flex-1 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
