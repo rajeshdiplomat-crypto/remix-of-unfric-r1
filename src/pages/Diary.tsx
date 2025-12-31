@@ -18,6 +18,25 @@ import { cn } from "@/lib/utils";
 import type { TimeRange, FeedEvent, SourceModule } from "@/components/diary/types";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
+// Helper to extract plain text from TipTap JSON
+const extractTextFromTiptap = (json: any): string => {
+  if (!json) return '';
+  try {
+    const parsed = typeof json === 'string' ? JSON.parse(json) : json;
+    const extractText = (node: any): string => {
+      if (!node) return '';
+      if (node.text) return node.text;
+      if (node.content && Array.isArray(node.content)) {
+        return node.content.map(extractText).join(' ');
+      }
+      return '';
+    };
+    return extractText(parsed).trim();
+  } catch {
+    return '';
+  }
+};
+
 const FILTER_TABS = [
   { value: 'all', label: 'All' },
   { value: 'journal', label: 'Journal' },
@@ -86,7 +105,7 @@ export default function Diary() {
         });
       });
 
-      // Journal - use actual content with question-wise breakdown
+      // Journal - use actual content with question-wise breakdown + body content
       journalRes.data?.forEach(entry => {
         const journalSections = [];
         if (entry.daily_feeling) {
@@ -99,7 +118,11 @@ export default function Diary() {
           journalSections.push({ label: 'Kindness', content: entry.daily_kindness });
         }
         
+        // Extract body content from TipTap JSON (text_formatting field)
+        const bodyContent = extractTextFromTiptap(entry.text_formatting);
+        
         const contentPreview = journalSections.map(s => s.content).join('\n\n') || 
+          bodyContent || 
           'Journal entry for ' + format(new Date(entry.entry_date), 'MMM d, yyyy');
         
         feedEvents.push({
@@ -109,11 +132,12 @@ export default function Diary() {
           source_id: entry.id,
           title: `Journal Entry - ${format(new Date(entry.entry_date), 'MMMM d, yyyy')}`,
           summary: 'Wrote a journal entry',
-          content_preview: contentPreview.substring(0, 300),
+          content_preview: contentPreview.substring(0, 500),
           metadata: { 
             tags: entry.tags || [], 
             entry_date: entry.entry_date,
-            sections: journalSections 
+            sections: journalSections,
+            bodyContent: bodyContent 
           },
           created_at: entry.created_at,
         });
