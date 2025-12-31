@@ -59,13 +59,14 @@ export default function Diary() {
     if (!user?.id) return;
 
     const seedFeedEvents = async () => {
-      // Fetch all module data
-      const [tasksRes, journalRes, notesRes, habitsRes, goalsRes] = await Promise.all([
+      // Fetch all module data including emotions
+      const [tasksRes, journalRes, notesRes, habitsRes, goalsRes, emotionsRes] = await Promise.all([
         supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
         supabase.from("journal_entries").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
         supabase.from("notes").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
         supabase.from("habits").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
         supabase.from("manifest_goals").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+        supabase.from("emotions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
       ]);
 
       const feedEvents: any[] = [];
@@ -151,6 +152,26 @@ export default function Diary() {
         });
       });
 
+      // Emotions check-ins
+      emotionsRes.data?.forEach(emotion => {
+        const emotionParts = emotion.emotion.split(':');
+        const primaryEmotion = emotionParts[0];
+        const secondaryEmotion = emotionParts[1] && !Number(emotionParts[1]) ? emotionParts[1] : null;
+        const intensity = emotionParts[emotionParts.length - 1];
+        
+        feedEvents.push({
+          user_id: user.id,
+          type: 'checkin',
+          source_module: 'emotions',
+          source_id: emotion.id,
+          title: `Emotion Check-in: ${primaryEmotion.charAt(0).toUpperCase() + primaryEmotion.slice(1)}${secondaryEmotion ? ` - ${secondaryEmotion}` : ''}`,
+          summary: `Feeling ${primaryEmotion} (intensity: ${intensity}/10)`,
+          content_preview: emotion.notes,
+          metadata: { tags: emotion.tags, intensity, primary: primaryEmotion, secondary: secondaryEmotion },
+          created_at: emotion.created_at,
+        });
+      });
+
       // Delete existing feed events first to avoid duplicates, then insert fresh
       if (feedEvents.length > 0) {
         await supabase.from("feed_events").delete().eq("user_id", user.id);
@@ -205,7 +226,7 @@ export default function Diary() {
   }
 
   return (
-    <div className="flex gap-6 max-w-7xl mx-auto px-4">
+    <div className="flex gap-6 w-full max-w-[1800px] mx-auto px-4 2xl:px-8">
       {/* Main Feed */}
       <div className="flex-1 min-w-0">
         {/* Header */}

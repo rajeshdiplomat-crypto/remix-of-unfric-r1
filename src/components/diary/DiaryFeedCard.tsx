@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import type { FeedEvent, FeedReaction, FeedComment, ModuleConfig, SourceModule } from "./types";
 import { REACTION_EMOJIS } from "./types";
 
-const MODULE_CONFIG: Record<SourceModule, ModuleConfig> = {
+const MODULE_CONFIG: Record<SourceModule | 'emotions', ModuleConfig> = {
   tasks: { icon: CheckSquare, label: "Tasks", color: "text-emerald-700", bgColor: "bg-emerald-100" },
   journal: { icon: PenLine, label: "Journal Entry", color: "text-stone-700", bgColor: "bg-stone-200" },
   notes: { icon: FileText, label: "Notes", color: "text-amber-700", bgColor: "bg-amber-100" },
@@ -26,6 +26,7 @@ const MODULE_CONFIG: Record<SourceModule, ModuleConfig> = {
   trackers: { icon: BarChart3, label: "Trackers", color: "text-teal-700", bgColor: "bg-teal-100" },
   manifest: { icon: Sparkles, label: "Manifest", color: "text-purple-700", bgColor: "bg-purple-100" },
   focus: { icon: Target, label: "Focus", color: "text-rose-700", bgColor: "bg-rose-100" },
+  emotions: { icon: Heart, label: "Emotion Check-in", color: "text-rose-600", bgColor: "bg-rose-100" },
 };
 
 interface DiaryFeedCardProps {
@@ -63,7 +64,7 @@ export function DiaryFeedCard({
   const [editingComment, setEditingComment] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
 
-  const config = MODULE_CONFIG[event.source_module];
+  const config = MODULE_CONFIG[event.source_module as keyof typeof MODULE_CONFIG] || MODULE_CONFIG.journal;
   const IconComponent = config.icon;
   const userReaction = reactions.find(r => r.user_id === currentUserId)?.emoji;
 
@@ -127,17 +128,11 @@ export function DiaryFeedCard({
             </div>
             
             <div className="min-w-0">
-              {/* Module name + dates */}
+              {/* Module name + date (only once) */}
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold text-foreground text-sm">{config.label}</span>
                 <span className="text-xs text-muted-foreground">
-                  Posted {format(new Date(event.created_at), 'MMM d')} · {format(new Date(event.created_at), 'h:mm a')}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                <span className="text-xs text-muted-foreground">
-                  Posted {format(new Date(event.created_at), 'MMM d')}
+                  {format(new Date(event.created_at), 'MMM d, yyyy')} · {format(new Date(event.created_at), 'h:mm a')}
                 </span>
               </div>
             </div>
