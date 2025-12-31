@@ -177,12 +177,25 @@ export function DiaryFeedCard({
           {event.type === 'complete' ? `Completed: ${event.title}` : event.title}
         </button>
 
-        {/* Content preview */}
-        {event.content_preview && (
+        {/* Journal sections - question-wise content */}
+        {event.source_module === 'journal' && event.metadata?.sections && Array.isArray(event.metadata.sections) && event.metadata.sections.length > 0 ? (
+          <div className="space-y-3 mb-3">
+            {event.metadata.sections.map((section: { label: string; content: string }, idx: number) => (
+              <div key={idx} className="bg-muted/30 rounded-lg p-3">
+                <h4 className="text-xs font-semibold text-primary uppercase tracking-wide mb-1">
+                  {section.label}
+                </h4>
+                <p className="text-sm text-foreground/80 leading-relaxed">
+                  {section.content}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : event.content_preview ? (
           <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
             {event.content_preview}
           </p>
-        )}
+        ) : null}
 
         {/* Subtasks for tasks */}
         {subtasks && subtasks.length > 0 && (

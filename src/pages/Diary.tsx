@@ -86,13 +86,21 @@ export default function Diary() {
         });
       });
 
-      // Journal - use actual content
+      // Journal - use actual content with question-wise breakdown
       journalRes.data?.forEach(entry => {
-        const contentParts = [];
-        if (entry.daily_feeling) contentParts.push(entry.daily_feeling);
-        if (entry.daily_gratitude) contentParts.push(entry.daily_gratitude);
-        if (entry.daily_kindness) contentParts.push(entry.daily_kindness);
-        const content = contentParts.join('\n\n') || 'Journal entry for ' + format(new Date(entry.entry_date), 'MMM d, yyyy');
+        const journalSections = [];
+        if (entry.daily_feeling) {
+          journalSections.push({ label: 'How I Feel', content: entry.daily_feeling });
+        }
+        if (entry.daily_gratitude) {
+          journalSections.push({ label: 'Gratitude', content: entry.daily_gratitude });
+        }
+        if (entry.daily_kindness) {
+          journalSections.push({ label: 'Kindness', content: entry.daily_kindness });
+        }
+        
+        const contentPreview = journalSections.map(s => s.content).join('\n\n') || 
+          'Journal entry for ' + format(new Date(entry.entry_date), 'MMM d, yyyy');
         
         feedEvents.push({
           user_id: user.id,
@@ -101,8 +109,12 @@ export default function Diary() {
           source_id: entry.id,
           title: `Journal Entry - ${format(new Date(entry.entry_date), 'MMMM d, yyyy')}`,
           summary: 'Wrote a journal entry',
-          content_preview: content.substring(0, 300),
-          metadata: { tags: entry.tags || [], entry_date: entry.entry_date },
+          content_preview: contentPreview.substring(0, 300),
+          metadata: { 
+            tags: entry.tags || [], 
+            entry_date: entry.entry_date,
+            sections: journalSections 
+          },
           created_at: entry.created_at,
         });
       });
