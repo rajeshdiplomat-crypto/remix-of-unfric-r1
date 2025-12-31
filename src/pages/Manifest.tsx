@@ -344,7 +344,7 @@ export default function Manifest() {
   }
 
   return (
-    <div className="flex gap-0 h-[calc(100vh-100px)] w-full max-w-[1800px] mx-auto px-4 2xl:px-8">
+    <div className="flex gap-0 h-[calc(100vh-100px)] w-full flex-1">
       {/* Main Content - Left */}
       <div className="flex-1 overflow-auto">
         <div className="space-y-6 pb-8">

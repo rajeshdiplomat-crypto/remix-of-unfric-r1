@@ -613,7 +613,7 @@ export default function Trackers() {
 
   return (
     <TooltipProvider>
-    <div className="w-full max-w-[1800px] mx-auto flex gap-6 px-4 2xl:px-8">
+    <div className="w-full flex-1 flex gap-6">
       {/* Left content area */}
       <div className="flex-1 min-w-0 space-y-4 md:space-y-6">
       {/* Header */}

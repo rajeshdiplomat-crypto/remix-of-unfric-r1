@@ -226,7 +226,7 @@ export default function Diary() {
   }
 
   return (
-    <div className="flex gap-6 w-full max-w-[1800px] mx-auto px-4 2xl:px-8">
+    <div className="flex gap-6 w-full flex-1">
       {/* Main Feed */}
       <div className="flex-1 min-w-0">
         {/* Header */}
