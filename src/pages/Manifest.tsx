@@ -344,10 +344,10 @@ export default function Manifest() {
   }
 
   return (
-    <div className="flex gap-0 h-[calc(100vh-100px)] w-full">
+    <div className="flex gap-0 h-[calc(100vh-100px)] w-full max-w-[1800px] mx-auto px-4 2xl:px-8">
       {/* Main Content - Left */}
       <div className="flex-1 overflow-auto">
-        <div className="max-w-4xl mx-auto space-y-6 pb-8 px-4">
+        <div className="space-y-6 pb-8">
           {/* Header */}
           <div className="flex items-start justify-between">
             <div>
