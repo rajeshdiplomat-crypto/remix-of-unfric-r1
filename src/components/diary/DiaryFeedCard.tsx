@@ -177,19 +177,41 @@ export function DiaryFeedCard({
           {event.type === 'complete' ? `Completed: ${event.title}` : event.title}
         </button>
 
-        {/* Journal sections - question-wise content */}
-        {event.source_module === 'journal' && event.metadata?.sections && Array.isArray(event.metadata.sections) && event.metadata.sections.length > 0 ? (
+        {/* Journal sections - question-wise content + body */}
+        {event.source_module === 'journal' ? (
           <div className="space-y-3 mb-3">
-            {event.metadata.sections.map((section: { label: string; content: string }, idx: number) => (
-              <div key={idx} className="bg-muted/30 rounded-lg p-3">
-                <h4 className="text-xs font-semibold text-primary uppercase tracking-wide mb-1">
-                  {section.label}
+            {/* Question sections */}
+            {event.metadata?.sections && Array.isArray(event.metadata.sections) && event.metadata.sections.length > 0 && (
+              <>
+                {event.metadata.sections.map((section: { label: string; content: string }, idx: number) => (
+                  <div key={idx} className="bg-muted/30 rounded-lg p-3">
+                    <h4 className="text-xs font-semibold text-primary uppercase tracking-wide mb-1">
+                      {section.label}
+                    </h4>
+                    <p className="text-sm text-foreground/80 leading-relaxed">
+                      {section.content}
+                    </p>
+                  </div>
+                ))}
+              </>
+            )}
+            {/* Body content from TipTap editor */}
+            {event.metadata?.bodyContent && (
+              <div className="bg-muted/20 rounded-lg p-3 border border-border/50">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                  Journal Entry
                 </h4>
-                <p className="text-sm text-foreground/80 leading-relaxed">
-                  {section.content}
+                <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
+                  {event.metadata.bodyContent}
                 </p>
               </div>
-            ))}
+            )}
+            {/* Fallback if no sections and no body */}
+            {(!event.metadata?.sections || event.metadata.sections.length === 0) && !event.metadata?.bodyContent && event.content_preview && (
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {event.content_preview}
+              </p>
+            )}
           </div>
         ) : event.content_preview ? (
           <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
