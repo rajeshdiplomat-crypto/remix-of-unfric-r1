@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +16,9 @@ import {
   Sparkles,
   ChevronRight,
   X,
+  Clock,
+  ImagePlus,
+  Trash2,
 } from "lucide-react";
 import { type ManifestGoal, type ManifestDailyPractice, DAILY_PRACTICE_KEY } from "./types";
 import { ManifestVisualizationMode } from "./ManifestVisualizationMode";
@@ -37,6 +40,7 @@ export function ManifestPracticePanel({
   onPracticeComplete,
 }: ManifestPracticePanelProps) {
   const today = format(new Date(), "yyyy-MM-dd");
+  const proofImageInputRef = useRef<HTMLInputElement>(null);
 
   // Load today's practice from localStorage
   const loadTodaysPractice = (): Partial<ManifestDailyPractice> => {
@@ -58,7 +62,9 @@ export function ManifestPracticePanel({
   // Section 1 state
   const [visualizationCompleted, setVisualizationCompleted] = useState(false);
   const [acted, setActed] = useState(false);
+  const [customActAsIf, setCustomActAsIf] = useState("");
   const [proofText, setProofText] = useState("");
+  const [proofImageUrl, setProofImageUrl] = useState<string | null>(null);
   const [proofSaved, setProofSaved] = useState(false);
   const [showVisualization, setShowVisualization] = useState(false);
 
@@ -73,7 +79,9 @@ export function ManifestPracticePanel({
     // Reset all state to defaults first
     setVisualizationCompleted(false);
     setActed(false);
+    setCustomActAsIf("");
     setProofText("");
+    setProofImageUrl(null);
     setProofSaved(false);
     setAlignment(5);
     setGrowthNote("");
@@ -84,10 +92,12 @@ export function ManifestPracticePanel({
     const saved = loadTodaysPractice();
     if (saved.visualization_completed) setVisualizationCompleted(true);
     if (saved.acted) setActed(true);
+    if (saved.custom_act_as_if) setCustomActAsIf(saved.custom_act_as_if);
     if (saved.proof_text) {
       setProofText(saved.proof_text);
       setProofSaved(true);
     }
+    if (saved.proof_image_url) setProofImageUrl(saved.proof_image_url);
     if (saved.alignment) setAlignment(saved.alignment);
     if (saved.growth_note) setGrowthNote(saved.growth_note);
     if (saved.gratitude) setGratitude(saved.gratitude || "");
@@ -107,8 +117,36 @@ export function ManifestPracticePanel({
 
   const handleActComplete = () => {
     setActed(true);
-    savePractice({ acted: true });
+    savePractice({ acted: true, custom_act_as_if: customActAsIf || undefined });
     toast.success("Nice move — that's practice!");
+  };
+
+  const handleCustomActAsIfChange = (value: string) => {
+    setCustomActAsIf(value);
+    savePractice({ custom_act_as_if: value });
+  };
+
+  const handleProofImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Convert to base64 for localStorage (in production, upload to storage)
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      setProofImageUrl(base64);
+      savePractice({ proof_image_url: base64 });
+      toast.success("Image attached!");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveProofImage = () => {
+    setProofImageUrl(null);
+    savePractice({ proof_image_url: undefined });
+    if (proofImageInputRef.current) {
+      proofImageInputRef.current.value = "";
+    }
   };
 
   const handleSaveProof = () => {
@@ -117,7 +155,7 @@ export function ManifestPracticePanel({
       return;
     }
     setProofSaved(true);
-    savePractice({ proof_text: proofText });
+    savePractice({ proof_text: proofText, proof_image_url: proofImageUrl || undefined });
     
     // Confetti celebration
     confetti({
@@ -140,6 +178,8 @@ export function ManifestPracticePanel({
       visualization_completed: true,
       acted: true,
       proof_text: proofText,
+      proof_image_url: proofImageUrl || undefined,
+      custom_act_as_if: customActAsIf || undefined,
       alignment,
       growth_note: growthNote,
       gratitude: gratitude || undefined,
@@ -160,6 +200,9 @@ export function ManifestPracticePanel({
   };
 
   const section1Progress = [visualizationCompleted, acted, proofSaved].filter(Boolean).length;
+
+  // Display act-as-if text (custom or default)
+  const displayActAsIf = customActAsIf || goal.act_as_if;
 
   if (showVisualization) {
     return (
@@ -188,6 +231,15 @@ export function ManifestPracticePanel({
                 />
               </div>
             )}
+            
+            {/* Check-in Time */}
+            {goal.check_in_time && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+                <Clock className="h-3 w-3" />
+                <span>Daily check-in: {goal.check_in_time}</span>
+              </div>
+            )}
+            
             <p className="text-xs text-muted-foreground mb-1">Practicing:</p>
             <h3 className="font-semibold text-foreground leading-tight">
               {goal.title}
@@ -245,7 +297,7 @@ export function ManifestPracticePanel({
             {/* 2. Act-as-If */}
             <Card className={`border-border/50 ${acted ? "bg-primary/5 border-primary/30" : ""}`}>
               <CardContent className="p-3">
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {acted ? (
@@ -264,9 +316,22 @@ export function ManifestPracticePanel({
                       {acted ? "Done" : "Mark Action Done"}
                     </Button>
                   </div>
+                  
+                  {/* Default act-as-if suggestion */}
                   <p className="text-sm text-muted-foreground ml-6">
-                    {goal.act_as_if}
+                    Suggestion: {goal.act_as_if}
                   </p>
+                  
+                  {/* Custom act-as-if input */}
+                  <div className="ml-6">
+                    <Input
+                      value={customActAsIf}
+                      onChange={(e) => handleCustomActAsIfChange(e.target.value)}
+                      placeholder="Or write your own action for today..."
+                      disabled={isLocked}
+                      className="text-sm"
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -282,6 +347,7 @@ export function ManifestPracticePanel({
                   )}
                   <span className="text-sm font-medium">Save Proof</span>
                 </div>
+                
                 <Textarea
                   value={proofText}
                   onChange={(e) => {
@@ -293,6 +359,50 @@ export function ManifestPracticePanel({
                   disabled={isLocked}
                   className="text-sm"
                 />
+                
+                {/* Proof Image Upload */}
+                <div className="space-y-2">
+                  <input
+                    ref={proofImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleProofImageUpload}
+                    className="hidden"
+                    disabled={isLocked}
+                  />
+                  
+                  {proofImageUrl ? (
+                    <div className="relative">
+                      <img
+                        src={proofImageUrl}
+                        alt="Proof"
+                        className="w-full h-24 object-cover rounded-lg border border-border/50"
+                      />
+                      {!isLocked && (
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-1 right-1 h-6 w-6"
+                          onClick={handleRemoveProofImage}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => proofImageInputRef.current?.click()}
+                      disabled={isLocked}
+                    >
+                      <ImagePlus className="h-4 w-4 mr-2" />
+                      Attach Image
+                    </Button>
+                  )}
+                </div>
+                
                 <Button
                   size="sm"
                   onClick={handleSaveProof}
