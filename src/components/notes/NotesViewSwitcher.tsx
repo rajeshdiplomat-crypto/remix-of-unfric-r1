@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { LayoutGrid, Columns, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -10,7 +11,12 @@ interface NotesViewSwitcherProps {
 }
 
 export function NotesViewSwitcher({ currentView, onViewChange }: NotesViewSwitcherProps) {
-  const views: Array<{ id: NotesViewType; label: string; icon: React.ReactNode; description: string }> = [
+  const views: Array<{
+    id: NotesViewType;
+    label: string;
+    icon: ReactNode;
+    description: string;
+  }> = [
     {
       id: "atlas",
       label: "Atlas",
@@ -33,29 +39,39 @@ export function NotesViewSwitcher({ currentView, onViewChange }: NotesViewSwitch
 
   return (
     <TooltipProvider>
-      <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg border border-border/30">
-        {views.map((view) => (
-          <Tooltip key={view.id}>
-            <TooltipTrigger asChild>
-              <Button
-                variant={currentView === view.id ? "secondary" : "ghost"}
-                size="sm"
-                className={`h-8 px-3 gap-2 ${
-                  currentView === view.id 
-                    ? "bg-background text-foreground shadow-sm border border-border/50" 
-                    : "text-foreground/60 hover:text-foreground hover:bg-muted/50"
-                }`}
-                onClick={() => onViewChange(view.id)}
-              >
-                {view.icon}
-                <span className="hidden sm:inline text-sm">{view.label}</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="bg-popover text-popover-foreground">
-              <p>{view.description}</p>
-            </TooltipContent>
-          </Tooltip>
-        ))}
+      {/* No outer box */}
+      <div className="inline-flex items-center gap-2">
+        {views.map((view) => {
+          const active = currentView === view.id;
+
+          return (
+            <Tooltip key={view.id}>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onViewChange(view.id)}
+                  className={[
+                    // Small, “luxury”, square corners
+                    "h-8 px-3 gap-2 rounded-none border text-sm font-medium",
+                    "transition-colors",
+                    active
+                      ? "bg-primary/10 text-primary border-primary/25"
+                      : "bg-transparent text-muted-foreground border-border/40 hover:bg-muted/40 hover:text-foreground",
+                  ].join(" ")}
+                >
+                  {view.icon}
+                  <span className="hidden sm:inline">{view.label}</span>
+                </Button>
+              </TooltipTrigger>
+
+              <TooltipContent side="bottom" className="bg-popover text-popover-foreground">
+                <p>{view.description}</p>
+              </TooltipContent>
+            </Tooltip>
+          );
+        })}
       </div>
     </TooltipProvider>
   );
