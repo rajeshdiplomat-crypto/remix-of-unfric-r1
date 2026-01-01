@@ -55,15 +55,18 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
       <SidebarHeader className="p-4">
-        <div className="flex items-center gap-3">
-          <img 
-            src="/favicon.png" 
-            alt="inbalance logo" 
-            className="h-8 w-8 rounded-lg object-cover"
-          />
-          {!collapsed && (
-            <span className="font-semibold text-lg text-foreground">inbalance</span>
-          )}
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-3">
+            <img 
+              src="/favicon.png" 
+              alt="inbalance logo" 
+              className="h-8 w-8 rounded-lg object-cover"
+            />
+            {!collapsed && (
+              <span className="font-semibold text-lg text-foreground">inbalance</span>
+            )}
+          </div>
+          <SidebarTrigger className="h-8 w-8" />
         </div>
       </SidebarHeader>
 

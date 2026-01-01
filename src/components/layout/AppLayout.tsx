@@ -1,5 +1,5 @@
 import { ReactNode, useState } from "react";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -21,31 +21,22 @@ function LayoutContent({ children }: AppLayoutProps) {
       </div>
       
       <main className="flex-1 flex flex-col w-full min-w-0">
-        <header className="h-14 border-b border-border flex items-center justify-between px-4 bg-card sticky top-0 z-40 flex-shrink-0">
-          <div className="flex items-center gap-2">
-            {/* Mobile menu trigger */}
-            <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-              <SheetTrigger asChild className="md:hidden">
-                <Button variant="ghost" size="icon" className="h-9 w-9">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-[280px]">
-                <MobileNav onNavigate={() => setMobileNavOpen(false)} />
-              </SheetContent>
-            </Sheet>
-            
-            {/* Desktop sidebar trigger */}
-            <div className="hidden md:block">
-              <SidebarTrigger />
-            </div>
-          </div>
-        </header>
+        {/* Mobile menu - only visible on mobile */}
+        <div className="md:hidden">
+          <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9 fixed top-3 left-3 z-50 bg-card/80 backdrop-blur-sm border border-border">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-[280px]">
+              <MobileNav onNavigate={() => setMobileNavOpen(false)} />
+            </SheetContent>
+          </Sheet>
+        </div>
         
-        <div className="flex-1 flex flex-col overflow-auto p-3 sm:p-4 md:p-6">
-          <div className="flex-1 w-full max-w-[2400px] mx-auto px-0 sm:px-2 lg:px-4 xl:px-8 2xl:px-12">
-            {children}
-          </div>
+        <div className="flex-1 flex flex-col overflow-auto px-4 lg:px-6 py-4">
+          {children}
         </div>
       </main>
     </div>
