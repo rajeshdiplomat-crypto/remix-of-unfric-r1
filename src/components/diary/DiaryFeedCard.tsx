@@ -147,12 +147,12 @@ export function DiaryFeedCard({
             {/* Avatar */}
             <div
               className={cn(
-                "h-5 w-10 rounded-full flex items-center justify-center text-lg font-semibold shrink-0",
+                "h-10 w-10 rounded-full flex items-center justify-center text-lg font-semibold shrink-0",
                 config.bgColor,
                 config.color,
               )}
             >
-              {event.source_module === "journal" ? "B" : <IconComponent className="h-5 w-5" />}
+              {event.source_module === "journal" ? "B" : <IconComponent className="h-8 w-5" />}
             </div>
 
             <div className="min-w-0">
