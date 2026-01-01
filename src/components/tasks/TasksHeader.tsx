@@ -2,7 +2,7 @@ import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { QuadrantMode } from "./types";
+import { QuadrantMode } from "./types";
 
 interface TasksHeaderProps {
   view: "board" | "quadrant";
@@ -14,12 +14,7 @@ interface TasksHeaderProps {
   onNewTask: () => void;
 }
 
-const MODE_OPTIONS: { value: QuadrantMode; label: string }[] = [
-  { value: "urgent-important", label: "Urgent • Important" },
-  { value: "status", label: "Status" },
-  { value: "date", label: "Date" },
-  { value: "time", label: "Time of Day" },
-];
+const controlBase = "h-10 rounded-xl bg-background/70 border-border/40 shadow-sm";
 
 export function TasksHeader({
   view,
@@ -31,80 +26,76 @@ export function TasksHeader({
   onNewTask,
 }: TasksHeaderProps) {
   return (
-    <div className="w-full">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        {/* Left: Title */}
+    <div className="flex flex-col gap-3">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        {/* Left */}
         <div className="min-w-0">
           <h1 className="text-[28px] font-semibold tracking-tight text-foreground">Tasks</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-[14px] text-muted-foreground mt-1">
             Organize your tasks by focus and see what truly matters today.
           </p>
         </div>
 
-        {/* Right: Controls */}
-        <div className="flex flex-wrap items-center gap-2 md:justify-end">
-          {/* View mode */}
+        {/* Right controls */}
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          {/* Mode select */}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground whitespace-nowrap">View mode</span>
+            <span className="hidden sm:inline text-[12px] uppercase tracking-[0.16em] text-muted-foreground">
+              View mode
+            </span>
 
             <Select value={quadrantMode} onValueChange={(v) => onQuadrantModeChange(v as QuadrantMode)}>
-              <SelectTrigger className="h-9 w-[190px] rounded-xl bg-card/60 border-border/40">
-                <SelectValue placeholder="Select..." />
+              <SelectTrigger className={`w-[190px] ${controlBase}`}>
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {MODE_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    {o.label}
-                  </SelectItem>
-                ))}
+                <SelectItem value="urgent-important">📋 Urgent × Important</SelectItem>
+                <SelectItem value="status">📊 Status</SelectItem>
+                <SelectItem value="date">📅 Date</SelectItem>
+                <SelectItem value="time">🕐 Time of Day</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Search */}
-          <div className="relative">
+          <div className="relative w-[220px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Search tasks..."
-              className="h-9 w-[260px] rounded-xl pl-9 bg-card/60 border-border/40 focus-visible:ring-1"
+              className={`pl-9 ${controlBase}`}
             />
           </div>
 
-          {/* Segmented view switch */}
-          <div className="flex items-center rounded-xl border border-border/40 bg-card/60 p-1">
-            <Button
+          {/* Segmented control (Board / Quadrant) */}
+          <div className="flex items-center rounded-xl border border-border/40 bg-background/60 p-1 shadow-sm">
+            <button
               type="button"
-              variant="ghost"
               onClick={() => onViewChange("board")}
               className={[
-                "h-8 rounded-lg px-3 text-sm",
-                view === "board"
-                  ? "bg-background shadow-sm text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
+                "h-8 px-3 rounded-lg text-[13px] font-medium transition",
+                view === "board" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
               ].join(" ")}
             >
               Board
-            </Button>
-
-            <Button
+            </button>
+            <button
               type="button"
-              variant="ghost"
               onClick={() => onViewChange("quadrant")}
               className={[
-                "h-8 rounded-lg px-3 text-sm",
+                "h-8 px-3 rounded-lg text-[13px] font-medium transition",
                 view === "quadrant"
-                  ? "bg-background shadow-sm text-foreground"
+                  ? "bg-card shadow-sm text-foreground"
                   : "text-muted-foreground hover:text-foreground",
               ].join(" ")}
             >
               Quadrant
-            </Button>
+            </button>
           </div>
 
-          {/* CTA */}
-          <Button onClick={onNewTask} className="h-9 rounded-xl px-4 shadow-sm">
+          {/* Primary CTA */}
+          <Button onClick={onNewTask} className="h-10 rounded-xl px-4 shadow-sm">
             <Plus className="h-4 w-4 mr-2" />
             New Task
           </Button>

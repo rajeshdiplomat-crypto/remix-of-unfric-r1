@@ -178,7 +178,7 @@ export default function Tasks() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const { taskId } = useParams(); // keep for future routing use (unused is ok)
+  useParams(); // keep if you use route params later
 
   const isFocusMode = location.pathname.includes("/focus/");
 
@@ -401,83 +401,81 @@ export default function Tasks() {
     );
   }
 
-  // ✅ IMPORTANT: Everything below is INSIDE return(...)
-  return (
-    <div className="h-full w-full flex flex-col bg-background overflow-x-hidden">
-      <div className="w-full flex-1 flex flex-col min-h-0 px-4 md:px-6 py-4 gap-4">
-        <TasksHeader
-          view={view}
-          onViewChange={setView}
-          quadrantMode={quadrantMode}
-          onQuadrantModeChange={setQuadrantMode}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onNewTask={openNewTaskDrawer}
-        />
+ return (
+  <div className="h-full w-full bg-background overflow-x-hidden">
+    <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 py-5 flex flex-col gap-4 min-h-0">
+      <TasksHeader
+        view={view}
+        onViewChange={setView}
+        quadrantMode={quadrantMode}
+        onQuadrantModeChange={setQuadrantMode}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onNewTask={openNewTaskDrawer}
+      />
 
-        <SummaryStrip tasks={filteredTasks} />
+      <SummaryStrip tasks={filteredTasks} />
 
-        {/* Clock is inside InsightsPanel */}
-        <InsightsPanel tasks={filteredTasks} />
+      <InsightsPanel tasks={filteredTasks} />
 
-        <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
+      <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
 
-        <div className="flex-1 grid grid-cols-1 xl:grid-cols-[300px_1fr] gap-4 min-h-0">
-          <div className="min-h-0 overflow-y-auto">
-            <AllTasksList
+      <div className="flex-1 grid grid-cols-1 xl:grid-cols-[320px_1fr] gap-5 min-h-0">
+        <div className="min-h-0 overflow-y-auto">
+          <AllTasksList
+            tasks={filteredTasks}
+            onTaskClick={openTaskDetail}
+            onStartTask={handleStartTask}
+            onCompleteTask={handleCompleteTask}
+          />
+        </div>
+
+        <div className="min-h-0 overflow-auto w-full">
+          {view === "quadrant" && (
+            <QuadrantGrid
+              mode={quadrantMode}
               tasks={filteredTasks}
               onTaskClick={openTaskDetail}
               onStartTask={handleStartTask}
               onCompleteTask={handleCompleteTask}
             />
-          </div>
+          )}
 
-          <div className="min-h-0 overflow-auto w-full">
-            {view === "quadrant" && (
-              <QuadrantGrid
-                mode={quadrantMode}
-                tasks={filteredTasks}
-                onTaskClick={openTaskDetail}
-                onStartTask={handleStartTask}
-                onCompleteTask={handleCompleteTask}
-              />
-            )}
-
-            {view === "board" && (
-              <BoardView
-                mode="status"
-                tasks={filteredTasks}
-                onTaskClick={openTaskDetail}
-                onDragStart={() => {}}
-                onDrop={handleBoardDrop}
-                onQuickAdd={handleBoardQuickAdd}
-                onStartTask={handleStartTask}
-                onCompleteTask={handleCompleteTask}
-              />
-            )}
-          </div>
+          {view === "board" && (
+            <BoardView
+              mode="status"
+              tasks={filteredTasks}
+              onTaskClick={openTaskDetail}
+              onDragStart={() => {}}
+              onDrop={handleBoardDrop}
+              onQuickAdd={handleBoardQuickAdd}
+              onStartTask={handleStartTask}
+              onCompleteTask={handleCompleteTask}
+            />
+          )}
         </div>
-
-        <UnifiedTaskDrawer
-          task={selectedTask}
-          isNew={isNewTask}
-          open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-          onSave={handleSaveTask}
-          onDelete={handleDeleteTask}
-          onStartFocus={handleStartFocus}
-          onStartTask={handleStartTask}
-          onCompleteTask={handleCompleteTask}
-        />
-
-        <DeepFocusPrompt
-          open={focusPromptOpen}
-          task={focusPromptTask}
-          onClose={() => setFocusPromptOpen(false)}
-          onStartFocus={() => focusPromptTask && handleStartFocus(focusPromptTask)}
-          onSkip={() => setFocusPromptOpen(false)}
-        />
       </div>
+
+      <UnifiedTaskDrawer
+        task={selectedTask}
+        isNew={isNewTask}
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        onSave={handleSaveTask}
+        onDelete={handleDeleteTask}
+        onStartFocus={handleStartFocus}
+        onStartTask={handleStartTask}
+        onCompleteTask={handleCompleteTask}
+      />
+
+      <DeepFocusPrompt
+        open={focusPromptOpen}
+        task={focusPromptTask}
+        onClose={() => setFocusPromptOpen(false)}
+        onStartFocus={() => focusPromptTask && handleStartFocus(focusPromptTask)}
+        onSkip={() => setFocusPromptOpen(false)}
+      />
     </div>
-  );
-}
+  </div>
+);
+
