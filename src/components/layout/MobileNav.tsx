@@ -63,9 +63,11 @@ export function MobileNav({ onNavigate }: MobileNavProps) {
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
-            <Sparkles className="h-5 w-5 text-primary-foreground" />
-          </div>
+          <img 
+            src="/favicon.png" 
+            alt="inbalance logo" 
+            className="h-10 w-10 rounded-xl object-cover"
+          />
           <span className="font-bold text-xl text-foreground">inbalance</span>
         </div>
       </div>
