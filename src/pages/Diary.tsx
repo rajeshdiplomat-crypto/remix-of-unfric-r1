@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DiaryFeedCard } from "@/components/diary/DiaryFeedCard";
 import { DiarySidebar } from "@/components/diary/DiarySidebar";
+import { JournalQuestionCard } from "@/components/diary/JournalQuestionCard";
 import { useFeedEvents } from "@/components/diary/useFeedEvents";
 import { useDiaryMetrics } from "@/components/diary/useDiaryMetrics";
 import { cn } from "@/lib/utils";
@@ -125,42 +126,41 @@ export default function Diary() {
         });
       });
 
-      // Journal - use actual content with question-wise breakdown + body content
+      // Journal - create separate feed events for each question
       journalRes.data?.forEach((entry) => {
-        const journalSections = [];
-        if (entry.daily_feeling) {
-          journalSections.push({ label: "How I Feel", content: entry.daily_feeling });
-        }
-        if (entry.daily_gratitude) {
-          journalSections.push({ label: "Gratitude", content: entry.daily_gratitude });
-        }
-        if (entry.daily_kindness) {
-          journalSections.push({ label: "Kindness", content: entry.daily_kindness });
-        }
+        const questions = [
+          { label: "How I Feel", content: entry.daily_feeling },
+          { label: "Gratitude", content: entry.daily_gratitude },
+          { label: "Kindness", content: entry.daily_kindness },
+        ];
 
         // Extract body content from TipTap JSON (text_formatting field)
         const bodyContent = extractTextFromTiptap(entry.text_formatting);
 
-        const contentPreview =
-          journalSections.map((s) => s.content).join("\n\n") ||
-          bodyContent ||
-          "Journal entry for " + format(new Date(entry.entry_date), "MMM d, yyyy");
+        // Add body content as a separate question card if it exists
+        if (bodyContent) {
+          questions.push({ label: "Journal Entry", content: bodyContent });
+        }
 
-        feedEvents.push({
-          user_id: user.id,
-          type: "publish",
-          source_module: "journal",
-          source_id: entry.id,
-          title: `Journal Entry - ${format(new Date(entry.entry_date), "MMMM d, yyyy")}`,
-          summary: "Wrote a journal entry",
-          content_preview: contentPreview.substring(0, 500),
-          metadata: {
-            tags: entry.tags || [],
-            entry_date: entry.entry_date,
-            sections: journalSections,
-            bodyContent: bodyContent,
-          },
-          created_at: entry.created_at,
+        // Create a separate feed event for each question
+        questions.forEach((question, idx) => {
+          feedEvents.push({
+            user_id: user.id,
+            type: "journal_question",
+            source_module: "journal",
+            source_id: `${entry.id}_q${idx}`,
+            title: question.label,
+            summary: question.content || "",
+            content_preview: question.content || "",
+            metadata: {
+              tags: entry.tags || [],
+              journal_date: entry.entry_date, // The date being written about
+              entry_id: entry.id,
+              question_label: question.label,
+              answer_content: question.content || "",
+            },
+            created_at: entry.created_at, // When user wrote it
+          });
         });
       });
 
@@ -373,22 +373,37 @@ export default function Diary() {
         ) : (
           <ScrollArea className="h-[calc(100vh-280px)]">
             <div className="space-y-4 pr-2">
-              {filteredEvents.map((event) => (
-                <DiaryFeedCard
-                  key={event.id}
-                  event={event}
-                  reactions={reactions[event.id] || []}
-                  comments={comments[event.id] || []}
-                  isSaved={saves.has(event.id)}
-                  currentUserId={user?.id || ""}
-                  onToggleReaction={toggleReaction}
-                  onAddComment={addComment}
-                  onEditComment={editComment}
-                  onDeleteComment={deleteComment}
-                  onToggleSave={toggleSave}
-                  onNavigateToSource={handleNavigateToSource}
-                />
-              ))}
+              {filteredEvents.map((event) => 
+                event.type === "journal_question" ? (
+                  <JournalQuestionCard
+                    key={event.id}
+                    questionLabel={(event.metadata as any)?.question_label || event.title}
+                    answerContent={(event.metadata as any)?.answer_content || event.content_preview || ""}
+                    journalDate={(event.metadata as any)?.journal_date || event.created_at}
+                    entryDate={event.created_at}
+                    emotionTag={(event.metadata as any)?.tags?.[0]}
+                    isSaved={saves.has(event.id)}
+                    onToggleSave={() => toggleSave(event.id)}
+                    onEdit={() => handleNavigateToSource(event)}
+                    onNavigate={() => handleNavigateToSource(event)}
+                  />
+                ) : (
+                  <DiaryFeedCard
+                    key={event.id}
+                    event={event}
+                    reactions={reactions[event.id] || []}
+                    comments={comments[event.id] || []}
+                    isSaved={saves.has(event.id)}
+                    currentUserId={user?.id || ""}
+                    onToggleReaction={toggleReaction}
+                    onAddComment={addComment}
+                    onEditComment={editComment}
+                    onDeleteComment={deleteComment}
+                    onToggleSave={toggleSave}
+                    onNavigateToSource={handleNavigateToSource}
+                  />
+                )
+              )}
             </div>
           </ScrollArea>
         )}

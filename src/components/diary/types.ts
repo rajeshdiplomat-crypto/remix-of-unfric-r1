@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 
-export type FeedEventType = 'create' | 'update' | 'publish' | 'complete' | 'checkin' | 'focus_end' | 'streak_milestone';
+export type FeedEventType = 'create' | 'update' | 'publish' | 'complete' | 'checkin' | 'focus_end' | 'streak_milestone' | 'journal_question';
 export type SourceModule = 'tasks' | 'journal' | 'notes' | 'mindmap' | 'trackers' | 'manifest' | 'focus';
 
 export interface FeedEvent {
