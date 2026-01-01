@@ -1,20 +1,24 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Loader2, Sparkles } from "lucide-react";
-import { subDays, parseISO, isSameDay } from "date-fns";
+import { subDays, parseISO, isSameDay, format, differenceInDays } from "date-fns";
 
 import { ManifestTopBar } from "@/components/manifest/ManifestTopBar";
 import { ManifestCard } from "@/components/manifest/ManifestCard";
-import { ManifestCreateForm } from "@/components/manifest/ManifestCreateForm";
-import { ManifestCheckInModal } from "@/components/manifest/ManifestCheckInModal";
+import { ManifestCreateModal } from "@/components/manifest/ManifestCreateModal";
+import { ManifestPracticePanel } from "@/components/manifest/ManifestPracticePanel";
 import { ManifestWeeklyPanel } from "@/components/manifest/ManifestWeeklyPanel";
-import { type ManifestGoal, type ManifestCheckIn } from "@/components/manifest/types";
+import {
+  type ManifestGoal,
+  type ManifestProof,
+  type ManifestDailyPractice,
+  GOAL_EXTRAS_KEY,
+  DAILY_PRACTICE_KEY,
+} from "@/components/manifest/types";
 
-// Local storage helpers for extended goal data
-const GOAL_EXTRAS_KEY = "manifest_goal_extras";
-
+// Local storage helpers
 function saveGoalExtras(goalId: string, extras: Partial<ManifestGoal>) {
   const all = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
   all[goalId] = { ...all[goalId], ...extras };
@@ -30,22 +34,26 @@ function loadAllGoalExtras(): Record<string, Partial<ManifestGoal>> {
   return JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
 }
 
+function loadAllPractices(): Record<string, ManifestDailyPractice> {
+  return JSON.parse(localStorage.getItem(DAILY_PRACTICE_KEY) || "{}");
+}
+
 export default function Manifest() {
   const { user } = useAuth();
   const [goals, setGoals] = useState<ManifestGoal[]>([]);
-  const [checkIns, setCheckIns] = useState<ManifestCheckIn[]>([]);
+  const [proofs, setProofs] = useState<ManifestProof[]>([]);
+  const [practices, setPractices] = useState<ManifestDailyPractice[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<ManifestGoal | null>(null);
-  const [checkInOpen, setCheckInOpen] = useState(false);
 
   // Fetch data
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
 
     try {
-      // Fetch goals
+      // Fetch goals from Supabase
       const { data: goalsData, error: goalsError } = await supabase
         .from("manifest_goals")
         .select("*")
@@ -54,93 +62,147 @@ export default function Manifest() {
 
       if (goalsError) throw goalsError;
 
-      // Fetch journal entries as check-ins
-      const { data: journalData, error: journalError } = await supabase
-        .from("manifest_journal")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (journalError) throw journalError;
-
       // Merge with local extras
       const extras = loadAllGoalExtras();
       const mergedGoals: ManifestGoal[] = (goalsData || []).map((g) => ({
         id: g.id,
+        user_id: g.user_id,
         title: g.title,
-        conviction: extras[g.id]?.conviction ?? 5,
+        category: extras[g.id]?.category || "other",
+        vision_image_url: extras[g.id]?.vision_image_url,
+        target_date: extras[g.id]?.target_date,
         live_from_end: extras[g.id]?.live_from_end,
         act_as_if: extras[g.id]?.act_as_if || "Take one small action",
+        conviction: extras[g.id]?.conviction ?? 5,
         visualization_minutes: extras[g.id]?.visualization_minutes || 3,
         daily_affirmation: extras[g.id]?.daily_affirmation || "",
         check_in_time: extras[g.id]?.check_in_time || "08:00",
         committed_7_days: extras[g.id]?.committed_7_days || false,
         is_completed: g.is_completed || false,
+        is_locked: extras[g.id]?.is_locked || false,
         created_at: g.created_at,
-      }));
-
-      // Transform journal entries to check-ins
-      const transformedCheckIns: ManifestCheckIn[] = (journalData || []).map((j) => ({
-        id: j.id,
-        goal_id: j.goal_id,
-        user_id: j.user_id,
-        entry_date: j.entry_date,
-        created_at: j.created_at,
-        alignment: 5,
-        acted_today: "yes" as const,
-        proofs: j.visualization ? [j.visualization] : [],
-        gratitude: j.gratitude || undefined,
+        updated_at: g.updated_at,
       }));
 
       setGoals(mergedGoals);
-      setCheckIns(transformedCheckIns);
+
+      // Load practices from localStorage
+      const allPractices = loadAllPractices();
+      const practicesList = Object.values(allPractices).filter(
+        (p) => p.user_id === user.id
+      );
+      setPractices(practicesList);
+
+      // Extract proofs from practices
+      const extractedProofs: ManifestProof[] = practicesList
+        .filter((p) => p.proof_text)
+        .map((p) => ({
+          id: p.id,
+          goal_id: p.goal_id,
+          text: p.proof_text!,
+          image_url: p.proof_image_url,
+          created_at: p.created_at,
+        }));
+      setProofs(extractedProofs);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast.error("Failed to load manifestations");
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchData();
-  }, [user]);
+  }, [fetchData]);
 
-  // Calculate metrics
-  const activeGoals = goals.filter((g) => !g.is_completed);
+  // Calculate metrics for each goal
+  const getGoalMetrics = useCallback(
+    (goal: ManifestGoal) => {
+      const today = new Date();
+      const goalPractices = practices.filter(
+        (p) => p.goal_id === goal.id && p.locked
+      );
 
-  const dayStreak = useMemo(() => {
+      // Calculate streak
+      let streak = 0;
+      for (let i = 0; i < 30; i++) {
+        const checkDate = subDays(today, i);
+        const hasPractice = goalPractices.some((p) =>
+          isSameDay(parseISO(p.entry_date), checkDate)
+        );
+        if (hasPractice) streak++;
+        else if (i > 0) break;
+      }
+
+      // Calculate momentum
+      // Formula: (ConvictionAvg × 0.4) + (ActConsistency × 0.3) + (ProofRate × 0.3)
+      const activeDays = Math.max(
+        1,
+        differenceInDays(today, parseISO(goal.created_at))
+      );
+      const last7Practices = goalPractices.filter((p) => {
+        const entryDate = parseISO(p.entry_date);
+        return entryDate >= subDays(today, 7);
+      });
+
+      const convictionAvg = goal.conviction * 10; // Convert 1-10 to %
+      const actConsistency =
+        (last7Practices.filter((p) => p.acted).length / 7) * 100;
+      const proofRate = Math.min(
+        (last7Practices.filter((p) => p.proof_text).length / 7) * 100,
+        100
+      );
+
+      const momentum = Math.round(
+        convictionAvg * 0.4 + actConsistency * 0.3 + proofRate * 0.3
+      );
+
+      // Get last proof
+      const goalProofs = proofs.filter((p) => p.goal_id === goal.id);
+      const lastProof = goalProofs[0];
+
+      return { streak, momentum, lastProof };
+    },
+    [practices, proofs]
+  );
+
+  // Calculate aggregate metrics
+  const activeGoals = goals.filter((g) => !g.is_completed && !g.is_locked);
+
+  const aggregateStreak = useMemo(() => {
     const today = new Date();
     let streak = 0;
+    const lockedPractices = practices.filter((p) => p.locked);
     for (let i = 0; i < 30; i++) {
       const checkDate = subDays(today, i);
-      const hasCheckIn = checkIns.some((c) =>
-        isSameDay(parseISO(c.entry_date), checkDate)
+      const hasPractice = lockedPractices.some((p) =>
+        isSameDay(parseISO(p.entry_date), checkDate)
       );
-      if (hasCheckIn) streak++;
+      if (hasPractice) streak++;
       else if (i > 0) break;
     }
     return streak;
-  }, [checkIns]);
+  }, [practices]);
 
-  const momentumScore = useMemo(() => {
-    const today = new Date();
-    const recentCheckIns = checkIns.filter((c) => {
-      const entryDate = parseISO(c.entry_date);
-      return entryDate >= subDays(today, 7);
-    });
-    if (!recentCheckIns.length) return 0;
-    const avgAlignment =
-      recentCheckIns.reduce((sum, c) => sum + c.alignment, 0) / recentCheckIns.length;
-    return Math.round((avgAlignment / 10) * 100);
-  }, [checkIns]);
+  const avgMomentum = useMemo(() => {
+    if (activeGoals.length === 0) return 0;
+    const total = activeGoals.reduce(
+      (sum, goal) => sum + getGoalMetrics(goal).momentum,
+      0
+    );
+    return Math.round(total / activeGoals.length);
+  }, [activeGoals, getGoalMetrics]);
 
   // Handlers
   const handleSaveGoal = async (goalData: {
     title: string;
-    conviction: number;
+    category: string;
+    vision_image_url?: string;
+    target_date?: string;
     live_from_end?: string;
     act_as_if: string;
+    conviction: number;
     visualization_minutes: 3 | 5 | 10;
     daily_affirmation: string;
     check_in_time: string;
@@ -164,17 +226,21 @@ export default function Manifest() {
 
       // Save extras to localStorage
       saveGoalExtras(data.id, {
-        conviction: goalData.conviction,
+        category: goalData.category,
+        vision_image_url: goalData.vision_image_url,
+        target_date: goalData.target_date,
         live_from_end: goalData.live_from_end,
         act_as_if: goalData.act_as_if,
+        conviction: goalData.conviction,
         visualization_minutes: goalData.visualization_minutes,
         daily_affirmation: goalData.daily_affirmation,
         check_in_time: goalData.check_in_time,
         committed_7_days: goalData.committed_7_days,
+        is_locked: false,
       });
 
       toast.success("Manifestation created!");
-      setShowCreateForm(false);
+      setShowCreateModal(false);
       fetchData();
     } catch (error) {
       console.error("Error creating goal:", error);
@@ -184,49 +250,16 @@ export default function Manifest() {
     }
   };
 
-  const handleSaveCheckIn = async (
-    checkIn: Omit<ManifestCheckIn, "id" | "user_id" | "created_at">
-  ) => {
-    if (!user) return;
-    setSaving(true);
-
-    try {
-      const { error } = await supabase.from("manifest_journal").insert({
-        user_id: user.id,
-        goal_id: checkIn.goal_id,
-        entry_date: checkIn.entry_date,
-        visualization: checkIn.proofs.join("\n"),
-        gratitude: checkIn.gratitude,
-      });
-
-      if (error) throw error;
-
-      toast.success("Check-in saved!");
-      setCheckInOpen(false);
+  const handlePracticeComplete = useCallback(
+    (practice: ManifestDailyPractice) => {
+      // Refresh data
       fetchData();
-    } catch (error) {
-      console.error("Error saving check-in:", error);
-      toast.error("Failed to save check-in");
-    } finally {
-      setSaving(false);
-    }
-  };
+    },
+    [fetchData]
+  );
 
-  const handleVisualize = (goal: ManifestGoal) => {
-    toast.info(`Starting ${goal.visualization_minutes}-minute visualization...`);
-  };
-
-  const handleDoAction = (goal: ManifestGoal) => {
-    toast.success(`Nice move — that's practice! Log one proof so your progress stacks.`);
-  };
-
-  const handleLogProof = (goal: ManifestGoal) => {
+  const handleSelectGoal = (goal: ManifestGoal) => {
     setSelectedGoal(goal);
-    setCheckInOpen(true);
-  };
-
-  const handleCelebrate = (proof: string) => {
-    toast.success("Celebrated! 🎉");
   };
 
   if (loading) {
@@ -237,25 +270,15 @@ export default function Manifest() {
     );
   }
 
-  if (showCreateForm) {
-    return (
-      <ManifestCreateForm
-        onSave={handleSaveGoal}
-        onCancel={() => setShowCreateForm(false)}
-        saving={saving}
-      />
-    );
-  }
-
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 lg:p-6 w-full">
-      {/* Main Content */}
-      <div className="flex-1 space-y-6">
+    <div className="flex flex-col lg:flex-row gap-6 p-4 lg:p-6 w-full h-full">
+      {/* Left Panel - Manifestation Board */}
+      <div className="flex-1 space-y-6 min-w-0">
         <ManifestTopBar
           activeCount={activeGoals.length}
-          dayStreak={dayStreak}
-          momentumScore={momentumScore}
-          onNewManifest={() => setShowCreateForm(true)}
+          streak={aggregateStreak}
+          avgMomentum={avgMomentum}
+          onNewManifest={() => setShowCreateModal(true)}
         />
 
         {/* Goals List */}
@@ -271,36 +294,50 @@ export default function Manifest() {
           </div>
         ) : (
           <div className="space-y-4">
-            {activeGoals.map((goal) => (
-              <ManifestCard
-                key={goal.id}
-                goal={goal}
-                checkIns={checkIns.filter((c) => c.goal_id === goal.id)}
-                onVisualize={() => handleVisualize(goal)}
-                onDoAction={() => handleDoAction(goal)}
-                onLogProof={() => handleLogProof(goal)}
-                onOpenCheckIn={() => {
-                  setSelectedGoal(goal);
-                  setCheckInOpen(true);
-                }}
-                onCelebrate={handleCelebrate}
-              />
-            ))}
+            {activeGoals.map((goal) => {
+              const { streak, momentum, lastProof } = getGoalMetrics(goal);
+              return (
+                <ManifestCard
+                  key={goal.id}
+                  goal={goal}
+                  streak={streak}
+                  momentum={momentum}
+                  lastProof={lastProof}
+                  isSelected={selectedGoal?.id === goal.id}
+                  onClick={() => handleSelectGoal(goal)}
+                />
+              );
+            })}
           </div>
         )}
+
+        {/* Weekly Panel - Mobile */}
+        <div className="lg:hidden">
+          <ManifestWeeklyPanel practices={practices} />
+        </div>
       </div>
 
-      {/* Right Panel */}
-      <div className="w-full lg:w-80 lg:sticky lg:top-4 lg:self-start space-y-4">
-        <ManifestWeeklyPanel checkIns={checkIns} />
-      </div>
+      {/* Right Panel - Practice Panel */}
+      {selectedGoal ? (
+        <div className="w-full lg:w-96 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] flex flex-col">
+          <ManifestPracticePanel
+            goal={selectedGoal}
+            streak={getGoalMetrics(selectedGoal).streak}
+            onClose={() => setSelectedGoal(null)}
+            onPracticeComplete={handlePracticeComplete}
+          />
+        </div>
+      ) : (
+        <div className="hidden lg:block w-96 lg:sticky lg:top-4 lg:self-start space-y-4">
+          <ManifestWeeklyPanel practices={practices} />
+        </div>
+      )}
 
-      {/* Check-in Modal */}
-      <ManifestCheckInModal
-        open={checkInOpen}
-        onOpenChange={setCheckInOpen}
-        goal={selectedGoal}
-        onSave={handleSaveCheckIn}
+      {/* Create Modal */}
+      <ManifestCreateModal
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+        onSave={handleSaveGoal}
         saving={saving}
       />
     </div>
