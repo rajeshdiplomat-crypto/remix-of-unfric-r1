@@ -401,13 +401,11 @@ export default function Tasks() {
     );
   }
 
-  return (
-    <div className="h-full w-full flex flex-col bg-background overflow-x-hidden">
-      <div className="w-full px-4 md:px-6 py-5">
-  <div className="mx-auto w-full max-w-[2800px] min-w-0 flex flex-col gap-4 min-h-0">
-  </div>
-</div>
-
+return (
+  <div className="h-full w-full bg-background overflow-x-hidden">
+    <div className="h-full w-full flex flex-col min-h-0 px-4 md:px-6 py-4">
+      {/* Max-width container (everything must be inside this) */}
+      <div className="mx-auto w-full max-w-[1400px] flex-1 flex flex-col gap-4 min-h-0 min-w-0">
         <TasksHeader
           view={view}
           onViewChange={setView}
@@ -420,13 +418,12 @@ export default function Tasks() {
 
         <SummaryStrip tasks={filteredTasks} />
 
-        {/* Clock must be inside InsightsPanel (like your screenshot) */}
         <InsightsPanel tasks={filteredTasks} />
 
         <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
 
-        <div className="flex-1 grid grid-cols-1 xl:grid-cols-[minmax(280px,320px)_1fr] gap-5 min-h-0 min-w-0">
-          <div className="min-h-0 overflow-y-auto">
+        <div className="flex-1 grid grid-cols-1 xl:grid-cols-[minmax(300px,340px)_minmax(0,1fr)] gap-5 min-h-0 min-w-0">
+          <div className="min-h-0 overflow-y-auto min-w-0">
             <AllTasksList
               tasks={filteredTasks}
               onTaskClick={openTaskDetail}
@@ -435,7 +432,7 @@ export default function Tasks() {
             />
           </div>
 
-          <div className="min-h-0 overflow-auto w-full">
+          <div className="min-h-0 overflow-auto w-full min-w-0">
             {view === "quadrant" && (
               <QuadrantGrid
                 mode={quadrantMode}
@@ -482,5 +479,5 @@ export default function Tasks() {
         />
       </div>
     </div>
-  );
-}
+  </div>
+);
