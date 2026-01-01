@@ -39,7 +39,7 @@ function KpiCard({
 }) {
   return (
     <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
-      <CardContent className="p-4 h-[96px] flex items-center gap-3 min-w-0">
+      <CardContent className="p-4 h-[86px] flex items-center gap-3 min-w-0">
         <div className={`h-9 w-9 rounded-xl flex items-center justify-center ${iconBg}`}>
           <div className={iconColor}>{icon}</div>
         </div>
@@ -115,7 +115,7 @@ function ClockKpiCard() {
 
   return (
     <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
-      <CardContent className="h-[86px] px-4 py-3 flex items-center gap-4 min-w-0">
+      <CardContent className="h-[96px] px-4 py-3 flex items-center gap-4 min-w-0">
         {/* Icon */}
         <div className="h-12 w-12 rounded-2xl bg-muted/40 flex items-center justify-center shrink-0">
           <CenterAnalogClock now={now} />
