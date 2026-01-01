@@ -131,16 +131,16 @@ function ClockKpiCard() {
 
   return (
     <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
-      <CardContent className="p-4 h-[110px] flex items-center justify-center gap-5">
-        {/* Bigger clock dial */}
-        <div className="h-16 w-16 rounded-2xl bg-muted/20 flex items-center justify-center">
+      <CardContent className="p-4 h-[86px] flex flex-col items-center justify-between">
+        {/* clock icon centered */}
+        <div className="h-12 w-12 rounded-2xl bg-muted/20 flex items-center justify-center">
           <CenterAnalogClock now={now} />
         </div>
 
-        {/* Bigger text, centered vertically */}
-        <div className="leading-tight">
-          <div className="text-xl font-semibold tracking-tight text-foreground">{timeText}</div>
-          <div className="text-sm text-muted-foreground">{dateText}</div>
+        {/* time + date centered like screenshot */}
+        <div className="text-center leading-tight">
+          <div className="text-sm font-semibold tracking-tight text-foreground">{timeText}</div>
+          <div className="text-[11px] text-muted-foreground">{dateText}</div>
         </div>
       </CardContent>
     </Card>
@@ -243,7 +243,7 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
       </div>
 
       {/* KPI ROW — FIXED */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         <KpiCard
           icon={<Calendar className="h-4 w-4" />}
           iconBg="bg-primary/10"
