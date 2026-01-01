@@ -162,7 +162,7 @@ export function ManifestPracticePanel({
   }
 
   return (
-    <div className="h-full flex flex-col bg-card border-l border-border/50">
+    <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-border/50">
         <div className="flex items-start justify-between gap-2">

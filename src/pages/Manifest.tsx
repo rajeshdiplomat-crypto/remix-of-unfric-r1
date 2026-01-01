@@ -271,9 +271,9 @@ export default function Manifest() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 lg:p-6 w-full h-full">
-      {/* Left Panel - Manifestation Board */}
-      <div className="flex-1 space-y-6 min-w-0">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] h-[calc(100vh-4rem)]">
+      {/* LEFT: Manifestation Board (scrollable) */}
+      <div className="overflow-y-auto p-4 lg:p-6 space-y-6">
         <ManifestTopBar
           activeCount={activeGoals.length}
           streak={aggregateStreak}
@@ -311,27 +311,34 @@ export default function Manifest() {
           </div>
         )}
 
-        {/* Weekly Panel - Mobile */}
+        {/* Weekly Panel - Mobile only */}
         <div className="lg:hidden">
           <ManifestWeeklyPanel practices={practices} />
         </div>
       </div>
 
-      {/* Right Panel - Practice Panel */}
-      {selectedGoal ? (
-        <div className="w-full lg:w-96 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] flex flex-col">
+      {/* RIGHT: Practice Panel (always mounted, sticky, independently scrollable) */}
+      <aside
+        className="hidden lg:flex flex-col h-full overflow-y-auto border-l border-border/50 bg-card"
+        tabIndex={-1}
+        aria-label="Practice panel"
+      >
+        {selectedGoal ? (
           <ManifestPracticePanel
             goal={selectedGoal}
             streak={getGoalMetrics(selectedGoal).streak}
             onClose={() => setSelectedGoal(null)}
             onPracticeComplete={handlePracticeComplete}
           />
-        </div>
-      ) : (
-        <div className="hidden lg:block w-96 lg:sticky lg:top-4 lg:self-start space-y-4">
-          <ManifestWeeklyPanel practices={practices} />
-        </div>
-      )}
+        ) : (
+          <div className="p-4 space-y-4">
+            <ManifestWeeklyPanel practices={practices} />
+            <div className="text-center py-8 text-muted-foreground">
+              <p className="text-sm">Select a manifestation to begin practice</p>
+            </div>
+          </div>
+        )}
+      </aside>
 
       {/* Create Modal */}
       <ManifestCreateModal
