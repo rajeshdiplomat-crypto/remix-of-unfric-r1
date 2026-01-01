@@ -53,7 +53,7 @@ function KpiCard({
   );
 }
 
-function CenterAnalogClock({ now }: { now: Date }) {
+function CenterAnalogClock({ now, size = 64 }: { now: Date; size?: number }) {
   const h = now.getHours() % 12;
   const m = now.getMinutes();
 
@@ -61,7 +61,7 @@ function CenterAnalogClock({ now }: { now: Date }) {
   const minuteAngle = m * 6;
 
   return (
-    <svg width="56" height="56" viewBox="0 0 64 64" className="text-muted-foreground">
+    <svg width={size} height={size} viewBox="0 0 64 64" className="text-muted-foreground">
       <circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.25" />
       {Array.from({ length: 12 }).map((_, i) => (
         <line
@@ -114,37 +114,32 @@ function ClockKpiCard() {
   }, []);
 
   return (
-    <Card
-      className="
-        relative overflow-hidden rounded-2xl border border-border/40
-        bg-card/60 backdrop-blur-sm shadow-sm
-        before:absolute before:inset-0 before:bg-gradient-to-r
-        before:from-primary/10 before:via-primary/5 before:to-transparent
-        before:pointer-events-none
-      "
-    >
-      <CardContent className="relative z-10 h-[92px] px-5 py-4 flex items-center gap-5 min-w-0">
-        {/* Bigger clock */}
-        <div className="h-14 w-14 rounded-2xl bg-muted/40 flex items-center justify-center shrink-0">
-          <CenterAnalogClock now={now} />
+    <Card className="rounded-2xl border border-primary/20 bg-primary/5 backdrop-blur-sm shadow-sm">
+      <CardContent className="h-[86px] px-5 py-3 flex items-center gap-4 min-w-0">
+        {/* Bigger icon */}
+        <div className="h-14 w-14 rounded-2xl bg-background/60 border border-border/30 flex items-center justify-center shrink-0">
+          <CenterAnalogClock now={now} size={60} />
         </div>
 
-        {/* Bigger time */}
+        {/* Bigger time + clearer date */}
         <div className="min-w-0 flex-1">
-          <div className="text-[28px] font-semibold tracking-tight text-foreground whitespace-nowrap leading-none tabular-nums">
-            {format(now, "h:mm a")}
+          <div className="text-[24px] font-semibold tracking-tight text-foreground whitespace-nowrap leading-none">
+            {format(now, "h:mm")}
+            <span className="ml-2 text-[12px] font-semibold align-top">{format(now, "a")}</span>
           </div>
 
-          <div className="mt-1 text-[12px] text-muted-foreground whitespace-nowrap leading-none">
+          <div className="mt-1.5 text-[12px] text-muted-foreground whitespace-nowrap leading-none">
             {format(now, "EEE, MMM d")}
             <span className="ml-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70">Local time</span>
           </div>
         </div>
 
-        {/* Chip */}
+        {/* Right chips */}
         <div className="ml-auto flex items-center gap-2 shrink-0 whitespace-nowrap">
           <span className="text-[11px] text-muted-foreground">Now</span>
-          <span className="h-7 px-4 rounded-full bg-muted/40 text-[12px] text-foreground flex items-center">Focus</span>
+          <span className="h-6 px-3 rounded-full bg-background/60 border border-border/30 text-[11px] text-foreground flex items-center">
+            Focus
+          </span>
         </div>
       </CardContent>
     </Card>
@@ -246,9 +241,11 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
         </Button>
       </div>
 
-      {/* KPI ROW (auto-fit so zoom never breaks alignment) */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-12">
-        <div className="col-span-2 lg:col-span-2 min-w-0">
+      {/* KPI ROW:
+          We use 6 columns on lg so the clock can span 2 columns (longer).
+          Total spans: 1 + 1 + 2 + 1 + 1 = 6 */}
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="lg:col-span-1">
           <KpiCard
             icon={<Calendar className="h-4 w-4" />}
             iconBg="bg-primary/10"
@@ -258,7 +255,7 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
           />
         </div>
 
-        <div className="col-span-2 lg:col-span-2 min-w-0">
+        <div className="lg:col-span-1">
           <KpiCard
             icon={<CheckCircle className="h-4 w-4" />}
             iconBg="bg-chart-1/10"
@@ -268,12 +265,11 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
           />
         </div>
 
-        {/* CLOCK = BIG + LONG */}
-        <div className="col-span-2 lg:col-span-4 min-w-0">
+        <div className="lg:col-span-2">
           <ClockKpiCard />
         </div>
 
-        <div className="col-span-2 lg:col-span-2 min-w-0">
+        <div className="lg:col-span-1">
           <KpiCard
             icon={<AlertTriangle className="h-4 w-4" />}
             iconBg="bg-destructive/10"
@@ -283,7 +279,7 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
           />
         </div>
 
-        <div className="col-span-2 lg:col-span-2 min-w-0">
+        <div className="lg:col-span-1">
           <KpiCard
             icon={<ClockIcon className="h-4 w-4" />}
             iconBg="bg-muted/20"
