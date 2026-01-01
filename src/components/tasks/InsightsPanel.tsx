@@ -230,51 +230,41 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
         </Button>
       </div>
 
-      {/* KPI ROW (12-col: no orphan on zoom) */}
-      <div className="grid grid-cols-2 lg:grid-cols-12 gap-3">
-        <div className="lg:col-span-2">
-          <KpiCard
-            icon={<Calendar className="h-4 w-4" />}
-            iconBg="bg-primary/10"
-            iconColor="text-primary"
-            value={plannedToday}
-            label="Planned Today"
-          />
-        </div>
+      {/* KPI ROW (auto-fit so zoom never breaks alignment) */}
+      <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
+        <KpiCard
+          icon={<Calendar className="h-4 w-4" />}
+          iconBg="bg-primary/10"
+          iconColor="text-primary"
+          value={plannedToday}
+          label="Planned Today"
+        />
 
-        <div className="lg:col-span-2">
-          <KpiCard
-            icon={<CheckCircle className="h-4 w-4" />}
-            iconBg="bg-chart-1/10"
-            iconColor="text-chart-1"
-            value={completedToday}
-            label="Done Today"
-          />
-        </div>
+        <KpiCard
+          icon={<CheckCircle className="h-4 w-4" />}
+          iconBg="bg-chart-1/10"
+          iconColor="text-chart-1"
+          value={completedToday}
+          label="Done Today"
+        />
 
-        <div className="lg:col-span-4">
-          <ClockKpiCard />
-        </div>
+        <ClockKpiCard />
 
-        <div className="lg:col-span-2">
-          <KpiCard
-            icon={<AlertTriangle className="h-4 w-4" />}
-            iconBg="bg-destructive/10"
-            iconColor="text-destructive"
-            value={overdueTasks}
-            label="Overdue"
-          />
-        </div>
+        <KpiCard
+          icon={<AlertTriangle className="h-4 w-4" />}
+          iconBg="bg-destructive/10"
+          iconColor="text-destructive"
+          value={overdueTasks}
+          label="Overdue"
+        />
 
-        <div className="lg:col-span-2">
-          <KpiCard
-            icon={<ClockIcon className="h-4 w-4" />}
-            iconBg="bg-muted/20"
-            iconColor="text-muted-foreground"
-            value={`${totalFocusMinutes}m`}
-            label="Focus Time"
-          />
-        </div>
+        <KpiCard
+          icon={<ClockIcon className="h-4 w-4" />}
+          iconBg="bg-muted/20"
+          iconColor="text-muted-foreground"
+          value={`${totalFocusMinutes}m`}
+          label="Focus Time"
+        />
       </div>
 
       {/* Charts Row */}
