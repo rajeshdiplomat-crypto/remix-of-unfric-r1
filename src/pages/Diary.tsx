@@ -110,9 +110,7 @@ export default function Diary() {
       });
 
       // Journal Answers - each answer is a separate feed event
-      const answersData = journalAnswersRes.data?.filter(
-        (a: any) => a.journal_entries?.user_id === user.id
-      ) || [];
+      const answersData = journalAnswersRes.data?.filter((a: any) => a.journal_entries?.user_id === user.id) || [];
 
       answersData.forEach((answer: any) => {
         const question = DEFAULT_QUESTIONS.find((q) => q.id === answer.question_id);
@@ -308,7 +306,7 @@ export default function Diary() {
 
   // Sort by entry date (newest first)
   const sortedEvents = [...filteredEvents].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   );
 
   if (loading && events.length === 0) {
@@ -330,9 +328,9 @@ export default function Diary() {
         </div>
 
         {/* Search Bar */}
-        <div className="mb-4">
+        <div className="mb-3">
           <div className="flex items-center gap-2 bg-card border border-border/40 rounded-lg px-3 py-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
+            <Search className="h-2 w-4 text-muted-foreground" />
             <Input
               placeholder="Search..."
               value={searchQuery}
@@ -350,7 +348,7 @@ export default function Diary() {
               variant="ghost"
               size="sm"
               className={cn(
-                "h-8 px-3 text-sm rounded-md whitespace-nowrap",
+                "h-5 px-3 text-sm rounded-md whitespace-nowrap",
                 filter === tab.value
                   ? "bg-muted text-foreground font-medium"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
@@ -385,7 +383,7 @@ export default function Diary() {
         ) : (
           <ScrollArea className="h-[calc(100vh-280px)]">
             <div className="space-y-4 pr-2">
-              {sortedEvents.map((event) => 
+              {sortedEvents.map((event) =>
                 event.type === "journal_question" ? (
                   <JournalQuestionCard
                     key={event.id}
@@ -398,11 +396,14 @@ export default function Diary() {
                     emotionTag={(event.metadata as any)?.tags?.[0]}
                     authorName={user?.email?.split("@")[0] || "You"}
                     isSaved={saves.has(event.id)}
-                    userReaction={reactions[event.id]?.find(r => r.user_id === user?.id)?.emoji as any}
-                    reactionCounts={reactions[event.id]?.reduce((acc, r) => {
-                      acc[r.emoji as any] = (acc[r.emoji as any] || 0) + 1;
-                      return acc;
-                    }, {} as Record<string, number>)}
+                    userReaction={reactions[event.id]?.find((r) => r.user_id === user?.id)?.emoji as any}
+                    reactionCounts={reactions[event.id]?.reduce(
+                      (acc, r) => {
+                        acc[r.emoji as any] = (acc[r.emoji as any] || 0) + 1;
+                        return acc;
+                      },
+                      {} as Record<string, number>,
+                    )}
                     onToggleSave={() => toggleSave(event.id)}
                     onEdit={() => handleNavigateToSource(event)}
                     onNavigate={() => handleNavigateToSource(event)}
@@ -424,7 +425,7 @@ export default function Diary() {
                     onToggleSave={toggleSave}
                     onNavigateToSource={handleNavigateToSource}
                   />
-                )
+                ),
               )}
             </div>
           </ScrollArea>
