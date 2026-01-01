@@ -39,7 +39,7 @@ function KpiCard({
 }) {
   return (
     <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
-      <CardContent className="p-4 h-[86px] flex items-center gap-3 min-w-0">
+      <CardContent className="p-4 h-[96px] flex items-center gap-3 min-w-0">
         <div className={`h-9 w-9 rounded-xl flex items-center justify-center ${iconBg}`}>
           <div className={iconColor}>{icon}</div>
         </div>
@@ -61,7 +61,7 @@ function CenterAnalogClock({ now }: { now: Date }) {
   const minuteAngle = m * 6;
 
   return (
-    <svg width="64" height="64" viewBox="0 0 64 64" className="text-muted-foreground">
+    <svg width="56" height="56" viewBox="0 0 64 64" className="text-muted-foreground">
       <circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.25" />
       {Array.from({ length: 12 }).map((_, i) => (
         <line
@@ -114,35 +114,30 @@ function ClockKpiCard() {
   }, []);
 
   return (
-    <Card className="relative overflow-hidden rounded-2xl border border-primary/15 bg-primary/5 shadow-sm">
-      {/* subtle accent line */}
-      <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-primary/30" />
-
+    <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
       <CardContent className="h-[86px] px-4 py-3 flex items-center gap-4 min-w-0">
         {/* Icon */}
-        <div className="h-14 w-14 rounded-2xl bg-background/70 border border-border/30 flex items-center justify-center shrink-0">
+        <div className="h-12 w-12 rounded-2xl bg-muted/40 flex items-center justify-center shrink-0">
           <CenterAnalogClock now={now} />
         </div>
 
-        {/* Time + Date (no wrapping) */}
+        {/* Time + Date (no wrapping, no cropping) */}
         <div className="min-w-0 flex-1">
-          <div className="text-[24px] font-semibold tracking-tight text-foreground whitespace-nowrap leading-none">
+          <div className="text-[20px] font-semibold tracking-tight text-foreground whitespace-nowrap leading-none">
             {format(now, "h:mm")}
-            <span className="ml-1 text-[13px] font-semibold align-top text-muted-foreground">{format(now, "a")}</span>
+            <span className="ml-1 text-[12px] font-semibold align-top">{format(now, "a")}</span>
           </div>
 
-          <div className="mt-1 text-[12px] text-muted-foreground whitespace-nowrap leading-none">
+          <div className="mt-1 text-[11px] text-muted-foreground whitespace-nowrap leading-none">
             {format(now, "EEE, MMM d")}
             <span className="ml-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70">Local time</span>
           </div>
         </div>
 
-        {/* Right chip (hide on tiny widths to avoid squeeze) */}
-        <div className="ml-auto hidden sm:flex items-center gap-2 shrink-0 whitespace-nowrap">
+        {/* Right chip */}
+        <div className="ml-auto flex items-center gap-2 shrink-0 whitespace-nowrap">
           <span className="text-[11px] text-muted-foreground">Now</span>
-          <span className="h-6 px-3 rounded-full bg-background/70 border border-border/30 text-[11px] text-foreground flex items-center">
-            Focus
-          </span>
+          <span className="h-6 px-3 rounded-full bg-muted/40 text-[11px] text-foreground flex items-center">Focus</span>
         </div>
       </CardContent>
     </Card>
@@ -244,7 +239,7 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
         </Button>
       </div>
 
-      {/* KPI ROW: auto-fit + clock spans 2 cols on lg */}
+      {/* KPI ROW (auto-fit so zoom never breaks alignment) */}
       <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
         <KpiCard
           icon={<Calendar className="h-4 w-4" />}
@@ -262,9 +257,7 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
           label="Done Today"
         />
 
-        <div className="lg:col-span-2">
-          <ClockKpiCard />
-        </div>
+        <ClockKpiCard />
 
         <KpiCard
           icon={<AlertTriangle className="h-4 w-4" />}
@@ -283,7 +276,7 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
         />
       </div>
 
-      {/* Charts Row (FIXED back to 3-column grid) */}
+      {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Plan vs Actual */}
         <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
