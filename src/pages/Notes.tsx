@@ -13,11 +13,11 @@ import { NotesSplitView } from "@/components/notes/NotesSplitView";
 import { NotesGroupSettings } from "@/components/notes/NotesGroupSettings";
 import { NotesGroupSection } from "@/components/notes/NotesGroupSection";
 import { NotesLocationPicker } from "@/components/notes/NotesLocationPicker";
-import { NotesViewSwitcher, NotesViewType } from "@/components/notes/NotesViewSwitcher";
+import { NotesViewType } from "@/components/notes/NotesViewSwitcher";
 import { NotesBoardView } from "@/components/notes/NotesBoardView";
 import { NotesMindMapView } from "@/components/notes/NotesMindMapView";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
+const controlBase = "h-10 rounded-xl bg-background/70 border-border/40 shadow-sm";
 export interface NoteGroup {
   id: string;
   name: string;
@@ -142,7 +142,6 @@ const SAMPLE_NOTES: Note[] = [
 
 type ViewMode = "overview" | "editor";
 type SortOption = "updatedAt" | "createdAt" | "title";
-const controlBase = "h-10 rounded-xl bg-background/70 border-border/40 shadow-sm";
 
 export default function Notes() {
   const { toast } = useToast();
