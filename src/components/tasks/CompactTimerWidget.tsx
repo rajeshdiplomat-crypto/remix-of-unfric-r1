@@ -11,7 +11,7 @@ const TIMER_PRESETS = [
   { label: "45", minutes: 45 },
 ];
 
-const STORAGE_KEY = 'mindflow-compact-timer';
+const STORAGE_KEY = 'inbalance-compact-timer';
 
 interface TimerState {
   mode: 'stopwatch' | 'timer';

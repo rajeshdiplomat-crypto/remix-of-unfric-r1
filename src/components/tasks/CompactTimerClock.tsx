@@ -18,7 +18,7 @@ const TIMER_PRESETS = [
   { label: "60m", minutes: 60 },
 ];
 
-const STORAGE_KEY = 'mindflow-timer-state';
+const STORAGE_KEY = 'inbalance-timer-state';
 
 interface TimerState {
   mode: Mode;
