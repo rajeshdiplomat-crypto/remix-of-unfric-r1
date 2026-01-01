@@ -118,32 +118,55 @@ function MiniAnalogClock({ now }: { now: Date }) {
   );
 }
 
-function ClockKpiCard() {
-  const [now, setNow] = useState(() => new Date());
+function CenterAnalogClock({ now }: { now: Date }) {
+  const h = now.getHours() % 12;
+  const m = now.getMinutes();
 
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  const timeText = useMemo(() => format(now, "h:mm a"), [now]);
-  const dateText = useMemo(() => format(now, "EEE, MMM d"), [now]);
+  const hourAngle = h * 30 + m * 0.5;
+  const minuteAngle = m * 6;
 
   return (
-    <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
-      <CardContent className="p-4 h-[86px] flex flex-col items-center justify-between">
-        {/* clock icon centered */}
-        <div className="h-12 w-12 rounded-2xl bg-muted/20 flex items-center justify-center">
-          <CenterAnalogClock now={now} />
-        </div>
-
-        {/* time + date centered like screenshot */}
-        <div className="text-center leading-tight">
-          <div className="text-sm font-semibold tracking-tight text-foreground">{timeText}</div>
-          <div className="text-[11px] text-muted-foreground">{dateText}</div>
-        </div>
-      </CardContent>
-    </Card>
+    <svg width="56" height="56" viewBox="0 0 64 64" className="text-muted-foreground">
+      <circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.25" />
+      {Array.from({ length: 12 }).map((_, i) => (
+        <line
+          key={i}
+          x1="32"
+          y1="10"
+          x2="32"
+          y2={i % 3 === 0 ? "15" : "13"}
+          stroke="currentColor"
+          strokeWidth="1"
+          opacity={i % 3 === 0 ? 0.45 : 0.22}
+          transform={`rotate(${i * 30} 32 32)`}
+        />
+      ))}
+      <line
+        x1="32"
+        y1="32"
+        x2="32"
+        y2="21"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        transform={`rotate(${hourAngle} 32 32)`}
+        className="text-foreground"
+        opacity="0.9"
+      />
+      <line
+        x1="32"
+        y1="32"
+        x2="32"
+        y2="15"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        transform={`rotate(${minuteAngle} 32 32)`}
+        className="text-foreground"
+        opacity="0.75"
+      />
+      <circle cx="32" cy="32" r="2.2" fill="currentColor" opacity="0.55" />
+    </svg>
   );
 }
 
