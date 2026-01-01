@@ -422,8 +422,6 @@ export default function Tasks() {
             onNewTask={openNewTaskDrawer}
           />
 
-          <SummaryStrip tasks={filteredTasks} />
-
           <InsightsPanel tasks={filteredTasks} />
 
           <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
