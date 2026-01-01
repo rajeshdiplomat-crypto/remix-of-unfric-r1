@@ -16,42 +16,47 @@ import { useFeedEvents } from "@/components/diary/useFeedEvents";
 import { useDiaryMetrics } from "@/components/diary/useDiaryMetrics";
 import { cn } from "@/lib/utils";
 import type { TimeRange, FeedEvent, SourceModule } from "@/components/diary/types";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Helper to extract plain text from TipTap JSON
 const extractTextFromTiptap = (json: any): string => {
-  if (!json) return '';
+  if (!json) return "";
   try {
-    const parsed = typeof json === 'string' ? JSON.parse(json) : json;
+    const parsed = typeof json === "string" ? JSON.parse(json) : json;
     const extractText = (node: any): string => {
-      if (!node) return '';
+      if (!node) return "";
       if (node.text) return node.text;
       if (node.content && Array.isArray(node.content)) {
-        return node.content.map(extractText).join(' ');
+        return node.content.map(extractText).join(" ");
       }
-      return '';
+      return "";
     };
     return extractText(parsed).trim();
   } catch {
-    return '';
+    return "";
   }
 };
 
 const FILTER_TABS = [
-  { value: 'all', label: 'All' },
-  { value: 'journal', label: 'Journal' },
-  { value: 'tasks', label: 'Tasks' },
-  { value: 'notes', label: 'Notes' },
-  { value: 'trackers', label: 'Trackers' },
-  { value: 'manifest', label: 'Manifest' },
-  { value: 'focus', label: 'Focus' },
+  { value: "all", label: "All" },
+  { value: "journal", label: "Journal" },
+  { value: "tasks", label: "Tasks" },
+  { value: "notes", label: "Notes" },
+  { value: "trackers", label: "Trackers" },
+  { value: "manifest", label: "Manifest" },
+  { value: "focus", label: "Focus" },
 ];
 
 export default function Diary() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [timeRange, setTimeRange] = useState<TimeRange>('week');
+  const [timeRange, setTimeRange] = useState<TimeRange>("week");
   const [searchQuery, setSearchQuery] = useState("");
 
   const {
@@ -81,24 +86,39 @@ export default function Diary() {
       // Fetch all module data including emotions
       const [tasksRes, journalRes, notesRes, habitsRes, goalsRes, emotionsRes] = await Promise.all([
         supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
-        supabase.from("journal_entries").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+        supabase
+          .from("journal_entries")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(20),
         supabase.from("notes").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
         supabase.from("habits").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
-        supabase.from("manifest_goals").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
-        supabase.from("emotions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+        supabase
+          .from("manifest_goals")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(20),
+        supabase
+          .from("emotions")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(20),
       ]);
 
       const feedEvents: any[] = [];
 
       // Tasks
-      tasksRes.data?.forEach(task => {
+      tasksRes.data?.forEach((task) => {
         feedEvents.push({
           user_id: user.id,
-          type: task.is_completed ? 'complete' : 'create',
-          source_module: 'tasks',
+          type: task.is_completed ? "complete" : "create",
+          source_module: "tasks",
           source_id: task.id,
           title: task.title,
-          summary: task.is_completed ? 'Completed a task' : 'Created a new task',
+          summary: task.is_completed ? "Completed a task" : "Created a new task",
           content_preview: task.description,
           metadata: { priority: task.priority, due_date: task.due_date },
           created_at: task.created_at,
@@ -106,52 +126,53 @@ export default function Diary() {
       });
 
       // Journal - use actual content with question-wise breakdown + body content
-      journalRes.data?.forEach(entry => {
+      journalRes.data?.forEach((entry) => {
         const journalSections = [];
         if (entry.daily_feeling) {
-          journalSections.push({ label: 'How I Feel', content: entry.daily_feeling });
+          journalSections.push({ label: "How I Feel", content: entry.daily_feeling });
         }
         if (entry.daily_gratitude) {
-          journalSections.push({ label: 'Gratitude', content: entry.daily_gratitude });
+          journalSections.push({ label: "Gratitude", content: entry.daily_gratitude });
         }
         if (entry.daily_kindness) {
-          journalSections.push({ label: 'Kindness', content: entry.daily_kindness });
+          journalSections.push({ label: "Kindness", content: entry.daily_kindness });
         }
-        
+
         // Extract body content from TipTap JSON (text_formatting field)
         const bodyContent = extractTextFromTiptap(entry.text_formatting);
-        
-        const contentPreview = journalSections.map(s => s.content).join('\n\n') || 
-          bodyContent || 
-          'Journal entry for ' + format(new Date(entry.entry_date), 'MMM d, yyyy');
-        
+
+        const contentPreview =
+          journalSections.map((s) => s.content).join("\n\n") ||
+          bodyContent ||
+          "Journal entry for " + format(new Date(entry.entry_date), "MMM d, yyyy");
+
         feedEvents.push({
           user_id: user.id,
-          type: 'publish',
-          source_module: 'journal',
+          type: "publish",
+          source_module: "journal",
           source_id: entry.id,
-          title: `Journal Entry - ${format(new Date(entry.entry_date), 'MMMM d, yyyy')}`,
-          summary: 'Wrote a journal entry',
+          title: `Journal Entry - ${format(new Date(entry.entry_date), "MMMM d, yyyy")}`,
+          summary: "Wrote a journal entry",
           content_preview: contentPreview.substring(0, 500),
-          metadata: { 
-            tags: entry.tags || [], 
+          metadata: {
+            tags: entry.tags || [],
             entry_date: entry.entry_date,
             sections: journalSections,
-            bodyContent: bodyContent 
+            bodyContent: bodyContent,
           },
           created_at: entry.created_at,
         });
       });
 
       // Notes
-      notesRes.data?.forEach(note => {
+      notesRes.data?.forEach((note) => {
         feedEvents.push({
           user_id: user.id,
-          type: 'create',
-          source_module: 'notes',
+          type: "create",
+          source_module: "notes",
           source_id: note.id,
           title: note.title,
-          summary: 'Created a note',
+          summary: "Created a note",
           content_preview: note.content?.substring(0, 200),
           metadata: { category: note.category, tags: note.tags },
           created_at: note.created_at,
@@ -159,14 +180,14 @@ export default function Diary() {
       });
 
       // Trackers (Habits)
-      habitsRes.data?.forEach(habit => {
+      habitsRes.data?.forEach((habit) => {
         feedEvents.push({
           user_id: user.id,
-          type: 'create',
-          source_module: 'trackers',
+          type: "create",
+          source_module: "trackers",
           source_id: habit.id,
           title: habit.name,
-          summary: 'Created a habit tracker',
+          summary: "Created a habit tracker",
           content_preview: habit.description,
           metadata: { frequency: habit.frequency },
           created_at: habit.created_at,
@@ -174,14 +195,14 @@ export default function Diary() {
       });
 
       // Manifest Goals
-      goalsRes.data?.forEach(goal => {
+      goalsRes.data?.forEach((goal) => {
         feedEvents.push({
           user_id: user.id,
-          type: goal.is_completed ? 'complete' : 'create',
-          source_module: 'manifest',
+          type: goal.is_completed ? "complete" : "create",
+          source_module: "manifest",
           source_id: goal.id,
           title: goal.title,
-          summary: goal.is_completed ? 'Achieved a goal!' : 'Set a new manifestation goal',
+          summary: goal.is_completed ? "Achieved a goal!" : "Set a new manifestation goal",
           content_preview: goal.description,
           metadata: { affirmations: goal.affirmations, feeling: goal.feeling_when_achieved },
           created_at: goal.created_at,
@@ -189,18 +210,18 @@ export default function Diary() {
       });
 
       // Emotions check-ins
-      emotionsRes.data?.forEach(emotion => {
-        const emotionParts = emotion.emotion.split(':');
+      emotionsRes.data?.forEach((emotion) => {
+        const emotionParts = emotion.emotion.split(":");
         const primaryEmotion = emotionParts[0];
         const secondaryEmotion = emotionParts[1] && !Number(emotionParts[1]) ? emotionParts[1] : null;
         const intensity = emotionParts[emotionParts.length - 1];
-        
+
         feedEvents.push({
           user_id: user.id,
-          type: 'checkin',
-          source_module: 'emotions',
+          type: "checkin",
+          source_module: "emotions",
           source_id: emotion.id,
-          title: `Emotion Check-in: ${primaryEmotion.charAt(0).toUpperCase() + primaryEmotion.slice(1)}${secondaryEmotion ? ` - ${secondaryEmotion}` : ''}`,
+          title: `Emotion Check-in: ${primaryEmotion.charAt(0).toUpperCase() + primaryEmotion.slice(1)}${secondaryEmotion ? ` - ${secondaryEmotion}` : ""}`,
           summary: `Feeling ${primaryEmotion} (intensity: ${intensity}/10)`,
           content_preview: emotion.notes,
           metadata: { tags: emotion.tags, intensity, primary: primaryEmotion, secondary: secondaryEmotion },
@@ -221,29 +242,54 @@ export default function Diary() {
 
   const handleNavigateToSource = (event: FeedEvent) => {
     switch (event.source_module) {
-      case 'tasks': navigate('/tasks'); break;
-      case 'journal': navigate('/journal'); break;
-      case 'notes': navigate('/notes'); break;
-      case 'trackers': navigate('/trackers'); break;
-      case 'manifest': navigate('/manifest'); break;
-      case 'focus': navigate('/deep-focus'); break;
-      default: break;
+      case "tasks":
+        navigate("/tasks");
+        break;
+      case "journal":
+        navigate("/journal");
+        break;
+      case "notes":
+        navigate("/notes");
+        break;
+      case "trackers":
+        navigate("/trackers");
+        break;
+      case "manifest":
+        navigate("/manifest");
+        break;
+      case "focus":
+        navigate("/deep-focus");
+        break;
+      default:
+        break;
     }
   };
 
   const handleQuickAction = (action: string) => {
     switch (action) {
-      case 'task': navigate('/tasks'); break;
-      case 'journal': navigate('/journal'); break;
-      case 'note': navigate('/notes'); break;
-      case 'activity': navigate('/trackers'); break;
-      case 'manifest': navigate('/manifest'); break;
-      case 'focus': navigate('/deep-focus'); break;
+      case "task":
+        navigate("/tasks");
+        break;
+      case "journal":
+        navigate("/journal");
+        break;
+      case "note":
+        navigate("/notes");
+        break;
+      case "activity":
+        navigate("/trackers");
+        break;
+      case "manifest":
+        navigate("/manifest");
+        break;
+      case "focus":
+        navigate("/deep-focus");
+        break;
     }
   };
 
   // Filter events based on search
-  const filteredEvents = events.filter(event => {
+  const filteredEvents = events.filter((event) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -286,18 +332,18 @@ export default function Diary() {
 
         {/* Filter Tabs */}
         <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1">
-          {FILTER_TABS.map(tab => (
+          {FILTER_TABS.map((tab) => (
             <Button
               key={tab.value}
               variant="ghost"
               size="sm"
               className={cn(
                 "h-8 px-3 text-sm rounded-md whitespace-nowrap",
-                filter === tab.value 
-                  ? "bg-muted text-foreground font-medium" 
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                filter === tab.value
+                  ? "bg-muted text-foreground font-medium"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
               )}
-              onClick={() => setFilter(tab.value as SourceModule | 'all' | 'saved')}
+              onClick={() => setFilter(tab.value as SourceModule | "all" | "saved")}
             >
               {tab.label}
             </Button>
@@ -320,19 +366,21 @@ export default function Diary() {
           <Card className="p-12 text-center bg-card border-border/40">
             <PenLine className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium text-foreground">No entries yet</h3>
-            <p className="text-muted-foreground mt-1 text-sm">Start journaling, adding tasks, or notes to see them here.</p>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Start journaling, adding tasks, or notes to see them here.
+            </p>
           </Card>
         ) : (
           <ScrollArea className="h-[calc(100vh-280px)]">
             <div className="space-y-4 pr-2">
-              {filteredEvents.map(event => (
+              {filteredEvents.map((event) => (
                 <DiaryFeedCard
                   key={event.id}
                   event={event}
                   reactions={reactions[event.id] || []}
                   comments={comments[event.id] || []}
                   isSaved={saves.has(event.id)}
-                  currentUserId={user?.id || ''}
+                  currentUserId={user?.id || ""}
                   onToggleReaction={toggleReaction}
                   onAddComment={addComment}
                   onEditComment={editComment}
@@ -347,8 +395,8 @@ export default function Diary() {
       </div>
 
       {/* Right Sidebar */}
-      <aside className="w-[360px] shrink-0 hidden lg:block">
-        <div className="sticky top-4" style={{ height: 'calc(100vh - 32px)', overflowY: 'auto' }}>
+      <aside className="w-[400px] shrink-0 hidden lg:block">
+        <div className="sticky top-4" style={{ height: "calc(100vh - 32px)", overflowY: "auto" }}>
           <DiarySidebar
             metrics={metrics}
             chartData={chartData}
