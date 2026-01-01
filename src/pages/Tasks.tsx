@@ -178,7 +178,7 @@ export default function Tasks() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  useParams(); // keep if you use route params later
+  useParams();
 
   const isFocusMode = location.pathname.includes("/focus/");
 
@@ -195,6 +195,9 @@ export default function Tasks() {
 
   const [focusPromptOpen, setFocusPromptOpen] = useState(false);
   const [focusPromptTask, setFocusPromptTask] = useState<QuadrantTask | null>(null);
+
+  // ✅ NEW: collapse left panel
+  const [allTasksCollapsed, setAllTasksCollapsed] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -400,6 +403,11 @@ export default function Tasks() {
       />
     );
   }
+
+  const gridCols = allTasksCollapsed
+    ? "xl:grid-cols-[72px_minmax(0,1fr)]"
+    : "xl:grid-cols-[minmax(300px,340px)_minmax(0,1fr)]";
+
   return (
     <div className="h-full w-full flex flex-col bg-background overflow-x-hidden">
       <div className="w-full flex-1 min-h-0 px-4 md:px-6 py-5">
@@ -420,16 +428,20 @@ export default function Tasks() {
 
           <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
 
-          <div className="flex-1 grid grid-cols-1 xl:grid-cols-[minmax(300px,340px)_minmax(0,1fr)] gap-5 min-h-0 min-w-0">
-            <div className="min-h-0 overflow-y-auto min-w-0">
+          <div className={`flex-1 grid grid-cols-1 ${gridCols} gap-5 min-h-0 min-w-0`}>
+            {/* Left */}
+            <div className="min-h-0 min-w-0">
               <AllTasksList
                 tasks={filteredTasks}
                 onTaskClick={openTaskDetail}
                 onStartTask={handleStartTask}
                 onCompleteTask={handleCompleteTask}
+                collapsed={allTasksCollapsed}
+                onToggleCollapse={() => setAllTasksCollapsed((v) => !v)}
               />
             </div>
 
+            {/* Right */}
             <div className="min-h-0 overflow-auto w-full min-w-0">
               {view === "quadrant" && (
                 <QuadrantGrid
