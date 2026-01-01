@@ -24,10 +24,7 @@ interface InsightsPanelProps {
   tasks: QuadrantTask[];
 }
 
-const cardShell =
-  "rounded-2xl border border-border/35 bg-card/60 backdrop-blur-sm shadow-[0_8px_30px_rgba(0,0,0,0.04)]";
-const microHover = "transition-all duration-200 hover:-translate-y-[1px] hover:shadow-[0_12px_36px_rgba(0,0,0,0.06)]";
-
+/* ----------------------------- KPI MINI CARD ----------------------------- */
 function KpiCard({
   icon,
   iconBg,
@@ -42,14 +39,14 @@ function KpiCard({
   label: string;
 }) {
   return (
-    <Card className={`${cardShell} ${microHover}`}>
-      <CardContent className="px-4 py-3 h-[78px] flex items-center gap-3">
+    <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
+      <CardContent className="p-4 h-[86px] flex items-center gap-3 min-w-0">
         <div className={`h-9 w-9 rounded-xl flex items-center justify-center ${iconBg}`}>
           <div className={iconColor}>{icon}</div>
         </div>
 
         <div className="min-w-0 leading-tight">
-          <div className="text-[24px] font-semibold tracking-tight text-foreground">{value}</div>
+          <div className="text-[26px] font-semibold tracking-tight text-foreground">{value}</div>
           <div className="text-[11px] text-muted-foreground">{label}</div>
         </div>
       </CardContent>
@@ -57,16 +54,17 @@ function KpiCard({
   );
 }
 
+/* --------------------------- CENTER ANALOG CLOCK -------------------------- */
 function CenterAnalogClock({ now }: { now: Date }) {
   const h = now.getHours() % 12;
   const m = now.getMinutes();
-  const s = now.getSeconds();
+
   const hourAngle = h * 30 + m * 0.5;
-  const minuteAngle = m * 6 + s * 0.1;
+  const minuteAngle = m * 6;
 
   return (
-    <svg width="60" height="60" viewBox="0 0 64 64" className="text-muted-foreground">
-      <circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.26" />
+    <svg width="72" height="72" viewBox="0 0 64 64" className="text-muted-foreground">
+      <circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.25" />
       {Array.from({ length: 12 }).map((_, i) => (
         <line
           key={i}
@@ -76,7 +74,7 @@ function CenterAnalogClock({ now }: { now: Date }) {
           y2={i % 3 === 0 ? "15" : "13"}
           stroke="currentColor"
           strokeWidth="1"
-          opacity={i % 3 === 0 ? 0.55 : 0.22}
+          opacity={i % 3 === 0 ? 0.45 : 0.22}
           transform={`rotate(${i * 30} 32 32)`}
         />
       ))}
@@ -86,9 +84,10 @@ function CenterAnalogClock({ now }: { now: Date }) {
         x2="32"
         y2="21"
         stroke="currentColor"
-        strokeWidth="2.5"
+        strokeWidth="2.4"
         strokeLinecap="round"
         transform={`rotate(${hourAngle} 32 32)`}
+        className="text-foreground"
         opacity="0.9"
       />
       <line
@@ -100,6 +99,7 @@ function CenterAnalogClock({ now }: { now: Date }) {
         strokeWidth="1.8"
         strokeLinecap="round"
         transform={`rotate(${minuteAngle} 32 32)`}
+        className="text-foreground"
         opacity="0.75"
       />
       <circle cx="32" cy="32" r="2.2" fill="currentColor" opacity="0.55" />
@@ -107,24 +107,7 @@ function CenterAnalogClock({ now }: { now: Date }) {
   );
 }
 
-function PremiumTooltip({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) {
-  if (!active || !payload?.length) return null;
-
-  return (
-    <div className="rounded-xl border border-border/40 bg-card/95 backdrop-blur px-3 py-2 shadow-[0_18px_50px_rgba(0,0,0,0.12)]">
-      <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{label}</div>
-      <div className="mt-1 space-y-0.5">
-        {payload.map((p, i) => (
-          <div key={i} className="flex items-center justify-between gap-4 text-[12px]">
-            <span className="text-muted-foreground">{p.name}</span>
-            <span className="font-medium text-foreground tabular-nums">{p.value}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
+/* --------------------------- BIG CLOCK KPI CARD --------------------------- */
 function ClockKpiCard() {
   const [now, setNow] = useState(() => new Date());
 
@@ -133,34 +116,39 @@ function ClockKpiCard() {
     return () => clearInterval(id);
   }, []);
 
-  return (
-    <Card className={`${cardShell} ${microHover} overflow-hidden`}>
-      {/* subtle luxury wash */}
-      <div className="pointer-events-none absolute inset-0 opacity-60 bg-[radial-gradient(900px_circle_at_20%_25%,hsl(var(--primary)/0.10),transparent_60%)]" />
-      <CardContent className="relative px-5 py-3 h-[78px] flex items-center justify-between">
-        <div className="flex items-center gap-4 min-w-0">
-          <div className="h-12 w-12 rounded-2xl border border-border/30 bg-background/60 flex items-center justify-center shadow-sm">
-            <CenterAnalogClock now={now} />
-          </div>
+  const timeText = useMemo(() => format(now, "h:mm a"), [now]);
+  const dateText = useMemo(() => format(now, "EEE, MMM d"), [now]);
 
-          <div className="min-w-0 leading-tight">
-            <div className="text-[20px] font-semibold tracking-tight text-foreground tabular-nums">
-              {format(now, "h:mm a")}
-            </div>
-            <div className="text-[12px] text-muted-foreground">{format(now, "EEE, MMM d")}</div>
-            <div className="mt-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/80">Local time</div>
-          </div>
+  return (
+    <Card className="relative overflow-hidden rounded-2xl border border-border/40 shadow-sm">
+      {/* soft luxury gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-card/90 via-card/60 to-muted/10" />
+      {/* subtle glow */}
+      <div className="absolute -top-24 -left-24 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
+      <div className="absolute -bottom-24 -right-24 h-56 w-56 rounded-full bg-muted/20 blur-3xl" />
+
+      <CardContent className="relative p-4 h-[110px] flex items-center justify-center gap-5">
+        {/* glass dial container */}
+        <div className="relative h-20 w-20 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.06)] flex items-center justify-center">
+          {/* inner ring */}
+          <div className="absolute inset-2 rounded-xl border border-border/30" />
+          <CenterAnalogClock now={now} />
         </div>
 
-        <div className="hidden sm:flex items-center gap-2">
-          <span className="text-[11px] text-muted-foreground">Now</span>
-          <span className="text-[11px] font-medium text-foreground">Focus</span>
+        {/* text */}
+        <div className="leading-tight">
+          <div className="text-[22px] font-semibold tracking-tight text-foreground">{timeText}</div>
+          <div className="text-[12px] text-muted-foreground">{dateText}</div>
+
+          {/* micro label for luxury feel */}
+          <div className="mt-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70">Local time</div>
         </div>
       </CardContent>
     </Card>
   );
 }
 
+/* ------------------------------ MAIN PANEL ------------------------------ */
 export function InsightsPanel({ tasks }: InsightsPanelProps) {
   const [expanded, setExpanded] = useState(true);
   const today = startOfDay(new Date());
@@ -169,26 +157,25 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
   const plannedToday = todayTasks.length;
   const completedToday = todayTasks.filter((t) => t.is_completed || t.completed_at).length;
 
-  const overdueTasks = tasks
-    .map((t) => ({ ...t, computedStatus: computeTaskStatus(t) }))
-    .filter((t) => t.computedStatus === "overdue").length;
+  const allTasksWithStatus = tasks.map((t) => ({ ...t, computedStatus: computeTaskStatus(t) }));
+  const overdueTasks = allTasksWithStatus.filter((t) => t.computedStatus === "overdue").length;
 
   const totalFocusMinutes = tasks.reduce((sum, t) => sum + (t.total_focus_minutes || 0), 0);
 
   const past7DaysData = useMemo(() => {
-    const data: { date: string; plan: number; actual: number }[] = [];
+    const data = [];
     for (let i = 6; i >= 0; i--) {
       const date = subDays(today, i);
       const dayStart = startOfDay(date);
       const planned = tasks.filter((t) => t.due_date && isSameDay(new Date(t.due_date), dayStart)).length;
       const actual = tasks.filter((t) => t.completed_at && isSameDay(new Date(t.completed_at), dayStart)).length;
-      data.push({ date: format(date, "EEE"), plan: planned, actual });
+      data.push({ date: format(date, "EEE"), fullDate: format(date, "MMM d"), plan: planned, actual });
     }
     return data;
   }, [tasks, today]);
 
   const future7DaysData = useMemo(() => {
-    const data: { date: string; tasks: number }[] = [];
+    const data = [];
     for (let i = 0; i < 7; i++) {
       const date = addDays(today, i);
       const dayStart = startOfDay(date);
@@ -196,7 +183,7 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
         if (!t.due_date || t.is_completed || t.completed_at) return false;
         return isSameDay(new Date(t.due_date), dayStart);
       }).length;
-      data.push({ date: i === 0 ? "Today" : format(date, "EEE"), tasks: upcoming });
+      data.push({ date: i === 0 ? "Today" : format(date, "EEE"), fullDate: format(date, "MMM d"), tasks: upcoming });
     }
     return data;
   }, [tasks, today]);
@@ -243,10 +230,9 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
 
   return (
     <div className="space-y-4 w-full">
-      {/* Premium section header */}
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="text-[12px] uppercase tracking-[0.18em] text-muted-foreground">Insights</div>
-
+        <h3 className="text-sm font-semibold tracking-tight text-foreground">Insights</h3>
         <Button
           variant="ghost"
           size="sm"
@@ -258,8 +244,8 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
         </Button>
       </div>
 
-      {/* KPI row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      {/* KPI ROW: small cards + BIG clock */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 items-stretch">
         <KpiCard
           icon={<Calendar className="h-4 w-4" />}
           iconBg="bg-primary/10"
@@ -276,7 +262,8 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
           label="Done Today"
         />
 
-        <div className="lg:col-span-2">
+        {/* BIG CLOCK (spans 2 columns) */}
+        <div className="col-span-2 sm:col-span-4 lg:col-span-2">
           <ClockKpiCard />
         </div>
 
@@ -290,36 +277,35 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
 
         <KpiCard
           icon={<ClockIcon className="h-4 w-4" />}
-          iconBg="bg-muted/25"
+          iconBg="bg-muted/20"
           iconColor="text-muted-foreground"
           value={`${totalFocusMinutes}m`}
           label="Focus Time"
         />
       </div>
 
-      {/* Charts row */}
+      {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Plan vs Actual */}
-        <Card className={`${cardShell} ${microHover}`}>
+        <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              <h4 className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                Plan vs actual (7 days)
+              <TrendingUp className="h-4 w-4 text-primary" />
+              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                PLAN VS ACTUAL (7 DAYS)
               </h4>
             </div>
 
-            <div className="h-[120px]">
+            <div className="h-[100px]">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={past7DaysData}>
                   <defs>
                     <linearGradient id="planGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.28} />
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.04} />
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.06} />
                     </linearGradient>
                   </defs>
-
-                  <CartesianGrid strokeDasharray="3 6" stroke="hsl(var(--border) / 0.45)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis
                     dataKey="date"
                     tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
@@ -330,50 +316,61 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
                     tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                     axisLine={false}
                     tickLine={false}
-                    width={18}
+                    width={20}
                     allowDecimals={false}
                   />
-                  <Tooltip content={<PremiumTooltip />} />
-
+                  <Tooltip
+                    contentStyle={{
+                      background: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "10px",
+                      fontSize: "12px",
+                    }}
+                  />
                   <Area
                     type="monotone"
                     dataKey="plan"
-                    name="Plan"
                     stroke="hsl(var(--primary))"
                     strokeWidth={2}
                     fill="url(#planGradient)"
-                    dot={false}
-                    activeDot={{ r: 4 }}
+                    dot={{ fill: "hsl(var(--primary))", strokeWidth: 0, r: 2.3 }}
                   />
                   <Line
                     type="monotone"
                     dataKey="actual"
-                    name="Actual"
                     stroke="hsl(var(--chart-1))"
                     strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 4 }}
+                    dot={{ fill: "hsl(var(--chart-1))", strokeWidth: 0, r: 2.3 }}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
+            </div>
+            {/* Legend (like before) */}
+            <div className="flex justify-center gap-4 mt-2">
+              <div className="flex items-center gap-1">
+                <div className="h-2 w-2 rounded-full bg-primary" />
+                <span className="text-xs text-muted-foreground">Plan</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="h-2 w-2 rounded-full bg-chart-1" />
+                <span className="text-xs text-muted-foreground">Actual</span>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Upcoming */}
-        <Card className={`${cardShell} ${microHover}`}>
+        <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <h4 className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                Upcoming (7 days)
-              </h4>
+              <Calendar className="h-4 w-4 text-primary" />
+              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">UPCOMING (7 DAYS)</h4>
             </div>
 
-            <div className="h-[120px]">
+            <div className="h-[100px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={future7DaysData} barSize={18}>
-                  <CartesianGrid strokeDasharray="3 6" stroke="hsl(var(--border) / 0.45)" />
+                <BarChart data={future7DaysData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis
                     dataKey="date"
                     tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
@@ -384,11 +381,18 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
                     tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                     axisLine={false}
                     tickLine={false}
-                    width={18}
+                    width={20}
                     allowDecimals={false}
                   />
-                  <Tooltip content={<PremiumTooltip />} />
-                  <Bar dataKey="tasks" name="Tasks" fill="hsl(var(--primary))" radius={[7, 7, 0, 0]} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "10px",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Bar dataKey="tasks" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -396,11 +400,11 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
         </Card>
 
         {/* By Quadrant */}
-        <Card className={`${cardShell} ${microHover}`}>
+        <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
-              <ClockIcon className="h-4 w-4 text-muted-foreground" />
-              <h4 className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">By quadrant</h4>
+              <ClockIcon className="h-4 w-4 text-primary" />
+              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">BY QUADRANT</h4>
             </div>
 
             <div className="h-[120px] flex items-center justify-center">
@@ -411,18 +415,23 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
                       data={quadrantData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={30}
-                      outerRadius={48}
+                      innerRadius={28}
+                      outerRadius={46}
                       paddingAngle={2}
                       dataKey="value"
-                      stroke="hsl(var(--card))"
-                      strokeWidth={2}
                     >
                       {quadrantData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip content={<PremiumTooltip />} />
+                    <Tooltip
+                      contentStyle={{
+                        background: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "10px",
+                        fontSize: "12px",
+                      }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (

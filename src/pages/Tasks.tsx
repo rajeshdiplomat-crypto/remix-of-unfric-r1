@@ -402,8 +402,12 @@ export default function Tasks() {
   }
 
   return (
-    <div className="h-full w-full bg-background overflow-x-hidden">
-      <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 py-5 flex flex-col gap-4 min-h-0">
+    <div className="h-full w-full flex flex-col bg-background overflow-x-hidden">
+      <div className="w-full px-4 md:px-6 py-5">
+  <div className="mx-auto w-full max-w-[1400px] min-w-0 flex flex-col gap-4 min-h-0">
+  </div>
+</div>
+
         <TasksHeader
           view={view}
           onViewChange={setView}
@@ -416,11 +420,12 @@ export default function Tasks() {
 
         <SummaryStrip tasks={filteredTasks} />
 
+        {/* Clock must be inside InsightsPanel (like your screenshot) */}
         <InsightsPanel tasks={filteredTasks} />
 
         <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
 
-        <div className="flex-1 grid grid-cols-1 xl:grid-cols-[320px_1fr] gap-5 min-h-0">
+        <div className="flex-1 grid grid-cols-1 xl:grid-cols-[minmax(280px,320px)_1fr] gap-5 min-h-0 min-w-0">
           <div className="min-h-0 overflow-y-auto">
             <AllTasksList
               tasks={filteredTasks}
