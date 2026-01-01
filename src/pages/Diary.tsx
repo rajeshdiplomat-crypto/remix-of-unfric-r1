@@ -5,10 +5,8 @@ import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { PenLine, Search, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DiaryFeedCard } from "@/components/diary/DiaryFeedCard";
 import { DiarySidebar } from "@/components/diary/DiarySidebar";
@@ -23,25 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-// Helper to extract plain text from TipTap JSON
-const extractTextFromTiptap = (json: any): string => {
-  if (!json) return "";
-  try {
-    const parsed = typeof json === "string" ? JSON.parse(json) : json;
-    const extractText = (node: any): string => {
-      if (!node) return "";
-      if (node.text) return node.text;
-      if (node.content && Array.isArray(node.content)) {
-        return node.content.map(extractText).join(" ");
-      }
-      return "";
-    };
-    return extractText(parsed).trim();
-  } catch {
-    return "";
-  }
-};
+import { DEFAULT_QUESTIONS } from "@/components/journal/types";
 
 const FILTER_TABS = [
   { value: "all", label: "All" },
@@ -55,7 +35,6 @@ const FILTER_TABS = [
 
 export default function Diary() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState<TimeRange>("week");
   const [searchQuery, setSearchQuery] = useState("");
@@ -73,7 +52,6 @@ export default function Diary() {
     editComment,
     deleteComment,
     toggleSave,
-    createFeedEvent,
     refetch,
   } = useFeedEvents(user?.id);
 
@@ -84,8 +62,8 @@ export default function Diary() {
     if (!user?.id) return;
 
     const seedFeedEvents = async () => {
-      // Fetch all module data including emotions
-      const [tasksRes, journalRes, notesRes, habitsRes, goalsRes, emotionsRes] = await Promise.all([
+      // Fetch all module data including journal answers
+      const [tasksRes, journalRes, journalAnswersRes, notesRes, habitsRes, goalsRes, emotionsRes] = await Promise.all([
         supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
         supabase
           .from("journal_entries")
@@ -93,6 +71,11 @@ export default function Diary() {
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(20),
+        supabase
+          .from("journal_answers")
+          .select("*, journal_entries!inner(user_id, entry_date, created_at)")
+          .order("created_at", { ascending: false })
+          .limit(100),
         supabase.from("notes").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
         supabase.from("habits").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
         supabase
@@ -126,43 +109,67 @@ export default function Diary() {
         });
       });
 
-      // Journal - create separate feed events for each question
-      journalRes.data?.forEach((entry) => {
-        const questions = [
-          { label: "How I Feel", content: entry.daily_feeling },
-          { label: "Gratitude", content: entry.daily_gratitude },
-          { label: "Kindness", content: entry.daily_kindness },
-        ];
+      // Journal Answers - each answer is a separate feed event
+      const answersData = journalAnswersRes.data?.filter(
+        (a: any) => a.journal_entries?.user_id === user.id
+      ) || [];
 
-        // Extract body content from TipTap JSON (text_formatting field)
-        const bodyContent = extractTextFromTiptap(entry.text_formatting);
+      answersData.forEach((answer: any) => {
+        const question = DEFAULT_QUESTIONS.find((q) => q.id === answer.question_id);
+        const questionLabel = question?.text || answer.question_id;
+        const journalEntry = answer.journal_entries;
 
-        // Add body content as a separate question card if it exists
-        if (bodyContent) {
-          questions.push({ label: "Journal Entry", content: bodyContent });
-        }
-
-        // Create a separate feed event for each question
-        questions.forEach((question, idx) => {
-          feedEvents.push({
-            user_id: user.id,
-            type: "journal_question",
-            source_module: "journal",
-            source_id: `${entry.id}_q${idx}`,
-            title: question.label,
-            summary: question.content || "",
-            content_preview: question.content || "",
-            metadata: {
-              tags: entry.tags || [],
-              journal_date: entry.entry_date, // The date being written about
-              entry_id: entry.id,
-              question_label: question.label,
-              answer_content: question.content || "",
-            },
-            created_at: entry.created_at, // When user wrote it
-          });
+        feedEvents.push({
+          user_id: user.id,
+          type: "journal_question",
+          source_module: "journal",
+          source_id: answer.id,
+          title: questionLabel,
+          summary: answer.answer_text || "",
+          content_preview: answer.answer_text || "",
+          metadata: {
+            journal_date: journalEntry?.entry_date,
+            entry_id: answer.journal_entry_id,
+            question_id: answer.question_id,
+            question_label: questionLabel,
+            answer_content: answer.answer_text || "",
+          },
+          created_at: journalEntry?.created_at || answer.created_at,
         });
       });
+
+      // Fallback: If no answers exist, use legacy journal entries
+      if (answersData.length === 0 && journalRes.data) {
+        journalRes.data.forEach((entry) => {
+          const questions = [
+            { id: "q1", label: "How I Feel", content: entry.daily_feeling },
+            { id: "q2", label: "Gratitude", content: entry.daily_gratitude },
+            { id: "q3", label: "Kindness", content: entry.daily_kindness },
+          ];
+
+          questions.forEach((question, idx) => {
+            if (question.content) {
+              feedEvents.push({
+                user_id: user.id,
+                type: "journal_question",
+                source_module: "journal",
+                source_id: `${entry.id}_q${idx}`,
+                title: question.label,
+                summary: question.content,
+                content_preview: question.content,
+                metadata: {
+                  journal_date: entry.entry_date,
+                  entry_id: entry.id,
+                  question_id: question.id,
+                  question_label: question.label,
+                  answer_content: question.content,
+                },
+                created_at: entry.created_at,
+              });
+            }
+          });
+        });
+      }
 
       // Notes
       notesRes.data?.forEach((note) => {
@@ -299,6 +306,11 @@ export default function Diary() {
     );
   });
 
+  // Sort by entry date (newest first)
+  const sortedEvents = [...filteredEvents].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
   if (loading && events.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -362,7 +374,7 @@ export default function Diary() {
           </DropdownMenu>
         </div>
 
-        {filteredEvents.length === 0 ? (
+        {sortedEvents.length === 0 ? (
           <Card className="p-12 text-center bg-card border-border/40">
             <PenLine className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium text-foreground">No entries yet</h3>
@@ -373,7 +385,7 @@ export default function Diary() {
         ) : (
           <ScrollArea className="h-[calc(100vh-280px)]">
             <div className="space-y-4 pr-2">
-              {filteredEvents.map((event) => 
+              {sortedEvents.map((event) => 
                 event.type === "journal_question" ? (
                   <JournalQuestionCard
                     key={event.id}
