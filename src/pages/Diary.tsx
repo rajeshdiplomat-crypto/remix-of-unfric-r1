@@ -330,7 +330,7 @@ export default function Diary() {
         {/* Search Bar */}
         <div className="mb-4">
           <div className="flex items-center gap-2 bg-card border border-border/40 rounded-xl px-3 py-1">
-            <Search className="h-4 w-4 text-muted-foreground" />
+            <Search className="h-2 w-4 text-muted-foreground" />
             <Input
               placeholder="Search..."
               value={searchQuery}
