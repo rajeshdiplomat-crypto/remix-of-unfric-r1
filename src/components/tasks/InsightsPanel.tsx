@@ -53,26 +53,24 @@ function KpiCard({
   );
 }
 
-function CenterAnalogClock({ now }: { now: Date }) {
+function MiniAnalogClock({ now }: { now: Date }) {
   const h = now.getHours() % 12;
   const m = now.getMinutes();
-
+  const s = now.getSeconds();
   const hourAngle = h * 30 + m * 0.5;
-  const minuteAngle = m * 6;
+  const minuteAngle = m * 6 + s * 0.1;
+  const secondAngle = s * 6;
 
   return (
-    <svg width="48" height="48" viewBox="0 0 64 64" className="text-muted-foreground">
-      {/* outer ring */}
-      <circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.25" />
-
-      {/* ticks */}
+    <svg width="56" height="56" viewBox="0 0 64 64" className="text-muted-foreground">
+      <circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.22" />
       {Array.from({ length: 12 }).map((_, i) => (
         <line
           key={i}
           x1="32"
           y1="10"
           x2="32"
-          y2={i % 3 === 0 ? "15" : "13"}
+          y2="13"
           stroke="currentColor"
           strokeWidth="1"
           opacity={i % 3 === 0 ? 0.45 : 0.22}
@@ -80,36 +78,42 @@ function CenterAnalogClock({ now }: { now: Date }) {
         />
       ))}
 
-      {/* hour hand */}
       <line
         x1="32"
         y1="32"
         x2="32"
-        y2="21"
+        y2="20"
         stroke="currentColor"
-        strokeWidth="2.4"
+        strokeWidth="2.2"
         strokeLinecap="round"
         transform={`rotate(${hourAngle} 32 32)`}
         className="text-foreground"
         opacity="0.9"
       />
-
-      {/* minute hand */}
       <line
         x1="32"
         y1="32"
         x2="32"
         y2="15"
         stroke="currentColor"
-        strokeWidth="1.8"
+        strokeWidth="1.6"
         strokeLinecap="round"
         transform={`rotate(${minuteAngle} 32 32)`}
         className="text-foreground"
         opacity="0.75"
       />
-
-      {/* center dot */}
-      <circle cx="32" cy="32" r="2.2" fill="currentColor" opacity="0.55" />
+      <line
+        x1="32"
+        y1="34"
+        x2="32"
+        y2="13"
+        stroke="currentColor"
+        strokeWidth="1"
+        strokeLinecap="round"
+        transform={`rotate(${secondAngle} 32 32)`}
+        opacity="0.22"
+      />
+      <circle cx="32" cy="32" r="2.1" fill="currentColor" opacity="0.55" />
     </svg>
   );
 }
@@ -127,16 +131,16 @@ function ClockKpiCard() {
 
   return (
     <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
-      <CardContent className="p-4 h-[86px] flex flex-col items-center justify-between">
-        {/* clock icon centered */}
-        <div className="h-12 w-12 rounded-2xl bg-muted/20 flex items-center justify-center">
+      <CardContent className="p-4 h-[110px] flex items-center justify-center gap-5">
+        {/* Bigger clock dial */}
+        <div className="h-16 w-16 rounded-2xl bg-muted/20 flex items-center justify-center">
           <CenterAnalogClock now={now} />
         </div>
 
-        {/* time + date centered like screenshot */}
-        <div className="text-center leading-tight">
-          <div className="text-sm font-semibold tracking-tight text-foreground">{timeText}</div>
-          <div className="text-[11px] text-muted-foreground">{dateText}</div>
+        {/* Bigger text, centered vertically */}
+        <div className="leading-tight">
+          <div className="text-xl font-semibold tracking-tight text-foreground">{timeText}</div>
+          <div className="text-sm text-muted-foreground">{dateText}</div>
         </div>
       </CardContent>
     </Card>
@@ -239,7 +243,7 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
       </div>
 
       {/* KPI ROW — FIXED */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
         <KpiCard
           icon={<Calendar className="h-4 w-4" />}
           iconBg="bg-primary/10"
@@ -256,7 +260,10 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
         />
 
         {/* CLOCK IN THE MIDDLE (like your reference) */}
-        <ClockKpiCard />
+        <div className="lg:col-span-2">
+          {" "}
+          <ClockKpiCard />{" "}
+        </div>
 
         <KpiCard
           icon={<AlertTriangle className="h-4 w-4" />}
