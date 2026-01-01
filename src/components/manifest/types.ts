@@ -46,6 +46,7 @@ export interface ManifestDailyPractice {
   acted: boolean;
   proof_text?: string;
   proof_image_url?: string;
+  custom_act_as_if?: string; // User's custom act-as-if for this day
   
   // Section 2 - Daily Check-in
   alignment?: number; // 1-10

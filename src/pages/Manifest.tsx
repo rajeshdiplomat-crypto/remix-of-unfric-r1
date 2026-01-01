@@ -46,6 +46,7 @@ export default function Manifest() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<ManifestGoal | null>(null);
   const [selectedGoal, setSelectedGoal] = useState<ManifestGoal | null>(null);
 
   // Fetch data
@@ -212,20 +213,37 @@ export default function Manifest() {
     setSaving(true);
 
     try {
-      const { data, error } = await supabase
-        .from("manifest_goals")
-        .insert({
-          user_id: user.id,
-          title: goalData.title,
-          is_completed: false,
-        })
-        .select()
-        .single();
+      let goalId: string;
 
-      if (error) throw error;
+      if (editingGoal) {
+        // Update existing goal
+        const { error } = await supabase
+          .from("manifest_goals")
+          .update({ title: goalData.title })
+          .eq("id", editingGoal.id);
+
+        if (error) throw error;
+        goalId = editingGoal.id;
+        toast.success("Manifestation updated!");
+      } else {
+        // Create new goal
+        const { data, error } = await supabase
+          .from("manifest_goals")
+          .insert({
+            user_id: user.id,
+            title: goalData.title,
+            is_completed: false,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        goalId = data.id;
+        toast.success("Manifestation created!");
+      }
 
       // Save extras to localStorage
-      saveGoalExtras(data.id, {
+      saveGoalExtras(goalId, {
         category: goalData.category,
         vision_image_url: goalData.vision_image_url,
         target_date: goalData.target_date,
@@ -239,12 +257,12 @@ export default function Manifest() {
         is_locked: false,
       });
 
-      toast.success("Manifestation created!");
       setShowCreateModal(false);
+      setEditingGoal(null);
       fetchData();
     } catch (error) {
-      console.error("Error creating goal:", error);
-      toast.error("Failed to create manifestation");
+      console.error("Error saving goal:", error);
+      toast.error(editingGoal ? "Failed to update manifestation" : "Failed to create manifestation");
     } finally {
       setSaving(false);
     }
@@ -260,6 +278,16 @@ export default function Manifest() {
 
   const handleSelectGoal = (goal: ManifestGoal) => {
     setSelectedGoal(goal);
+  };
+
+  const handleEditGoal = (goal: ManifestGoal) => {
+    setEditingGoal(goal);
+    setShowCreateModal(true);
+  };
+
+  const handleCloseModal = (open: boolean) => {
+    setShowCreateModal(open);
+    if (!open) setEditingGoal(null);
   };
 
   if (loading) {
@@ -305,6 +333,7 @@ export default function Manifest() {
                   lastProof={lastProof}
                   isSelected={selectedGoal?.id === goal.id}
                   onClick={() => handleSelectGoal(goal)}
+                  onEdit={() => handleEditGoal(goal)}
                 />
               );
             })}
@@ -340,12 +369,13 @@ export default function Manifest() {
         )}
       </aside>
 
-      {/* Create Modal */}
+      {/* Create/Edit Modal */}
       <ManifestCreateModal
         open={showCreateModal}
-        onOpenChange={setShowCreateModal}
+        onOpenChange={handleCloseModal}
         onSave={handleSaveGoal}
         saving={saving}
+        editingGoal={editingGoal}
       />
     </div>
   );

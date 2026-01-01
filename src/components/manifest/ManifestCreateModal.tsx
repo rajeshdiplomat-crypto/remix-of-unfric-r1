@@ -27,6 +27,7 @@ import {
   CATEGORIES,
   MANIFEST_DRAFT_KEY,
   type StarterTemplate,
+  type ManifestGoal,
 } from "./types";
 
 interface ManifestCreateModalProps {
@@ -46,6 +47,7 @@ interface ManifestCreateModalProps {
     committed_7_days: boolean;
   }) => void;
   saving?: boolean;
+  editingGoal?: ManifestGoal | null;
 }
 
 interface DraftState {
@@ -85,22 +87,45 @@ export function ManifestCreateModal({
   onOpenChange,
   onSave,
   saving,
+  editingGoal,
 }: ManifestCreateModalProps) {
   const [draft, setDraft] = useState<DraftState>(initialDraft);
+  const isEditing = !!editingGoal;
 
-  // Load draft from localStorage
+  // Load draft from localStorage or from editingGoal
   useEffect(() => {
     if (open) {
-      const saved = localStorage.getItem(MANIFEST_DRAFT_KEY);
-      if (saved) {
-        try {
-          setDraft(JSON.parse(saved));
-        } catch {
+      if (editingGoal) {
+        // Load from editing goal
+        setDraft({
+          step: 1,
+          title: editingGoal.title,
+          category: editingGoal.category || "other",
+          visionImageUrl: editingGoal.vision_image_url || "",
+          targetDate: editingGoal.target_date || "",
+          liveFromEnd: editingGoal.live_from_end || "",
+          actAsIf: editingGoal.act_as_if || "",
+          customActAsIf: "",
+          conviction: editingGoal.conviction ?? 5,
+          visualizationMinutes: editingGoal.visualization_minutes || 3,
+          dailyAffirmation: editingGoal.daily_affirmation || "",
+          checkInTime: editingGoal.check_in_time || "08:00",
+          committed7Days: editingGoal.committed_7_days || false,
+        });
+      } else {
+        const saved = localStorage.getItem(MANIFEST_DRAFT_KEY);
+        if (saved) {
+          try {
+            setDraft(JSON.parse(saved));
+          } catch {
+            setDraft(initialDraft);
+          }
+        } else {
           setDraft(initialDraft);
         }
       }
     }
-  }, [open]);
+  }, [open, editingGoal]);
 
   // Save draft to localStorage
   const saveDraft = (updates: Partial<DraftState>) => {
@@ -177,9 +202,13 @@ export function ManifestCreateModal({
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>
-              {draft.step === 1 && "Step 1: Basics"}
-              {draft.step === 2 && "Step 2: Make it Executable"}
-              {draft.step === 3 && "Step 3: Daily System"}
+              {isEditing ? "Edit Manifestation" : (
+                <>
+                  {draft.step === 1 && "Step 1: Basics"}
+                  {draft.step === 2 && "Step 2: Make it Executable"}
+                  {draft.step === 3 && "Step 3: Daily System"}
+                </>
+              )}
             </span>
             <div className="flex items-center gap-1">
               {[1, 2, 3].map((s) => (
@@ -486,7 +515,7 @@ export function ManifestCreateModal({
             </Button>
           ) : (
             <Button onClick={handleSubmit} disabled={!canSubmit || saving}>
-              {saving ? "Creating..." : "Create & Start"}
+              {saving ? (isEditing ? "Saving..." : "Creating...") : (isEditing ? "Save Changes" : "Create & Start")}
             </Button>
           )}
         </div>
