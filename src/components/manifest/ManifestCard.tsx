@@ -23,9 +23,12 @@ export function ManifestCard({
   return (
     <Card
       className={`border-border/50 cursor-pointer transition-all hover:border-primary/50 ${
-        isSelected ? "ring-2 ring-primary border-primary" : ""
+        isSelected ? "ring-2 ring-primary border-primary border-l-4 border-l-primary" : ""
       }`}
-      onClick={onClick}
+      onClick={(e) => {
+        e.preventDefault();
+        onClick();
+      }}
     >
       <CardContent className="p-4">
         {/* Assumption Text */}
