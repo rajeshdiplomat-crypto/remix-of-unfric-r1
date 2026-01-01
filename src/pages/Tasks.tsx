@@ -15,13 +15,13 @@ import { LargeClockWidget } from "@/components/tasks/LargeClockWidget";
 import { UnifiedTaskDrawer } from "@/components/tasks/UnifiedTaskDrawer";
 import { DeepFocusPrompt } from "@/components/tasks/DeepFocusPrompt";
 import PremiumDeepFocus from "@/pages/PremiumDeepFocus";
-import { 
-  QuadrantTask, 
-  QuadrantMode, 
-  Urgency, 
-  Importance, 
-  Status, 
-  TimeOfDay, 
+import {
+  QuadrantTask,
+  QuadrantMode,
+  Urgency,
+  Importance,
+  Status,
+  TimeOfDay,
   DateBucket,
   computeTaskStatus,
   createDefaultTask,
@@ -30,7 +30,7 @@ import {
 // Sample data
 const SAMPLE_TASKS: QuadrantTask[] = [
   {
-    id: 'sample-1',
+    id: "sample-1",
     title: "Prepare launch checklist",
     description: "Complete all pre-launch requirements",
     due_date: new Date().toISOString(),
@@ -56,7 +56,7 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     quadrant_assigned: true,
   },
   {
-    id: 'sample-2',
+    id: "sample-2",
     title: "Q3 report analysis",
     description: "Analyze quarterly performance metrics",
     due_date: new Date(Date.now() - 86400000).toISOString(),
@@ -79,7 +79,7 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     quadrant_assigned: true,
   },
   {
-    id: 'sample-3',
+    id: "sample-3",
     title: "Review marketing assets",
     description: "Review and approve marketing materials",
     due_date: new Date().toISOString(),
@@ -102,7 +102,7 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     quadrant_assigned: true,
   },
   {
-    id: 'sample-4',
+    id: "sample-4",
     title: "Draft Q4 objectives",
     description: "Plan next quarter goals",
     due_date: new Date(Date.now() + 86400000 * 3).toISOString(),
@@ -125,7 +125,7 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     quadrant_assigned: true,
   },
   {
-    id: 'sample-5',
+    id: "sample-5",
     title: "Weekly team sync prep",
     description: "Prepare agenda for team meeting",
     due_date: new Date(Date.now() + 86400000).toISOString(),
@@ -148,7 +148,7 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     quadrant_assigned: true,
   },
   {
-    id: 'sample-6',
+    id: "sample-6",
     title: "Explore automation tools",
     description: "Research automation options",
     due_date: new Date(Date.now() + 86400000 * 5).toISOString(),
@@ -178,20 +178,20 @@ export default function Tasks() {
   const navigate = useNavigate();
   const location = useLocation();
   const { taskId } = useParams();
-  
-  const isFocusMode = location.pathname.includes('/focus/');
-  
-  const [view, setView] = useState<'board' | 'quadrant'>('quadrant');
-  const [quadrantMode, setQuadrantMode] = useState<QuadrantMode>('urgent-important');
+
+  const isFocusMode = location.pathname.includes("/focus/");
+
+  const [view, setView] = useState<"board" | "quadrant">("quadrant");
+  const [quadrantMode, setQuadrantMode] = useState<QuadrantMode>("urgent-important");
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   const [tasks, setTasks] = useState<QuadrantTask[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<QuadrantTask | null>(null);
   const [isNewTask, setIsNewTask] = useState(false);
-  
+
   // Deep Focus prompt state
   const [focusPromptOpen, setFocusPromptOpen] = useState(false);
   const [focusPromptTask, setFocusPromptTask] = useState<QuadrantTask | null>(null);
@@ -207,10 +207,12 @@ export default function Tasks() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setTasks(prev => prev.map(t => ({
-        ...t,
-        status: computeTaskStatus(t),
-      })));
+      setTasks((prev) =>
+        prev.map((t) => ({
+          ...t,
+          status: computeTaskStatus(t),
+        })),
+      );
     }, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -225,7 +227,7 @@ export default function Tasks() {
       .order("created_at", { ascending: false });
 
     if (!error && data) {
-      const quadrantTasks: QuadrantTask[] = data.map(t => {
+      const quadrantTasks: QuadrantTask[] = data.map((t) => {
         const task: QuadrantTask = {
           ...t,
           due_time: null,
@@ -233,11 +235,11 @@ export default function Tasks() {
           reminder_at: null,
           alarm_enabled: false,
           total_focus_minutes: 0,
-          urgency: t.priority === 'high' ? 'high' : 'low' as Urgency,
-          importance: t.priority === 'high' ? 'high' : 'low' as Importance,
-          status: 'upcoming' as Status,
-          time_of_day: 'morning' as TimeOfDay,
-          date_bucket: 'today' as DateBucket,
+          urgency: t.priority === "high" ? "high" : ("low" as Urgency),
+          importance: t.priority === "high" ? "high" : ("low" as Importance),
+          status: "upcoming" as Status,
+          time_of_day: "morning" as TimeOfDay,
+          date_bucket: "today" as DateBucket,
           tags: [],
           subtasks: [],
           quadrant_assigned: true,
@@ -245,7 +247,7 @@ export default function Tasks() {
         task.status = computeTaskStatus(task);
         return task;
       });
-      
+
       setTasks(quadrantTasks.length === 0 ? SAMPLE_TASKS : quadrantTasks);
     }
     setLoading(false);
@@ -265,19 +267,19 @@ export default function Tasks() {
 
   const handleSaveTask = (task: QuadrantTask) => {
     task.status = computeTaskStatus(task);
-    
+
     if (isNewTask) {
-      setTasks(prev => [task, ...prev]);
+      setTasks((prev) => [task, ...prev]);
       toast({ title: "Created!", description: "Your task has been created" });
     } else {
-      setTasks(prev => prev.map(t => t.id === task.id ? task : t));
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? task : t)));
       toast({ title: "Updated!", description: "Task has been updated" });
     }
     setDrawerOpen(false);
   };
 
   const handleDeleteTask = (taskId: string) => {
-    setTasks(prev => prev.filter(t => t.id !== taskId));
+    setTasks((prev) => prev.filter((t) => t.id !== taskId));
     setDrawerOpen(false);
     toast({ title: "Deleted", description: "Task has been removed" });
   };
@@ -286,12 +288,12 @@ export default function Tasks() {
     const updated: QuadrantTask = {
       ...task,
       started_at: task.started_at || new Date().toISOString(),
-      status: 'ongoing',
+      status: "ongoing",
     };
-    setTasks(prev => prev.map(t => t.id === task.id ? updated : t));
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
     setSelectedTask(updated);
     toast({ title: "Started!", description: "Task moved to Ongoing" });
-    
+
     // Show Deep Focus prompt
     setFocusPromptTask(updated);
     setFocusPromptOpen(true);
@@ -302,9 +304,9 @@ export default function Tasks() {
       ...task,
       is_completed: true,
       completed_at: new Date().toISOString(),
-      status: 'completed',
+      status: "completed",
     };
-    setTasks(prev => prev.map(t => t.id === task.id ? updated : t));
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
     setDrawerOpen(false);
     toast({ title: "Completed!", description: "Task marked as done" });
   };
@@ -314,9 +316,9 @@ export default function Tasks() {
       const updated: QuadrantTask = {
         ...task,
         started_at: new Date().toISOString(),
-        status: 'ongoing',
+        status: "ongoing",
       };
-      setTasks(prev => prev.map(t => t.id === task.id ? updated : t));
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
     }
     setDrawerOpen(false);
     setFocusPromptOpen(false);
@@ -327,39 +329,37 @@ export default function Tasks() {
     const newTask = createDefaultTask({
       title,
       status: columnId as Status,
-      started_at: columnId === 'ongoing' ? new Date().toISOString() : null,
-      is_completed: columnId === 'completed',
-      completed_at: columnId === 'completed' ? new Date().toISOString() : null,
+      started_at: columnId === "ongoing" ? new Date().toISOString() : null,
+      is_completed: columnId === "completed",
+      completed_at: columnId === "completed" ? new Date().toISOString() : null,
       quadrant_assigned: true,
     });
-    setTasks(prev => [newTask, ...prev]);
+    setTasks((prev) => [newTask, ...prev]);
     toast({ title: "Task added" });
   };
 
   const handleBoardDrop = (columnId: string, task: QuadrantTask) => {
     const updated: QuadrantTask = { ...task };
-    
-    if (columnId === 'ongoing') {
+
+    if (columnId === "ongoing") {
       updated.started_at = updated.started_at || new Date().toISOString();
       updated.is_completed = false;
       updated.completed_at = null;
-    } else if (columnId === 'completed') {
+    } else if (columnId === "completed") {
       updated.is_completed = true;
       updated.completed_at = new Date().toISOString();
-    } else if (columnId === 'upcoming') {
+    } else if (columnId === "upcoming") {
       updated.started_at = null;
       updated.is_completed = false;
       updated.completed_at = null;
     }
-    
+
     updated.status = computeTaskStatus(updated);
-    setTasks(prev => prev.map(t => t.id === task.id ? updated : t));
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
     toast({ title: "Task updated" });
   };
 
-  const filteredTasks = tasks.filter(t => 
-    t.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredTasks = tasks.filter((t) => t.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
   if (loading) {
     return (
@@ -374,13 +374,17 @@ export default function Tasks() {
       <PremiumDeepFocus
         tasks={tasks}
         onUpdateTask={async (updated) => {
-          setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
+          setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
           // Persist to database
           if (user) {
-            await supabase.from("tasks").update({
-              is_completed: updated.is_completed,
-              completed_at: updated.completed_at,
-            }).eq("id", updated.id).eq("user_id", user.id);
+            await supabase
+              .from("tasks")
+              .update({
+                is_completed: updated.is_completed,
+                completed_at: updated.completed_at,
+              })
+              .eq("id", updated.id)
+              .eq("user_id", user.id);
           }
         }}
       />
@@ -388,9 +392,8 @@ export default function Tasks() {
   }
 
   return (
-  <div className="h-full w-full flex flex-col bg-background overflow-x-hidden">
-    <div className="w-full flex-1 flex flex-col gap-4 px-4 md:px-6 py-4 min-h-0">
-      {/* Header */}
+    <div className="h-full flex flex-col gap-4 py-2 overflow-x-hidden bg-background w-full flex-1">
+      {/* Header - Remove timer widget from here */}
       <TasksHeader
         view={view}
         onViewChange={setView}
@@ -404,14 +407,20 @@ export default function Tasks() {
       {/* Summary Strip */}
       <SummaryStrip tasks={filteredTasks} />
 
-      {/* Insights Panel (we'll move clock inside this) */}
+      {/* Clock Widget Row - Larger */}
+      <div className="w-full">
+        <LargeClockWidget />
+      </div>
+
+      {/* Insights Panel Row - Below Clock */}
       <InsightsPanel tasks={filteredTasks} />
 
       {/* Top Focus Bar */}
       <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
 
-      {/* Task Views */}
-      <div className="flex-1 grid grid-cols-1 xl:grid-cols-[300px_1fr] gap-4 min-h-0">
+      {/* Task Views - Full Width */}
+      <div className="flex-1 grid grid-cols-1 xl:grid-cols-[280px_1fr] gap-4 min-h-0">
+        {/* All Tasks List */}
         <div className="min-h-0 overflow-y-auto">
           <AllTasksList
             tasks={filteredTasks}
@@ -421,6 +430,7 @@ export default function Tasks() {
           />
         </div>
 
+        {/* Quadrant/Board View - Full remaining width */}
         <div className="min-h-0 overflow-auto w-full">
           {view === "quadrant" && (
             <QuadrantGrid
@@ -447,7 +457,7 @@ export default function Tasks() {
         </div>
       </div>
 
-      {/* Drawer */}
+      {/* Unified Task Drawer */}
       <UnifiedTaskDrawer
         task={selectedTask}
         isNew={isNewTask}
@@ -469,5 +479,5 @@ export default function Tasks() {
         onSkip={() => setFocusPromptOpen(false)}
       />
     </div>
-  </div>
-);
+  );
+}
