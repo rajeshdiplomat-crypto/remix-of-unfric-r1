@@ -1,36 +1,41 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { TrendingUp, CheckCircle, Camera, Lightbulb } from "lucide-react";
-import { type ManifestCheckIn } from "./types";
+import { TrendingUp, Lightbulb } from "lucide-react";
+import { type ManifestDailyPractice } from "./types";
 import { subDays, parseISO, isSameDay, format } from "date-fns";
 
 interface ManifestWeeklyPanelProps {
-  checkIns: ManifestCheckIn[];
+  practices: ManifestDailyPractice[];
 }
 
-export function ManifestWeeklyPanel({ checkIns }: ManifestWeeklyPanelProps) {
+export function ManifestWeeklyPanel({ practices }: ManifestWeeklyPanelProps) {
   const today = new Date();
 
   // Filter to last 7 days
-  const weekCheckIns = checkIns.filter((c) => {
-    const entryDate = parseISO(c.entry_date);
-    return entryDate >= subDays(today, 7);
+  const weekPractices = practices.filter((p) => {
+    const entryDate = parseISO(p.entry_date);
+    return entryDate >= subDays(today, 7) && p.locked;
   });
 
   // Calculate metrics
-  const avgAlignment = weekCheckIns.length
-    ? Math.round(weekCheckIns.reduce((sum, c) => sum + c.alignment, 0) / weekCheckIns.length * 10) / 10
+  const avgAlignment = weekPractices.length
+    ? Math.round(
+        (weekPractices.reduce((sum, p) => sum + (p.alignment || 0), 0) /
+          weekPractices.length) *
+          10
+      ) / 10
     : 0;
 
-  const actAsIfDays = weekCheckIns.filter((c) => c.acted_today === "yes" || c.acted_today === "mostly").length;
+  const actAsIfDays = weekPractices.filter((p) => p.acted).length;
 
-  const proofsLogged = weekCheckIns.reduce((sum, c) => sum + c.proofs.length, 0);
+  const proofsLogged = weekPractices.filter((p) => p.proof_text).length;
 
   // Sparkline data
   const sparklineData = Array.from({ length: 7 }, (_, i) => {
     const date = subDays(today, 6 - i);
-    const checkIn = weekCheckIns.find((c) => isSameDay(parseISO(c.entry_date), date));
-    return checkIn?.alignment || 0;
+    const practice = weekPractices.find((p) =>
+      isSameDay(parseISO(p.entry_date), date)
+    );
+    return practice?.alignment || 0;
   });
 
   // Insight based on metrics

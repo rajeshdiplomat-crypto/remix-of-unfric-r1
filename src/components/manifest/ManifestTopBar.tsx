@@ -1,17 +1,23 @@
 import { Button } from "@/components/ui/button";
 import { Plus, Flame, Target, TrendingUp } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ManifestTopBarProps {
   activeCount: number;
-  dayStreak: number;
-  momentumScore: number;
+  streak: number;
+  avgMomentum: number;
   onNewManifest: () => void;
 }
 
 export function ManifestTopBar({
   activeCount,
-  dayStreak,
-  momentumScore,
+  streak,
+  avgMomentum,
   onNewManifest,
 }: ManifestTopBarProps) {
   return (
@@ -28,18 +34,29 @@ export function ManifestTopBar({
         <div className="flex items-center gap-2">
           <Flame className="h-4 w-4 text-orange-500" />
           <span className="text-sm">
-            <span className="font-medium text-foreground">{dayStreak}</span>
-            <span className="text-muted-foreground ml-1">Day Streak</span>
+            <span className="font-medium text-foreground">{streak}</span>
+            <span className="text-muted-foreground ml-1">Streak</span>
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <TrendingUp className="h-4 w-4 text-primary" />
-          <span className="text-sm">
-            <span className="font-medium text-foreground">{momentumScore}%</span>
-            <span className="text-muted-foreground ml-1">Momentum</span>
-          </span>
-        </div>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-2 cursor-help">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                <span className="text-sm">
+                  <span className="font-medium text-foreground">{avgMomentum}%</span>
+                  <span className="text-muted-foreground ml-1">Momentum</span>
+                </span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="text-xs max-w-xs">
+                Momentum measures how consistently this assumption is being practiced.
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       <Button onClick={onNewManifest} size="sm">

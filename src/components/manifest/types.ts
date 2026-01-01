@@ -1,30 +1,59 @@
 export interface ManifestGoal {
   id: string;
-  title: string; // The assumption
-  conviction: number; // 1-10
+  user_id: string;
+  title: string; // The assumption (present tense)
+  category: string;
+  vision_image_url?: string;
+  target_date?: string;
   live_from_end?: string;
   act_as_if: string;
+  conviction: number; // Latest conviction 1-10
   visualization_minutes: 3 | 5 | 10;
   daily_affirmation: string;
   check_in_time: string;
   committed_7_days: boolean;
   is_completed: boolean;
+  is_locked: boolean;
   created_at: string;
   updated_at?: string;
 }
 
-export interface ManifestCheckIn {
+export interface ManifestProof {
+  id: string;
+  goal_id: string;
+  text: string;
+  image_url?: string;
+  created_at: string;
+}
+
+export interface ManifestConviction {
+  id: string;
+  goal_id: string;
+  value: number; // 1-10
+  entry_date: string;
+  created_at: string;
+}
+
+export interface ManifestDailyPractice {
   id: string;
   goal_id: string;
   user_id: string;
   entry_date: string;
   created_at: string;
-  alignment: number; // 1-10
-  acted_today: 'yes' | 'mostly' | 'not_yet';
-  proofs: string[];
-  proof_images?: string[];
+  
+  // Section 1 - Daily Practice
+  visualization_completed: boolean;
+  acted: boolean;
+  proof_text?: string;
+  proof_image_url?: string;
+  
+  // Section 2 - Daily Check-in
+  alignment?: number; // 1-10
   growth_note?: string;
   gratitude?: string;
+  
+  // Lock state
+  locked: boolean;
 }
 
 export interface StarterTemplate {
@@ -100,3 +129,18 @@ export const ACT_AS_IF_OPTIONS = [
   "Practice 5-min pitch",
   "Dress the part"
 ];
+
+export const CATEGORIES = [
+  { id: "career", label: "Career" },
+  { id: "wealth", label: "Wealth" },
+  { id: "health", label: "Health" },
+  { id: "habits", label: "Habits" },
+  { id: "relationships", label: "Relationships" },
+  { id: "learning", label: "Learning" },
+  { id: "other", label: "Other" }
+];
+
+// Draft storage key
+export const MANIFEST_DRAFT_KEY = "manifest_create_draft";
+export const GOAL_EXTRAS_KEY = "manifest_goal_extras";
+export const DAILY_PRACTICE_KEY = "manifest_daily_practice";
