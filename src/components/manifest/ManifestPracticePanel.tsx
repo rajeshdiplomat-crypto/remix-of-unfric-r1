@@ -68,8 +68,19 @@ export function ManifestPracticePanel({
   const [gratitude, setGratitude] = useState("");
   const [isLocked, setIsLocked] = useState(false);
 
-  // Load saved state on mount
+  // Load saved state on mount and when goal changes - RESET all state first
   useEffect(() => {
+    // Reset all state to defaults first
+    setVisualizationCompleted(false);
+    setActed(false);
+    setProofText("");
+    setProofSaved(false);
+    setAlignment(5);
+    setGrowthNote("");
+    setGratitude("");
+    setIsLocked(false);
+
+    // Then load saved values for this specific goal
     const saved = loadTodaysPractice();
     if (saved.visualization_completed) setVisualizationCompleted(true);
     if (saved.acted) setActed(true);
@@ -81,7 +92,7 @@ export function ManifestPracticePanel({
     if (saved.growth_note) setGrowthNote(saved.growth_note);
     if (saved.gratitude) setGratitude(saved.gratitude || "");
     if (saved.locked) setIsLocked(true);
-  }, [goal.id]);
+  }, [goal.id, today]);
 
   const section1Complete = visualizationCompleted && acted && proofSaved;
   const section2Ready = section1Complete;
