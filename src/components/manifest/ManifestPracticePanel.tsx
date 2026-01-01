@@ -225,7 +225,7 @@ export function ManifestPracticePanel({
                     onClick={() => setShowVisualization(true)}
                     disabled={isLocked}
                   >
-                    Visualize ({goal.visualization_minutes}m)
+                    {visualizationCompleted ? "Redo" : `Visualize (${goal.visualization_minutes}m)`}
                   </Button>
                 </div>
               </CardContent>
@@ -248,7 +248,7 @@ export function ManifestPracticePanel({
                       size="sm"
                       variant={acted ? "outline" : "default"}
                       onClick={handleActComplete}
-                      disabled={acted || isLocked}
+                      disabled={isLocked}
                     >
                       {acted ? "Done" : "Mark Action Done"}
                     </Button>
@@ -273,22 +273,23 @@ export function ManifestPracticePanel({
                 </div>
                 <Textarea
                   value={proofText}
-                  onChange={(e) => setProofText(e.target.value)}
+                  onChange={(e) => {
+                    setProofText(e.target.value);
+                    if (proofSaved) setProofSaved(false);
+                  }}
                   placeholder="A colleague asked for my input; I felt calm in the meeting."
                   rows={2}
-                  disabled={proofSaved || isLocked}
+                  disabled={isLocked}
                   className="text-sm"
                 />
-                {!proofSaved && (
-                  <Button
-                    size="sm"
-                    onClick={handleSaveProof}
-                    disabled={!proofText.trim() || isLocked}
-                    className="w-full"
-                  >
-                    Save Proof
-                  </Button>
-                )}
+                <Button
+                  size="sm"
+                  onClick={handleSaveProof}
+                  disabled={!proofText.trim() || isLocked}
+                  className="w-full"
+                >
+                  {proofSaved ? "Update Proof" : "Save Proof"}
+                </Button>
               </CardContent>
             </Card>
           </div>
