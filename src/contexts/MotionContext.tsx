@@ -7,7 +7,7 @@ interface MotionContextValue {
 
 const MotionContext = createContext<MotionContextValue | null>(null);
 
-const STORAGE_KEY = 'mindflow-motion';
+const STORAGE_KEY = 'inbalance-motion';
 
 export function MotionProvider({ children }: { children: ReactNode }) {
   const [motionEnabled, setMotionState] = useState<boolean>(() => {

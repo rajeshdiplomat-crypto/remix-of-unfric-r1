@@ -42,7 +42,7 @@ const FOCUS_QUOTES = [
   { text: "You can do anything, but not everything.", author: "David Allen" },
 ];
 
-const STORAGE_KEY = 'mindflow-deepfocus-premium-settings';
+const STORAGE_KEY = 'inbalance-deepfocus-premium-settings';
 
 interface DeepFocusSettings {
   wallpaperId: string;

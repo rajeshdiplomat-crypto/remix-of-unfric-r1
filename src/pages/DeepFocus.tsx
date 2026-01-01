@@ -56,7 +56,7 @@ const FOCUS_QUOTES = [
   { text: "The main thing is to keep the main thing the main thing.", author: "Stephen Covey" },
 ];
 
-const STORAGE_KEY = 'mindflow-deepfocus-settings';
+const STORAGE_KEY = 'inbalance-deepfocus-settings';
 
 interface DeepFocusSettings {
   wallpaperId: string;

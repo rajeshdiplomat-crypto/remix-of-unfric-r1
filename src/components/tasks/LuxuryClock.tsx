@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 type ClockMode = 'digital' | 'analog';
 
-const STORAGE_KEY = 'mindflow-clock-mode';
+const STORAGE_KEY = 'inbalance-clock-mode';
 
 export function LuxuryClock() {
   const [time, setTime] = useState(new Date());
