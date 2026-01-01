@@ -60,7 +60,7 @@ export function AppSidebar() {
             <Sparkles className="h-4 w-4 text-primary-foreground" />
           </div>
           {!collapsed && (
-            <span className="font-semibold text-lg text-foreground">InBalance</span>
+            <span className="font-semibold text-lg text-foreground">inbalance</span>
           )}
         </div>
       </SidebarHeader>

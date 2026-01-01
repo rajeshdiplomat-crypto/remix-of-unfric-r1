@@ -66,7 +66,7 @@ export function MobileNav({ onNavigate }: MobileNavProps) {
           <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
             <Sparkles className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="font-bold text-xl text-foreground">InBalance</span>
+          <span className="font-bold text-xl text-foreground">inbalance</span>
         </div>
       </div>
 

@@ -326,7 +326,7 @@ export default function Diary() {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Your Diary</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">A timeline of everything you do in InBalance</p>
+          <p className="text-muted-foreground text-sm mt-0.5">A timeline of everything you do in inbalance</p>
         </div>
 
         {/* Search Bar */}
