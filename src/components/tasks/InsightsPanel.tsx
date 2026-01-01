@@ -114,30 +114,37 @@ function ClockKpiCard() {
   }, []);
 
   return (
-    <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
-      <CardContent className="h-[96px] px-4 py-3 flex items-center gap-4 min-w-0">
-        {/* Icon */}
-        <div className="h-12 w-12 rounded-2xl bg-muted/40 flex items-center justify-center shrink-0">
+    <Card
+      className="
+        relative overflow-hidden rounded-2xl border border-border/40
+        bg-card/60 backdrop-blur-sm shadow-sm
+        before:absolute before:inset-0 before:bg-gradient-to-r
+        before:from-primary/10 before:via-primary/5 before:to-transparent
+        before:pointer-events-none
+      "
+    >
+      <CardContent className="relative z-10 h-[92px] px-5 py-4 flex items-center gap-5 min-w-0">
+        {/* Bigger clock */}
+        <div className="h-14 w-14 rounded-2xl bg-muted/40 flex items-center justify-center shrink-0">
           <CenterAnalogClock now={now} />
         </div>
 
-        {/* Time + Date (no wrapping, no cropping) */}
+        {/* Bigger time */}
         <div className="min-w-0 flex-1">
-          <div className="text-[20px] font-semibold tracking-tight text-foreground whitespace-nowrap leading-none">
-            {format(now, "h:mm")}
-            <span className="ml-1 text-[12px] font-semibold align-top">{format(now, "a")}</span>
+          <div className="text-[28px] font-semibold tracking-tight text-foreground whitespace-nowrap leading-none tabular-nums">
+            {format(now, "h:mm a")}
           </div>
 
-          <div className="mt-1 text-[11px] text-muted-foreground whitespace-nowrap leading-none">
+          <div className="mt-1 text-[12px] text-muted-foreground whitespace-nowrap leading-none">
             {format(now, "EEE, MMM d")}
             <span className="ml-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70">Local time</span>
           </div>
         </div>
 
-        {/* Right chip */}
+        {/* Chip */}
         <div className="ml-auto flex items-center gap-2 shrink-0 whitespace-nowrap">
           <span className="text-[11px] text-muted-foreground">Now</span>
-          <span className="h-6 px-3 rounded-full bg-muted/40 text-[11px] text-foreground flex items-center">Focus</span>
+          <span className="h-7 px-4 rounded-full bg-muted/40 text-[12px] text-foreground flex items-center">Focus</span>
         </div>
       </CardContent>
     </Card>
@@ -240,40 +247,51 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
       </div>
 
       {/* KPI ROW (auto-fit so zoom never breaks alignment) */}
-      <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
-        <KpiCard
-          icon={<Calendar className="h-4 w-4" />}
-          iconBg="bg-primary/10"
-          iconColor="text-primary"
-          value={plannedToday}
-          label="Planned Today"
-        />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-12">
+        <div className="col-span-2 lg:col-span-2 min-w-0">
+          <KpiCard
+            icon={<Calendar className="h-4 w-4" />}
+            iconBg="bg-primary/10"
+            iconColor="text-primary"
+            value={plannedToday}
+            label="Planned Today"
+          />
+        </div>
 
-        <KpiCard
-          icon={<CheckCircle className="h-4 w-4" />}
-          iconBg="bg-chart-1/10"
-          iconColor="text-chart-1"
-          value={completedToday}
-          label="Done Today"
-        />
+        <div className="col-span-2 lg:col-span-2 min-w-0">
+          <KpiCard
+            icon={<CheckCircle className="h-4 w-4" />}
+            iconBg="bg-chart-1/10"
+            iconColor="text-chart-1"
+            value={completedToday}
+            label="Done Today"
+          />
+        </div>
 
-        <ClockKpiCard />
+        {/* CLOCK = BIG + LONG */}
+        <div className="col-span-2 lg:col-span-4 min-w-0">
+          <ClockKpiCard />
+        </div>
 
-        <KpiCard
-          icon={<AlertTriangle className="h-4 w-4" />}
-          iconBg="bg-destructive/10"
-          iconColor="text-destructive"
-          value={overdueTasks}
-          label="Overdue"
-        />
+        <div className="col-span-2 lg:col-span-2 min-w-0">
+          <KpiCard
+            icon={<AlertTriangle className="h-4 w-4" />}
+            iconBg="bg-destructive/10"
+            iconColor="text-destructive"
+            value={overdueTasks}
+            label="Overdue"
+          />
+        </div>
 
-        <KpiCard
-          icon={<ClockIcon className="h-4 w-4" />}
-          iconBg="bg-muted/20"
-          iconColor="text-muted-foreground"
-          value={`${totalFocusMinutes}m`}
-          label="Focus Time"
-        />
+        <div className="col-span-2 lg:col-span-2 min-w-0">
+          <KpiCard
+            icon={<ClockIcon className="h-4 w-4" />}
+            iconBg="bg-muted/20"
+            iconColor="text-muted-foreground"
+            value={`${totalFocusMinutes}m`}
+            label="Focus Time"
+          />
+        </div>
       </div>
 
       {/* Charts Row */}
