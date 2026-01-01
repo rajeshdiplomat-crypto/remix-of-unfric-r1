@@ -16,8 +16,8 @@ import {
   Zap,
   ArrowUpDown,
   LayoutGrid,
-  KanbanSquare,
-  Share2,
+  Kanban,
+  Network,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { NotesSplitView } from "@/components/notes/NotesSplitView";
@@ -27,6 +27,7 @@ import { NotesLocationPicker } from "@/components/notes/NotesLocationPicker";
 import { NotesBoardView } from "@/components/notes/NotesBoardView";
 import { NotesMindMapView } from "@/components/notes/NotesMindMapView";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export interface NoteGroup {
   id: string;
@@ -109,24 +110,55 @@ const SAMPLE_NOTES: Note[] = [
     isPinned: false,
     isArchived: false,
   },
+  {
+    id: "4",
+    groupId: "personal",
+    folderId: null,
+    title: "Travel Itinerary: Japan",
+    contentRich: "Day 1: Tokyo arrival, Shinjuku dinner. Day 2: Kyoto temples",
+    plainText: "Day 1: Tokyo arrival, Shinjuku dinner. Day 2: Kyoto temples",
+    tags: ["travel"],
+    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+    isPinned: false,
+    isArchived: false,
+  },
+  {
+    id: "5",
+    groupId: "wellness",
+    folderId: null,
+    title: "Gratitude Journal Draft",
+    contentRich: "Today I am grateful for the sunny weather and morning coffee",
+    plainText: "Today I am grateful for the sunny weather and morning coffee",
+    tags: ["gratitude"],
+    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000 * 10).toISOString(),
+    isPinned: false,
+    isArchived: false,
+  },
+  {
+    id: "6",
+    groupId: "hobby",
+    folderId: null,
+    title: "Book Ideas",
+    contentRich: "The Silent Patient, Project Hail Mary, Atomic Habits",
+    plainText: "The Silent Patient, Project Hail Mary, Atomic Habits",
+    tags: ["reading"],
+    createdAt: new Date(Date.now() - 86400000 * 15).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000 * 15).toISOString(),
+    isPinned: false,
+    isArchived: false,
+  },
 ];
 
 type ViewMode = "overview" | "editor";
 type SortOption = "updatedAt" | "createdAt" | "title";
-type NotesView = "atlas" | "board" | "mindmap";
-
-function safeUUID() {
-  // fallback for environments without crypto.randomUUID
-  try {
-    return crypto.randomUUID();
-  } catch {
-    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  }
-}
+type NotesViewType = "atlas" | "board" | "mindmap";
 
 export default function Notes() {
   const { toast } = useToast();
 
+  // Load from localStorage or use defaults
   const [notes, setNotes] = useState<Note[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_NOTES);
     return saved ? JSON.parse(saved) : SAMPLE_NOTES;
@@ -150,8 +182,9 @@ export default function Notes() {
   const [sortBy, setSortBy] = useState<SortOption>("updatedAt");
   const [filterGroupId, setFilterGroupId] = useState<string>("all");
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
-  const [notesView, setNotesView] = useState<NotesView>("atlas");
+  const [notesView, setNotesView] = useState<NotesViewType>("atlas");
 
+  // Persist to localStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_NOTES, JSON.stringify(notes));
   }, [notes]);
@@ -171,13 +204,15 @@ export default function Notes() {
       .filter((note) => {
         if (note.isArchived) return false;
 
-        const matchesSearch = searchQuery
-          ? note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            note.plainText.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            note.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+        const q = searchQuery.trim().toLowerCase();
+        const matchesSearch = q
+          ? note.title.toLowerCase().includes(q) ||
+            note.plainText.toLowerCase().includes(q) ||
+            note.tags.some((tag) => tag.toLowerCase().includes(q))
           : true;
 
         const matchesFilter = filterGroupId === "all" || note.groupId === filterGroupId;
+
         return matchesSearch && matchesFilter;
       })
       .sort((a, b) => {
@@ -188,11 +223,14 @@ export default function Notes() {
       });
   }, [notes, searchQuery, filterGroupId, sortBy]);
 
-  const getGroupName = (groupId: string) => groups.find((g) => g.id === groupId)?.name || "Unknown";
+  const getGroupName = (groupId: string) => {
+    return groups.find((g) => g.id === groupId)?.name || "Unknown";
+  };
 
+  // Create note (go straight to editor)
   const handleCreateNote = (groupId: string, folderId: string | null) => {
     const newNote: Note = {
-      id: safeUUID(),
+      id: crypto.randomUUID(),
       groupId,
       folderId,
       title: "",
@@ -209,6 +247,7 @@ export default function Notes() {
     setViewMode("editor");
   };
 
+  // Quick note -> Inbox
   const handleQuickNote = () => {
     if (!groups.find((g) => g.id === "inbox")) {
       const inboxGroup: NoteGroup = {
@@ -226,7 +265,7 @@ export default function Notes() {
 
   const handleCreateFolder = (groupId: string, folderName: string) => {
     const newFolder: NoteFolder = {
-      id: safeUUID(),
+      id: crypto.randomUUID(),
       groupId,
       name: folderName,
       sortOrder: folders.filter((f) => f.groupId === groupId).length,
@@ -262,86 +301,106 @@ export default function Notes() {
     setSelectedNote(null);
   };
 
-  const handleGroupsChange = (newGroups: NoteGroup[]) => setGroups(newGroups);
+  const handleGroupsChange = (newGroups: NoteGroup[]) => {
+    setGroups(newGroups);
+  };
 
-  // ---------- OVERVIEW ----------
+  // =========================
+  // OVERVIEW
+  // =========================
   if (viewMode === "overview") {
     return (
-      <div className="w-full flex-1 space-y-6 pb-20">
-        {/* Header (match Tasks style: left title, right actions) */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="flex-1">
-            <h1 className="text-2xl font-semibold tracking-tight">Notes</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Your life atlas — everything in one calm view</p>
+      <div className="w-full flex-1 space-y-5 pb-20">
+        {/* Header (match Tasks: title left, controls right) */}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Notes</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Your life atlas — everything in one calm view</p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 lg:justify-end">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button className="gap-2">
-                  <Plus className="h-4 w-4" />
+                <Button className="h-9 rounded-xl px-4 shadow-sm">
+                  <Plus className="h-4 w-4 mr-2" />
                   New note
-                  <ChevronDown className="h-4 w-4 opacity-70" />
+                  <ChevronDown className="h-4 w-4 ml-2 opacity-70" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-60">
                 <DropdownMenuItem onClick={handleNewNoteWithOptions} className="py-2.5">
-                  <FileText className="h-4 w-4 mr-2" />
+                  <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
                   <div className="flex flex-col">
                     <span className="text-sm">New Note</span>
-                    <span className="text-xs text-muted-foreground">Choose group/section</span>
+                    <span className="text-xs text-muted-foreground">Choose where to save</span>
                   </div>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleQuickNote} className="py-2.5">
-                  <Zap className="h-4 w-4 mr-2" />
+                  <Zap className="h-4 w-4 mr-2 text-muted-foreground" />
                   <div className="flex flex-col">
                     <span className="text-sm">Quick Note</span>
-                    <span className="text-xs text-muted-foreground">Saves to Inbox</span>
+                    <span className="text-xs text-muted-foreground">Send to Inbox</span>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="outline" size="icon" onClick={() => setSettingsOpen(true)} aria-label="Notes settings">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 rounded-xl"
+              onClick={() => setSettingsOpen(true)}
+              aria-label="Notes settings"
+              title="Settings"
+            >
               <Settings className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        {/* Controls row (View toggle + Search + Sort) */}
-        <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-          {/* View toggle (no NotesViewSwitcher dependency) */}
-          <div className="flex items-center gap-1 rounded-xl border bg-background p-1 w-fit">
-            <Button
-              type="button"
-              variant={notesView === "atlas" ? "default" : "ghost"}
+        {/* Controls Row (match Tasks: view switcher + search + sort) */}
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+          {/* View Switch (modern segmented control) */}
+          <div className="flex items-center gap-2">
+            <div className="text-xs font-semibold tracking-wider text-muted-foreground hidden md:block">VIEW</div>
+
+            <ToggleGroup
+              type="single"
+              value={notesView}
+              onValueChange={(v) => {
+                if (v) setNotesView(v as NotesViewType);
+              }}
+              variant="outline"
               size="sm"
-              onClick={() => setNotesView("atlas")}
-              className="gap-2 rounded-lg"
+              className="rounded-xl bg-background/60 p-1 border"
             >
-              <LayoutGrid className="h-4 w-4" />
-              Atlas
-            </Button>
-            <Button
-              type="button"
-              variant={notesView === "board" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setNotesView("board")}
-              className="gap-2 rounded-lg"
-            >
-              <KanbanSquare className="h-4 w-4" />
-              Board
-            </Button>
-            <Button
-              type="button"
-              variant={notesView === "mindmap" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setNotesView("mindmap")}
-              className="gap-2 rounded-lg"
-            >
-              <Share2 className="h-4 w-4" />
-              Mind Map
-            </Button>
+              <ToggleGroupItem
+                value="atlas"
+                aria-label="Atlas view"
+                className="rounded-lg px-3 data-[state=on]:bg-primary/10 data-[state=on]:text-primary data-[state=on]:border-primary/30"
+              >
+                <LayoutGrid className="h-4 w-4 mr-2" />
+                Atlas
+              </ToggleGroupItem>
+
+              <ToggleGroupItem
+                value="board"
+                aria-label="Board view"
+                className="rounded-lg px-3 data-[state=on]:bg-primary/10 data-[state=on]:text-primary data-[state=on]:border-primary/30"
+              >
+                <Kanban className="h-4 w-4 mr-2" />
+                Board
+              </ToggleGroupItem>
+
+              <ToggleGroupItem
+                value="mindmap"
+                aria-label="Mind map view"
+                className="rounded-lg px-3 data-[state=on]:bg-primary/10 data-[state=on]:text-primary data-[state=on]:border-primary/30"
+              >
+                <Network className="h-4 w-4 mr-2" />
+                Mind Map
+              </ToggleGroupItem>
+            </ToggleGroup>
           </div>
 
           {/* Search */}
@@ -351,51 +410,56 @@ export default function Notes() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search notes..."
-              className="pl-10 h-10 rounded-xl"
+              className="h-9 rounded-xl pl-10"
             />
           </div>
 
           {/* Sort */}
-          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-            <SelectTrigger className="w-[170px] h-10 rounded-xl">
-              <ArrowUpDown className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Sort" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="updatedAt">Last edited</SelectItem>
-              <SelectItem value="createdAt">Created date</SelectItem>
-              <SelectItem value="title">A–Z</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+              <SelectTrigger className="h-9 rounded-xl w-[170px]">
+                <ArrowUpDown className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Sort" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="updatedAt">Last edited</SelectItem>
+                <SelectItem value="createdAt">Created date</SelectItem>
+                <SelectItem value="title">A–Z</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        {/* Group filter chips */}
+        {/* Filter Chips (premium + consistent) */}
         <div className="flex flex-wrap gap-2">
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setFilterGroupId("all")}
-            className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
-              filterGroupId === "all"
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-background hover:bg-muted border-border"
+            className={`h-8 rounded-full px-3 ${
+              filterGroupId === "all" ? "bg-primary/10 text-primary border-primary/30" : "text-foreground/80"
             }`}
           >
             All
-          </button>
+          </Button>
 
-          {sortedGroups.map((group) => (
-            <button
-              key={group.id}
-              onClick={() => setFilterGroupId(group.id)}
-              className={`px-3 py-1.5 rounded-full text-sm border flex items-center gap-2 transition-colors ${
-                filterGroupId === group.id
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-background hover:bg-muted border-border"
-              }`}
-            >
-              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: group.color }} />
-              {group.name}
-            </button>
-          ))}
+          {sortedGroups.map((group) => {
+            const active = filterGroupId === group.id;
+            return (
+              <Button
+                key={group.id}
+                variant="outline"
+                size="sm"
+                onClick={() => setFilterGroupId(group.id)}
+                className={`h-8 rounded-full px-3 gap-2 ${
+                  active ? "bg-primary/10 text-primary border-primary/30" : "text-foreground/80"
+                }`}
+              >
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: group.color }} />
+                {group.name}
+              </Button>
+            );
+          })}
         </div>
 
         {/* Content */}
@@ -442,7 +506,18 @@ export default function Notes() {
           />
         )}
 
-        {/* Settings */}
+        {/* Empty State */}
+        {sortedGroups.length === 0 && (
+          <div className="rounded-2xl border bg-card p-10 text-center">
+            <p className="text-muted-foreground mb-4">No groups yet. Create your first group to get started.</p>
+            <Button className="h-9 rounded-xl" onClick={() => setSettingsOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Group
+            </Button>
+          </div>
+        )}
+
+        {/* Settings Dialog */}
         <NotesGroupSettings
           open={settingsOpen}
           onOpenChange={setSettingsOpen}
@@ -452,7 +527,7 @@ export default function Notes() {
           onFoldersChange={setFolders}
         />
 
-        {/* Location Picker */}
+        {/* Location Picker Dialog */}
         <NotesLocationPicker
           open={locationPickerOpen}
           onOpenChange={setLocationPickerOpen}
@@ -464,7 +539,9 @@ export default function Notes() {
     );
   }
 
-  // ---------- EDITOR ----------
+  // =========================
+  // EDITOR (Split View)
+  // =========================
   return (
     <NotesSplitView
       notes={filteredNotes}
