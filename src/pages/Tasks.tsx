@@ -402,10 +402,10 @@ export default function Tasks() {
   }
 
 return (
-  <div className="h-full w-full bg-background overflow-x-hidden">
-    <div className="h-full w-full flex flex-col min-h-0 px-4 md:px-6 py-4">
-      {/* Max-width container (everything must be inside this) */}
-      <div className="mx-auto w-full max-w-[1400px] flex-1 flex flex-col gap-4 min-h-0 min-w-0">
+  <div className="w-full px-4 md:px-6 py-5">
+  <div className="mx-auto w-full max-w-[1400px] min-w-0 flex flex-col gap-4 min-h-0">
+  </div>
+</div>
         <TasksHeader
           view={view}
           onViewChange={setView}
@@ -480,4 +480,5 @@ return (
       </div>
     </div>
   </div>
-);
+}
+
