@@ -329,7 +329,7 @@ export default function Diary() {
 
         {/* Search Bar */}
         <div className="mb-4">
-          <div className="flex items-center gap-2 bg-card border border-border/40 rounded-lg px-3 py-1">
+          <div className="flex items-center gap-2 bg-card border border-border/40 rounded-xl px-3 py-1">
             <Search className="h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search..."
@@ -348,7 +348,7 @@ export default function Diary() {
               variant="ghost"
               size="sm"
               className={cn(
-                "h-5 px-3 text-sm rounded-md whitespace-nowrap",
+                "h-6 px-3 text-sm rounded-xl whitespace-nowrap",
                 filter === tab.value
                   ? "bg-muted text-foreground font-medium"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
