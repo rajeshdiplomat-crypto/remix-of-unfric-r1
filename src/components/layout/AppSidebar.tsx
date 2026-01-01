@@ -56,9 +56,11 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-border">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <Sparkles className="h-4 w-4 text-primary-foreground" />
-          </div>
+          <img 
+            src="/favicon.png" 
+            alt="inbalance logo" 
+            className="h-8 w-8 rounded-lg object-cover"
+          />
           {!collapsed && (
             <span className="font-semibold text-lg text-foreground">inbalance</span>
           )}
