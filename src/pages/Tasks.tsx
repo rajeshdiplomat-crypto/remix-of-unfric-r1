@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -178,7 +178,7 @@ export default function Tasks() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const { taskId } = useParams(); // keeping in case you use it later
+  useParams(); // keep if you use route params later
 
   const isFocusMode = location.pathname.includes("/focus/");
 
@@ -193,7 +193,6 @@ export default function Tasks() {
   const [selectedTask, setSelectedTask] = useState<QuadrantTask | null>(null);
   const [isNewTask, setIsNewTask] = useState(false);
 
-  // Deep Focus prompt state
   const [focusPromptOpen, setFocusPromptOpen] = useState(false);
   const [focusPromptTask, setFocusPromptTask] = useState<QuadrantTask | null>(null);
 
@@ -216,14 +215,13 @@ export default function Tasks() {
         })),
       );
     }, 60000);
-
     return () => clearInterval(interval);
   }, []);
 
   const fetchTasks = async () => {
     if (!user) return;
-
     setLoading(true);
+
     const { data, error } = await supabase
       .from("tasks")
       .select("*")
@@ -284,8 +282,8 @@ export default function Tasks() {
     setDrawerOpen(false);
   };
 
-  const handleDeleteTask = (taskId: string) => {
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+  const handleDeleteTask = (id: string) => {
+    setTasks((prev) => prev.filter((t) => t.id !== id));
     setDrawerOpen(false);
     toast({ title: "Deleted", description: "Task has been removed" });
   };
@@ -301,7 +299,6 @@ export default function Tasks() {
     setSelectedTask(updated);
     toast({ title: "Started!", description: "Task moved to Ongoing" });
 
-    // Show Deep Focus prompt
     setFocusPromptTask(updated);
     setFocusPromptOpen(true);
   };
@@ -406,9 +403,7 @@ export default function Tasks() {
 
   return (
     <div className="h-full w-full flex flex-col bg-background overflow-x-hidden">
-      {/* Main content wrapper: premium spacing + consistent alignment */}
       <div className="w-full flex-1 flex flex-col min-h-0 px-4 md:px-6 py-4 gap-4">
-        {/* Header */}
         <TasksHeader
           view={view}
           onViewChange={setView}
@@ -419,18 +414,14 @@ export default function Tasks() {
           onNewTask={openNewTaskDrawer}
         />
 
-        {/* Summary Strip */}
         <SummaryStrip tasks={filteredTasks} />
 
-        {/* Insights (we will move the clock inside InsightsPanel in next step) */}
+        {/* Clock must be inside InsightsPanel (like your screenshot) */}
         <InsightsPanel tasks={filteredTasks} />
 
-        {/* Top Focus Bar */}
         <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
 
-        {/* Task Views */}
         <div className="flex-1 grid grid-cols-1 xl:grid-cols-[300px_1fr] gap-4 min-h-0">
-          {/* All Tasks List */}
           <div className="min-h-0 overflow-y-auto">
             <AllTasksList
               tasks={filteredTasks}
@@ -440,7 +431,6 @@ export default function Tasks() {
             />
           </div>
 
-          {/* Quadrant/Board View */}
           <div className="min-h-0 overflow-auto w-full">
             {view === "quadrant" && (
               <QuadrantGrid
@@ -467,7 +457,6 @@ export default function Tasks() {
           </div>
         </div>
 
-        {/* Unified Task Drawer */}
         <UnifiedTaskDrawer
           task={selectedTask}
           isNew={isNewTask}
@@ -480,7 +469,6 @@ export default function Tasks() {
           onCompleteTask={handleCompleteTask}
         />
 
-        {/* Deep Focus Prompt */}
         <DeepFocusPrompt
           open={focusPromptOpen}
           task={focusPromptTask}
