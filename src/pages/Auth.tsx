@@ -130,13 +130,13 @@ export default function Auth() {
   const getDescription = () => {
     switch (mode) {
       case "signup":
-        return "Sign up to start your InBalance journey";
+        return "Sign up to start your inbalance journey";
       case "forgot-password":
         return "Enter your email and we'll send you a reset link";
       case "verify-email":
         return "We've sent a verification email. Please check your inbox.";
       default:
-        return "Sign in to continue your InBalance journey";
+        return "Sign in to continue your inbalance journey";
     }
   };
 
