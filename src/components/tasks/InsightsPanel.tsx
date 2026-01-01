@@ -53,24 +53,26 @@ function KpiCard({
   );
 }
 
-function MiniAnalogClock({ now }: { now: Date }) {
+function CenterAnalogClock({ now }: { now: Date }) {
   const h = now.getHours() % 12;
   const m = now.getMinutes();
-  const s = now.getSeconds();
+
   const hourAngle = h * 30 + m * 0.5;
-  const minuteAngle = m * 6 + s * 0.1;
-  const secondAngle = s * 6;
+  const minuteAngle = m * 6;
 
   return (
-    <svg width="44" height="44" viewBox="0 0 64 64" className="text-muted-foreground">
-      <circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.22" />
+    <svg width="48" height="48" viewBox="0 0 64 64" className="text-muted-foreground">
+      {/* outer ring */}
+      <circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.25" />
+
+      {/* ticks */}
       {Array.from({ length: 12 }).map((_, i) => (
         <line
           key={i}
           x1="32"
           y1="10"
           x2="32"
-          y2="13"
+          y2={i % 3 === 0 ? "15" : "13"}
           stroke="currentColor"
           strokeWidth="1"
           opacity={i % 3 === 0 ? 0.45 : 0.22}
@@ -78,42 +80,36 @@ function MiniAnalogClock({ now }: { now: Date }) {
         />
       ))}
 
+      {/* hour hand */}
       <line
         x1="32"
         y1="32"
         x2="32"
-        y2="20"
+        y2="21"
         stroke="currentColor"
-        strokeWidth="2.2"
+        strokeWidth="2.4"
         strokeLinecap="round"
         transform={`rotate(${hourAngle} 32 32)`}
         className="text-foreground"
         opacity="0.9"
       />
+
+      {/* minute hand */}
       <line
         x1="32"
         y1="32"
         x2="32"
         y2="15"
         stroke="currentColor"
-        strokeWidth="1.6"
+        strokeWidth="1.8"
         strokeLinecap="round"
         transform={`rotate(${minuteAngle} 32 32)`}
         className="text-foreground"
         opacity="0.75"
       />
-      <line
-        x1="32"
-        y1="34"
-        x2="32"
-        y2="13"
-        stroke="currentColor"
-        strokeWidth="1"
-        strokeLinecap="round"
-        transform={`rotate(${secondAngle} 32 32)`}
-        opacity="0.22"
-      />
-      <circle cx="32" cy="32" r="2.1" fill="currentColor" opacity="0.55" />
+
+      {/* center dot */}
+      <circle cx="32" cy="32" r="2.2" fill="currentColor" opacity="0.55" />
     </svg>
   );
 }
@@ -131,12 +127,14 @@ function ClockKpiCard() {
 
   return (
     <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
-      <CardContent className="p-4 h-[86px] flex items-center gap-3 min-w-0">
-        <div className="h-9 w-9 rounded-xl bg-muted/20 flex items-center justify-center">
-          <MiniAnalogClock now={now} />
+      <CardContent className="p-4 h-[86px] flex flex-col items-center justify-between">
+        {/* clock icon centered */}
+        <div className="h-12 w-12 rounded-2xl bg-muted/20 flex items-center justify-center">
+          <CenterAnalogClock now={now} />
         </div>
 
-        <div className="min-w-0 leading-tight">
+        {/* time + date centered like screenshot */}
+        <div className="text-center leading-tight">
           <div className="text-sm font-semibold tracking-tight text-foreground">{timeText}</div>
           <div className="text-[11px] text-muted-foreground">{dateText}</div>
         </div>
