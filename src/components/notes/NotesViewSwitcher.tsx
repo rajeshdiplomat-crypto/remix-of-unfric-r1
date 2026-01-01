@@ -1,7 +1,6 @@
-import type { ReactNode } from "react";
+import * as React from "react";
 import { LayoutGrid, Columns, Network } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 export type NotesViewType = "atlas" | "board" | "mindmap";
 
@@ -14,7 +13,7 @@ export function NotesViewSwitcher({ currentView, onViewChange }: NotesViewSwitch
   const views: Array<{
     id: NotesViewType;
     label: string;
-    icon: ReactNode;
+    icon: React.ReactNode;
     description: string;
   }> = [
     {
@@ -38,41 +37,33 @@ export function NotesViewSwitcher({ currentView, onViewChange }: NotesViewSwitch
   ];
 
   return (
-    <TooltipProvider>
-      {/* No outer box */}
-      <div className="inline-flex items-center gap-2">
-        {views.map((view) => {
-          const active = currentView === view.id;
+    // No outer container styling (no bg, no border, no rounded)
+    <div className="inline-flex items-center">
+      {views.map((view, idx) => {
+        const active = currentView === view.id;
 
-          return (
-            <Tooltip key={view.id}>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onViewChange(view.id)}
-                  className={[
-                    // Small, “luxury”, square corners
-                    "h-8 px-3 gap-2 rounded-none border text-sm font-medium",
-                    "transition-colors",
-                    active
-                      ? "bg-primary/10 text-primary border-primary/25"
-                      : "bg-transparent text-muted-foreground border-border/40 hover:bg-muted/40 hover:text-foreground",
-                  ].join(" ")}
-                >
-                  {view.icon}
-                  <span className="hidden sm:inline">{view.label}</span>
-                </Button>
-              </TooltipTrigger>
-
-              <TooltipContent side="bottom" className="bg-popover text-popover-foreground">
-                <p>{view.description}</p>
-              </TooltipContent>
-            </Tooltip>
-          );
-        })}
-      </div>
-    </TooltipProvider>
+        return (
+          <button
+            key={view.id}
+            type="button"
+            title={view.description}
+            aria-pressed={active}
+            onClick={() => onViewChange(view.id)}
+            className={cn(
+              // base
+              "h-9 px-3 inline-flex items-center gap-2 text-sm font-medium",
+              "border border-border/40 bg-background text-muted-foreground hover:text-foreground hover:bg-muted/30",
+              // remove ALL rounding + avoid double borders between buttons
+              "rounded-none -ml-px first:ml-0",
+              // active
+              active && "bg-primary text-primary-foreground border-primary/40 hover:bg-primary/90",
+            )}
+          >
+            {view.icon}
+            <span className="hidden sm:inline">{view.label}</span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
