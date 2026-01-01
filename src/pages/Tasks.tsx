@@ -388,8 +388,9 @@ export default function Tasks() {
   }
 
   return (
-    <div className="h-full flex flex-col gap-4 py-2 overflow-x-hidden bg-background w-full flex-1">
-      {/* Header - Remove timer widget from here */}
+  <div className="h-full w-full flex flex-col bg-background overflow-x-hidden">
+    <div className="w-full flex-1 flex flex-col gap-4 px-4 md:px-6 py-4 min-h-0">
+      {/* Header */}
       <TasksHeader
         view={view}
         onViewChange={setView}
@@ -403,20 +404,14 @@ export default function Tasks() {
       {/* Summary Strip */}
       <SummaryStrip tasks={filteredTasks} />
 
-      {/* Clock Widget Row - Larger */}
-      <div className="w-full">
-        <LargeClockWidget />
-      </div>
-
-      {/* Insights Panel Row - Below Clock */}
+      {/* Insights Panel (we'll move clock inside this) */}
       <InsightsPanel tasks={filteredTasks} />
 
       {/* Top Focus Bar */}
       <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
 
-      {/* Task Views - Full Width */}
-      <div className="flex-1 grid grid-cols-1 xl:grid-cols-[280px_1fr] gap-4 min-h-0">
-        {/* All Tasks List */}
+      {/* Task Views */}
+      <div className="flex-1 grid grid-cols-1 xl:grid-cols-[300px_1fr] gap-4 min-h-0">
         <div className="min-h-0 overflow-y-auto">
           <AllTasksList
             tasks={filteredTasks}
@@ -426,9 +421,8 @@ export default function Tasks() {
           />
         </div>
 
-        {/* Quadrant/Board View - Full remaining width */}
         <div className="min-h-0 overflow-auto w-full">
-          {view === 'quadrant' && (
+          {view === "quadrant" && (
             <QuadrantGrid
               mode={quadrantMode}
               tasks={filteredTasks}
@@ -438,7 +432,7 @@ export default function Tasks() {
             />
           )}
 
-          {view === 'board' && (
+          {view === "board" && (
             <BoardView
               mode="status"
               tasks={filteredTasks}
@@ -453,7 +447,7 @@ export default function Tasks() {
         </div>
       </div>
 
-      {/* Unified Task Drawer */}
+      {/* Drawer */}
       <UnifiedTaskDrawer
         task={selectedTask}
         isNew={isNewTask}
@@ -475,5 +469,5 @@ export default function Tasks() {
         onSkip={() => setFocusPromptOpen(false)}
       />
     </div>
-  );
-}
+  </div>
+);
