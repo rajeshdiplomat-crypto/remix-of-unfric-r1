@@ -120,15 +120,28 @@ function ClockKpiCard() {
   const dateText = useMemo(() => format(now, "EEE, MMM d"), [now]);
 
   return (
-    <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
-      <CardContent className="p-4 h-[110px] flex items-center justify-center gap-5">
-        <div className="h-20 w-20 rounded-2xl bg-muted/20 flex items-center justify-center">
+    <Card className="relative overflow-hidden rounded-2xl border border-border/40 shadow-sm">
+      {/* soft luxury gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-card/90 via-card/60 to-muted/10" />
+      {/* subtle glow */}
+      <div className="absolute -top-24 -left-24 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
+      <div className="absolute -bottom-24 -right-24 h-56 w-56 rounded-full bg-muted/20 blur-3xl" />
+
+      <CardContent className="relative p-4 h-[110px] flex items-center justify-center gap-5">
+        {/* glass dial container */}
+        <div className="relative h-20 w-20 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.06)] flex items-center justify-center">
+          {/* inner ring */}
+          <div className="absolute inset-2 rounded-xl border border-border/30" />
           <CenterAnalogClock now={now} />
         </div>
 
+        {/* text */}
         <div className="leading-tight">
-          <div className="text-xl font-semibold tracking-tight text-foreground">{timeText}</div>
-          <div className="text-sm text-muted-foreground">{dateText}</div>
+          <div className="text-[22px] font-semibold tracking-tight text-foreground">{timeText}</div>
+          <div className="text-[12px] text-muted-foreground">{dateText}</div>
+
+          {/* micro label for luxury feel */}
+          <div className="mt-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70">Local time</div>
         </div>
       </CardContent>
     </Card>
