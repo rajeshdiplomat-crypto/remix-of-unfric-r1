@@ -257,6 +257,41 @@ export type Database = {
         }
         Relationships: []
       }
+      journal_answers: {
+        Row: {
+          answer_text: string | null
+          created_at: string
+          id: string
+          journal_entry_id: string
+          question_id: string
+          updated_at: string
+        }
+        Insert: {
+          answer_text?: string | null
+          created_at?: string
+          id?: string
+          journal_entry_id: string
+          question_id: string
+          updated_at?: string
+        }
+        Update: {
+          answer_text?: string | null
+          created_at?: string
+          id?: string
+          journal_entry_id?: string
+          question_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_answers_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journal_entries: {
         Row: {
           created_at: string

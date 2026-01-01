@@ -14,7 +14,17 @@ import {
   JournalTemplate,
   JOURNAL_SKINS,
   DEFAULT_TEMPLATE,
+  DEFAULT_QUESTIONS,
 } from "@/components/journal/types";
+
+interface JournalAnswer {
+  id: string;
+  journal_entry_id: string;
+  question_id: string;
+  answer_text: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 const generateInitialContent = (questions: { text: string }[]) => {
   const content = {
@@ -27,6 +37,61 @@ const generateInitialContent = (questions: { text: string }[]) => {
   return JSON.stringify(content);
 };
 
+// Extract answers from TipTap content based on question headings
+const extractAnswersFromContent = (contentJSON: string, questions: { id: string; text: string }[]): { question_id: string; answer_text: string }[] => {
+  try {
+    const parsed = typeof contentJSON === "string" ? JSON.parse(contentJSON) : contentJSON;
+    if (!parsed?.content) return [];
+
+    const answers: { question_id: string; answer_text: string }[] = [];
+    let currentQuestionId: string | null = null;
+    let currentAnswerParts: string[] = [];
+
+    const extractText = (node: any): string => {
+      if (!node) return "";
+      if (node.text) return node.text;
+      if (node.content && Array.isArray(node.content)) {
+        return node.content.map(extractText).join("");
+      }
+      return "";
+    };
+
+    for (const node of parsed.content) {
+      if (node.type === "heading" && node.attrs?.level === 2) {
+        // Save previous answer if exists
+        if (currentQuestionId) {
+          answers.push({
+            question_id: currentQuestionId,
+            answer_text: currentAnswerParts.join("\n").trim(),
+          });
+        }
+
+        // Find matching question
+        const headingText = extractText(node).trim();
+        const matchedQuestion = questions.find((q) => q.text === headingText);
+        currentQuestionId = matchedQuestion?.id || null;
+        currentAnswerParts = [];
+      } else if (currentQuestionId) {
+        // Collect answer content
+        const text = extractText(node);
+        if (text) currentAnswerParts.push(text);
+      }
+    }
+
+    // Save last answer
+    if (currentQuestionId) {
+      answers.push({
+        question_id: currentQuestionId,
+        answer_text: currentAnswerParts.join("\n").trim(),
+      });
+    }
+
+    return answers;
+  } catch {
+    return [];
+  }
+};
+
 export default function Journal() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -35,6 +100,7 @@ export default function Journal() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [currentEntry, setCurrentEntry] = useState<JournalEntry | null>(null);
+  const [currentAnswers, setCurrentAnswers] = useState<JournalAnswer[]>([]);
   const [content, setContent] = useState("");
   const [isSaved, setIsSaved] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -91,35 +157,52 @@ export default function Journal() {
 
     const fetchOrCreateEntry = async () => {
       setIsLoading(true);
-      const { data } = await supabase
+      
+      // Fetch entry
+      const { data: entryData } = await supabase
         .from("journal_entries")
         .select("*")
         .eq("user_id", user.id)
         .eq("entry_date", dateStr)
         .maybeSingle();
 
-      if (data) {
+      if (entryData) {
+        // Fetch answers for this entry
+        const { data: answersData } = await supabase
+          .from("journal_answers")
+          .select("*")
+          .eq("journal_entry_id", entryData.id);
+
         const contentJSON =
-          typeof data.text_formatting === "string"
-            ? data.text_formatting
-            : JSON.stringify(data.text_formatting) || "";
+          typeof entryData.text_formatting === "string"
+            ? entryData.text_formatting
+            : JSON.stringify(entryData.text_formatting) || "";
 
         setCurrentEntry({
-          id: data.id,
-          entryDate: data.entry_date,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at,
-          title: data.daily_feeling || "Untitled",
+          id: entryData.id,
+          entryDate: entryData.entry_date,
+          createdAt: entryData.created_at,
+          updatedAt: entryData.updated_at,
+          title: entryData.daily_feeling || "Untitled",
           contentJSON,
-          mood: data.daily_feeling || undefined,
-          tags: data.tags || [],
+          mood: entryData.daily_feeling || undefined,
+          tags: entryData.tags || [],
         });
-        setContent(contentJSON);
+        setCurrentAnswers(answersData || []);
+        
+        // If we have answers, rebuild content from them
+        if (answersData && answersData.length > 0) {
+          const rebuiltContent = rebuildContentFromAnswers(answersData, template.questions);
+          setContent(rebuiltContent);
+        } else {
+          setContent(contentJSON);
+        }
       } else {
         const initialContent = template.applyOnNewEntry
           ? generateInitialContent(template.questions)
           : JSON.stringify({ type: "doc", content: [{ type: "paragraph" }] });
         setCurrentEntry(null);
+        setCurrentAnswers([]);
         setContent(initialContent);
       }
       setIsSaved(true);
@@ -128,6 +211,25 @@ export default function Journal() {
 
     fetchOrCreateEntry();
   }, [selectedDate, user, template.applyOnNewEntry, template.questions]);
+
+  // Rebuild TipTap content from answers
+  const rebuildContentFromAnswers = (answers: JournalAnswer[], questions: { id: string; text: string }[]) => {
+    const content = {
+      type: "doc",
+      content: questions.flatMap((q) => {
+        const answer = answers.find((a) => a.question_id === q.id);
+        const answerContent = answer?.answer_text 
+          ? [{ type: "text", text: answer.answer_text }]
+          : [];
+        
+        return [
+          { type: "heading", attrs: { level: 2, textAlign: "left" }, content: [{ type: "text", text: q.text }] },
+          { type: "paragraph", attrs: { textAlign: "left" }, content: answerContent },
+        ];
+      }),
+    };
+    return JSON.stringify(content);
+  };
 
   const handleContentChange = useCallback((newContent: string) => {
     setContent(newContent);
@@ -139,7 +241,11 @@ export default function Journal() {
     const dateStr = format(selectedDate, "yyyy-MM-dd");
 
     try {
+      // Extract answers from current content
+      const extractedAnswers = extractAnswersFromContent(content, template.questions);
+
       if (currentEntry) {
+        // Update entry
         await supabase
           .from("journal_entries")
           .update({
@@ -147,8 +253,32 @@ export default function Journal() {
             updated_at: new Date().toISOString(),
           })
           .eq("id", currentEntry.id);
+
+        // Upsert answers
+        for (const answer of extractedAnswers) {
+          const existingAnswer = currentAnswers.find((a) => a.question_id === answer.question_id);
+          
+          if (existingAnswer) {
+            await supabase
+              .from("journal_answers")
+              .update({
+                answer_text: answer.answer_text,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", existingAnswer.id);
+          } else {
+            await supabase
+              .from("journal_answers")
+              .insert({
+                journal_entry_id: currentEntry.id,
+                question_id: answer.question_id,
+                answer_text: answer.answer_text,
+              });
+          }
+        }
       } else {
-        const { data } = await supabase
+        // Create new entry
+        const { data: newEntry } = await supabase
           .from("journal_entries")
           .insert({
             user_id: user.id,
@@ -158,20 +288,41 @@ export default function Journal() {
           .select()
           .single();
 
-        if (data) {
-          const newEntry: JournalEntry = {
-            id: data.id,
-            entryDate: data.entry_date,
-            createdAt: data.created_at,
-            updatedAt: data.updated_at,
+        if (newEntry) {
+          // Insert answers
+          const answersToInsert = extractedAnswers.map((a) => ({
+            journal_entry_id: newEntry.id,
+            question_id: a.question_id,
+            answer_text: a.answer_text,
+          }));
+
+          if (answersToInsert.length > 0) {
+            await supabase.from("journal_answers").insert(answersToInsert);
+          }
+
+          const entry: JournalEntry = {
+            id: newEntry.id,
+            entryDate: newEntry.entry_date,
+            createdAt: newEntry.created_at,
+            updatedAt: newEntry.updated_at,
             title: "Untitled",
             contentJSON: content,
             tags: [],
           };
-          setCurrentEntry(newEntry);
-          setEntries((prev) => [newEntry, ...prev]);
+          setCurrentEntry(entry);
+          setEntries((prev) => [entry, ...prev]);
         }
       }
+
+      // Refetch answers
+      if (currentEntry) {
+        const { data: refreshedAnswers } = await supabase
+          .from("journal_answers")
+          .select("*")
+          .eq("journal_entry_id", currentEntry.id);
+        setCurrentAnswers(refreshedAnswers || []);
+      }
+
       setIsSaved(true);
       toast({ title: "Saved", description: "Your journal entry has been saved." });
     } catch (error) {
