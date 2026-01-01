@@ -1,398 +1,300 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Plus, Sparkles, Target, Heart, DollarSign, Briefcase, TrendingUp, Repeat } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { format, subDays, isSameDay, parseISO } from "date-fns";
-import { ManifestSummaryStrip } from "@/components/manifest/ManifestSummaryStrip";
-import { ManifestGoalCardCompact } from "@/components/manifest/ManifestGoalCardCompact";
-import { ManifestCreateWizard } from "@/components/manifest/ManifestCreateWizard";
+import { toast } from "sonner";
+import { Loader2, Sparkles } from "lucide-react";
+import { subDays, parseISO, isSameDay } from "date-fns";
+
+import { ManifestTopBar } from "@/components/manifest/ManifestTopBar";
+import { ManifestCard } from "@/components/manifest/ManifestCard";
+import { ManifestCreateForm } from "@/components/manifest/ManifestCreateForm";
 import { ManifestCheckInModal } from "@/components/manifest/ManifestCheckInModal";
-import { ManifestRightPanel } from "@/components/manifest/ManifestRightPanel";
-import { CATEGORIES, type ManifestGoal, type ManifestCheckIn } from "@/components/manifest/types";
+import { ManifestWeeklyPanel } from "@/components/manifest/ManifestWeeklyPanel";
+import { type ManifestGoal, type ManifestCheckIn } from "@/components/manifest/types";
 
-const CATEGORY_ICONS: Record<string, typeof Target> = {
-  all: Target,
-  wealth: DollarSign,
-  health: Heart,
-  career: Briefcase,
-  growth: TrendingUp,
-  habits: Repeat,
-};
+// Local storage helpers for extended goal data
+const GOAL_EXTRAS_KEY = "manifest_goal_extras";
 
-// Local storage helpers
-function saveGoalExtras(goalId: string, data: Partial<ManifestGoal>) {
-  const stored = JSON.parse(localStorage.getItem("manifest_goal_extras") || "{}");
-  stored[goalId] = { ...stored[goalId], ...data };
-  localStorage.setItem("manifest_goal_extras", JSON.stringify(stored));
+function saveGoalExtras(goalId: string, extras: Partial<ManifestGoal>) {
+  const all = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
+  all[goalId] = { ...all[goalId], ...extras };
+  localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify(all));
 }
 
 function loadGoalExtras(goalId: string): Partial<ManifestGoal> {
-  const stored = JSON.parse(localStorage.getItem("manifest_goal_extras") || "{}");
-  return stored[goalId] || {};
+  const all = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
+  return all[goalId] || {};
 }
 
 function loadAllGoalExtras(): Record<string, Partial<ManifestGoal>> {
-  return JSON.parse(localStorage.getItem("manifest_goal_extras") || "{}");
+  return JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
 }
 
 export default function Manifest() {
   const { user } = useAuth();
-  const { toast } = useToast();
-  
   const [goals, setGoals] = useState<ManifestGoal[]>([]);
   const [checkIns, setCheckIns] = useState<ManifestCheckIn[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
-  const [createOpen, setCreateOpen] = useState(false);
-  const [checkInOpen, setCheckInOpen] = useState(false);
-  const [editGoal, setEditGoal] = useState<ManifestGoal | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<ManifestGoal | null>(null);
-  
-  const [activeFilter, setActiveFilter] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [checkInOpen, setCheckInOpen] = useState(false);
 
-  useEffect(() => {
-    if (user) fetchData();
-  }, [user]);
-
-  useEffect(() => {
-    if (goals.length > 0 && !selectedGoal) {
-      setSelectedGoal(goals.find(g => !g.is_completed) || goals[0]);
-    }
-  }, [goals]);
-
+  // Fetch data
   const fetchData = async () => {
     if (!user) return;
-    setLoading(true);
 
-    const [goalsResult, journalResult] = await Promise.all([
-      supabase
+    try {
+      // Fetch goals
+      const { data: goalsData, error: goalsError } = await supabase
         .from("manifest_goals")
         .select("*")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false }),
-      supabase
+        .order("created_at", { ascending: false });
+
+      if (goalsError) throw goalsError;
+
+      // Fetch journal entries as check-ins
+      const { data: journalData, error: journalError } = await supabase
         .from("manifest_journal")
         .select("*")
         .eq("user_id", user.id)
-        .order("entry_date", { ascending: false }),
-    ]);
+        .order("created_at", { ascending: false });
 
-    if (!goalsResult.error && goalsResult.data) {
+      if (journalError) throw journalError;
+
+      // Merge with local extras
       const extras = loadAllGoalExtras();
-      const mergedGoals = goalsResult.data.map(g => ({
-        ...g,
-        ...extras[g.id],
-      })) as ManifestGoal[];
-      setGoals(mergedGoals);
-    }
-    
-    if (!journalResult.error && journalResult.data) {
-      // Transform journal entries to check-ins format
-      const transformedCheckIns: ManifestCheckIn[] = journalResult.data.map(entry => ({
-        id: entry.id,
-        goal_id: entry.goal_id,
-        user_id: entry.user_id,
-        entry_date: entry.entry_date,
-        created_at: entry.created_at,
-        alignment: 7, // Default
-        acted_today: 'yes' as const,
-        proofs: entry.gratitude ? [entry.gratitude] : [],
-        gratitude: entry.visualization || undefined,
+      const mergedGoals: ManifestGoal[] = (goalsData || []).map((g) => ({
+        id: g.id,
+        title: g.title,
+        conviction: extras[g.id]?.conviction ?? 5,
+        live_from_end: extras[g.id]?.live_from_end,
+        act_as_if: extras[g.id]?.act_as_if || "Take one small action",
+        visualization_minutes: extras[g.id]?.visualization_minutes || 3,
+        daily_affirmation: extras[g.id]?.daily_affirmation || "",
+        check_in_time: extras[g.id]?.check_in_time || "08:00",
+        committed_7_days: extras[g.id]?.committed_7_days || false,
+        is_completed: g.is_completed || false,
+        created_at: g.created_at,
       }));
+
+      // Transform journal entries to check-ins
+      const transformedCheckIns: ManifestCheckIn[] = (journalData || []).map((j) => ({
+        id: j.id,
+        goal_id: j.goal_id,
+        user_id: j.user_id,
+        entry_date: j.entry_date,
+        created_at: j.created_at,
+        alignment: 5,
+        acted_today: "yes" as const,
+        proofs: j.visualization ? [j.visualization] : [],
+        gratitude: j.gratitude || undefined,
+      }));
+
+      setGoals(mergedGoals);
       setCheckIns(transformedCheckIns);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast.error("Failed to load manifestations");
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
-  // Calculate stats
-  const activeGoals = goals.filter(g => !g.is_completed);
-  const manifestedGoals = goals.filter(g => g.is_completed);
-  
-  const dayStreak = (() => {
-    if (checkIns.length === 0) return 0;
+  useEffect(() => {
+    fetchData();
+  }, [user]);
+
+  // Calculate metrics
+  const activeGoals = goals.filter((g) => !g.is_completed);
+
+  const dayStreak = useMemo(() => {
+    const today = new Date();
     let streak = 0;
-    for (let i = 0; i < 365; i++) {
-      const checkDate = subDays(new Date(), i);
-      const hasCheckIn = checkIns.some(c => isSameDay(parseISO(c.entry_date), checkDate));
+    for (let i = 0; i < 30; i++) {
+      const checkDate = subDays(today, i);
+      const hasCheckIn = checkIns.some((c) =>
+        isSameDay(parseISO(c.entry_date), checkDate)
+      );
       if (hasCheckIn) streak++;
       else if (i > 0) break;
     }
     return streak;
-  })();
-  
-  const momentumScore = (() => {
-    const recentCheckIns = checkIns.filter(c => {
-      const daysDiff = Math.floor((Date.now() - parseISO(c.entry_date).getTime()) / (1000 * 60 * 60 * 24));
-      return daysDiff < 7;
+  }, [checkIns]);
+
+  const momentumScore = useMemo(() => {
+    const today = new Date();
+    const recentCheckIns = checkIns.filter((c) => {
+      const entryDate = parseISO(c.entry_date);
+      return entryDate >= subDays(today, 7);
     });
-    if (recentCheckIns.length === 0) return 0;
-    const avgAlignment = recentCheckIns.reduce((acc, c) => acc + c.alignment, 0) / recentCheckIns.length;
-    const actedDays = recentCheckIns.filter(c => c.acted_today === 'yes' || c.acted_today === 'mostly').length;
-    const proofCount = recentCheckIns.reduce((acc, c) => acc + (c.proofs?.length || 0), 0);
-    return Math.round((avgAlignment * 4 + (actedDays / 7) * 30 + Math.min(proofCount * 5, 30)));
-  })();
+    if (!recentCheckIns.length) return 0;
+    const avgAlignment =
+      recentCheckIns.reduce((sum, c) => sum + c.alignment, 0) / recentCheckIns.length;
+    return Math.round((avgAlignment / 10) * 100);
+  }, [checkIns]);
 
-  // Filter goals
-  const filteredGoals = goals.filter(goal => {
-    const matchesFilter = activeFilter === "all" || goal.category === activeFilter;
-    const matchesSearch = !searchQuery || goal.title.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
-
-  const handleSaveGoal = async (data: Partial<ManifestGoal>) => {
+  // Handlers
+  const handleSaveGoal = async (goalData: {
+    title: string;
+    conviction: number;
+    live_from_end?: string;
+    act_as_if: string;
+    visualization_minutes: 3 | 5 | 10;
+    daily_affirmation: string;
+    check_in_time: string;
+    committed_7_days: boolean;
+  }) => {
     if (!user) return;
     setSaving(true);
 
-    if (editGoal) {
-      const { error } = await supabase
+    try {
+      const { data, error } = await supabase
         .from("manifest_goals")
-        .update({
-          title: data.title,
-          description: data.live_from_end || null,
-          feeling_when_achieved: data.daily_affirmation || null,
-          affirmations: data.affirmations || [],
+        .insert({
+          user_id: user.id,
+          title: goalData.title,
+          is_completed: false,
         })
-        .eq("id", editGoal.id);
+        .select()
+        .single();
 
-      if (error) {
-        toast({ title: "Error", description: "Failed to update", variant: "destructive" });
-      } else {
-        saveGoalExtras(editGoal.id, data);
-        toast({ title: "Updated!", description: "Your manifestation has been updated" });
-        setCreateOpen(false);
-        setEditGoal(null);
-        fetchData();
-      }
-    } else {
-      const { data: newGoal, error } = await supabase.from("manifest_goals").insert({
-        user_id: user.id,
-        title: data.title,
-        description: data.live_from_end || null,
-        feeling_when_achieved: data.daily_affirmation || null,
-        affirmations: data.affirmations || [],
-      }).select().single();
+      if (error) throw error;
 
-      if (error) {
-        toast({ title: "Error", description: "Failed to create", variant: "destructive" });
-      } else if (newGoal) {
-        saveGoalExtras(newGoal.id, data);
-        toast({ title: "Created!", description: "Your manifestation is ready" });
-        setCreateOpen(false);
-        fetchData();
-        
-        const fullGoal = { ...newGoal, ...data } as ManifestGoal;
-        setSelectedGoal(fullGoal);
-      }
+      // Save extras to localStorage
+      saveGoalExtras(data.id, {
+        conviction: goalData.conviction,
+        live_from_end: goalData.live_from_end,
+        act_as_if: goalData.act_as_if,
+        visualization_minutes: goalData.visualization_minutes,
+        daily_affirmation: goalData.daily_affirmation,
+        check_in_time: goalData.check_in_time,
+        committed_7_days: goalData.committed_7_days,
+      });
+
+      toast.success("Manifestation created!");
+      setShowCreateForm(false);
+      fetchData();
+    } catch (error) {
+      console.error("Error creating goal:", error);
+      toast.error("Failed to create manifestation");
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
-  const handleSaveCheckIn = async (checkIn: Partial<ManifestCheckIn>) => {
-    if (!user || !checkIn.goal_id) return;
+  const handleSaveCheckIn = async (
+    checkIn: Omit<ManifestCheckIn, "id" | "user_id" | "created_at">
+  ) => {
+    if (!user) return;
     setSaving(true);
 
-    const { error } = await supabase.from("manifest_journal").insert({
-      user_id: user.id,
-      goal_id: checkIn.goal_id,
-      entry_date: checkIn.entry_date,
-      gratitude: checkIn.proofs?.join("; ") || null,
-      visualization: checkIn.gratitude || null,
-    });
+    try {
+      const { error } = await supabase.from("manifest_journal").insert({
+        user_id: user.id,
+        goal_id: checkIn.goal_id,
+        entry_date: checkIn.entry_date,
+        visualization: checkIn.proofs.join("\n"),
+        gratitude: checkIn.gratitude,
+      });
 
-    if (error) {
-      toast({ title: "Error", description: "Failed to save check-in", variant: "destructive" });
-    } else {
-      toast({ title: "Locked in!", description: "Today's check-in saved" });
+      if (error) throw error;
+
+      toast.success("Check-in saved!");
       setCheckInOpen(false);
       fetchData();
+    } catch (error) {
+      console.error("Error saving check-in:", error);
+      toast.error("Failed to save check-in");
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
-  const handleQuickAction = async (action: string) => {
-    if (!user || !selectedGoal) return;
-    
-    await supabase.from("manifest_journal").insert({
-      user_id: user.id,
-      goal_id: selectedGoal.id,
-      entry_date: format(new Date(), "yyyy-MM-dd"),
-      gratitude: action,
-    });
-    
-    toast({ title: "Action logged!", description: action });
-    fetchData();
+  const handleVisualize = (goal: ManifestGoal) => {
+    toast.info(`Starting ${goal.visualization_minutes}-minute visualization...`);
   };
 
-  const handleUpdateWoop = (woop: ManifestGoal['woop']) => {
-    if (!selectedGoal) return;
-    saveGoalExtras(selectedGoal.id, { woop });
-    setGoals(prev => prev.map(g => g.id === selectedGoal.id ? { ...g, woop } : g));
-    setSelectedGoal(prev => prev ? { ...prev, woop } : null);
-    toast({ title: "WOOP updated" });
+  const handleDoAction = (goal: ManifestGoal) => {
+    toast.success(`Nice move — that's practice! Log one proof so your progress stacks.`);
   };
 
-  const handleAddIfThen = (trigger: { if_part: string; then_part: string }) => {
-    if (!selectedGoal) return;
-    const existing = selectedGoal.if_then_triggers || [];
-    const updated = [...existing, { id: crypto.randomUUID(), ...trigger }];
-    saveGoalExtras(selectedGoal.id, { if_then_triggers: updated });
-    setGoals(prev => prev.map(g => g.id === selectedGoal.id ? { ...g, if_then_triggers: updated } : g));
-    setSelectedGoal(prev => prev ? { ...prev, if_then_triggers: updated } : null);
-    toast({ title: "Trigger added" });
+  const handleLogProof = (goal: ManifestGoal) => {
+    setSelectedGoal(goal);
+    setCheckInOpen(true);
   };
 
-  const handleUpdateMicroStep = (step: string) => {
-    if (!selectedGoal) return;
-    saveGoalExtras(selectedGoal.id, { micro_step: step });
-    setGoals(prev => prev.map(g => g.id === selectedGoal.id ? { ...g, micro_step: step } : g));
-    setSelectedGoal(prev => prev ? { ...prev, micro_step: step } : null);
-    toast({ title: "Micro-step set" });
+  const handleCelebrate = (proof: string) => {
+    toast.success("Celebrated! 🎉");
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-pulse text-muted-foreground">Loading manifestations...</div>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  return (
-    <div className="flex h-[calc(100vh-100px)] w-full">
-      {/* Main Content - Left */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <div className="flex-1 overflow-auto pr-4">
-          <div className="space-y-4 pb-8">
-            {/* Header */}
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Manifestation Board</h1>
-              <p className="text-sm text-muted-foreground">Assume the feeling of the wish fulfilled</p>
-            </div>
-            
-            {/* Summary Strip */}
-            <ManifestSummaryStrip
-              activeGoals={activeGoals.length}
-              manifestedGoals={manifestedGoals.length}
-              dayStreak={dayStreak}
-              momentumScore={momentumScore}
-              onNewManifest={() => setCreateOpen(true)}
-            />
-            
-            {/* Search & Filters */}
-            <div className="flex items-center gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search assumptions..."
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            
-            {/* Category Filter Pills */}
-            <ScrollArea className="w-full">
-              <div className="flex items-center gap-2 pb-1">
-                {CATEGORIES.map(cat => {
-                  const Icon = CATEGORY_ICONS[cat.id] || Target;
-                  return (
-                    <Button
-                      key={cat.id}
-                      variant={activeFilter === cat.id ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setActiveFilter(cat.id)}
-                      className="rounded-full gap-1.5 shrink-0"
-                    >
-                      <Icon className="h-3.5 w-3.5" />
-                      {cat.label}
-                    </Button>
-                  );
-                })}
-              </div>
-            </ScrollArea>
-            
-            {/* Goals List */}
-            <div className="space-y-3">
-              {filteredGoals.length === 0 ? (
-                <div className="text-center py-16">
-                  <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                    <Sparkles className="h-8 w-8 text-primary" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">
-                    {searchQuery ? "No matches found" : "Begin Your Journey"}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">
-                    {searchQuery 
-                      ? "Try different keywords" 
-                      : "Create your first manifestation and start living from the end."
-                    }
-                  </p>
-                  {!searchQuery && (
-                    <Button onClick={() => setCreateOpen(true)} className="gap-2">
-                      <Plus className="h-4 w-4" />
-                      New Manifestation
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                filteredGoals.map(goal => (
-                  <ManifestGoalCardCompact
-                    key={goal.id}
-                    goal={goal}
-                    checkIns={checkIns.filter(c => c.goal_id === goal.id)}
-                    isSelected={selectedGoal?.id === goal.id}
-                    onClick={() => setSelectedGoal(goal)}
-                    onVisualize={() => {
-                      setSelectedGoal(goal);
-                      toast({ title: `Visualize: ${goal.visualization_length || 3} minutes` });
-                    }}
-                    onActAsIf={() => {
-                      setSelectedGoal(goal);
-                      if (goal.act_as_if) {
-                        toast({ title: "Today's Act-as-If", description: goal.act_as_if });
-                      }
-                    }}
-                    onLogProof={() => {
-                      setSelectedGoal(goal);
-                      setCheckInOpen(true);
-                    }}
-                  />
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Right Panel */}
-      <ManifestRightPanel
-        selectedGoal={selectedGoal}
-        checkIns={checkIns}
-        onCheckIn={() => setCheckInOpen(true)}
-        onQuickAction={handleQuickAction}
-        onUpdateWoop={handleUpdateWoop}
-        onAddIfThen={handleAddIfThen}
-        onUpdateMicroStep={handleUpdateMicroStep}
-      />
-      
-      {/* Create Wizard */}
-      <ManifestCreateWizard
-        open={createOpen}
-        onOpenChange={setCreateOpen}
+  if (showCreateForm) {
+    return (
+      <ManifestCreateForm
         onSave={handleSaveGoal}
-        onOpenCheckIn={() => setCheckInOpen(true)}
-        editGoal={editGoal}
+        onCancel={() => setShowCreateForm(false)}
         saving={saving}
       />
-      
+    );
+  }
+
+  return (
+    <div className="flex flex-col lg:flex-row gap-6 p-4 lg:p-6 w-full">
+      {/* Main Content */}
+      <div className="flex-1 space-y-6">
+        <ManifestTopBar
+          activeCount={activeGoals.length}
+          dayStreak={dayStreak}
+          momentumScore={momentumScore}
+          onNewManifest={() => setShowCreateForm(true)}
+        />
+
+        {/* Goals List */}
+        {activeGoals.length === 0 ? (
+          <div className="text-center py-12 px-4">
+            <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">
+              Start your manifestation journey
+            </h3>
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              Write it present-tense. Practice it daily. Celebrate progress.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {activeGoals.map((goal) => (
+              <ManifestCard
+                key={goal.id}
+                goal={goal}
+                checkIns={checkIns.filter((c) => c.goal_id === goal.id)}
+                onVisualize={() => handleVisualize(goal)}
+                onDoAction={() => handleDoAction(goal)}
+                onLogProof={() => handleLogProof(goal)}
+                onOpenCheckIn={() => {
+                  setSelectedGoal(goal);
+                  setCheckInOpen(true);
+                }}
+                onCelebrate={handleCelebrate}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Right Panel */}
+      <div className="w-full lg:w-80 lg:sticky lg:top-4 lg:self-start space-y-4">
+        <ManifestWeeklyPanel checkIns={checkIns} />
+      </div>
+
       {/* Check-in Modal */}
       <ManifestCheckInModal
         open={checkInOpen}

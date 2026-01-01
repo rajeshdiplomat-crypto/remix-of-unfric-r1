@@ -1,28 +1,16 @@
 export interface ManifestGoal {
   id: string;
-  title: string;
-  description: string | null;
-  feeling_when_achieved: string | null;
-  affirmations: string[];
+  title: string; // The assumption
+  conviction: number; // 1-10
+  live_from_end?: string;
+  act_as_if: string;
+  visualization_minutes: 3 | 5 | 10;
+  daily_affirmation: string;
+  check_in_time: string;
+  committed_7_days: boolean;
   is_completed: boolean;
   created_at: string;
-  category?: string;
-  cover_image?: string;
-  target_date?: string;
-  visualization_length?: number;
-  daily_affirmation?: string;
-  check_in_time?: string;
-  act_as_if?: string;
-  conviction?: number;
-  live_from_end?: string;
-  woop?: {
-    wish: string;
-    outcome: string;
-    obstacle: string;
-    plan: string;
-  };
-  if_then_triggers?: Array<{ id: string; if_part: string; then_part: string }>;
-  micro_step?: string;
+  updated_at?: string;
 }
 
 export interface ManifestCheckIn {
@@ -31,7 +19,7 @@ export interface ManifestCheckIn {
   user_id: string;
   entry_date: string;
   created_at: string;
-  alignment: number;
+  alignment: number; // 1-10
   acted_today: 'yes' | 'mostly' | 'not_yet';
   proofs: string[];
   proof_images?: string[];
@@ -49,68 +37,66 @@ export interface StarterTemplate {
   affirmation: string;
 }
 
-export const CATEGORIES = [
-  { id: "all", label: "All", icon: "Target" },
-  { id: "wealth", label: "Wealth", icon: "DollarSign" },
-  { id: "health", label: "Health", icon: "Heart" },
-  { id: "career", label: "Career", icon: "Briefcase" },
-  { id: "growth", label: "Growth", icon: "TrendingUp" },
-  { id: "habits", label: "Habits", icon: "Repeat" },
-] as const;
-
 export const STARTER_TEMPLATES: StarterTemplate[] = [
   {
     id: "career",
-    name: "Career Leap",
+    name: "Career",
     category: "career",
-    assumption: "I am confidently in my ideal role and growing every month.",
-    act_as_if: "I update my LinkedIn with my new title mindset",
-    visualization_script: "See yourself walking into the office of your dreams. Feel the confidence in your stride. Hear your colleagues congratulating you.",
-    affirmation: "I attract opportunities that align with my highest self."
+    assumption: "I am thriving in my ideal role.",
+    act_as_if: "Update profile",
+    visualization_script: "See yourself on day one of your dream role. Feel the confidence as you walk through the door.",
+    affirmation: "My ideal career is unfolding perfectly for me."
   },
   {
     id: "wealth",
-    name: "Wealth Flow",
+    name: "Wealth",
     category: "wealth",
-    assumption: "Money flows to me easily and abundantly.",
-    act_as_if: "I review my investment portfolio as a wealthy person would",
-    visualization_script: "Picture your bank balance growing. Feel the security and freedom wealth provides. See yourself making generous decisions.",
-    affirmation: "I am a magnet for financial abundance."
+    assumption: "My income grows steadily.",
+    act_as_if: "Automate savings",
+    visualization_script: "Picture your bank balance growing. Feel the security and freedom wealth provides.",
+    affirmation: "Abundance flows to me naturally and consistently."
   },
   {
     id: "health",
-    name: "Vibrant Health",
+    name: "Health",
     category: "health",
-    assumption: "My body is strong, healthy, and full of energy.",
-    act_as_if: "I prepare my workout clothes the night before",
-    visualization_script: "Feel the vitality flowing through every cell. See yourself moving with ease and joy. Experience the energy of optimal health.",
-    affirmation: "Every cell in my body vibrates with health and vitality."
+    assumption: "I feel energetic every morning.",
+    act_as_if: "10-min movement now",
+    visualization_script: "Feel the vitality flowing through every cell. See yourself moving with ease and joy.",
+    affirmation: "My body is strong, healthy, and full of energy."
   },
   {
     id: "habit",
-    name: "Daily Discipline",
+    name: "Habit",
     category: "habits",
-    assumption: "I naturally follow through on my commitments to myself.",
-    act_as_if: "I set my alarm 30 minutes earlier as a disciplined person would",
-    visualization_script: "See yourself completing your daily routine with ease. Feel the pride of consistency. Watch your habits compound into success.",
-    affirmation: "I am someone who keeps promises to myself."
+    assumption: "I read nightly.",
+    act_as_if: "Read one page tonight",
+    visualization_script: "See yourself finishing the book. Feel the satisfaction of consistent practice.",
+    affirmation: "I naturally follow through on my commitments."
   },
   {
-    id: "relationship",
-    name: "Deep Connection",
-    category: "growth",
-    assumption: "I attract and maintain loving, supportive relationships.",
-    act_as_if: "I reach out to express appreciation to someone I care about",
-    visualization_script: "Feel the warmth of genuine connection. See yourself surrounded by people who uplift you. Experience the joy of deep bonds.",
-    affirmation: "I give and receive love freely and abundantly."
+    id: "relationships",
+    name: "Relationships",
+    category: "relationships",
+    assumption: "My relationships are warm and supportive.",
+    act_as_if: "Send a gratitude message",
+    visualization_script: "Feel the warmth of genuine connection. See yourself surrounded by people who uplift you.",
+    affirmation: "I attract and nurture loving relationships."
   },
   {
     id: "learning",
-    name: "Rapid Learning",
-    category: "growth",
-    assumption: "I absorb and apply new knowledge with ease.",
-    act_as_if: "I dedicate focused time to learning something new today",
-    visualization_script: "See yourself mastering a new skill. Feel the satisfaction of understanding. Watch yourself confidently applying what you've learned.",
-    affirmation: "My mind is sharp, curious, and always growing."
+    name: "Learning",
+    category: "learning",
+    assumption: "I practice 15 minutes daily and improve.",
+    act_as_if: "Do one practice task now",
+    visualization_script: "See yourself mastering a new skill. Feel the satisfaction of growth and understanding.",
+    affirmation: "I learn and grow with ease every day."
   }
+];
+
+export const ACT_AS_IF_OPTIONS = [
+  "Update profile",
+  "Send one confident message",
+  "Practice 5-min pitch",
+  "Dress the part"
 ];
