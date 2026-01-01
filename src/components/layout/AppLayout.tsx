@@ -42,8 +42,8 @@ function LayoutContent({ children }: AppLayoutProps) {
           </div>
         </header>
         
-        <div className="flex-1 overflow-auto p-3 sm:p-4 md:p-6">
-          <div className="w-full max-w-[1800px] mx-auto 2xl:px-4">
+        <div className="flex-1 flex flex-col overflow-auto p-3 sm:p-4 md:p-6">
+          <div className="flex-1 w-full max-w-[2400px] mx-auto px-0 sm:px-2 lg:px-4 xl:px-8 2xl:px-12">
             {children}
           </div>
         </div>
