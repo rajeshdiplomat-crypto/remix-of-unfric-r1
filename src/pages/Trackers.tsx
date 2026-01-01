@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { format, addDays, startOfWeek, isToday, isBefore, isAfter, parseISO, differenceInDays, startOfMonth, endOfMonth, eachDayOfInterval, subDays } from "date-fns";
+import { computeEndDateForHabitDays, getScheduledDates } from "@/lib/dateUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +33,7 @@ interface ActivityItem {
   priority: string;
   description: string;
   frequencyPattern: boolean[];
-  numberOfDays: number; // Calendar duration in days
+  habitDays: number; // Number of measured habit occurrences
   startDate: string;
   completions: Record<string, boolean>;
   createdAt: string;
@@ -60,7 +61,7 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
     priority: "High",
     description: "Daily workout routine",
     frequencyPattern: [true, true, true, true, true, false, false],
-    numberOfDays: 30,
+    habitDays: 22, // 22 weekday sessions
     startDate: format(addDays(new Date(), -10), "yyyy-MM-dd"),
     completions: {
       [format(addDays(new Date(), -10), "yyyy-MM-dd")]: true,
@@ -81,7 +82,7 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
     priority: "Medium",
     description: "Read 20 pages daily",
     frequencyPattern: [true, true, true, true, true, true, true],
-    numberOfDays: 30,
+    habitDays: 30, // 30 daily sessions
     startDate: format(addDays(new Date(), -30), "yyyy-MM-dd"),
     completions: Object.fromEntries(
       Array.from({ length: 28 }, (_, i) => [
@@ -98,7 +99,7 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
     priority: "Medium",
     description: "Language learning",
     frequencyPattern: [true, true, true, true, true, false, false],
-    numberOfDays: 61,
+    habitDays: 44, // ~44 weekday sessions over ~2 months
     startDate: format(addDays(new Date(), 7), "yyyy-MM-dd"),
     completions: {},
     createdAt: new Date().toISOString(),
@@ -110,7 +111,7 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
     priority: "High",
     description: "No social media after 8pm",
     frequencyPattern: [true, true, true, true, true, true, true],
-    numberOfDays: 7,
+    habitDays: 7, // 7 daily sessions
     startDate: format(addDays(new Date(), -5), "yyyy-MM-dd"),
     completions: {
       [format(addDays(new Date(), -5), "yyyy-MM-dd")]: true,
@@ -148,9 +149,13 @@ export default function Trackers() {
   const [formStartDate, setFormStartDate] = useState<Date>(new Date());
   const [formImageUrl, setFormImageUrl] = useState<string | null>(null);
 
-  // FIXED: Calendar-based end date calculation
+  // Compute end date based on habit days (number of occurrences)
   const getEndDate = (activity: ActivityItem) => {
-    return addDays(parseISO(activity.startDate), activity.numberOfDays - 1);
+    return computeEndDateForHabitDays(
+      parseISO(activity.startDate),
+      activity.frequencyPattern,
+      activity.habitDays
+    );
   };
 
   // Days left until end (calendar days)
@@ -442,7 +447,7 @@ export default function Trackers() {
     setFormPriority(activity.priority);
     setFormDescription(activity.description);
     setFormFrequency([...activity.frequencyPattern]);
-    setFormDays(activity.numberOfDays);
+    setFormDays(activity.habitDays);
     setFormStartDate(parseISO(activity.startDate));
     setFormImageUrl(loadActivityImage(activity.id));
     setDialogOpen(true);
@@ -480,7 +485,7 @@ export default function Trackers() {
       priority: formPriority,
       description: formDescription,
       frequencyPattern: formFrequency,
-      numberOfDays: formDays,
+      habitDays: formDays,
       startDate: format(formStartDate, "yyyy-MM-dd"),
       completions: editingActivity?.completions || {},
       createdAt: editingActivity?.createdAt || new Date().toISOString(),
@@ -499,13 +504,13 @@ export default function Trackers() {
       ));
       toast({ 
         title: "Activity updated",
-        description: `${scheduledSessions} sessions scheduled over ${formDays} days`,
+        description: `${scheduledSessions} habit sessions scheduled`,
       });
     } else {
       setActivities([tempActivity, ...activities]);
       toast({ 
         title: "Activity created",
-        description: `${scheduledSessions} sessions scheduled over ${formDays} days`,
+        description: `${scheduledSessions} habit sessions scheduled`,
       });
     }
     setDialogOpen(false);
@@ -946,7 +951,7 @@ export default function Trackers() {
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <CalendarDays className="h-3 w-3" />
-                        {format(parseISO(activity.startDate), "MMM d")} → {format(getEndDate(activity), "MMM d")} ({activity.numberOfDays} days)
+                        {format(parseISO(activity.startDate), "MMM d")} → {format(getEndDate(activity), "MMM d")} ({activity.habitDays} sessions)
                       </span>
                       <span className="font-medium text-foreground">{daysLeft} days left</span>
                       <Badge 
@@ -1062,9 +1067,8 @@ export default function Trackers() {
                   {viewMode === "compact" && (
                     <ScrollArea className="w-full">
                       <div className="flex gap-0.5">
-                        {Array.from({ length: Math.min(activity.numberOfDays, 60) }, (_, i) => {
-                          const day = addDays(parseISO(activity.startDate), i);
-                          const isPlanned = isPlannedForDate(activity, day);
+                        {getScheduledDates(parseISO(activity.startDate), activity.frequencyPattern, Math.min(activity.habitDays, 60)).map((day, i) => {
+                          const isPlanned = true; // All dates from getScheduledDates are planned
                           const isCompleted = activity.completions[format(day, "yyyy-MM-dd")];
                           const isFuture = isAfter(day, new Date());
                           
@@ -1192,16 +1196,19 @@ export default function Trackers() {
                 </Popover>
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Duration (Calendar Days)</label>
+                <label className="text-sm font-medium mb-2 block">Habit Days</label>
                 <Input
                   type="number"
                   min={1}
-                  max={365}
+                  max={1000}
                   value={formDays}
                   onChange={(e) => setFormDays(parseInt(e.target.value) || 30)}
                 />
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  End: {format(addDays(formStartDate, formDays - 1), "MMM d, yyyy")}
+                  Number of measured habit occurrences
+                </p>
+                <p className="text-[10px] text-primary font-medium mt-1">
+                  End: {format(computeEndDateForHabitDays(formStartDate, formFrequency, formDays), "d MMM, yyyy")}
                 </p>
               </div>
             </div>
@@ -1246,17 +1253,7 @@ export default function Trackers() {
                 ))}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                {formFrequency.filter(Boolean).length} days/week × {Math.ceil(formDays / 7)} weeks ≈ {
-                  (() => {
-                    let count = 0;
-                    for (let i = 0; i < formDays; i++) {
-                      const date = addDays(formStartDate, i);
-                      const dayOfWeek = (date.getDay() + 6) % 7;
-                      if (formFrequency[dayOfWeek]) count++;
-                    }
-                    return count;
-                  })()
-                } scheduled sessions
+                {formFrequency.filter(Boolean).length} days/week → {formDays} habit sessions
               </p>
             </div>
             <div className="flex gap-2 pt-4">

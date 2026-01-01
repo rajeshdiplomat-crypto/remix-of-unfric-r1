@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { BarChart, Bar, XAxis, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import { loadActivityImage, saveActivityImage } from "./ActivityImageUpload";
 import { cn } from "@/lib/utils";
+import { computeEndDateForHabitDays } from "@/lib/dateUtils";
 
 interface ActivityItem {
   id: string;
@@ -17,7 +18,7 @@ interface ActivityItem {
   priority: string;
   description: string;
   frequencyPattern: boolean[];
-  numberOfDays: number;
+  habitDays: number; // Number of measured habit occurrences
   startDate: string;
   completions: Record<string, boolean>;
   createdAt: string;
@@ -62,8 +63,8 @@ export function ActivityDetailPanel({
     }
   }, [activity?.id, activity?.completions]);
 
-  // Helper functions
-  const getEndDate = (act: ActivityItem) => addDays(parseISO(act.startDate), act.numberOfDays - 1);
+  // Helper functions - compute end date based on habit days
+  const getEndDate = (act: ActivityItem) => computeEndDateForHabitDays(parseISO(act.startDate), act.frequencyPattern, act.habitDays);
 
   const getDaysLeft = (act: ActivityItem) => {
     const endDate = getEndDate(act);
@@ -469,8 +470,8 @@ export function ActivityDetailPanel({
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Duration</p>
-                  <p className="font-medium text-foreground">{activity.numberOfDays} days</p>
+                  <p className="text-muted-foreground">Habit Days</p>
+                  <p className="font-medium text-foreground">{activity.habitDays} sessions</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Frequency</p>
