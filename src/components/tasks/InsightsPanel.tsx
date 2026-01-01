@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ChevronUp, Calendar, CheckCircle, AlertTriangle, Clock as ClockIcon, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,101 @@ interface InsightsPanelProps {
   tasks: QuadrantTask[];
 }
 
-function CompactClockCard() {
+function KpiCard({
+  icon,
+  iconBg,
+  iconColor,
+  value,
+  label,
+}: {
+  icon: ReactNode;
+  iconBg: string;
+  iconColor: string;
+  value: ReactNode;
+  label: string;
+}) {
+  return (
+    <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
+      <CardContent className="p-4 h-[86px] flex items-center gap-3 min-w-0">
+        <div className={`h-9 w-9 rounded-xl flex items-center justify-center ${iconBg}`}>
+          <div className={iconColor}>{icon}</div>
+        </div>
+
+        <div className="min-w-0 leading-tight">
+          <div className="text-[26px] font-semibold tracking-tight text-foreground">{value}</div>
+          <div className="text-[11px] text-muted-foreground">{label}</div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MiniAnalogClock({ now }: { now: Date }) {
+  const h = now.getHours() % 12;
+  const m = now.getMinutes();
+  const s = now.getSeconds();
+  const hourAngle = h * 30 + m * 0.5;
+  const minuteAngle = m * 6 + s * 0.1;
+  const secondAngle = s * 6;
+
+  return (
+    <svg width="44" height="44" viewBox="0 0 64 64" className="text-muted-foreground">
+      <circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.22" />
+      {Array.from({ length: 12 }).map((_, i) => (
+        <line
+          key={i}
+          x1="32"
+          y1="10"
+          x2="32"
+          y2="13"
+          stroke="currentColor"
+          strokeWidth="1"
+          opacity={i % 3 === 0 ? 0.45 : 0.22}
+          transform={`rotate(${i * 30} 32 32)`}
+        />
+      ))}
+
+      <line
+        x1="32"
+        y1="32"
+        x2="32"
+        y2="20"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        transform={`rotate(${hourAngle} 32 32)`}
+        className="text-foreground"
+        opacity="0.9"
+      />
+      <line
+        x1="32"
+        y1="32"
+        x2="32"
+        y2="15"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        transform={`rotate(${minuteAngle} 32 32)`}
+        className="text-foreground"
+        opacity="0.75"
+      />
+      <line
+        x1="32"
+        y1="34"
+        x2="32"
+        y2="13"
+        stroke="currentColor"
+        strokeWidth="1"
+        strokeLinecap="round"
+        transform={`rotate(${secondAngle} 32 32)`}
+        opacity="0.22"
+      />
+      <circle cx="32" cy="32" r="2.1" fill="currentColor" opacity="0.55" />
+    </svg>
+  );
+}
+
+function ClockKpiCard() {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -35,125 +129,16 @@ function CompactClockCard() {
   const timeText = useMemo(() => format(now, "h:mm a"), [now]);
   const dateText = useMemo(() => format(now, "EEE, MMM d"), [now]);
 
-  const h = now.getHours() % 12;
-  const m = now.getMinutes();
-  const s = now.getSeconds();
-
-  const hourAngle = h * 30 + m * 0.5;
-  const minuteAngle = m * 6 + s * 0.1;
-  const secondAngle = s * 6;
-
-  const ticks = useMemo(
-    () =>
-      Array.from({ length: 12 }).map((_, i) => {
-        const a = i * 30;
-        return (
-          <line
-            key={i}
-            x1="32"
-            y1="8"
-            x2="32"
-            y2="11"
-            stroke="currentColor"
-            strokeWidth="1"
-            opacity={i % 3 === 0 ? 0.45 : 0.2}
-            transform={`rotate(${a} 32 32)`}
-          />
-        );
-      }),
-    [],
-  );
-
   return (
-    <Card className="rounded-xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
-      <CardContent className="p-3 h-[88px] flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <svg width="56" height="56" viewBox="0 0 64 64" className="shrink-0 text-muted-foreground">
-            <circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.25" />
-            <g>{ticks}</g>
-
-            {/* hour */}
-            <line
-              x1="32"
-              y1="32"
-              x2="32"
-              y2="20"
-              stroke="currentColor"
-              strokeWidth="2.1"
-              strokeLinecap="round"
-              transform={`rotate(${hourAngle} 32 32)`}
-              className="text-foreground"
-              opacity="0.9"
-            />
-            {/* minute */}
-            <line
-              x1="32"
-              y1="32"
-              x2="32"
-              y2="14"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              transform={`rotate(${minuteAngle} 32 32)`}
-              className="text-foreground"
-              opacity="0.75"
-            />
-            {/* second */}
-            <line
-              x1="32"
-              y1="34"
-              x2="32"
-              y2="12"
-              stroke="currentColor"
-              strokeWidth="1"
-              strokeLinecap="round"
-              transform={`rotate(${secondAngle} 32 32)`}
-              opacity="0.25"
-            />
-            <circle cx="32" cy="32" r="2.2" fill="currentColor" opacity="0.6" />
-          </svg>
-
-          <div className="leading-tight">
-            <div className="text-sm font-semibold tracking-tight text-foreground">{timeText}</div>
-            <div className="text-[11px] text-muted-foreground">{dateText}</div>
-          </div>
+    <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
+      <CardContent className="p-4 h-[86px] flex items-center gap-3 min-w-0">
+        <div className="h-9 w-9 rounded-xl bg-muted/20 flex items-center justify-center">
+          <MiniAnalogClock now={now} />
         </div>
 
-        <div className="h-10 w-px bg-border/50" />
-
-        <div className="text-right leading-tight pl-3">
-          <div className="text-[11px] text-muted-foreground">Now</div>
-          <div className="text-sm font-medium tracking-tight text-foreground">Focus</div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function MetricCard({
-  icon,
-  iconBg,
-  iconColor,
-  value,
-  label,
-}: {
-  icon: React.ReactNode;
-  iconBg: string;
-  iconColor: string;
-  value: React.ReactNode;
-  label: string;
-}) {
-  return (
-    <Card className="rounded-xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
-      <CardContent className="p-3 h-[88px] flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${iconBg}`}>
-            <div className={iconColor}>{icon}</div>
-          </div>
-          <div className="leading-tight">
-            <div className="text-2xl font-semibold tracking-tight text-foreground">{value}</div>
-            <div className="text-[11px] text-muted-foreground">{label}</div>
-          </div>
+        <div className="min-w-0 leading-tight">
+          <div className="text-sm font-semibold tracking-tight text-foreground">{timeText}</div>
+          <div className="text-[11px] text-muted-foreground">{dateText}</div>
         </div>
       </CardContent>
     </Card>
@@ -164,18 +149,11 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
   const [expanded, setExpanded] = useState(true);
   const today = startOfDay(new Date());
 
-  const todayTasks = tasks.filter((t) => {
-    if (!t.due_date) return false;
-    return isSameDay(new Date(t.due_date), today);
-  });
-
+  const todayTasks = tasks.filter((t) => t.due_date && isSameDay(new Date(t.due_date), today));
   const plannedToday = todayTasks.length;
   const completedToday = todayTasks.filter((t) => t.is_completed || t.completed_at).length;
 
-  const allTasksWithStatus = tasks.map((t) => ({
-    ...t,
-    computedStatus: computeTaskStatus(t),
-  }));
+  const allTasksWithStatus = tasks.map((t) => ({ ...t, computedStatus: computeTaskStatus(t) }));
   const overdueTasks = allTasksWithStatus.filter((t) => t.computedStatus === "overdue").length;
 
   const totalFocusMinutes = tasks.reduce((sum, t) => sum + (t.total_focus_minutes || 0), 0);
@@ -187,13 +165,7 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
       const dayStart = startOfDay(date);
       const planned = tasks.filter((t) => t.due_date && isSameDay(new Date(t.due_date), dayStart)).length;
       const actual = tasks.filter((t) => t.completed_at && isSameDay(new Date(t.completed_at), dayStart)).length;
-
-      data.push({
-        date: format(date, "EEE"),
-        fullDate: format(date, "MMM d"),
-        plan: planned,
-        actual,
-      });
+      data.push({ date: format(date, "EEE"), fullDate: format(date, "MMM d"), plan: planned, actual });
     }
     return data;
   }, [tasks, today]);
@@ -207,12 +179,7 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
         if (!t.due_date || t.is_completed || t.completed_at) return false;
         return isSameDay(new Date(t.due_date), dayStart);
       }).length;
-
-      data.push({
-        date: i === 0 ? "Today" : format(date, "EEE"),
-        fullDate: format(date, "MMM d"),
-        tasks: upcoming,
-      });
+      data.push({ date: i === 0 ? "Today" : format(date, "EEE"), fullDate: format(date, "MMM d"), tasks: upcoming });
     }
     return data;
   }, [tasks, today]);
@@ -262,7 +229,6 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold tracking-tight text-foreground">Insights</h3>
-
         <Button
           variant="ghost"
           size="sm"
@@ -274,17 +240,16 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
         </Button>
       </div>
 
-      {/* KPI Row — now includes CLOCK in the middle */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <MetricCard
+      {/* KPI ROW — FIXED */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <KpiCard
           icon={<Calendar className="h-4 w-4" />}
           iconBg="bg-primary/10"
           iconColor="text-primary"
           value={plannedToday}
           label="Planned Today"
         />
-
-        <MetricCard
+        <KpiCard
           icon={<CheckCircle className="h-4 w-4" />}
           iconBg="bg-chart-1/10"
           iconColor="text-chart-1"
@@ -292,18 +257,17 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
           label="Done Today"
         />
 
-        {/* Clock in between (like your screenshot) */}
-        <CompactClockCard />
+        {/* CLOCK IN THE MIDDLE (like your reference) */}
+        <ClockKpiCard />
 
-        <MetricCard
+        <KpiCard
           icon={<AlertTriangle className="h-4 w-4" />}
           iconBg="bg-destructive/10"
           iconColor="text-destructive"
           value={overdueTasks}
           label="Overdue"
         />
-
-        <MetricCard
+        <KpiCard
           icon={<ClockIcon className="h-4 w-4" />}
           iconBg="bg-muted/20"
           iconColor="text-muted-foreground"
@@ -313,9 +277,9 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Plan vs Actual */}
-        <Card className="rounded-xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
+        <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
               <TrendingUp className="h-4 w-4 text-primary" />
@@ -324,7 +288,7 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
               </h4>
             </div>
 
-            <div className="h-[110px]">
+            <div className="h-[120px]">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={past7DaysData}>
                   <defs>
@@ -333,7 +297,6 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
                       <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.06} />
                     </linearGradient>
                   </defs>
-
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis
                     dataKey="date"
@@ -356,7 +319,6 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
                       fontSize: "12px",
                     }}
                   />
-
                   <Area
                     type="monotone"
                     dataKey="plan"
@@ -365,7 +327,6 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
                     fill="url(#planGradient)"
                     dot={{ fill: "hsl(var(--primary))", strokeWidth: 0, r: 2.3 }}
                   />
-
                   <Line
                     type="monotone"
                     dataKey="actual"
@@ -376,29 +337,18 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
-
-            <div className="flex justify-center gap-4 mt-2">
-              <div className="flex items-center gap-1">
-                <div className="h-2 w-2 rounded-full bg-primary" />
-                <span className="text-xs text-muted-foreground">Plan</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="h-2 w-2 rounded-full bg-chart-1" />
-                <span className="text-xs text-muted-foreground">Actual</span>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
         {/* Upcoming */}
-        <Card className="rounded-xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
+        <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
               <Calendar className="h-4 w-4 text-primary" />
               <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">UPCOMING (7 DAYS)</h4>
             </div>
 
-            <div className="h-[110px]">
+            <div className="h-[120px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={future7DaysData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -431,14 +381,14 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
         </Card>
 
         {/* By Quadrant */}
-        <Card className="rounded-xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
+        <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
               <ClockIcon className="h-4 w-4 text-primary" />
               <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">BY QUADRANT</h4>
             </div>
 
-            <div className="h-[110px] flex items-center justify-center">
+            <div className="h-[120px] flex items-center justify-center">
               {quadrantData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
