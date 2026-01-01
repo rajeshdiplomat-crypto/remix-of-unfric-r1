@@ -115,18 +115,27 @@ function ClockKpiCard() {
 
   return (
     <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
-      <CardContent className="p-4 h-[86px] flex items-center gap-4">
-        <div className="h-12 w-12 rounded-2xl bg-muted/40 flex items-center justify-center">
+      <CardContent className="h-[86px] px-4 py-3 flex items-center gap-4 min-w-0">
+        {/* Icon */}
+        <div className="h-12 w-12 rounded-2xl bg-muted/40 flex items-center justify-center shrink-0">
           <CenterAnalogClock now={now} />
         </div>
 
-        <div className="min-w-0 leading-tight">
-          <div className="text-[22px] font-semibold tracking-tight text-foreground">{format(now, "h:mm a")}</div>
-          <div className="text-[12px] text-muted-foreground">{format(now, "EEE, MMM d")}</div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70 mt-1">Local time</div>
+        {/* Time + Date (no wrapping, no cropping) */}
+        <div className="min-w-0 flex-1">
+          <div className="text-[20px] font-semibold tracking-tight text-foreground whitespace-nowrap leading-none">
+            {format(now, "h:mm")}
+            <span className="ml-1 text-[12px] font-semibold align-top">{format(now, "a")}</span>
+          </div>
+
+          <div className="mt-1 text-[11px] text-muted-foreground whitespace-nowrap leading-none">
+            {format(now, "EEE, MMM d")}
+            <span className="ml-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70">Local time</span>
+          </div>
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        {/* Right chip */}
+        <div className="ml-auto flex items-center gap-2 shrink-0 whitespace-nowrap">
           <span className="text-[11px] text-muted-foreground">Now</span>
           <span className="h-6 px-3 rounded-full bg-muted/40 text-[11px] text-foreground flex items-center">Focus</span>
         </div>
