@@ -244,44 +244,51 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
         </Button>
       </div>
 
-      {/* KPI ROW: small cards + BIG clock */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 items-stretch">
-        <KpiCard
-          icon={<Calendar className="h-4 w-4" />}
-          iconBg="bg-primary/10"
-          iconColor="text-primary"
-          value={plannedToday}
-          label="Planned Today"
-        />
+      {/* KPI ROW (12-col so no orphan card on zoom) */}
+      <div className="grid grid-cols-2 lg:grid-cols-12 gap-3">
+        <div className="lg:col-span-2">
+          <KpiCard
+            icon={<Calendar className="h-4 w-4" />}
+            iconBg="bg-primary/10"
+            iconColor="text-primary"
+            value={plannedToday}
+            label="Planned Today"
+          />
+        </div>
 
-        <KpiCard
-          icon={<CheckCircle className="h-4 w-4" />}
-          iconBg="bg-chart-1/10"
-          iconColor="text-chart-1"
-          value={completedToday}
-          label="Done Today"
-        />
+        <div className="lg:col-span-2">
+          <KpiCard
+            icon={<CheckCircle className="h-4 w-4" />}
+            iconBg="bg-chart-1/10"
+            iconColor="text-chart-1"
+            value={completedToday}
+            label="Done Today"
+          />
+        </div>
 
-        {/* BIG CLOCK (spans 2 columns) */}
-        <div className="col-span-2 sm:col-span-4 lg:col-span-2">
+        <div className="lg:col-span-4">
           <ClockKpiCard />
         </div>
 
-        <KpiCard
-          icon={<AlertTriangle className="h-4 w-4" />}
-          iconBg="bg-destructive/10"
-          iconColor="text-destructive"
-          value={overdueTasks}
-          label="Overdue"
-        />
+        <div className="lg:col-span-2">
+          <KpiCard
+            icon={<AlertTriangle className="h-4 w-4" />}
+            iconBg="bg-destructive/10"
+            iconColor="text-destructive"
+            value={overdueTasks}
+            label="Overdue"
+          />
+        </div>
 
-        <KpiCard
-          icon={<ClockIcon className="h-4 w-4" />}
-          iconBg="bg-muted/20"
-          iconColor="text-muted-foreground"
-          value={`${totalFocusMinutes}m`}
-          label="Focus Time"
-        />
+        <div className="lg:col-span-2">
+          <KpiCard
+            icon={<ClockIcon className="h-4 w-4" />}
+            iconBg="bg-muted/20"
+            iconColor="text-muted-foreground"
+            value={`${totalFocusMinutes}m`}
+            label="Focus Time"
+          />
+        </div>
       </div>
 
       {/* Charts Row */}
@@ -296,7 +303,7 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
               </h4>
             </div>
 
-            <div className="h-[100px]">
+            <div className="h-[120px]">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={past7DaysData}>
                   <defs>
@@ -345,17 +352,6 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
-            {/* Legend (like before) */}
-            <div className="flex justify-center gap-4 mt-2">
-              <div className="flex items-center gap-1">
-                <div className="h-2 w-2 rounded-full bg-primary" />
-                <span className="text-xs text-muted-foreground">Plan</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="h-2 w-2 rounded-full bg-chart-1" />
-                <span className="text-xs text-muted-foreground">Actual</span>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
@@ -367,7 +363,7 @@ export function InsightsPanel({ tasks }: InsightsPanelProps) {
               <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">UPCOMING (7 DAYS)</h4>
             </div>
 
-            <div className="h-[100px]">
+            <div className="h-[120px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={future7DaysData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
