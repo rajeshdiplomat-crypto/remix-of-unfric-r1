@@ -389,15 +389,25 @@ export default function Diary() {
                 event.type === "journal_question" ? (
                   <JournalQuestionCard
                     key={event.id}
+                    eventId={event.id}
                     questionLabel={(event.metadata as any)?.question_label || event.title}
                     answerContent={(event.metadata as any)?.answer_content || event.content_preview || ""}
+                    contentHtml={(event.metadata as any)?.content_html}
                     journalDate={(event.metadata as any)?.journal_date || event.created_at}
                     entryDate={event.created_at}
                     emotionTag={(event.metadata as any)?.tags?.[0]}
+                    authorName={user?.email?.split("@")[0] || "You"}
                     isSaved={saves.has(event.id)}
+                    userReaction={reactions[event.id]?.find(r => r.user_id === user?.id)?.emoji as any}
+                    reactionCounts={reactions[event.id]?.reduce((acc, r) => {
+                      acc[r.emoji as any] = (acc[r.emoji as any] || 0) + 1;
+                      return acc;
+                    }, {} as Record<string, number>)}
                     onToggleSave={() => toggleSave(event.id)}
                     onEdit={() => handleNavigateToSource(event)}
                     onNavigate={() => handleNavigateToSource(event)}
+                    onToggleReaction={(eventId, reaction) => toggleReaction(eventId, reaction || "")}
+                    onAddComment={(eventId, text) => addComment(eventId, text)}
                   />
                 ) : (
                   <DiaryFeedCard

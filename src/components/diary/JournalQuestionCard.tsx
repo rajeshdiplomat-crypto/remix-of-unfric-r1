@@ -3,45 +3,104 @@ import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PenLine, Bookmark, BookmarkCheck, Edit2, Maximize2, Plus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { 
+  PenLine, 
+  Bookmark, 
+  BookmarkCheck, 
+  Edit2, 
+  Plus,
+  MessageCircle,
+  Share2,
+  Send,
+  MoreHorizontal,
+  Copy,
+  ExternalLink,
+  Code,
+  ThumbsUp,
+  Heart,
+  Lightbulb,
+  PartyPopper,
+  HandHeart,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
+
+// Reaction types with icons
+const REACTION_TYPES = [
+  { type: 'like', emoji: '👍', icon: ThumbsUp, label: 'Like' },
+  { type: 'love', emoji: '❤️', icon: Heart, label: 'Love' },
+  { type: 'insight', emoji: '💡', icon: Lightbulb, label: 'Insight' },
+  { type: 'celebrate', emoji: '🎉', icon: PartyPopper, label: 'Celebrate' },
+  { type: 'support', emoji: '🤝', icon: HandHeart, label: 'Support' },
+] as const;
+
+type ReactionType = typeof REACTION_TYPES[number]['type'];
 
 interface JournalQuestionCardProps {
+  eventId: string;
   questionLabel: string;
   answerContent: string;
-  journalDate: string; // The date being written about (entry_date)
-  entryDate: string; // When user wrote it (created_at)
+  contentHtml?: string;
+  journalDate: string;
+  entryDate: string;
   emotionTag?: string;
+  authorName?: string;
+  authorAvatarUrl?: string;
   isSaved: boolean;
+  userReaction?: ReactionType | null;
+  reactionCounts?: Record<ReactionType, number>;
   onToggleSave: () => void;
   onEdit: () => void;
   onNavigate: () => void;
+  onToggleReaction?: (eventId: string, reaction: ReactionType | null) => void;
+  onAddComment?: (eventId: string, text: string) => void;
 }
 
 export function JournalQuestionCard({
+  eventId,
   questionLabel,
   answerContent,
+  contentHtml,
   journalDate,
   entryDate,
   emotionTag,
+  authorName = "You",
+  authorAvatarUrl,
   isSaved,
+  userReaction: initialUserReaction,
+  reactionCounts: initialReactionCounts,
   onToggleSave,
   onEdit,
   onNavigate,
+  onToggleReaction,
+  onAddComment,
 }: JournalQuestionCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const { toast } = useToast();
+  const [expanded, setExpanded] = useState(false);
+  const [showComposer, setShowComposer] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [userReaction, setUserReaction] = useState<ReactionType | null>(initialUserReaction || null);
+  const [reactionCounts, setReactionCounts] = useState<Record<string, number>>(initialReactionCounts || {});
 
   const journalDateObj = new Date(journalDate);
   const entryDateObj = new Date(entryDate);
@@ -52,171 +111,339 @@ export function JournalQuestionCard({
   const fullEntryDate = entryDateObj.toISOString();
 
   const isEmptyAnswer = !answerContent || answerContent.trim() === "";
-  const truncatedContent = answerContent?.length > 140 
-    ? answerContent.substring(0, 140).trim() + "…" 
-    : answerContent;
   const needsReadMore = answerContent?.length > 140;
 
-  return (
-    <>
-      <Card className="overflow-hidden bg-card border-border/40 shadow-sm hover:shadow-md transition-shadow p-4 rounded-xl">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-xs text-muted-foreground cursor-default">
-                  <span className="font-medium text-foreground">Journal</span>
-                  <span className="mx-1.5">|</span>
-                  <span>{formattedJournalDate}</span>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p className="text-xs font-mono">{fullJournalDate}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+  // Get author initials for avatar fallback
+  const authorInitials = authorName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-xs text-muted-foreground cursor-default">
-                  {formattedEntryDate}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p className="text-xs font-mono">{fullEntryDate}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+  // Toggle reaction with optimistic update
+  const handleToggleReaction = (type: ReactionType) => {
+    const prevReaction = userReaction;
+    const nextReaction = prevReaction === type ? null : type;
+    
+    // Optimistic update
+    setUserReaction(nextReaction);
+    setReactionCounts((prev) => {
+      const updated = { ...prev };
+      if (prevReaction) {
+        updated[prevReaction] = Math.max(0, (updated[prevReaction] || 0) - 1);
+      }
+      if (nextReaction) {
+        updated[nextReaction] = (updated[nextReaction] || 0) + 1;
+      }
+      return updated;
+    });
+
+    // Call parent handler
+    onToggleReaction?.(eventId, nextReaction);
+  };
+
+  // Handle share actions
+  const handleCopyLink = () => {
+    const shareUrl = `${window.location.origin}/share/journal-answer/${eventId}`;
+    navigator.clipboard.writeText(shareUrl);
+    toast({ title: "Link copied to clipboard" });
+  };
+
+  const handleShareToX = () => {
+    const shareUrl = `${window.location.origin}/share/journal-answer/${eventId}`;
+    const text = encodeURIComponent(`${questionLabel}\n\n${answerContent.slice(0, 100)}...`);
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(shareUrl)}`, '_blank');
+  };
+
+  const handleEmbed = () => {
+    const embedCode = `<iframe src="${window.location.origin}/embed/journal-answer/${eventId}" width="400" height="300" frameborder="0"></iframe>`;
+    navigator.clipboard.writeText(embedCode);
+    toast({ title: "Embed code copied to clipboard" });
+  };
+
+  // Handle comment submission
+  const handleAddComment = () => {
+    if (!commentText.trim()) return;
+    onAddComment?.(eventId, commentText.trim());
+    setCommentText("");
+    setShowComposer(false);
+    toast({ title: "Comment posted" });
+  };
+
+  // Get total reaction count
+  const totalReactions = Object.values(reactionCounts).reduce((sum, count) => sum + count, 0);
+
+  // Get top 3 reactions for display
+  const topReactions = Object.entries(reactionCounts)
+    .filter(([, count]) => count > 0)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 3);
+
+  return (
+    <Card className="overflow-hidden bg-card border-border/40 shadow-sm hover:shadow-md transition-shadow rounded-xl">
+      {/* Header with Avatar */}
+      <div className="px-4 pt-4 pb-2">
+        <div className="flex items-center justify-between" role="banner">
+          {/* Left: Avatar + Label block */}
+          <div className="flex items-center gap-3">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={authorAvatarUrl} alt={authorName} className="object-cover" />
+              <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                {authorInitials}
+              </AvatarFallback>
+            </Avatar>
+            
+            <div className="flex flex-col">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-sm font-semibold text-foreground cursor-default">
+                      Journal | {formattedJournalDate}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p className="text-xs font-mono">{fullJournalDate}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-xs text-muted-foreground cursor-default">
+                      {formattedEntryDate}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p className="text-xs font-mono">{fullEntryDate}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
+
+          {/* Right: More menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={handleCopyLink}>
+                <Copy className="h-4 w-4 mr-2" />
+                Copy link
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onToggleSave}>
+                {isSaved ? <BookmarkCheck className="h-4 w-4 mr-2" /> : <Bookmark className="h-4 w-4 mr-2" />}
+                {isSaved ? "Unsave" : "Save post"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onNavigate}>
+                Open in Journal
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      {/* Body */}
+      <CardContent className="px-4 pb-4 pt-2">
+        {/* Title (Question) */}
+        <h3 className="text-base font-medium text-foreground mb-2">
+          {questionLabel}
+        </h3>
+
+        {/* Content (Answer) - Inline expandable */}
+        {isEmptyAnswer ? (
+          <div className="flex items-center justify-between py-3 px-3 bg-muted/30 rounded-lg">
+            <span className="text-sm text-muted-foreground italic">
+              No response
+            </span>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-7 px-2 text-xs text-primary hover:text-primary/80"
+              onClick={onEdit}
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Add
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div 
+              className={cn(
+                "overflow-hidden transition-[max-height] duration-200 ease-in-out",
+                expanded ? "max-h-[1000px]" : "max-h-[72px]"
+              )}
+            >
+              {contentHtml ? (
+                <div 
+                  className="text-sm text-foreground/80 leading-relaxed prose prose-sm max-w-none break-words"
+                  dangerouslySetInnerHTML={{ __html: contentHtml }}
+                />
+              ) : (
+                <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
+                  {answerContent}
+                </p>
+              )}
+            </div>
+            
+            {needsReadMore && (
+              <button 
+                onClick={() => setExpanded(!expanded)}
+                className="text-sm text-primary hover:text-primary/80 underline mt-2"
+              >
+                {expanded ? "Show less" : "Read more"}
+              </button>
+            )}
+          </>
+        )}
+
+        {/* Emotion tag */}
+        {emotionTag && (
+          <div className="flex items-center gap-2 mt-3">
+            <PenLine className="h-3.5 w-3.5 text-muted-foreground" />
+            <Badge 
+              variant="secondary" 
+              className="text-xs px-2 py-0 h-5 bg-rose-100 text-rose-700"
+            >
+              {emotionTag}
+            </Badge>
+          </div>
+        )}
+
+        {/* Reaction summary */}
+        {totalReactions > 0 && (
+          <div className="flex items-center gap-2 py-2 mt-2">
+            <div className="flex -space-x-1">
+              {topReactions.map(([type]) => {
+                const reaction = REACTION_TYPES.find(r => r.type === type);
+                return reaction ? (
+                  <span key={type} className="text-sm">
+                    {reaction.emoji}
+                  </span>
+                ) : null;
+              })}
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {totalReactions} reaction{totalReactions !== 1 ? "s" : ""}
+            </span>
+          </div>
+        )}
+
+        {/* Actions: Reactions · Comment · Share */}
+        <div className="flex items-center gap-4 mt-4 pt-3 border-t border-border/50">
+          {/* Reactions */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                aria-pressed={!!userReaction}
+                className={cn(
+                  "flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-2 py-1",
+                  userReaction && "text-primary"
+                )}
+              >
+                {userReaction ? (
+                  <span className="text-base">
+                    {REACTION_TYPES.find(r => r.type === userReaction)?.emoji}
+                  </span>
+                ) : (
+                  <ThumbsUp className="h-4 w-4" />
+                )}
+                <span>{userReaction ? REACTION_TYPES.find(r => r.type === userReaction)?.label : 'React'}</span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2" side="top">
+              <div className="flex gap-1">
+                {REACTION_TYPES.map((reaction) => (
+                  <button
+                    key={reaction.type}
+                    onClick={() => handleToggleReaction(reaction.type)}
+                    aria-pressed={userReaction === reaction.type}
+                    className={cn(
+                      "text-xl p-1.5 rounded hover:bg-muted transition-transform hover:scale-125",
+                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      userReaction === reaction.type && "bg-primary/20"
+                    )}
+                    title={reaction.label}
+                  >
+                    {reaction.emoji}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Comment */}
+          <button
+            onClick={() => setShowComposer(!showComposer)}
+            aria-pressed={showComposer}
+            className={cn(
+              "flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-2 py-1",
+              showComposer && "text-primary"
+            )}
+          >
+            <MessageCircle className="h-4 w-4" />
+            <span>Comment</span>
+          </button>
+
+          {/* Share */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={cn(
+                  "flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-2 py-1"
+                )}
+              >
+                <Share2 className="h-4 w-4" />
+                <span>Share</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuItem onClick={handleCopyLink}>
+                <Copy className="h-4 w-4 mr-2" />
+                Copy link
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleShareToX}>
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Share to X
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleEmbed}>
+                <Code className="h-4 w-4 mr-2" />
+                Embed
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
-        {/* Body */}
-        <CardContent className="p-0">
-          {/* Title (Question) */}
-          <h3 className="text-sm font-semibold text-foreground mb-2 line-clamp-1">
-            {questionLabel}
-          </h3>
-
-          {/* Content (Answer) */}
-          {isEmptyAnswer ? (
-            <div className="flex items-center justify-between py-3 px-3 bg-muted/30 rounded-lg">
-              <span className="text-sm text-muted-foreground italic">
-                No answer yet — Add your response
-              </span>
+        {/* Inline Comment Composer */}
+        {showComposer && (
+          <div className="mt-3 pt-3 border-t border-border/30">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Write a comment..."
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleAddComment()}
+                className="flex-1 bg-muted/30"
+              />
               <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-7 px-2 text-xs text-primary hover:text-primary/80"
-                onClick={onEdit}
-              >
-                <Plus className="h-3 w-3 mr-1" />
-                Add
-              </Button>
-            </div>
-          ) : (
-            <p className="text-sm text-foreground/80 leading-relaxed mb-3">
-              {truncatedContent}
-              {needsReadMore && (
-                <button 
-                  onClick={() => setIsExpanded(true)}
-                  className="text-primary hover:text-primary/80 ml-1 text-sm font-medium"
-                >
-                  Read more
-                </button>
-              )}
-            </p>
-          )}
-
-          {/* Metadata Row */}
-          <div className="flex items-center justify-between pt-2 border-t border-border/30 mt-3">
-            <div className="flex items-center gap-2">
-              <PenLine className="h-3.5 w-3.5 text-muted-foreground" />
-              {emotionTag && (
-                <Badge 
-                  variant="secondary" 
-                  className="text-xs px-2 py-0 h-5 bg-rose-100 text-rose-700"
-                >
-                  {emotionTag}
-                </Badge>
-              )}
-            </div>
-
-            <div className="flex items-center gap-1">
-              <Button 
-                variant="ghost" 
                 size="icon" 
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                onClick={onToggleSave}
+                onClick={handleAddComment} 
+                disabled={!commentText.trim()}
               >
-                {isSaved ? (
-                  <BookmarkCheck className="h-3.5 w-3.5 text-primary" />
-                ) : (
-                  <Bookmark className="h-3.5 w-3.5" />
-                )}
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                onClick={onEdit}
-              >
-                <Edit2 className="h-3.5 w-3.5" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                onClick={() => setIsExpanded(true)}
-              >
-                <Maximize2 className="h-3.5 w-3.5" />
+                <Send className="h-4 w-4" />
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Expand Modal */}
-      <Dialog open={isExpanded} onOpenChange={setIsExpanded}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-              <span>
-                <span className="font-medium text-foreground">Journal</span>
-                <span className="mx-1.5">|</span>
-                <span>{formattedJournalDate}</span>
-              </span>
-              <span>{formattedEntryDate}</span>
-            </div>
-            <DialogTitle className="text-lg font-semibold">
-              {questionLabel}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="mt-4">
-            {isEmptyAnswer ? (
-              <p className="text-muted-foreground italic">No answer yet</p>
-            ) : (
-              <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
-                {answerContent}
-              </p>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 pt-4 border-t border-border/30 mt-4">
-            <PenLine className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Journal Entry</span>
-            {emotionTag && (
-              <Badge 
-                variant="secondary" 
-                className="text-xs px-2 py-0 h-5 bg-rose-100 text-rose-700 ml-auto"
-              >
-                {emotionTag}
-              </Badge>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
