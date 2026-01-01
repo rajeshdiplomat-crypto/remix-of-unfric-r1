@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -11,10 +12,10 @@ import { TopFocusBar } from "@/components/tasks/TopFocusBar";
 import { AllTasksList } from "@/components/tasks/AllTasksList";
 import { QuadrantGrid } from "@/components/tasks/QuadrantGrid";
 import { BoardView } from "@/components/tasks/BoardView";
-import { LargeClockWidget } from "@/components/tasks/LargeClockWidget";
 import { UnifiedTaskDrawer } from "@/components/tasks/UnifiedTaskDrawer";
 import { DeepFocusPrompt } from "@/components/tasks/DeepFocusPrompt";
 import PremiumDeepFocus from "@/pages/PremiumDeepFocus";
+
 import {
   QuadrantTask,
   QuadrantMode,
@@ -177,7 +178,7 @@ export default function Tasks() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const { taskId } = useParams();
+  const { taskId } = useParams(); // keeping in case you use it later
 
   const isFocusMode = location.pathname.includes("/focus/");
 
@@ -203,6 +204,7 @@ export default function Tasks() {
       return;
     }
     fetchTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   useEffect(() => {
@@ -214,11 +216,13 @@ export default function Tasks() {
         })),
       );
     }, 60000);
+
     return () => clearInterval(interval);
   }, []);
 
   const fetchTasks = async () => {
     if (!user) return;
+
     setLoading(true);
     const { data, error } = await supabase
       .from("tasks")
@@ -235,8 +239,8 @@ export default function Tasks() {
           reminder_at: null,
           alarm_enabled: false,
           total_focus_minutes: 0,
-          urgency: t.priority === "high" ? "high" : ("low" as Urgency),
-          importance: t.priority === "high" ? "high" : ("low" as Importance),
+          urgency: (t.priority === "high" ? "high" : "low") as Urgency,
+          importance: (t.priority === "high" ? "high" : "low") as Importance,
           status: "upcoming" as Status,
           time_of_day: "morning" as TimeOfDay,
           date_bucket: "today" as DateBucket,
@@ -250,6 +254,7 @@ export default function Tasks() {
 
       setTasks(quadrantTasks.length === 0 ? SAMPLE_TASKS : quadrantTasks);
     }
+
     setLoading(false);
   };
 
@@ -275,6 +280,7 @@ export default function Tasks() {
       setTasks((prev) => prev.map((t) => (t.id === task.id ? task : t)));
       toast({ title: "Updated!", description: "Task has been updated" });
     }
+
     setDrawerOpen(false);
   };
 
@@ -290,6 +296,7 @@ export default function Tasks() {
       started_at: task.started_at || new Date().toISOString(),
       status: "ongoing",
     };
+
     setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
     setSelectedTask(updated);
     toast({ title: "Started!", description: "Task moved to Ongoing" });
@@ -306,6 +313,7 @@ export default function Tasks() {
       completed_at: new Date().toISOString(),
       status: "completed",
     };
+
     setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
     setDrawerOpen(false);
     toast({ title: "Completed!", description: "Task marked as done" });
@@ -320,6 +328,7 @@ export default function Tasks() {
       };
       setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
     }
+
     setDrawerOpen(false);
     setFocusPromptOpen(false);
     navigate(`/tasks/focus/${task.id}`);
@@ -334,6 +343,7 @@ export default function Tasks() {
       completed_at: columnId === "completed" ? new Date().toISOString() : null,
       quadrant_assigned: true,
     });
+
     setTasks((prev) => [newTask, ...prev]);
     toast({ title: "Task added" });
   };
@@ -359,7 +369,11 @@ export default function Tasks() {
     toast({ title: "Task updated" });
   };
 
-  const filteredTasks = tasks.filter((t) => t.title.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredTasks = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return tasks;
+    return tasks.filter((t) => t.title.toLowerCase().includes(q));
+  }, [tasks, searchQuery]);
 
   if (loading) {
     return (
@@ -375,7 +389,6 @@ export default function Tasks() {
         tasks={tasks}
         onUpdateTask={async (updated) => {
           setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-          // Persist to database
           if (user) {
             await supabase
               .from("tasks")
@@ -392,86 +405,90 @@ export default function Tasks() {
   }
 
   return (
-  <div className="h-full w-full flex flex-col bg-background overflow-x-hidden">
-    <div className="w-full flex-1 flex flex-col gap-4 px-4 md:px-6 py-4 min-h-0">
-      {/* Header */}
-      <TasksHeader
-        view={view}
-        onViewChange={setView}
-        quadrantMode={quadrantMode}
-        onQuadrantModeChange={setQuadrantMode}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onNewTask={openNewTaskDrawer}
-      />
+    <div className="h-full w-full flex flex-col bg-background overflow-x-hidden">
+      {/* Main content wrapper: premium spacing + consistent alignment */}
+      <div className="w-full flex-1 flex flex-col min-h-0 px-4 md:px-6 py-4 gap-4">
+        {/* Header */}
+        <TasksHeader
+          view={view}
+          onViewChange={setView}
+          quadrantMode={quadrantMode}
+          onQuadrantModeChange={setQuadrantMode}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onNewTask={openNewTaskDrawer}
+        />
 
-      {/* Summary Strip */}
-      <SummaryStrip tasks={filteredTasks} />
+        {/* Summary Strip */}
+        <SummaryStrip tasks={filteredTasks} />
 
-      {/* Insights Panel (we'll move clock inside this) */}
-      <InsightsPanel tasks={filteredTasks} />
+        {/* Insights (we will move the clock inside InsightsPanel in next step) */}
+        <InsightsPanel tasks={filteredTasks} />
 
-      {/* Top Focus Bar */}
-      <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
+        {/* Top Focus Bar */}
+        <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
 
-      {/* Task Views */}
-      <div className="flex-1 grid grid-cols-1 xl:grid-cols-[300px_1fr] gap-4 min-h-0">
-        <div className="min-h-0 overflow-y-auto">
-          <AllTasksList
-            tasks={filteredTasks}
-            onTaskClick={openTaskDetail}
-            onStartTask={handleStartTask}
-            onCompleteTask={handleCompleteTask}
-          />
-        </div>
-
-        <div className="min-h-0 overflow-auto w-full">
-          {view === "quadrant" && (
-            <QuadrantGrid
-              mode={quadrantMode}
+        {/* Task Views */}
+        <div className="flex-1 grid grid-cols-1 xl:grid-cols-[300px_1fr] gap-4 min-h-0">
+          {/* All Tasks List */}
+          <div className="min-h-0 overflow-y-auto">
+            <AllTasksList
               tasks={filteredTasks}
               onTaskClick={openTaskDetail}
               onStartTask={handleStartTask}
               onCompleteTask={handleCompleteTask}
             />
-          )}
+          </div>
 
-          {view === "board" && (
-            <BoardView
-              mode="status"
-              tasks={filteredTasks}
-              onTaskClick={openTaskDetail}
-              onDragStart={() => {}}
-              onDrop={handleBoardDrop}
-              onQuickAdd={handleBoardQuickAdd}
-              onStartTask={handleStartTask}
-              onCompleteTask={handleCompleteTask}
-            />
-          )}
+          {/* Quadrant/Board View */}
+          <div className="min-h-0 overflow-auto w-full">
+            {view === "quadrant" && (
+              <QuadrantGrid
+                mode={quadrantMode}
+                tasks={filteredTasks}
+                onTaskClick={openTaskDetail}
+                onStartTask={handleStartTask}
+                onCompleteTask={handleCompleteTask}
+              />
+            )}
+
+            {view === "board" && (
+              <BoardView
+                mode="status"
+                tasks={filteredTasks}
+                onTaskClick={openTaskDetail}
+                onDragStart={() => {}}
+                onDrop={handleBoardDrop}
+                onQuickAdd={handleBoardQuickAdd}
+                onStartTask={handleStartTask}
+                onCompleteTask={handleCompleteTask}
+              />
+            )}
+          </div>
         </div>
+
+        {/* Unified Task Drawer */}
+        <UnifiedTaskDrawer
+          task={selectedTask}
+          isNew={isNewTask}
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          onSave={handleSaveTask}
+          onDelete={handleDeleteTask}
+          onStartFocus={handleStartFocus}
+          onStartTask={handleStartTask}
+          onCompleteTask={handleCompleteTask}
+        />
+
+        {/* Deep Focus Prompt */}
+        <DeepFocusPrompt
+          open={focusPromptOpen}
+          task={focusPromptTask}
+          onClose={() => setFocusPromptOpen(false)}
+          onStartFocus={() => focusPromptTask && handleStartFocus(focusPromptTask)}
+          onSkip={() => setFocusPromptOpen(false)}
+        />
       </div>
-
-      {/* Drawer */}
-      <UnifiedTaskDrawer
-        task={selectedTask}
-        isNew={isNewTask}
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        onSave={handleSaveTask}
-        onDelete={handleDeleteTask}
-        onStartFocus={handleStartFocus}
-        onStartTask={handleStartTask}
-        onCompleteTask={handleCompleteTask}
-      />
-
-      {/* Deep Focus Prompt */}
-      <DeepFocusPrompt
-        open={focusPromptOpen}
-        task={focusPromptTask}
-        onClose={() => setFocusPromptOpen(false)}
-        onStartFocus={() => focusPromptTask && handleStartFocus(focusPromptTask)}
-        onSkip={() => setFocusPromptOpen(false)}
-      />
     </div>
-  </div>
-);
+  );
+}
