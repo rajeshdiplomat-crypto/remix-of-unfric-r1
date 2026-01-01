@@ -13,7 +13,7 @@ import { AllTasksList } from "@/components/tasks/AllTasksList";
 import { QuadrantGrid } from "@/components/tasks/QuadrantGrid";
 import { BoardView } from "@/components/tasks/BoardView";
 import { UnifiedTaskDrawer } from "@/components/tasks/UnifiedTaskDrawer";
-import { DeepFocusPrompt } from "@/components/tasks/DeepFocusPrompt";
+import { DeepFocusPrompt } from "@/components/tasks/DeepFocusPromptModal";
 import PremiumDeepFocus from "@/pages/PremiumDeepFocus";
 
 import {

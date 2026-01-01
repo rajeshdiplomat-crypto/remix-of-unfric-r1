@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import DOMPurify from "dompurify";
 import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -282,7 +283,7 @@ export function JournalQuestionCard({
               {contentHtml ? (
                 <div 
                   className="text-sm text-foreground/80 leading-relaxed prose prose-sm max-w-none break-words"
-                  dangerouslySetInnerHTML={{ __html: contentHtml }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(contentHtml) }}
                 />
               ) : (
                 <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
