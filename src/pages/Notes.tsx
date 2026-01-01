@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -7,17 +7,27 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Search, Settings, FileText, ChevronDown, Zap, ArrowUpDown } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Settings,
+  FileText,
+  ChevronDown,
+  Zap,
+  ArrowUpDown,
+  LayoutGrid,
+  KanbanSquare,
+  Share2,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { NotesSplitView } from "@/components/notes/NotesSplitView";
 import { NotesGroupSettings } from "@/components/notes/NotesGroupSettings";
 import { NotesGroupSection } from "@/components/notes/NotesGroupSection";
 import { NotesLocationPicker } from "@/components/notes/NotesLocationPicker";
-import { NotesViewType } from "@/components/notes/NotesViewSwitcher";
 import { NotesBoardView } from "@/components/notes/NotesBoardView";
 import { NotesMindMapView } from "@/components/notes/NotesMindMapView";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-const controlBase = "h-10 rounded-xl bg-background/70 border-border/40 shadow-sm";
+
 export interface NoteGroup {
   id: string;
   name: string;
@@ -99,54 +109,24 @@ const SAMPLE_NOTES: Note[] = [
     isPinned: false,
     isArchived: false,
   },
-  {
-    id: "4",
-    groupId: "personal",
-    folderId: null,
-    title: "Travel Itinerary: Japan",
-    contentRich: "Day 1: Tokyo arrival, Shinjuku dinner. Day 2: Kyoto temples",
-    plainText: "Day 1: Tokyo arrival, Shinjuku dinner. Day 2: Kyoto temples",
-    tags: ["travel"],
-    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-    isPinned: false,
-    isArchived: false,
-  },
-  {
-    id: "5",
-    groupId: "wellness",
-    folderId: null,
-    title: "Gratitude Journal Draft",
-    contentRich: "Today I am grateful for the sunny weather and morning coffee",
-    plainText: "Today I am grateful for the sunny weather and morning coffee",
-    tags: ["gratitude"],
-    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 10).toISOString(),
-    isPinned: false,
-    isArchived: false,
-  },
-  {
-    id: "6",
-    groupId: "hobby",
-    folderId: null,
-    title: "Book Ideas",
-    contentRich: "The Silent Patient, Project Hail Mary, Atomic Habits",
-    plainText: "The Silent Patient, Project Hail Mary, Atomic Habits",
-    tags: ["reading"],
-    createdAt: new Date(Date.now() - 86400000 * 15).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 15).toISOString(),
-    isPinned: false,
-    isArchived: false,
-  },
 ];
 
 type ViewMode = "overview" | "editor";
 type SortOption = "updatedAt" | "createdAt" | "title";
+type NotesView = "atlas" | "board" | "mindmap";
+
+function safeUUID() {
+  // fallback for environments without crypto.randomUUID
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+}
 
 export default function Notes() {
   const { toast } = useToast();
 
-  // Load from localStorage or use defaults
   const [notes, setNotes] = useState<Note[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_NOTES);
     return saved ? JSON.parse(saved) : SAMPLE_NOTES;
@@ -164,14 +144,14 @@ export default function Notes() {
 
   const [viewMode, setViewMode] = useState<ViewMode>("overview");
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("updatedAt");
   const [filterGroupId, setFilterGroupId] = useState<string>("all");
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
-  const [notesView, setNotesView] = useState<NotesViewType>("atlas");
+  const [notesView, setNotesView] = useState<NotesView>("atlas");
 
-  // Persist to localStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_NOTES, JSON.stringify(notes));
   }, [notes]);
@@ -184,8 +164,9 @@ export default function Notes() {
     localStorage.setItem(STORAGE_KEY_FOLDERS, JSON.stringify(folders));
   }, [folders]);
 
-  // Filter and sort notes
-  const getFilteredNotes = () => {
+  const sortedGroups = useMemo(() => [...groups].sort((a, b) => a.sortOrder - b.sortOrder), [groups]);
+
+  const filteredNotes = useMemo(() => {
     return notes
       .filter((note) => {
         if (note.isArchived) return false;
@@ -197,34 +178,21 @@ export default function Notes() {
           : true;
 
         const matchesFilter = filterGroupId === "all" || note.groupId === filterGroupId;
-
         return matchesSearch && matchesFilter;
       })
       .sort((a, b) => {
-        if (sortBy === "title") {
-          return a.title.localeCompare(b.title);
-        }
+        if (sortBy === "title") return a.title.localeCompare(b.title);
         const dateA = new Date(a[sortBy]).getTime();
         const dateB = new Date(b[sortBy]).getTime();
         return dateB - dateA;
       });
-  };
+  }, [notes, searchQuery, filterGroupId, sortBy]);
 
-  const filteredNotes = getFilteredNotes();
+  const getGroupName = (groupId: string) => groups.find((g) => g.id === groupId)?.name || "Unknown";
 
-  const getGroupName = (groupId: string) => {
-    return groups.find((g) => g.id === groupId)?.name || "Unknown";
-  };
-
-  const getFolderName = (folderId: string | null) => {
-    if (!folderId) return null;
-    return folders.find((f) => f.id === folderId)?.name || null;
-  };
-
-  // Create note inline (no modal)
   const handleCreateNote = (groupId: string, folderId: string | null) => {
     const newNote: Note = {
-      id: crypto.randomUUID(),
+      id: safeUUID(),
       groupId,
       folderId,
       title: "",
@@ -241,36 +209,33 @@ export default function Notes() {
     setViewMode("editor");
   };
 
-  // Quick note - goes to Inbox (ensure inbox exists)
   const handleQuickNote = () => {
-    // Ensure Inbox group exists
     if (!groups.find((g) => g.id === "inbox")) {
       const inboxGroup: NoteGroup = {
         id: "inbox",
         name: "Inbox",
         color: "hsl(215, 20%, 65%)",
-        sortOrder: -1, // Always first
+        sortOrder: -1,
       };
       setGroups([inboxGroup, ...groups]);
     }
     handleCreateNote("inbox", null);
   };
 
-  // New note with location picker - no defaults
-  const handleNewNoteWithOptions = () => {
-    setLocationPickerOpen(true);
-  };
+  const handleNewNoteWithOptions = () => setLocationPickerOpen(true);
 
-  // Create folder inline
   const handleCreateFolder = (groupId: string, folderName: string) => {
     const newFolder: NoteFolder = {
-      id: crypto.randomUUID(),
+      id: safeUUID(),
       groupId,
       name: folderName,
       sortOrder: folders.filter((f) => f.groupId === groupId).length,
     };
     setFolders([...folders, newFolder]);
-    toast({ title: "Section created", description: `"${folderName}" added to ${getGroupName(groupId)}` });
+    toast({
+      title: "Section created",
+      description: `"${folderName}" added to ${getGroupName(groupId)}`,
+    });
   };
 
   const handleSaveNote = (updatedNote: Note) => {
@@ -297,123 +262,143 @@ export default function Notes() {
     setSelectedNote(null);
   };
 
-  const handleGroupsChange = (newGroups: NoteGroup[]) => {
-    setGroups(newGroups);
-  };
+  const handleGroupsChange = (newGroups: NoteGroup[]) => setGroups(newGroups);
 
-  // Sort groups by sortOrder
-  const sortedGroups = [...groups].sort((a, b) => a.sortOrder - b.sortOrder);
-
-  // Overview (Life Atlas Layout)
+  // ---------- OVERVIEW ----------
   if (viewMode === "overview") {
     return (
       <div className="w-full flex-1 space-y-6 pb-20">
-        {/* Header - calmer, journal-like */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        {/* Header (match Tasks style: left title, right actions) */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="flex-1">
-            <h1 className="text-xl font-medium text-foreground/90">Notes</h1>
-            <p className="text-sm text-muted-foreground/60 mt-0.5">Your life atlas — everything in one calm view</p>
+            <h1 className="text-2xl font-semibold tracking-tight">Notes</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Your life atlas — everything in one calm view</p>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* New Note Dropdown - less dominant */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="text-muted-foreground hover:text-foreground">
-                  <Plus className="h-4 w-4 mr-1.5" />
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
                   New note
-                  <ChevronDown className="h-3.5 w-3.5 ml-1.5 opacity-50" />
+                  <ChevronDown className="h-4 w-4 opacity-70" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem onClick={handleNewNoteWithOptions} className="py-2.5">
-                  <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <FileText className="h-4 w-4 mr-2" />
                   <div className="flex flex-col">
                     <span className="text-sm">New Note</span>
-                    <span className="text-xs text-muted-foreground/60">Choose where to save</span>
+                    <span className="text-xs text-muted-foreground">Choose group/section</span>
                   </div>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleQuickNote} className="py-2.5">
-                  <Zap className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span className="text-sm">Quick Note</span>
-                  <span className="ml-auto text-xs text-muted-foreground/50">→ Inbox</span>
+                  <Zap className="h-4 w-4 mr-2" />
+                  <div className="flex flex-col">
+                    <span className="text-sm">Quick Note</span>
+                    <span className="text-xs text-muted-foreground">Saves to Inbox</span>
+                  </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground/60 hover:text-foreground"
-              onClick={() => setSettingsOpen(true)}
-            >
+            <Button variant="outline" size="icon" onClick={() => setSettingsOpen(true)} aria-label="Notes settings">
               <Settings className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        {/* View Switcher */}
-        <div className="flex justify-end">
-          <NotesViewSwitcher currentView={notesView} onViewChange={setNotesView} />
-        </div>
-
-        {/* Group Filter Chips - Above Search */}
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setFilterGroupId("all")}
-            className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-              filterGroupId === "all"
-                ? "bg-primary/10 text-primary border border-primary/30"
-                : "bg-muted/30 text-foreground/70 hover:bg-muted/50 border border-transparent"
-            }`}
-          >
-            All
-          </button>
-          {sortedGroups.map((group) => (
-            <button
-              key={group.id}
-              onClick={() => setFilterGroupId(group.id)}
-              className={`px-3 py-1.5 rounded-full text-sm flex items-center gap-2 transition-colors ${
-                filterGroupId === group.id
-                  ? "bg-primary/10 text-primary border border-primary/30"
-                  : "bg-muted/30 text-foreground/70 hover:bg-muted/50 border border-transparent"
-              }`}
+        {/* Controls row (View toggle + Search + Sort) */}
+        <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+          {/* View toggle (no NotesViewSwitcher dependency) */}
+          <div className="flex items-center gap-1 rounded-xl border bg-background p-1 w-fit">
+            <Button
+              type="button"
+              variant={notesView === "atlas" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setNotesView("atlas")}
+              className="gap-2 rounded-lg"
             >
-              <div className="h-2 w-2 rounded-full" style={{ backgroundColor: group.color }} />
-              {group.name}
-            </button>
-          ))}
-        </div>
+              <LayoutGrid className="h-4 w-4" />
+              Atlas
+            </Button>
+            <Button
+              type="button"
+              variant={notesView === "board" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setNotesView("board")}
+              className="gap-2 rounded-lg"
+            >
+              <KanbanSquare className="h-4 w-4" />
+              Board
+            </Button>
+            <Button
+              type="button"
+              variant={notesView === "mindmap" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setNotesView("mindmap")}
+              className="gap-2 rounded-lg"
+            >
+              <Share2 className="h-4 w-4" />
+              Mind Map
+            </Button>
+          </div>
 
-        {/* Search + Sort Bar */}
-        <div className="flex flex-col sm:flex-row gap-3">
+          {/* Search */}
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search all notes..."
-              className="pl-10"
+              placeholder="Search notes..."
+              className="pl-10 h-10 rounded-xl"
             />
           </div>
 
-          <div className="flex gap-2">
-            {/* Sort */}
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-              <SelectTrigger className="w-[140px]">
-                <ArrowUpDown className="h-4 w-4 mr-2" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="updatedAt">Last edited</SelectItem>
-                <SelectItem value="createdAt">Created date</SelectItem>
-                <SelectItem value="title">A–Z</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Sort */}
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+            <SelectTrigger className="w-[170px] h-10 rounded-xl">
+              <ArrowUpDown className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Sort" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="updatedAt">Last edited</SelectItem>
+              <SelectItem value="createdAt">Created date</SelectItem>
+              <SelectItem value="title">A–Z</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Notes View Content */}
+        {/* Group filter chips */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setFilterGroupId("all")}
+            className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+              filterGroupId === "all"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background hover:bg-muted border-border"
+            }`}
+          >
+            All
+          </button>
+
+          {sortedGroups.map((group) => (
+            <button
+              key={group.id}
+              onClick={() => setFilterGroupId(group.id)}
+              className={`px-3 py-1.5 rounded-full text-sm border flex items-center gap-2 transition-colors ${
+                filterGroupId === group.id
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background hover:bg-muted border-border"
+              }`}
+            >
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: group.color }} />
+              {group.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Content */}
         {notesView === "atlas" && (
           <div className="space-y-4">
             {sortedGroups
@@ -457,18 +442,7 @@ export default function Notes() {
           />
         )}
 
-        {/* Empty State */}
-        {sortedGroups.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">No groups yet. Create your first group to get started.</p>
-            <Button onClick={() => setSettingsOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Group
-            </Button>
-          </div>
-        )}
-
-        {/* Settings Dialog */}
+        {/* Settings */}
         <NotesGroupSettings
           open={settingsOpen}
           onOpenChange={setSettingsOpen}
@@ -478,7 +452,7 @@ export default function Notes() {
           onFoldersChange={setFolders}
         />
 
-        {/* Location Picker Dialog */}
+        {/* Location Picker */}
         <NotesLocationPicker
           open={locationPickerOpen}
           onOpenChange={setLocationPickerOpen}
@@ -490,7 +464,7 @@ export default function Notes() {
     );
   }
 
-  // Editor View (Split View)
+  // ---------- EDITOR ----------
   return (
     <NotesSplitView
       notes={filteredNotes}
