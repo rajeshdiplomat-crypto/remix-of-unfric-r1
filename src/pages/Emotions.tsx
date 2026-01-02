@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Check, Loader2, ArrowLeft } from "lucide-react";
@@ -196,108 +195,106 @@ export default function Emotions() {
   const currentEmotion = selectedEmotion || latestEntry?.emotion || null;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6rem)] gap-4">
-      {/* Top: Patterns Dashboard */}
-      <div className="shrink-0">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 h-[calc(100vh-4rem)]">
+      {/* LEFT: Check-in + Patterns (scrollable) */}
+      <div className="overflow-y-auto space-y-6">
+        {/* How are you feeling - Check-in section */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">How are you feeling?</CardTitle>
+            <p className="text-sm text-muted-foreground">Take a moment to check in with yourself</p>
+          </CardHeader>
+          <CardContent>
+            {step === 'sliders' && (
+              <div className="space-y-6">
+                <EmotionSliderPicker onSelect={handleSliderComplete} />
+                
+                {/* Recent entries table */}
+                {entries.length > 0 && (
+                  <div className="pt-4 border-t">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3">Recent check-ins</h3>
+                    <div className="space-y-2">
+                      {entries.slice(0, 5).map((entry) => (
+                        <div key={entry.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: QUADRANTS[entry.quadrant].color }}
+                            />
+                            <span className="text-sm font-medium">{entry.emotion}</span>
+                            {entry.context?.what && (
+                              <span className="text-xs text-muted-foreground px-2 py-0.5 bg-muted rounded-full">
+                                {entry.context.what}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(entry.created_at), 'MMM d, h:mm a')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {step === 'details' && selectedQuadrant && selectedEmotion && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: QUADRANTS[selectedQuadrant].bgColor }}>
+                  <div
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: QUADRANTS[selectedQuadrant].color }}
+                  />
+                  <div>
+                    <p className="font-medium" style={{ color: QUADRANTS[selectedQuadrant].color }}>
+                      {selectedEmotion}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{QUADRANTS[selectedQuadrant].description}</p>
+                  </div>
+                </div>
+
+                <EmotionContextFieldsEnhanced
+                  note={note}
+                  onNoteChange={setNote}
+                  context={context}
+                  onContextChange={setContext}
+                  sendToJournal={sendToJournal}
+                  onSendToJournalChange={setSendToJournal}
+                  checkInTime={checkInTime}
+                  onCheckInTimeChange={setCheckInTime}
+                />
+
+                <div className="flex gap-3">
+                  <Button variant="outline" onClick={handleBack} className="flex-1">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back
+                  </Button>
+                  <Button onClick={saveCheckIn} disabled={saving} className="flex-1">
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
+                    Save Check-in
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Patterns Dashboard - Bottom of left panel */}
         <PatternsDashboardEnhanced entries={entries} />
       </div>
 
-      {/* Bottom: Left (Check-in) + Right (Strategies) */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Left Panel: Check-in */}
-        <div className="lg:col-span-8 min-h-0">
-          <Card className="h-full flex flex-col">
-            <CardHeader className="pb-3 shrink-0">
-              <CardTitle className="text-lg">How are you feeling?</CardTitle>
-              <p className="text-sm text-muted-foreground">Take a moment to check in with yourself</p>
-            </CardHeader>
-            <CardContent className="flex-1 min-h-0 overflow-auto">
-              {step === 'sliders' && (
-                <div className="space-y-6">
-                  <EmotionSliderPicker onSelect={handleSliderComplete} />
-                  
-                  {/* Recent entries table */}
-                  {entries.length > 0 && (
-                    <div className="pt-4 border-t">
-                      <h3 className="text-sm font-medium text-muted-foreground mb-3">Recent check-ins</h3>
-                      <div className="space-y-2">
-                        {entries.slice(0, 5).map((entry) => (
-                          <div key={entry.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: QUADRANTS[entry.quadrant].color }}
-                              />
-                              <span className="text-sm font-medium">{entry.emotion}</span>
-                              {entry.context?.what && (
-                                <span className="text-xs text-muted-foreground px-2 py-0.5 bg-muted rounded-full">
-                                  {entry.context.what}
-                                </span>
-                              )}
-                            </div>
-                            <span className="text-xs text-muted-foreground">
-                              {format(new Date(entry.created_at), 'MMM d, h:mm a')}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {step === 'details' && selectedQuadrant && selectedEmotion && (
-                <div className="space-y-6">
-                  <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: QUADRANTS[selectedQuadrant].bgColor }}>
-                    <div
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: QUADRANTS[selectedQuadrant].color }}
-                    />
-                    <div>
-                      <p className="font-medium" style={{ color: QUADRANTS[selectedQuadrant].color }}>
-                        {selectedEmotion}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{QUADRANTS[selectedQuadrant].description}</p>
-                    </div>
-                  </div>
-
-                  <EmotionContextFieldsEnhanced
-                    note={note}
-                    onNoteChange={setNote}
-                    context={context}
-                    onContextChange={setContext}
-                    sendToJournal={sendToJournal}
-                    onSendToJournalChange={setSendToJournal}
-                    checkInTime={checkInTime}
-                    onCheckInTimeChange={setCheckInTime}
-                  />
-
-                  <div className="flex gap-3">
-                    <Button variant="outline" onClick={handleBack} className="flex-1">
-                      <ArrowLeft className="h-4 w-4 mr-2" />
-                      Back
-                    </Button>
-                    <Button onClick={saveCheckIn} disabled={saving} className="flex-1">
-                      {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
-                      Save Check-in
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Panel: Strategies */}
-        <div className="lg:col-span-4 min-h-0">
-          <ScrollArea className="h-full">
-            <StrategiesPanelEnhanced
-              currentQuadrant={currentQuadrant}
-              currentEmotion={currentEmotion}
-            />
-          </ScrollArea>
-        </div>
-      </div>
+      {/* RIGHT: Strategies Panel (always mounted, sticky, independently scrollable) */}
+      <aside
+        className="hidden lg:flex flex-col h-full overflow-y-auto border-l border-border/50 bg-card"
+        tabIndex={-1}
+        aria-label="Strategies panel"
+      >
+        <StrategiesPanelEnhanced
+          currentQuadrant={currentQuadrant}
+          currentEmotion={currentEmotion}
+        />
+      </aside>
     </div>
   );
 }
