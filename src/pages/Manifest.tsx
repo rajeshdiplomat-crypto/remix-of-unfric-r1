@@ -9,7 +9,6 @@ import { ManifestTopBar } from "@/components/manifest/ManifestTopBar";
 import { ManifestCard } from "@/components/manifest/ManifestCard";
 import { ManifestCreateModal } from "@/components/manifest/ManifestCreateModal";
 import { ManifestPracticePanel } from "@/components/manifest/ManifestPracticePanel";
-import { ManifestWeeklyPanel } from "@/components/manifest/ManifestWeeklyPanel";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -383,10 +382,6 @@ export default function Manifest() {
           </div>
         )}
 
-        {/* Weekly Panel - Mobile only */}
-        <div className="lg:hidden">
-          <ManifestWeeklyPanel practices={practices} />
-        </div>
       </div>
 
       {/* RIGHT: Practice Panel (always mounted, sticky, independently scrollable) */}
@@ -403,11 +398,8 @@ export default function Manifest() {
             onPracticeComplete={handlePracticeComplete}
           />
         ) : (
-          <div className="p-4 space-y-4">
-            <ManifestWeeklyPanel practices={practices} />
-            <div className="text-center py-8 text-muted-foreground">
-              <p className="text-sm">Select a manifestation to begin practice</p>
-            </div>
+          <div className="p-4 flex items-center justify-center h-full">
+            <p className="text-sm text-muted-foreground">Select a manifestation to begin practice</p>
           </div>
         )}
       </aside>
