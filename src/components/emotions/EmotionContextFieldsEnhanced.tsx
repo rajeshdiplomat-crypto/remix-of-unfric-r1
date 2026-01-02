@@ -32,6 +32,8 @@ interface EmotionContextFieldsEnhancedProps {
   onSendToJournalChange: (value: boolean) => void;
   checkInTime: Date;
   onCheckInTimeChange: (date: Date) => void;
+  hideJournalToggle?: boolean;
+  hideTimeField?: boolean;
 }
 
 function PresetPills({ 
@@ -112,7 +114,9 @@ export function EmotionContextFieldsEnhanced({
   sendToJournal,
   onSendToJournalChange,
   checkInTime,
-  onCheckInTimeChange
+  onCheckInTimeChange,
+  hideJournalToggle = false,
+  hideTimeField = false
 }: EmotionContextFieldsEnhancedProps) {
   const [isOpen, setIsOpen] = useState(false);
   
@@ -136,29 +140,35 @@ export function EmotionContextFieldsEnhanced({
         />
       </div>
 
-      {/* Date/Time and Journal sync */}
-      <div className="flex items-center justify-between gap-4 p-3 rounded-lg bg-muted/30">
-        <div className="flex items-center gap-2">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          <input
-            type="datetime-local"
-            value={checkInTime.toISOString().slice(0, 16)}
-            onChange={(e) => onCheckInTimeChange(new Date(e.target.value))}
-            className="text-sm bg-transparent border-none focus:outline-none text-foreground"
-          />
+      {/* Date/Time and Journal sync - conditionally rendered */}
+      {(!hideTimeField || !hideJournalToggle) && (
+        <div className="flex items-center justify-between gap-4 p-3 rounded-lg bg-muted/30">
+          {!hideTimeField && (
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <input
+                type="datetime-local"
+                value={checkInTime.toISOString().slice(0, 16)}
+                onChange={(e) => onCheckInTimeChange(new Date(e.target.value))}
+                className="text-sm bg-transparent border-none focus:outline-none text-foreground"
+              />
+            </div>
+          )}
+          {!hideJournalToggle && (
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4 text-muted-foreground" />
+              <Label htmlFor="journal-sync" className="text-sm text-muted-foreground cursor-pointer">
+                Send to Journal
+              </Label>
+              <Switch
+                id="journal-sync"
+                checked={sendToJournal}
+                onCheckedChange={onSendToJournalChange}
+              />
+            </div>
+          )}
         </div>
-        <div className="flex items-center gap-2">
-          <BookOpen className="h-4 w-4 text-muted-foreground" />
-          <Label htmlFor="journal-sync" className="text-sm text-muted-foreground cursor-pointer">
-            Send to Journal
-          </Label>
-          <Switch
-            id="journal-sync"
-            checked={sendToJournal}
-            onCheckedChange={onSendToJournalChange}
-          />
-        </div>
-      </div>
+      )}
       
       {/* Collapsible context fields */}
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
