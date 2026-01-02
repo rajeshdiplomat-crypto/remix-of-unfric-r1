@@ -35,6 +35,17 @@ const TIME_PERIOD_INFO = {
   night: { label: 'Night', range: '9pm–6am', icon: Moon, color: 'hsl(230, 50%, 45%)' }
 };
 
+// Helper to get short unique quadrant label (combines energy + pleasantness)
+function getShortQuadrantLabel(quadrant: QuadrantType): string {
+  const labels: Record<QuadrantType, string> = {
+    'high-pleasant': 'High Pleasant',
+    'high-unpleasant': 'High Unpleasant',
+    'low-unpleasant': 'Low Unpleasant',
+    'low-pleasant': 'Low Pleasant'
+  };
+  return labels[quadrant];
+}
+
 // Helper to get emotion color based on quadrant
 function getEmotionColor(emotion: string, entries: EmotionEntry[]): string | null {
   const entry = entries.find(e => e.emotion === emotion);
@@ -205,7 +216,7 @@ function MonthlyCalendar({ entries }: { entries: EmotionEntry[] }) {
               className="w-2 h-2 rounded"
               style={{ backgroundColor: info.color }}
             />
-            <span className="text-muted-foreground">{info.label.split(',')[0]}</span>
+            <span className="text-muted-foreground">{getShortQuadrantLabel(key as QuadrantType)}</span>
           </div>
         ))}
       </div>
@@ -501,7 +512,7 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
     const quadrantData = Object.entries(quadrantCounts)
       .filter(([_, count]) => count > 0)
       .map(([id, count]) => ({
-        name: QUADRANTS[id as QuadrantType].label.split(',')[0],
+        name: getShortQuadrantLabel(id as QuadrantType),
         value: count,
         color: QUADRANTS[id as QuadrantType].color
       }));
@@ -602,7 +613,7 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
                     className="text-sm font-medium truncate"
                     style={{ color: QUADRANTS[mostCommonQuadrant[0] as QuadrantType].color }}
                   >
-                    {QUADRANTS[mostCommonQuadrant[0] as QuadrantType].label.split(',')[0]}
+                    {getShortQuadrantLabel(mostCommonQuadrant[0] as QuadrantType)}
                   </p>
                 ) : (
                   <p className="text-sm text-muted-foreground">—</p>
