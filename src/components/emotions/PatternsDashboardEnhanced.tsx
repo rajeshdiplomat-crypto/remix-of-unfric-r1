@@ -588,78 +588,29 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
             </Card>
           </div>
           
-          {/* Daytime insights */}
-          <DaytimeInsights entries={filteredEntries} />
-          
-          {/* Weekly activity */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Last 7 Days</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[160px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={stats.dailyData}>
-                    <XAxis 
-                      dataKey="date" 
-                      axisLine={false} 
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                    />
-                    <YAxis 
-                      hide 
-                      domain={[0, 'auto']}
-                    />
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          const data = payload[0].payload;
-                          return (
-                            <div className="bg-popover text-popover-foreground rounded-lg shadow-lg border p-2 text-xs">
-                              <p className="font-medium">{data.fullDate}</p>
-                              <p className="text-muted-foreground">{data.count} check-in{data.count !== 1 ? 's' : ''}</p>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Bar 
-                      dataKey="count" 
-                      fill="hsl(var(--primary))" 
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* Quadrant distribution */}
-          {stats.quadrantData.length > 0 && (
+          {/* Row 1: Daytime insights + Last 7 Days side by side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Daytime insights */}
+            <DaytimeInsights entries={filteredEntries} />
+            
+            {/* Weekly activity */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Mood Distribution</CardTitle>
+                <CardTitle className="text-sm font-medium">Last 7 Days</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[200px]">
+                <div className="h-[160px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={stats.quadrantData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={80}
-                        paddingAngle={2}
-                        dataKey="value"
-                      >
-                        {stats.quadrantData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Legend 
-                        formatter={(value) => <span className="text-xs">{value}</span>}
+                    <BarChart data={stats.dailyData}>
+                      <XAxis 
+                        dataKey="date" 
+                        axisLine={false} 
+                        tickLine={false}
+                        tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                      />
+                      <YAxis 
+                        hide 
+                        domain={[0, 'auto']}
                       />
                       <Tooltip
                         content={({ active, payload }) => {
@@ -667,55 +618,110 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
                             const data = payload[0].payload;
                             return (
                               <div className="bg-popover text-popover-foreground rounded-lg shadow-lg border p-2 text-xs">
-                                <p className="font-medium">{data.name}</p>
-                                <p className="text-muted-foreground">{data.value} times</p>
+                                <p className="font-medium">{data.fullDate}</p>
+                                <p className="text-muted-foreground">{data.count} check-in{data.count !== 1 ? 's' : ''}</p>
                               </div>
                             );
                           }
                           return null;
                         }}
                       />
-                    </PieChart>
+                      <Bar 
+                        dataKey="count" 
+                        fill="hsl(var(--primary))" 
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
             </Card>
-          )}
+          </div>
+          
+          {/* Row 2: Mood Distribution + Most Frequent Feelings side by side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Quadrant distribution */}
+            {stats.quadrantData.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Mood Distribution</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[200px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={stats.quadrantData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={80}
+                          paddingAngle={2}
+                          dataKey="value"
+                        >
+                          {stats.quadrantData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Legend 
+                          formatter={(value) => <span className="text-xs">{value}</span>}
+                        />
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload;
+                              return (
+                                <div className="bg-popover text-popover-foreground rounded-lg shadow-lg border p-2 text-xs">
+                                  <p className="font-medium">{data.name}</p>
+                                  <p className="text-muted-foreground">{data.value} times</p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Top emotions */}
+            {stats.topEmotions.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Most Frequent Feelings</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {stats.topEmotions.map(([emotion, count]) => {
+                      const maxCount = stats.topEmotions[0][1];
+                      const percentage = (count / maxCount) * 100;
+                      
+                      return (
+                        <div key={emotion} className="space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span className="font-medium">{emotion}</span>
+                            <span className="text-muted-foreground">{count} times</span>
+                          </div>
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-primary rounded-full transition-all"
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
           
           {/* Pattern Correlations */}
           <PatternCorrelations entries={filteredEntries} />
-          
-          {/* Top emotions */}
-          {stats.topEmotions.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Most Frequent Feelings</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {stats.topEmotions.map(([emotion, count]) => {
-                    const maxCount = stats.topEmotions[0][1];
-                    const percentage = (count / maxCount) * 100;
-                    
-                    return (
-                      <div key={emotion} className="space-y-1">
-                        <div className="flex justify-between text-sm">
-                          <span className="font-medium">{emotion}</span>
-                          <span className="text-muted-foreground">{count} times</span>
-                        </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-primary rounded-full transition-all"
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
           
           {/* Monthly Calendar - at the bottom */}
           <Card>
