@@ -1,6 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { format, addDays, startOfWeek, isToday, isBefore, isAfter, parseISO, differenceInDays, startOfMonth, endOfMonth, eachDayOfInterval, subDays } from "date-fns";
 import { computeEndDateForHabitDays, getScheduledDates } from "@/lib/dateUtils";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -129,7 +131,9 @@ type ViewMode = "week" | "compact" | "heatmap";
 
 export default function Trackers() {
   const { toast } = useToast();
-  const [activities, setActivities] = useState<ActivityItem[]>(SAMPLE_ACTIVITIES);
+  const { user } = useAuth();
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -148,6 +152,70 @@ export default function Trackers() {
   const [formDays, setFormDays] = useState(30);
   const [formStartDate, setFormStartDate] = useState<Date>(new Date());
   const [formImageUrl, setFormImageUrl] = useState<string | null>(null);
+
+  // Fetch habits from Supabase on mount
+  useEffect(() => {
+    if (!user) {
+      setActivities(SAMPLE_ACTIVITIES);
+      setLoading(false);
+      return;
+    }
+    fetchHabits();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  const fetchHabits = async () => {
+    if (!user) return;
+    setLoading(true);
+
+    const { data: habitsData, error: habitsError } = await supabase
+      .from("habits")
+      .select("*")
+      .eq("user_id", user.id);
+
+    const { data: completionsData, error: completionsError } = await supabase
+      .from("habit_completions")
+      .select("*")
+      .eq("user_id", user.id);
+
+    if (habitsError || completionsError) {
+      console.error("Error fetching habits:", habitsError || completionsError);
+      setActivities(SAMPLE_ACTIVITIES);
+      setLoading(false);
+      return;
+    }
+
+    // Transform habits to ActivityItem format
+    const transformedActivities: ActivityItem[] = (habitsData || []).map((habit) => {
+      // Get completions for this habit
+      const habitCompletions = (completionsData || [])
+        .filter((c) => c.habit_id === habit.id)
+        .reduce((acc, c) => {
+          acc[c.completed_date] = true;
+          return acc;
+        }, {} as Record<string, boolean>);
+
+      // Parse target_days to frequencyPattern (target_days: [1,2,3,4,5] -> Mon-Fri)
+      const targetDays = habit.target_days || [1, 2, 3, 4, 5, 6, 7];
+      const frequencyPattern = [1, 2, 3, 4, 5, 6, 7].map((d) => targetDays.includes(d));
+
+      return {
+        id: habit.id,
+        name: habit.name,
+        category: "health", // Default category
+        priority: "Medium",
+        description: habit.description || "",
+        frequencyPattern,
+        habitDays: 30, // Default habit days
+        startDate: format(new Date(habit.created_at), "yyyy-MM-dd"),
+        completions: habitCompletions,
+        createdAt: habit.created_at,
+      };
+    });
+
+    setActivities(transformedActivities.length === 0 ? SAMPLE_ACTIVITIES : transformedActivities);
+    setLoading(false);
+  };
 
   // Compute end date based on habit days (number of occurrences)
   const getEndDate = (activity: ActivityItem) => {
@@ -413,8 +481,14 @@ export default function Trackers() {
     return activity.frequencyPattern[dayOfWeek];
   };
 
-  const toggleCompletion = (activityId: string, date: Date) => {
+  const toggleCompletion = async (activityId: string, date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
+    const activity = activities.find((a) => a.id === activityId);
+    if (!activity) return;
+
+    const wasCompleted = activity.completions[dateStr];
+
+    // Update local state
     setActivities(activities.map((a) => {
       if (a.id !== activityId) return a;
       const newCompletions = { ...a.completions };
@@ -425,6 +499,26 @@ export default function Trackers() {
       }
       return { ...a, completions: newCompletions };
     }));
+
+    // Sync to Supabase
+    if (user) {
+      if (wasCompleted) {
+        // Delete completion
+        await supabase
+          .from("habit_completions")
+          .delete()
+          .eq("habit_id", activityId)
+          .eq("user_id", user.id)
+          .eq("completed_date", dateStr);
+      } else {
+        // Insert completion
+        await supabase.from("habit_completions").insert({
+          habit_id: activityId,
+          user_id: user.id,
+          completed_date: dateStr,
+        });
+      }
+    }
   };
 
   const openCreateDialog = () => {
@@ -474,7 +568,7 @@ export default function Trackers() {
     saveActivityImage(activityId, imageUrl);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formName.trim()) return;
 
     // Calculate scheduled sessions for preview
@@ -498,31 +592,59 @@ export default function Trackers() {
       saveActivityImage(tempActivity.id, formImageUrl);
     }
 
+    // Update local state
     if (editingActivity) {
       setActivities(activities.map((a) =>
         a.id === editingActivity.id ? tempActivity : a
       ));
-      toast({ 
-        title: "Activity updated",
-        description: `${scheduledSessions} habit sessions scheduled`,
-      });
     } else {
       setActivities([tempActivity, ...activities]);
-      toast({ 
-        title: "Activity created",
-        description: `${scheduledSessions} habit sessions scheduled`,
-      });
     }
+
+    // Sync to Supabase
+    if (user) {
+      // Convert frequencyPattern to target_days array [1-7]
+      const targetDays = formFrequency
+        .map((selected, idx) => (selected ? idx + 1 : null))
+        .filter((d): d is number => d !== null);
+
+      const { error } = await supabase.from("habits").upsert({
+        id: tempActivity.id,
+        user_id: user.id,
+        name: tempActivity.name,
+        description: tempActivity.description || null,
+        frequency: "custom",
+        target_days: targetDays,
+      });
+
+      if (error) {
+        toast({ title: "Sync failed", description: error.message, variant: "destructive" });
+        return;
+      }
+    }
+
+    toast({ 
+      title: editingActivity ? "Activity updated" : "Activity created",
+      description: `${scheduledSessions} habit sessions scheduled`,
+    });
     setDialogOpen(false);
   };
 
-  const handleDelete = (activityId: string) => {
+  const handleDelete = async (activityId: string) => {
     setActivities(activities.filter((a) => a.id !== activityId));
     setSelectedActivities(prev => {
       const next = new Set(prev);
       next.delete(activityId);
       return next;
     });
+
+    // Sync to Supabase
+    if (user) {
+      // Delete completions first (foreign key constraint)
+      await supabase.from("habit_completions").delete().eq("habit_id", activityId).eq("user_id", user.id);
+      await supabase.from("habits").delete().eq("id", activityId).eq("user_id", user.id);
+    }
+
     toast({ title: "Activity deleted" });
   };
 
