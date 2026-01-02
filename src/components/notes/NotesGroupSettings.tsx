@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import type { DragEvent } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,14 +18,14 @@ interface NotesGroupSettingsProps {
 }
 
 const PRESET_COLORS = [
-  "hsl(221, 83%, 53%)", // Blue
-  "hsl(142, 71%, 45%)", // Green
-  "hsl(262, 83%, 58%)", // Purple
-  "hsl(25, 95%, 53%)",  // Orange
-  "hsl(0, 84%, 60%)",   // Red
-  "hsl(47, 95%, 53%)",  // Yellow
-  "hsl(199, 95%, 73%)", // Cyan
-  "hsl(339, 81%, 51%)", // Pink
+  "hsl(221, 83%, 53%)",
+  "hsl(142, 71%, 45%)",
+  "hsl(262, 83%, 58%)",
+  "hsl(25, 95%, 53%)",
+  "hsl(0, 84%, 60%)",
+  "hsl(47, 95%, 53%)",
+  "hsl(199, 95%, 73%)",
+  "hsl(339, 81%, 51%)",
 ];
 
 export function NotesGroupSettings({
@@ -45,17 +46,12 @@ export function NotesGroupSettings({
   const [draggedItem, setDraggedItem] = useState<{ id: string; index: number } | null>(null);
   const dragOverItem = useRef<number | null>(null);
 
-  // Sort groups by sortOrder
   const sortedGroups = [...groups].sort((a, b) => a.sortOrder - b.sortOrder);
 
   const toggleExpanded = (groupId: string) => {
-    setExpandedGroups(prev => {
+    setExpandedGroups((prev) => {
       const next = new Set(prev);
-      if (next.has(groupId)) {
-        next.delete(groupId);
-      } else {
-        next.add(groupId);
-      }
+      next.has(groupId) ? next.delete(groupId) : next.add(groupId);
       return next;
     });
   };
@@ -68,11 +64,7 @@ export function NotesGroupSettings({
 
   const handleSaveEdit = () => {
     if (!editingGroup || !editName.trim()) return;
-    onGroupsChange(
-      groups.map((g) =>
-        g.id === editingGroup ? { ...g, name: editName, color: editColor } : g
-      )
-    );
+    onGroupsChange(groups.map((g) => (g.id === editingGroup ? { ...g, name: editName, color: editColor } : g)));
     setEditingGroup(null);
     toast({ title: "Group updated" });
   };
@@ -109,12 +101,12 @@ export function NotesGroupSettings({
   };
 
   // Drag and drop handlers
-  const handleDragStart = (e: React.DragEvent, id: string, index: number) => {
+  const handleDragStart = (e: DragEvent, id: string, index: number) => {
     setDraggedItem({ id, index });
     e.dataTransfer.effectAllowed = "move";
   };
 
-  const handleDragOver = (e: React.DragEvent, index: number) => {
+  const handleDragOver = (e: DragEvent, index: number) => {
     e.preventDefault();
     dragOverItem.current = index;
   };
@@ -134,18 +126,13 @@ export function NotesGroupSettings({
       return;
     }
 
-    // Reorder groups
     const reorderedGroups = [...sortedGroups];
     const [removed] = reorderedGroups.splice(dragIndex, 1);
     reorderedGroups.splice(hoverIndex, 0, removed);
 
-    // Update sortOrder for all groups
-    const updatedGroups = reorderedGroups.map((g, idx) => ({
-      ...g,
-      sortOrder: idx,
-    }));
-
+    const updatedGroups = reorderedGroups.map((g, idx) => ({ ...g, sortOrder: idx }));
     onGroupsChange(updatedGroups);
+
     setDraggedItem(null);
     dragOverItem.current = null;
     toast({ title: "Groups reordered" });
@@ -153,14 +140,13 @@ export function NotesGroupSettings({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md rounded-2xl">
         <DialogHeader>
           <DialogTitle>Manage Groups</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[400px]">
+        <ScrollArea className="max-h-[420px]">
           <div className="space-y-2 py-4">
-            {/* Existing Groups */}
             {sortedGroups.map((group, index) => {
               const groupFolders = folders.filter((f) => f.groupId === group.id);
               const isExpanded = expandedGroups.has(group.id);
@@ -172,16 +158,16 @@ export function NotesGroupSettings({
                     onDragStart={(e) => handleDragStart(e, group.id, index)}
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDragEnd={handleDragEnd}
-                    className={`flex items-center gap-2 p-2 rounded-lg bg-muted/30 transition-colors ${
+                    className={`flex items-center gap-2 p-2 rounded-xl bg-muted/25 border border-border/30 transition-colors ${
                       draggedItem?.id === group.id ? "opacity-50" : ""
                     }`}
                   >
-                    <div 
+                    <div
                       className="w-1 h-6 rounded-full shrink-0"
                       style={{ backgroundColor: editingGroup === group.id ? editColor : group.color }}
                     />
                     <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab active:cursor-grabbing" />
-                    
+
                     {groupFolders.length > 0 && (
                       <button onClick={() => toggleExpanded(group.id)} className="p-0.5">
                         {isExpanded ? (
@@ -191,77 +177,67 @@ export function NotesGroupSettings({
                         )}
                       </button>
                     )}
-                    
+
                     {editingGroup === group.id ? (
                       <div className="flex-1 flex items-center gap-2">
                         <Input
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
-                          className="h-7 text-sm"
+                          className="h-8 text-sm rounded-xl"
                           autoFocus
                         />
-                        <div className="flex gap-0.5">
+                        <div className="flex gap-1">
                           {PRESET_COLORS.slice(0, 4).map((color) => (
                             <button
                               key={color}
-                              className={`h-4 w-4 rounded-full border ${
-                                editColor === color ? "border-foreground" : "border-transparent"
-                              }`}
+                              className={`h-4 w-4 rounded-full border ${editColor === color ? "border-foreground" : "border-transparent"}`}
                               style={{ backgroundColor: color }}
                               onClick={() => setEditColor(color)}
                             />
                           ))}
                         </div>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleSaveEdit}>
-                          <Check className="h-3 w-3 text-green-500" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSaveEdit}>
+                          <Check className="h-4 w-4 text-green-500" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCancelEdit}>
-                          <X className="h-3 w-3 text-destructive" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancelEdit}>
+                          <X className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     ) : (
                       <>
                         <span className="flex-1 font-medium text-sm">{group.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {groupFolders.length} folders
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={() => handleEditGroup(group)}
-                        >
-                          <Edit2 className="h-3 w-3" />
+                        <span className="text-xs text-muted-foreground">{groupFolders.length} folders</span>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditGroup(group)}>
+                          <Edit2 className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 text-destructive hover:text-destructive"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
                           onClick={() => handleDeleteGroup(group.id)}
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </>
                     )}
                   </div>
 
-                  {/* Folders under this group */}
                   {isExpanded && groupFolders.length > 0 && (
-                    <div className="ml-6 space-y-1">
+                    <div className="ml-8 space-y-1">
                       {groupFolders.map((folder) => (
                         <div
                           key={folder.id}
-                          className="flex items-center gap-2 px-2 py-1.5 rounded bg-muted/20"
+                          className="flex items-center gap-2 px-2 py-2 rounded-xl bg-muted/15 border border-border/20"
                         >
-                          <Folder className="h-3 w-3 text-muted-foreground" />
+                          <Folder className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm text-muted-foreground flex-1">{folder.name}</span>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-5 w-5 text-destructive hover:text-destructive"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
                             onClick={() => handleDeleteFolder(folder.id)}
                           >
-                            <Trash2 className="h-3 w-3" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       ))}
@@ -271,7 +247,6 @@ export function NotesGroupSettings({
               );
             })}
 
-            {/* Add New Group */}
             <div className="border-t pt-4 mt-4">
               <h4 className="text-sm font-medium mb-2">Add New Group</h4>
               <div className="flex items-center gap-2">
@@ -279,11 +254,9 @@ export function NotesGroupSettings({
                   value={newGroupName}
                   onChange={(e) => setNewGroupName(e.target.value)}
                   placeholder="Group name..."
-                  className="flex-1"
+                  className="flex-1 rounded-xl"
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleAddGroup();
-                    }
+                    if (e.key === "Enter") handleAddGroup();
                   }}
                 />
                 <div className="flex gap-1">
@@ -298,7 +271,7 @@ export function NotesGroupSettings({
                     />
                   ))}
                 </div>
-                <Button size="sm" onClick={handleAddGroup} disabled={!newGroupName.trim()}>
+                <Button size="sm" className="h-9 rounded-xl" onClick={handleAddGroup} disabled={!newGroupName.trim()}>
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
