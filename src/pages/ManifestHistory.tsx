@@ -84,7 +84,7 @@ export default function ManifestHistory() {
             title: data.title,
             category: extras.category || "other",
             vision_image_url: extras.vision_image_url,
-            target_date: extras.target_date,
+            start_date: extras.start_date,
             live_from_end: extras.live_from_end,
             act_as_if: extras.act_as_if || "Take one small action",
             conviction: extras.conviction ?? 5,

@@ -71,7 +71,7 @@ export default function Manifest() {
         title: g.title,
         category: extras[g.id]?.category || "other",
         vision_image_url: extras[g.id]?.vision_image_url,
-        target_date: extras[g.id]?.target_date,
+        start_date: extras[g.id]?.start_date,
         live_from_end: extras[g.id]?.live_from_end,
         act_as_if: extras[g.id]?.act_as_if || "Take one small action",
         conviction: extras[g.id]?.conviction ?? 5,
@@ -200,7 +200,7 @@ export default function Manifest() {
     title: string;
     category: string;
     vision_image_url?: string;
-    target_date?: string;
+    start_date?: string;
     live_from_end?: string;
     act_as_if: string;
     conviction: number;
@@ -246,7 +246,7 @@ export default function Manifest() {
       saveGoalExtras(goalId, {
         category: goalData.category,
         vision_image_url: goalData.vision_image_url,
-        target_date: goalData.target_date,
+        start_date: goalData.start_date,
         live_from_end: goalData.live_from_end,
         act_as_if: goalData.act_as_if,
         conviction: goalData.conviction,

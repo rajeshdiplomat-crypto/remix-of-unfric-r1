@@ -37,7 +37,7 @@ interface ManifestCreateModalProps {
     title: string;
     category: string;
     vision_image_url?: string;
-    target_date?: string;
+    start_date?: string;
     live_from_end?: string;
     act_as_if: string;
     conviction: number;
@@ -55,7 +55,7 @@ interface DraftState {
   title: string;
   category: string;
   visionImageUrl: string;
-  targetDate: string;
+  startDate: string;
   liveFromEnd: string;
   actAsIf: string;
   customActAsIf: string;
@@ -71,7 +71,7 @@ const initialDraft: DraftState = {
   title: "",
   category: "other",
   visionImageUrl: "",
-  targetDate: "",
+  startDate: "",
   liveFromEnd: "",
   actAsIf: "",
   customActAsIf: "",
@@ -102,7 +102,7 @@ export function ManifestCreateModal({
           title: editingGoal.title,
           category: editingGoal.category || "other",
           visionImageUrl: editingGoal.vision_image_url || "",
-          targetDate: editingGoal.target_date || "",
+          startDate: editingGoal.start_date || "",
           liveFromEnd: editingGoal.live_from_end || "",
           actAsIf: editingGoal.act_as_if || "",
           customActAsIf: "",
@@ -162,7 +162,7 @@ export function ManifestCreateModal({
       title: draft.title,
       category: draft.category,
       vision_image_url: draft.visionImageUrl || undefined,
-      target_date: draft.targetDate || undefined,
+      start_date: draft.startDate || undefined,
       live_from_end: draft.liveFromEnd || undefined,
       act_as_if: finalActAsIf,
       conviction: draft.conviction,
@@ -319,14 +319,14 @@ export function ManifestCreateModal({
                 )}
               </div>
 
-              {/* Target Date */}
+              {/* Start Date */}
               <div className="space-y-2">
-                <Label htmlFor="target-date">Target Date (optional)</Label>
+                <Label htmlFor="start-date">Start Date (optional)</Label>
                 <Input
-                  id="target-date"
+                  id="start-date"
                   type="date"
-                  value={draft.targetDate}
-                  onChange={(e) => saveDraft({ targetDate: e.target.value })}
+                  value={draft.startDate}
+                  onChange={(e) => saveDraft({ startDate: e.target.value })}
                   className="w-40"
                 />
               </div>
