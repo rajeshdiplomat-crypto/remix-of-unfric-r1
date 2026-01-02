@@ -348,7 +348,7 @@ export default function Journal() {
 
   return (
     <div
-      className="flex w-full"
+      className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 w-full"
       style={{
         backgroundColor: currentSkin.pageBg,
         color: currentSkin.text,
@@ -356,7 +356,7 @@ export default function Journal() {
       }}
     >
       {/* Main Editor Area */}
-      <div className="flex-1 flex flex-col min-w-0 p-6">
+      <div className="flex flex-col min-w-0 p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>

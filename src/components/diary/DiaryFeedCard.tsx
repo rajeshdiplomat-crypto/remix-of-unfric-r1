@@ -192,7 +192,7 @@ export function DiaryFeedCard({
   };
 
   return (
-    <Card className="overflow-hidden bg-card border-border/40 shadow-sm hover:shadow-md transition-shadow rounded-xl">
+    <Card className="overflow-hidden bg-card border-border/40 shadow-[0_6px_18px_hsl(210_29%_8%/0.06)] hover:shadow-[0_10px_30px_hsl(210_29%_8%/0.08)] transition-all duration-200 rounded-[10px]">
       {/* Header with Avatar - matching JournalQuestionCard */}
       <div className="px-4 pt-4 pb-2">
         <div className="flex items-center justify-between" role="banner">

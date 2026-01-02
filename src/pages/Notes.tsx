@@ -384,8 +384,8 @@ export default function Notes() {
   // =========================
   if (viewMode === "overview") {
     return (
-      <div className="w-full flex-1 pb-24">
-        <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 space-y-6">
+      <div className="w-full flex-1 pb-24 max-w-[1400px] mx-auto">
+        <div className="w-full space-y-6">
           {/* Header */}
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">
