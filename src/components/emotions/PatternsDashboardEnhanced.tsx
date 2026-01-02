@@ -632,22 +632,25 @@ function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
               </div>
               <div className="flex flex-wrap gap-2">
                 {items.map(({ label, distribution, total }) => (
-                  <div key={label} className="p-2 rounded-lg bg-muted/30 flex gap-3">
+                  <div
+                    key={label}
+                    className="p-2 rounded-lg bg-muted/30 flex gap-3"
+                  >
                     {/* Vertical stacked bar on left */}
                     {distribution.length > 0 ? (
-                      <div className="flex flex-col w-2 rounded-full overflow-hidden h-12 shrink-0">
+                      <div className="flex flex-col w-2 rounded-full overflow-hidden h-14 shrink-0">
                         {distribution.map(({ quadrant, percentage }) => (
-                          <div 
+                          <div
                             key={quadrant}
-                            style={{ 
-                              height: `${percentage}%`, 
-                              backgroundColor: QUADRANTS[quadrant].color 
+                            style={{
+                              height: `${percentage}%`,
+                              backgroundColor: QUADRANTS[quadrant].color
                             }}
                           />
                         ))}
                       </div>
                     ) : (
-                      <div className="w-2 h-12 rounded-full bg-muted/50 shrink-0" />
+                      <div className="w-2 h-14 rounded-full bg-muted/50 shrink-0" />
                     )}
                     
                     {/* Content on right */}
@@ -984,8 +987,7 @@ export function PatternsDashboardEnhanced({ entries, onDateClick }: PatternsDash
                 <CardContent>
                   <div className="space-y-3">
                     {stats.topEmotions.map(([emotion, count]) => {
-                      const maxCount = stats.topEmotions[0][1];
-                      const percentage = (count / maxCount) * 100;
+                      const percentage = stats.totalEntries > 0 ? (count / stats.totalEntries) * 100 : 0;
                       const emotionColor = getEmotionColor(emotion, filteredEntries) || 'hsl(var(--primary))';
                       
                       return (

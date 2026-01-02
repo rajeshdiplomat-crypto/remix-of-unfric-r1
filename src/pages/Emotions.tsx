@@ -62,7 +62,7 @@ export default function Emotions() {
     if (user) fetchEntries();
   }, [user]);
 
-  const fetchEntries = async () => {
+  const fetchEntries = async (): Promise<EmotionEntry[] | undefined> => {
     if (!user) return;
     try {
       const { data, error } = await supabase
@@ -78,7 +78,7 @@ export default function Emotions() {
         let quadrant: QuadrantType = 'low-pleasant';
         let emotion = row.emotion;
         let parsedContext: EmotionEntry['context'] = undefined;
-        
+
         try {
           const parsedData = JSON.parse(row.emotion);
           if (parsedData.quadrant) quadrant = parsedData.quadrant;
@@ -103,9 +103,12 @@ export default function Emotions() {
           created_at: row.created_at,
         };
       });
+
       setEntries(parsed);
+      return parsed;
     } catch (err) {
       console.error('Error fetching emotions:', err);
+      return;
     } finally {
       setLoading(false);
     }
@@ -160,7 +163,7 @@ export default function Emotions() {
 
       toast.success(`Logged: ${selectedEmotion}`);
       resetCheckIn();
-      fetchEntries();
+      await fetchEntries();
     } catch (err) {
       console.error('Error saving emotion:', err);
       toast.error('Failed to save check-in');
@@ -269,6 +272,9 @@ export default function Emotions() {
   const saveEditedEntry = async () => {
     if (!user || !editingEntry || !editQuadrant || !editEmotion) return;
     setSaving(true);
+
+    const wasViewingDate = viewingDate;
+
     try {
       const emotionData = JSON.stringify({
         quadrant: editQuadrant,
@@ -291,21 +297,17 @@ export default function Emotions() {
       if (error) throw error;
 
       toast.success('Check-in updated');
-      
-      // First cancel edit to close modal
+
+      // Close edit modal first
       cancelEdit();
-      
-      // Then fetch entries to refresh all data
-      await fetchEntries();
-      
-      // Close viewing dialog if the date changed
-      if (viewingDate && viewingDate !== newEntryDate) {
-        setViewingDate(null);
-        setViewingEntries([]);
-      } else if (viewingDate) {
-        // Refresh viewing entries for current date
-        const updatedEntries = entries.filter(e => e.entry_date === viewingDate);
-        setViewingEntries(updatedEntries);
+
+      // Refresh all entries (calendar, patterns, recent list)
+      const updated = (await fetchEntries()) ?? [];
+
+      // If user was looking at a date-specific list, keep them there and show the updated date
+      if (wasViewingDate) {
+        setViewingDate(newEntryDate);
+        setViewingEntries(updated.filter(e => e.entry_date === newEntryDate));
       }
     } catch (err) {
       console.error('Error updating emotion:', err);
@@ -334,7 +336,7 @@ export default function Emotions() {
 
       toast.success('Check-in deleted');
       setDeletingEntryId(null);
-      fetchEntries();
+      await fetchEntries();
       
       // Update viewing entries if dialog is open
       if (viewingDate) {
@@ -429,8 +431,9 @@ export default function Emotions() {
         />
         
         {/* Check-in reminders */}
-        <CheckinReminders />
-        
+        <div className="mt-6">
+          <CheckinReminders />
+        </div>
         {/* Recent check-ins dynamically below strategies */}
         {entries.length > 0 && (
           <Card className="mt-4">
@@ -455,7 +458,7 @@ export default function Emotions() {
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           <span className="text-xs text-muted-foreground">
-                            {format(new Date(entry.created_at), 'MMM d')}
+                            {format(new Date(entry.entry_date + 'T12:00:00'), 'MMM d')}
                           </span>
                           {(hasDetails || true) && (
                             <Button
