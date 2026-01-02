@@ -53,7 +53,7 @@ export function AppSidebar() {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border">
+    <Sidebar collapsible="icon" className="border-r border-border/30 bg-sidebar">
       <SidebarHeader className="p-4">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-3">
@@ -72,15 +72,19 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Main</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-muted-foreground/70 text-xs uppercase tracking-wider">Main</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={isActive(item.url)}
+                    tooltip={item.title}
+                  >
                     <NavLink
                       to={item.url}
-                      className="flex items-center gap-3"
+                      className="flex items-center gap-3 rounded-lg transition-colors"
                       activeClassName="bg-primary/10 text-primary"
                     >
                       <item.icon className="h-4 w-4" />
@@ -94,15 +98,19 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Productivity</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-muted-foreground/70 text-xs uppercase tracking-wider">Productivity</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {productivityItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={isActive(item.url)}
+                    tooltip={item.title}
+                  >
                     <NavLink
                       to={item.url}
-                      className="flex items-center gap-3"
+                      className="flex items-center gap-3 rounded-lg transition-colors"
                       activeClassName="bg-primary/10 text-primary"
                     >
                       <item.icon className="h-4 w-4" />
@@ -119,10 +127,14 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/settings")}>
+                <SidebarMenuButton 
+                  asChild 
+                  isActive={isActive("/settings")}
+                  tooltip="Settings"
+                >
                   <NavLink
                     to="/settings"
-                    className="flex items-center gap-3"
+                    className="flex items-center gap-3 rounded-lg transition-colors"
                     activeClassName="bg-primary/10 text-primary"
                   >
                     <Settings className="h-4 w-4" />
@@ -135,11 +147,11 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t border-border">
+      <SidebarFooter className="p-4 border-t border-border/30">
         <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8">
+          <Avatar className="h-9 w-9 border-2 border-primary/20">
             <AvatarImage src={user?.user_metadata?.avatar_url} />
-            <AvatarFallback className="bg-primary/20 text-primary">
+            <AvatarFallback className="bg-primary/10 text-primary font-medium">
               {user?.email?.charAt(0).toUpperCase() || "U"}
             </AvatarFallback>
           </Avatar>
@@ -156,7 +168,7 @@ export function AppSidebar() {
               variant="ghost"
               size="icon"
               onClick={signOut}
-              className="h-8 w-8"
+              className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
             >
               <LogOut className="h-4 w-4" />
             </Button>

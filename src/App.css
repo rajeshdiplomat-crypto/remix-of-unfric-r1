@@ -1,15 +1,22 @@
 /* VISUAL TOKENS - src/App.css */
 :root {
-  --accent-blue: 199 89% 48%; /* hsl equivalent of #0ea5ff */
-  --radius-card: 10px;
-  --card-shadow: 0 6px 18px hsl(210 29% 8% / 0.06);
-  --card-shadow-hover: 0 10px 30px hsl(210 29% 8% / 0.08);
+  --accent-blue: 199 89% 48%; /* #0ea5ff */
+  --radius-card: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 9999px;
+  --card-shadow: 0 6px 18px hsl(210 20% 15% / 0.06);
+  --card-shadow-hover: 0 10px 30px hsl(210 20% 15% / 0.08);
+  --card-shadow-active: 0 4px 12px hsl(210 20% 15% / 0.04);
   --gutter-lg: 2.5rem; /* 40px */
+  --gutter-md: 1.5rem; /* 24px */
+  --space-xs: 0.25rem;
   --space-sm: 0.5rem;
   --space-md: 1rem;
   --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
   --transition-fast: 150ms;
-  --transition-medium: 220ms;
+  --transition-medium: 200ms;
 }
 
 /* Root container */
@@ -29,21 +36,37 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Smooth hover transitions for interactive elements */
+button, a, [role="button"], .interactive {
+  transition: transform var(--transition-fast) ease, 
+              background-color var(--transition-medium) ease, 
+              box-shadow var(--transition-medium) ease,
+              border-color var(--transition-medium) ease;
+}
+
 /* Cards - UI card styling */
 .ui-card {
   background: hsl(var(--card));
   border-radius: var(--radius-card);
   box-shadow: var(--card-shadow);
-  border: 1px solid hsl(var(--border) / 0.4);
-  padding: var(--space-md);
-  margin-bottom: 1.125rem; /* 18px vertical rhythm */
-  transition: transform var(--transition-fast) ease, box-shadow var(--transition-medium) ease;
+  border: 1px solid hsl(var(--border) / 0.5);
+  padding: var(--space-lg);
+  margin-bottom: 1.25rem;
+  transition: transform var(--transition-fast) ease, 
+              box-shadow var(--transition-medium) ease;
 }
 
 /* Interactive lift effect */
 .interactive:hover {
-  transform: translateY(-3px);
+  transform: translateY(-4px);
   box-shadow: var(--card-shadow-hover);
+}
+
+/* Active press effect */
+.interactive:active,
+.ui-card:active {
+  transform: translateY(-1px);
+  box-shadow: var(--card-shadow-active);
 }
 
 /* Primary button - pill style */
@@ -53,25 +76,36 @@
   justify-content: center;
   background: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
-  border-radius: 9999px;
-  padding: 0.5rem 0.95rem;
+  border-radius: var(--radius-pill);
+  padding: 0.625rem 1.25rem;
+  font-weight: 500;
   border: none;
   cursor: pointer;
-  transition: transform var(--transition-fast) ease, box-shadow var(--transition-medium) ease;
+  transition: transform var(--transition-fast) ease, 
+              box-shadow var(--transition-medium) ease,
+              background-color var(--transition-medium) ease;
 }
 
 .btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px hsl(var(--primary) / 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px hsl(var(--primary) / 0.35);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
 }
 
 /* Ghost button */
 .btn-ghost {
   background: transparent;
   color: hsl(var(--foreground));
-  border: 1px solid hsl(var(--border) / 0.4);
-  border-radius: 8px;
-  padding: 0.45rem 0.75rem;
+  border: 1px solid hsl(var(--border) / 0.5);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 1rem;
+}
+
+.btn-ghost:hover {
+  background: hsl(var(--muted) / 0.5);
 }
 
 /* Chips / tags */
@@ -79,28 +113,30 @@
   display: inline-flex;
   align-items: center;
   height: 36px;
-  padding: 0 0.75rem;
-  border-radius: 9999px;
-  background: hsl(var(--muted) / 0.15);
+  padding: 0 0.875rem;
+  border-radius: var(--radius-pill);
+  background: hsl(var(--muted) / 0.3);
   font-size: 0.875rem;
+  font-weight: 500;
   border: 1px solid hsl(var(--border) / 0.3);
-  transition: background var(--transition-fast) ease;
+  transition: background var(--transition-fast) ease,
+              border-color var(--transition-fast) ease;
 }
 
 .chip:hover {
-  background: hsl(var(--muted) / 0.25);
+  background: hsl(var(--muted) / 0.5);
 }
 
 .chip.active {
-  background: hsl(var(--primary) / 0.15);
+  background: hsl(var(--primary) / 0.1);
   border-color: hsl(var(--primary) / 0.3);
   color: hsl(var(--primary));
 }
 
 /* Separators */
 .separator {
-  border-top: 1px solid hsl(var(--border) / 0.4);
-  margin: var(--space-md) 0;
+  border-top: 1px solid hsl(var(--border) / 0.5);
+  margin: var(--space-lg) 0;
 }
 
 /* Gutter helper to apply wide gutters across pages */
@@ -129,10 +165,18 @@
   overflow: hidden;
 }
 
-/* Focus ring */
+/* Focus ring - enhanced */
 :focus-visible {
-  outline: 2px solid hsl(var(--ring) / 0.5);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.25);
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Legacy styles preserved for backwards compatibility */
@@ -144,11 +188,11 @@
 }
 
 .logo:hover {
-  filter: drop-shadow(0 0 2em hsl(231 62% 71% / 0.67));
+  filter: drop-shadow(0 0 2em hsl(var(--primary) / 0.6));
 }
 
 .logo.react:hover {
-  filter: drop-shadow(0 0 2em hsl(193 100% 68% / 0.67));
+  filter: drop-shadow(0 0 2em hsl(199 89% 48% / 0.6));
 }
 
 @keyframes logo-spin {
@@ -167,7 +211,7 @@
 }
 
 .card-style {
-  padding: 1em;
+  padding: 1.25em;
 }
 
 .read-the-docs {

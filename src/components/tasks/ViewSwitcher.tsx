@@ -9,11 +9,11 @@ interface ViewSwitcherProps {
 
 export function ViewSwitcher({ view, onViewChange }: ViewSwitcherProps) {
   return (
-    <div className="flex items-center bg-muted/50 rounded-lg p-1">
+    <div className="inline-flex items-center bg-muted/30 rounded-full p-1 border border-border/30">
       <button
         onClick={() => onViewChange('board')}
         className={cn(
-          "px-4 py-1.5 text-sm font-medium rounded-md transition-all",
+          "px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200",
           view === 'board' 
             ? "bg-background text-foreground shadow-sm" 
             : "text-muted-foreground hover:text-foreground"
@@ -24,7 +24,7 @@ export function ViewSwitcher({ view, onViewChange }: ViewSwitcherProps) {
       <button
         onClick={() => onViewChange('quadrant')}
         className={cn(
-          "px-4 py-1.5 text-sm font-medium rounded-md transition-all",
+          "px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200",
           view === 'quadrant' 
             ? "bg-primary text-primary-foreground shadow-sm" 
             : "text-muted-foreground hover:text-foreground"
