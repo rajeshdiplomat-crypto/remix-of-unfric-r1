@@ -9,6 +9,7 @@ import { FontProvider } from "@/contexts/FontContext";
 import { MotionProvider } from "@/contexts/MotionContext";
 import { CustomThemeProvider } from "@/contexts/CustomThemeContext";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageTransition } from "@/components/layout/PageTransition";
 import { CursorGradient } from "@/components/motion/CursorGradient";
 import Auth from "./pages/Auth";
 import Diary from "./pages/Diary";
@@ -39,7 +40,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/auth" replace />;
   }
 
-  return <AppLayout>{children}</AppLayout>;
+  return (
+    <AppLayout>
+      <PageTransition>{children}</PageTransition>
+    </AppLayout>
+  );
 }
 
 const App = () => (
