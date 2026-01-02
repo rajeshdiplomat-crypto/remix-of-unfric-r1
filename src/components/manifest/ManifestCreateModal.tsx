@@ -96,6 +96,10 @@ export function ManifestCreateModal({
   useEffect(() => {
     if (open) {
       if (editingGoal) {
+        // Check if act_as_if is a preset or custom
+        const savedActAsIf = editingGoal.act_as_if || "";
+        const isPreset = ACT_AS_IF_OPTIONS.includes(savedActAsIf);
+        
         // Load from editing goal
         setDraft({
           step: 1,
@@ -104,8 +108,8 @@ export function ManifestCreateModal({
           visionImageUrl: editingGoal.vision_image_url || "",
           startDate: editingGoal.start_date || "",
           liveFromEnd: editingGoal.live_from_end || "",
-          actAsIf: editingGoal.act_as_if || "",
-          customActAsIf: "",
+          actAsIf: isPreset ? savedActAsIf : "custom",
+          customActAsIf: isPreset ? "" : savedActAsIf,
           conviction: editingGoal.conviction ?? 5,
           visualizationMinutes: editingGoal.visualization_minutes || 3,
           dailyAffirmation: editingGoal.daily_affirmation || "",
