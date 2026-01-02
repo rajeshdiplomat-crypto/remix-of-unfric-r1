@@ -623,14 +623,14 @@ function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
         <CardTitle className="text-sm font-medium">Context Insights</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-4">
           {insights.map(({ category, icon: CategoryIcon, items }) => (
             <div key={category} className="space-y-2">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <CategoryIcon className="h-4 w-4" />
                 <span className="text-xs font-medium">{category}</span>
               </div>
-              <div className="space-y-2">
+              <div className="flex flex-wrap gap-2">
                 {items.map(({ label, distribution, total }) => (
                   <div key={label} className="p-2 rounded-lg bg-muted/30 flex gap-3">
                     {/* Vertical stacked bar on left */}
