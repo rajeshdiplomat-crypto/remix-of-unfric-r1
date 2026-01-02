@@ -8,18 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Plus,
-  Search,
-  Settings,
-  FileText,
-  ChevronDown,
-  Zap,
-  ArrowUpDown,
-  Pin,
-  Clock,
-  Layers,
-} from "lucide-react";
+import { Plus, Search, Settings, FileText, ChevronDown, Zap, ArrowUpDown, Pin, Clock, Layers } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -158,11 +147,7 @@ type ViewMode = "overview" | "editor";
 type SortOption = "updatedAt" | "createdAt" | "title";
 
 function isSameDay(a: Date, b: Date) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
 function StatCard({
@@ -180,9 +165,7 @@ function StatCard({
     <div className="rounded-2xl border border-border/50 bg-card shadow-sm">
       <div className="p-4 flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-            {label}
-          </p>
+          <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">{label}</p>
           <p className="mt-2 text-2xl font-semibold text-foreground">{value}</p>
           {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
         </div>
@@ -235,10 +218,7 @@ export default function Notes() {
     localStorage.setItem(STORAGE_KEY_FOLDERS, JSON.stringify(folders));
   }, [folders]);
 
-  const sortedGroups = useMemo(
-    () => [...groups].sort((a, b) => a.sortOrder - b.sortOrder),
-    [groups]
-  );
+  const sortedGroups = useMemo(() => [...groups].sort((a, b) => a.sortOrder - b.sortOrder), [groups]);
 
   const filteredNotes = useMemo(() => {
     return notes
@@ -278,10 +258,7 @@ export default function Notes() {
     };
   }, [notes, groups]);
 
-  const pinnedNotes = useMemo(
-    () => filteredNotes.filter((n) => n.isPinned).slice(0, 6),
-    [filteredNotes]
-  );
+  const pinnedNotes = useMemo(() => filteredNotes.filter((n) => n.isPinned).slice(0, 6), [filteredNotes]);
 
   const getGroupName = (groupId: string) => {
     return groups.find((g) => g.id === groupId)?.name || "Unknown";
@@ -291,11 +268,7 @@ export default function Notes() {
     if (!user?.id) return;
 
     const category: "thoughts" | "creative" | "private" =
-      note.groupId === "personal"
-        ? "private"
-        : note.groupId === "hobby"
-        ? "creative"
-        : "thoughts";
+      note.groupId === "personal" ? "private" : note.groupId === "hobby" ? "creative" : "thoughts";
 
     try {
       const { error } = await supabase.from("notes").upsert({
@@ -395,7 +368,7 @@ export default function Notes() {
   };
 
   const handleNoteClick = (note: Note) => {
-    ̣setSelectedNote(note);
+    setSelectedNote(note);
     setViewMode("editor");
   };
 
@@ -505,9 +478,7 @@ export default function Notes() {
                   size="sm"
                   onClick={() => setFilterGroupId("all")}
                   className={`h-9 rounded-full px-4 ${
-                    filterGroupId === "all"
-                      ? "bg-primary/10 text-primary border-primary/30"
-                      : "text-foreground/80"
+                    filterGroupId === "all" ? "bg-primary/10 text-primary border-primary/30" : "text-foreground/80"
                   }`}
                 >
                   All
@@ -522,15 +493,10 @@ export default function Notes() {
                       size="sm"
                       onClick={() => setFilterGroupId(group.id)}
                       className={`h-9 rounded-full px-4 ${
-                        active
-                          ? "bg-primary/10 text-primary border-primary/30"
-                          : "text-foreground/80"
+                        active ? "bg-primary/10 text-primary border-primary/30" : "text-foreground/80"
                       }`}
                     >
-                      <span
-                        className="h-2.5 w-2.5 rounded-full mr-2"
-                        style={{ backgroundColor: group.color }}
-                      />
+                      <span className="h-2.5 w-2.5 rounded-full mr-2" style={{ backgroundColor: group.color }} />
                       {group.name}
                     </Button>
                   );
@@ -552,12 +518,8 @@ export default function Notes() {
             <div className="rounded-2xl border border-border/50 bg-card shadow-sm">
               <div className="p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-                    Pinned
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Fast access to what matters.
-                  </p>
+                  <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Pinned</p>
+                  <p className="text-sm text-muted-foreground mt-1">Fast access to what matters.</p>
                 </div>
               </div>
 
@@ -570,21 +532,15 @@ export default function Notes() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="font-semibold text-foreground truncate">
-                          {n.title || "Untitled"}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                          {n.plainText || "No content"}
-                        </p>
+                        <p className="font-semibold text-foreground truncate">{n.title || "Untitled"}</p>
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{n.plainText || "No content"}</p>
                       </div>
                       <Pin className="h-4 w-4 text-muted-foreground" />
                     </div>
 
                     <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
                       <span>{getGroupName(n.groupId)}</span>
-                      <span>
-                        {formatDistanceToNow(new Date(n.updatedAt), { addSuffix: true })}
-                      </span>
+                      <span>{formatDistanceToNow(new Date(n.updatedAt), { addSuffix: true })}</span>
                     </div>
                   </button>
                 ))}
@@ -639,9 +595,7 @@ export default function Notes() {
           {/* Empty */}
           {sortedGroups.length === 0 && (
             <div className="rounded-2xl border border-border/50 bg-card shadow-sm p-10 text-center">
-              <p className="text-muted-foreground mb-4">
-                No groups yet. Create your first group to get started.
-              </p>
+              <p className="text-muted-foreground mb-4">No groups yet. Create your first group to get started.</p>
               <Button className="h-10 rounded-xl" onClick={() => setSettingsOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Group
