@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { QuadrantType, QUADRANTS } from "./types";
+import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
+import { QuadrantType, QUADRANTS, EMOTION_DESCRIPTIONS } from "./types";
 import { cn } from "@/lib/utils";
 
 interface EmotionSliderPickerProps {
@@ -194,34 +195,46 @@ export function EmotionSliderPicker({ onSelect, initialQuadrant, initialEmotion,
             const isTopMatch = index === 0;
             const isSelected = selectedEmotion === item.emotion;
             const emotionQuadrant = QUADRANTS[item.quadrant];
+            const description = EMOTION_DESCRIPTIONS[item.emotion];
             
             return (
-              <button
-                key={item.emotion}
-                onClick={() => handleEmotionClick(item.emotion, item.quadrant)}
-                className={cn(
-                  "px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-150",
-                  "border focus:outline-none focus:ring-2 focus:ring-offset-2",
-                  isSelected || (isTopMatch && !selectedEmotion)
-                    ? "scale-105 shadow-md" 
-                    : "hover:scale-[1.02]"
+              <HoverCard key={item.emotion} openDelay={200} closeDelay={100}>
+                <HoverCardTrigger asChild>
+                  <button
+                    onClick={() => handleEmotionClick(item.emotion, item.quadrant)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-150",
+                      "border focus:outline-none focus:ring-2 focus:ring-offset-2",
+                      isSelected || (isTopMatch && !selectedEmotion)
+                        ? "scale-105 shadow-md" 
+                        : "hover:scale-[1.02]"
+                    )}
+                    style={{
+                      backgroundColor: (isSelected || (isTopMatch && !selectedEmotion)) 
+                        ? emotionQuadrant.color 
+                        : 'transparent',
+                      borderColor: emotionQuadrant.borderColor,
+                      color: (isSelected || (isTopMatch && !selectedEmotion)) 
+                        ? 'white' 
+                        : emotionQuadrant.color,
+                      ['--tw-ring-color' as string]: emotionQuadrant.color
+                    }}
+                  >
+                    {item.emotion}
+                    {isTopMatch && !selectedEmotion && (
+                      <span className="ml-1 text-xs opacity-80">✓</span>
+                    )}
+                  </button>
+                </HoverCardTrigger>
+                {description && (
+                  <HoverCardContent side="top" className="w-64 p-3">
+                    <p className="font-medium text-sm mb-1" style={{ color: emotionQuadrant.color }}>
+                      {item.emotion}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{description}</p>
+                  </HoverCardContent>
                 )}
-                style={{
-                  backgroundColor: (isSelected || (isTopMatch && !selectedEmotion)) 
-                    ? emotionQuadrant.color 
-                    : 'transparent',
-                  borderColor: emotionQuadrant.borderColor,
-                  color: (isSelected || (isTopMatch && !selectedEmotion)) 
-                    ? 'white' 
-                    : emotionQuadrant.color,
-                  ['--tw-ring-color' as string]: emotionQuadrant.color
-                }}
-              >
-                {item.emotion}
-                {isTopMatch && !selectedEmotion && (
-                  <span className="ml-1 text-xs opacity-80">✓</span>
-                )}
-              </button>
+              </HoverCard>
             );
           })}
         </div>

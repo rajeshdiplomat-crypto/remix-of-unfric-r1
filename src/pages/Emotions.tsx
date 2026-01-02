@@ -292,22 +292,21 @@ export default function Emotions() {
 
       toast.success('Check-in updated');
       
+      // First cancel edit to close modal
+      cancelEdit();
+      
+      // Then fetch entries to refresh all data
+      await fetchEntries();
+      
       // Close viewing dialog if the date changed
       if (viewingDate && viewingDate !== newEntryDate) {
         setViewingDate(null);
         setViewingEntries([]);
       } else if (viewingDate) {
-        // Update viewing entries if dialog is open and date didn't change
-        setViewingEntries(prev => 
-          prev.map(e => e.id === editingEntry.id 
-            ? { ...e, note: editNote || undefined, context: editContext, quadrant: editQuadrant, emotion: editEmotion }
-            : e
-          )
-        );
+        // Refresh viewing entries for current date
+        const updatedEntries = entries.filter(e => e.entry_date === viewingDate);
+        setViewingEntries(updatedEntries);
       }
-      
-      cancelEdit();
-      fetchEntries();
     } catch (err) {
       console.error('Error updating emotion:', err);
       toast.error('Failed to update check-in');
