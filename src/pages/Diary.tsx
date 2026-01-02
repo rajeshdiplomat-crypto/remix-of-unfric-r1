@@ -57,192 +57,231 @@ export default function Diary() {
 
   const { metrics, chartData, smartInsight } = useDiaryMetrics(user?.id, timeRange);
 
-  // Seed feed events from existing data on mount
+  // Seed feed events from existing data
+  const seedFeedEvents = async () => {
+    if (!user?.id) return;
+
+    // Fetch all module data including journal answers
+    const [tasksRes, journalRes, journalAnswersRes, notesRes, habitsRes, goalsRes, emotionsRes] = await Promise.all([
+      supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+      supabase
+        .from("journal_entries")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20),
+      supabase
+        .from("journal_answers")
+        .select("*, journal_entries!inner(user_id, entry_date, created_at)")
+        .order("created_at", { ascending: false })
+        .limit(100),
+      supabase.from("notes").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+      supabase.from("habits").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+      supabase
+        .from("manifest_goals")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20),
+      supabase
+        .from("emotions")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20),
+    ]);
+
+    const feedEvents: any[] = [];
+
+    // Tasks
+    tasksRes.data?.forEach((task) => {
+      feedEvents.push({
+        user_id: user.id,
+        type: task.is_completed ? "complete" : "create",
+        source_module: "tasks",
+        source_id: task.id,
+        title: task.title,
+        summary: task.is_completed ? "Completed a task" : "Created a new task",
+        content_preview: task.description,
+        metadata: { priority: task.priority, due_date: task.due_date },
+        created_at: task.created_at,
+      });
+    });
+
+    // Journal Answers - each answer is a separate feed event
+    const answersData = journalAnswersRes.data?.filter((a: any) => a.journal_entries?.user_id === user.id) || [];
+
+    answersData.forEach((answer: any) => {
+      const question = DEFAULT_QUESTIONS.find((q) => q.id === answer.question_id);
+      const questionLabel = question?.text || answer.question_id;
+      const journalEntry = answer.journal_entries;
+
+      feedEvents.push({
+        user_id: user.id,
+        type: "journal_question",
+        source_module: "journal",
+        source_id: answer.id,
+        title: questionLabel,
+        summary: answer.answer_text || "",
+        content_preview: answer.answer_text || "",
+        metadata: {
+          journal_date: journalEntry?.entry_date,
+          entry_id: answer.journal_entry_id,
+          question_id: answer.question_id,
+          question_label: questionLabel,
+          answer_content: answer.answer_text || "",
+        },
+        created_at: journalEntry?.created_at || answer.created_at,
+      });
+    });
+
+    // Fallback: If no answers exist, use legacy journal entries
+    if (answersData.length === 0 && journalRes.data) {
+      journalRes.data.forEach((entry) => {
+        const questions = [
+          { id: "q1", label: "How I Feel", content: entry.daily_feeling },
+          { id: "q2", label: "Gratitude", content: entry.daily_gratitude },
+          { id: "q3", label: "Kindness", content: entry.daily_kindness },
+        ];
+
+        questions.forEach((question, idx) => {
+          if (question.content) {
+            feedEvents.push({
+              user_id: user.id,
+              type: "journal_question",
+              source_module: "journal",
+              source_id: `${entry.id}_q${idx}`,
+              title: question.label,
+              summary: question.content,
+              content_preview: question.content,
+              metadata: {
+                journal_date: entry.entry_date,
+                entry_id: entry.id,
+                question_id: question.id,
+                question_label: question.label,
+                answer_content: question.content,
+              },
+              created_at: entry.created_at,
+            });
+          }
+        });
+      });
+    }
+
+    // Notes
+    notesRes.data?.forEach((note) => {
+      feedEvents.push({
+        user_id: user.id,
+        type: "create",
+        source_module: "notes",
+        source_id: note.id,
+        title: note.title,
+        summary: "Created a note",
+        content_preview: note.content?.substring(0, 200),
+        metadata: { category: note.category, tags: note.tags },
+        created_at: note.created_at,
+      });
+    });
+
+    // Trackers (Habits)
+    habitsRes.data?.forEach((habit) => {
+      feedEvents.push({
+        user_id: user.id,
+        type: "create",
+        source_module: "trackers",
+        source_id: habit.id,
+        title: habit.name,
+        summary: "Created a habit tracker",
+        content_preview: habit.description,
+        metadata: { frequency: habit.frequency },
+        created_at: habit.created_at,
+      });
+    });
+
+    // Manifest Goals
+    goalsRes.data?.forEach((goal) => {
+      feedEvents.push({
+        user_id: user.id,
+        type: goal.is_completed ? "complete" : "create",
+        source_module: "manifest",
+        source_id: goal.id,
+        title: goal.title,
+        summary: goal.is_completed ? "Achieved a goal!" : "Set a new manifestation goal",
+        content_preview: goal.description,
+        metadata: { affirmations: goal.affirmations, feeling: goal.feeling_when_achieved },
+        created_at: goal.created_at,
+      });
+    });
+
+    // Emotions check-ins
+    emotionsRes.data?.forEach((emotion) => {
+      const emotionParts = emotion.emotion.split(":");
+      const primaryEmotion = emotionParts[0];
+      const secondaryEmotion = emotionParts[1] && !Number(emotionParts[1]) ? emotionParts[1] : null;
+      const intensity = emotionParts[emotionParts.length - 1];
+
+      feedEvents.push({
+        user_id: user.id,
+        type: "checkin",
+        source_module: "emotions",
+        source_id: emotion.id,
+        title: `Emotion Check-in: ${primaryEmotion.charAt(0).toUpperCase() + primaryEmotion.slice(1)}${secondaryEmotion ? ` - ${secondaryEmotion}` : ""}`,
+        summary: `Feeling ${primaryEmotion} (intensity: ${intensity}/10)`,
+        content_preview: emotion.notes,
+        metadata: { tags: emotion.tags, intensity, primary: primaryEmotion, secondary: secondaryEmotion },
+        created_at: emotion.created_at,
+      });
+    });
+
+    // Delete existing feed events first to avoid duplicates, then insert fresh
+    if (feedEvents.length > 0) {
+      await supabase.from("feed_events").delete().eq("user_id", user.id);
+      await supabase.from("feed_events").insert(feedEvents);
+      refetch();
+    }
+  };
+
+  // Seed feed events on mount
+  useEffect(() => {
+    if (!user?.id) return;
+    seedFeedEvents();
+  }, [user?.id]);
+
+  // Real-time subscriptions for tasks and habits
   useEffect(() => {
     if (!user?.id) return;
 
-    const seedFeedEvents = async () => {
-      // Fetch all module data including journal answers
-      const [tasksRes, journalRes, journalAnswersRes, notesRes, habitsRes, goalsRes, emotionsRes] = await Promise.all([
-        supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
-        supabase
-          .from("journal_entries")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(20),
-        supabase
-          .from("journal_answers")
-          .select("*, journal_entries!inner(user_id, entry_date, created_at)")
-          .order("created_at", { ascending: false })
-          .limit(100),
-        supabase.from("notes").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
-        supabase.from("habits").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
-        supabase
-          .from("manifest_goals")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(20),
-        supabase
-          .from("emotions")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(20),
-      ]);
+    const channel = supabase
+      .channel("diary-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tasks", filter: `user_id=eq.${user.id}` },
+        () => {
+          // Re-seed feed when tasks change
+          seedFeedEvents();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "habits", filter: `user_id=eq.${user.id}` },
+        () => {
+          // Re-seed feed when habits change
+          seedFeedEvents();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "habit_completions", filter: `user_id=eq.${user.id}` },
+        () => {
+          // Re-seed feed when habit completions change
+          seedFeedEvents();
+        }
+      )
+      .subscribe();
 
-      const feedEvents: any[] = [];
-
-      // Tasks
-      tasksRes.data?.forEach((task) => {
-        feedEvents.push({
-          user_id: user.id,
-          type: task.is_completed ? "complete" : "create",
-          source_module: "tasks",
-          source_id: task.id,
-          title: task.title,
-          summary: task.is_completed ? "Completed a task" : "Created a new task",
-          content_preview: task.description,
-          metadata: { priority: task.priority, due_date: task.due_date },
-          created_at: task.created_at,
-        });
-      });
-
-      // Journal Answers - each answer is a separate feed event
-      const answersData = journalAnswersRes.data?.filter((a: any) => a.journal_entries?.user_id === user.id) || [];
-
-      answersData.forEach((answer: any) => {
-        const question = DEFAULT_QUESTIONS.find((q) => q.id === answer.question_id);
-        const questionLabel = question?.text || answer.question_id;
-        const journalEntry = answer.journal_entries;
-
-        feedEvents.push({
-          user_id: user.id,
-          type: "journal_question",
-          source_module: "journal",
-          source_id: answer.id,
-          title: questionLabel,
-          summary: answer.answer_text || "",
-          content_preview: answer.answer_text || "",
-          metadata: {
-            journal_date: journalEntry?.entry_date,
-            entry_id: answer.journal_entry_id,
-            question_id: answer.question_id,
-            question_label: questionLabel,
-            answer_content: answer.answer_text || "",
-          },
-          created_at: journalEntry?.created_at || answer.created_at,
-        });
-      });
-
-      // Fallback: If no answers exist, use legacy journal entries
-      if (answersData.length === 0 && journalRes.data) {
-        journalRes.data.forEach((entry) => {
-          const questions = [
-            { id: "q1", label: "How I Feel", content: entry.daily_feeling },
-            { id: "q2", label: "Gratitude", content: entry.daily_gratitude },
-            { id: "q3", label: "Kindness", content: entry.daily_kindness },
-          ];
-
-          questions.forEach((question, idx) => {
-            if (question.content) {
-              feedEvents.push({
-                user_id: user.id,
-                type: "journal_question",
-                source_module: "journal",
-                source_id: `${entry.id}_q${idx}`,
-                title: question.label,
-                summary: question.content,
-                content_preview: question.content,
-                metadata: {
-                  journal_date: entry.entry_date,
-                  entry_id: entry.id,
-                  question_id: question.id,
-                  question_label: question.label,
-                  answer_content: question.content,
-                },
-                created_at: entry.created_at,
-              });
-            }
-          });
-        });
-      }
-
-      // Notes
-      notesRes.data?.forEach((note) => {
-        feedEvents.push({
-          user_id: user.id,
-          type: "create",
-          source_module: "notes",
-          source_id: note.id,
-          title: note.title,
-          summary: "Created a note",
-          content_preview: note.content?.substring(0, 200),
-          metadata: { category: note.category, tags: note.tags },
-          created_at: note.created_at,
-        });
-      });
-
-      // Trackers (Habits)
-      habitsRes.data?.forEach((habit) => {
-        feedEvents.push({
-          user_id: user.id,
-          type: "create",
-          source_module: "trackers",
-          source_id: habit.id,
-          title: habit.name,
-          summary: "Created a habit tracker",
-          content_preview: habit.description,
-          metadata: { frequency: habit.frequency },
-          created_at: habit.created_at,
-        });
-      });
-
-      // Manifest Goals
-      goalsRes.data?.forEach((goal) => {
-        feedEvents.push({
-          user_id: user.id,
-          type: goal.is_completed ? "complete" : "create",
-          source_module: "manifest",
-          source_id: goal.id,
-          title: goal.title,
-          summary: goal.is_completed ? "Achieved a goal!" : "Set a new manifestation goal",
-          content_preview: goal.description,
-          metadata: { affirmations: goal.affirmations, feeling: goal.feeling_when_achieved },
-          created_at: goal.created_at,
-        });
-      });
-
-      // Emotions check-ins
-      emotionsRes.data?.forEach((emotion) => {
-        const emotionParts = emotion.emotion.split(":");
-        const primaryEmotion = emotionParts[0];
-        const secondaryEmotion = emotionParts[1] && !Number(emotionParts[1]) ? emotionParts[1] : null;
-        const intensity = emotionParts[emotionParts.length - 1];
-
-        feedEvents.push({
-          user_id: user.id,
-          type: "checkin",
-          source_module: "emotions",
-          source_id: emotion.id,
-          title: `Emotion Check-in: ${primaryEmotion.charAt(0).toUpperCase() + primaryEmotion.slice(1)}${secondaryEmotion ? ` - ${secondaryEmotion}` : ""}`,
-          summary: `Feeling ${primaryEmotion} (intensity: ${intensity}/10)`,
-          content_preview: emotion.notes,
-          metadata: { tags: emotion.tags, intensity, primary: primaryEmotion, secondary: secondaryEmotion },
-          created_at: emotion.created_at,
-        });
-      });
-
-      // Delete existing feed events first to avoid duplicates, then insert fresh
-      if (feedEvents.length > 0) {
-        await supabase.from("feed_events").delete().eq("user_id", user.id);
-        await supabase.from("feed_events").insert(feedEvents);
-        refetch();
-      }
+    return () => {
+      supabase.removeChannel(channel);
     };
-
-    seedFeedEvents();
   }, [user?.id]);
 
   const handleNavigateToSource = (event: FeedEvent) => {
