@@ -144,6 +144,8 @@ export interface EmotionEntry {
     who?: string;
     what?: string;
     body?: string;
+    sleepHours?: string;
+    physicalActivity?: string;
   };
   entry_date: string;
   created_at: string;
