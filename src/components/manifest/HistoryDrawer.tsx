@@ -70,21 +70,19 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
         const practice = allPractices[key] as Partial<ManifestDailyPractice>;
         const dateStr = key.replace(`${goal.id}_`, "");
         
+        // Build acts text from acts array
+        const actsText = practice.acts?.map(a => a.text).join(", ");
+        
         goalPractices.push({
           date: dateStr,
           practiced: practice.locked || false,
           alignment: practice.alignment || 0,
-          acted: practice.acted || false,
-          visualization_completed: practice.visualization_completed || false,
-          proofs: practice.proof_text || practice.proof_image_url ? [{
-            id: `${goal.id}_${dateStr}_proof`,
-            text: practice.proof_text,
-            image_url: practice.proof_image_url,
-            created_at: practice.created_at || new Date().toISOString(),
-          }] : [],
+          acted: (practice.act_count || 0) > 0,
+          visualization_completed: (practice.visualization_count || 0) > 0,
+          proofs: practice.proofs || [],
           growth_note: practice.growth_note,
           gratitude: practice.gratitude,
-          custom_act_as_if: practice.custom_act_as_if,
+          custom_act_as_if: actsText,
         });
       }
     });

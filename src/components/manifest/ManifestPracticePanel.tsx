@@ -13,14 +13,21 @@ import {
   Check,
   Camera,
   Lock,
-  Sparkles,
   ChevronRight,
   X,
   Clock,
   ImagePlus,
   Trash2,
+  Plus,
 } from "lucide-react";
-import { type ManifestGoal, type ManifestDailyPractice, DAILY_PRACTICE_KEY } from "./types";
+import { 
+  type ManifestGoal, 
+  type ManifestDailyPractice, 
+  type ProofEntry,
+  type ActEntry,
+  type VisualizationEntry,
+  DAILY_PRACTICE_KEY 
+} from "./types";
 import { ManifestVisualizationMode } from "./ManifestVisualizationMode";
 import { format } from "date-fns";
 import confetti from "canvas-confetti";
@@ -59,13 +66,16 @@ export function ManifestPracticePanel({
     localStorage.setItem(DAILY_PRACTICE_KEY, JSON.stringify(all));
   };
 
-  // Section 1 state
-  const [visualizationCompleted, setVisualizationCompleted] = useState(false);
-  const [acted, setActed] = useState(false);
-  const [customActAsIf, setCustomActAsIf] = useState("");
-  const [proofText, setProofText] = useState("");
-  const [proofImageUrl, setProofImageUrl] = useState<string | null>(null);
-  const [proofSaved, setProofSaved] = useState(false);
+  // Section 1 state - Multiple entries
+  const [visualizations, setVisualizations] = useState<VisualizationEntry[]>([]);
+  const [acts, setActs] = useState<ActEntry[]>([]);
+  const [proofs, setProofs] = useState<ProofEntry[]>([]);
+  
+  // Current entry being created
+  const [currentActText, setCurrentActText] = useState("");
+  const [currentProofText, setCurrentProofText] = useState("");
+  const [currentProofImageUrl, setCurrentProofImageUrl] = useState<string | null>(null);
+  
   const [showVisualization, setShowVisualization] = useState(false);
 
   // Section 2 state
@@ -74,15 +84,15 @@ export function ManifestPracticePanel({
   const [gratitude, setGratitude] = useState("");
   const [isLocked, setIsLocked] = useState(false);
 
-  // Load saved state on mount and when goal changes - RESET all state first
+  // Load saved state on mount and when goal changes
   useEffect(() => {
     // Reset all state to defaults first
-    setVisualizationCompleted(false);
-    setActed(false);
-    setCustomActAsIf("");
-    setProofText("");
-    setProofImageUrl(null);
-    setProofSaved(false);
+    setVisualizations([]);
+    setActs([]);
+    setProofs([]);
+    setCurrentActText("");
+    setCurrentProofText("");
+    setCurrentProofImageUrl(null);
     setAlignment(5);
     setGrowthNote("");
     setGratitude("");
@@ -90,80 +100,108 @@ export function ManifestPracticePanel({
 
     // Then load saved values for this specific goal
     const saved = loadTodaysPractice();
-    if (saved.visualization_completed) setVisualizationCompleted(true);
-    if (saved.acted) setActed(true);
-    if (saved.custom_act_as_if) setCustomActAsIf(saved.custom_act_as_if);
-    if (saved.proof_text) {
-      setProofText(saved.proof_text);
-      setProofSaved(true);
-    }
-    if (saved.proof_image_url) setProofImageUrl(saved.proof_image_url);
+    if (saved.visualizations) setVisualizations(saved.visualizations);
+    if (saved.acts) setActs(saved.acts);
+    if (saved.proofs) setProofs(saved.proofs);
     if (saved.alignment) setAlignment(saved.alignment);
     if (saved.growth_note) setGrowthNote(saved.growth_note);
     if (saved.gratitude) setGratitude(saved.gratitude || "");
     if (saved.locked) setIsLocked(true);
   }, [goal.id, today]);
 
-  const section1Complete = visualizationCompleted && acted && proofSaved;
+  const hasVisualization = visualizations.length > 0;
+  const hasAct = acts.length > 0;
+  const hasProof = proofs.length > 0;
+  const section1Complete = hasVisualization && hasAct && hasProof;
   const section2Ready = section1Complete;
   const canLock = section2Ready && growthNote.trim().length > 0;
 
   const handleVisualizationComplete = () => {
-    setVisualizationCompleted(true);
+    const newEntry: VisualizationEntry = {
+      id: crypto.randomUUID(),
+      duration: goal.visualization_minutes,
+      created_at: new Date().toISOString(),
+    };
+    const updated = [...visualizations, newEntry];
+    setVisualizations(updated);
     setShowVisualization(false);
-    savePractice({ visualization_completed: true });
+    savePractice({ visualizations: updated, visualization_count: updated.length });
     toast.success("Visualization complete!");
   };
 
-  const handleActComplete = () => {
-    setActed(true);
-    savePractice({ acted: true, custom_act_as_if: customActAsIf || undefined });
+  const handleAddAct = () => {
+    const text = currentActText.trim() || goal.act_as_if;
+    const newEntry: ActEntry = {
+      id: crypto.randomUUID(),
+      text,
+      created_at: new Date().toISOString(),
+    };
+    const updated = [...acts, newEntry];
+    setActs(updated);
+    setCurrentActText("");
+    savePractice({ acts: updated, act_count: updated.length });
     toast.success("Nice move — that's practice!");
   };
 
-  const handleCustomActAsIfChange = (value: string) => {
-    setCustomActAsIf(value);
-    savePractice({ custom_act_as_if: value });
+  const handleRemoveAct = (id: string) => {
+    const updated = acts.filter(a => a.id !== id);
+    setActs(updated);
+    savePractice({ acts: updated, act_count: updated.length });
   };
 
   const handleProofImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Convert to base64 for localStorage (in production, upload to storage)
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64 = reader.result as string;
-      setProofImageUrl(base64);
-      savePractice({ proof_image_url: base64 });
+      setCurrentProofImageUrl(base64);
       toast.success("Image attached!");
     };
     reader.readAsDataURL(file);
   };
 
-  const handleRemoveProofImage = () => {
-    setProofImageUrl(null);
-    savePractice({ proof_image_url: undefined });
+  const handleRemoveCurrentProofImage = () => {
+    setCurrentProofImageUrl(null);
     if (proofImageInputRef.current) {
       proofImageInputRef.current.value = "";
     }
   };
 
-  const handleSaveProof = () => {
-    if (!proofText.trim()) {
+  const handleAddProof = () => {
+    if (!currentProofText.trim()) {
       toast.error("Please enter at least one line of proof");
       return;
     }
-    setProofSaved(true);
-    savePractice({ proof_text: proofText, proof_image_url: proofImageUrl || undefined });
     
-    // Confetti celebration
+    const newEntry: ProofEntry = {
+      id: crypto.randomUUID(),
+      text: currentProofText.trim(),
+      image_url: currentProofImageUrl || undefined,
+      created_at: new Date().toISOString(),
+    };
+    const updated = [...proofs, newEntry];
+    setProofs(updated);
+    setCurrentProofText("");
+    setCurrentProofImageUrl(null);
+    if (proofImageInputRef.current) {
+      proofImageInputRef.current.value = "";
+    }
+    savePractice({ proofs: updated });
+    
     confetti({
       particleCount: 80,
       spread: 60,
       origin: { y: 0.7 },
     });
     toast.success("Great — proof saved. Momentum +1");
+  };
+
+  const handleRemoveProof = (id: string) => {
+    const updated = proofs.filter(p => p.id !== id);
+    setProofs(updated);
+    savePractice({ proofs: updated });
   };
 
   const handleLockToday = () => {
@@ -175,11 +213,11 @@ export function ManifestPracticePanel({
       user_id: goal.user_id,
       entry_date: today,
       created_at: new Date().toISOString(),
-      visualization_completed: true,
-      acted: true,
-      proof_text: proofText,
-      proof_image_url: proofImageUrl || undefined,
-      custom_act_as_if: customActAsIf || undefined,
+      visualization_count: visualizations.length,
+      visualizations,
+      act_count: acts.length,
+      acts,
+      proofs,
       alignment,
       growth_note: growthNote,
       gratitude: gratitude || undefined,
@@ -189,7 +227,6 @@ export function ManifestPracticePanel({
     savePractice(practice);
     setIsLocked(true);
 
-    // Celebration
     confetti({
       particleCount: 100,
       spread: 70,
@@ -199,10 +236,7 @@ export function ManifestPracticePanel({
     onPracticeComplete(practice);
   };
 
-  const section1Progress = [visualizationCompleted, acted, proofSaved].filter(Boolean).length;
-
-  // Display act-as-if text (custom or default)
-  const displayActAsIf = customActAsIf || goal.act_as_if;
+  const section1Progress = [hasVisualization, hasAct, hasProof].filter(Boolean).length;
 
   if (showVisualization) {
     return (
@@ -221,7 +255,6 @@ export function ManifestPracticePanel({
       <div className="p-4 border-b border-border/50">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            {/* Vision Image */}
             {goal.vision_image_url && (
               <div className="w-full h-32 rounded-lg overflow-hidden mb-3 border border-border/50">
                 <img
@@ -232,7 +265,6 @@ export function ManifestPracticePanel({
               </div>
             )}
             
-            {/* Check-in Time */}
             {goal.check_in_time && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
                 <Clock className="h-3 w-3" />
@@ -270,90 +302,139 @@ export function ManifestPracticePanel({
               </Badge>
             </div>
 
-            {/* 1. Visualization */}
-            <Card className={`border-border/50 ${visualizationCompleted ? "bg-primary/5 border-primary/30" : ""}`}>
-              <CardContent className="p-3">
+            {/* 1. Visualizations */}
+            <Card className={`border-border/50 ${hasVisualization ? "bg-primary/5 border-primary/30" : ""}`}>
+              <CardContent className="p-3 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    {visualizationCompleted ? (
+                    {hasVisualization ? (
                       <Check className="h-4 w-4 text-primary" />
                     ) : (
                       <Play className="h-4 w-4 text-muted-foreground" />
                     )}
                     <span className="text-sm font-medium">Visualization</span>
+                    {visualizations.length > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {visualizations.length}x
+                      </Badge>
+                    )}
                   </div>
                   <Button
                     size="sm"
-                    variant={visualizationCompleted ? "outline" : "default"}
+                    variant={hasVisualization ? "outline" : "default"}
                     onClick={() => setShowVisualization(true)}
                     disabled={isLocked}
                   >
-                    {visualizationCompleted ? "Redo" : `Visualize (${goal.visualization_minutes}m)`}
+                    <Plus className="h-3 w-3 mr-1" />
+                    {hasVisualization ? "Add Another" : `Visualize (${goal.visualization_minutes}m)`}
                   </Button>
                 </div>
+                
+                {/* List of completed visualizations */}
+                {visualizations.length > 0 && (
+                  <div className="space-y-1 ml-6">
+                    {visualizations.map((v, i) => (
+                      <div key={v.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Check className="h-3 w-3 text-primary" />
+                        <span>Session {i + 1} • {v.duration}min • {format(new Date(v.created_at), "h:mm a")}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
             {/* 2. Act-as-If */}
-            <Card className={`border-border/50 ${acted ? "bg-primary/5 border-primary/30" : ""}`}>
-              <CardContent className="p-3">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {acted ? (
-                        <Check className="h-4 w-4 text-primary" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      )}
-                      <span className="text-sm font-medium">Act-as-If</span>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant={acted ? "outline" : "default"}
-                      onClick={handleActComplete}
-                      disabled={isLocked}
-                    >
-                      {acted ? "Done" : "Mark Action Done"}
-                    </Button>
-                  </div>
-                  
-                  {/* Default act-as-if suggestion */}
-                  <p className="text-sm text-muted-foreground ml-6">
-                    Suggestion: {goal.act_as_if}
-                  </p>
-                  
-                  {/* Custom act-as-if input */}
-                  <div className="ml-6">
-                    <Input
-                      value={customActAsIf}
-                      onChange={(e) => handleCustomActAsIfChange(e.target.value)}
-                      placeholder="Or write your own action for today..."
-                      disabled={isLocked}
-                      className="text-sm"
-                    />
+            <Card className={`border-border/50 ${hasAct ? "bg-primary/5 border-primary/30" : ""}`}>
+              <CardContent className="p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {hasAct ? (
+                      <Check className="h-4 w-4 text-primary" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <span className="text-sm font-medium">Act-as-If</span>
+                    {acts.length > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {acts.length}x
+                      </Badge>
+                    )}
                   </div>
                 </div>
+                
+                {/* Default suggestion */}
+                <p className="text-sm text-muted-foreground ml-6">
+                  Suggestion: {goal.act_as_if}
+                </p>
+                
+                {/* Custom act input + add button */}
+                <div className="ml-6 flex gap-2">
+                  <Input
+                    value={currentActText}
+                    onChange={(e) => setCurrentActText(e.target.value)}
+                    placeholder="Or write your own action..."
+                    disabled={isLocked}
+                    className="text-sm flex-1"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleAddAct}
+                    disabled={isLocked}
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add
+                  </Button>
+                </div>
+                
+                {/* List of completed acts */}
+                {acts.length > 0 && (
+                  <div className="space-y-2 ml-6">
+                    {acts.map((a) => (
+                      <div key={a.id} className="flex items-center justify-between gap-2 p-2 bg-muted/50 rounded-md">
+                        <div className="flex items-center gap-2 text-xs">
+                          <Check className="h-3 w-3 text-primary" />
+                          <span>{a.text}</span>
+                          <span className="text-muted-foreground">• {format(new Date(a.created_at), "h:mm a")}</span>
+                        </div>
+                        {!isLocked && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => handleRemoveAct(a.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
             {/* 3. Save Proof */}
-            <Card className={`border-border/50 ${proofSaved ? "bg-primary/5 border-primary/30" : ""}`}>
+            <Card className={`border-border/50 ${hasProof ? "bg-primary/5 border-primary/30" : ""}`}>
               <CardContent className="p-3 space-y-3">
                 <div className="flex items-center gap-2">
-                  {proofSaved ? (
+                  {hasProof ? (
                     <Check className="h-4 w-4 text-primary" />
                   ) : (
                     <Camera className="h-4 w-4 text-muted-foreground" />
                   )}
                   <span className="text-sm font-medium">Save Proof</span>
+                  {proofs.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      {proofs.length}x
+                    </Badge>
+                  )}
                 </div>
                 
+                {/* New proof input */}
                 <Textarea
-                  value={proofText}
-                  onChange={(e) => {
-                    setProofText(e.target.value);
-                    if (proofSaved) setProofSaved(false);
-                  }}
+                  value={currentProofText}
+                  onChange={(e) => setCurrentProofText(e.target.value)}
                   placeholder="A colleague asked for my input; I felt calm in the meeting."
                   rows={2}
                   disabled={isLocked}
@@ -371,10 +452,10 @@ export function ManifestPracticePanel({
                     disabled={isLocked}
                   />
                   
-                  {proofImageUrl ? (
+                  {currentProofImageUrl ? (
                     <div className="relative">
                       <img
-                        src={proofImageUrl}
+                        src={currentProofImageUrl}
                         alt="Proof"
                         className="w-full h-24 object-cover rounded-lg border border-border/50"
                       />
@@ -383,7 +464,7 @@ export function ManifestPracticePanel({
                           variant="destructive"
                           size="icon"
                           className="absolute top-1 right-1 h-6 w-6"
-                          onClick={handleRemoveProofImage}
+                          onClick={handleRemoveCurrentProofImage}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -405,12 +486,48 @@ export function ManifestPracticePanel({
                 
                 <Button
                   size="sm"
-                  onClick={handleSaveProof}
-                  disabled={!proofText.trim() || isLocked}
+                  onClick={handleAddProof}
+                  disabled={!currentProofText.trim() || isLocked}
                   className="w-full"
                 >
-                  {proofSaved ? "Update Proof" : "Save Proof"}
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add Proof
                 </Button>
+                
+                {/* List of saved proofs */}
+                {proofs.length > 0 && (
+                  <div className="space-y-2 pt-2 border-t border-border/50">
+                    {proofs.map((p) => (
+                      <div key={p.id} className="p-2 bg-muted/50 rounded-md space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <p className="text-xs">{p.text}</p>
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(p.created_at), "h:mm a")}
+                            </span>
+                          </div>
+                          {!isLocked && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => handleRemoveProof(p.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                        {p.image_url && (
+                          <img
+                            src={p.image_url}
+                            alt="Proof"
+                            className="w-full h-20 object-cover rounded-md"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -483,13 +600,13 @@ export function ManifestPracticePanel({
             >
               {isLocked ? (
                 <>
-                  <Check className="h-4 w-4 mr-2" />
+                  <Lock className="h-4 w-4 mr-2" />
                   Day Locked
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Lock Today — Celebrate
+                  <Lock className="h-4 w-4 mr-2" />
+                  Lock Today
                 </>
               )}
             </Button>
