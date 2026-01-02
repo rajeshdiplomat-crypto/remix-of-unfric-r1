@@ -11,6 +11,16 @@ import { ManifestCreateModal } from "@/components/manifest/ManifestCreateModal";
 import { ManifestPracticePanel } from "@/components/manifest/ManifestPracticePanel";
 import { ManifestWeeklyPanel } from "@/components/manifest/ManifestWeeklyPanel";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   type ManifestGoal,
   type ManifestProof,
   type ManifestDailyPractice,
@@ -48,6 +58,7 @@ export default function Manifest() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingGoal, setEditingGoal] = useState<ManifestGoal | null>(null);
   const [selectedGoal, setSelectedGoal] = useState<ManifestGoal | null>(null);
+  const [deletingGoal, setDeletingGoal] = useState<ManifestGoal | null>(null);
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -285,6 +296,37 @@ export default function Manifest() {
     setShowCreateModal(true);
   };
 
+  const handleDeleteGoal = async () => {
+    if (!deletingGoal) return;
+    
+    try {
+      const { error } = await supabase
+        .from("manifest_goals")
+        .delete()
+        .eq("id", deletingGoal.id);
+
+      if (error) throw error;
+
+      // Also remove from localStorage
+      const extras = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
+      delete extras[deletingGoal.id];
+      localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify(extras));
+
+      // Clear selection if deleting selected goal
+      if (selectedGoal?.id === deletingGoal.id) {
+        setSelectedGoal(null);
+      }
+
+      toast.success("Manifestation deleted");
+      fetchData();
+    } catch (error) {
+      console.error("Error deleting goal:", error);
+      toast.error("Failed to delete manifestation");
+    } finally {
+      setDeletingGoal(null);
+    }
+  };
+
   const handleCloseModal = (open: boolean) => {
     setShowCreateModal(open);
     if (!open) setEditingGoal(null);
@@ -334,6 +376,7 @@ export default function Manifest() {
                   isSelected={selectedGoal?.id === goal.id}
                   onClick={() => handleSelectGoal(goal)}
                   onEdit={() => handleEditGoal(goal)}
+                  onDelete={() => setDeletingGoal(goal)}
                 />
               );
             })}
@@ -377,6 +420,24 @@ export default function Manifest() {
         saving={saving}
         editingGoal={editingGoal}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingGoal} onOpenChange={(open) => !open && setDeletingGoal(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Manifestation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deletingGoal?.title}"? This action cannot be undone and all practice history for this goal will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteGoal} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

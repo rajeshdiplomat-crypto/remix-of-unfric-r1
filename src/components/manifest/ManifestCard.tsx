@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Pencil, Check, Minus, Clock, History } from "lucide-react";
+import { Pencil, Check, Minus, Clock, History, Trash2 } from "lucide-react";
 import { type ManifestGoal, type ManifestProof, type ManifestDailyPractice, DAILY_PRACTICE_KEY } from "./types";
 import { format, subDays, isSameDay, parseISO } from "date-fns";
 import { useMemo } from "react";
@@ -16,6 +16,7 @@ interface ManifestCardProps {
   isSelected: boolean;
   onClick: () => void;
   onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 export function ManifestCard({
@@ -26,6 +27,7 @@ export function ManifestCard({
   isSelected,
   onClick,
   onEdit,
+  onDelete,
 }: ManifestCardProps) {
   const navigate = useNavigate();
   // Get last 7 days practice history
@@ -171,6 +173,20 @@ export function ManifestCard({
             >
               <History className="h-4 w-4" />
             </Button>
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                title="Delete goal"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>
