@@ -161,6 +161,14 @@ export function EmotionSliderPicker({ onSelect, initialQuadrant, initialEmotion,
 
   const handleEmotionClick = (emotion: string, quadrant: QuadrantType) => {
     setSelectedEmotion(emotion);
+    
+    // Find the emotion's coordinates and update sliders
+    const emotionData = ALL_EMOTIONS.find(e => e.emotion === emotion && e.quadrant === quadrant);
+    if (emotionData) {
+      setEnergy(Math.round(emotionData.energy));
+      setPleasantness(Math.round(emotionData.pleasantness));
+    }
+    
     // In compact mode, immediately call onSelect
     if (compact) {
       onSelect(quadrant, emotion);

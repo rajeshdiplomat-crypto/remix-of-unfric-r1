@@ -55,6 +55,7 @@ export function DiarySidebar({
     { value: 'notes', label: 'Only Notes' },
     { value: 'trackers', label: 'Only Trackers' },
     { value: 'manifest', label: 'Only Manifest' },
+    { value: 'emotions', label: 'Only Emotions' },
   ];
 
   return (
