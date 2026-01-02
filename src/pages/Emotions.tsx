@@ -146,15 +146,25 @@ export default function Emotions() {
 
       const entryDate = format(checkInTime, 'yyyy-MM-dd');
 
-      const { error } = await supabase.from('emotions').insert({
+      const { data: insertedEmotion, error } = await supabase.from('emotions').insert({
         user_id: user.id,
         emotion: emotionData,
         notes: note || null,
         tags: null,
         entry_date: entryDate,
-      });
+      }).select('id').single();
 
       if (error) throw error;
+
+      // Create feed event for diary
+      await createEmotionFeedEvent(
+        insertedEmotion.id,
+        selectedQuadrant,
+        selectedEmotion,
+        note || undefined,
+        context,
+        entryDate
+      );
 
       // Send to journal if toggled
       if (sendToJournal && note) {
@@ -169,6 +179,39 @@ export default function Emotions() {
       toast.error('Failed to save check-in');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const createEmotionFeedEvent = async (
+    emotionId: string,
+    quadrant: QuadrantType,
+    emotion: string,
+    note?: string,
+    ctx?: typeof context,
+    entryDate?: string
+  ) => {
+    if (!user) return;
+    
+    const contextParts: string[] = [];
+    if (ctx?.who) contextParts.push(`with ${ctx.who}`);
+    if (ctx?.what) contextParts.push(`while ${ctx.what}`);
+    
+    const summary = contextParts.length > 0 ? contextParts.join(' ') : null;
+    
+    try {
+      await supabase.from('feed_events').insert({
+        user_id: user.id,
+        type: 'checkin',
+        source_module: 'emotions',
+        source_id: emotionId,
+        title: `Feeling ${emotion}`,
+        summary: summary,
+        content_preview: note || null,
+        media: [],
+        metadata: { quadrant, emotion, context: ctx, entry_date: entryDate },
+      });
+    } catch (err) {
+      console.error('Error creating feed event:', err);
     }
   };
 
