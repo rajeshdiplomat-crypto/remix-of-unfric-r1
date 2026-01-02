@@ -7,6 +7,9 @@ import { cn } from "@/lib/utils";
 
 interface EmotionSliderPickerProps {
   onSelect: (quadrant: QuadrantType, emotion: string) => void;
+  initialQuadrant?: QuadrantType;
+  initialEmotion?: string;
+  compact?: boolean;
 }
 
 // Flatten all emotions with their quadrant and coordinates
@@ -52,10 +55,22 @@ QUADRANTS['low-pleasant'].emotions.forEach((emotion, i) => {
   });
 });
 
-export function EmotionSliderPicker({ onSelect }: EmotionSliderPickerProps) {
-  const [energy, setEnergy] = useState(50);
-  const [pleasantness, setPleasantness] = useState(50);
-  const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null);
+export function EmotionSliderPicker({ onSelect, initialQuadrant, initialEmotion, compact }: EmotionSliderPickerProps) {
+  // Calculate initial slider values based on initialQuadrant
+  const getInitialEnergy = () => {
+    if (initialQuadrant?.startsWith('high')) return 75;
+    if (initialQuadrant?.startsWith('low')) return 25;
+    return 50;
+  };
+  const getInitialPleasantness = () => {
+    if (initialQuadrant?.endsWith('pleasant') && !initialQuadrant?.includes('unpleasant')) return 75;
+    if (initialQuadrant?.includes('unpleasant')) return 25;
+    return 50;
+  };
+  
+  const [energy, setEnergy] = useState(getInitialEnergy());
+  const [pleasantness, setPleasantness] = useState(getInitialPleasantness());
+  const [selectedEmotion, setSelectedEmotion] = useState<string | null>(initialEmotion || null);
 
   // Calculate distance to find closest emotions
   const suggestedEmotions = useMemo(() => {
@@ -85,6 +100,10 @@ export function EmotionSliderPicker({ onSelect }: EmotionSliderPickerProps) {
 
   const handleEmotionClick = (emotion: string, quadrant: QuadrantType) => {
     setSelectedEmotion(emotion);
+    // In compact mode, immediately call onSelect
+    if (compact) {
+      onSelect(quadrant, emotion);
+    }
   };
 
   const handleConfirm = () => {
@@ -99,11 +118,13 @@ export function EmotionSliderPicker({ onSelect }: EmotionSliderPickerProps) {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-6">
-      <div className="text-center">
-        <p className="text-sm text-muted-foreground">How are you feeling right now?</p>
-        <p className="text-xs text-muted-foreground/70 mt-1">Adjust the sliders to find your emotion</p>
-      </div>
+    <div className={cn("w-full mx-auto", compact ? "space-y-4" : "max-w-md space-y-6")}>
+      {!compact && (
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">How are you feeling right now?</p>
+          <p className="text-xs text-muted-foreground/70 mt-1">Adjust the sliders to find your emotion</p>
+        </div>
+      )}
 
       {/* Energy Slider */}
       <div className="space-y-3">
@@ -206,18 +227,22 @@ export function EmotionSliderPicker({ onSelect }: EmotionSliderPickerProps) {
         </div>
       </div>
 
-      {/* Confirm Button */}
-      <Button 
-        onClick={handleConfirm} 
-        className="w-full"
-        disabled={!bestMatch && !selectedEmotion}
-      >
-        Continue with {selectedEmotion || bestMatch?.emotion || 'selection'}
-      </Button>
+      {/* Confirm Button - only show if not compact mode */}
+      {!compact && (
+        <Button 
+          onClick={handleConfirm} 
+          className="w-full"
+          disabled={!bestMatch && !selectedEmotion}
+        >
+          Continue with {selectedEmotion || bestMatch?.emotion || 'selection'}
+        </Button>
+      )}
 
-      <p className="text-center text-xs text-muted-foreground/60 italic">
-        All emotions are OK — they're signals, not judgments
-      </p>
+      {!compact && (
+        <p className="text-center text-xs text-muted-foreground/60 italic">
+          All emotions are OK — they're signals, not judgments
+        </p>
+      )}
     </div>
   );
 }
