@@ -477,17 +477,18 @@ export default function Tasks() {
     : "xl:grid-cols-[minmax(300px,340px)_minmax(0,1fr)]";
 
   return (
-    <main className="flex-1 w-full px-8 lg:px-10 py-6 bg-background overflow-x-hidden">
-      <div className="w-full flex flex-col gap-4 min-h-0">
-        <TasksHeader
-          view={view}
-          onViewChange={setView}
-          quadrantMode={quadrantMode}
-          onQuadrantModeChange={setQuadrantMode}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onNewTask={openNewTaskDrawer}
-        />
+    <div className="h-full w-full flex flex-col bg-background overflow-x-hidden">
+      <div className="w-full flex-1 min-h-0">
+        <div className="w-full min-w-0 flex flex-col gap-4 min-h-0">
+          <TasksHeader
+            view={view}
+            onViewChange={setView}
+            quadrantMode={quadrantMode}
+            onQuadrantModeChange={setQuadrantMode}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onNewTask={openNewTaskDrawer}
+          />
 
           <InsightsPanel tasks={filteredTasks} />
 
@@ -545,14 +546,15 @@ export default function Tasks() {
             onCompleteTask={handleCompleteTask}
           />
 
-        <DeepFocusPrompt
-          open={focusPromptOpen}
-          task={focusPromptTask}
-          onClose={() => setFocusPromptOpen(false)}
-          onStartFocus={() => focusPromptTask && handleStartFocus(focusPromptTask)}
-          onSkip={() => setFocusPromptOpen(false)}
-        />
+          <DeepFocusPrompt
+            open={focusPromptOpen}
+            task={focusPromptTask}
+            onClose={() => setFocusPromptOpen(false)}
+            onStartFocus={() => focusPromptTask && handleStartFocus(focusPromptTask)}
+            onSkip={() => setFocusPromptOpen(false)}
+          />
+        </div>
       </div>
-    </main>
+    </div>
   );
 }

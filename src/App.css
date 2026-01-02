@@ -1,26 +1,3 @@
-/* src/App.css — visual tokens */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-:root {
-  --radius: 10px;
-  --card-shadow: 0 6px 18px rgba(10,20,30,0.06);
-  --accent: #0ea5ff;
-  --gutter-lg: 2.5rem;
-  --space-sm: 0.5rem;
-  --space-md: 1rem;
-  --space-lg: 1.5rem;
-  --muted-color: #6b7280;
-  --transition-fast: 150ms;
-  --transition-medium: 220ms;
-}
-
-html, body, #root {
-  height: 100%;
-  font-family: 'Inter', var(--font-sans), system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-}
-
 #root {
   max-width: 100%;
   margin: 0;
@@ -28,167 +5,26 @@ html, body, #root {
   text-align: left;
 }
 
-/* global UI smoothing */
-* {
-  box-sizing: border-box;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* transitions & microinteractions */
-.button, button, .btn {
-  transition: transform var(--transition-fast) ease, box-shadow var(--transition-medium) ease, background-color var(--transition-fast) ease;
-}
-
-/* card defaults (shared UI component) */
-.card, .ui-card {
-  border-radius: var(--radius);
-  box-shadow: var(--card-shadow);
-  border: 1px solid rgba(15,23,42,0.04);
-  background: hsl(var(--card));
-  padding: 1rem;
-  margin-bottom: 1.125rem;
-}
-
-/* headings & text scale */
-h1, .page-title {
-  font-weight: 600;
-  font-size: 1.25rem;
-  line-height: 1.4;
-  margin-bottom: 0.5rem;
-}
-
-body, p, input, button {
-  font-size: 16px;
-  line-height: 1.5;
-}
-
-/* chips / small items */
-.chip, .tag-chip, .view-chip {
-  display: inline-flex;
-  align-items: center;
-  height: 36px;
-  padding: 0 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.875rem;
-  background: rgba(15,23,42,0.03);
-  color: hsl(var(--foreground));
-  border: 1px solid rgba(15,23,42,0.03);
-  transition: all var(--transition-fast) ease;
-}
-
-.chip:hover, .tag-chip:hover, .view-chip:hover {
-  background: rgba(15,23,42,0.06);
-}
-
-/* primary CTA */
-.btn-primary {
-  background: var(--accent);
-  color: #fff;
-  border-radius: 9999px;
-  padding: 0.5rem 1rem;
-  box-shadow: 0 6px 14px rgba(14,165,255,0.12);
-  font-weight: 500;
-}
-
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(14,165,255,0.18);
-}
-
-/* secondary/ghost */
-.btn-ghost {
-  background: transparent;
-  border: 1px solid rgba(15,23,42,0.06);
-  color: hsl(var(--foreground));
-  border-radius: 8px;
-  padding: 0.45rem 0.75rem;
-}
-
-.btn-ghost:hover {
-  background: rgba(15,23,42,0.03);
-}
-
-/* interactive hover lift */
-.interactive:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 30px rgba(10,20,30,0.06);
-}
-
-/* reduce heavy borders to thin separators */
-.separator {
-  border-top: 1px solid rgba(15,23,42,0.04);
-  margin: 1rem 0;
-}
-
-/* form inputs — slimmer rounded */
-input, textarea, select {
-  border-radius: 8px;
-  border: 1px solid rgba(15,23,42,0.06);
-  padding: 0.6rem 0.75rem;
-}
-
-/* focus outlines */
-:focus-visible {
-  outline: 2px solid rgba(14,165,255,0.12);
-  outline-offset: 2px;
-}
-
-/* sidebar collapsed width token */
-.sidebar-collapsed {
-  width: 56px !important;
-  min-width: 56px !important;
-}
-
-/* helpful spacing utilities */
-.px-main {
-  padding-left: var(--gutter-lg);
-  padding-right: var(--gutter-lg);
-}
-
-/* page layout grid */
-.page-grid {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 2rem;
-}
-
-.main-col {
-  grid-column: span 9;
-}
-
-.aside-col {
-  grid-column: span 3;
-}
-
-@media (max-width: 1024px) {
-  .main-col {
-    grid-column: span 12;
-  }
-  .aside-col {
-    display: none;
-  }
-}
-
-/* Legacy classes kept for compatibility */
 .logo {
   height: 6em;
   padding: 1.5em;
   will-change: filter;
   transition: filter 300ms;
 }
-
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
-
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
 @keyframes logo-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -197,6 +33,10 @@ input, textarea, select {
   }
 }
 
+.card {
+  padding: 1em;
+}
+
 .read-the-docs {
-  color: var(--muted-color);
+  color: #888;
 }

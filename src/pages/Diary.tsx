@@ -357,26 +357,25 @@ export default function Diary() {
   }
 
   return (
-    <main className="flex-1 w-full px-8 lg:px-10 py-6">
-      <div className="grid grid-cols-12 gap-8">
-        {/* Main Feed - 9 columns */}
-        <section className="col-span-12 lg:col-span-9">
-          {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-semibold text-foreground">Your Diary</h1>
-            <p className="text-muted-foreground text-sm mt-0.5">A timeline of everything you do in inbalance</p>
-          </div>
+    <div className="flex gap-6 w-full flex-1">
+      {/* Main Feed */}
+      <div className="flex-1 min-w-0">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-foreground">Your Diary</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">A timeline of everything you do in inbalance</p>
+        </div>
 
-          {/* Search Bar */}
-          <div className="mb-4">
-            <div className="flex items-center gap-2 bg-card border border-border/40 rounded-xl px-3 py-1">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="border-0 bg-transparent focus-visible:ring-0 px-0 h-8 text-sm placeholder:text-muted-foreground"
-              />
+        {/* Search Bar */}
+        <div className="mb-4">
+          <div className="flex items-center gap-2 bg-card border border-border/40 rounded-xl px-3 py-1">
+            <Search className="h-2 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="border-0 bg-transparent focus-visible:ring-0 px-0 h-8 text-sm placeholder:text-muted-foreground"
+            />
           </div>
         </div>
 
@@ -413,7 +412,7 @@ export default function Diary() {
         </div>
 
         {sortedEvents.length === 0 ? (
-          <Card className="p-12 text-center bg-card border-border/40 ui-card">
+          <Card className="p-12 text-center bg-card border-border/40">
             <PenLine className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium text-foreground">No entries yet</h3>
             <p className="text-muted-foreground mt-1 text-sm">
@@ -470,24 +469,23 @@ export default function Diary() {
             </div>
           </ScrollArea>
         )}
-        </section>
-
-        {/* Right Sidebar - 3 columns */}
-        <aside className="col-span-3 hidden lg:block">
-          <div className="sticky top-6" style={{ height: "calc(100vh - 48px)", overflowY: "auto" }}>
-            <DiarySidebar
-              metrics={metrics}
-              chartData={chartData}
-              smartInsight={smartInsight}
-              timeRange={timeRange}
-              onTimeRangeChange={setTimeRange}
-              filter={filter}
-              onFilterChange={setFilter}
-              onQuickAction={handleQuickAction}
-            />
-          </div>
-        </aside>
       </div>
-    </main>
+
+      {/* Right Sidebar */}
+      <aside className="w-[400px] shrink-0 hidden lg:block">
+        <div className="sticky top-4" style={{ height: "calc(100vh - 32px)", overflowY: "auto" }}>
+          <DiarySidebar
+            metrics={metrics}
+            chartData={chartData}
+            smartInsight={smartInsight}
+            timeRange={timeRange}
+            onTimeRangeChange={setTimeRange}
+            filter={filter}
+            onFilterChange={setFilter}
+            onQuickAction={handleQuickAction}
+          />
+        </div>
+      </aside>
+    </div>
   );
 }

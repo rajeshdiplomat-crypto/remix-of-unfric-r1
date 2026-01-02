@@ -720,16 +720,15 @@ export default function Trackers() {
 
   return (
     <TooltipProvider>
-      <main className="flex-1 w-full px-8 lg:px-10 py-6">
-        <div className="grid grid-cols-12 gap-8">
-          {/* LEFT - 9 columns */}
-          <section className="col-span-12 lg:col-span-9 space-y-5">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-              <div>
-                <h1 className="text-2xl font-semibold tracking-tight text-foreground">Activity Tracker</h1>
-                <p className="text-sm text-muted-foreground">Monitor commitments, consistency, and momentum.</p>
-              </div>
+      <div className="w-full flex flex-col lg:flex-row gap-6">
+        {/* LEFT */}
+        <div className="flex-1 min-w-0 space-y-5">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground">Activity Tracker</h1>
+              <p className="text-sm text-muted-foreground">Monitor commitments, consistency, and momentum.</p>
+            </div>
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <Button variant="outline" size="sm" onClick={handleExport} className="h-9 rounded-xl gap-2">
@@ -1367,20 +1366,17 @@ export default function Trackers() {
               </div>
             </DialogContent>
           </Dialog>
-        </section>
-
-        {/* RIGHT - 3 columns */}
-        <aside className="col-span-3 hidden lg:block">
-          <ActivityDetailPanel
-            activity={currentSelectedActivity}
-            onEdit={openEditDialog}
-            onToggleCompletion={toggleCompletion}
-            onSkipDay={handleSkipDay}
-            onImageChange={handleImageChange}
-          />
-        </aside>
         </div>
-      </main>
+
+        {/* RIGHT */}
+        <ActivityDetailPanel
+          activity={currentSelectedActivity}
+          onEdit={openEditDialog}
+          onToggleCompletion={toggleCompletion}
+          onSkipDay={handleSkipDay}
+          onImageChange={handleImageChange}
+        />
+      </div>
     </TooltipProvider>
   );
 }
