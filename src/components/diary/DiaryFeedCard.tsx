@@ -134,12 +134,15 @@ export function DiaryFeedCard({
   const dueDate = metadata?.due_date;
   const subtasks = metadata?.subtasks as { text: string; completed: boolean }[] | undefined;
   const tags = metadata?.tags as string[] | undefined;
+  const entryDateStr = metadata?.entry_date; // For emotions, journal entries, etc.
 
-  // Date formatting matching JournalQuestionCard
+  // Date formatting - entry_date for display, created_at for logged time
+  const displayDate = entryDateStr ? new Date(entryDateStr + 'T12:00:00') : new Date(event.created_at);
+  const formattedDate = format(displayDate, "d MMM");
+  
   const eventDate = new Date(event.created_at);
-  const formattedDate = format(eventDate, "d MMM");
-  const formattedTime = format(eventDate, "d MMM yy") + ", " + format(eventDate, "h:mm a").toLowerCase();
-  const fullDate = eventDate.toISOString();
+  const formattedTime = "Logged " + format(eventDate, "d MMM yy") + ", " + format(eventDate, "h:mm a").toLowerCase();
+  const fullDate = displayDate.toISOString();
 
   // Content expansion
   const contentPreview = event.content_preview || event.summary || "";
