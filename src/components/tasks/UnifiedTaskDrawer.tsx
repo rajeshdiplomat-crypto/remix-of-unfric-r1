@@ -71,7 +71,7 @@ export function UnifiedTaskDrawer({
     } else {
       setFormData({
         ...DEFAULT_TASK,
-        id: `new-${Date.now()}`,
+        id: crypto.randomUUID(),
         created_at: new Date().toISOString(),
       });
     }

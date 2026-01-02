@@ -253,7 +253,8 @@ export default function Tasks() {
         return task;
       });
 
-      setTasks(quadrantTasks.length === 0 ? SAMPLE_TASKS : quadrantTasks);
+      // Don't use sample data for logged-in users - show empty state
+      setTasks(quadrantTasks);
     }
 
     setLoading(false);

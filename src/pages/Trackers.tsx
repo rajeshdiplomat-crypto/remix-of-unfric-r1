@@ -180,7 +180,7 @@ export default function Trackers() {
 
     if (habitsError || completionsError) {
       console.error("Error fetching habits:", habitsError || completionsError);
-      setActivities(SAMPLE_ACTIVITIES);
+      setActivities([]);
       setLoading(false);
       return;
     }
@@ -213,7 +213,8 @@ export default function Trackers() {
       };
     });
 
-    setActivities(transformedActivities.length === 0 ? SAMPLE_ACTIVITIES : transformedActivities);
+    // Don't use sample data for logged-in users - show empty state
+    setActivities(transformedActivities);
     setLoading(false);
   };
 

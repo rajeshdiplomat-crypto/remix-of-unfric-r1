@@ -116,7 +116,7 @@ export const BOARD_COLUMNS: QuadrantConfig[] = [
 
 // Default task template
 export const createDefaultTask = (overrides?: Partial<QuadrantTask>): QuadrantTask => ({
-  id: `new-${Date.now()}`,
+  id: crypto.randomUUID(),
   title: '',
   description: null,
   due_date: null,
