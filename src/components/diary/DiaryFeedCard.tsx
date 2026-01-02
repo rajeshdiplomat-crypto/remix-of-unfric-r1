@@ -156,10 +156,10 @@ export function DiaryFeedCard({
             </div>
 
             <div className="min-w-0">
-              {/* Notes-specific format: Line 1 - Notes | Date, Line 2 - Time, Line 3 - Title */}
-              {event.source_module === "notes" ? (
+              {/* Unified 4-line format for notes, manifest, tasks */}
+              {(event.source_module === "notes" || event.source_module === "manifest" || event.source_module === "tasks") ? (
                 <div className="space-y-0.5">
-                  {/* Line 1: Notes | Date */}
+                  {/* Line 1: Module | Date */}
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-foreground text-sm">{config.label}</span>
                     <span className="text-muted-foreground">|</span>
@@ -176,11 +176,17 @@ export function DiaryFeedCard({
                     onClick={() => onNavigateToSource(event)}
                     className="text-base font-semibold text-foreground hover:underline text-left block pt-1"
                   >
-                    {event.title}
+                    {event.type === "complete" ? `Completed: ${event.title}` : event.title}
                   </button>
+                  {/* Line 4: Body/Content preview */}
+                  {event.content_preview && (
+                    <p className="text-sm text-muted-foreground leading-relaxed pt-1">
+                      {event.content_preview}
+                    </p>
+                  )}
                 </div>
               ) : (
-                /* Default format for other modules */
+                /* Default format for journal and other modules */
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-semibold text-foreground text-sm">{config.label}</span>
                   <span className="text-xs text-muted-foreground">
@@ -220,8 +226,8 @@ export function DiaryFeedCard({
 
       {/* Content */}
       <CardContent className="pt-2 pb-3 px-4">
-        {/* Title - skip for notes since it's shown in header */}
-        {event.source_module !== "notes" && (
+        {/* Title - skip for notes/manifest/tasks since shown in header */}
+        {event.source_module !== "notes" && event.source_module !== "manifest" && event.source_module !== "tasks" && (
           <button
             onClick={() => onNavigateToSource(event)}
             className="text-lg font-semibold text-foreground hover:underline text-left block mb-2"
@@ -266,7 +272,7 @@ export function DiaryFeedCard({
                 <p className="text-sm text-muted-foreground leading-relaxed">{event.content_preview}</p>
               )}
           </div>
-        ) : event.content_preview ? (
+        ) : (event.source_module !== "notes" && event.source_module !== "manifest" && event.source_module !== "tasks" && event.content_preview) ? (
           <p className="text-sm text-muted-foreground mb-3 leading-relaxed">{event.content_preview}</p>
         ) : null}
 
