@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
+import DOMPurify from "dompurify";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Heart,
   PenLine,
@@ -17,18 +18,20 @@ import {
   Share2,
   Send,
   MoreHorizontal,
-  Edit2,
   Trash2,
   Copy,
   Bookmark,
   BookmarkCheck,
-  ChevronDown,
-  ChevronUp,
   Reply,
   Flame,
   Calendar,
   Check,
-  List,
+  ThumbsUp,
+  Lightbulb,
+  PartyPopper,
+  HandHeart,
+  ExternalLink,
+  Code,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -38,20 +41,36 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { FeedEvent, FeedReaction, FeedComment, ModuleConfig, SourceModule } from "./types";
-import { REACTION_EMOJIS } from "./types";
+
+// Reaction types matching JournalQuestionCard
+const REACTION_TYPES = [
+  { type: 'like', emoji: '👍', icon: ThumbsUp, label: 'Like' },
+  { type: 'love', emoji: '❤️', icon: Heart, label: 'Love' },
+  { type: 'insight', emoji: '💡', icon: Lightbulb, label: 'Insight' },
+  { type: 'celebrate', emoji: '🎉', icon: PartyPopper, label: 'Celebrate' },
+  { type: 'support', emoji: '🤝', icon: HandHeart, label: 'Support' },
+] as const;
+
+type ReactionType = typeof REACTION_TYPES[number]['type'];
 
 const MODULE_CONFIG: Record<SourceModule | "emotions", ModuleConfig> = {
   tasks: { icon: CheckSquare, label: "Tasks", color: "text-emerald-700", bgColor: "bg-emerald-100" },
-  journal: { icon: PenLine, label: "Journal Entry", color: "text-stone-700", bgColor: "bg-stone-200" },
+  journal: { icon: PenLine, label: "Journal", color: "text-stone-700", bgColor: "bg-stone-200" },
   notes: { icon: FileText, label: "Notes", color: "text-amber-700", bgColor: "bg-amber-100" },
   mindmap: { icon: Target, label: "Mind Map", color: "text-indigo-700", bgColor: "bg-indigo-100" },
   trackers: { icon: BarChart3, label: "Trackers", color: "text-teal-700", bgColor: "bg-teal-100" },
   manifest: { icon: Sparkles, label: "Manifest", color: "text-purple-700", bgColor: "bg-purple-100" },
   focus: { icon: Target, label: "Focus", color: "text-rose-700", bgColor: "bg-rose-100" },
-  emotions: { icon: Heart, label: "Emotion Check-in", color: "text-rose-600", bgColor: "bg-rose-100" },
+  emotions: { icon: Heart, label: "Emotions", color: "text-rose-600", bgColor: "bg-rose-100" },
 };
 
 interface DiaryFeedCardProps {
@@ -82,6 +101,7 @@ export function DiaryFeedCard({
   onNavigateToSource,
 }: DiaryFeedCardProps) {
   const { toast } = useToast();
+  const [expanded, setExpanded] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
@@ -99,22 +119,62 @@ export function DiaryFeedCard({
     reactionCounts[r.emoji] = (reactionCounts[r.emoji] || 0) + 1;
   });
   const topReactions = Object.entries(reactionCounts)
+    .filter(([, count]) => count > 0)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3);
+  const totalReactions = reactions.length;
 
   // Organize comments with replies
   const topLevelComments = comments.filter((c) => !c.parent_comment_id);
   const getReplies = (commentId: string) => comments.filter((c) => c.parent_comment_id === commentId);
 
-  const handleShare = () => {
-    navigator.clipboard.writeText(`${event.title}\n\n${event.content_preview || event.summary || ""}`);
-    toast({ title: "Copied to clipboard" });
+  // Parse metadata
+  const metadata = event.metadata as any;
+  const priority = metadata?.priority;
+  const dueDate = metadata?.due_date;
+  const subtasks = metadata?.subtasks as { text: string; completed: boolean }[] | undefined;
+  const tags = metadata?.tags as string[] | undefined;
+
+  // Date formatting matching JournalQuestionCard
+  const eventDate = new Date(event.created_at);
+  const formattedDate = format(eventDate, "d MMM");
+  const formattedTime = format(eventDate, "d MMM yy") + ", " + format(eventDate, "h:mm a").toLowerCase();
+  const fullDate = eventDate.toISOString();
+
+  // Content expansion
+  const contentPreview = event.content_preview || event.summary || "";
+  const needsReadMore = contentPreview.length > 140;
+
+  // Get module initial for avatar
+  const moduleInitial = config.label.charAt(0).toUpperCase();
+
+  const handleCopyLink = () => {
+    const shareUrl = `${window.location.origin}/share/feed/${event.id}`;
+    navigator.clipboard.writeText(shareUrl);
+    toast({ title: "Link copied to clipboard" });
+  };
+
+  const handleShareToX = () => {
+    const shareUrl = `${window.location.origin}/share/feed/${event.id}`;
+    const text = encodeURIComponent(`${event.title}\n\n${contentPreview.slice(0, 100)}...`);
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(shareUrl)}`, '_blank');
+  };
+
+  const handleEmbed = () => {
+    const embedCode = `<iframe src="${window.location.origin}/embed/feed/${event.id}" width="400" height="300" frameborder="0"></iframe>`;
+    navigator.clipboard.writeText(embedCode);
+    toast({ title: "Embed code copied to clipboard" });
+  };
+
+  const handleToggleReaction = (emoji: string) => {
+    onToggleReaction(event.id, emoji);
   };
 
   const handleAddComment = () => {
     if (!commentText.trim()) return;
     onAddComment(event.id, commentText);
     setCommentText("");
+    toast({ title: "Comment posted" });
   };
 
   const handleAddReply = (parentId: string) => {
@@ -131,160 +191,120 @@ export function DiaryFeedCard({
     setEditText("");
   };
 
-  // Parse metadata for task-specific display
-  const metadata = event.metadata as any;
-  const priority = metadata?.priority;
-  const dueDate = metadata?.due_date;
-  const subtasks = metadata?.subtasks as { text: string; completed: boolean }[] | undefined;
-  const tags = metadata?.tags as string[] | undefined;
-
   return (
-    <Card className="overflow-hidden bg-card border-border/40 shadow-sm hover:shadow-md transition-shadow">
-      {/* Header */}
+    <Card className="overflow-hidden bg-card border-border/40 shadow-sm hover:shadow-md transition-shadow rounded-xl">
+      {/* Header with Avatar - matching JournalQuestionCard */}
       <div className="px-4 pt-4 pb-2">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3">
-            {/* Avatar */}
-            <div
-              className={cn(
-                "h-10 w-10 rounded-full flex items-center justify-center text-lg font-semibold shrink-0",
-                config.bgColor,
-                config.color,
-              )}
-            >
-              {event.source_module === "journal" ? "B" : <IconComponent className="h-8 w-5" />}
-            </div>
-
-            <div className="min-w-0">
-              {/* Unified 4-line format for notes, manifest, tasks */}
-              {(event.source_module === "notes" || event.source_module === "manifest" || event.source_module === "tasks") ? (
-                <div className="space-y-0.5">
-                  {/* Line 1: Module | Date */}
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-foreground text-sm">{config.label}</span>
-                    <span className="text-muted-foreground">|</span>
-                    <span className="text-sm text-muted-foreground">
-                      {format(new Date(event.created_at), "MMM d, yyyy")}
+        <div className="flex items-center justify-between" role="banner">
+          {/* Left: Avatar + Label block */}
+          <div className="flex items-center gap-3">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className={cn("text-xs font-medium", config.bgColor, config.color)}>
+                <IconComponent className="h-4 w-4" />
+              </AvatarFallback>
+            </Avatar>
+            
+            <div className="flex flex-col">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-sm font-semibold text-foreground cursor-default">
+                      {config.label} | {formattedDate}
                     </span>
-                  </div>
-                  {/* Line 2: Update time */}
-                  <p className="text-xs text-muted-foreground">
-                    {format(new Date(event.created_at), "h:mm a")}
-                  </p>
-                  {/* Line 3: Header/Title */}
-                  <button
-                    onClick={() => onNavigateToSource(event)}
-                    className="text-base font-semibold text-foreground hover:underline text-left block pt-1"
-                  >
-                    {event.type === "complete" ? `Completed: ${event.title}` : event.title}
-                  </button>
-                  {/* Line 4: Body/Content preview */}
-                  {event.content_preview && (
-                    <p className="text-sm text-muted-foreground leading-relaxed pt-1">
-                      {event.content_preview}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                /* Default format for journal and other modules */
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-foreground text-sm">{config.label}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {format(new Date(event.created_at), "MMM d, yyyy")} · {format(new Date(event.created_at), "h:mm a")}
-                  </span>
-                </div>
-              )}
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p className="text-xs font-mono">{fullDate}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-xs text-muted-foreground cursor-default">
+                      {formattedTime}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p className="text-xs font-mono">{fullDate}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(event.created_at), { addSuffix: false })} ago
-            </span>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={handleShare}>
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy text
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onToggleSave(event.id)}>
-                  {isSaved ? <BookmarkCheck className="h-4 w-4 mr-2" /> : <Bookmark className="h-4 w-4 mr-2" />}
-                  {isSaved ? "Unsave" : "Save post"}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => onNavigateToSource(event)}>Open in {config.label}</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          {/* Right: More menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={handleCopyLink}>
+                <Copy className="h-4 w-4 mr-2" />
+                Copy link
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onToggleSave(event.id)}>
+                {isSaved ? <BookmarkCheck className="h-4 w-4 mr-2" /> : <Bookmark className="h-4 w-4 mr-2" />}
+                {isSaved ? "Unsave" : "Save post"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onNavigateToSource(event)}>
+                Open in {config.label}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      {/* Content */}
-      <CardContent className="pt-2 pb-3 px-4">
-        {/* Title - skip for notes/manifest/tasks since shown in header */}
-        {event.source_module !== "notes" && event.source_module !== "manifest" && event.source_module !== "tasks" && (
-          <button
-            onClick={() => onNavigateToSource(event)}
-            className="text-lg font-semibold text-foreground hover:underline text-left block mb-2"
-          >
-            {event.type === "complete" ? `Completed: ${event.title}` : event.title}
-          </button>
-        )}
+      {/* Body */}
+      <CardContent className="px-4 pb-4 pt-2">
+        {/* Title */}
+        <h3 
+          className="text-base font-medium text-foreground mb-2 cursor-pointer hover:underline"
+          onClick={() => onNavigateToSource(event)}
+        >
+          {event.type === "complete" ? `Completed: ${event.title}` : event.title}
+        </h3>
 
-        {/* Journal sections - question-wise content + body */}
-        {event.source_module === "journal" ? (
-          <div className="space-y-3 mb-3">
-            {/* Question sections */}
-            {event.metadata?.sections &&
-              Array.isArray(event.metadata.sections) &&
-              event.metadata.sections.length > 0 && (
-                <>
-                  {event.metadata.sections.map((section: { label: string; content: string }, idx: number) => (
-                    <div key={idx} className="bg-muted/30 rounded-lg p-3">
-                      <h4 className="text-xs font-semibold text-primary uppercase tracking-wide mb-1">
-                        {section.label}
-                      </h4>
-                      <p className="text-sm text-foreground/80 leading-relaxed">{section.content}</p>
-                    </div>
-                  ))}
-                </>
+        {/* Content - Inline expandable matching JournalQuestionCard */}
+        {contentPreview ? (
+          <>
+            <div 
+              className={cn(
+                "overflow-hidden transition-[max-height] duration-200 ease-in-out",
+                expanded ? "max-h-[1000px]" : "max-h-[72px]"
               )}
-            {/* Body content from TipTap editor */}
-            {event.metadata?.bodyContent && (
-              <div className="bg-muted/20 rounded-lg p-3 border border-border/50">
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-                  Journal Entry
-                </h4>
-                <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
-                  {event.metadata.bodyContent}
-                </p>
-              </div>
+            >
+              <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
+                {contentPreview}
+              </p>
+            </div>
+            
+            {needsReadMore && (
+              <button 
+                onClick={() => setExpanded(!expanded)}
+                className="text-sm text-primary hover:text-primary/80 underline mt-2"
+              >
+                {expanded ? "Show less" : "Read more"}
+              </button>
             )}
-            {/* Fallback if no sections and no body */}
-            {(!event.metadata?.sections || event.metadata.sections.length === 0) &&
-              !event.metadata?.bodyContent &&
-              event.content_preview && (
-                <p className="text-sm text-muted-foreground leading-relaxed">{event.content_preview}</p>
-              )}
-          </div>
-        ) : (event.source_module !== "notes" && event.source_module !== "manifest" && event.source_module !== "tasks" && event.content_preview) ? (
-          <p className="text-sm text-muted-foreground mb-3 leading-relaxed">{event.content_preview}</p>
+          </>
         ) : null}
 
         {/* Subtasks for tasks */}
         {subtasks && subtasks.length > 0 && (
-          <div className="space-y-1.5 mb-3">
+          <div className="space-y-1.5 mt-3">
             {subtasks.map((task, i) => (
               <div key={i} className="flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground">•</span>
+                <span className={cn(
+                  "h-4 w-4 rounded border flex items-center justify-center",
+                  task.completed ? "bg-emerald-100 border-emerald-300" : "border-border"
+                )}>
+                  {task.completed && <Check className="h-3 w-3 text-emerald-600" />}
+                </span>
                 <span className={cn(task.completed && "line-through text-muted-foreground")}>{task.text}</span>
-                {task.completed && <List className="h-3.5 w-3.5 text-muted-foreground" />}
-                {task.completed && <Check className="h-3.5 w-3.5 text-emerald-600" />}
               </div>
             ))}
           </div>
@@ -292,26 +312,22 @@ export function DiaryFeedCard({
 
         {/* Tags */}
         {tags && tags.length > 0 && (
-          <div className="flex items-center gap-2 mb-3 flex-wrap">
+          <div className="flex items-center gap-2 mt-3 flex-wrap">
             {tags.map((tag, i) => (
               <Badge
                 key={i}
                 variant="secondary"
-                className="bg-stone-200 text-stone-700 hover:bg-stone-300 text-xs font-normal px-2.5 py-0.5"
+                className="text-xs px-2 py-0 h-5"
               >
-                {tag}
+                #{tag}
               </Badge>
             ))}
-            <div className="flex items-center gap-1 ml-auto text-muted-foreground">
-              <List className="h-4 w-4" />
-              <Heart className="h-4 w-4 fill-rose-400 text-rose-400" />
-            </div>
           </div>
         )}
 
         {/* Priority and Due date badges */}
         {(priority || dueDate) && (
-          <div className="flex items-center gap-2 mb-3 flex-wrap">
+          <div className="flex items-center gap-2 mt-3 flex-wrap">
             {priority && (
               <Badge
                 variant="secondary"
@@ -332,10 +348,6 @@ export function DiaryFeedCard({
                 Due {format(new Date(dueDate), "MMM d")}
               </Badge>
             )}
-            <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-              <span>Mothive</span>
-              <ChevronDown className="h-3 w-3" />
-            </div>
           </div>
         )}
 
@@ -343,21 +355,21 @@ export function DiaryFeedCard({
         {event.media && event.media.length > 0 && (
           <div
             className={cn(
-              "grid gap-2 mb-3",
+              "grid gap-2 mt-3",
               event.media.length === 1 && "grid-cols-1",
               event.media.length === 2 && "grid-cols-2",
-              event.media.length >= 3 && "grid-cols-4",
+              event.media.length >= 3 && "grid-cols-3",
             )}
           >
             {event.media.slice(0, 4).map((url, i) => (
-              <img key={i} src={url} alt="" className="rounded-lg w-full h-20 object-cover" />
+              <img key={i} src={url} alt="" className="rounded-lg w-full h-24 object-cover" />
             ))}
           </div>
         )}
 
         {/* Reaction summary */}
-        {topReactions.length > 0 && (
-          <div className="flex items-center gap-2 py-2">
+        {totalReactions > 0 && (
+          <div className="flex items-center gap-2 py-2 mt-2">
             <div className="flex -space-x-1">
               {topReactions.map(([emoji]) => (
                 <span key={emoji} className="text-sm">
@@ -366,84 +378,100 @@ export function DiaryFeedCard({
               ))}
             </div>
             <span className="text-xs text-muted-foreground">
-              {reactions.length} reaction{reactions.length !== 1 ? "s" : ""}
+              {totalReactions} reaction{totalReactions !== 1 ? "s" : ""}
             </span>
-            {comments.length > 0 && (
-              <>
-                <span className="text-muted-foreground">•</span>
-                <span className="text-xs text-muted-foreground">
-                  {comments.length} comment{comments.length !== 1 ? "s" : ""}
-                </span>
-              </>
-            )}
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex items-center border-t border-border/50 pt-2 -mx-4 px-4">
-          <div className="flex-1 flex items-center justify-center">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn("gap-2 text-muted-foreground hover:text-foreground", userReaction && "text-primary")}
-                >
-                  {userReaction ? (
-                    <span className="text-base">{userReaction}</span>
-                  ) : (
-                    <span className="text-base">🖐</span>
-                  )}
-                  <span className="text-sm">React</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-2" side="top">
-                <div className="flex gap-1">
-                  {REACTION_EMOJIS.map((emoji) => (
-                    <button
-                      key={emoji}
-                      onClick={() => onToggleReaction(event.id, emoji)}
-                      className={cn(
-                        "text-xl p-1.5 rounded hover:bg-muted transition-transform hover:scale-125",
-                        userReaction === emoji && "bg-primary/20",
-                      )}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
+        {/* Actions: Reactions · Comment · Share - matching JournalQuestionCard */}
+        <div className="flex items-center gap-4 mt-4 pt-3 border-t border-border/50">
+          {/* Reactions */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                aria-pressed={!!userReaction}
+                className={cn(
+                  "flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-2 py-1",
+                  userReaction && "text-primary"
+                )}
+              >
+                {userReaction ? (
+                  <span className="text-base">{userReaction}</span>
+                ) : (
+                  <ThumbsUp className="h-4 w-4" />
+                )}
+                <span>{userReaction ? REACTION_TYPES.find(r => r.emoji === userReaction)?.label || 'React' : 'React'}</span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2" side="top">
+              <div className="flex gap-1">
+                {REACTION_TYPES.map((reaction) => (
+                  <button
+                    key={reaction.type}
+                    onClick={() => handleToggleReaction(reaction.emoji)}
+                    aria-pressed={userReaction === reaction.emoji}
+                    className={cn(
+                      "text-xl p-1.5 rounded hover:bg-muted transition-transform hover:scale-125",
+                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      userReaction === reaction.emoji && "bg-primary/20"
+                    )}
+                    title={reaction.label}
+                  >
+                    {reaction.emoji}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
 
-          <div className="flex-1 flex items-center justify-center border-l border-r border-border/50">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-2 text-muted-foreground hover:text-foreground"
-              onClick={() => setShowComments(!showComments)}
-            >
-              <MessageCircle className="h-4 w-4" />
-              <span className="text-sm">Comment</span>
-            </Button>
-          </div>
+          {/* Comment */}
+          <button
+            onClick={() => setShowComments(!showComments)}
+            aria-pressed={showComments}
+            className={cn(
+              "flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-2 py-1",
+              showComments && "text-primary"
+            )}
+          >
+            <MessageCircle className="h-4 w-4" />
+            <span>Comment</span>
+          </button>
 
-          <div className="flex-1 flex items-center justify-center">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-2 text-muted-foreground hover:text-foreground"
-              onClick={handleShare}
-            >
-              <Share2 className="h-4 w-4" />
-              <span className="text-sm">Share</span>
-            </Button>
-          </div>
+          {/* Share */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={cn(
+                  "flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-2 py-1"
+                )}
+              >
+                <Share2 className="h-4 w-4" />
+                <span>Share</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuItem onClick={handleCopyLink}>
+                <Copy className="h-4 w-4 mr-2" />
+                Copy link
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleShareToX}>
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Share to X
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleEmbed}>
+                <Code className="h-4 w-4 mr-2" />
+                Embed
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Comments section */}
         {showComments && (
-          <div className="mt-3 pt-3 border-t border-border/50 space-y-3">
+          <div className="mt-3 pt-3 border-t border-border/30 space-y-3">
             {/* Comment input */}
             <div className="flex gap-2">
               <Input
