@@ -1,12 +1,182 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QuadrantType, QUADRANTS, EmotionEntry } from "./types";
-import { format, subDays, startOfDay, eachDayOfInterval, parseISO } from "date-fns";
+import { format, subDays, startOfDay, eachDayOfInterval, startOfWeek, endOfWeek, addWeeks, subWeeks, parseISO } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { TrendingUp, Calendar, Activity, Target } from "lucide-react";
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PatternsDashboardProps {
   entries: EmotionEntry[];
+}
+
+function CalendarHeatmap({ entries }: { entries: EmotionEntry[] }) {
+  const heatmapData = useMemo(() => {
+    const today = startOfDay(new Date());
+    const weeksToShow = 12;
+    const startDate = startOfWeek(subWeeks(today, weeksToShow - 1), { weekStartsOn: 0 });
+    const endDate = endOfWeek(today, { weekStartsOn: 0 });
+    
+    const allDays = eachDayOfInterval({ start: startDate, end: endDate });
+    
+    // Count entries per day and track quadrants
+    const entriesByDate: Record<string, { count: number; quadrants: QuadrantType[] }> = {};
+    entries.forEach(entry => {
+      if (!entriesByDate[entry.entry_date]) {
+        entriesByDate[entry.entry_date] = { count: 0, quadrants: [] };
+      }
+      entriesByDate[entry.entry_date].count++;
+      if (entry.quadrant) {
+        entriesByDate[entry.entry_date].quadrants.push(entry.quadrant);
+      }
+    });
+    
+    // Group by weeks
+    const weeks: { date: Date; dateStr: string; count: number; quadrants: QuadrantType[] }[][] = [];
+    let currentWeek: { date: Date; dateStr: string; count: number; quadrants: QuadrantType[] }[] = [];
+    
+    allDays.forEach((day, i) => {
+      const dateStr = format(day, 'yyyy-MM-dd');
+      const data = entriesByDate[dateStr] || { count: 0, quadrants: [] };
+      
+      currentWeek.push({
+        date: day,
+        dateStr,
+        count: data.count,
+        quadrants: data.quadrants
+      });
+      
+      if (currentWeek.length === 7) {
+        weeks.push(currentWeek);
+        currentWeek = [];
+      }
+    });
+    
+    if (currentWeek.length > 0) {
+      weeks.push(currentWeek);
+    }
+    
+    return { weeks, today };
+  }, [entries]);
+
+  const getIntensityColor = (count: number, quadrants: QuadrantType[]) => {
+    if (count === 0) return 'bg-muted/50';
+    
+    // Get dominant quadrant color
+    if (quadrants.length > 0) {
+      const quadrantCounts: Record<QuadrantType, number> = {
+        'high-pleasant': 0,
+        'high-unpleasant': 0,
+        'low-unpleasant': 0,
+        'low-pleasant': 0
+      };
+      quadrants.forEach(q => quadrantCounts[q]++);
+      
+      const dominant = Object.entries(quadrantCounts).sort((a, b) => b[1] - a[1])[0][0] as QuadrantType;
+      const intensity = Math.min(count, 4);
+      const opacities = [0.3, 0.5, 0.7, 0.9];
+      
+      return `opacity-${Math.round(opacities[intensity - 1] * 100)}`;
+    }
+    
+    return 'bg-primary/50';
+  };
+
+  const getDominantColor = (quadrants: QuadrantType[]): string | undefined => {
+    if (quadrants.length === 0) return undefined;
+    
+    const quadrantCounts: Record<QuadrantType, number> = {
+      'high-pleasant': 0,
+      'high-unpleasant': 0,
+      'low-unpleasant': 0,
+      'low-pleasant': 0
+    };
+    quadrants.forEach(q => quadrantCounts[q]++);
+    
+    const dominant = Object.entries(quadrantCounts).sort((a, b) => b[1] - a[1])[0][0] as QuadrantType;
+    return QUADRANTS[dominant].color;
+  };
+
+  const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium">Emotion Calendar (Last 12 Weeks)</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex gap-1">
+          {/* Day labels */}
+          <div className="flex flex-col gap-1 mr-1 text-[10px] text-muted-foreground">
+            {dayLabels.map((label, i) => (
+              <div key={i} className="h-3 w-3 flex items-center justify-center">
+                {i % 2 === 1 ? label : ''}
+              </div>
+            ))}
+          </div>
+          
+          {/* Weeks grid */}
+          <div className="flex gap-1 overflow-x-auto">
+            {heatmapData.weeks.map((week, weekIdx) => (
+              <div key={weekIdx} className="flex flex-col gap-1">
+                {week.map((day) => {
+                  const isFuture = day.date > heatmapData.today;
+                  const dominantColor = getDominantColor(day.quadrants);
+                  const intensity = Math.min(day.count, 4);
+                  const opacityValue = intensity === 0 ? 0.15 : 0.3 + (intensity * 0.175);
+                  
+                  return (
+                    <TooltipProvider key={day.dateStr}>
+                      <UITooltip delayDuration={100}>
+                        <TooltipTrigger asChild>
+                          <div
+                            className={`h-3 w-3 rounded-sm transition-colors ${
+                              isFuture 
+                                ? 'bg-transparent border border-dashed border-muted-foreground/20' 
+                                : day.count === 0 
+                                  ? 'bg-muted/40' 
+                                  : ''
+                            }`}
+                            style={
+                              !isFuture && day.count > 0 && dominantColor
+                                ? { backgroundColor: dominantColor, opacity: opacityValue }
+                                : undefined
+                            }
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-xs">
+                          <p className="font-medium">{format(day.date, 'MMM d, yyyy')}</p>
+                          <p className="text-muted-foreground">
+                            {day.count === 0 
+                              ? 'No check-ins' 
+                              : `${day.count} check-in${day.count > 1 ? 's' : ''}`
+                            }
+                          </p>
+                        </TooltipContent>
+                      </UITooltip>
+                    </TooltipProvider>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Legend */}
+        <div className="flex items-center justify-end gap-3 mt-3 text-[10px] text-muted-foreground">
+          <span>Less</span>
+          <div className="flex gap-1">
+            <div className="h-3 w-3 rounded-sm bg-muted/40" />
+            <div className="h-3 w-3 rounded-sm bg-primary/30" />
+            <div className="h-3 w-3 rounded-sm bg-primary/50" />
+            <div className="h-3 w-3 rounded-sm bg-primary/70" />
+            <div className="h-3 w-3 rounded-sm bg-primary/90" />
+          </div>
+          <span>More</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 export function PatternsDashboard({ entries }: PatternsDashboardProps) {
@@ -164,6 +334,9 @@ export function PatternsDashboard({ entries }: PatternsDashboardProps) {
               </CardContent>
             </Card>
           </div>
+          
+          {/* Calendar Heatmap */}
+          <CalendarHeatmap entries={entries} />
           
           {/* Weekly activity */}
           <Card>
