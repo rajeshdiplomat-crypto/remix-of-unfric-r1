@@ -234,37 +234,7 @@ export default function Emotions() {
           </CardHeader>
           <CardContent>
             {step === 'sliders' && (
-              <div className="space-y-6">
-                <EmotionSliderPicker onSelect={handleSliderComplete} />
-                
-                {/* Recent entries table */}
-                {entries.length > 0 && (
-                  <div className="pt-4 border-t">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-3">Recent check-ins</h3>
-                    <div className="space-y-2">
-                      {entries.slice(0, 5).map((entry) => (
-                        <div key={entry.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: QUADRANTS[entry.quadrant].color }}
-                            />
-                            <span className="text-sm font-medium">{entry.emotion}</span>
-                            {entry.context?.what && (
-                              <span className="text-xs text-muted-foreground px-2 py-0.5 bg-muted rounded-full">
-                                {entry.context.what}
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(entry.created_at), 'MMM d, h:mm a')}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <EmotionSliderPicker onSelect={handleSliderComplete} />
             )}
 
             {step === 'details' && selectedQuadrant && selectedEmotion && (
@@ -312,7 +282,7 @@ export default function Emotions() {
         <PatternsDashboardEnhanced entries={entries} />
       </div>
 
-      {/* RIGHT: Strategies Panel (always mounted, sticky, independently scrollable) */}
+      {/* RIGHT: Strategies Panel + Recent Check-ins (always mounted, sticky, independently scrollable) */}
       <aside
         className="hidden lg:flex flex-col h-full overflow-y-auto border-l border-border/50 bg-card"
         tabIndex={-1}
@@ -322,6 +292,38 @@ export default function Emotions() {
           currentQuadrant={currentQuadrant}
           currentEmotion={currentEmotion}
         />
+        
+        {/* Recent check-ins at the bottom of right panel */}
+        {entries.length > 0 && (
+          <Card className="m-4 mt-0">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Recent Check-ins</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {entries.slice(0, 5).map((entry) => (
+                  <div key={entry.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: QUADRANTS[entry.quadrant].color }}
+                      />
+                      <span className="text-sm font-medium">{entry.emotion}</span>
+                      {entry.context?.what && (
+                        <span className="text-xs text-muted-foreground px-2 py-0.5 bg-muted rounded-full">
+                          {entry.context.what}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(entry.created_at), 'MMM d, h:mm a')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </aside>
     </div>
   );
