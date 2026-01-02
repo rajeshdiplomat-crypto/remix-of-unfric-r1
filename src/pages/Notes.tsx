@@ -233,22 +233,37 @@ export default function Notes() {
   // Sync note to Supabase for Diary feed
   const syncNoteToSupabase = async (note: Note) => {
     if (!user?.id) return;
-    
+
+    const category: "thoughts" | "creative" | "private" =
+      note.groupId === "personal" ? "private" : note.groupId === "hobby" ? "creative" : "thoughts";
+
     try {
       const { error } = await supabase.from("notes").upsert({
         id: note.id,
         user_id: user.id,
         title: note.title || "Untitled",
         content: note.plainText || note.contentRich,
-        category: note.groupId,
+        category,
         tags: note.tags,
         created_at: note.createdAt,
         updated_at: note.updatedAt,
       });
-      
-      if (error) console.error("Failed to sync note:", error);
+
+      if (error) {
+        console.error("Failed to sync note:", error);
+        toast({
+          title: "Couldn't sync note to Diary",
+          description: "Please try saving again.",
+          variant: "destructive",
+        });
+      }
     } catch (err) {
       console.error("Error syncing note:", err);
+      toast({
+        title: "Couldn't sync note to Diary",
+        description: "Please try saving again.",
+        variant: "destructive",
+      });
     }
   };
 
