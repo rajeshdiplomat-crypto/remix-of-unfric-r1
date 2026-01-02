@@ -451,11 +451,11 @@ export default function Notes() {
                 variant="outline"
                 size="sm"
                 onClick={() => setFilterGroupId(group.id)}
-                className={`h-8 rounded-full px-3 gap-2 ${
+                className={`h-8 rounded-full px-3 border-l-2 ${
                   active ? "bg-primary/10 text-primary border-primary/30" : "text-foreground/80"
                 }`}
+                style={{ borderLeftColor: group.color }}
               >
-                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: group.color }} />
                 {group.name}
               </Button>
             );

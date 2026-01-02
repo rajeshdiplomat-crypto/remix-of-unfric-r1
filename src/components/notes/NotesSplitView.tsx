@@ -191,17 +191,14 @@ export function NotesSplitView({
                   {/* Group Header */}
                   <button
                     onClick={() => toggleGroup(group.id)}
-                    className="w-full px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2 hover:bg-muted/20 rounded transition-colors"
+                    className="w-full px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2 hover:bg-muted/20 rounded transition-colors border-l-2"
+                    style={{ borderLeftColor: group.color }}
                   >
                     {isGroupExpanded ? (
                       <ChevronDown className="h-3 w-3" />
                     ) : (
                       <ChevronRight className="h-3 w-3" />
                     )}
-                    <div 
-                      className="h-2 w-2 rounded-full" 
-                      style={{ backgroundColor: group.color }} 
-                    />
                     <span className="flex-1 text-left">{group.name}</span>
                     {mostRecentUpdate && (
                       <NotesActivityDot updatedAt={mostRecentUpdate} size="sm" />

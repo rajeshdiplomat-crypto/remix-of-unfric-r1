@@ -74,18 +74,14 @@ export function NotesGroupSection({
       {/* Group Header - Section title style, not card */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center gap-3 py-3 px-1 hover:bg-muted/10 transition-colors rounded-md"
+        className="w-full flex items-center gap-3 py-3 px-3 hover:bg-muted/10 transition-colors rounded-md border-l-2"
+        style={{ borderLeftColor: group.color }}
       >
         {isExpanded ? (
           <ChevronDown className="h-4 w-4 text-muted-foreground/60" />
         ) : (
           <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
         )}
-        
-        <div
-          className="h-2.5 w-2.5 rounded-full shrink-0 opacity-80"
-          style={{ backgroundColor: group.color }}
-        />
         
         <h2 className="text-base font-medium text-foreground/90">{group.name}</h2>
         

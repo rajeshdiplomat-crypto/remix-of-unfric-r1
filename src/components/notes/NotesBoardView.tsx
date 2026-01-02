@@ -64,12 +64,11 @@ export function NotesBoardView({
               className="w-80 shrink-0 bg-card/50 rounded-xl border border-border/40 flex flex-col"
             >
               {/* Column Header - Enhanced */}
-              <div className="p-4 border-b border-border/30">
+              <div 
+                className="p-4 border-b border-border/30 border-t-2"
+                style={{ borderTopColor: group.color }}
+              >
                 <div className="flex items-center gap-3">
-                  <div
-                    className="h-3 w-3 rounded-full shrink-0 shadow-sm"
-                    style={{ backgroundColor: group.color }}
-                  />
                   <h3 className="font-semibold text-foreground flex-1 text-base">{group.name}</h3>
                   {mostRecentUpdate && (
                     <NotesActivityDot updatedAt={mostRecentUpdate} size="md" />

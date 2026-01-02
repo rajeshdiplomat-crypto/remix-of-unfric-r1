@@ -176,6 +176,10 @@ export function NotesGroupSettings({
                       draggedItem?.id === group.id ? "opacity-50" : ""
                     }`}
                   >
+                    <div 
+                      className="w-1 h-6 rounded-full shrink-0"
+                      style={{ backgroundColor: editingGroup === group.id ? editColor : group.color }}
+                    />
                     <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab active:cursor-grabbing" />
                     
                     {groupFolders.length > 0 && (
@@ -187,11 +191,6 @@ export function NotesGroupSettings({
                         )}
                       </button>
                     )}
-                    
-                    <div
-                      className="h-4 w-4 rounded-full shrink-0"
-                      style={{ backgroundColor: editingGroup === group.id ? editColor : group.color }}
-                    />
                     
                     {editingGroup === group.id ? (
                       <div className="flex-1 flex items-center gap-2">
