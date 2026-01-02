@@ -3,6 +3,8 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
+import { Input } from "@/components/ui/input";
+import { Search, Quote } from "lucide-react";
 import { QuadrantType, QUADRANTS, EMOTION_DESCRIPTIONS } from "./types";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +14,54 @@ interface EmotionSliderPickerProps {
   initialEmotion?: string;
   compact?: boolean;
 }
+
+// Daily changing quotes by emotion quadrant
+const EMOTION_QUOTES: Record<QuadrantType, string[]> = {
+  'high-pleasant': [
+    "Joy is not in things; it is in us.",
+    "Happiness is a direction, not a place.",
+    "The purpose of life is to be happy.",
+    "Let your joy be in your journey.",
+    "Enthusiasm is the electricity of life.",
+    "Celebrate every tiny victory.",
+    "Your energy introduces you before you speak.",
+  ],
+  'high-unpleasant': [
+    "Feel the feeling, but don't become it.",
+    "Anger is one letter short of danger.",
+    "Between stimulus and response, there is space.",
+    "This too shall pass.",
+    "Your emotions are valid, your reactions are choices.",
+    "Breathe. You're going to be okay.",
+    "Strong emotions mean you care deeply.",
+  ],
+  'low-unpleasant': [
+    "It's okay to not be okay.",
+    "The wound is where the light enters.",
+    "Even the darkest night will end.",
+    "You are allowed to rest.",
+    "Healing is not linear.",
+    "Be gentle with yourself today.",
+    "Every storm runs out of rain.",
+  ],
+  'low-pleasant': [
+    "Peace comes from within.",
+    "In stillness, we find ourselves.",
+    "Calm mind brings inner strength.",
+    "Serenity is not freedom from the storm.",
+    "Rest is not idleness.",
+    "Embrace the quiet moments.",
+    "Contentment is the greatest wealth.",
+  ],
+};
+
+const getDailyQuote = (quadrant: QuadrantType, emotion: string): string => {
+  const quotes = EMOTION_QUOTES[quadrant];
+  // Use date + emotion to create a consistent daily selection
+  const today = new Date().toDateString();
+  const hash = (today + emotion).split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+  return quotes[hash % quotes.length];
+};
 
 // Flatten all emotions with their quadrant and coordinates
 const ALL_EMOTIONS: { emotion: string; quadrant: QuadrantType; energy: number; pleasantness: number }[] = [];
@@ -72,6 +122,16 @@ export function EmotionSliderPicker({ onSelect, initialQuadrant, initialEmotion,
   const [energy, setEnergy] = useState(getInitialEnergy());
   const [pleasantness, setPleasantness] = useState(getInitialPleasantness());
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>(initialEmotion || null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Search results from all emotions
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const query = searchQuery.toLowerCase();
+    return ALL_EMOTIONS.filter(e => 
+      e.emotion.toLowerCase().includes(query)
+    ).slice(0, 8);
+  }, [searchQuery]);
 
   // Calculate distance to find closest emotions
   const suggestedEmotions = useMemo(() => {
@@ -123,7 +183,47 @@ export function EmotionSliderPicker({ onSelect, initialQuadrant, initialEmotion,
       {!compact && (
         <div className="text-center">
           <p className="text-sm text-muted-foreground">How are you feeling right now?</p>
-          <p className="text-xs text-muted-foreground/70 mt-1">Adjust the sliders to find your emotion</p>
+          <p className="text-xs text-muted-foreground/70 mt-1">Adjust the sliders or search for an emotion</p>
+        </div>
+      )}
+
+      {/* Search Bar */}
+      {!compact && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search any emotion..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+          {searchResults.length > 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-card border border-border rounded-lg shadow-lg p-2 space-y-1">
+              {searchResults.map((item) => {
+                const emotionQuadrant = QUADRANTS[item.quadrant];
+                return (
+                  <button
+                    key={item.emotion}
+                    onClick={() => {
+                      handleEmotionClick(item.emotion, item.quadrant);
+                      setSearchQuery("");
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-md hover:bg-accent/50 flex items-center gap-2 transition-colors"
+                  >
+                    <span 
+                      className="w-2 h-2 rounded-full" 
+                      style={{ backgroundColor: emotionQuadrant.color }}
+                    />
+                    <span className="text-sm">{item.emotion}</span>
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {emotionQuadrant.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -240,15 +340,32 @@ export function EmotionSliderPicker({ onSelect, initialQuadrant, initialEmotion,
         </div>
       </div>
 
-      {/* Confirm Button - only show if not compact mode */}
+      {/* Confirm Button with Quote - only show if not compact mode */}
       {!compact && (
-        <Button 
-          onClick={handleConfirm} 
-          className="w-full"
-          disabled={!bestMatch && !selectedEmotion}
-        >
-          Continue with {selectedEmotion || bestMatch?.emotion || 'selection'}
-        </Button>
+        <div className="space-y-3">
+          <Button 
+            onClick={handleConfirm} 
+            className="w-full"
+            disabled={!bestMatch && !selectedEmotion}
+          >
+            Continue with {selectedEmotion || bestMatch?.emotion || 'selection'}
+          </Button>
+          
+          {/* Daily Quote */}
+          {(selectedEmotion || bestMatch) && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-border/50">
+              <Quote className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+              <p className="text-xs text-muted-foreground italic">
+                "{getDailyQuote(
+                  selectedEmotion 
+                    ? (suggestedEmotions.find(e => e.emotion === selectedEmotion)?.quadrant || currentQuadrant)
+                    : (bestMatch?.quadrant || currentQuadrant),
+                  selectedEmotion || bestMatch?.emotion || ''
+                )}"
+              </p>
+            </div>
+          )}
+        </div>
       )}
 
       {!compact && (
