@@ -50,6 +50,9 @@ export default function Emotions() {
   const [editingEntry, setEditingEntry] = useState<EmotionEntry | null>(null);
   const [editNote, setEditNote] = useState("");
   const [editContext, setEditContext] = useState<EmotionEntry['context']>({});
+  const [editQuadrant, setEditQuadrant] = useState<QuadrantType | null>(null);
+  const [editEmotion, setEditEmotion] = useState<string | null>(null);
+  const [editDate, setEditDate] = useState<Date>(new Date());
   
   // For delete confirmation
   const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
@@ -249,29 +252,38 @@ export default function Emotions() {
     setEditingEntry(entry);
     setEditNote(entry.note || "");
     setEditContext(entry.context || {});
+    setEditQuadrant(entry.quadrant);
+    setEditEmotion(entry.emotion);
+    setEditDate(new Date(entry.entry_date + 'T12:00:00'));
   };
 
   const cancelEdit = () => {
     setEditingEntry(null);
     setEditNote("");
     setEditContext({});
+    setEditQuadrant(null);
+    setEditEmotion(null);
+    setEditDate(new Date());
   };
 
   const saveEditedEntry = async () => {
-    if (!user || !editingEntry) return;
+    if (!user || !editingEntry || !editQuadrant || !editEmotion) return;
     setSaving(true);
     try {
       const emotionData = JSON.stringify({
-        quadrant: editingEntry.quadrant,
-        emotion: editingEntry.emotion,
+        quadrant: editQuadrant,
+        emotion: editEmotion,
         context: editContext,
       });
+      
+      const newEntryDate = format(editDate, 'yyyy-MM-dd');
 
       const { error } = await supabase
         .from('emotions')
         .update({
           emotion: emotionData,
           notes: editNote || null,
+          entry_date: newEntryDate,
         })
         .eq('id', editingEntry.id)
         .eq('user_id', user.id);
@@ -279,24 +291,34 @@ export default function Emotions() {
       if (error) throw error;
 
       toast.success('Check-in updated');
-      cancelEdit();
-      fetchEntries();
       
-      // Update viewing entries if dialog is open
-      if (viewingDate) {
+      // Close viewing dialog if the date changed
+      if (viewingDate && viewingDate !== newEntryDate) {
+        setViewingDate(null);
+        setViewingEntries([]);
+      } else if (viewingDate) {
+        // Update viewing entries if dialog is open and date didn't change
         setViewingEntries(prev => 
           prev.map(e => e.id === editingEntry.id 
-            ? { ...e, note: editNote || undefined, context: editContext }
+            ? { ...e, note: editNote || undefined, context: editContext, quadrant: editQuadrant, emotion: editEmotion }
             : e
           )
         );
       }
+      
+      cancelEdit();
+      fetchEntries();
     } catch (err) {
       console.error('Error updating emotion:', err);
       toast.error('Failed to update check-in');
     } finally {
       setSaving(false);
     }
+  };
+  
+  const handleEditEmotionSelect = (quadrant: QuadrantType, emotion: string) => {
+    setEditQuadrant(quadrant);
+    setEditEmotion(emotion);
   };
 
   const deleteEntry = async (entryId: string) => {
@@ -594,23 +616,32 @@ export default function Emotions() {
       
       {/* Edit Entry Dialog */}
       <Dialog open={!!editingEntry} onOpenChange={(open) => !open && cancelEdit()}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Check-in</DialogTitle>
           </DialogHeader>
-          {editingEntry && (
+          {editingEntry && editQuadrant && editEmotion && (
             <div className="space-y-4">
-              <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: QUADRANTS[editingEntry.quadrant].bgColor }}>
-                <div
-                  className="w-4 h-4 rounded-full"
-                  style={{ backgroundColor: QUADRANTS[editingEntry.quadrant].color }}
+              {/* Emotion Picker for editing */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Emotion</label>
+                <EmotionSliderPicker 
+                  onSelect={handleEditEmotionSelect} 
+                  initialQuadrant={editQuadrant}
+                  initialEmotion={editEmotion}
+                  compact
                 />
-                <div>
-                  <p className="font-medium" style={{ color: QUADRANTS[editingEntry.quadrant].color }}>
-                    {editingEntry.emotion}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{QUADRANTS[editingEntry.quadrant].description}</p>
-                </div>
+              </div>
+              
+              {/* Date picker */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Date</label>
+                <input
+                  type="date"
+                  value={format(editDate, 'yyyy-MM-dd')}
+                  onChange={(e) => setEditDate(new Date(e.target.value + 'T12:00:00'))}
+                  className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
+                />
               </div>
               
               <EmotionContextFieldsEnhanced

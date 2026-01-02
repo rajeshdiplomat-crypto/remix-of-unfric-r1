@@ -632,36 +632,43 @@ function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
               </div>
               <div className="space-y-2">
                 {items.map(({ label, distribution, total }) => (
-                  <div key={label} className="p-2 rounded-lg bg-muted/30">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-sm font-medium">{label}</span>
-                      <span className="text-[10px] text-muted-foreground">{total} check-ins</span>
-                    </div>
+                  <div key={label} className="p-2 rounded-lg bg-muted/30 flex gap-3">
+                    {/* Vertical stacked bar on left */}
+                    {distribution.length > 0 ? (
+                      <div className="flex flex-col w-2 rounded-full overflow-hidden h-12 shrink-0">
+                        {distribution.map(({ quadrant, percentage }) => (
+                          <div 
+                            key={quadrant}
+                            style={{ 
+                              height: `${percentage}%`, 
+                              backgroundColor: QUADRANTS[quadrant].color 
+                            }}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="w-2 h-12 rounded-full bg-muted/50 shrink-0" />
+                    )}
                     
-                    {/* Stacked bar */}
-                    <div className="flex h-1.5 rounded-full overflow-hidden mb-1">
-                      {distribution.map(({ quadrant, percentage }) => (
-                        <div 
-                          key={quadrant}
-                          style={{ 
-                            width: `${percentage}%`, 
-                            backgroundColor: QUADRANTS[quadrant].color 
-                          }}
-                        />
-                      ))}
-                    </div>
-                    
-                    {/* Top percentages as colored text */}
-                    <div className="flex flex-wrap gap-x-2 gap-y-0.5">
-                      {distribution.slice(0, 3).map(({ quadrant, percentage }) => (
-                        <span 
-                          key={quadrant} 
-                          className="text-[9px] font-medium"
-                          style={{ color: QUADRANTS[quadrant].color }}
-                        >
-                          {percentage}% {getShortQuadrantLabel(quadrant)}
-                        </span>
-                      ))}
+                    {/* Content on right */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium truncate">{label}</span>
+                        <span className="text-[10px] text-muted-foreground shrink-0">{total}</span>
+                      </div>
+                      
+                      {/* Top percentages as colored text */}
+                      <div className="space-y-0.5">
+                        {distribution.slice(0, 2).map(({ quadrant, percentage }) => (
+                          <p 
+                            key={quadrant} 
+                            className="text-[10px] font-medium truncate"
+                            style={{ color: QUADRANTS[quadrant].color }}
+                          >
+                            {percentage}% {getShortQuadrantLabel(quadrant)}
+                          </p>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 ))}
