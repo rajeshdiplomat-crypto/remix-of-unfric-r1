@@ -7,27 +7,22 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { SmilePlus, TrendingUp, Lightbulb, Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Lightbulb, X } from "lucide-react";
 
-import { QuadrantType, EmotionEntry, EmotionSection, QUADRANTS } from "@/components/emotions/types";
+import { QuadrantType, EmotionEntry, QUADRANTS } from "@/components/emotions/types";
 import { EmotionQuadrantPicker } from "@/components/emotions/EmotionQuadrantPicker";
 import { EmotionLabelSelector } from "@/components/emotions/EmotionLabelSelector";
 import { EmotionContextFields } from "@/components/emotions/EmotionContextFields";
 import { StrategiesPanel } from "@/components/emotions/StrategiesPanel";
 import { PatternsDashboard } from "@/components/emotions/PatternsDashboard";
-
-const sidebarSections: { id: EmotionSection; label: string; icon: React.ReactNode }[] = [
-  { id: 'check-in', label: 'Check-In', icon: <SmilePlus className="h-5 w-5" /> },
-  { id: 'patterns', label: 'Patterns', icon: <TrendingUp className="h-5 w-5" /> },
-  { id: 'strategies', label: 'Strategies', icon: <Lightbulb className="h-5 w-5" /> },
-];
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 export default function Emotions() {
   const { user } = useAuth();
-  const [activeSection, setActiveSection] = useState<EmotionSection>('check-in');
   const [entries, setEntries] = useState<EmotionEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [strategiesOpen, setStrategiesOpen] = useState(false);
 
   // Check-in state
   const [selectedQuadrant, setSelectedQuadrant] = useState<QuadrantType | null>(null);
@@ -135,39 +130,45 @@ export default function Emotions() {
     }
   };
 
+  const latestEntry = entries[0];
+
   return (
     <div className="flex h-[calc(100vh-6rem)] gap-6">
-      {/* Sidebar */}
-      <aside className="w-16 lg:w-48 shrink-0 flex flex-col gap-1 py-2">
-        {sidebarSections.map((section) => (
-          <button
-            key={section.id}
-            onClick={() => setActiveSection(section.id)}
-            className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left",
-              activeSection === section.id
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-            )}
-          >
-            {section.icon}
-            <span className="hidden lg:inline text-sm font-medium">{section.label}</span>
-          </button>
-        ))}
-      </aside>
-
-      {/* Main content */}
-      <main className="flex-1 min-w-0">
-        <ScrollArea className="h-full pr-4">
-          {activeSection === 'check-in' && (
-            <div className="max-w-lg mx-auto py-6 space-y-6">
-              <div className="text-center">
-                <h1 className="text-2xl font-semibold mb-1">How are you feeling?</h1>
+      {/* Left Panel - Check-in (top) + Patterns (bottom) */}
+      <main className="flex-1 min-w-0 flex flex-col gap-6">
+        {/* Check-in Section */}
+        <section className="shrink-0">
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-center mb-4">
+                <h1 className="text-xl font-semibold mb-1">How are you feeling?</h1>
                 <p className="text-sm text-muted-foreground">Take a moment to check in with yourself</p>
               </div>
 
               {step === 'quadrant' && (
-                <EmotionQuadrantPicker selected={selectedQuadrant} onSelect={handleQuadrantSelect} />
+                <>
+                  <EmotionQuadrantPicker selected={selectedQuadrant} onSelect={handleQuadrantSelect} />
+                  {/* Recent entries inline */}
+                  {entries.length > 0 && (
+                    <div className="pt-4 mt-4 border-t">
+                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Recent check-ins</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {entries.slice(0, 5).map((entry) => (
+                          <div key={entry.id} className="flex items-center gap-1.5 px-2 py-1 bg-muted/30 rounded-full text-sm">
+                            <span>
+                              {entry.quadrant === 'high-pleasant' && '😊'}
+                              {entry.quadrant === 'high-unpleasant' && '😰'}
+                              {entry.quadrant === 'low-unpleasant' && '😔'}
+                              {entry.quadrant === 'low-pleasant' && '😌'}
+                            </span>
+                            <span className="font-medium">{entry.emotion}</span>
+                            <span className="text-xs text-muted-foreground">{format(new Date(entry.created_at), 'h:mm a')}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
 
               {step === 'emotion' && selectedQuadrant && (
@@ -180,72 +181,79 @@ export default function Emotions() {
               )}
 
               {step === 'details' && selectedQuadrant && selectedEmotion && (
-                <Card>
-                  <CardContent className="p-6 space-y-6">
-                    <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: QUADRANTS[selectedQuadrant].bgColor }}>
-                      <span className="text-2xl">
-                        {selectedQuadrant === 'high-pleasant' && '😊'}
-                        {selectedQuadrant === 'high-unpleasant' && '😰'}
-                        {selectedQuadrant === 'low-unpleasant' && '😔'}
-                        {selectedQuadrant === 'low-pleasant' && '😌'}
-                      </span>
-                      <div>
-                        <p className="font-medium" style={{ color: QUADRANTS[selectedQuadrant].color }}>{selectedEmotion}</p>
-                        <p className="text-xs text-muted-foreground">{QUADRANTS[selectedQuadrant].description}</p>
-                      </div>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: QUADRANTS[selectedQuadrant].bgColor }}>
+                    <span className="text-2xl">
+                      {selectedQuadrant === 'high-pleasant' && '😊'}
+                      {selectedQuadrant === 'high-unpleasant' && '😰'}
+                      {selectedQuadrant === 'low-unpleasant' && '😔'}
+                      {selectedQuadrant === 'low-pleasant' && '😌'}
+                    </span>
+                    <div>
+                      <p className="font-medium" style={{ color: QUADRANTS[selectedQuadrant].color }}>{selectedEmotion}</p>
+                      <p className="text-xs text-muted-foreground">{QUADRANTS[selectedQuadrant].description}</p>
                     </div>
+                  </div>
 
-                    <EmotionContextFields note={note} onNoteChange={setNote} context={context} onContextChange={setContext} />
+                  <EmotionContextFields note={note} onNoteChange={setNote} context={context} onContextChange={setContext} />
 
-                    <div className="flex gap-3">
-                      <Button variant="outline" onClick={handleBack} className="flex-1">Back</Button>
-                      <Button onClick={saveCheckIn} disabled={saving} className="flex-1">
-                        {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
-                        Save Check-in
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Recent entries */}
-              {entries.length > 0 && step === 'quadrant' && (
-                <div className="pt-6 border-t">
-                  <h3 className="text-sm font-medium text-muted-foreground mb-3">Recent check-ins</h3>
-                  <div className="space-y-2">
-                    {entries.slice(0, 5).map((entry) => (
-                      <div key={entry.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">
-                            {entry.quadrant === 'high-pleasant' && '😊'}
-                            {entry.quadrant === 'high-unpleasant' && '😰'}
-                            {entry.quadrant === 'low-unpleasant' && '😔'}
-                            {entry.quadrant === 'low-pleasant' && '😌'}
-                          </span>
-                          <span className="text-sm font-medium">{entry.emotion}</span>
-                        </div>
-                        <span className="text-xs text-muted-foreground">{format(new Date(entry.created_at), 'MMM d, h:mm a')}</span>
-                      </div>
-                    ))}
+                  <div className="flex gap-3">
+                    <Button variant="outline" onClick={handleBack} className="flex-1">Back</Button>
+                    <Button onClick={saveCheckIn} disabled={saving} className="flex-1">
+                      {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
+                      Save Check-in
+                    </Button>
                   </div>
                 </div>
               )}
-            </div>
-          )}
+            </CardContent>
+          </Card>
+        </section>
 
-          {activeSection === 'patterns' && (
-            <div className="max-w-2xl mx-auto py-6">
-              <PatternsDashboard entries={entries} />
-            </div>
-          )}
-
-          {activeSection === 'strategies' && (
-            <div className="max-w-2xl mx-auto py-6">
-              <StrategiesPanel currentQuadrant={selectedQuadrant} currentEmotion={selectedEmotion} />
-            </div>
-          )}
-        </ScrollArea>
+        {/* Patterns Section */}
+        <section className="flex-1 min-h-0">
+          <ScrollArea className="h-full">
+            <PatternsDashboard entries={entries} />
+          </ScrollArea>
+        </section>
       </main>
+
+      {/* Right Panel - Strategies Slider */}
+      <Sheet open={strategiesOpen} onOpenChange={setStrategiesOpen}>
+        <SheetTrigger asChild>
+          <Button
+            variant="outline"
+            size="lg"
+            className="fixed right-4 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-1 py-4 px-3 rounded-l-xl rounded-r-none border-r-0 shadow-lg bg-background/95 backdrop-blur"
+          >
+            <Lightbulb className="h-5 w-5" />
+            <span className="text-xs font-medium writing-mode-vertical" style={{ writingMode: 'vertical-rl' }}>Strategies</span>
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="right" className="w-[420px] sm:w-[480px] p-0">
+          <SheetHeader className="p-6 pb-4 border-b">
+            <div className="flex items-center justify-between">
+              <SheetTitle className="flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-primary" />
+                Strategies
+              </SheetTitle>
+            </div>
+            {latestEntry && (
+              <p className="text-sm text-muted-foreground">
+                Based on your mood: <span className="font-medium text-foreground">{latestEntry.emotion}</span>
+              </p>
+            )}
+          </SheetHeader>
+          <ScrollArea className="h-[calc(100vh-120px)]">
+            <div className="p-6">
+              <StrategiesPanel 
+                currentQuadrant={latestEntry?.quadrant || selectedQuadrant} 
+                currentEmotion={latestEntry?.emotion || selectedEmotion} 
+              />
+            </div>
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
