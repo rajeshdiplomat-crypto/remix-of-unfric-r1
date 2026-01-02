@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Filter } from "lucide-react";
+import { ArrowLeft, Clock } from "lucide-react";
 import { format, startOfWeek, endOfWeek, isWithinInterval, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { type ManifestGoal, type ManifestDailyPractice, DAILY_PRACTICE_KEY, GOAL_EXTRAS_KEY } from "@/components/manifest/types";
 import { HistoryDayCard } from "@/components/manifest/HistoryDayCard";
 import { ProofLightbox } from "@/components/manifest/ProofLightbox";
@@ -38,28 +39,75 @@ interface WeekGroup {
   proofsCount: number;
 }
 
+// Helper to load goal extras from localStorage
+function loadGoalExtras(goalId: string): Partial<ManifestGoal> {
+  const stored = localStorage.getItem(GOAL_EXTRAS_KEY);
+  if (!stored) return {};
+  const all = JSON.parse(stored);
+  return all[goalId] || {};
+}
+
 export default function ManifestHistory() {
   const { goalId } = useParams<{ goalId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const [goal, setGoal] = useState<ManifestGoal | null>(null);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>("all");
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [historyData, setHistoryData] = useState<HistoryDay[]>([]);
 
-  // Load goal info
+  // Load goal info from Supabase + local extras
   useEffect(() => {
-    if (!goalId) return;
-    
-    const stored = localStorage.getItem(GOAL_EXTRAS_KEY);
-    if (stored) {
-      const goals: ManifestGoal[] = JSON.parse(stored);
-      const foundGoal = goals.find(g => g.id === goalId);
-      if (foundGoal) {
-        setGoal(foundGoal);
+    async function fetchGoal() {
+      if (!goalId || !user) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from("manifest_goals")
+          .select("*")
+          .eq("id", goalId)
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (error) throw error;
+        
+        if (data) {
+          const extras = loadGoalExtras(goalId);
+          const mergedGoal: ManifestGoal = {
+            id: data.id,
+            user_id: data.user_id,
+            title: data.title,
+            category: extras.category || "other",
+            vision_image_url: extras.vision_image_url,
+            target_date: extras.target_date,
+            live_from_end: extras.live_from_end,
+            act_as_if: extras.act_as_if || "Take one small action",
+            conviction: extras.conviction ?? 5,
+            visualization_minutes: extras.visualization_minutes || 3,
+            daily_affirmation: extras.daily_affirmation || "",
+            check_in_time: extras.check_in_time || "08:00",
+            committed_7_days: extras.committed_7_days || false,
+            is_completed: data.is_completed || false,
+            is_locked: extras.is_locked || false,
+            created_at: data.created_at,
+            updated_at: data.updated_at,
+          };
+          setGoal(mergedGoal);
+        }
+      } catch (err) {
+        console.error("Error fetching goal:", err);
+      } finally {
+        setLoading(false);
       }
     }
-  }, [goalId]);
+    
+    fetchGoal();
+  }, [goalId, user]);
 
   // Load history data
   useEffect(() => {
@@ -186,6 +234,16 @@ export default function ManifestHistory() {
   const handleImageClick = (imageUrl: string) => {
     setLightboxImage(imageUrl);
   };
+
+  if (loading) {
+    return (
+      <div className="flex-1 w-full px-4 lg:px-6 py-4">
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!goal) {
     return (
