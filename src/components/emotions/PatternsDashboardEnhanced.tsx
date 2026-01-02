@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { QuadrantType, QUADRANTS, EmotionEntry } from "./types";
 import { format, subDays, startOfDay, eachDayOfInterval, startOfWeek, endOfWeek, subWeeks, parseISO, getHours, startOfMonth, endOfMonth, eachDayOfInterval as eachDay, isSameMonth } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
-import { TrendingUp, Calendar, Activity, Target, Sun, Moon, Sunrise, Sunset, Dumbbell, Users, Briefcase } from "lucide-react";
+import { TrendingUp, Calendar, Activity, Target, Sun, Moon, Sunrise, Sunset, Dumbbell, Users, Briefcase, BedDouble, Heart, Smile, Frown } from "lucide-react";
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type DateRange = 7 | 30 | 90;
@@ -99,7 +99,7 @@ function MonthlyCalendar({ entries }: { entries: EmotionEntry[] }) {
   const today = startOfDay(new Date());
 
   return (
-    <div className="max-w-md mx-auto">
+    <div className="max-w-md">
       <div className="flex items-center justify-between mb-3">
         <p className="text-sm font-medium text-muted-foreground">Monthly Overview</p>
         <div className="flex gap-1 items-center">
@@ -155,7 +155,7 @@ function MonthlyCalendar({ entries }: { entries: EmotionEntry[] }) {
                 <TooltipTrigger asChild>
                   <div
                     className={`
-                      aspect-square rounded flex flex-col items-center justify-center transition-all cursor-default
+                      aspect-square rounded flex flex-col items-start justify-center pl-1.5 transition-all cursor-default
                       ${isToday ? 'ring-1 ring-primary ring-offset-1' : ''}
                       ${isFuture ? 'opacity-30' : ''}
                       ${!data && !isFuture ? 'bg-muted/30' : ''}
@@ -164,22 +164,25 @@ function MonthlyCalendar({ entries }: { entries: EmotionEntry[] }) {
                       dominant && !isFuture
                         ? { 
                             backgroundColor: QUADRANTS[dominant].bgColor,
-                            borderColor: QUADRANTS[dominant].borderColor,
-                            borderWidth: '1px',
+                            borderColor: QUADRANTS[dominant].color,
+                            borderWidth: '2px',
                             borderStyle: 'solid'
                           }
                         : undefined
                     }
                   >
-                    <span className={`text-xs font-medium ${dominant ? '' : 'text-muted-foreground'}`}>
+                    <span 
+                      className={`text-xs font-medium`}
+                      style={{ color: dominant && !isFuture ? QUADRANTS[dominant].color : undefined }}
+                    >
                       {format(day, 'd')}
                     </span>
-                    {data && data.count > 0 && (
+                    {data && data.count > 1 && (
                       <span 
                         className="text-[8px] font-medium"
                         style={{ color: dominant ? QUADRANTS[dominant].color : 'inherit' }}
                       >
-                        {data.count}
+                        +{data.count - 1}
                       </span>
                     )}
                   </div>
@@ -291,9 +294,8 @@ function DaytimeInsights({ entries }: { entries: EmotionEntry[] }) {
               >
                 <Icon className="h-5 w-5 mx-auto mb-1" style={{ color: quadrantColor }} />
                 <p className="text-xs font-medium text-muted-foreground">{info.label}</p>
-                <p className="text-[10px] text-muted-foreground/60">{info.range}</p>
                 {topEmotion ? (
-                  <p className="text-sm font-medium mt-2" style={{ color: quadrantColor }}>{topEmotion[0]}</p>
+                  <p className="text-sm font-medium mt-2" style={{ color: quadrantColor }}>I am feeling {topEmotion[0]}</p>
                 ) : (
                   <p className="text-sm text-muted-foreground/50 mt-2">—</p>
                 )}
@@ -439,6 +441,174 @@ function PatternCorrelations({ entries }: { entries: EmotionEntry[] }) {
         {correlations.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-4">
             Add more context to your check-ins to see patterns
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Context-based insights (who, what, sleep, activity)
+function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
+  const insights = useMemo(() => {
+    const result: { 
+      category: string; 
+      icon: any; 
+      items: { label: string; mood: 'positive' | 'negative' | 'neutral'; count: number }[] 
+    }[] = [];
+    
+    // Who are you with
+    const whoData: Record<string, { pleasant: number; total: number }> = {};
+    entries.forEach(entry => {
+      const who = entry.context?.who;
+      if (who) {
+        if (!whoData[who]) whoData[who] = { pleasant: 0, total: 0 };
+        whoData[who].total++;
+        if (entry.quadrant?.includes('pleasant')) whoData[who].pleasant++;
+      }
+    });
+    
+    if (Object.keys(whoData).length > 0) {
+      result.push({
+        category: 'Who are you with',
+        icon: Users,
+        items: Object.entries(whoData)
+          .sort((a, b) => b[1].total - a[1].total)
+          .slice(0, 4)
+          .map(([label, data]) => ({
+            label,
+            mood: data.pleasant / data.total > 0.6 ? 'positive' : data.pleasant / data.total < 0.4 ? 'negative' : 'neutral',
+            count: data.total
+          }))
+      });
+    }
+    
+    // What are you doing
+    const whatData: Record<string, { pleasant: number; total: number }> = {};
+    entries.forEach(entry => {
+      const what = entry.context?.what;
+      if (what) {
+        if (!whatData[what]) whatData[what] = { pleasant: 0, total: 0 };
+        whatData[what].total++;
+        if (entry.quadrant?.includes('pleasant')) whatData[what].pleasant++;
+      }
+    });
+    
+    if (Object.keys(whatData).length > 0) {
+      result.push({
+        category: 'What are you doing',
+        icon: Briefcase,
+        items: Object.entries(whatData)
+          .sort((a, b) => b[1].total - a[1].total)
+          .slice(0, 4)
+          .map(([label, data]) => ({
+            label,
+            mood: data.pleasant / data.total > 0.6 ? 'positive' : data.pleasant / data.total < 0.4 ? 'negative' : 'neutral',
+            count: data.total
+          }))
+      });
+    }
+    
+    // Sleep last night
+    const sleepData: Record<string, { pleasant: number; total: number }> = {};
+    entries.forEach(entry => {
+      const sleep = entry.context?.sleepHours;
+      if (sleep) {
+        if (!sleepData[sleep]) sleepData[sleep] = { pleasant: 0, total: 0 };
+        sleepData[sleep].total++;
+        if (entry.quadrant?.includes('pleasant')) sleepData[sleep].pleasant++;
+      }
+    });
+    
+    if (Object.keys(sleepData).length > 0) {
+      result.push({
+        category: 'Sleep last night',
+        icon: BedDouble,
+        items: Object.entries(sleepData)
+          .sort((a, b) => b[1].total - a[1].total)
+          .slice(0, 4)
+          .map(([label, data]) => ({
+            label,
+            mood: data.pleasant / data.total > 0.6 ? 'positive' : data.pleasant / data.total < 0.4 ? 'negative' : 'neutral',
+            count: data.total
+          }))
+      });
+    }
+    
+    // Physical activity
+    const activityData: Record<string, { pleasant: number; total: number }> = {};
+    entries.forEach(entry => {
+      const activity = entry.context?.physicalActivity;
+      if (activity) {
+        if (!activityData[activity]) activityData[activity] = { pleasant: 0, total: 0 };
+        activityData[activity].total++;
+        if (entry.quadrant?.includes('pleasant')) activityData[activity].pleasant++;
+      }
+    });
+    
+    if (Object.keys(activityData).length > 0) {
+      result.push({
+        category: 'Physical activity',
+        icon: Dumbbell,
+        items: Object.entries(activityData)
+          .sort((a, b) => b[1].total - a[1].total)
+          .slice(0, 4)
+          .map(([label, data]) => ({
+            label,
+            mood: data.pleasant / data.total > 0.6 ? 'positive' : data.pleasant / data.total < 0.4 ? 'negative' : 'neutral',
+            count: data.total
+          }))
+      });
+    }
+    
+    return result;
+  }, [entries]);
+  
+  if (insights.length === 0) {
+    return null;
+  }
+  
+  const getMoodIcon = (mood: 'positive' | 'negative' | 'neutral') => {
+    switch (mood) {
+      case 'positive': return { icon: Smile, color: 'hsl(142, 52%, 45%)' };
+      case 'negative': return { icon: Frown, color: 'hsl(0, 72%, 51%)' };
+      default: return { icon: Heart, color: 'hsl(215, 20%, 45%)' };
+    }
+  };
+  
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium">Context Insights</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {insights.map(({ category, icon: CategoryIcon, items }) => (
+            <div key={category} className="space-y-2">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <CategoryIcon className="h-4 w-4" />
+                <span className="text-xs font-medium">{category}</span>
+              </div>
+              <div className="space-y-1.5">
+                {items.map(({ label, mood, count }) => {
+                  const { icon: MoodIcon, color } = getMoodIcon(mood);
+                  return (
+                    <div key={label} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
+                      <div className="flex items-center gap-2">
+                        <MoodIcon className="h-3 w-3" style={{ color }} />
+                        <span className="text-sm">{label}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{count}×</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+        {insights.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Add context to your check-ins to see how different situations affect your mood
           </p>
         )}
       </CardContent>
@@ -781,6 +951,9 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
               <MonthlyCalendar entries={entries} />
             </CardContent>
           </Card>
+          
+          {/* Context-based insights below calendar */}
+          <ContextInsights entries={filteredEntries} />
         </>
       )}
     </div>
