@@ -161,21 +161,17 @@ export function NotesMindMapView({
             >
               <div 
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-full border bg-card/95 backdrop-blur-sm transition-all duration-300",
+                  "flex items-center gap-2 px-4 py-2 rounded-lg border-l-3 bg-card/95 backdrop-blur-sm transition-all duration-300",
                   isSelected 
-                    ? "border-2 shadow-lg scale-105" 
-                    : "border-border/50 hover:border-border hover:shadow-md"
+                    ? "shadow-lg scale-105" 
+                    : "hover:shadow-md"
                 )}
                 style={{
-                  borderColor: isSelected ? group.color : undefined,
+                  borderLeftColor: group.color,
+                  borderLeftWidth: '3px',
                   boxShadow: isSelected ? `0 0 20px ${group.color}40` : undefined,
                 }}
               >
-                {/* Colored Dot */}
-                <div 
-                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: group.color }}
-                />
                 {/* Label */}
                 <span className="text-sm font-medium text-foreground whitespace-nowrap">
                   {group.name}
