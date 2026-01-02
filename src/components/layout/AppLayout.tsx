@@ -35,7 +35,7 @@ function LayoutContent({ children }: AppLayoutProps) {
           </Sheet>
         </div>
         
-        <div className="flex-1 flex flex-col overflow-auto px-4 lg:px-6 py-4">
+        <div className="flex-1 flex flex-col overflow-auto px-6 lg:px-10 py-6">
           {children}
         </div>
       </main>

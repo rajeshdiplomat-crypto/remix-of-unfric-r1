@@ -37,9 +37,8 @@ export function NotesViewSwitcher({ currentView, onViewChange }: NotesViewSwitch
   ];
 
   return (
-    // No outer container styling (no bg, no border, no rounded)
-    <div className="inline-flex items-center">
-      {views.map((view, idx) => {
+    <div className="inline-flex items-center bg-muted/30 rounded-full p-1 border border-border/30">
+      {views.map((view) => {
         const active = currentView === view.id;
 
         return (
@@ -50,13 +49,10 @@ export function NotesViewSwitcher({ currentView, onViewChange }: NotesViewSwitch
             aria-pressed={active}
             onClick={() => onViewChange(view.id)}
             className={cn(
-              // base
-              "h-9 px-3 inline-flex items-center gap-2 text-sm font-medium",
-              "border border-border/40 bg-background text-muted-foreground hover:text-foreground hover:bg-muted/30",
-              // remove ALL rounding + avoid double borders between buttons
-              "rounded-none -ml-px first:ml-0",
-              // active
-              active && "bg-primary text-primary-foreground border-primary/40 hover:bg-primary/90",
+              "h-9 px-4 inline-flex items-center gap-2 text-sm font-medium rounded-full transition-all duration-200",
+              active 
+                ? "bg-primary text-primary-foreground shadow-sm" 
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             {view.icon}
