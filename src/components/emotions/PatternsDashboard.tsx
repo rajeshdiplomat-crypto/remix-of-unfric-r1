@@ -1,10 +1,19 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { QuadrantType, QUADRANTS, EmotionEntry } from "./types";
-import { format, subDays, startOfDay, eachDayOfInterval, startOfWeek, endOfWeek, addWeeks, subWeeks, parseISO } from "date-fns";
+import { format, subDays, startOfDay, eachDayOfInterval, startOfWeek, endOfWeek, subWeeks, isAfter, parseISO } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { TrendingUp, Calendar, Activity, Target } from "lucide-react";
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+type DateRange = 7 | 30 | 90;
+
+const DATE_RANGE_OPTIONS: { value: DateRange; label: string }[] = [
+  { value: 7, label: '7 days' },
+  { value: 30, label: '30 days' },
+  { value: 90, label: '90 days' },
+];
 
 interface PatternsDashboardProps {
   entries: EmotionEntry[];
@@ -180,10 +189,21 @@ function CalendarHeatmap({ entries }: { entries: EmotionEntry[] }) {
 }
 
 export function PatternsDashboard({ entries }: PatternsDashboardProps) {
+  const [dateRange, setDateRange] = useState<DateRange>(30);
+  
+  // Filter entries by date range
+  const filteredEntries = useMemo(() => {
+    const today = startOfDay(new Date());
+    const cutoffDate = subDays(today, dateRange - 1);
+    const cutoffStr = format(cutoffDate, 'yyyy-MM-dd');
+    
+    return entries.filter(entry => entry.entry_date >= cutoffStr);
+  }, [entries, dateRange]);
+  
   const stats = useMemo(() => {
     const today = startOfDay(new Date());
-    const last7Days = eachDayOfInterval({
-      start: subDays(today, 6),
+    const dateRangeDays = eachDayOfInterval({
+      start: subDays(today, dateRange - 1),
       end: today
     });
     
@@ -198,10 +218,15 @@ export function PatternsDashboard({ entries }: PatternsDashboardProps) {
     // Emotion frequency
     const emotionCounts: Record<string, number> = {};
     
-    // Daily entries for the week
+    // Daily entries for the range (show last 7 days in bar chart for readability)
+    const last7Days = eachDayOfInterval({
+      start: subDays(today, 6),
+      end: today
+    });
+    
     const dailyData = last7Days.map(date => {
       const dateStr = format(date, 'yyyy-MM-dd');
-      const dayEntries = entries.filter(e => e.entry_date === dateStr);
+      const dayEntries = filteredEntries.filter(e => e.entry_date === dateStr);
       return {
         date: format(date, 'EEE'),
         fullDate: dateStr,
@@ -210,7 +235,7 @@ export function PatternsDashboard({ entries }: PatternsDashboardProps) {
       };
     });
     
-    entries.forEach(entry => {
+    filteredEntries.forEach(entry => {
       if (entry.quadrant && quadrantCounts[entry.quadrant] !== undefined) {
         quadrantCounts[entry.quadrant]++;
       }
@@ -233,9 +258,9 @@ export function PatternsDashboard({ entries }: PatternsDashboardProps) {
         color: QUADRANTS[id as QuadrantType].color
       }));
     
-    // Current streak
+    // Current streak (always calculated from all entries)
     let streak = 0;
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 90; i++) {
       const checkDate = format(subDays(today, i), 'yyyy-MM-dd');
       const hasEntry = entries.some(e => e.entry_date === checkDate);
       if (hasEntry) {
@@ -246,25 +271,42 @@ export function PatternsDashboard({ entries }: PatternsDashboardProps) {
     }
     
     return {
-      totalEntries: entries.length,
+      totalEntries: filteredEntries.length,
       quadrantCounts,
       quadrantData,
       topEmotions,
       dailyData,
       streak
     };
-  }, [entries]);
+  }, [filteredEntries, dateRange, entries]);
   
   const mostCommonQuadrant = Object.entries(stats.quadrantCounts)
     .sort((a, b) => b[1] - a[1])[0];
   
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold mb-1">Your Patterns</h2>
-        <p className="text-sm text-muted-foreground">
-          Insights from your emotional check-ins
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold mb-1">Your Patterns</h2>
+          <p className="text-sm text-muted-foreground">
+            Insights from your emotional check-ins
+          </p>
+        </div>
+        
+        {/* Date range selector */}
+        <div className="flex gap-1">
+          {DATE_RANGE_OPTIONS.map((option) => (
+            <Button
+              key={option.value}
+              variant={dateRange === option.value ? "chipActive" : "chip"}
+              size="sm"
+              onClick={() => setDateRange(option.value)}
+              className="text-xs"
+            >
+              {option.label}
+            </Button>
+          ))}
+        </div>
       </div>
       
       {entries.length === 0 ? (
