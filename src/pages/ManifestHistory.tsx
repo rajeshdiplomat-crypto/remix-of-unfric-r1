@@ -17,8 +17,16 @@ interface HistoryDay {
   date: string;
   practiced: boolean;
   alignment: number;
-  acted: boolean;
-  visualization_completed: boolean;
+  visualizations: Array<{
+    id: string;
+    duration: number;
+    created_at: string;
+  }>;
+  acts: Array<{
+    id: string;
+    text: string;
+    created_at: string;
+  }>;
   proofs: Array<{
     id: string;
     text?: string;
@@ -27,7 +35,6 @@ interface HistoryDay {
   }>;
   growth_note?: string;
   gratitude?: string;
-  custom_act_as_if?: string;
 }
 
 interface WeekGroup {
@@ -127,19 +134,15 @@ export default function ManifestHistory() {
         const practice = allPractices[key] as Partial<ManifestDailyPractice>;
         const dateStr = key.replace(`${goalId}_`, "");
         
-        // Build acts text from acts array
-        const actsText = practice.acts?.map(a => a.text).join(", ");
-        
         goalPractices.push({
           date: dateStr,
           practiced: practice.locked || false,
           alignment: practice.alignment || 0,
-          acted: (practice.act_count || 0) > 0,
-          visualization_completed: (practice.visualization_count || 0) > 0,
+          visualizations: practice.visualizations || [],
+          acts: practice.acts || [],
           proofs: practice.proofs || [],
           growth_note: practice.growth_note,
           gratitude: practice.gratitude,
-          custom_act_as_if: actsText,
         });
       }
     });
@@ -196,7 +199,7 @@ export default function ManifestHistory() {
     group.avgAlignment = practicedDays.length > 0
       ? Math.round(practicedDays.reduce((sum, d) => sum + d.alignment, 0) / practicedDays.length * 10) / 10
       : 0;
-    group.actDays = group.days.filter(d => d.acted).length;
+    group.actDays = group.days.filter(d => d.acts.length > 0).length;
     group.proofsCount = group.days.reduce((sum, d) => sum + d.proofs.length, 0);
   });
 

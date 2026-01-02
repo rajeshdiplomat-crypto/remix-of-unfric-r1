@@ -11,8 +11,16 @@ interface HistoryDayData {
   date: string;
   practiced: boolean;
   alignment: number;
-  acted: boolean;
-  visualization_completed: boolean;
+  visualizations: Array<{
+    id: string;
+    duration: number;
+    created_at: string;
+  }>;
+  acts: Array<{
+    id: string;
+    text: string;
+    created_at: string;
+  }>;
   proofs: Array<{
     id: string;
     text?: string;
@@ -21,7 +29,6 @@ interface HistoryDayData {
   }>;
   growth_note?: string;
   gratitude?: string;
-  custom_act_as_if?: string;
 }
 
 interface HistoryDayCardProps {
@@ -96,11 +103,15 @@ export function HistoryDayCard({ data, onImageClick, onUseAsMicroAction }: Histo
               
               {/* Micro icons */}
               <div className="flex items-center gap-1 text-muted-foreground">
-                {data.visualization_completed && (
-                  <span className="text-[10px]" title="Visualization completed">Viz ✓</span>
+                {data.visualizations.length > 0 && (
+                  <span className="text-[10px]" title={`${data.visualizations.length} visualization(s)`}>
+                    Viz×{data.visualizations.length}
+                  </span>
                 )}
-                {data.acted && (
-                  <span className="text-[10px]" title="Action completed">Act ✓</span>
+                {data.acts.length > 0 && (
+                  <span className="text-[10px]" title={`${data.acts.length} action(s)`}>
+                    Act×{data.acts.length}
+                  </span>
                 )}
               </div>
             </div>
@@ -109,8 +120,8 @@ export function HistoryDayCard({ data, onImageClick, onUseAsMicroAction }: Histo
             {(hasProofText || hasProofImage) && (
               <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
                 {hasProofImage && <ImageIcon className="h-3 w-3" />}
-                {proofExcerpt && (
-                  <span className="truncate">{proofExcerpt}{proofExcerpt.length >= 50 && "..."}</span>
+                {data.proofs.length > 0 && (
+                  <span className="truncate">{data.proofs.length} proof(s)</span>
                 )}
               </div>
             )}
@@ -129,10 +140,42 @@ export function HistoryDayCard({ data, onImageClick, onUseAsMicroAction }: Histo
         {/* Expanded Details */}
         {isExpanded && (
           <div className="mt-3 pt-3 border-t border-border/50 space-y-3">
+            {/* Visualizations */}
+            {data.visualizations.length > 0 && (
+              <div className="space-y-1">
+                <span className="text-xs font-medium text-muted-foreground">
+                  Visualization(s) — {data.visualizations.length} session(s)
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {data.visualizations.map((viz) => (
+                    <Badge key={viz.id} variant="secondary" className="text-[10px]">
+                      {viz.duration}min at {format(new Date(viz.created_at), "HH:mm")}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Acts */}
+            {data.acts.length > 0 && (
+              <div className="space-y-1">
+                <span className="text-xs font-medium text-muted-foreground">
+                  Act-as-If — {data.acts.length} action(s)
+                </span>
+                {data.acts.map((act) => (
+                  <p key={act.id} className="text-sm text-foreground bg-background/50 p-2 rounded-md">
+                    {act.text}
+                  </p>
+                ))}
+              </div>
+            )}
+
             {/* Proofs */}
             {data.proofs.length > 0 && (
               <div className="space-y-2">
-                <span className="text-xs font-medium text-muted-foreground">Proof(s)</span>
+                <span className="text-xs font-medium text-muted-foreground">
+                  Proof(s) — {data.proofs.length}
+                </span>
                 {data.proofs.map((proof) => (
                   <div key={proof.id} className="space-y-1">
                     {proof.text && (
@@ -175,14 +218,6 @@ export function HistoryDayCard({ data, onImageClick, onUseAsMicroAction }: Histo
                 </summary>
                 <p className="text-foreground mt-1 pl-2">{data.gratitude}</p>
               </details>
-            )}
-
-            {/* Custom Act-as-If */}
-            {data.custom_act_as_if && (
-              <div>
-                <span className="text-xs font-medium text-muted-foreground">Custom Action</span>
-                <p className="text-sm text-foreground mt-1">{data.custom_act_as_if}</p>
-              </div>
             )}
 
             {/* Timestamp */}
