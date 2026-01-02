@@ -271,27 +271,51 @@ export default function Tasks() {
     setDrawerOpen(true);
   };
 
-  const handleSaveTask = (task: QuadrantTask) => {
+  const handleSaveTask = async (task: QuadrantTask) => {
     task.status = computeTaskStatus(task);
 
+    // Update local state immediately for responsiveness
     if (isNewTask) {
       setTasks((prev) => [task, ...prev]);
-      toast({ title: "Created!", description: "Your task has been created" });
     } else {
       setTasks((prev) => prev.map((t) => (t.id === task.id ? task : t)));
-      toast({ title: "Updated!", description: "Task has been updated" });
     }
 
+    // Sync to Supabase if user is logged in
+    if (user) {
+      const { error } = await supabase.from("tasks").upsert({
+        id: task.id,
+        user_id: user.id,
+        title: task.title,
+        description: task.description || null,
+        due_date: task.due_date || null,
+        priority: task.priority,
+        is_completed: task.is_completed,
+        completed_at: task.completed_at || null,
+      });
+
+      if (error) {
+        toast({ title: "Sync failed", description: error.message, variant: "destructive" });
+        return;
+      }
+    }
+
+    toast({ title: isNewTask ? "Created!" : "Updated!", description: isNewTask ? "Your task has been created" : "Task has been updated" });
     setDrawerOpen(false);
   };
 
-  const handleDeleteTask = (id: string) => {
+  const handleDeleteTask = async (id: string) => {
     setTasks((prev) => prev.filter((t) => t.id !== id));
     setDrawerOpen(false);
+
+    if (user) {
+      await supabase.from("tasks").delete().eq("id", id).eq("user_id", user.id);
+    }
+
     toast({ title: "Deleted", description: "Task has been removed" });
   };
 
-  const handleStartTask = (task: QuadrantTask) => {
+  const handleStartTask = async (task: QuadrantTask) => {
     const updated: QuadrantTask = {
       ...task,
       started_at: task.started_at || new Date().toISOString(),
@@ -300,22 +324,41 @@ export default function Tasks() {
 
     setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
     setSelectedTask(updated);
+
+    // Sync started status to Supabase
+    if (user) {
+      await supabase.from("tasks").update({
+        is_completed: false,
+        completed_at: null,
+      }).eq("id", task.id).eq("user_id", user.id);
+    }
+
     toast({ title: "Started!", description: "Task moved to Ongoing" });
 
     setFocusPromptTask(updated);
     setFocusPromptOpen(true);
   };
 
-  const handleCompleteTask = (task: QuadrantTask) => {
+  const handleCompleteTask = async (task: QuadrantTask) => {
+    const completedAt = new Date().toISOString();
     const updated: QuadrantTask = {
       ...task,
       is_completed: true,
-      completed_at: new Date().toISOString(),
+      completed_at: completedAt,
       status: "completed",
     };
 
     setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
     setDrawerOpen(false);
+
+    // Sync completion to Supabase
+    if (user) {
+      await supabase.from("tasks").update({
+        is_completed: true,
+        completed_at: completedAt,
+      }).eq("id", task.id).eq("user_id", user.id);
+    }
+
     toast({ title: "Completed!", description: "Task marked as done" });
   };
 
@@ -334,7 +377,7 @@ export default function Tasks() {
     navigate(`/tasks/focus/${task.id}`);
   };
 
-  const handleBoardQuickAdd = (title: string, columnId: string) => {
+  const handleBoardQuickAdd = async (title: string, columnId: string) => {
     const newTask = createDefaultTask({
       title,
       status: columnId as Status,
@@ -345,10 +388,25 @@ export default function Tasks() {
     });
 
     setTasks((prev) => [newTask, ...prev]);
+
+    // Sync to Supabase
+    if (user) {
+      await supabase.from("tasks").insert({
+        id: newTask.id,
+        user_id: user.id,
+        title: newTask.title,
+        description: newTask.description || null,
+        due_date: newTask.due_date || null,
+        priority: newTask.priority,
+        is_completed: newTask.is_completed,
+        completed_at: newTask.completed_at || null,
+      });
+    }
+
     toast({ title: "Task added" });
   };
 
-  const handleBoardDrop = (columnId: string, task: QuadrantTask) => {
+  const handleBoardDrop = async (columnId: string, task: QuadrantTask) => {
     const updated: QuadrantTask = { ...task };
 
     if (columnId === "ongoing") {
@@ -366,6 +424,15 @@ export default function Tasks() {
 
     updated.status = computeTaskStatus(updated);
     setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+
+    // Sync to Supabase
+    if (user) {
+      await supabase.from("tasks").update({
+        is_completed: updated.is_completed,
+        completed_at: updated.completed_at,
+      }).eq("id", task.id).eq("user_id", user.id);
+    }
+
     toast({ title: "Task updated" });
   };
 
