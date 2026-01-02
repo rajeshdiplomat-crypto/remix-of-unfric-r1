@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { Check, Loader2, ArrowLeft, ChevronLeft, ChevronDown, ChevronUp, X } from "lucide-react";
+import { Check, Loader2, ArrowLeft, ChevronLeft, ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 import { QuadrantType, EmotionEntry, QUADRANTS } from "@/components/emotions/types";
 import { EmotionSliderPicker } from "@/components/emotions/EmotionSliderPicker";
@@ -44,6 +45,15 @@ export default function Emotions() {
   
   // For expanded check-in cards
   const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
+  
+  // For editing entries
+  const [editingEntry, setEditingEntry] = useState<EmotionEntry | null>(null);
+  const [editNote, setEditNote] = useState("");
+  const [editContext, setEditContext] = useState<EmotionEntry['context']>({});
+  
+  // For delete confirmation
+  const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (user) fetchEntries();
@@ -235,6 +245,92 @@ export default function Emotions() {
     setExpandedEntryId(prev => prev === entryId ? null : entryId);
   };
 
+  const startEditEntry = (entry: EmotionEntry) => {
+    setEditingEntry(entry);
+    setEditNote(entry.note || "");
+    setEditContext(entry.context || {});
+  };
+
+  const cancelEdit = () => {
+    setEditingEntry(null);
+    setEditNote("");
+    setEditContext({});
+  };
+
+  const saveEditedEntry = async () => {
+    if (!user || !editingEntry) return;
+    setSaving(true);
+    try {
+      const emotionData = JSON.stringify({
+        quadrant: editingEntry.quadrant,
+        emotion: editingEntry.emotion,
+        context: editContext,
+      });
+
+      const { error } = await supabase
+        .from('emotions')
+        .update({
+          emotion: emotionData,
+          notes: editNote || null,
+        })
+        .eq('id', editingEntry.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast.success('Check-in updated');
+      cancelEdit();
+      fetchEntries();
+      
+      // Update viewing entries if dialog is open
+      if (viewingDate) {
+        setViewingEntries(prev => 
+          prev.map(e => e.id === editingEntry.id 
+            ? { ...e, note: editNote || undefined, context: editContext }
+            : e
+          )
+        );
+      }
+    } catch (err) {
+      console.error('Error updating emotion:', err);
+      toast.error('Failed to update check-in');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteEntry = async (entryId: string) => {
+    if (!user) return;
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('emotions')
+        .delete()
+        .eq('id', entryId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast.success('Check-in deleted');
+      setDeletingEntryId(null);
+      fetchEntries();
+      
+      // Update viewing entries if dialog is open
+      if (viewingDate) {
+        const updatedEntries = viewingEntries.filter(e => e.id !== entryId);
+        setViewingEntries(updatedEntries);
+        if (updatedEntries.length === 0) {
+          setViewingDate(null);
+        }
+      }
+    } catch (err) {
+      console.error('Error deleting emotion:', err);
+      toast.error('Failed to delete check-in');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 h-[calc(100vh-4rem)]">
       {/* LEFT: Check-in + Patterns (scrollable) */}
@@ -340,7 +436,7 @@ export default function Emotions() {
                           <span className="text-xs text-muted-foreground">
                             {format(new Date(entry.created_at), 'MMM d')}
                           </span>
-                          {hasDetails && (
+                          {(hasDetails || true) && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -358,7 +454,7 @@ export default function Emotions() {
                       </div>
                       
                       {/* Expanded details */}
-                      {isExpanded && hasDetails && (
+                      {isExpanded && (
                         <div className="px-3 pb-3 pt-0 space-y-2 border-t border-border/30">
                           {entry.note && (
                             <p className="text-sm text-muted-foreground mt-2">{entry.note}</p>
@@ -384,6 +480,28 @@ export default function Emotions() {
                                 Activity: {entry.context.physicalActivity}
                               </span>
                             )}
+                          </div>
+                          
+                          {/* Edit/Delete actions */}
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => startEditEntry(entry)}
+                            >
+                              <Pencil className="h-3 w-3 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs text-destructive hover:text-destructive"
+                              onClick={() => setDeletingEntryId(entry.id)}
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              Delete
+                            </Button>
                           </div>
                         </div>
                       )}
@@ -419,9 +537,27 @@ export default function Emotions() {
                   <span className="font-medium" style={{ color: QUADRANTS[entry.quadrant].color }}>
                     {entry.emotion}
                   </span>
-                  <span className="text-xs text-muted-foreground ml-auto">
-                    {format(new Date(entry.created_at), 'h:mm a')}
-                  </span>
+                  <div className="flex items-center gap-1 ml-auto">
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(entry.created_at), 'h:mm a')}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => startEditEntry(entry)}
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                      onClick={() => setDeletingEntryId(entry.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
                 
                 {entry.note && (
@@ -455,6 +591,77 @@ export default function Emotions() {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Edit Entry Dialog */}
+      <Dialog open={!!editingEntry} onOpenChange={(open) => !open && cancelEdit()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Check-in</DialogTitle>
+          </DialogHeader>
+          {editingEntry && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: QUADRANTS[editingEntry.quadrant].bgColor }}>
+                <div
+                  className="w-4 h-4 rounded-full"
+                  style={{ backgroundColor: QUADRANTS[editingEntry.quadrant].color }}
+                />
+                <div>
+                  <p className="font-medium" style={{ color: QUADRANTS[editingEntry.quadrant].color }}>
+                    {editingEntry.emotion}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{QUADRANTS[editingEntry.quadrant].description}</p>
+                </div>
+              </div>
+              
+              <EmotionContextFieldsEnhanced
+                note={editNote}
+                onNoteChange={setEditNote}
+                context={editContext}
+                onContextChange={setEditContext}
+                sendToJournal={false}
+                onSendToJournalChange={() => {}}
+                checkInTime={new Date(editingEntry.created_at)}
+                onCheckInTimeChange={() => {}}
+                hideJournalToggle
+                hideTimeField
+              />
+              
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={cancelEdit} className="flex-1">
+                  Cancel
+                </Button>
+                <Button onClick={saveEditedEntry} disabled={saving} className="flex-1">
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deletingEntryId} onOpenChange={(open) => !open && setDeletingEntryId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete check-in?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this emotion check-in.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingEntryId && deleteEntry(deletingEntryId)}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
