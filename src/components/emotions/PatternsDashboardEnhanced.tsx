@@ -17,6 +17,8 @@ const DATE_RANGE_OPTIONS: { value: DateRange; label: string }[] = [
 
 interface PatternsDashboardEnhancedProps {
   entries: EmotionEntry[];
+  onEditEntry?: (entry: EmotionEntry) => void;
+  onDateClick?: (date: string, entries: EmotionEntry[]) => void;
 }
 
 // Time period classification
@@ -60,7 +62,7 @@ function getEmotionColor(emotion: string, entries: EmotionEntry[]): string | nul
 }
 
 // Enhanced Calendar with full-width grid and color coding based on emotion entries
-function MonthlyCalendar({ entries }: { entries: EmotionEntry[] }) {
+function MonthlyCalendar({ entries, onDateClick }: { entries: EmotionEntry[]; onDateClick?: (date: string, entries: EmotionEntry[]) => void }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   
   const calendarData = useMemo(() => {
@@ -72,12 +74,13 @@ function MonthlyCalendar({ entries }: { entries: EmotionEntry[] }) {
     const firstDayOfWeek = start.getDay();
     
     // Count entries per day with full quadrant info
-    const entriesByDate: Record<string, { count: number; emotions: string[]; quadrants: QuadrantType[] }> = {};
+    const entriesByDate: Record<string, { count: number; emotions: string[]; quadrants: QuadrantType[]; entries: EmotionEntry[] }> = {};
     entries.forEach(entry => {
       if (!entriesByDate[entry.entry_date]) {
-        entriesByDate[entry.entry_date] = { count: 0, emotions: [], quadrants: [] };
+        entriesByDate[entry.entry_date] = { count: 0, emotions: [], quadrants: [], entries: [] };
       }
       entriesByDate[entry.entry_date].count++;
+      entriesByDate[entry.entry_date].entries.push(entry);
       if (entry.emotion) entriesByDate[entry.entry_date].emotions.push(entry.emotion);
       if (entry.quadrant) entriesByDate[entry.entry_date].quadrants.push(entry.quadrant);
     });
@@ -101,6 +104,12 @@ function MonthlyCalendar({ entries }: { entries: EmotionEntry[] }) {
   // Calculate number of rows needed
   const totalCells = calendarData.firstDayOfWeek + calendarData.days.length;
   const numRows = Math.ceil(totalCells / 7);
+
+  const handleDayClick = (dateStr: string, dayEntries: EmotionEntry[]) => {
+    if (onDateClick && dayEntries.length > 0) {
+      onDateClick(dateStr, dayEntries);
+    }
+  };
 
   return (
     <div className="w-full h-full flex flex-col">
@@ -152,14 +161,17 @@ function MonthlyCalendar({ entries }: { entries: EmotionEntry[] }) {
           const dominant = data ? getDominantQuadrant(data.quadrants) : null;
           const isToday = day.getTime() === today.getTime();
           const isFuture = day > today;
+          const hasEntries = data && data.count > 0;
           
           return (
             <TooltipProvider key={dateStr}>
               <UITooltip delayDuration={100}>
                 <TooltipTrigger asChild>
                   <div
+                    onClick={() => hasEntries && handleDayClick(dateStr, data.entries)}
                     className={`
-                      min-h-[40px] rounded flex flex-col items-center justify-center transition-all cursor-default
+                      min-h-[40px] rounded flex flex-col items-center justify-center transition-all
+                      ${hasEntries ? 'cursor-pointer hover:ring-2 hover:ring-primary/50' : 'cursor-default'}
                       ${isToday ? 'ring-1 ring-primary ring-offset-1' : ''}
                       ${isFuture ? 'opacity-30' : ''}
                       ${!data && !isFuture ? 'bg-muted/30' : ''}
@@ -191,7 +203,7 @@ function MonthlyCalendar({ entries }: { entries: EmotionEntry[] }) {
                   {data ? (
                     <>
                       <p className="text-muted-foreground text-xs">
-                        {data.count} check-in{data.count > 1 ? 's' : ''}
+                        {data.count} check-in{data.count > 1 ? 's' : ''} — Click to view
                       </p>
                       {data.emotions.length > 0 && (
                         <p className="text-xs mt-1">
@@ -282,41 +294,45 @@ function DaytimeInsights({ entries }: { entries: EmotionEntry[] }) {
             return (
               <div 
                 key={period} 
-                className="p-3 rounded-lg bg-muted/30"
+                className="p-3 rounded-lg bg-muted/30 flex gap-3"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <Icon className="h-4 w-4" style={{ color: info.color }} />
-                  <p className="text-xs font-medium text-muted-foreground">{info.label}</p>
-                </div>
-                
+                {/* Vertical stacked bar on left */}
                 {distribution && distribution.length > 0 ? (
-                  <div className="space-y-1.5">
-                    {/* Stacked bar */}
-                    <div className="flex h-2 rounded-full overflow-hidden">
-                      {distribution.map(({ quadrant, percentage }) => (
-                        <div 
-                          key={quadrant}
-                          style={{ 
-                            width: `${percentage}%`, 
-                            backgroundColor: QUADRANTS[quadrant].color 
-                          }}
-                        />
-                      ))}
-                    </div>
-                    
-                    {/* Top 2 percentages */}
+                  <div className="flex flex-col w-2 rounded-full overflow-hidden h-16 shrink-0">
+                    {distribution.map(({ quadrant, percentage }) => (
+                      <div 
+                        key={quadrant}
+                        style={{ 
+                          height: `${percentage}%`, 
+                          backgroundColor: QUADRANTS[quadrant].color 
+                        }}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="w-2 h-16 rounded-full bg-muted/50 shrink-0" />
+                )}
+                
+                {/* Content on right */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Icon className="h-4 w-4 shrink-0" style={{ color: info.color }} />
+                    <p className="text-xs font-medium text-muted-foreground">{info.label}</p>
+                  </div>
+                  
+                  {distribution && distribution.length > 0 ? (
                     <div className="space-y-0.5">
                       {distribution.slice(0, 2).map(({ quadrant, percentage }) => (
-                        <p key={quadrant} className="text-[10px]" style={{ color: QUADRANTS[quadrant].color }}>
+                        <p key={quadrant} className="text-[10px] truncate" style={{ color: QUADRANTS[quadrant].color }}>
                           {percentage}% {getShortQuadrantLabel(quadrant)}
                         </p>
                       ))}
                     </div>
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground/50">—</p>
-                )}
-                <p className="text-[10px] text-muted-foreground mt-1">{totalCount} check-ins</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground/50">—</p>
+                  )}
+                  <p className="text-[10px] text-muted-foreground mt-1">{totalCount} check-ins</p>
+                </div>
               </div>
             );
           })}
@@ -663,7 +679,7 @@ function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
   );
 }
 
-export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhancedProps) {
+export function PatternsDashboardEnhanced({ entries, onDateClick }: PatternsDashboardEnhancedProps) {
   const [dateRange, setDateRange] = useState<DateRange>(30);
   
   // Filter entries by date range
@@ -995,7 +1011,7 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
               <CardTitle className="text-sm font-medium">Monthly Overview</CardTitle>
             </CardHeader>
             <CardContent>
-              <MonthlyCalendar entries={entries} />
+              <MonthlyCalendar entries={entries} onDateClick={onDateClick} />
             </CardContent>
           </Card>
           

@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { Check, Loader2, ArrowLeft, ChevronLeft } from "lucide-react";
+import { Check, Loader2, ArrowLeft, ChevronLeft, ChevronDown, ChevronUp, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 import { QuadrantType, EmotionEntry, QUADRANTS } from "@/components/emotions/types";
 import { EmotionSliderPicker } from "@/components/emotions/EmotionSliderPicker";
@@ -36,6 +37,13 @@ export default function Emotions() {
   const [sendToJournal, setSendToJournal] = useState(false);
   const [checkInTime, setCheckInTime] = useState<Date>(new Date());
   const [step, setStep] = useState<'sliders' | 'details'>('sliders');
+  
+  // For viewing entries by date
+  const [viewingDate, setViewingDate] = useState<string | null>(null);
+  const [viewingEntries, setViewingEntries] = useState<EmotionEntry[]>([]);
+  
+  // For expanded check-in cards
+  const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) fetchEntries();
@@ -218,6 +226,15 @@ export default function Emotions() {
   const currentQuadrant = selectedQuadrant || latestEntry?.quadrant || null;
   const currentEmotion = selectedEmotion || latestEntry?.emotion || null;
 
+  const handleDateClick = (date: string, dayEntries: EmotionEntry[]) => {
+    setViewingDate(date);
+    setViewingEntries(dayEntries);
+  };
+
+  const toggleExpandEntry = (entryId: string) => {
+    setExpandedEntryId(prev => prev === entryId ? null : entryId);
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 h-[calc(100vh-4rem)]">
       {/* LEFT: Check-in + Patterns (scrollable) */}
@@ -280,7 +297,7 @@ export default function Emotions() {
         </Card>
 
         {/* Patterns Dashboard - Bottom of left panel */}
-        <PatternsDashboardEnhanced entries={entries} />
+        <PatternsDashboardEnhanced entries={entries} onDateClick={handleDateClick} />
       </div>
 
       {/* RIGHT: Strategies Panel + Recent Check-ins (always mounted, sticky, independently scrollable) */}
@@ -305,30 +322,139 @@ export default function Emotions() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {entries.slice(0, 5).map((entry) => (
-                  <div key={entry.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: QUADRANTS[entry.quadrant].color }}
-                      />
-                      <span className="text-sm font-medium">I am feeling {entry.emotion}</span>
-                      {entry.context?.what && (
-                        <span className="text-xs text-muted-foreground px-2 py-0.5 bg-muted rounded-full">
-                          {entry.context.what}
-                        </span>
+                {entries.slice(0, 5).map((entry) => {
+                  const isExpanded = expandedEntryId === entry.id;
+                  const hasDetails = entry.note || entry.context?.who || entry.context?.what || entry.context?.sleepHours || entry.context?.physicalActivity;
+                  
+                  return (
+                    <div key={entry.id} className="rounded-lg bg-muted/30 overflow-hidden">
+                      <div className="flex items-center justify-between p-3">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <div
+                            className="w-3 h-3 rounded-full shrink-0"
+                            style={{ backgroundColor: QUADRANTS[entry.quadrant].color }}
+                          />
+                          <span className="text-sm font-medium truncate">I am feeling {entry.emotion}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(entry.created_at), 'MMM d')}
+                          </span>
+                          {hasDetails && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => toggleExpandEntry(entry.id)}
+                            >
+                              {isExpanded ? (
+                                <ChevronUp className="h-3.5 w-3.5" />
+                              ) : (
+                                <ChevronDown className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Expanded details */}
+                      {isExpanded && hasDetails && (
+                        <div className="px-3 pb-3 pt-0 space-y-2 border-t border-border/30">
+                          {entry.note && (
+                            <p className="text-sm text-muted-foreground mt-2">{entry.note}</p>
+                          )}
+                          <div className="flex flex-wrap gap-1.5">
+                            {entry.context?.who && (
+                              <span className="text-xs px-2 py-0.5 bg-muted rounded-full">
+                                With: {entry.context.who}
+                              </span>
+                            )}
+                            {entry.context?.what && (
+                              <span className="text-xs px-2 py-0.5 bg-muted rounded-full">
+                                {entry.context.what}
+                              </span>
+                            )}
+                            {entry.context?.sleepHours && (
+                              <span className="text-xs px-2 py-0.5 bg-muted rounded-full">
+                                Sleep: {entry.context.sleepHours}
+                              </span>
+                            )}
+                            {entry.context?.physicalActivity && (
+                              <span className="text-xs px-2 py-0.5 bg-muted rounded-full">
+                                Activity: {entry.context.physicalActivity}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      {format(new Date(entry.created_at), 'MMM d')}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
         )}
       </aside>
+      
+      {/* Dialog for viewing entries by date */}
+      <Dialog open={!!viewingDate} onOpenChange={(open) => !open && setViewingDate(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Check-ins for {viewingDate ? format(new Date(viewingDate), 'EEEE, MMMM d, yyyy') : ''}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+            {viewingEntries.map((entry) => (
+              <div 
+                key={entry.id} 
+                className="p-4 rounded-lg"
+                style={{ backgroundColor: QUADRANTS[entry.quadrant].bgColor }}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: QUADRANTS[entry.quadrant].color }}
+                  />
+                  <span className="font-medium" style={{ color: QUADRANTS[entry.quadrant].color }}>
+                    {entry.emotion}
+                  </span>
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    {format(new Date(entry.created_at), 'h:mm a')}
+                  </span>
+                </div>
+                
+                {entry.note && (
+                  <p className="text-sm text-muted-foreground mb-2">{entry.note}</p>
+                )}
+                
+                <div className="flex flex-wrap gap-1.5">
+                  {entry.context?.who && (
+                    <span className="text-xs px-2 py-0.5 bg-background/50 rounded-full">
+                      With: {entry.context.who}
+                    </span>
+                  )}
+                  {entry.context?.what && (
+                    <span className="text-xs px-2 py-0.5 bg-background/50 rounded-full">
+                      {entry.context.what}
+                    </span>
+                  )}
+                  {entry.context?.sleepHours && (
+                    <span className="text-xs px-2 py-0.5 bg-background/50 rounded-full">
+                      Sleep: {entry.context.sleepHours}
+                    </span>
+                  )}
+                  {entry.context?.physicalActivity && (
+                    <span className="text-xs px-2 py-0.5 bg-background/50 rounded-full">
+                      Activity: {entry.context.physicalActivity}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
