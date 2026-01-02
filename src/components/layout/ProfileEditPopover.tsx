@@ -98,27 +98,37 @@ export function ProfileEditPopover({ collapsed }: ProfileEditPopoverProps) {
       <PopoverTrigger asChild>
         <button 
           className={cn(
-            "flex items-center gap-3 w-full p-2 rounded-lg transition-colors",
-            "hover:bg-sidebar-accent/50 text-left"
+            "w-full rounded-2xl transition-all duration-200",
+            "bg-gradient-to-br from-primary/10 via-primary/5 to-transparent",
+            "hover:from-primary/15 hover:via-primary/10 hover:shadow-sm",
+            "border border-primary/10",
+            collapsed ? "p-2 flex items-center justify-center" : "p-4"
           )}
         >
-          <Avatar className="h-9 w-9 flex-shrink-0">
-            <AvatarImage src={displayAvatar} />
-            <AvatarFallback className="bg-primary/20 text-primary font-medium text-sm">
-              {displayName.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          
-          {!collapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate text-sidebar-foreground">
-                {displayName}
-              </p>
-              {displayBio ? (
-                <p className="text-xs text-muted-foreground truncate">{displayBio}</p>
-              ) : (
-                <p className="text-xs text-muted-foreground/60 italic">Add bio...</p>
-              )}
+          {collapsed ? (
+            <Avatar className="h-10 w-10 ring-2 ring-background shadow-md">
+              <AvatarImage src={displayAvatar} />
+              <AvatarFallback className="bg-primary/20 text-primary font-semibold">
+                {displayName.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          ) : (
+            <div className="flex flex-col items-center gap-3 text-center">
+              <Avatar className="h-14 w-14 ring-2 ring-background shadow-md">
+                <AvatarImage src={displayAvatar} />
+                <AvatarFallback className="bg-primary/20 text-primary font-semibold text-lg">
+                  {displayName.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              
+              <div className="space-y-0.5">
+                <p className="text-sm font-semibold text-sidebar-foreground">
+                  {displayName}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Edit profile
+                </p>
+              </div>
             </div>
           )}
         </button>
