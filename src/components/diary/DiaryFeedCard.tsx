@@ -156,13 +156,38 @@ export function DiaryFeedCard({
             </div>
 
             <div className="min-w-0">
-              {/* Module name + date (only once) */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-foreground text-sm">{config.label}</span>
-                <span className="text-xs text-muted-foreground">
-                  {format(new Date(event.created_at), "MMM d, yyyy")} · {format(new Date(event.created_at), "h:mm a")}
-                </span>
-              </div>
+              {/* Notes-specific format: Line 1 - Notes | Date, Line 2 - Time, Line 3 - Title */}
+              {event.source_module === "notes" ? (
+                <div className="space-y-0.5">
+                  {/* Line 1: Notes | Date */}
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-foreground text-sm">{config.label}</span>
+                    <span className="text-muted-foreground">|</span>
+                    <span className="text-sm text-muted-foreground">
+                      {format(new Date(event.created_at), "MMM d, yyyy")}
+                    </span>
+                  </div>
+                  {/* Line 2: Update time */}
+                  <p className="text-xs text-muted-foreground">
+                    {format(new Date(event.created_at), "h:mm a")}
+                  </p>
+                  {/* Line 3: Header/Title */}
+                  <button
+                    onClick={() => onNavigateToSource(event)}
+                    className="text-base font-semibold text-foreground hover:underline text-left block pt-1"
+                  >
+                    {event.title}
+                  </button>
+                </div>
+              ) : (
+                /* Default format for other modules */
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-foreground text-sm">{config.label}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {format(new Date(event.created_at), "MMM d, yyyy")} · {format(new Date(event.created_at), "h:mm a")}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -195,13 +220,15 @@ export function DiaryFeedCard({
 
       {/* Content */}
       <CardContent className="pt-2 pb-3 px-4">
-        {/* Title */}
-        <button
-          onClick={() => onNavigateToSource(event)}
-          className="text-lg font-semibold text-foreground hover:underline text-left block mb-2"
-        >
-          {event.type === "complete" ? `Completed: ${event.title}` : event.title}
-        </button>
+        {/* Title - skip for notes since it's shown in header */}
+        {event.source_module !== "notes" && (
+          <button
+            onClick={() => onNavigateToSource(event)}
+            className="text-lg font-semibold text-foreground hover:underline text-left block mb-2"
+          >
+            {event.type === "complete" ? `Completed: ${event.title}` : event.title}
+          </button>
+        )}
 
         {/* Journal sections - question-wise content + body */}
         {event.source_module === "journal" ? (
