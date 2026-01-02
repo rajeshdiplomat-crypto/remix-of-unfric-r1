@@ -10,7 +10,6 @@ import {
   CheckSquare,
   Settings,
   LogOut,
-  Menu,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -30,6 +29,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const mainNavItems = [
   { title: "Diary", url: "/diary", icon: BookOpen },
@@ -66,7 +66,10 @@ export function AppSidebar() {
               <span className="font-semibold text-lg text-foreground">inbalance</span>
             )}
           </div>
-          <SidebarTrigger className="h-8 w-8" />
+          <div className="flex items-center gap-1">
+            <ThemeToggle collapsed={collapsed} />
+            <SidebarTrigger className="h-8 w-8" />
+          </div>
         </div>
       </SidebarHeader>
 
