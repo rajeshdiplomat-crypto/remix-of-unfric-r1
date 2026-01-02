@@ -20,6 +20,8 @@ import {
   Network,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { NotesSplitView } from "@/components/notes/NotesSplitView";
 import { NotesGroupSettings } from "@/components/notes/NotesGroupSettings";
 import { NotesGroupSection } from "@/components/notes/NotesGroupSection";
@@ -157,6 +159,7 @@ type NotesViewType = "atlas" | "board" | "mindmap";
 
 export default function Notes() {
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Load from localStorage or use defaults
   const [notes, setNotes] = useState<Note[]>(() => {
@@ -227,8 +230,30 @@ export default function Notes() {
     return groups.find((g) => g.id === groupId)?.name || "Unknown";
   };
 
+  // Sync note to Supabase for Diary feed
+  const syncNoteToSupabase = async (note: Note) => {
+    if (!user?.id) return;
+    
+    try {
+      const { error } = await supabase.from("notes").upsert({
+        id: note.id,
+        user_id: user.id,
+        title: note.title || "Untitled",
+        content: note.plainText || note.contentRich,
+        category: note.groupId,
+        tags: note.tags,
+        created_at: note.createdAt,
+        updated_at: note.updatedAt,
+      });
+      
+      if (error) console.error("Failed to sync note:", error);
+    } catch (err) {
+      console.error("Error syncing note:", err);
+    }
+  };
+
   // Create note (go straight to editor)
-  const handleCreateNote = (groupId: string, folderId: string | null) => {
+  const handleCreateNote = async (groupId: string, folderId: string | null) => {
     const newNote: Note = {
       id: crypto.randomUUID(),
       groupId,
@@ -277,17 +302,28 @@ export default function Notes() {
     });
   };
 
-  const handleSaveNote = (updatedNote: Note) => {
-    setNotes(notes.map((n) => (n.id === updatedNote.id ? { ...updatedNote, updatedAt: new Date().toISOString() } : n)));
+  const handleSaveNote = async (updatedNote: Note) => {
+    const noteWithTimestamp = { ...updatedNote, updatedAt: new Date().toISOString() };
+    setNotes(notes.map((n) => (n.id === updatedNote.id ? noteWithTimestamp : n)));
+    
+    // Sync to Supabase so it appears in Diary feed
+    await syncNoteToSupabase(noteWithTimestamp);
+    
     toast({ title: "Note saved" });
   };
 
-  const handleDeleteNote = (noteId: string) => {
+  const handleDeleteNote = async (noteId: string) => {
     setNotes(notes.filter((n) => n.id !== noteId));
     if (selectedNote?.id === noteId) {
       setSelectedNote(null);
       setViewMode("overview");
     }
+    
+    // Also delete from Supabase
+    if (user?.id) {
+      await supabase.from("notes").delete().eq("id", noteId).eq("user_id", user.id);
+    }
+    
     toast({ title: "Note deleted" });
   };
 
