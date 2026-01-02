@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Upload, X, Image as ImageIcon } from "lucide-react";
+import { useRef, useState } from "react";
+import { Upload, X, Image as ImageIcon, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -15,25 +15,9 @@ export function ActivityImageUpload({ imageUrl, onImageChange, compact = false }
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) handleFile(file);
-  };
-
   const handleFile = (file: File) => {
     if (!file.type.startsWith("image/")) return;
-    
+
     const reader = new FileReader();
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string;
@@ -47,36 +31,43 @@ export function ActivityImageUpload({ imageUrl, onImageChange, compact = false }
     if (file) handleFile(file);
   };
 
-  const handleRemove = () => {
-    onImageChange(null);
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFile(file);
   };
 
   if (imageUrl) {
     return (
-      <div className={cn("relative group rounded-lg overflow-hidden", compact ? "h-20" : "h-32")}>
-        <img 
-          src={imageUrl} 
-          alt="Activity cover" 
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-          <Button 
+      <div
+        className={cn("relative overflow-hidden rounded-xl border border-border/60 bg-card", compact ? "h-20" : "h-32")}
+      >
+        <img src={imageUrl} alt="Activity cover" className="h-full w-full object-cover" />
+
+        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent" />
+
+        <div className="absolute top-2 right-2 flex items-center gap-1.5">
+          <Button
             type="button"
-            size="sm" 
             variant="secondary"
+            size="icon"
+            className="h-7 w-7 rounded-lg bg-black/35 text-white hover:bg-black/50"
             onClick={() => inputRef.current?.click()}
           >
-            Replace
+            <RefreshCcw className="h-3.5 w-3.5" />
           </Button>
-          <Button 
+          <Button
             type="button"
-            size="sm" 
-            variant="destructive"
-            onClick={handleRemove}
+            variant="secondary"
+            size="icon"
+            className="h-7 w-7 rounded-lg bg-black/35 text-white hover:bg-black/50"
+            onClick={() => onImageChange(null)}
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
           </Button>
         </div>
+
         <input
           ref={inputRef}
           type="file"
@@ -91,19 +82,41 @@ export function ActivityImageUpload({ imageUrl, onImageChange, compact = false }
   return (
     <div
       className={cn(
-        "border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-2 transition-colors cursor-pointer",
-        isDragging ? "border-primary bg-primary/10" : "border-border hover:border-primary/50",
-        compact ? "p-3" : "p-4"
+        "group relative cursor-pointer rounded-xl border border-border/60 bg-card/60 p-4 transition-colors",
+        "hover:bg-card",
+        isDragging && "ring-2 ring-primary/30",
+        compact ? "p-3" : "p-4",
       )}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setIsDragging(true);
+      }}
+      onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
       onClick={() => inputRef.current?.click()}
     >
-      <Upload className={cn("text-muted-foreground", compact ? "h-5 w-5" : "h-6 w-6")} />
-      <p className="text-xs text-muted-foreground text-center">
-        Drag & drop or <span className="text-primary font-medium">Browse</span>
-      </p>
+      <div className="flex items-center gap-3">
+        <div
+          className={cn(
+            "flex h-9 w-9 items-center justify-center rounded-lg border border-border/60 bg-muted/40",
+            "group-hover:bg-muted/60",
+          )}
+        >
+          <ImageIcon className="h-4 w-4 text-muted-foreground" />
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-foreground leading-tight">Add cover image</p>
+          <p className="text-xs text-muted-foreground">
+            Drag & drop or <span className="text-foreground">browse</span>
+          </p>
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          <Upload className="h-4 w-4 text-muted-foreground" />
+        </div>
+      </div>
+
       <input
         ref={inputRef}
         type="file"
@@ -115,17 +128,14 @@ export function ActivityImageUpload({ imageUrl, onImageChange, compact = false }
   );
 }
 
-// Helper to save/load images from localStorage by activity ID
+// Helpers: save/load images from localStorage by activity ID
 export function saveActivityImage(activityId: string, imageUrl: string | null) {
   const stored = localStorage.getItem(STORAGE_KEY);
   const images: Record<string, string> = stored ? JSON.parse(stored) : {};
-  
-  if (imageUrl) {
-    images[activityId] = imageUrl;
-  } else {
-    delete images[activityId];
-  }
-  
+
+  if (imageUrl) images[activityId] = imageUrl;
+  else delete images[activityId];
+
   localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
 }
 
