@@ -342,11 +342,11 @@ export default function Notes() {
   // =========================
   if (viewMode === "overview") {
     return (
-      <div className="w-full flex-1 space-y-6 pb-20">
+      <main className="flex-1 w-full px-8 lg:px-10 py-6 pb-20">
         {/* Header: Tasks-like */}
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between mb-6">
           <div className="min-w-0">
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground">Notes</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Notes</h1>
             <p className="mt-1 text-sm text-muted-foreground">Your life atlas — everything in one calm view</p>
           </div>
 
@@ -390,8 +390,8 @@ export default function Notes() {
           </div>
         </div>
 
-        {/* Controls row: Tasks-like rhythm */}
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+        {/* Controls row */}
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center mb-6">
           <div className="flex items-center gap-3">
             <div className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground hidden md:block">
               VIEW MODE
@@ -423,13 +423,13 @@ export default function Notes() {
           </Select>
         </div>
 
-        {/* Group chips: premium pills */}
-        <div className="flex flex-wrap gap-2">
+        {/* Group chips */}
+        <div className="flex flex-wrap gap-2 mb-6">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setFilterGroupId("all")}
-            className={`h-8 rounded-full px-3 ${
+            className={`h-9 rounded-full px-4 chip ${
               filterGroupId === "all" ? "bg-primary/10 text-primary border-primary/30" : "text-foreground/80"
             }`}
           >
@@ -444,7 +444,7 @@ export default function Notes() {
                 variant="outline"
                 size="sm"
                 onClick={() => setFilterGroupId(group.id)}
-                className={`h-8 rounded-full px-3 border-l-2 ${
+                className={`h-9 rounded-full px-4 border-l-2 chip ${
                   active ? "bg-primary/10 text-primary border-primary/30" : "text-foreground/80"
                 }`}
                 style={{ borderLeftColor: group.color }}
@@ -530,7 +530,7 @@ export default function Notes() {
           folders={folders}
           onConfirm={handleCreateNote}
         />
-      </div>
+      </main>
     );
   }
 

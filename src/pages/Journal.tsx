@@ -347,27 +347,28 @@ export default function Journal() {
   };
 
   return (
-    <div
-      className="flex w-full"
+    <main
+      className="flex-1 w-full px-8 lg:px-10 py-6"
       style={{
         backgroundColor: currentSkin.pageBg,
         color: currentSkin.text,
         minHeight: "100vh",
       }}
     >
-      {/* Main Editor Area */}
-      <div className="flex-1 flex flex-col min-w-0 p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-2xl font-semibold flex items-center gap-2">
-              <BookOpen className="h-6 w-6" />
-              Journal
-            </h1>
-            <p className="text-sm" style={{ color: currentSkin.mutedText }}>
-              {format(selectedDate, "EEEE, MMMM d, yyyy")}
-            </p>
-          </div>
+      <div className="grid grid-cols-12 gap-8">
+        {/* Main Editor Area - 9 columns */}
+        <section className="col-span-12 lg:col-span-9 flex flex-col min-w-0">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-semibold flex items-center gap-2">
+                <BookOpen className="h-6 w-6" />
+                Journal
+              </h1>
+              <p className="text-sm" style={{ color: currentSkin.mutedText }}>
+                {format(selectedDate, "EEEE, MMMM d, yyyy")}
+              </p>
+            </div>
           <div className="flex items-center gap-2">
             <span
               className="text-xs flex items-center gap-1"
@@ -432,17 +433,18 @@ export default function Journal() {
             fontSize={fontSize}
           />
         )}
-      </div>
+        </section>
 
-      {/* Right Sidebar */}
-      <div className="p-4 pl-0">
-        <JournalSidebarPanel
-          selectedDate={selectedDate}
-          onDateSelect={setSelectedDate}
-          entries={entries}
-          onInsertPrompt={handleInsertPrompt}
-          skin={currentSkin}
-        />
+        {/* Right Sidebar - 3 columns */}
+        <aside className="col-span-3 hidden lg:block">
+          <JournalSidebarPanel
+            selectedDate={selectedDate}
+            onDateSelect={setSelectedDate}
+            entries={entries}
+            onInsertPrompt={handleInsertPrompt}
+            skin={currentSkin}
+          />
+        </aside>
       </div>
 
       {/* Settings Modal */}
@@ -454,6 +456,6 @@ export default function Journal() {
         currentSkinId={currentSkinId}
         onSkinChange={handleSkinChange}
       />
-    </div>
+    </main>
   );
 }
