@@ -62,15 +62,16 @@ const REACTION_TYPES = [
 
 type ReactionType = typeof REACTION_TYPES[number]['type'];
 
+// Soft pastel module colors matching the new design system
 const MODULE_CONFIG: Record<SourceModule | "emotions", ModuleConfig> = {
-  tasks: { icon: CheckSquare, label: "Tasks", color: "text-emerald-700", bgColor: "bg-emerald-100" },
-  journal: { icon: PenLine, label: "Journal", color: "text-stone-700", bgColor: "bg-stone-200" },
-  notes: { icon: FileText, label: "Notes", color: "text-amber-700", bgColor: "bg-amber-100" },
-  mindmap: { icon: Target, label: "Mind Map", color: "text-indigo-700", bgColor: "bg-indigo-100" },
-  trackers: { icon: BarChart3, label: "Trackers", color: "text-teal-700", bgColor: "bg-teal-100" },
-  manifest: { icon: Sparkles, label: "Manifest", color: "text-purple-700", bgColor: "bg-purple-100" },
-  focus: { icon: Target, label: "Focus", color: "text-rose-700", bgColor: "bg-rose-100" },
-  emotions: { icon: Heart, label: "Emotions", color: "text-rose-600", bgColor: "bg-rose-100" },
+  tasks: { icon: CheckSquare, label: "Tasks", color: "text-emerald-600", bgColor: "bg-emerald-50" },
+  journal: { icon: PenLine, label: "Journal", color: "text-amber-600", bgColor: "bg-amber-50" },
+  notes: { icon: FileText, label: "Notes", color: "text-sky-600", bgColor: "bg-sky-50" },
+  mindmap: { icon: Target, label: "Mind Map", color: "text-violet-600", bgColor: "bg-violet-50" },
+  trackers: { icon: BarChart3, label: "Trackers", color: "text-teal-600", bgColor: "bg-teal-50" },
+  manifest: { icon: Sparkles, label: "Manifest", color: "text-purple-600", bgColor: "bg-purple-50" },
+  focus: { icon: Target, label: "Focus", color: "text-rose-500", bgColor: "bg-rose-50" },
+  emotions: { icon: Heart, label: "Emotions", color: "text-pink-500", bgColor: "bg-pink-50" },
 };
 
 interface DiaryFeedCardProps {
