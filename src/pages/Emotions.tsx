@@ -14,6 +14,7 @@ import { EmotionSliderPicker } from "@/components/emotions/EmotionSliderPicker";
 import { EmotionContextFieldsEnhanced } from "@/components/emotions/EmotionContextFieldsEnhanced";
 import { StrategiesPanelEnhanced } from "@/components/emotions/StrategiesPanelEnhanced";
 import { PatternsDashboardEnhanced } from "@/components/emotions/PatternsDashboardEnhanced";
+import { CheckinReminders } from "@/components/emotions/CheckinReminders";
 export default function Emotions() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -225,7 +226,7 @@ export default function Emotions() {
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2 mb-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(-1)}>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/diary')}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <CardTitle className="text-lg">How are you feeling?</CardTitle>
@@ -292,6 +293,9 @@ export default function Emotions() {
           currentQuadrant={currentQuadrant}
           currentEmotion={currentEmotion}
         />
+        
+        {/* Check-in reminders */}
+        <CheckinReminders />
         
         {/* Recent check-ins dynamically below strategies */}
         {entries.length > 0 && (
