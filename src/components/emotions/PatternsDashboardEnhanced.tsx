@@ -35,7 +35,20 @@ const TIME_PERIOD_INFO = {
   night: { label: 'Night', range: '9pm–6am', icon: Moon, color: 'hsl(230, 50%, 45%)' }
 };
 
-// Enhanced Calendar with larger cells and color coding
+// Helper to get emotion color based on quadrant
+function getEmotionColor(emotion: string, entries: EmotionEntry[]): string | null {
+  const entry = entries.find(e => e.emotion === emotion);
+  if (entry) return QUADRANTS[entry.quadrant].color;
+  // Fallback - search through quadrant emotions
+  for (const [key, info] of Object.entries(QUADRANTS)) {
+    if (info.emotions.includes(emotion)) {
+      return info.color;
+    }
+  }
+  return null;
+}
+
+// Enhanced Calendar with larger cells and color coding based on emotion entries
 function MonthlyCalendar({ entries }: { entries: EmotionEntry[] }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   
@@ -47,7 +60,7 @@ function MonthlyCalendar({ entries }: { entries: EmotionEntry[] }) {
     // Get first day offset for proper grid alignment
     const firstDayOfWeek = start.getDay();
     
-    // Count entries per day
+    // Count entries per day with full quadrant info
     const entriesByDate: Record<string, { count: number; emotions: string[]; quadrants: QuadrantType[] }> = {};
     entries.forEach(entry => {
       if (!entriesByDate[entry.entry_date]) {
@@ -61,6 +74,7 @@ function MonthlyCalendar({ entries }: { entries: EmotionEntry[] }) {
     return { days, firstDayOfWeek, entriesByDate };
   }, [currentMonth, entries]);
 
+  // Get dominant quadrant based on combined energy + pleasantness
   const getDominantQuadrant = (quadrants: QuadrantType[]): QuadrantType | null => {
     if (quadrants.length === 0) return null;
     const counts: Record<QuadrantType, number> = {
@@ -199,7 +213,7 @@ function MonthlyCalendar({ entries }: { entries: EmotionEntry[] }) {
   );
 }
 
-// Daytime pattern insights
+// Daytime pattern insights - based on combined energy + pleasantness (quadrant)
 function DaytimeInsights({ entries }: { entries: EmotionEntry[] }) {
   const insights = useMemo(() => {
     const periodData: Record<string, { emotions: string[]; quadrants: QuadrantType[] }> = {
@@ -223,9 +237,20 @@ function DaytimeInsights({ entries }: { entries: EmotionEntry[] }) {
       return Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
     };
     
+    // Get dominant quadrant (combines energy + pleasantness)
+    const getDominantQuadrant = (quadrants: QuadrantType[]): QuadrantType | null => {
+      if (quadrants.length === 0) return null;
+      const counts: Record<QuadrantType, number> = {
+        'high-pleasant': 0, 'high-unpleasant': 0, 'low-unpleasant': 0, 'low-pleasant': 0
+      };
+      quadrants.forEach(q => counts[q]++);
+      return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0] as QuadrantType;
+    };
+    
     return Object.entries(periodData).map(([period, data]) => ({
       period: period as keyof typeof TIME_PERIOD_INFO,
       topEmotion: getTopEmotion(data.emotions),
+      dominantQuadrant: getDominantQuadrant(data.quadrants),
       count: data.emotions.length
     }));
   }, [entries]);
@@ -237,20 +262,27 @@ function DaytimeInsights({ entries }: { entries: EmotionEntry[] }) {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {insights.map(({ period, topEmotion, count }) => {
+          {insights.map(({ period, topEmotion, dominantQuadrant, count }) => {
             const info = TIME_PERIOD_INFO[period];
             const Icon = info.icon;
+            const quadrantColor = dominantQuadrant ? QUADRANTS[dominantQuadrant].color : info.color;
             
             return (
               <div 
                 key={period} 
                 className="p-3 rounded-lg bg-muted/30 text-center"
+                style={dominantQuadrant ? { 
+                  backgroundColor: QUADRANTS[dominantQuadrant].bgColor,
+                  borderColor: QUADRANTS[dominantQuadrant].borderColor,
+                  borderWidth: '1px',
+                  borderStyle: 'solid'
+                } : undefined}
               >
-                <Icon className="h-5 w-5 mx-auto mb-1" style={{ color: info.color }} />
+                <Icon className="h-5 w-5 mx-auto mb-1" style={{ color: quadrantColor }} />
                 <p className="text-xs font-medium text-muted-foreground">{info.label}</p>
                 <p className="text-[10px] text-muted-foreground/60">{info.range}</p>
                 {topEmotion ? (
-                  <p className="text-sm font-medium mt-2">{topEmotion[0]}</p>
+                  <p className="text-sm font-medium mt-2" style={{ color: quadrantColor }}>{topEmotion[0]}</p>
                 ) : (
                   <p className="text-sm text-muted-foreground/50 mt-2">—</p>
                 )}
@@ -418,7 +450,7 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
   const stats = useMemo(() => {
     const today = startOfDay(new Date());
     
-    // Entries by quadrant
+    // Entries by quadrant (combines energy + pleasantness)
     const quadrantCounts: Record<QuadrantType, number> = {
       'high-pleasant': 0,
       'high-unpleasant': 0,
@@ -426,8 +458,8 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
       'low-pleasant': 0
     };
     
-    // Emotion frequency
-    const emotionCounts: Record<string, number> = {};
+    // Emotion frequency with quadrant tracking
+    const emotionCounts: Record<string, { count: number; quadrant: QuadrantType | null }> = {};
     
     // Daily entries for the range (show last 7 days in bar chart for readability)
     const last7Days = eachDayOfInterval({
@@ -451,16 +483,21 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
         quadrantCounts[entry.quadrant]++;
       }
       if (entry.emotion) {
-        emotionCounts[entry.emotion] = (emotionCounts[entry.emotion] || 0) + 1;
+        if (!emotionCounts[entry.emotion]) {
+          emotionCounts[entry.emotion] = { count: 0, quadrant: null };
+        }
+        emotionCounts[entry.emotion].count++;
+        emotionCounts[entry.emotion].quadrant = entry.quadrant;
       }
     });
     
-    // Top emotions
+    // Top emotions with count only for display
     const topEmotions = Object.entries(emotionCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 5)
+      .map(([emotion, data]) => [emotion, data.count] as [string, number]);
     
-    // Quadrant data for pie chart
+    // Quadrant data for pie chart - shows combined energy + pleasantness
     const quadrantData = Object.entries(quadrantCounts)
       .filter(([_, count]) => count > 0)
       .map(([id, count]) => ({
@@ -687,7 +724,7 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
               </Card>
             )}
             
-            {/* Top emotions */}
+            {/* Top emotions - color coded */}
             {stats.topEmotions.length > 0 && (
               <Card>
                 <CardHeader className="pb-2">
@@ -698,17 +735,18 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
                     {stats.topEmotions.map(([emotion, count]) => {
                       const maxCount = stats.topEmotions[0][1];
                       const percentage = (count / maxCount) * 100;
+                      const emotionColor = getEmotionColor(emotion, filteredEntries) || 'hsl(var(--primary))';
                       
                       return (
                         <div key={emotion} className="space-y-1">
                           <div className="flex justify-between text-sm">
-                            <span className="font-medium">{emotion}</span>
+                            <span className="font-medium" style={{ color: emotionColor }}>{emotion}</span>
                             <span className="text-muted-foreground">{count} times</span>
                           </div>
                           <div className="h-2 bg-muted rounded-full overflow-hidden">
                             <div 
-                              className="h-full bg-primary rounded-full transition-all"
-                              style={{ width: `${percentage}%` }}
+                              className="h-full rounded-full transition-all"
+                              style={{ width: `${percentage}%`, backgroundColor: emotionColor }}
                             />
                           </div>
                         </div>

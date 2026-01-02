@@ -284,7 +284,7 @@ export default function Emotions() {
 
       {/* RIGHT: Strategies Panel + Recent Check-ins (always mounted, sticky, independently scrollable) */}
       <aside
-        className="hidden lg:flex flex-col h-full overflow-y-auto border-l border-border/50 bg-card"
+        className="hidden lg:flex flex-col h-full overflow-y-auto border-l border-border/50 bg-card p-4"
         tabIndex={-1}
         aria-label="Strategies panel"
       >
@@ -293,9 +293,9 @@ export default function Emotions() {
           currentEmotion={currentEmotion}
         />
         
-        {/* Recent check-ins at the bottom of right panel */}
+        {/* Recent check-ins dynamically below strategies */}
         {entries.length > 0 && (
-          <Card className="m-4 mt-0">
+          <Card className="mt-4">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Recent Check-ins</CardTitle>
             </CardHeader>
@@ -308,7 +308,7 @@ export default function Emotions() {
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: QUADRANTS[entry.quadrant].color }}
                       />
-                      <span className="text-sm font-medium">{entry.emotion}</span>
+                      <span className="text-sm font-medium">I am feeling {entry.emotion}</span>
                       {entry.context?.what && (
                         <span className="text-xs text-muted-foreground px-2 py-0.5 bg-muted rounded-full">
                           {entry.context.what}
@@ -316,7 +316,7 @@ export default function Emotions() {
                       )}
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {format(new Date(entry.created_at), 'MMM d, h:mm a')}
+                      {format(new Date(entry.created_at), 'MMM d')}
                     </span>
                   </div>
                 ))}
