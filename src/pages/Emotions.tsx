@@ -6,16 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { Check, Loader2, ArrowLeft } from "lucide-react";
+import { Check, Loader2, ArrowLeft, ChevronLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import { QuadrantType, EmotionEntry, QUADRANTS } from "@/components/emotions/types";
 import { EmotionSliderPicker } from "@/components/emotions/EmotionSliderPicker";
 import { EmotionContextFieldsEnhanced } from "@/components/emotions/EmotionContextFieldsEnhanced";
 import { StrategiesPanelEnhanced } from "@/components/emotions/StrategiesPanelEnhanced";
 import { PatternsDashboardEnhanced } from "@/components/emotions/PatternsDashboardEnhanced";
-
 export default function Emotions() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [entries, setEntries] = useState<EmotionEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -155,7 +156,7 @@ export default function Emotions() {
         .select('id')
         .eq('user_id', user.id)
         .eq('entry_date', entryDate)
-        .single();
+        .maybeSingle();
 
       let journalEntryId: string;
 
@@ -176,12 +177,34 @@ export default function Emotions() {
         journalEntryId = newEntry.id;
       }
 
-      // Add emotion note as a journal answer
-      await supabase.from('journal_answers').insert({
-        journal_entry_id: journalEntryId,
-        question_id: 'emotion-checkin',
-        answer_text: `[${emotion}] ${noteText}`,
-      });
+      // Check if first question answer already exists
+      const { data: existingAnswer } = await supabase
+        .from('journal_answers')
+        .select('id, answer_text')
+        .eq('journal_entry_id', journalEntryId)
+        .eq('question_id', 'feeling')
+        .maybeSingle();
+
+      const emotionNote = `[${emotion}] ${noteText}`;
+
+      if (existingAnswer) {
+        // Append to existing answer
+        const updatedText = existingAnswer.answer_text 
+          ? `${existingAnswer.answer_text}\n\n${emotionNote}`
+          : emotionNote;
+        
+        await supabase
+          .from('journal_answers')
+          .update({ answer_text: updatedText })
+          .eq('id', existingAnswer.id);
+      } else {
+        // Create new answer for the first question
+        await supabase.from('journal_answers').insert({
+          journal_entry_id: journalEntryId,
+          question_id: 'feeling',
+          answer_text: emotionNote,
+        });
+      }
 
       toast.success('Note added to journal');
     } catch (err) {
@@ -201,8 +224,13 @@ export default function Emotions() {
         {/* How are you feeling - Check-in section */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">How are you feeling?</CardTitle>
-            <p className="text-sm text-muted-foreground">Take a moment to check in with yourself</p>
+            <div className="flex items-center gap-2 mb-1">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(-1)}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <CardTitle className="text-lg">How are you feeling?</CardTitle>
+            </div>
+            <p className="text-sm text-muted-foreground ml-10">Take a moment to check in with yourself</p>
           </CardHeader>
           <CardContent>
             {step === 'sliders' && (

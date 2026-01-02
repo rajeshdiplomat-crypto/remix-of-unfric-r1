@@ -74,129 +74,128 @@ function MonthlyCalendar({ entries }: { entries: EmotionEntry[] }) {
   const today = startOfDay(new Date());
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium">Monthly Overview</CardTitle>
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1))}
-            >
-              ←
-            </Button>
-            <span className="text-sm font-medium min-w-[100px] text-center">
-              {format(currentMonth, 'MMMM yyyy')}
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1))}
-            >
-              →
-            </Button>
+    <div className="max-w-md mx-auto">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm font-medium text-muted-foreground">Monthly Overview</p>
+        <div className="flex gap-1 items-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={() => setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1))}
+          >
+            ←
+          </Button>
+          <span className="text-xs font-medium min-w-[90px] text-center">
+            {format(currentMonth, 'MMM yyyy')}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={() => setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1))}
+          >
+            →
+          </Button>
+        </div>
+      </div>
+      
+      {/* Day headers */}
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {dayLabels.map(day => (
+          <div key={day} className="text-center text-[10px] text-muted-foreground font-medium py-1">
+            {day}
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {/* Day headers */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
-          {dayLabels.map(day => (
-            <div key={day} className="text-center text-xs text-muted-foreground font-medium py-1">
-              {day}
-            </div>
-          ))}
-        </div>
+        ))}
+      </div>
+      
+      {/* Calendar grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {/* Empty cells for offset */}
+        {Array.from({ length: calendarData.firstDayOfWeek }).map((_, i) => (
+          <div key={`empty-${i}`} className="aspect-square" />
+        ))}
         
-        {/* Calendar grid */}
-        <div className="grid grid-cols-7 gap-1">
-          {/* Empty cells for offset */}
-          {Array.from({ length: calendarData.firstDayOfWeek }).map((_, i) => (
-            <div key={`empty-${i}`} className="aspect-square" />
-          ))}
+        {/* Day cells */}
+        {calendarData.days.map(day => {
+          const dateStr = format(day, 'yyyy-MM-dd');
+          const data = calendarData.entriesByDate[dateStr];
+          const dominant = data ? getDominantQuadrant(data.quadrants) : null;
+          const isToday = day.getTime() === today.getTime();
+          const isFuture = day > today;
           
-          {/* Day cells */}
-          {calendarData.days.map(day => {
-            const dateStr = format(day, 'yyyy-MM-dd');
-            const data = calendarData.entriesByDate[dateStr];
-            const dominant = data ? getDominantQuadrant(data.quadrants) : null;
-            const isToday = day.getTime() === today.getTime();
-            const isFuture = day > today;
-            
-            return (
-              <TooltipProvider key={dateStr}>
-                <UITooltip delayDuration={100}>
-                  <TooltipTrigger asChild>
-                    <div
-                      className={`
-                        aspect-square rounded-lg flex flex-col items-center justify-center p-1 transition-all cursor-default
-                        ${isToday ? 'ring-2 ring-primary ring-offset-1' : ''}
-                        ${isFuture ? 'opacity-30' : ''}
-                        ${!data && !isFuture ? 'bg-muted/30' : ''}
-                      `}
-                      style={
-                        dominant && !isFuture
-                          ? { 
-                              backgroundColor: QUADRANTS[dominant].bgColor,
-                              borderColor: QUADRANTS[dominant].borderColor,
-                              borderWidth: '2px',
-                              borderStyle: 'solid'
-                            }
-                          : undefined
-                      }
-                    >
-                      <span className={`text-sm font-medium ${dominant ? '' : 'text-muted-foreground'}`}>
-                        {format(day, 'd')}
+          return (
+            <TooltipProvider key={dateStr}>
+              <UITooltip delayDuration={100}>
+                <TooltipTrigger asChild>
+                  <div
+                    className={`
+                      aspect-square rounded flex flex-col items-center justify-center transition-all cursor-default
+                      ${isToday ? 'ring-1 ring-primary ring-offset-1' : ''}
+                      ${isFuture ? 'opacity-30' : ''}
+                      ${!data && !isFuture ? 'bg-muted/30' : ''}
+                    `}
+                    style={
+                      dominant && !isFuture
+                        ? { 
+                            backgroundColor: QUADRANTS[dominant].bgColor,
+                            borderColor: QUADRANTS[dominant].borderColor,
+                            borderWidth: '1px',
+                            borderStyle: 'solid'
+                          }
+                        : undefined
+                    }
+                  >
+                    <span className={`text-xs font-medium ${dominant ? '' : 'text-muted-foreground'}`}>
+                      {format(day, 'd')}
+                    </span>
+                    {data && data.count > 0 && (
+                      <span 
+                        className="text-[8px] font-medium"
+                        style={{ color: dominant ? QUADRANTS[dominant].color : 'inherit' }}
+                      >
+                        {data.count}
                       </span>
-                      {data && data.count > 0 && (
-                        <span 
-                          className="text-[10px] font-medium"
-                          style={{ color: dominant ? QUADRANTS[dominant].color : 'inherit' }}
-                        >
-                          {data.count}
-                        </span>
-                      )}
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-[200px]">
-                    <p className="font-medium">{format(day, 'EEEE, MMM d')}</p>
-                    {data ? (
-                      <>
-                        <p className="text-muted-foreground text-xs">
-                          {data.count} check-in{data.count > 1 ? 's' : ''}
-                        </p>
-                        {data.emotions.length > 0 && (
-                          <p className="text-xs mt-1">
-                            Felt: {data.emotions.slice(0, 3).join(', ')}
-                            {data.emotions.length > 3 ? '...' : ''}
-                          </p>
-                        )}
-                      </>
-                    ) : (
-                      <p className="text-muted-foreground text-xs">No check-ins</p>
                     )}
-                  </TooltipContent>
-                </UITooltip>
-              </TooltipProvider>
-            );
-          })}
-        </div>
-        
-        {/* Legend */}
-        <div className="flex flex-wrap gap-3 mt-4 justify-center">
-          {Object.entries(QUADRANTS).map(([key, info]) => (
-            <div key={key} className="flex items-center gap-1.5 text-xs">
-              <div 
-                className="w-3 h-3 rounded"
-                style={{ backgroundColor: info.color }}
-              />
-              <span className="text-muted-foreground">{info.label.split(',')[0]}</span>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[200px]">
+                  <p className="font-medium">{format(day, 'EEEE, MMM d')}</p>
+                  {data ? (
+                    <>
+                      <p className="text-muted-foreground text-xs">
+                        {data.count} check-in{data.count > 1 ? 's' : ''}
+                      </p>
+                      {data.emotions.length > 0 && (
+                        <p className="text-xs mt-1">
+                          Felt: {data.emotions.slice(0, 3).join(', ')}
+                          {data.emotions.length > 3 ? '...' : ''}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground text-xs">No check-ins</p>
+                  )}
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+          );
+        })}
+      </div>
+      
+      {/* Legend */}
+      <div className="flex flex-wrap gap-2 mt-3 justify-center">
+        {Object.entries(QUADRANTS).map(([key, info]) => (
+          <div key={key} className="flex items-center gap-1 text-[10px]">
+            <div 
+              className="w-2 h-2 rounded"
+              style={{ backgroundColor: info.color }}
+            />
+            <span className="text-muted-foreground">{info.label.split(',')[0]}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -589,9 +588,6 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
             </Card>
           </div>
           
-          {/* Monthly Calendar */}
-          <MonthlyCalendar entries={entries} />
-          
           {/* Daytime insights */}
           <DaytimeInsights entries={filteredEntries} />
           
@@ -720,6 +716,16 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
               </CardContent>
             </Card>
           )}
+          
+          {/* Monthly Calendar - at the bottom */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Monthly Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <MonthlyCalendar entries={entries} />
+            </CardContent>
+          </Card>
         </>
       )}
     </div>

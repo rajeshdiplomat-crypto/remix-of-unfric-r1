@@ -18,7 +18,7 @@ export const QUADRANTS: Record<QuadrantType, QuadrantInfo> = {
     color: 'hsl(45, 93%, 47%)', // warm yellow
     bgColor: 'hsl(45, 93%, 95%)',
     borderColor: 'hsl(45, 93%, 70%)',
-    emotions: ['Excited', 'Joyful', 'Inspired', 'Energetic', 'Enthusiastic', 'Optimistic', 'Proud', 'Thrilled', 'Elated', 'Ecstatic', 'Hopeful', 'Passionate', 'Confident', 'Amazed', 'Playful']
+    emotions: ['Excited', 'Joyful', 'Inspired', 'Energetic', 'Enthusiastic', 'Optimistic', 'Proud', 'Thrilled', 'Elated', 'Ecstatic', 'Hopeful', 'Passionate', 'Confident', 'Amazed', 'Playful', 'Grateful', 'Amused', 'Cheerful', 'Blissful', 'Motivated', 'Alive', 'Radiant', 'Vibrant', 'Exhilarated', 'Empowered']
   },
   'high-unpleasant': {
     id: 'high-unpleasant',
@@ -27,7 +27,7 @@ export const QUADRANTS: Record<QuadrantType, QuadrantInfo> = {
     color: 'hsl(0, 72%, 51%)', // red
     bgColor: 'hsl(0, 72%, 95%)',
     borderColor: 'hsl(0, 72%, 75%)',
-    emotions: ['Anxious', 'Angry', 'Frustrated', 'Stressed', 'Overwhelmed', 'Irritated', 'Panicked', 'Furious', 'Agitated', 'Restless', 'Nervous', 'Tense', 'Worried', 'Annoyed', 'Impatient']
+    emotions: ['Anxious', 'Angry', 'Frustrated', 'Stressed', 'Overwhelmed', 'Irritated', 'Panicked', 'Furious', 'Agitated', 'Restless', 'Nervous', 'Tense', 'Worried', 'Annoyed', 'Impatient', 'Fearful', 'Enraged', 'Hostile', 'Jealous', 'Defensive', 'Alarmed', 'Shocked', 'Resentful', 'Bitter', 'Apprehensive']
   },
   'low-unpleasant': {
     id: 'low-unpleasant',
@@ -36,7 +36,7 @@ export const QUADRANTS: Record<QuadrantType, QuadrantInfo> = {
     color: 'hsl(215, 20%, 45%)', // muted blue-gray
     bgColor: 'hsl(215, 20%, 95%)',
     borderColor: 'hsl(215, 20%, 70%)',
-    emotions: ['Sad', 'Tired', 'Depressed', 'Lonely', 'Drained', 'Hopeless', 'Discouraged', 'Bored', 'Disappointed', 'Guilty', 'Ashamed', 'Exhausted', 'Empty', 'Melancholy', 'Numb']
+    emotions: ['Sad', 'Tired', 'Depressed', 'Lonely', 'Drained', 'Hopeless', 'Discouraged', 'Bored', 'Disappointed', 'Guilty', 'Ashamed', 'Exhausted', 'Empty', 'Melancholy', 'Numb', 'Indifferent', 'Apathetic', 'Grief-stricken', 'Dejected', 'Withdrawn', 'Defeated', 'Gloomy', 'Isolated', 'Vulnerable', 'Lost']
   },
   'low-pleasant': {
     id: 'low-pleasant',
@@ -45,7 +45,7 @@ export const QUADRANTS: Record<QuadrantType, QuadrantInfo> = {
     color: 'hsl(142, 52%, 45%)', // green
     bgColor: 'hsl(142, 52%, 95%)',
     borderColor: 'hsl(142, 52%, 70%)',
-    emotions: ['Calm', 'Content', 'Relaxed', 'Peaceful', 'Grateful', 'Serene', 'Comfortable', 'Satisfied', 'Secure', 'Cozy', 'Tranquil', 'Mellow', 'Rested', 'Thoughtful', 'Appreciative']
+    emotions: ['Calm', 'Content', 'Relaxed', 'Peaceful', 'Grateful', 'Serene', 'Comfortable', 'Satisfied', 'Secure', 'Cozy', 'Tranquil', 'Mellow', 'Rested', 'Thoughtful', 'Appreciative', 'Centered', 'Grounded', 'Balanced', 'Soft', 'Tender', 'Soothed', 'At ease', 'Still', 'Hopeful', 'Loving']
   }
 };
 
