@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -7,11 +8,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Search, Settings, FileText, ChevronDown, Zap, ArrowUpDown } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Settings,
+  FileText,
+  ChevronDown,
+  Zap,
+  ArrowUpDown,
+  Pin,
+  Clock,
+  Layers,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-
 import { NotesSplitView } from "@/components/notes/NotesSplitView";
 import { NotesGroupSettings } from "@/components/notes/NotesGroupSettings";
 import { NotesGroupSection } from "@/components/notes/NotesGroupSection";
@@ -19,7 +30,6 @@ import { NotesLocationPicker } from "@/components/notes/NotesLocationPicker";
 import { NotesBoardView } from "@/components/notes/NotesBoardView";
 import { NotesMindMapView } from "@/components/notes/NotesMindMapView";
 import { NotesViewSwitcher, type NotesViewType } from "@/components/notes/NotesViewSwitcher";
-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export interface NoteGroup {
@@ -147,25 +157,61 @@ const SAMPLE_NOTES: Note[] = [
 type ViewMode = "overview" | "editor";
 type SortOption = "updatedAt" | "createdAt" | "title";
 
-const isBrowser = typeof window !== "undefined";
-function readJSON<T>(key: string, fallback: T): T {
-  if (!isBrowser) return fallback;
-  try {
-    const raw = window.localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
+function isSameDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  icon,
+  hint,
+}: {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+  hint?: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-border/50 bg-card shadow-sm">
+      <div className="p-4 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+            {label}
+          </p>
+          <p className="mt-2 text-2xl font-semibold text-foreground">{value}</p>
+          {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+        </div>
+        <div className="h-10 w-10 rounded-2xl bg-muted/30 ring-1 ring-border/40 flex items-center justify-center text-muted-foreground">
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function Notes() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Load from localStorage or use defaults
-  const [notes, setNotes] = useState<Note[]>(() => readJSON(STORAGE_KEY_NOTES, SAMPLE_NOTES));
-  const [groups, setGroups] = useState<NoteGroup[]>(() => readJSON(STORAGE_KEY_GROUPS, DEFAULT_GROUPS));
-  const [folders, setFolders] = useState<NoteFolder[]>(() => readJSON(STORAGE_KEY_FOLDERS, []));
+  const [notes, setNotes] = useState<Note[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_NOTES);
+    return saved ? JSON.parse(saved) : SAMPLE_NOTES;
+  });
+
+  const [groups, setGroups] = useState<NoteGroup[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_GROUPS);
+    return saved ? JSON.parse(saved) : DEFAULT_GROUPS;
+  });
+
+  const [folders, setFolders] = useState<NoteFolder[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_FOLDERS);
+    return saved ? JSON.parse(saved) : [];
+  });
 
   const [viewMode, setViewMode] = useState<ViewMode>("overview");
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -177,23 +223,22 @@ export default function Notes() {
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [notesView, setNotesView] = useState<NotesViewType>("atlas");
 
-  // Persist to localStorage
   useEffect(() => {
-    if (!isBrowser) return;
-    window.localStorage.setItem(STORAGE_KEY_NOTES, JSON.stringify(notes));
+    localStorage.setItem(STORAGE_KEY_NOTES, JSON.stringify(notes));
   }, [notes]);
 
   useEffect(() => {
-    if (!isBrowser) return;
-    window.localStorage.setItem(STORAGE_KEY_GROUPS, JSON.stringify(groups));
+    localStorage.setItem(STORAGE_KEY_GROUPS, JSON.stringify(groups));
   }, [groups]);
 
   useEffect(() => {
-    if (!isBrowser) return;
-    window.localStorage.setItem(STORAGE_KEY_FOLDERS, JSON.stringify(folders));
+    localStorage.setItem(STORAGE_KEY_FOLDERS, JSON.stringify(folders));
   }, [folders]);
 
-  const sortedGroups = useMemo(() => [...groups].sort((a, b) => a.sortOrder - b.sortOrder), [groups]);
+  const sortedGroups = useMemo(
+    () => [...groups].sort((a, b) => a.sortOrder - b.sortOrder),
+    [groups]
+  );
 
   const filteredNotes = useMemo(() => {
     return notes
@@ -218,14 +263,39 @@ export default function Notes() {
       });
   }, [notes, searchQuery, filterGroupId, sortBy]);
 
-  const getGroupName = (groupId: string) => groups.find((g) => g.id === groupId)?.name || "Unknown";
+  const insights = useMemo(() => {
+    const activeNotes = notes.filter((n) => !n.isArchived);
+    const now = new Date();
+    const editedToday = activeNotes.filter((n) => isSameDay(new Date(n.updatedAt), now)).length;
+    const pinned = activeNotes.filter((n) => n.isPinned).length;
+    const activeGroups = groups.filter((g) => activeNotes.some((n) => n.groupId === g.id)).length;
 
-  // Sync note to Supabase for Diary feed
+    return {
+      total: activeNotes.length,
+      editedToday,
+      pinned,
+      activeGroups,
+    };
+  }, [notes, groups]);
+
+  const pinnedNotes = useMemo(
+    () => filteredNotes.filter((n) => n.isPinned).slice(0, 6),
+    [filteredNotes]
+  );
+
+  const getGroupName = (groupId: string) => {
+    return groups.find((g) => g.id === groupId)?.name || "Unknown";
+  };
+
   const syncNoteToSupabase = async (note: Note) => {
     if (!user?.id) return;
 
     const category: "thoughts" | "creative" | "private" =
-      note.groupId === "personal" ? "private" : note.groupId === "hobby" ? "creative" : "thoughts";
+      note.groupId === "personal"
+        ? "private"
+        : note.groupId === "hobby"
+        ? "creative"
+        : "thoughts";
 
     try {
       const { error } = await supabase.from("notes").upsert({
@@ -240,15 +310,13 @@ export default function Notes() {
       });
 
       if (error) {
-        console.error("Failed to sync note:", error);
         toast({
           title: "Couldn't sync note to Diary",
           description: "Please try saving again.",
           variant: "destructive",
         });
       }
-    } catch (err) {
-      console.error("Error syncing note:", err);
+    } catch {
       toast({
         title: "Couldn't sync note to Diary",
         description: "Please try saving again.",
@@ -271,7 +339,6 @@ export default function Notes() {
       isPinned: false,
       isArchived: false,
     };
-
     setNotes([newNote, ...notes]);
     setSelectedNote(newNote);
     setViewMode("editor");
@@ -328,7 +395,7 @@ export default function Notes() {
   };
 
   const handleNoteClick = (note: Note) => {
-    setSelectedNote(note);
+    ̣setSelectedNote(note);
     setViewMode("editor");
   };
 
@@ -337,158 +404,227 @@ export default function Notes() {
     setSelectedNote(null);
   };
 
+  const handleGroupsChange = (newGroups: NoteGroup[]) => setGroups(newGroups);
+
   // =========================
   // OVERVIEW
   // =========================
   if (viewMode === "overview") {
     return (
-      <div className="w-full flex-1 space-y-6 pb-20">
-        {/* Header: Tasks-like */}
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground">Notes</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Your life atlas — everything in one calm view</p>
-          </div>
-
-          <div className="flex items-center gap-2 lg:justify-end">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button className="h-9 rounded-xl px-4 shadow-sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  New note
-                  <ChevronDown className="h-4 w-4 ml-2 opacity-70" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64">
-                <DropdownMenuItem onClick={handleNewNoteWithOptions} className="py-2.5">
-                  <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <div className="flex flex-col">
-                    <span className="text-sm">New Note</span>
-                    <span className="text-xs text-muted-foreground">Choose where to save</span>
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleQuickNote} className="py-2.5">
-                  <Zap className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <div className="flex flex-col">
-                    <span className="text-sm">Quick Note</span>
-                    <span className="text-xs text-muted-foreground">Send to Inbox</span>
-                  </div>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 rounded-xl"
-              onClick={() => setSettingsOpen(true)}
-              aria-label="Notes settings"
-              title="Settings"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Controls row: Tasks-like rhythm */}
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-          <div className="flex items-center gap-3">
-            <div className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground hidden md:block">
-              VIEW MODE
+      <div className="w-full flex-1 pb-24">
+        <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 space-y-6">
+          {/* Header */}
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground">Notes</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Your life atlas — everything in one calm, premium view
+              </p>
             </div>
 
-            <NotesViewSwitcher currentView={notesView} onViewChange={(v) => setNotesView(v)} />
-          </div>
+            <div className="flex items-center gap-2 lg:justify-end">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button className="h-10 rounded-xl px-4 shadow-sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    New note
+                    <ChevronDown className="h-4 w-4 ml-2 opacity-70" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-60">
+                  <DropdownMenuItem onClick={handleNewNoteWithOptions} className="py-2.5">
+                    <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <div className="flex flex-col">
+                      <span className="text-sm">New Note</span>
+                      <span className="text-xs text-muted-foreground">Choose where to save</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleQuickNote} className="py-2.5">
+                    <Zap className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <div className="flex flex-col">
+                      <span className="text-sm">Quick Note</span>
+                      <span className="text-xs text-muted-foreground">Send to Inbox</span>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search notes..."
-              className="h-9 rounded-xl pl-10"
-            />
-          </div>
-
-          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-            <SelectTrigger className="h-9 rounded-xl w-[170px]">
-              <ArrowUpDown className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Sort" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="updatedAt">Last edited</SelectItem>
-              <SelectItem value="createdAt">Created date</SelectItem>
-              <SelectItem value="title">A–Z</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Group chips: premium pills */}
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setFilterGroupId("all")}
-            className={`h-8 rounded-full px-3 ${
-              filterGroupId === "all" ? "bg-primary/10 text-primary border-primary/30" : "text-foreground/80"
-            }`}
-          >
-            All
-          </Button>
-
-          {sortedGroups.map((group) => {
-            const active = filterGroupId === group.id;
-            return (
               <Button
-                key={group.id}
                 variant="outline"
-                size="sm"
-                onClick={() => setFilterGroupId(group.id)}
-                className={`h-8 rounded-full px-3 border-l-2 ${
-                  active ? "bg-primary/10 text-primary border-primary/30" : "text-foreground/80"
-                }`}
-                style={{ borderLeftColor: group.color }}
+                size="icon"
+                className="h-10 w-10 rounded-xl"
+                onClick={() => setSettingsOpen(true)}
+                aria-label="Notes settings"
+                title="Settings"
               >
-                {group.name}
+                <Settings className="h-4 w-4" />
               </Button>
-            );
-          })}
-        </div>
-
-        {/* Views */}
-        {notesView === "atlas" && (
-          <div className="space-y-3">
-            {sortedGroups
-              .filter((g) => filterGroupId === "all" || g.id === filterGroupId)
-              .map((group) => (
-                <NotesGroupSection
-                  key={group.id}
-                  group={group}
-                  folders={folders}
-                  notes={filteredNotes}
-                  selectedNoteId={selectedNote?.id}
-                  onNoteClick={handleNoteClick}
-                  onAddNote={handleCreateNote}
-                  onAddFolder={handleCreateFolder}
-                />
-              ))}
+            </div>
           </div>
-        )}
 
-        {notesView === "board" && (
-          <NotesBoardView
-            groups={sortedGroups.filter((g) => filterGroupId === "all" || g.id === filterGroupId)}
-            folders={folders}
-            notes={filteredNotes}
-            selectedNoteId={selectedNote?.id}
-            onNoteClick={handleNoteClick}
-            onAddNote={handleCreateNote}
-            onAddFolder={handleCreateFolder}
-          />
-        )}
+          {/* Controls */}
+          <div className="rounded-2xl border border-border/50 bg-card shadow-sm">
+            <div className="p-4 flex flex-col gap-3 xl:flex-row xl:items-center">
+              <div className="flex items-center gap-3">
+                <div className="text-xs font-semibold tracking-wider text-muted-foreground hidden md:block">
+                  VIEW MODE
+                </div>
+                <NotesViewSwitcher currentView={notesView} onViewChange={setNotesView} />
+              </div>
 
-        {notesView === "mindmap" && (
-          <div className="rounded-2xl border border-border/40 bg-card/40 shadow-sm overflow-hidden">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search notes, tags, text..."
+                  className="h-10 rounded-xl pl-10 bg-background"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+                  <SelectTrigger className="h-10 rounded-xl w-[180px]">
+                    <ArrowUpDown className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Sort" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="updatedAt">Last edited</SelectItem>
+                    <SelectItem value="createdAt">Created date</SelectItem>
+                    <SelectItem value="title">A–Z</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Filter chips */}
+            <div className="px-4 pb-4">
+              <div className="flex gap-2 overflow-auto no-scrollbar">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFilterGroupId("all")}
+                  className={`h-9 rounded-full px-4 ${
+                    filterGroupId === "all"
+                      ? "bg-primary/10 text-primary border-primary/30"
+                      : "text-foreground/80"
+                  }`}
+                >
+                  All
+                </Button>
+
+                {sortedGroups.map((group) => {
+                  const active = filterGroupId === group.id;
+                  return (
+                    <Button
+                      key={group.id}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setFilterGroupId(group.id)}
+                      className={`h-9 rounded-full px-4 ${
+                        active
+                          ? "bg-primary/10 text-primary border-primary/30"
+                          : "text-foreground/80"
+                      }`}
+                    >
+                      <span
+                        className="h-2.5 w-2.5 rounded-full mr-2"
+                        style={{ backgroundColor: group.color }}
+                      />
+                      {group.name}
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Insights */}
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <StatCard label="Total notes" value={`${insights.total}`} icon={<FileText className="h-5 w-5" />} />
+            <StatCard label="Edited today" value={`${insights.editedToday}`} icon={<Clock className="h-5 w-5" />} />
+            <StatCard label="Pinned" value={`${insights.pinned}`} icon={<Pin className="h-5 w-5" />} />
+            <StatCard label="Active groups" value={`${insights.activeGroups}`} icon={<Layers className="h-5 w-5" />} />
+          </div>
+
+          {/* Pinned */}
+          {pinnedNotes.length > 0 && (
+            <div className="rounded-2xl border border-border/50 bg-card shadow-sm">
+              <div className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                    Pinned
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Fast access to what matters.
+                  </p>
+                </div>
+              </div>
+
+              <div className="px-4 pb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {pinnedNotes.map((n) => (
+                  <button
+                    key={n.id}
+                    onClick={() => handleNoteClick(n)}
+                    className="text-left rounded-2xl border border-border/40 bg-background/60 hover:bg-background/80 hover:shadow-sm transition-all p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-foreground truncate">
+                          {n.title || "Untitled"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                          {n.plainText || "No content"}
+                        </p>
+                      </div>
+                      <Pin className="h-4 w-4 text-muted-foreground" />
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{getGroupName(n.groupId)}</span>
+                      <span>
+                        {formatDistanceToNow(new Date(n.updatedAt), { addSuffix: true })}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Content */}
+          {notesView === "atlas" && (
+            <div className="space-y-4">
+              {sortedGroups
+                .filter((g) => filterGroupId === "all" || g.id === filterGroupId)
+                .map((group) => (
+                  <NotesGroupSection
+                    key={group.id}
+                    group={group}
+                    folders={folders}
+                    notes={filteredNotes}
+                    selectedNoteId={selectedNote?.id}
+                    onNoteClick={handleNoteClick}
+                    onAddNote={handleCreateNote}
+                    onAddFolder={handleCreateFolder}
+                  />
+                ))}
+            </div>
+          )}
+
+          {notesView === "board" && (
+            <NotesBoardView
+              groups={sortedGroups.filter((g) => filterGroupId === "all" || g.id === filterGroupId)}
+              folders={folders}
+              notes={filteredNotes}
+              selectedNoteId={selectedNote?.id}
+              onNoteClick={handleNoteClick}
+              onAddNote={handleCreateNote}
+              onAddFolder={handleCreateFolder}
+            />
+          )}
+
+          {notesView === "mindmap" && (
             <NotesMindMapView
               groups={sortedGroups.filter((g) => filterGroupId === "all" || g.id === filterGroupId)}
               folders={folders}
@@ -498,44 +634,46 @@ export default function Notes() {
               onAddNote={handleCreateNote}
               onAddFolder={handleCreateFolder}
             />
-          </div>
-        )}
+          )}
 
-        {/* Empty state */}
-        {sortedGroups.length === 0 && (
-          <div className="rounded-2xl border border-border/40 bg-card/40 p-10 text-center shadow-sm">
-            <p className="text-muted-foreground mb-4">No groups yet. Create your first group to get started.</p>
-            <Button className="h-9 rounded-xl" onClick={() => setSettingsOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Group
-            </Button>
-          </div>
-        )}
+          {/* Empty */}
+          {sortedGroups.length === 0 && (
+            <div className="rounded-2xl border border-border/50 bg-card shadow-sm p-10 text-center">
+              <p className="text-muted-foreground mb-4">
+                No groups yet. Create your first group to get started.
+              </p>
+              <Button className="h-10 rounded-xl" onClick={() => setSettingsOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Group
+              </Button>
+            </div>
+          )}
 
-        {/* Settings Dialog */}
-        <NotesGroupSettings
-          open={settingsOpen}
-          onOpenChange={setSettingsOpen}
-          groups={groups}
-          onGroupsChange={setGroups}
-          folders={folders}
-          onFoldersChange={setFolders}
-        />
+          {/* Settings Dialog */}
+          <NotesGroupSettings
+            open={settingsOpen}
+            onOpenChange={setSettingsOpen}
+            groups={groups}
+            onGroupsChange={handleGroupsChange}
+            folders={folders}
+            onFoldersChange={setFolders}
+          />
 
-        {/* Location Picker Dialog */}
-        <NotesLocationPicker
-          open={locationPickerOpen}
-          onOpenChange={setLocationPickerOpen}
-          groups={groups}
-          folders={folders}
-          onConfirm={handleCreateNote}
-        />
+          {/* Location Picker */}
+          <NotesLocationPicker
+            open={locationPickerOpen}
+            onOpenChange={setLocationPickerOpen}
+            groups={groups}
+            folders={folders}
+            onConfirm={handleCreateNote}
+          />
+        </div>
       </div>
     );
   }
 
   // =========================
-  // EDITOR
+  // EDITOR (Split View)
   // =========================
   return (
     <NotesSplitView

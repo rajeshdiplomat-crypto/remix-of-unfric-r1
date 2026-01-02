@@ -35,180 +35,201 @@ export function NotesGroupSection({
   const [newFolderName, setNewFolderName] = useState("");
   const folderInputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-expand when this becomes the focused group
   useEffect(() => {
-    if (isFocusedGroup) {
-      setIsExpanded(true);
-    }
+    if (isFocusedGroup) setIsExpanded(true);
   }, [isFocusedGroup]);
 
-  // Filter data for this group
   const groupFolders = folders.filter((f) => f.groupId === group.id);
   const directNotes = notes.filter((n) => n.groupId === group.id && !n.folderId);
   const allGroupNotes = notes.filter((n) => n.groupId === group.id);
-
-  // Get most recent update for activity dot
   const mostRecentUpdate = getMostRecentUpdate(allGroupNotes);
 
   useEffect(() => {
-    if (isAddingFolder && folderInputRef.current) {
-      folderInputRef.current.focus();
-    }
+    if (isAddingFolder && folderInputRef.current) folderInputRef.current.focus();
   }, [isAddingFolder]);
 
   const handleCreateFolder = () => {
-    if (newFolderName.trim()) {
-      onAddFolder(group.id, newFolderName.trim());
-      setNewFolderName("");
-      setIsAddingFolder(false);
-    }
+    if (!newFolderName.trim()) return;
+    onAddFolder(group.id, newFolderName.trim());
+    setNewFolderName("");
+    setIsAddingFolder(false);
   };
 
-  // In focus mode, dim non-focused groups
-  const focusModeClasses = isInFocusMode && !isFocusedGroup 
-    ? "opacity-40 pointer-events-none" 
-    : "";
+  const focusModeClasses = isInFocusMode && !isFocusedGroup ? "opacity-50 pointer-events-none" : "";
 
   return (
-    <div className={`group/section ${focusModeClasses}`}>
-      {/* Group Header - Section title style, not card */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center gap-3 py-3 px-3 hover:bg-muted/10 transition-colors rounded-md border-l-2"
-        style={{ borderLeftColor: group.color }}
-      >
-        {isExpanded ? (
-          <ChevronDown className="h-4 w-4 text-muted-foreground/60" />
-        ) : (
-          <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
-        )}
-        
-        <h2 className="text-base font-medium text-foreground/90">{group.name}</h2>
-        
-        {/* Activity Dot */}
-        {mostRecentUpdate && (
-          <NotesActivityDot updatedAt={mostRecentUpdate} size="md" />
-        )}
-        
-        <span className="text-xs text-muted-foreground/70 ml-auto">
-          {allGroupNotes.length} {allGroupNotes.length === 1 ? "note" : "notes"}
-          {groupFolders.length > 0 && ` · ${groupFolders.length} ${groupFolders.length === 1 ? "section" : "sections"}`}
-        </span>
-      </button>
+    <div className={focusModeClasses}>
+      <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
+        {/* Accent line */}
+        <div className="absolute inset-x-0 top-0 h-1" style={{ backgroundColor: group.color }} />
 
-      {/* Expanded Content - flows under header */}
-      {isExpanded && (
-        <div className="pl-8 pr-1 pb-6 pt-2 space-y-1">
-          {/* Empty State */}
-          {allGroupNotes.length === 0 && groupFolders.length === 0 && (
-            <div className="py-6 text-center">
-              <p className="text-sm text-muted-foreground/70 mb-4">This group is empty</p>
-              <div className="flex justify-center gap-3">
-                <button
-                  onClick={() => onAddNote(group.id, null)}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  + Add your first note
-                </button>
-                <span className="text-muted-foreground/40">·</span>
-                <button
-                  onClick={() => setIsAddingFolder(true)}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  + Create a section
-                </button>
+        {/* Header */}
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="w-full px-5 py-4 text-left hover:bg-muted/10 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted/30 ring-1 ring-border/40">
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              )}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: group.color }} />
+                <h2 className="text-base font-semibold text-foreground truncate">{group.name}</h2>
+                {mostRecentUpdate && <NotesActivityDot updatedAt={mostRecentUpdate} size="md" />}
+              </div>
+
+              <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                <span>{allGroupNotes.length} notes</span>
+                {groupFolders.length > 0 && (
+                  <>
+                    <span className="opacity-50">•</span>
+                    <span>{groupFolders.length} sections</span>
+                  </>
+                )}
               </div>
             </div>
-          )}
 
-          {/* Folders */}
-          {groupFolders.map((folder) => (
-            <NotesFolderSection
-              key={folder.id}
-              folder={folder}
-              notes={notes}
-              group={group}
-              selectedNoteId={selectedNoteId}
-              onNoteClick={onNoteClick}
-              onAddNote={(folderId) => onAddNote(group.id, folderId)}
-            />
-          ))}
-
-          {/* Direct Notes (not in any folder) */}
-          {directNotes.length > 0 && (
-            <div className="space-y-0.5">
-              {groupFolders.length > 0 && (
-                <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider pt-3 pb-1">
-                  Ungrouped
-                </p>
-              )}
-              {directNotes.map((note) => (
-                <NotesNoteRow
-                  key={note.id}
-                  note={note}
-                  group={group}
-                  isSelected={selectedNoteId === note.id}
-                  onClick={() => onNoteClick(note)}
-                  showActivityDot
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Inline Add Actions - text style */}
-          {(allGroupNotes.length > 0 || groupFolders.length > 0) && (
-            <div className="flex items-center gap-4 pt-4">
-              <button
-                onClick={() => onAddNote(group.id, null)}
-                className="text-sm text-muted-foreground/60 hover:text-foreground transition-colors"
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 rounded-xl"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onAddNote(group.id, null);
+                }}
               >
-                + Add note
-              </button>
-              
-              {!isAddingFolder ? (
-                <button
-                  onClick={() => setIsAddingFolder(true)}
-                  className="text-sm text-muted-foreground/60 hover:text-foreground transition-colors"
-                >
-                  + Add section
-                </button>
+                <Plus className="h-4 w-4 mr-2" />
+                New
+              </Button>
+            </div>
+          </div>
+        </button>
+
+        {/* Body */}
+        {isExpanded && (
+          <div className="px-5 pb-5">
+            <div className="rounded-2xl border border-border/40 bg-background/40 p-4">
+              {/* Empty */}
+              {allGroupNotes.length === 0 && groupFolders.length === 0 ? (
+                <div className="py-6 text-center">
+                  <p className="text-sm text-muted-foreground">No notes here yet.</p>
+                  <div className="mt-3 flex justify-center gap-2">
+                    <Button variant="outline" className="h-9 rounded-xl" onClick={() => onAddNote(group.id, null)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add note
+                    </Button>
+                    <Button variant="ghost" className="h-9 rounded-xl" onClick={() => setIsAddingFolder(true)}>
+                      <FolderPlus className="h-4 w-4 mr-2" />
+                      Add section
+                    </Button>
+                  </div>
+                </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <Input
-                    ref={folderInputRef}
-                    value={newFolderName}
-                    onChange={(e) => setNewFolderName(e.target.value)}
-                    placeholder="Section name..."
-                    className="h-7 w-36 text-sm bg-transparent border-muted-foreground/20"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleCreateFolder();
-                      if (e.key === "Escape") {
-                        setIsAddingFolder(false);
-                        setNewFolderName("");
-                      }
-                    }}
-                  />
-                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={handleCreateFolder}>
-                    Add
-                  </Button>
-                  <button
-                    className="text-xs text-muted-foreground hover:text-foreground"
-                    onClick={() => {
-                      setIsAddingFolder(false);
-                      setNewFolderName("");
-                    }}
-                  >
-                    Cancel
-                  </button>
+                <div className="space-y-3">
+                  {/* Folders */}
+                  {groupFolders.map((folder) => (
+                    <NotesFolderSection
+                      key={folder.id}
+                      folder={folder}
+                      notes={notes}
+                      group={group}
+                      selectedNoteId={selectedNoteId}
+                      onNoteClick={onNoteClick}
+                      onAddNote={(folderId) => onAddNote(group.id, folderId)}
+                    />
+                  ))}
+
+                  {/* Direct Notes */}
+                  {directNotes.length > 0 && (
+                    <div className="space-y-0.5">
+                      {groupFolders.length > 0 && (
+                        <p className="text-[11px] text-muted-foreground uppercase tracking-wider pt-2">Ungrouped</p>
+                      )}
+                      <div className="rounded-xl border border-border/40 bg-background/50 p-2">
+                        {directNotes.map((note) => (
+                          <NotesNoteRow
+                            key={note.id}
+                            note={note}
+                            group={group}
+                            isSelected={selectedNoteId === note.id}
+                            onClick={() => onNoteClick(note)}
+                            showActivityDot
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="pt-2">
+                    {!isAddingFolder ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-9 rounded-xl"
+                          onClick={() => onAddNote(group.id, null)}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add note
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-9 rounded-xl"
+                          onClick={() => setIsAddingFolder(true)}
+                        >
+                          <FolderPlus className="h-4 w-4 mr-2" />
+                          Add section
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Input
+                          ref={folderInputRef}
+                          value={newFolderName}
+                          onChange={(e) => setNewFolderName(e.target.value)}
+                          placeholder="Section name…"
+                          className="h-9 w-52 rounded-xl bg-background"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleCreateFolder();
+                            if (e.key === "Escape") {
+                              setIsAddingFolder(false);
+                              setNewFolderName("");
+                            }
+                          }}
+                        />
+                        <Button size="sm" className="h-9 rounded-xl" onClick={handleCreateFolder}>
+                          Add
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-9 rounded-xl"
+                          onClick={() => {
+                            setIsAddingFolder(false);
+                            setNewFolderName("");
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Divider between groups */}
-      <div className="border-b border-border/30 mt-2" />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
