@@ -357,9 +357,9 @@ export default function Diary() {
   }
 
   return (
-    <div className="flex gap-6 w-full flex-1">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 w-full flex-1">
       {/* Main Feed */}
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Your Diary</h1>
@@ -472,8 +472,8 @@ export default function Diary() {
       </div>
 
       {/* Right Sidebar */}
-      <aside className="w-[400px] shrink-0 hidden lg:block">
-        <div className="sticky top-4" style={{ height: "calc(100vh - 32px)", overflowY: "auto" }}>
+      <aside className="hidden lg:block">
+        <div className="sticky top-4 h-[calc(100vh-2rem)] overflow-y-auto">
           <DiarySidebar
             metrics={metrics}
             chartData={chartData}

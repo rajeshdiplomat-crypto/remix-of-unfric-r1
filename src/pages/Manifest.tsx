@@ -339,9 +339,9 @@ export default function Manifest() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] h-[calc(100vh-4rem)]">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 h-[calc(100vh-4rem)]">
       {/* LEFT: Manifestation Board (scrollable) */}
-      <div className="overflow-y-auto p-4 lg:p-6 space-y-6">
+      <div className="overflow-y-auto space-y-6">
         <ManifestTopBar
           activeCount={activeGoals.length}
           streak={aggregateStreak}

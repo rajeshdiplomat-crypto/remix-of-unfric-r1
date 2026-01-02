@@ -43,7 +43,7 @@ All colors MUST be HSL.
     --input: 212 26% 83%;
     --ring: 216 19% 26%;
 
-    --radius: 0rem;
+    --radius: 0.625rem; /* 10px */
 
     --sidebar-background: 0 0% 98%;
 

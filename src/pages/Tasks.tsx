@@ -479,7 +479,7 @@ export default function Tasks() {
   return (
     <div className="h-full w-full flex flex-col bg-background overflow-x-hidden">
       <div className="w-full flex-1 min-h-0">
-        <div className="w-full min-w-0 flex flex-col gap-4 min-h-0">
+        <div className="w-full min-w-0 flex flex-col gap-6 min-h-0">
           <TasksHeader
             view={view}
             onViewChange={setView}
@@ -494,7 +494,7 @@ export default function Tasks() {
 
           <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
 
-          <div className={`flex-1 grid grid-cols-1 ${gridCols} gap-5 min-h-0 min-w-0`}>
+          <div className={`flex-1 grid grid-cols-1 ${gridCols} gap-8 min-h-0 min-w-0`}>
             {/* Left */}
             <div className="min-h-0 min-w-0">
               <AllTasksList
