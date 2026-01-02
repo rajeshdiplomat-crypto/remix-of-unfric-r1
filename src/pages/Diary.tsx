@@ -31,6 +31,7 @@ const FILTER_TABS = [
   { value: "trackers", label: "Trackers" },
   { value: "manifest", label: "Manifest" },
   { value: "focus", label: "Focus" },
+  { value: "emotions", label: "Emotions" },
 ];
 
 export default function Diary() {
@@ -215,20 +216,40 @@ export default function Diary() {
 
     // Emotions check-ins
     emotionsRes.data?.forEach((emotion) => {
-      const emotionParts = emotion.emotion.split(":");
-      const primaryEmotion = emotionParts[0];
-      const secondaryEmotion = emotionParts[1] && !Number(emotionParts[1]) ? emotionParts[1] : null;
-      const intensity = emotionParts[emotionParts.length - 1];
+      let parsedEmotion = { quadrant: '', emotion: '', context: {} as any };
+      try {
+        // Try to parse as JSON first (new format from EmotionSliderPicker)
+        const parsed = JSON.parse(emotion.emotion);
+        parsedEmotion = parsed;
+      } catch {
+        // Fallback for old colon-separated format
+        const emotionParts = emotion.emotion.split(":");
+        parsedEmotion.emotion = emotionParts[0];
+        parsedEmotion.quadrant = emotionParts[1] || '';
+      }
+
+      const contextParts: string[] = [];
+      if (parsedEmotion.context?.who) contextParts.push(`with ${parsedEmotion.context.who}`);
+      if (parsedEmotion.context?.what) contextParts.push(`while ${parsedEmotion.context.what}`);
+
+      const emotionLabel = parsedEmotion.emotion || 'Unknown';
+      const summary = contextParts.length > 0 ? contextParts.join(' ') : null;
 
       feedEvents.push({
         user_id: user.id,
         type: "checkin",
         source_module: "emotions",
         source_id: emotion.id,
-        title: `Emotion Check-in: ${primaryEmotion.charAt(0).toUpperCase() + primaryEmotion.slice(1)}${secondaryEmotion ? ` - ${secondaryEmotion}` : ""}`,
-        summary: `Feeling ${primaryEmotion} (intensity: ${intensity}/10)`,
+        title: `Feeling ${emotionLabel.charAt(0).toUpperCase() + emotionLabel.slice(1)}`,
+        summary: summary,
         content_preview: emotion.notes,
-        metadata: { tags: emotion.tags, intensity, primary: primaryEmotion, secondary: secondaryEmotion },
+        metadata: { 
+          quadrant: parsedEmotion.quadrant, 
+          emotion: parsedEmotion.emotion, 
+          context: parsedEmotion.context,
+          tags: emotion.tags,
+          entry_date: emotion.entry_date 
+        },
         created_at: emotion.created_at,
       });
     });
@@ -304,6 +325,9 @@ export default function Diary() {
       case "focus":
         navigate("/deep-focus");
         break;
+      case "emotions":
+        navigate("/emotions");
+        break;
       default:
         break;
     }
@@ -328,6 +352,9 @@ export default function Diary() {
         break;
       case "focus":
         navigate("/deep-focus");
+        break;
+      case "emotions":
+        navigate("/emotions");
         break;
     }
   };
