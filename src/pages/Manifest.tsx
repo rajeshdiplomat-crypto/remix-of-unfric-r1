@@ -339,9 +339,10 @@ export default function Manifest() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] h-[calc(100vh-4rem)]">
-      {/* LEFT: Manifestation Board (scrollable) */}
-      <div className="overflow-y-auto p-4 lg:p-6 space-y-6">
+    <main className="flex-1 w-full px-8 lg:px-10 py-6">
+      <div className="grid grid-cols-12 gap-8 h-[calc(100vh-4rem)]">
+        {/* LEFT: Manifestation Board - 9 columns */}
+        <section className="col-span-12 lg:col-span-9 overflow-y-auto space-y-6">
         <ManifestTopBar
           activeCount={activeGoals.length}
           streak={aggregateStreak}
@@ -381,7 +382,7 @@ export default function Manifest() {
           </div>
         )}
 
-      </div>
+        </section>
 
       {/* RIGHT: Practice Panel (always mounted, sticky, independently scrollable) */}
       <aside
@@ -429,6 +430,7 @@ export default function Manifest() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </div>
+    </main>
   );
 }
