@@ -15,6 +15,7 @@ import Diary from "./pages/Diary";
 import Emotions from "./pages/Emotions";
 import Journal from "./pages/Journal";
 import Manifest from "./pages/Manifest";
+import ManifestHistory from "./pages/ManifestHistory";
 import Trackers from "./pages/Trackers";
 import Notes from "./pages/Notes";
 import Tasks from "./pages/Tasks";
@@ -60,6 +61,7 @@ const App = () => (
                     <Route path="/emotions" element={<ProtectedRoute><Emotions /></ProtectedRoute>} />
                     <Route path="/journal" element={<ProtectedRoute><Journal /></ProtectedRoute>} />
                     <Route path="/manifest" element={<ProtectedRoute><Manifest /></ProtectedRoute>} />
+                    <Route path="/manifest/history/:goalId" element={<ProtectedRoute><ManifestHistory /></ProtectedRoute>} />
                     <Route path="/trackers" element={<ProtectedRoute><Trackers /></ProtectedRoute>} />
                     <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
                     <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />

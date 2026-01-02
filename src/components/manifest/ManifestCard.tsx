@@ -2,10 +2,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Pencil, Check, Minus, Clock } from "lucide-react";
+import { Pencil, Check, Minus, Clock, History } from "lucide-react";
 import { type ManifestGoal, type ManifestProof, type ManifestDailyPractice, DAILY_PRACTICE_KEY } from "./types";
 import { format, subDays, isSameDay, parseISO } from "date-fns";
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface ManifestCardProps {
   goal: ManifestGoal;
@@ -26,6 +27,7 @@ export function ManifestCard({
   onClick,
   onEdit,
 }: ManifestCardProps) {
+  const navigate = useNavigate();
   // Get last 7 days practice history
   const last7DaysHistory = useMemo(() => {
     const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
@@ -141,20 +143,35 @@ export function ManifestCard({
             )}
           </div>
 
-          {/* Edit Button */}
-          {onEdit && (
+          {/* Action Buttons */}
+          <div className="flex flex-col gap-1 shrink-0">
+            {onEdit && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit();
+                }}
+                title="Edit goal"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 shrink-0"
+              className="h-8 w-8"
               onClick={(e) => {
                 e.stopPropagation();
-                onEdit();
+                navigate(`/manifest/history/${goal.id}`);
               }}
+              title="View history"
             >
-              <Pencil className="h-4 w-4" />
+              <History className="h-4 w-4" />
             </Button>
-          )}
+          </div>
         </div>
       </CardContent>
     </Card>

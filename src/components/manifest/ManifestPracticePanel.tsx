@@ -19,9 +19,7 @@ import {
   Clock,
   ImagePlus,
   Trash2,
-  History,
 } from "lucide-react";
-import { HistoryDrawer } from "./HistoryDrawer";
 import { type ManifestGoal, type ManifestDailyPractice, DAILY_PRACTICE_KEY } from "./types";
 import { ManifestVisualizationMode } from "./ManifestVisualizationMode";
 import { format } from "date-fns";
@@ -75,9 +73,6 @@ export function ManifestPracticePanel({
   const [growthNote, setGrowthNote] = useState("");
   const [gratitude, setGratitude] = useState("");
   const [isLocked, setIsLocked] = useState(false);
-
-  // History drawer state
-  const [showHistory, setShowHistory] = useState(false);
 
   // Load saved state on mount and when goal changes - RESET all state first
   useEffect(() => {
@@ -220,23 +215,8 @@ export function ManifestPracticePanel({
     );
   }
 
-  // Handle using proof as micro-action from history
-  const handleUseAsMicroAction = (text: string) => {
-    setCustomActAsIf(text);
-    savePractice({ custom_act_as_if: text });
-    setShowHistory(false);
-  };
-
   return (
-    <div className="h-full flex flex-col relative">
-      {/* History Drawer */}
-      <HistoryDrawer
-        goal={goal}
-        isOpen={showHistory}
-        onClose={() => setShowHistory(false)}
-        onUseAsMicroAction={handleUseAsMicroAction}
-      />
-
+    <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-border/50">
         <div className="flex items-start justify-between gap-2">
@@ -272,21 +252,9 @@ export function ManifestPracticePanel({
               </Badge>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setShowHistory(true)}
-              aria-label="View practice history for this manifestation"
-              className="text-xs"
-            >
-              <History className="h-3 w-3 mr-1" />
-              View History
-            </Button>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
