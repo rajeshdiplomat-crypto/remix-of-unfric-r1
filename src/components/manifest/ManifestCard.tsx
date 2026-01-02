@@ -49,7 +49,7 @@ export function ManifestCard({
     return history;
   }, [goal.id]);
 
-  const startDate = goal.created_at ? format(parseISO(goal.created_at), "MMM d, yyyy") : "—";
+  const startDate = goal.start_date ? format(parseISO(goal.start_date), "MMM d, yyyy") : (goal.created_at ? format(parseISO(goal.created_at), "MMM d, yyyy") : "—");
 
   return (
     <Card

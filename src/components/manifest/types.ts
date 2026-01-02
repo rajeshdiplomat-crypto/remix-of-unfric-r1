@@ -4,7 +4,7 @@ export interface ManifestGoal {
   title: string; // The assumption (present tense)
   category: string;
   vision_image_url?: string;
-  target_date?: string;
+  start_date?: string;
   live_from_end?: string;
   act_as_if: string;
   conviction: number; // Latest conviction 1-10
