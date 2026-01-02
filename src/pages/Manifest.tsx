@@ -104,16 +104,15 @@ export default function Manifest() {
       );
       setPractices(practicesList);
 
-      // Extract proofs from practices
+      // Extract proofs from practices (flatten arrays)
       const extractedProofs: ManifestProof[] = practicesList
-        .filter((p) => p.proof_text)
-        .map((p) => ({
-          id: p.id,
+        .flatMap((p) => (p.proofs || []).map(proof => ({
+          id: proof.id,
           goal_id: p.goal_id,
-          text: p.proof_text!,
-          image_url: p.proof_image_url,
-          created_at: p.created_at,
-        }));
+          text: proof.text,
+          image_url: proof.image_url,
+          created_at: proof.created_at,
+        })));
       setProofs(extractedProofs);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -159,9 +158,9 @@ export default function Manifest() {
 
       const convictionAvg = goal.conviction * 10; // Convert 1-10 to %
       const actConsistency =
-        (last7Practices.filter((p) => p.acted).length / 7) * 100;
+        (last7Practices.filter((p) => (p.act_count || 0) > 0).length / 7) * 100;
       const proofRate = Math.min(
-        (last7Practices.filter((p) => p.proof_text).length / 7) * 100,
+        (last7Practices.filter((p) => (p.proofs?.length || 0) > 0).length / 7) * 100,
         100
       );
 

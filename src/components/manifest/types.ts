@@ -34,6 +34,25 @@ export interface ManifestConviction {
   created_at: string;
 }
 
+export interface ProofEntry {
+  id: string;
+  text: string;
+  image_url?: string;
+  created_at: string;
+}
+
+export interface ActEntry {
+  id: string;
+  text: string;
+  created_at: string;
+}
+
+export interface VisualizationEntry {
+  id: string;
+  duration: number;
+  created_at: string;
+}
+
 export interface ManifestDailyPractice {
   id: string;
   goal_id: string;
@@ -41,12 +60,12 @@ export interface ManifestDailyPractice {
   entry_date: string;
   created_at: string;
   
-  // Section 1 - Daily Practice
-  visualization_completed: boolean;
-  acted: boolean;
-  proof_text?: string;
-  proof_image_url?: string;
-  custom_act_as_if?: string; // User's custom act-as-if for this day
+  // Section 1 - Daily Practice (multiple entries supported)
+  visualization_count: number;
+  visualizations: VisualizationEntry[];
+  act_count: number;
+  acts: ActEntry[];
+  proofs: ProofEntry[];
   
   // Section 2 - Daily Check-in
   alignment?: number; // 1-10

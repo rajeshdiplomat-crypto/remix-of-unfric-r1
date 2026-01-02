@@ -25,9 +25,9 @@ export function ManifestWeeklyPanel({ practices }: ManifestWeeklyPanelProps) {
       ) / 10
     : 0;
 
-  const actAsIfDays = weekPractices.filter((p) => p.acted).length;
+  const actAsIfDays = weekPractices.filter((p) => (p.act_count || 0) > 0).length;
 
-  const proofsLogged = weekPractices.filter((p) => p.proof_text).length;
+  const proofsLogged = weekPractices.filter((p) => (p.proofs?.length || 0) > 0).length;
 
   // Sparkline data
   const sparklineData = Array.from({ length: 7 }, (_, i) => {
