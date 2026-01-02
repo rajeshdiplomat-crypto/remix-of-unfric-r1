@@ -115,6 +115,9 @@ export function ManifestPracticePanel({
   const section1Complete = hasVisualization && hasAct && hasProof;
   const section2Ready = section1Complete;
   const canLock = section2Ready && growthNote.trim().length > 0;
+  
+  // Allow adding entries even after locking - users can do multiple sessions per day
+  const canAddEntries = true; // Always allow adding more entries
 
   const handleVisualizationComplete = () => {
     const newEntry: VisualizationEntry = {
@@ -323,7 +326,6 @@ export function ManifestPracticePanel({
                     size="sm"
                     variant={hasVisualization ? "outline" : "default"}
                     onClick={() => setShowVisualization(true)}
-                    disabled={isLocked}
                   >
                     <Plus className="h-3 w-3 mr-1" />
                     {hasVisualization ? "Add Another" : `Visualize (${goal.visualization_minutes}m)`}
@@ -374,13 +376,11 @@ export function ManifestPracticePanel({
                     value={currentActText}
                     onChange={(e) => setCurrentActText(e.target.value)}
                     placeholder="Or write your own action..."
-                    disabled={isLocked}
                     className="text-sm flex-1"
                   />
                   <Button
                     size="sm"
                     onClick={handleAddAct}
-                    disabled={isLocked}
                   >
                     <Plus className="h-3 w-3 mr-1" />
                     Add
@@ -397,16 +397,14 @@ export function ManifestPracticePanel({
                           <span>{a.text}</span>
                           <span className="text-muted-foreground">• {format(new Date(a.created_at), "h:mm a")}</span>
                         </div>
-                        {!isLocked && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => handleRemoveAct(a.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => handleRemoveAct(a.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -437,7 +435,6 @@ export function ManifestPracticePanel({
                   onChange={(e) => setCurrentProofText(e.target.value)}
                   placeholder="A colleague asked for my input; I felt calm in the meeting."
                   rows={2}
-                  disabled={isLocked}
                   className="text-sm"
                 />
                 
@@ -449,7 +446,6 @@ export function ManifestPracticePanel({
                     accept="image/*"
                     onChange={handleProofImageUpload}
                     className="hidden"
-                    disabled={isLocked}
                   />
                   
                   {currentProofImageUrl ? (
@@ -459,7 +455,6 @@ export function ManifestPracticePanel({
                         alt="Proof"
                         className="w-full h-24 object-cover rounded-lg border border-border/50"
                       />
-                      {!isLocked && (
                         <Button
                           variant="destructive"
                           size="icon"
@@ -468,7 +463,6 @@ export function ManifestPracticePanel({
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
-                      )}
                     </div>
                   ) : (
                     <Button
@@ -476,18 +470,17 @@ export function ManifestPracticePanel({
                       size="sm"
                       className="w-full"
                       onClick={() => proofImageInputRef.current?.click()}
-                      disabled={isLocked}
                     >
                       <ImagePlus className="h-4 w-4 mr-2" />
                       Attach Image
                     </Button>
-                  )}
+                )}
                 </div>
                 
                 <Button
                   size="sm"
                   onClick={handleAddProof}
-                  disabled={!currentProofText.trim() || isLocked}
+                  disabled={!currentProofText.trim()}
                   className="w-full"
                 >
                   <Plus className="h-3 w-3 mr-1" />
@@ -506,16 +499,14 @@ export function ManifestPracticePanel({
                               {format(new Date(p.created_at), "h:mm a")}
                             </span>
                           </div>
-                          {!isLocked && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => handleRemoveProof(p.id)}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => handleRemoveProof(p.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
                         </div>
                         {p.image_url && (
                           <img
@@ -558,12 +549,10 @@ export function ManifestPracticePanel({
                 min={1}
                 max={10}
                 step={1}
-                disabled={isLocked}
               />
               <p className="text-xs text-muted-foreground">How aligned did you feel?</p>
             </div>
 
-            {/* Growth Note */}
             <div className="space-y-2">
               <Label className="text-sm">Growth Note *</Label>
               <Input
@@ -573,7 +562,6 @@ export function ManifestPracticePanel({
                   savePractice({ growth_note: e.target.value });
                 }}
                 placeholder="Short insight or idea for tomorrow."
-                disabled={isLocked}
               />
             </div>
 
@@ -588,20 +576,19 @@ export function ManifestPracticePanel({
                 }}
                 placeholder="1–3 things you appreciate"
                 rows={2}
-                disabled={isLocked}
               />
             </div>
 
-            {/* Lock Button */}
+            {/* Lock/Update Button */}
             <Button
               onClick={handleLockToday}
-              disabled={!canLock || isLocked}
+              disabled={!canLock}
               className="w-full"
             >
               {isLocked ? (
                 <>
                   <Lock className="h-4 w-4 mr-2" />
-                  Day Locked
+                  Update Day
                 </>
               ) : (
                 <>
