@@ -153,7 +153,7 @@ export function AllTasksList({
   // ✅ Collapsed rail UI
   if (collapsed) {
     return (
-      <div className="flex flex-col h-full min-h-0 bg-card/50 rounded-2xl border border-border/50 items-center py-3 gap-3 overflow-hidden">
+      <div className="flex flex-col h-full bg-card/50 rounded-2xl border border-border/50 items-center py-3 gap-3">
         <Button
           variant="ghost"
           size="icon"
@@ -184,9 +184,9 @@ export function AllTasksList({
   }
 
   return (
-    <div className="flex flex-col h-full min-h-0 bg-card/50 rounded-2xl border border-border/50 overflow-hidden">
-      {/* Header - fixed, never scrolls */}
-      <div className="p-4 border-b border-border/30 flex items-center justify-between flex-shrink-0">
+    <div className="flex flex-col h-full bg-card/50 rounded-2xl border border-border/50">
+      {/* Header */}
+      <div className="p-4 border-b border-border/30 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">All Tasks</h2>
 
         <Button
@@ -204,7 +204,7 @@ export function AllTasksList({
       <Tabs
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as FilterTab)}
-        className="flex-1 flex flex-col min-h-0 overflow-hidden"
+        className="flex-1 flex flex-col min-h-0"
       >
         <div className="px-3 pt-3">
           <TabsList className="w-full grid grid-cols-5 h-8 bg-muted/30">

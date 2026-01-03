@@ -477,9 +477,9 @@ export default function Tasks() {
     : "xl:grid-cols-[minmax(300px,340px)_minmax(0,1fr)]";
 
   return (
-    <div className="h-[calc(100vh-4rem)] w-full flex flex-col bg-background overflow-hidden">
-      <div className="w-full flex-1 min-h-0 overflow-hidden">
-        <div className="w-full min-w-0 flex flex-col gap-6 h-full overflow-hidden">
+    <div className="h-full w-full flex flex-col bg-background overflow-x-hidden">
+      <div className="w-full flex-1 min-h-0">
+        <div className="w-full min-w-0 flex flex-col gap-6 min-h-0">
           <TasksHeader
             view={view}
             onViewChange={setView}
@@ -494,9 +494,9 @@ export default function Tasks() {
 
           <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
 
-          <div className={`flex-1 grid grid-cols-1 ${gridCols} gap-8 min-h-0 min-w-0 overflow-hidden`}>
+          <div className={`flex-1 grid grid-cols-1 ${gridCols} gap-8 min-h-0 min-w-0`}>
             {/* Left */}
-            <div className="min-h-0 min-w-0 overflow-hidden flex flex-col">
+            <div className="min-h-0 min-w-0">
               <AllTasksList
                 tasks={filteredTasks}
                 onTaskClick={openTaskDetail}
@@ -508,7 +508,7 @@ export default function Tasks() {
             </div>
 
             {/* Right */}
-            <div className="min-h-0 overflow-hidden w-full min-w-0 flex flex-col">
+            <div className="min-h-0 overflow-auto w-full min-w-0">
               {view === "quadrant" && (
                 <QuadrantGrid
                   mode={quadrantMode}

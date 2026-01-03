@@ -74,14 +74,14 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
     return (
       <div
         className={cn(
-          "relative flex flex-col rounded-2xl border transition-all duration-300 min-h-0 overflow-hidden",
-          "bg-card/80 backdrop-blur-sm",
+          "relative flex flex-col rounded-2xl border transition-all duration-300",
+          "bg-card/80 backdrop-blur-sm min-h-[320px]",
           isTopLeft ? "border-primary/30 shadow-lg" : "border-border/50 shadow-sm",
           "hover:shadow-md hover:border-border"
         )}
       >
-        {/* Header - fixed height, never scrolls */}
-        <div className="flex items-center justify-between p-4 border-b border-border/30 flex-shrink-0">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border/30">
           <div className="flex items-center gap-2">
             <Icon className={cn("h-4 w-4", isTopLeft ? "text-primary" : "text-muted-foreground")} />
             <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">
@@ -98,9 +98,9 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
           </div>
         </div>
 
-        {/* Task List - scrollable area */}
-        <div className="flex-1 min-h-0 p-3 space-y-2 overflow-y-auto">
-          {quadrantTasks.map((task) => {
+        {/* Task List - now shows 5-6 tasks */}
+        <div className="flex-1 p-3 space-y-2 overflow-y-auto">
+          {quadrantTasks.slice(0, 6).map((task) => {
             const isCompleted = task.is_completed || !!task.completed_at;
             const status = computeTaskStatus(task);
             
@@ -206,16 +206,16 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
 
   return (
     <>
-      <div className="relative h-full min-h-0 flex flex-col overflow-hidden">
+      <div className="relative h-full">
         {/* Axis Labels */}
         {mode === 'urgent-important' && (
           <>
-            <div className="absolute -left-6 top-1/2 -translate-y-1/2 -rotate-90 whitespace-nowrap z-10">
+            <div className="absolute -left-6 top-1/2 -translate-y-1/2 -rotate-90 whitespace-nowrap">
               <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60">
                 Low Importance — High Importance
               </span>
             </div>
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-6 whitespace-nowrap z-10">
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-6 whitespace-nowrap">
               <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60">
                 Low Urgency · High Urgency
               </span>
@@ -224,7 +224,7 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
         )}
 
         {/* 2x2 Grid */}
-        <div className="grid grid-cols-2 gap-4 flex-1 min-h-0 pl-2 overflow-hidden">
+        <div className="grid grid-cols-2 gap-4 h-full pl-2">
           <QuadrantCard quadrant={modeConfig.quadrants[0]} position={0} />
           <QuadrantCard quadrant={modeConfig.quadrants[1]} position={1} />
           <QuadrantCard quadrant={modeConfig.quadrants[2]} position={2} />
