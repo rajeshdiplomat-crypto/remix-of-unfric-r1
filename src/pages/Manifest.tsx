@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, Pause, Play } from "lucide-react";
 import { subDays, parseISO, isSameDay, differenceInDays } from "date-fns";
 
 import { ManifestTopBar } from "@/components/manifest/ManifestTopBar";
@@ -21,6 +21,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import { Button } from "@/components/ui/button";
+
 import {
   type ManifestGoal,
   type ManifestProof,
@@ -36,17 +38,156 @@ function saveGoalExtras(goalId: string, extras: Partial<ManifestGoal>) {
   localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify(all));
 }
 
-function loadGoalExtras(goalId: string): Partial<ManifestGoal> {
-  const all = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
-  return all[goalId] || {};
-}
-
 function loadAllGoalExtras(): Record<string, Partial<ManifestGoal>> {
   return JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
 }
 
 function loadAllPractices(): Record<string, ManifestDailyPractice> {
   return JSON.parse(localStorage.getItem(DAILY_PRACTICE_KEY) || "{}");
+}
+
+function isVideoUrl(url?: string) {
+  if (!url) return false;
+  if (url.startsWith("data:video")) return true;
+  return /\.(mp4|webm|ogg)(\?|#|$)/i.test(url);
+}
+
+function ManifestHero({ mediaUrl, title, subtitle }: { mediaUrl?: string | null; title: string; subtitle: string }) {
+  const [paused, setPaused] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  const bgRef = useRef<HTMLDivElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const isVideo = useMemo(() => isVideoUrl(mediaUrl || undefined), [mediaUrl]);
+
+  // Respect reduced motion preferences
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => setReduceMotion(mq.matches);
+    apply();
+
+    // Safari fallback compatibility
+    if (mq.addEventListener) mq.addEventListener("change", apply);
+    else mq.addListener(apply);
+
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", apply);
+      else mq.removeListener(apply);
+    };
+  }, []);
+
+  // Auto-scroll effect for image background (no rerenders, direct style update)
+  useEffect(() => {
+    if (!mediaUrl || isVideo || paused || reduceMotion) return;
+    if (!bgRef.current) return;
+
+    let raf = 0;
+    let y = 0;
+    let last = performance.now();
+
+    const tick = (now: number) => {
+      const dt = now - last;
+      last = now;
+
+      // Slow luxury drift
+      y = (y + dt * 0.012) % 2400;
+      if (bgRef.current) {
+        bgRef.current.style.backgroundPosition = `center ${-y}px`;
+      }
+
+      raf = requestAnimationFrame(tick);
+    };
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [mediaUrl, isVideo, paused, reduceMotion]);
+
+  // Play/pause video if used
+  useEffect(() => {
+    if (!isVideo || !videoRef.current) return;
+    const v = videoRef.current;
+
+    const sync = async () => {
+      try {
+        if (paused || reduceMotion) {
+          v.pause();
+        } else {
+          // Most browsers allow autoplay only if muted; we keep it muted.
+          await v.play();
+        }
+      } catch {
+        // Ignore autoplay rejections
+      }
+    };
+
+    void sync();
+  }, [paused, reduceMotion, isVideo]);
+
+  return (
+    <div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
+      {/* Media */}
+      <div className="relative h-[220px] sm:h-[260px]">
+        {mediaUrl ? (
+          isVideo ? (
+            <video
+              ref={videoRef}
+              src={mediaUrl}
+              muted
+              playsInline
+              loop
+              autoPlay={!paused && !reduceMotion}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : (
+            <div
+              ref={bgRef}
+              className="absolute inset-0"
+              style={{
+                backgroundImage: `url(${mediaUrl})`,
+                backgroundSize: "cover",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "center",
+                transform: "scale(1.04)",
+              }}
+            />
+          )
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-muted/30 to-muted/10" />
+        )}
+
+        {/* Soft overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/35 to-background/10" />
+        <div className="absolute inset-0 ring-1 ring-inset ring-border/30" />
+
+        {/* Pause button (tiny + hidden) */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => setPaused((p) => !p)}
+          className="absolute right-3 top-3 h-8 w-8 rounded-full bg-background/30 backdrop-blur-md opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
+          aria-label={paused ? "Play hero media" : "Pause hero media"}
+          title={paused ? "Play" : "Pause"}
+        >
+          {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+        </Button>
+
+        {/* Copy */}
+        <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-border/50 bg-background/30 px-3 py-1 text-xs text-muted-foreground backdrop-blur-md">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary/80" />
+              Manifest
+            </div>
+            <h2 className="mt-3 text-xl sm:text-2xl font-semibold tracking-tight text-foreground">{title}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function Manifest() {
@@ -69,7 +210,6 @@ export default function Manifest() {
     if (!user) return;
 
     try {
-      // Fetch goals from Supabase
       const { data: goalsData, error: goalsError } = await supabase
         .from("manifest_goals")
         .select("*")
@@ -78,7 +218,6 @@ export default function Manifest() {
 
       if (goalsError) throw goalsError;
 
-      // Merge with local extras
       const extras = loadAllGoalExtras();
       const mergedGoals: ManifestGoal[] = (goalsData || []).map((g) => ({
         id: g.id,
@@ -102,12 +241,10 @@ export default function Manifest() {
 
       setGoals(mergedGoals);
 
-      // Load practices from localStorage
       const allPractices = loadAllPractices();
       const practicesList = Object.values(allPractices).filter((p) => p.user_id === user.id);
       setPractices(practicesList);
 
-      // Extract proofs from practices (flatten arrays)
       const extractedProofs: ManifestProof[] = practicesList.flatMap((p) =>
         (p.proofs || []).map((proof) => ({
           id: proof.id,
@@ -136,7 +273,6 @@ export default function Manifest() {
       const today = new Date();
       const goalPractices = practices.filter((p) => p.goal_id === goal.id && p.locked);
 
-      // Calculate streak
       let streak = 0;
       for (let i = 0; i < 30; i++) {
         const checkDate = subDays(today, i);
@@ -145,8 +281,6 @@ export default function Manifest() {
         else if (i > 0) break;
       }
 
-      // Calculate momentum
-      // Formula: (ConvictionAvg × 0.4) + (ActConsistency × 0.3) + (ProofRate × 0.3)
       const activeDays = Math.max(1, differenceInDays(today, parseISO(goal.created_at)));
 
       const last7Practices = goalPractices.filter((p) => {
@@ -154,24 +288,22 @@ export default function Manifest() {
         return entryDate >= subDays(today, 7);
       });
 
-      const convictionAvg = goal.conviction * 10; // Convert 1-10 to %
+      const convictionAvg = goal.conviction * 10;
       const actConsistency = (last7Practices.filter((p) => (p.act_count || 0) > 0).length / 7) * 100;
 
       const proofRate = Math.min((last7Practices.filter((p) => (p.proofs?.length || 0) > 0).length / 7) * 100, 100);
 
       const momentum = Math.round(convictionAvg * 0.4 + actConsistency * 0.3 + proofRate * 0.3);
 
-      // Get last proof
       const goalProofs = proofs.filter((p) => p.goal_id === goal.id);
       const lastProof = goalProofs[0];
 
-      void activeDays; // keep to match original logic footprint (not used in UI)
+      void activeDays;
       return { streak, momentum, lastProof };
     },
     [practices, proofs],
   );
 
-  // Calculate aggregate metrics
   const activeGoals = goals.filter((g) => !g.is_completed && !g.is_locked);
 
   const aggregateStreak = useMemo(() => {
@@ -185,7 +317,6 @@ export default function Manifest() {
       if (hasPractice) streak++;
       else if (i > 0) break;
     }
-
     return streak;
   }, [practices]);
 
@@ -217,7 +348,6 @@ export default function Manifest() {
       let goalId: string;
 
       if (editingGoal) {
-        // Update existing goal
         const { error } = await supabase
           .from("manifest_goals")
           .update({ title: goalData.title })
@@ -227,7 +357,6 @@ export default function Manifest() {
         goalId = editingGoal.id;
         toast.success("Manifestation updated!");
       } else {
-        // Create new goal
         const { data, error } = await supabase
           .from("manifest_goals")
           .insert({
@@ -243,7 +372,6 @@ export default function Manifest() {
         toast.success("Manifestation created!");
       }
 
-      // Save extras to localStorage
       saveGoalExtras(goalId, {
         category: goalData.category,
         vision_image_url: goalData.vision_image_url,
@@ -277,10 +405,7 @@ export default function Manifest() {
     [fetchData],
   );
 
-  const handleSelectGoal = (goal: ManifestGoal) => {
-    setSelectedGoal(goal);
-  };
-
+  const handleSelectGoal = (goal: ManifestGoal) => setSelectedGoal(goal);
   const handleEditGoal = (goal: ManifestGoal) => {
     setEditingGoal(goal);
     setShowCreateModal(true);
@@ -291,15 +416,12 @@ export default function Manifest() {
 
     try {
       const { error } = await supabase.from("manifest_goals").delete().eq("id", deletingGoal.id);
-
       if (error) throw error;
 
-      // Also remove from localStorage
       const extras = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
       delete extras[deletingGoal.id];
       localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify(extras));
 
-      // Clear selection if deleting selected goal
       if (selectedGoal?.id === deletingGoal.id) {
         setSelectedGoal(null);
       }
@@ -319,6 +441,18 @@ export default function Manifest() {
     if (!open) setEditingGoal(null);
   };
 
+  // Hero media priority: selected goal > first goal with vision image > none
+  const heroMediaUrl = useMemo(() => {
+    if (selectedGoal?.vision_image_url) return selectedGoal.vision_image_url;
+    const withVision = activeGoals.find((g) => !!g.vision_image_url);
+    return withVision?.vision_image_url || null;
+  }, [selectedGoal, activeGoals]);
+
+  const heroTitle = selectedGoal ? "Focused practice, softly." : "Your vision board, refined.";
+  const heroSubtitle = selectedGoal
+    ? "Stay with one manifestation — track proof, momentum, and lock your day."
+    : "Create a manifestation, practice daily, and build evidence without rushing.";
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -329,8 +463,10 @@ export default function Manifest() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 h-[calc(100vh-4rem)]">
-      {/* LEFT: Manifestation Board (scrollable) */}
-      <div className="overflow-y-auto space-y-6">
+      {/* LEFT: Board */}
+      <div className="overflow-y-auto space-y-6 pb-6">
+        <ManifestHero mediaUrl={heroMediaUrl} title={heroTitle} subtitle={heroSubtitle} />
+
         <ManifestTopBar
           activeCount={activeGoals.length}
           streak={aggregateStreak}
@@ -340,12 +476,17 @@ export default function Manifest() {
 
         {/* Goals List */}
         {activeGoals.length === 0 ? (
-          <div className="text-center py-12 px-4">
-            <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-foreground mb-2">Start your manifestation journey</h3>
+          <div className="text-center py-14 px-4 rounded-2xl border border-border/50 bg-card shadow-sm">
+            <div className="mx-auto mb-4 h-12 w-12 rounded-2xl bg-muted/40 flex items-center justify-center">
+              <Sparkles className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">Start your manifestation journey</h3>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
               Write it present-tense. Practice it daily. Celebrate progress.
             </p>
+            <Button onClick={() => setShowCreateModal(true)} className="rounded-full px-5">
+              Create your first
+            </Button>
           </div>
         ) : (
           <div className="space-y-4">
@@ -369,9 +510,9 @@ export default function Manifest() {
         )}
       </div>
 
-      {/* RIGHT: Practice Panel (always mounted, sticky, independently scrollable) */}
+      {/* RIGHT: Practice Panel */}
       <aside
-        className="hidden lg:flex flex-col h-full overflow-y-auto border-l border-border/50 bg-card"
+        className="hidden lg:flex flex-col h-full overflow-y-auto rounded-2xl border border-border/50 bg-card shadow-sm"
         tabIndex={-1}
         aria-label="Practice panel"
       >
@@ -383,8 +524,13 @@ export default function Manifest() {
             onPracticeComplete={handlePracticeComplete}
           />
         ) : (
-          <div className="p-4 flex items-center justify-center h-full">
-            <p className="text-sm text-muted-foreground">Select a manifestation to begin practice</p>
+          <div className="p-6 flex items-center justify-center h-full">
+            <div className="text-center max-w-xs">
+              <div className="mx-auto mb-3 h-10 w-10 rounded-2xl bg-muted/40 flex items-center justify-center">
+                <Sparkles className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">Select a manifestation to begin practice</p>
+            </div>
           </div>
         )}
       </aside>

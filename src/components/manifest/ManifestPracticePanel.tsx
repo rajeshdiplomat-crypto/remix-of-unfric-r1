@@ -8,25 +8,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Play, Check, Camera, Lock, ChevronRight, X, Clock, ImagePlus, Trash2, Plus } from "lucide-react";
 import {
-  Play,
-  Check,
-  Camera,
-  Lock,
-  ChevronRight,
-  X,
-  Clock,
-  ImagePlus,
-  Trash2,
-  Plus,
-} from "lucide-react";
-import { 
-  type ManifestGoal, 
-  type ManifestDailyPractice, 
+  type ManifestGoal,
+  type ManifestDailyPractice,
   type ProofEntry,
   type ActEntry,
   type VisualizationEntry,
-  DAILY_PRACTICE_KEY 
+  DAILY_PRACTICE_KEY,
 } from "./types";
 import { ManifestVisualizationMode } from "./ManifestVisualizationMode";
 import { format } from "date-fns";
@@ -40,16 +29,10 @@ interface ManifestPracticePanelProps {
   onPracticeComplete: (practice: ManifestDailyPractice) => void;
 }
 
-export function ManifestPracticePanel({
-  goal,
-  streak,
-  onClose,
-  onPracticeComplete,
-}: ManifestPracticePanelProps) {
+export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplete }: ManifestPracticePanelProps) {
   const today = format(new Date(), "yyyy-MM-dd");
   const proofImageInputRef = useRef<HTMLInputElement>(null);
 
-  // Load today's practice from localStorage
   const loadTodaysPractice = (): Partial<ManifestDailyPractice> => {
     const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
     if (stored) {
@@ -66,27 +49,22 @@ export function ManifestPracticePanel({
     localStorage.setItem(DAILY_PRACTICE_KEY, JSON.stringify(all));
   };
 
-  // Section 1 state - Multiple entries
   const [visualizations, setVisualizations] = useState<VisualizationEntry[]>([]);
   const [acts, setActs] = useState<ActEntry[]>([]);
   const [proofs, setProofs] = useState<ProofEntry[]>([]);
-  
-  // Current entry being created
+
   const [currentActText, setCurrentActText] = useState("");
   const [currentProofText, setCurrentProofText] = useState("");
   const [currentProofImageUrl, setCurrentProofImageUrl] = useState<string | null>(null);
-  
+
   const [showVisualization, setShowVisualization] = useState(false);
 
-  // Section 2 state
   const [alignment, setAlignment] = useState(5);
   const [growthNote, setGrowthNote] = useState("");
   const [gratitude, setGratitude] = useState("");
   const [isLocked, setIsLocked] = useState(false);
 
-  // Load saved state on mount and when goal changes
   useEffect(() => {
-    // Reset all state to defaults first
     setVisualizations([]);
     setActs([]);
     setProofs([]);
@@ -98,7 +76,6 @@ export function ManifestPracticePanel({
     setGratitude("");
     setIsLocked(false);
 
-    // Then load saved values for this specific goal
     const saved = loadTodaysPractice();
     if (saved.visualizations) setVisualizations(saved.visualizations);
     if (saved.acts) setActs(saved.acts);
@@ -115,9 +92,6 @@ export function ManifestPracticePanel({
   const section1Complete = hasVisualization && hasAct && hasProof;
   const section2Ready = section1Complete;
   const canLock = section2Ready && growthNote.trim().length > 0;
-  
-  // Allow adding entries even after locking - users can do multiple sessions per day
-  const canAddEntries = true; // Always allow adding more entries
 
   const handleVisualizationComplete = () => {
     const newEntry: VisualizationEntry = {
@@ -147,7 +121,7 @@ export function ManifestPracticePanel({
   };
 
   const handleRemoveAct = (id: string) => {
-    const updated = acts.filter(a => a.id !== id);
+    const updated = acts.filter((a) => a.id !== id);
     setActs(updated);
     savePractice({ acts: updated, act_count: updated.length });
   };
@@ -167,9 +141,7 @@ export function ManifestPracticePanel({
 
   const handleRemoveCurrentProofImage = () => {
     setCurrentProofImageUrl(null);
-    if (proofImageInputRef.current) {
-      proofImageInputRef.current.value = "";
-    }
+    if (proofImageInputRef.current) proofImageInputRef.current.value = "";
   };
 
   const handleAddProof = () => {
@@ -177,7 +149,7 @@ export function ManifestPracticePanel({
       toast.error("Please enter at least one line of proof");
       return;
     }
-    
+
     const newEntry: ProofEntry = {
       id: crypto.randomUUID(),
       text: currentProofText.trim(),
@@ -188,21 +160,16 @@ export function ManifestPracticePanel({
     setProofs(updated);
     setCurrentProofText("");
     setCurrentProofImageUrl(null);
-    if (proofImageInputRef.current) {
-      proofImageInputRef.current.value = "";
-    }
+    if (proofImageInputRef.current) proofImageInputRef.current.value = "";
+
     savePractice({ proofs: updated });
-    
-    confetti({
-      particleCount: 80,
-      spread: 60,
-      origin: { y: 0.7 },
-    });
+
+    confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
     toast.success("Great — proof saved. Momentum +1");
   };
 
   const handleRemoveProof = (id: string) => {
-    const updated = proofs.filter(p => p.id !== id);
+    const updated = proofs.filter((p) => p.id !== id);
     setProofs(updated);
     savePractice({ proofs: updated });
   };
@@ -230,11 +197,7 @@ export function ManifestPracticePanel({
     savePractice(practice);
     setIsLocked(true);
 
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-    });
+    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
     toast.success("Day locked — celebrate your progress!");
     onPracticeComplete(practice);
   };
@@ -255,39 +218,39 @@ export function ManifestPracticePanel({
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-border/50">
-        <div className="flex items-start justify-between gap-2">
+      <div className="p-5 border-b border-border/50">
+        <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             {goal.vision_image_url && (
-              <div className="w-full h-32 rounded-lg overflow-hidden mb-3 border border-border/50">
-                <img
-                  src={goal.vision_image_url}
-                  alt="Vision"
-                  className="w-full h-full object-cover"
-                />
+              <div className="w-full h-36 rounded-2xl overflow-hidden mb-4 border border-border/50 shadow-sm">
+                <img src={goal.vision_image_url} alt="Vision" className="w-full h-full object-cover" />
               </div>
             )}
-            
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="default" className="text-xs rounded-full">
+                Active
+              </Badge>
+              <Badge variant="outline" className="text-xs rounded-full">
+                Day {streak}
+              </Badge>
+              <Badge variant="outline" className="text-xs rounded-full">
+                Conviction {goal.conviction}/10
+              </Badge>
+            </div>
+
             {goal.check_in_time && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+              <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" />
                 <span>Daily check-in: {goal.check_in_time}</span>
               </div>
             )}
-            
-            <p className="text-xs text-muted-foreground mb-1">Practicing:</p>
-            <h3 className="font-semibold text-foreground leading-tight">
-              {goal.title}
-            </h3>
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-              <Badge variant="default" className="text-xs">Active</Badge>
-              <Badge variant="outline" className="text-xs">Day {streak}</Badge>
-              <Badge variant="outline" className="text-xs">
-                Conviction {goal.conviction}/10
-              </Badge>
-            </div>
+
+            <p className="mt-3 text-xs text-muted-foreground">Practicing:</p>
+            <h3 className="mt-1 font-semibold text-foreground leading-tight line-clamp-3">{goal.title}</h3>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+
+          <Button variant="ghost" size="icon" className="rounded-full" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -295,20 +258,22 @@ export function ManifestPracticePanel({
 
       {/* Scrollable Content */}
       <ScrollArea className="flex-1">
-        <div className="p-4 space-y-6">
-          {/* Section 1: Daily Practice */}
+        <div className="p-5 space-y-6">
+          {/* Section 1 */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="font-medium text-foreground">Section 1 — Daily Practice</h4>
-              <Badge variant="outline" className="text-xs">
+              <h4 className="font-semibold text-foreground">Section 1 — Daily Practice</h4>
+              <Badge variant="outline" className="text-xs rounded-full">
                 {section1Progress}/3
               </Badge>
             </div>
 
-            {/* 1. Visualizations */}
-            <Card className={`border-border/50 ${hasVisualization ? "bg-primary/5 border-primary/30" : ""}`}>
-              <CardContent className="p-3 space-y-3">
-                <div className="flex items-center justify-between">
+            {/* Visualization */}
+            <Card
+              className={`rounded-2xl border-border/50 ${hasVisualization ? "bg-primary/5 border-primary/25" : ""}`}
+            >
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     {hasVisualization ? (
                       <Check className="h-4 w-4 text-primary" />
@@ -317,28 +282,31 @@ export function ManifestPracticePanel({
                     )}
                     <span className="text-sm font-medium">Visualization</span>
                     {visualizations.length > 0 && (
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge variant="secondary" className="text-xs rounded-full">
                         {visualizations.length}x
                       </Badge>
                     )}
                   </div>
+
                   <Button
                     size="sm"
                     variant={hasVisualization ? "outline" : "default"}
                     onClick={() => setShowVisualization(true)}
+                    className="rounded-full"
                   >
                     <Plus className="h-3 w-3 mr-1" />
                     {hasVisualization ? "Add Another" : `Visualize (${goal.visualization_minutes}m)`}
                   </Button>
                 </div>
-                
-                {/* List of completed visualizations */}
+
                 {visualizations.length > 0 && (
                   <div className="space-y-1 ml-6">
                     {visualizations.map((v, i) => (
                       <div key={v.id} className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Check className="h-3 w-3 text-primary" />
-                        <span>Session {i + 1} • {v.duration}min • {format(new Date(v.created_at), "h:mm a")}</span>
+                        <span>
+                          Session {i + 1} • {v.duration}min • {format(new Date(v.created_at), "h:mm a")}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -346,31 +314,25 @@ export function ManifestPracticePanel({
               </CardContent>
             </Card>
 
-            {/* 2. Act-as-If */}
-            <Card className={`border-border/50 ${hasAct ? "bg-primary/5 border-primary/30" : ""}`}>
-              <CardContent className="p-3 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {hasAct ? (
-                      <Check className="h-4 w-4 text-primary" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    )}
-                    <span className="text-sm font-medium">Act-as-If</span>
-                    {acts.length > 0 && (
-                      <Badge variant="secondary" className="text-xs">
-                        {acts.length}x
-                      </Badge>
-                    )}
-                  </div>
+            {/* Act-as-If */}
+            <Card className={`rounded-2xl border-border/50 ${hasAct ? "bg-primary/5 border-primary/25" : ""}`}>
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  {hasAct ? (
+                    <Check className="h-4 w-4 text-primary" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  )}
+                  <span className="text-sm font-medium">Act-as-If</span>
+                  {acts.length > 0 && (
+                    <Badge variant="secondary" className="text-xs rounded-full">
+                      {acts.length}x
+                    </Badge>
+                  )}
                 </div>
-                
-                {/* Default suggestion */}
-                <p className="text-sm text-muted-foreground ml-6">
-                  Suggestion: {goal.act_as_if}
-                </p>
-                
-                {/* Custom act input + add button */}
+
+                <p className="text-sm text-muted-foreground ml-6">Suggestion: {goal.act_as_if}</p>
+
                 <div className="ml-6 flex gap-2">
                   <Input
                     value={currentActText}
@@ -378,20 +340,19 @@ export function ManifestPracticePanel({
                     placeholder="Or write your own action..."
                     className="text-sm flex-1"
                   />
-                  <Button
-                    size="sm"
-                    onClick={handleAddAct}
-                  >
+                  <Button size="sm" onClick={handleAddAct} className="rounded-full">
                     <Plus className="h-3 w-3 mr-1" />
                     Add
                   </Button>
                 </div>
-                
-                {/* List of completed acts */}
+
                 {acts.length > 0 && (
                   <div className="space-y-2 ml-6">
                     {acts.map((a) => (
-                      <div key={a.id} className="flex items-center justify-between gap-2 p-2 bg-muted/50 rounded-md">
+                      <div
+                        key={a.id}
+                        className="flex items-center justify-between gap-2 p-2.5 bg-muted/40 rounded-xl border border-border/40"
+                      >
                         <div className="flex items-center gap-2 text-xs">
                           <Check className="h-3 w-3 text-primary" />
                           <span>{a.text}</span>
@@ -400,7 +361,7 @@ export function ManifestPracticePanel({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6"
+                          className="h-7 w-7 rounded-full"
                           onClick={() => handleRemoveAct(a.id)}
                         >
                           <Trash2 className="h-3 w-3" />
@@ -412,9 +373,9 @@ export function ManifestPracticePanel({
               </CardContent>
             </Card>
 
-            {/* 3. Save Proof */}
-            <Card className={`border-border/50 ${hasProof ? "bg-primary/5 border-primary/30" : ""}`}>
-              <CardContent className="p-3 space-y-3">
+            {/* Save Proof */}
+            <Card className={`rounded-2xl border-border/50 ${hasProof ? "bg-primary/5 border-primary/25" : ""}`}>
+              <CardContent className="p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   {hasProof ? (
                     <Check className="h-4 w-4 text-primary" />
@@ -423,13 +384,12 @@ export function ManifestPracticePanel({
                   )}
                   <span className="text-sm font-medium">Save Proof</span>
                   {proofs.length > 0 && (
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="secondary" className="text-xs rounded-full">
                       {proofs.length}x
                     </Badge>
                   )}
                 </div>
-                
-                {/* New proof input */}
+
                 <Textarea
                   value={currentProofText}
                   onChange={(e) => setCurrentProofText(e.target.value)}
@@ -437,8 +397,7 @@ export function ManifestPracticePanel({
                   rows={2}
                   className="text-sm"
                 />
-                
-                {/* Proof Image Upload */}
+
                 <div className="space-y-2">
                   <input
                     ref={proofImageInputRef}
@@ -447,51 +406,50 @@ export function ManifestPracticePanel({
                     onChange={handleProofImageUpload}
                     className="hidden"
                   />
-                  
+
                   {currentProofImageUrl ? (
                     <div className="relative">
                       <img
                         src={currentProofImageUrl}
                         alt="Proof"
-                        className="w-full h-24 object-cover rounded-lg border border-border/50"
+                        className="w-full h-28 object-cover rounded-2xl border border-border/50"
                       />
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-1 right-1 h-6 w-6"
-                          onClick={handleRemoveCurrentProofImage}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-7 w-7 rounded-full"
+                        onClick={handleRemoveCurrentProofImage}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
                   ) : (
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full"
+                      className="w-full rounded-full"
                       onClick={() => proofImageInputRef.current?.click()}
                     >
                       <ImagePlus className="h-4 w-4 mr-2" />
                       Attach Image
                     </Button>
-                )}
+                  )}
                 </div>
-                
+
                 <Button
                   size="sm"
                   onClick={handleAddProof}
                   disabled={!currentProofText.trim()}
-                  className="w-full"
+                  className="w-full rounded-full"
                 >
                   <Plus className="h-3 w-3 mr-1" />
                   Add Proof
                 </Button>
-                
-                {/* List of saved proofs */}
+
                 {proofs.length > 0 && (
                   <div className="space-y-2 pt-2 border-t border-border/50">
                     {proofs.map((p) => (
-                      <div key={p.id} className="p-2 bg-muted/50 rounded-md space-y-2">
+                      <div key={p.id} className="p-3 bg-muted/40 rounded-2xl border border-border/40 space-y-2">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1">
                             <p className="text-xs">{p.text}</p>
@@ -502,18 +460,14 @@ export function ManifestPracticePanel({
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6"
+                            className="h-7 w-7 rounded-full"
                             onClick={() => handleRemoveProof(p.id)}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
                         {p.image_url && (
-                          <img
-                            src={p.image_url}
-                            alt="Proof"
-                            className="w-full h-20 object-cover rounded-md"
-                          />
+                          <img src={p.image_url} alt="Proof" className="w-full h-24 object-cover rounded-xl" />
                         )}
                       </div>
                     ))}
@@ -525,20 +479,17 @@ export function ManifestPracticePanel({
 
           <Separator />
 
-          {/* Section 2: Daily Check-in */}
+          {/* Section 2 */}
           <div className={`space-y-4 ${!section2Ready ? "opacity-50 pointer-events-none" : ""}`}>
             <div className="flex items-center justify-between">
-              <h4 className="font-medium text-foreground">Section 2 — Daily Check-in</h4>
-              {!section2Ready && (
-                <Lock className="h-4 w-4 text-muted-foreground" />
-              )}
+              <h4 className="font-semibold text-foreground">Section 2 — Daily Check-in</h4>
+              {!section2Ready && <Lock className="h-4 w-4 text-muted-foreground" />}
             </div>
 
-            {/* Alignment Slider */}
-            <div className="space-y-3">
+            <div className="space-y-3 rounded-2xl border border-border/50 bg-muted/20 p-4">
               <div className="flex justify-between items-center">
                 <Label className="text-sm">Alignment</Label>
-                <span className="text-sm font-medium text-primary">{alignment}/10</span>
+                <span className="text-sm font-semibold text-primary">{alignment}/10</span>
               </div>
               <Slider
                 value={[alignment]}
@@ -565,7 +516,6 @@ export function ManifestPracticePanel({
               />
             </div>
 
-            {/* Gratitude */}
             <div className="space-y-2">
               <Label className="text-sm">Gratitude (optional)</Label>
               <Textarea
@@ -579,23 +529,9 @@ export function ManifestPracticePanel({
               />
             </div>
 
-            {/* Lock/Update Button */}
-            <Button
-              onClick={handleLockToday}
-              disabled={!canLock}
-              className="w-full"
-            >
-              {isLocked ? (
-                <>
-                  <Lock className="h-4 w-4 mr-2" />
-                  Update Day
-                </>
-              ) : (
-                <>
-                  <Lock className="h-4 w-4 mr-2" />
-                  Lock Today
-                </>
-              )}
+            <Button onClick={handleLockToday} disabled={!canLock} className="w-full rounded-full">
+              <Lock className="h-4 w-4 mr-2" />
+              {isLocked ? "Update Day" : "Lock Today"}
             </Button>
           </div>
         </div>
