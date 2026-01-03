@@ -6,19 +6,8 @@ import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, ArrowRight, Sparkles, ImagePlus, X } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -82,13 +71,7 @@ const initialDraft: DraftState = {
   committed7Days: false,
 };
 
-export function ManifestCreateModal({
-  open,
-  onOpenChange,
-  onSave,
-  saving,
-  editingGoal,
-}: ManifestCreateModalProps) {
+export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editingGoal }: ManifestCreateModalProps) {
   const [draft, setDraft] = useState<DraftState>(initialDraft);
   const isEditing = !!editingGoal;
 
@@ -99,7 +82,7 @@ export function ManifestCreateModal({
         // Check if act_as_if is a preset or custom
         const savedActAsIf = editingGoal.act_as_if || "";
         const isPreset = ACT_AS_IF_OPTIONS.includes(savedActAsIf);
-        
+
         // Load from editing goal
         setDraft({
           step: 1,
@@ -185,7 +168,7 @@ export function ManifestCreateModal({
   };
 
   const canProceedStep1 = draft.title.trim().length > 0;
-  const canProceedStep2 = (draft.actAsIf || draft.customActAsIf.trim());
+  const canProceedStep2 = draft.actAsIf || draft.customActAsIf.trim();
   const canSubmit = draft.dailyAffirmation.trim().length > 0;
 
   // Handle image upload (simulated for now - would need storage bucket)
@@ -206,7 +189,9 @@ export function ManifestCreateModal({
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>
-              {isEditing ? "Edit Manifestation" : (
+              {isEditing ? (
+                "Edit Manifestation"
+              ) : (
                 <>
                   {draft.step === 1 && "Step 1: Basics"}
                   {draft.step === 2 && "Step 2: Make it Executable"}
@@ -216,12 +201,7 @@ export function ManifestCreateModal({
             </span>
             <div className="flex items-center gap-1">
               {[1, 2, 3].map((s) => (
-                <div
-                  key={s}
-                  className={`w-2 h-2 rounded-full ${
-                    s <= draft.step ? "bg-primary" : "bg-muted"
-                  }`}
-                />
+                <div key={s} className={`w-2 h-2 rounded-full ${s <= draft.step ? "bg-primary" : "bg-muted"}`} />
               ))}
             </div>
           </DialogTitle>
@@ -233,9 +213,7 @@ export function ManifestCreateModal({
             <>
               {/* Templates */}
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                  Quick Start Templates
-                </Label>
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Quick Start Templates</Label>
                 <div className="flex flex-wrap gap-2">
                   {STARTER_TEMPLATES.map((template) => (
                     <Button
@@ -261,18 +239,13 @@ export function ManifestCreateModal({
                   onChange={(e) => saveDraft({ title: e.target.value })}
                   placeholder="I am confidently working in my ideal role and growing every month."
                 />
-                <p className="text-xs text-muted-foreground">
-                  State it as your current reality.
-                </p>
+                <p className="text-xs text-muted-foreground">State it as your current reality.</p>
               </div>
 
               {/* Category */}
               <div className="space-y-2">
                 <Label>Category</Label>
-                <Select
-                  value={draft.category}
-                  onValueChange={(v) => saveDraft({ category: v })}
-                >
+                <Select value={draft.category} onValueChange={(v) => saveDraft({ category: v })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -291,11 +264,7 @@ export function ManifestCreateModal({
                 <Label>Vision Image (optional)</Label>
                 {draft.visionImageUrl ? (
                   <div className="relative w-full h-32 rounded-lg overflow-hidden border border-border/50">
-                    <img
-                      src={draft.visionImageUrl}
-                      alt="Vision"
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={draft.visionImageUrl} alt="Vision" className="w-full h-full object-cover" />
                     <Button
                       variant="secondary"
                       size="icon"
@@ -309,16 +278,9 @@ export function ManifestCreateModal({
                   <label className="flex items-center justify-center w-full h-24 rounded-lg border border-dashed border-border cursor-pointer hover:border-primary/50 transition-colors">
                     <div className="text-center">
                       <ImagePlus className="h-6 w-6 text-muted-foreground mx-auto mb-1" />
-                      <span className="text-xs text-muted-foreground">
-                        Upload image
-                      </span>
+                      <span className="text-xs text-muted-foreground">Upload image</span>
                     </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleImageUpload}
-                    />
+                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                   </label>
                 )}
               </div>
@@ -342,9 +304,7 @@ export function ManifestCreateModal({
             <>
               {/* Live from the End */}
               <div className="space-y-2">
-                <Label htmlFor="live-from-end">
-                  If it's already true, what do you do today?
-                </Label>
+                <Label htmlFor="live-from-end">If it's already true, what do you do today?</Label>
                 <Textarea
                   id="live-from-end"
                   value={draft.liveFromEnd}
@@ -352,9 +312,7 @@ export function ManifestCreateModal({
                   placeholder="I speak confidently in meetings and lead with clarity."
                   rows={2}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Short, vivid scene helps the mind align.
-                </p>
+                <p className="text-xs text-muted-foreground">Short, vivid scene helps the mind align.</p>
               </div>
 
               {/* Act-as-If */}
@@ -382,18 +340,14 @@ export function ManifestCreateModal({
                   }}
                   placeholder="e.g., Update LinkedIn headline to 'Supply Chain Lead'"
                 />
-                <p className="text-xs text-muted-foreground">
-                  One small, high-impact action.
-                </p>
+                <p className="text-xs text-muted-foreground">One small, high-impact action.</p>
               </div>
 
               {/* Conviction */}
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <Label>Conviction</Label>
-                  <span className="text-sm font-medium text-primary">
-                    {draft.conviction}/10
-                  </span>
+                  <span className="text-sm font-medium text-primary">{draft.conviction}/10</span>
                 </div>
                 <Slider
                   value={[draft.conviction]}
@@ -418,9 +372,7 @@ export function ManifestCreateModal({
                 <Label>Visualization</Label>
                 <RadioGroup
                   value={String(draft.visualizationMinutes)}
-                  onValueChange={(v) =>
-                    saveDraft({ visualizationMinutes: Number(v) as 3 | 5 | 10 })
-                  }
+                  onValueChange={(v) => saveDraft({ visualizationMinutes: Number(v) as 3 | 5 | 10 })}
                   className="flex gap-4"
                 >
                   {[3, 5, 10].map((min) => (
@@ -432,9 +384,7 @@ export function ManifestCreateModal({
                     </div>
                   ))}
                 </RadioGroup>
-                <p className="text-xs text-muted-foreground">
-                  Focused, concrete scenes beat length.
-                </p>
+                <p className="text-xs text-muted-foreground">Focused, concrete scenes beat length.</p>
               </div>
 
               {/* Daily Affirmation */}
@@ -446,9 +396,7 @@ export function ManifestCreateModal({
                   onChange={(e) => saveDraft({ dailyAffirmation: e.target.value })}
                   placeholder="This success is already unfolding for me."
                 />
-                <p className="text-xs text-muted-foreground">
-                  Read aloud at check-in.
-                </p>
+                <p className="text-xs text-muted-foreground">Read aloud at check-in.</p>
               </div>
 
               {/* Check-in Time */}
@@ -461,9 +409,7 @@ export function ManifestCreateModal({
                   onChange={(e) => saveDraft({ checkInTime: e.target.value })}
                   className="w-32"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Pick a reliable moment for 1–3 minutes.
-                </p>
+                <p className="text-xs text-muted-foreground">Pick a reliable moment for 1–3 minutes.</p>
               </div>
 
               {/* Commitment Pledge */}
@@ -471,18 +417,14 @@ export function ManifestCreateModal({
                 <Checkbox
                   id="commitment"
                   checked={draft.committed7Days}
-                  onCheckedChange={(checked) =>
-                    saveDraft({ committed7Days: checked === true })
-                  }
+                  onCheckedChange={(checked) => saveDraft({ committed7Days: checked === true })}
                   className="mt-0.5"
                 />
                 <div>
                   <Label htmlFor="commitment" className="cursor-pointer font-medium">
                     I commit to a 7-day practice.
                   </Label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Pledges increase follow-through.
-                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Pledges increase follow-through.</p>
                 </div>
               </div>
             </>
@@ -491,10 +433,7 @@ export function ManifestCreateModal({
 
         {/* Footer */}
         <div className="flex items-center justify-between pt-4 border-t border-border/50">
-          <Button
-            variant="ghost"
-            onClick={draft.step === 1 ? handleClose : handleBack}
-          >
+          <Button variant="ghost" onClick={draft.step === 1 ? handleClose : handleBack}>
             {draft.step === 1 ? (
               "Cancel"
             ) : (
@@ -508,10 +447,7 @@ export function ManifestCreateModal({
           {draft.step < 3 ? (
             <Button
               onClick={handleNext}
-              disabled={
-                (draft.step === 1 && !canProceedStep1) ||
-                (draft.step === 2 && !canProceedStep2)
-              }
+              disabled={(draft.step === 1 && !canProceedStep1) || (draft.step === 2 && !canProceedStep2)}
             >
               {draft.step === 1 && "Next: Make it Real"}
               {draft.step === 2 && "Next: Daily System"}
@@ -519,7 +455,7 @@ export function ManifestCreateModal({
             </Button>
           ) : (
             <Button onClick={handleSubmit} disabled={!canSubmit || saving}>
-              {saving ? (isEditing ? "Saving..." : "Creating...") : (isEditing ? "Save Changes" : "Create & Start")}
+              {saving ? (isEditing ? "Saving..." : "Creating...") : isEditing ? "Save Changes" : "Create & Start"}
             </Button>
           )}
         </div>
