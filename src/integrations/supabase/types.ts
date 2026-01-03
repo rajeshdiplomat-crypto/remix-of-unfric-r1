@@ -551,36 +551,66 @@ export type Database = {
       }
       tasks: {
         Row: {
+          alarm_enabled: boolean | null
           completed_at: string | null
           created_at: string
           description: string | null
           due_date: string | null
+          due_time: string | null
           id: string
+          importance: string | null
           is_completed: boolean | null
           priority: string | null
+          reminder_at: string | null
+          started_at: string | null
+          subtasks: Json | null
+          tags: string[] | null
+          time_of_day: string | null
           title: string
+          total_focus_minutes: number | null
+          urgency: string | null
           user_id: string
         }
         Insert: {
+          alarm_enabled?: boolean | null
           completed_at?: string | null
           created_at?: string
           description?: string | null
           due_date?: string | null
+          due_time?: string | null
           id?: string
+          importance?: string | null
           is_completed?: boolean | null
           priority?: string | null
+          reminder_at?: string | null
+          started_at?: string | null
+          subtasks?: Json | null
+          tags?: string[] | null
+          time_of_day?: string | null
           title: string
+          total_focus_minutes?: number | null
+          urgency?: string | null
           user_id: string
         }
         Update: {
+          alarm_enabled?: boolean | null
           completed_at?: string | null
           created_at?: string
           description?: string | null
           due_date?: string | null
+          due_time?: string | null
           id?: string
+          importance?: string | null
           is_completed?: boolean | null
           priority?: string | null
+          reminder_at?: string | null
+          started_at?: string | null
+          subtasks?: Json | null
+          tags?: string[] | null
+          time_of_day?: string | null
           title?: string
+          total_focus_minutes?: number | null
+          urgency?: string | null
           user_id?: string
         }
         Relationships: []

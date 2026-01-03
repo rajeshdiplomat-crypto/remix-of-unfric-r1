@@ -68,6 +68,22 @@ export function suggestTimeOfDay(dueTime: string | null): TimeOfDay {
   return 'night';
 }
 
+export function computeDateBucket(dueDate: string | null): DateBucket {
+  if (!dueDate) return 'today';
+  
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const due = new Date(dueDate);
+  const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+  
+  const diffDays = Math.floor((dueDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 0) return 'yesterday';
+  if (diffDays === 0) return 'today';
+  if (diffDays === 1) return 'tomorrow';
+  return 'week';
+}
+
 export const QUADRANT_MODES: Record<QuadrantMode, { label: string; quadrants: QuadrantConfig[] }> = {
   'urgent-important': {
     label: 'Urgent × Important',

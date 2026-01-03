@@ -26,6 +26,8 @@ import {
   DateBucket,
   computeTaskStatus,
   createDefaultTask,
+  suggestTimeOfDay,
+  computeDateBucket,
 } from "@/components/tasks/types";
 
 // Sample data
@@ -232,22 +234,30 @@ export default function Tasks() {
       .order("created_at", { ascending: false });
 
     if (!error && data) {
-      const quadrantTasks: QuadrantTask[] = data.map((t) => {
+      const quadrantTasks: QuadrantTask[] = data.map((t: any) => {
+        const dueTime = t.due_time || null;
         const task: QuadrantTask = {
-          ...t,
-          due_time: null,
-          started_at: null,
-          reminder_at: null,
-          alarm_enabled: false,
-          total_focus_minutes: 0,
-          urgency: (t.priority === "high" ? "high" : "low") as Urgency,
-          importance: (t.priority === "high" ? "high" : "low") as Importance,
-          status: "upcoming" as Status,
-          time_of_day: "morning" as TimeOfDay,
-          date_bucket: "today" as DateBucket,
-          tags: [],
-          subtasks: [],
-          quadrant_assigned: true,
+          id: t.id,
+          title: t.title,
+          description: t.description,
+          due_date: t.due_date,
+          due_time: dueTime,
+          priority: t.priority || 'medium',
+          is_completed: t.is_completed || false,
+          completed_at: t.completed_at,
+          created_at: t.created_at,
+          started_at: t.started_at || null,
+          reminder_at: t.reminder_at || null,
+          alarm_enabled: t.alarm_enabled || false,
+          total_focus_minutes: t.total_focus_minutes || 0,
+          urgency: (t.urgency || 'low') as Urgency,
+          importance: (t.importance || 'low') as Importance,
+          status: 'upcoming' as Status,
+          time_of_day: (t.time_of_day || suggestTimeOfDay(dueTime)) as TimeOfDay,
+          date_bucket: computeDateBucket(t.due_date) as DateBucket,
+          tags: t.tags || [],
+          subtasks: (t.subtasks as any[]) || [],
+          quadrant_assigned: !!(t.urgency || t.importance),
         };
         task.status = computeTaskStatus(task);
         return task;
@@ -290,10 +300,20 @@ export default function Tasks() {
         title: task.title,
         description: task.description || null,
         due_date: task.due_date || null,
+        due_time: task.due_time || null,
         priority: task.priority,
+        urgency: task.urgency,
+        importance: task.importance,
+        time_of_day: task.time_of_day,
         is_completed: task.is_completed,
         completed_at: task.completed_at || null,
-      });
+        started_at: task.started_at || null,
+        reminder_at: task.reminder_at || null,
+        alarm_enabled: task.alarm_enabled,
+        subtasks: task.subtasks as any,
+        tags: task.tags,
+        total_focus_minutes: task.total_focus_minutes,
+      } as any);
 
       if (error) {
         toast({ title: "Sync failed", description: error.message, variant: "destructive" });
@@ -331,7 +351,8 @@ export default function Tasks() {
       await supabase.from("tasks").update({
         is_completed: false,
         completed_at: null,
-      }).eq("id", task.id).eq("user_id", user.id);
+        started_at: updated.started_at,
+      } as any).eq("id", task.id).eq("user_id", user.id);
     }
 
     toast({ title: "Started!", description: "Task moved to Ongoing" });
@@ -398,10 +419,17 @@ export default function Tasks() {
         title: newTask.title,
         description: newTask.description || null,
         due_date: newTask.due_date || null,
+        due_time: newTask.due_time || null,
         priority: newTask.priority,
+        urgency: newTask.urgency,
+        importance: newTask.importance,
+        time_of_day: newTask.time_of_day,
         is_completed: newTask.is_completed,
         completed_at: newTask.completed_at || null,
-      });
+        started_at: newTask.started_at || null,
+        tags: newTask.tags,
+        subtasks: newTask.subtasks as any,
+      } as any);
     }
 
     toast({ title: "Task added" });
@@ -431,7 +459,8 @@ export default function Tasks() {
       await supabase.from("tasks").update({
         is_completed: updated.is_completed,
         completed_at: updated.completed_at,
-      }).eq("id", task.id).eq("user_id", user.id);
+        started_at: updated.started_at,
+      } as any).eq("id", task.id).eq("user_id", user.id);
     }
 
     toast({ title: "Task updated" });
