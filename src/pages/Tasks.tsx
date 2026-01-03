@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { format } from "date-fns";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,10 +15,6 @@ import { BoardView } from "@/components/tasks/BoardView";
 import { UnifiedTaskDrawer } from "@/components/tasks/UnifiedTaskDrawer";
 import { DeepFocusPrompt } from "@/components/tasks/DeepFocusPromptModal";
 import PremiumDeepFocus from "@/pages/PremiumDeepFocus";
-import { ImageFirstCard } from "@/components/ImageFirstCard";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Pencil, Play, CheckCircle2 } from "lucide-react";
 
 import {
   QuadrantTask,
@@ -496,84 +491,6 @@ export default function Tasks() {
           />
 
           <InsightsPanel tasks={filteredTasks} />
-
-          {/* Top Task - ImageFirstCard for the most urgent/important ongoing task */}
-          {filteredTasks.filter(t => t.status === "ongoing" || (t.urgency === "high" && t.importance === "high" && !t.is_completed)).length > 0 && (() => {
-            const topTask = filteredTasks.find(t => t.status === "ongoing") || 
-                           filteredTasks.find(t => t.urgency === "high" && t.importance === "high" && !t.is_completed);
-            if (!topTask) return null;
-            
-            return (
-              <ImageFirstCard
-                title={topTask.title}
-                subtitle={topTask.description || "No description"}
-                meta={[
-                  topTask.status.charAt(0).toUpperCase() + topTask.status.slice(1),
-                  topTask.due_date ? format(new Date(topTask.due_date), "MMM d") : "",
-                  topTask.urgency === "high" ? "🔥 Urgent" : "",
-                ].filter(Boolean)}
-                onClick={() => openTaskDetail(topTask)}
-                ariaLabel={topTask.title}
-                actions={
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openTaskDetail(topTask);
-                      }}
-                      title="Edit"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    {topTask.status !== "ongoing" && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleStartTask(topTask);
-                        }}
-                        title="Start"
-                      >
-                        <Play className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {topTask.status === "ongoing" && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-green-600 hover:text-green-600"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCompleteTask(topTask);
-                        }}
-                        title="Complete"
-                      >
-                        <CheckCircle2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </>
-                }
-              >
-                <div className="flex items-center gap-2 flex-wrap">
-                  {topTask.tags?.map((tag, i) => (
-                    <Badge key={i} variant="secondary" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                  {topTask.total_focus_minutes > 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      {topTask.total_focus_minutes}m focused
-                    </span>
-                  )}
-                </div>
-              </ImageFirstCard>
-            );
-          })()}
 
           <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
 

@@ -47,8 +47,6 @@ import {
   Timer,
   TrendingUp,
   Zap,
-  Pencil,
-  Trash2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -63,7 +61,6 @@ import { BarChart, Bar, ResponsiveContainer } from "recharts";
 import { ActivityImageUpload, loadActivityImage, saveActivityImage } from "@/components/trackers/ActivityImageUpload";
 import { ActivityDetailPanel } from "@/components/trackers/ActivityDetailPanel";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { ImageFirstCard } from "@/components/ImageFirstCard";
 
 interface ActivityItem {
   id: string;
@@ -974,7 +971,7 @@ export default function Trackers() {
 
           {/* Activity cards */}
           <div className="space-y-3">
-            {filteredActivities.map((activity, index) => {
+            {filteredActivities.map((activity) => {
               const category = getCategoryInfo(activity.category);
               const status = getStatus(activity);
               const currentStreak = getCurrentStreak(activity);
@@ -985,79 +982,7 @@ export default function Trackers() {
               const sessionsLeft = getSessionsLeft(activity);
               const daysLeft = getDaysLeft(activity);
               const completedSessions = getCompletedSessions(activity);
-              const activityImage = loadActivityImage(activity.id);
 
-              // First card uses ImageFirstCard (Zara-style)
-              if (index === 0) {
-                return (
-                  <ImageFirstCard
-                    key={activity.id}
-                    coverImage={activityImage || undefined}
-                    title={activity.name}
-                    subtitle={`${activity.description} • ${daysLeft} days left`}
-                    meta={[
-                      category.label.split(" ")[0],
-                      status,
-                      currentStreak > 0 ? `🔥 ${currentStreak} streak` : "",
-                    ].filter(Boolean)}
-                    onClick={() => selectActivity(activity)}
-                    ariaLabel={activity.name}
-                    actions={
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openEditDialog(activity);
-                          }}
-                          title="Edit"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(activity.id);
-                          }}
-                          title="Delete"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </>
-                    }
-                  >
-                    <div className="space-y-3">
-                      {/* Progress */}
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>{completedSessions}/{scheduledSessions} sessions</span>
-                          <span>{percent}% complete</span>
-                        </div>
-                        <Progress value={percent} className="h-1.5" />
-                      </div>
-
-                      {/* Quick insight */}
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Flame className="h-3.5 w-3.5 text-orange-500" />
-                          Streak: {currentStreak}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Zap className="h-3.5 w-3.5 text-yellow-500" />
-                          Best: {longestStreak}
-                        </span>
-                      </div>
-                    </div>
-                  </ImageFirstCard>
-                );
-              }
-
-              // Other cards use existing Card component
               return (
                 <Card
                   key={activity.id}
