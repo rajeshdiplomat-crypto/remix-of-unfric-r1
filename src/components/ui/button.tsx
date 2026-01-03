@@ -9,21 +9,21 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "rounded-full bg-primary text-primary-foreground hover:bg-primary/90 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0",
-        destructive: "rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:-translate-y-0.5",
-        outline: "rounded-lg border border-input bg-background hover:bg-muted/50 hover:text-foreground",
-        secondary: "rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/70",
-        ghost: "rounded-lg hover:bg-muted/50 hover:text-foreground",
+        default: "rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md active:shadow-sm",
+        destructive: "rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm",
+        outline: "rounded-xl border border-border/60 bg-background hover:bg-muted/30 hover:border-border text-foreground",
+        secondary: "rounded-xl bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        ghost: "rounded-xl hover:bg-muted/40 hover:text-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         chip: "rounded-full bg-muted/30 text-foreground border border-border/30 hover:bg-muted/50 font-normal",
         chipActive: "rounded-full bg-primary/10 text-primary border border-primary/30 hover:bg-primary/15 font-medium",
       },
       size: {
-        default: "h-11 px-6 py-2.5",
-        sm: "h-9 px-4",
+        default: "h-10 px-5",
+        sm: "h-8 px-3 text-xs",
         lg: "h-12 px-8",
-        icon: "h-10 w-10 rounded-lg",
-        chip: "h-9 px-4",
+        icon: "h-10 w-10",
+        chip: "h-8 px-4",
       },
     },
     defaultVariants: {
