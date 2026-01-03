@@ -17,6 +17,7 @@ import { EmotionContextFieldsEnhanced } from "@/components/emotions/EmotionConte
 import { StrategiesPanelEnhanced } from "@/components/emotions/StrategiesPanelEnhanced";
 import { PatternsDashboardEnhanced } from "@/components/emotions/PatternsDashboardEnhanced";
 import { CheckinReminders } from "@/components/emotions/CheckinReminders";
+import { PageHeroMedia, HERO_TEXT } from "@/components/common/PageHeroMedia";
 export default function Emotions() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -400,12 +401,21 @@ export default function Emotions() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 h-[calc(100vh-4rem)]">
       {/* LEFT: Check-in + Patterns (scrollable) */}
-      <div className="overflow-y-auto space-y-6">
+      <div className="overflow-y-auto space-y-6 pr-1">
+        {/* Hero Media Block */}
+        <PageHeroMedia
+          storageKey="emotion_page_hero_media"
+          typeKey="emotion_page_hero_media_type"
+          badge={HERO_TEXT.emotion.badge}
+          title={HERO_TEXT.emotion.title}
+          subtitle={HERO_TEXT.emotion.subtitle}
+        />
+
         {/* How are you feeling - Check-in section */}
-        <Card>
+        <Card className="border-border/40 shadow-sm">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2 mb-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/diary')}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => navigate('/diary')}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <CardTitle className="text-lg">How are you feeling?</CardTitle>
