@@ -753,51 +753,51 @@ export default function Trackers() {
             </div>
           </div>
 
-          {/* KPI Row (Tasks-like) */}
-          <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
-            <Card className="rounded-2xl border-border/60 bg-card/60 p-4">
+          {/* KPI Row - Unified alignment */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <Card className="rounded-xl border-border/40 bg-card p-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                   <ActivityIcon className="h-5 w-5 text-primary" />
                 </div>
-                <div>
-                  <p className="text-2xl font-semibold leading-none">{activeCount}</p>
+                <div className="min-w-0">
+                  <p className="text-xl font-semibold leading-none">{activeCount}</p>
                   <p className="text-xs text-muted-foreground mt-1">Active</p>
                 </div>
               </div>
             </Card>
 
-            <Card className="rounded-2xl border-border/60 bg-card/60 p-4">
+            <Card className="rounded-xl border-border/40 bg-card p-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-2xl bg-orange-500/10 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-xl bg-orange-500/10 flex items-center justify-center shrink-0">
                   <Flame className="h-5 w-5 text-orange-500" />
                 </div>
-                <div>
-                  <p className="text-2xl font-semibold leading-none">{totalStreak}</p>
+                <div className="min-w-0">
+                  <p className="text-xl font-semibold leading-none">{totalStreak}</p>
                   <p className="text-xs text-muted-foreground mt-1">Total Streak</p>
                 </div>
               </div>
             </Card>
 
-            <Card className="rounded-2xl border-border/60 bg-card/60 p-4">
+            <Card className="rounded-xl border-border/40 bg-card p-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-2xl bg-green-500/10 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
                   <TrendingUp className="h-5 w-5 text-green-600" />
                 </div>
-                <div>
-                  <p className="text-2xl font-semibold leading-none">{weeklyStats.avgCompletion}%</p>
+                <div className="min-w-0">
+                  <p className="text-xl font-semibold leading-none">{weeklyStats.avgCompletion}%</p>
                   <p className="text-xs text-muted-foreground mt-1">Weekly Avg</p>
                 </div>
               </div>
             </Card>
 
-            <Card className="rounded-2xl border-border/60 bg-card/60 p-4">
+            <Card className="rounded-xl border-border/40 bg-card p-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-2xl bg-purple-500/10 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0">
                   <CheckCircle2 className="h-5 w-5 text-purple-600" />
                 </div>
-                <div>
-                  <p className="text-2xl font-semibold leading-none">
+                <div className="min-w-0">
+                  <p className="text-xl font-semibold leading-none">
                     {completedThisWeek}/{plannedThisWeek}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">This Week</p>
@@ -805,24 +805,26 @@ export default function Trackers() {
               </div>
             </Card>
 
-            <Card className="rounded-2xl border-border/60 bg-card/60 p-4 col-span-2 lg:col-span-1">
-              <p className="text-xs text-muted-foreground font-medium">Today</p>
-              <div className="mt-2 flex items-baseline justify-between">
-                <p className="text-2xl font-semibold">{todayCompletion}%</p>
-              </div>
-              <div className="mt-3 h-2 w-full rounded-full bg-muted">
-                <div className="h-2 rounded-full bg-primary transition-all" style={{ width: `${todayCompletion}%` }} />
+            <Card className="rounded-xl border-border/40 bg-card p-4">
+              <div className="flex flex-col h-full justify-between">
+                <p className="text-xs text-muted-foreground font-medium">Today</p>
+                <p className="text-xl font-semibold mt-1">{todayCompletion}%</p>
+                <div className="mt-2 h-1.5 w-full rounded-full bg-muted">
+                  <div className="h-1.5 rounded-full bg-primary transition-all" style={{ width: `${todayCompletion}%` }} />
+                </div>
               </div>
             </Card>
 
-            <Card className="rounded-2xl border-border/60 bg-card/60 p-4 col-span-2 lg:col-span-1">
-              <p className="text-xs text-muted-foreground font-medium">7-Day Trend</p>
-              <div className="mt-2 h-10">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={last7DaysTrend} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                    <Bar dataKey="completion" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+            <Card className="rounded-xl border-border/40 bg-card p-4">
+              <div className="flex flex-col h-full justify-between">
+                <p className="text-xs text-muted-foreground font-medium">7-Day Trend</p>
+                <div className="mt-2 h-10 flex-1">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={last7DaysTrend} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                      <Bar dataKey="completion" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </Card>
           </div>

@@ -162,14 +162,14 @@ function StatCard({
   hint?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-border/50 bg-card shadow-sm">
-      <div className="p-4 flex items-start justify-between gap-4">
+    <div className="rounded-xl border border-border/40 bg-card shadow-sm hover:shadow-md transition-shadow duration-200">
+      <div className="p-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">{label}</p>
-          <p className="mt-2 text-2xl font-semibold text-foreground">{value}</p>
-          {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{label}</p>
+          <p className="mt-1.5 text-xl font-semibold text-foreground">{value}</p>
+          {hint && <p className="mt-1 text-xs text-muted-foreground/60">{hint}</p>}
         </div>
-        <div className="h-10 w-10 rounded-2xl bg-muted/30 ring-1 ring-border/40 flex items-center justify-center text-muted-foreground">
+        <div className="h-10 w-10 rounded-xl bg-muted/30 flex items-center justify-center text-muted-foreground shrink-0">
           {icon}
         </div>
       </div>
