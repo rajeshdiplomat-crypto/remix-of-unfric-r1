@@ -61,6 +61,7 @@ import { BarChart, Bar, ResponsiveContainer } from "recharts";
 import { ActivityImageUpload, loadActivityImage, saveActivityImage } from "@/components/trackers/ActivityImageUpload";
 import { ActivityDetailPanel } from "@/components/trackers/ActivityDetailPanel";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { PageHeroMedia, HERO_TEXT } from "@/components/common/PageHeroMedia";
 
 interface ActivityItem {
   id: string;
@@ -722,21 +723,30 @@ export default function Trackers() {
     <TooltipProvider>
       <div className="w-full flex flex-col lg:flex-row gap-6">
         {/* LEFT */}
-        <div className="flex-1 min-w-0 space-y-5">
+        <div className="flex-1 min-w-0 space-y-6">
+          {/* Hero Media Block */}
+          <PageHeroMedia
+            storageKey="tracker_page_hero_media"
+            typeKey="tracker_page_hero_media_type"
+            badge={HERO_TEXT.tracker.badge}
+            title={HERO_TEXT.tracker.title}
+            subtitle={HERO_TEXT.tracker.subtitle}
+          />
+
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
               <h1 className="text-2xl font-semibold tracking-tight text-foreground">Activity Tracker</h1>
-              <p className="text-sm text-muted-foreground">Monitor commitments, consistency, and momentum.</p>
+              <p className="text-sm text-muted-foreground mt-1">Monitor commitments, consistency, and momentum.</p>
             </div>
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Button variant="outline" size="sm" onClick={handleExport} className="h-9 rounded-xl gap-2">
+              <Button variant="outline" size="sm" onClick={handleExport} className="h-10 rounded-full gap-2 shadow-sm">
                 <Download className="h-4 w-4" />
                 <span className="hidden sm:inline">Export</span>
               </Button>
 
-              <Button size="sm" onClick={openCreateDialog} className="h-9 rounded-xl gap-2 flex-1 sm:flex-none">
+              <Button size="sm" onClick={openCreateDialog} className="h-10 rounded-full gap-2 flex-1 sm:flex-none shadow-sm">
                 <Plus className="h-4 w-4" />
                 New Activity
               </Button>

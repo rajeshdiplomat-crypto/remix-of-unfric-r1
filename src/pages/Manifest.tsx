@@ -1,14 +1,15 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Pause, Play } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import { subDays, parseISO, isSameDay, differenceInDays } from "date-fns";
 
 import { ManifestTopBar } from "@/components/manifest/ManifestTopBar";
 import { ManifestCard } from "@/components/manifest/ManifestCard";
 import { ManifestCreateModal } from "@/components/manifest/ManifestCreateModal";
 import { ManifestPracticePanel } from "@/components/manifest/ManifestPracticePanel";
+import { PageHeroMedia, HERO_TEXT } from "@/components/common/PageHeroMedia";
 
 import {
   AlertDialog,
@@ -44,150 +45,6 @@ function loadAllGoalExtras(): Record<string, Partial<ManifestGoal>> {
 
 function loadAllPractices(): Record<string, ManifestDailyPractice> {
   return JSON.parse(localStorage.getItem(DAILY_PRACTICE_KEY) || "{}");
-}
-
-function isVideoUrl(url?: string) {
-  if (!url) return false;
-  if (url.startsWith("data:video")) return true;
-  return /\.(mp4|webm|ogg)(\?|#|$)/i.test(url);
-}
-
-function ManifestHero({ mediaUrl, title, subtitle }: { mediaUrl?: string | null; title: string; subtitle: string }) {
-  const [paused, setPaused] = useState(false);
-  const [reduceMotion, setReduceMotion] = useState(false);
-
-  const bgRef = useRef<HTMLDivElement | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-
-  const isVideo = useMemo(() => isVideoUrl(mediaUrl || undefined), [mediaUrl]);
-
-  // Respect reduced motion preferences
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const apply = () => setReduceMotion(mq.matches);
-    apply();
-
-    // Safari fallback compatibility
-    if (mq.addEventListener) mq.addEventListener("change", apply);
-    else mq.addListener(apply);
-
-    return () => {
-      if (mq.removeEventListener) mq.removeEventListener("change", apply);
-      else mq.removeListener(apply);
-    };
-  }, []);
-
-  // Auto-scroll effect for image background (no rerenders, direct style update)
-  useEffect(() => {
-    if (!mediaUrl || isVideo || paused || reduceMotion) return;
-    if (!bgRef.current) return;
-
-    let raf = 0;
-    let y = 0;
-    let last = performance.now();
-
-    const tick = (now: number) => {
-      const dt = now - last;
-      last = now;
-
-      // Slow luxury drift
-      y = (y + dt * 0.012) % 2400;
-      if (bgRef.current) {
-        bgRef.current.style.backgroundPosition = `center ${-y}px`;
-      }
-
-      raf = requestAnimationFrame(tick);
-    };
-
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [mediaUrl, isVideo, paused, reduceMotion]);
-
-  // Play/pause video if used
-  useEffect(() => {
-    if (!isVideo || !videoRef.current) return;
-    const v = videoRef.current;
-
-    const sync = async () => {
-      try {
-        if (paused || reduceMotion) {
-          v.pause();
-        } else {
-          // Most browsers allow autoplay only if muted; we keep it muted.
-          await v.play();
-        }
-      } catch {
-        // Ignore autoplay rejections
-      }
-    };
-
-    void sync();
-  }, [paused, reduceMotion, isVideo]);
-
-  return (
-    <div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
-      {/* Media */}
-      <div className="relative h-[220px] sm:h-[260px]">
-        {mediaUrl ? (
-          isVideo ? (
-            <video
-              ref={videoRef}
-              src={mediaUrl}
-              muted
-              playsInline
-              loop
-              autoPlay={!paused && !reduceMotion}
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          ) : (
-            <div
-              ref={bgRef}
-              className="absolute inset-0"
-              style={{
-                backgroundImage: `url(${mediaUrl})`,
-                backgroundSize: "cover",
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "center",
-                transform: "scale(1.04)",
-              }}
-            />
-          )
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-muted/30 to-muted/10" />
-        )}
-
-        {/* Soft overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/35 to-background/10" />
-        <div className="absolute inset-0 ring-1 ring-inset ring-border/30" />
-
-        {/* Pause button (tiny + hidden) */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={() => setPaused((p) => !p)}
-          className="absolute right-3 top-3 h-8 w-8 rounded-full bg-background/30 backdrop-blur-md opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
-          aria-label={paused ? "Play hero media" : "Pause hero media"}
-          title={paused ? "Play" : "Pause"}
-        >
-          {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-        </Button>
-
-        {/* Copy */}
-        <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6">
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-border/50 bg-background/30 px-3 py-1 text-xs text-muted-foreground backdrop-blur-md">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary/80" />
-              Manifest
-            </div>
-            <h2 className="mt-3 text-xl sm:text-2xl font-semibold tracking-tight text-foreground">{title}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 export default function Manifest() {
@@ -441,18 +298,6 @@ export default function Manifest() {
     if (!open) setEditingGoal(null);
   };
 
-  // Hero media priority: selected goal > first goal with vision image > none
-  const heroMediaUrl = useMemo(() => {
-    if (selectedGoal?.vision_image_url) return selectedGoal.vision_image_url;
-    const withVision = activeGoals.find((g) => !!g.vision_image_url);
-    return withVision?.vision_image_url || null;
-  }, [selectedGoal, activeGoals]);
-
-  const heroTitle = selectedGoal ? "Focused practice, softly." : "Your vision board, refined.";
-  const heroSubtitle = selectedGoal
-    ? "Stay with one manifestation — track proof, momentum, and lock your day."
-    : "Create a manifestation, practice daily, and build evidence without rushing.";
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -464,8 +309,15 @@ export default function Manifest() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 h-[calc(100vh-4rem)]">
       {/* LEFT: Board */}
-      <div className="overflow-y-auto space-y-6 pb-6">
-        <ManifestHero mediaUrl={heroMediaUrl} title={heroTitle} subtitle={heroSubtitle} />
+      <div className="overflow-y-auto space-y-6 pb-6 pr-1">
+        {/* Hero Media Block */}
+        <PageHeroMedia
+          storageKey="manifest_page_hero_media"
+          typeKey="manifest_page_hero_media_type"
+          badge={HERO_TEXT.manifest.badge}
+          title={HERO_TEXT.manifest.title}
+          subtitle={HERO_TEXT.manifest.subtitle}
+        />
 
         <ManifestTopBar
           activeCount={activeGoals.length}

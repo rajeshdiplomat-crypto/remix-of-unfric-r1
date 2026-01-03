@@ -59,8 +59,10 @@ export function ManifestCard({
 
   return (
     <Card
-      className={`relative cursor-pointer transition-all hover:border-primary/50 overflow-hidden ${
-        isSelected ? "ring-2 ring-primary border-primary border-l-4 border-l-primary" : "border-border/50"
+      className={`relative cursor-pointer transition-all duration-200 overflow-hidden hover:shadow-md ${
+        isSelected 
+          ? "ring-2 ring-primary border-primary border-l-4 border-l-primary shadow-md" 
+          : "border-border/40 hover:border-border/60"
       }`}
       onClick={(e) => {
         e.preventDefault();
@@ -79,17 +81,17 @@ export function ManifestCard({
         />
       )}
 
-      <CardContent className="p-4 relative">
-        <div className="flex items-start justify-between gap-2">
+      <CardContent className="p-5 relative">
+        <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             {/* Assumption Text */}
-            <h3 className="font-medium text-foreground leading-tight mb-2">{goal.title}</h3>
+            <h3 className="font-medium text-foreground leading-tight mb-3 text-base">{goal.title}</h3>
 
             {/* Start Date & Check-in Time */}
-            <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
-              <span>Started {startDate}</span>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
+              <span className="font-medium">Started {startDate}</span>
               {goal.check_in_time && (
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1.5 bg-muted/40 px-2 py-1 rounded-full">
                   <Clock className="h-3 w-3" />
                   {goal.check_in_time}
                 </span>
@@ -97,28 +99,30 @@ export function ManifestCard({
             </div>
 
             {/* Status Badges */}
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              <Badge variant={goal.is_locked ? "secondary" : "default"} className="text-xs">
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <Badge variant={goal.is_locked ? "secondary" : "default"} className="text-xs rounded-full px-3">
                 {goal.is_locked ? "Locked" : "Active"}
               </Badge>
               {streak > 0 && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs rounded-full px-3">
                   🔥 Day {streak}
                 </Badge>
               )}
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-xs rounded-full px-3">
                 Conviction {goal.conviction}/10
               </Badge>
             </div>
 
             {/* Last 7 Days History */}
-            <div className="flex items-center gap-1 mb-3">
-              <span className="text-xs text-muted-foreground mr-2">Last 7 days:</span>
+            <div className="flex items-center gap-1.5 mb-4">
+              <span className="text-xs text-muted-foreground mr-2 font-medium">Last 7 days:</span>
               {last7DaysHistory.map((day, idx) => (
                 <div
                   key={idx}
-                  className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
-                    day.completed ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors ${
+                    day.completed 
+                      ? "bg-primary text-primary-foreground shadow-sm" 
+                      : "bg-muted/50 text-muted-foreground border border-border/40"
                   }`}
                   title={format(day.date, "MMM d")}
                 >
@@ -128,18 +132,18 @@ export function ManifestCard({
             </div>
 
             {/* Momentum Bar */}
-            <div className="space-y-1 mb-3">
+            <div className="space-y-2 mb-4">
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Momentum</span>
-                <span>{momentum}%</span>
+                <span className="font-medium">Momentum</span>
+                <span className="font-semibold text-foreground">{momentum}%</span>
               </div>
-              <Progress value={momentum} className="h-1.5" />
+              <Progress value={momentum} className="h-2" />
             </div>
 
             {/* Last Saved Proof */}
             {lastProof && (
-              <div className="text-xs text-muted-foreground truncate">
-                <span className="text-foreground/70">Last proof:</span> {lastProof.text}
+              <div className="text-xs text-muted-foreground truncate p-2.5 bg-muted/30 rounded-lg border border-border/30">
+                <span className="text-foreground/80 font-medium">Last proof:</span> {lastProof.text}
               </div>
             )}
           </div>
