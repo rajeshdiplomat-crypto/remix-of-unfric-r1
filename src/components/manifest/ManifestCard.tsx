@@ -1,22 +1,16 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
-import { Pencil, Check, Minus, Clock, History, Trash2 } from "lucide-react";
-import { type ManifestGoal, type ManifestProof, type ManifestDailyPractice, DAILY_PRACTICE_KEY } from "./types";
-import { format, subDays, isSameDay, parseISO } from "date-fns";
 import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { format, parseISO, differenceInDays } from "date-fns";
+import { Pencil, Trash2, Image as ImageIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import type { ManifestGoal, ManifestProof } from "@/components/manifest/types";
 
-interface ManifestCardProps {
-  goal: ManifestGoal;
-  streak: number;
-  momentum: number;
-  lastProof?: ManifestProof;
-  isSelected: boolean;
-  onClick: () => void;
-  onEdit?: () => void;
-  onDelete?: () => void;
+function Pill({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center rounded-full border border-white/20 bg-white/15 px-3 py-1.5 text-xs text-white/90 backdrop-blur">
+      {children}
+    </span>
+  );
 }
 
 export function ManifestCard({
@@ -28,168 +22,120 @@ export function ManifestCard({
   onClick,
   onEdit,
   onDelete,
-}: ManifestCardProps) {
-  const navigate = useNavigate();
-  // Get last 7 days practice history
-  const last7DaysHistory = useMemo(() => {
-    const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
-    const allPractices: Record<string, ManifestDailyPractice> = stored ? JSON.parse(stored) : {};
-    
-    const today = new Date();
-    const history: { date: Date; completed: boolean }[] = [];
-    
-    for (let i = 6; i >= 0; i--) {
-      const date = subDays(today, i);
-      const dateStr = format(date, "yyyy-MM-dd");
-      const practice = allPractices[`${goal.id}_${dateStr}`];
-      history.push({
-        date,
-        completed: practice?.locked === true,
-      });
+}: {
+  goal: ManifestGoal;
+  streak: number;
+  momentum: number;
+  lastProof?: ManifestProof;
+  isSelected: boolean;
+  onClick: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const day = useMemo(() => {
+    try {
+      return Math.max(0, differenceInDays(new Date(), parseISO(goal.created_at)));
+    } catch {
+      return 0;
     }
-    
-    return history;
-  }, [goal.id]);
+  }, [goal.created_at]);
 
-  const startDate = goal.start_date ? format(parseISO(goal.start_date), "MMM d, yyyy") : (goal.created_at ? format(parseISO(goal.created_at), "MMM d, yyyy") : "—");
+  const hasImage = !!goal.vision_image_url;
 
   return (
-    <Card
-      className={`relative cursor-pointer transition-all hover:border-primary/50 overflow-hidden ${
-        isSelected ? "ring-2 ring-primary border-primary border-l-4 border-l-primary" : "border-border/50"
-      }`}
-      onClick={(e) => {
-        e.preventDefault();
-        onClick();
-      }}
-    >
-      {/* Vision Image Background */}
-      {goal.vision_image_url && (
-        <div 
-          className="absolute inset-0 opacity-15 pointer-events-none"
-          style={{
-            backgroundImage: `url(${goal.vision_image_url})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        />
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      className={cn(
+        "group relative overflow-hidden rounded-[28px] border border-black/5 bg-white/60 shadow-[0_18px_55px_rgba(0,0,0,0.08)] transition-transform",
+        "hover:-translate-y-[2px] hover:shadow-[0_22px_70px_rgba(0,0,0,0.10)]",
+        isSelected && "ring-2 ring-black/10",
       )}
-      
-      <CardContent className="p-4 relative">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            {/* Assumption Text */}
-            <h3 className="font-medium text-foreground leading-tight mb-2">
-              {goal.title}
-            </h3>
+    >
+      {/* Background */}
+      <div className="absolute inset-0">
+        {hasImage ? (
+          <img src={goal.vision_image_url} alt="" className="h-full w-full object-cover" loading="lazy" />
+        ) : (
+          <div className="h-full w-full bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.45),rgba(255,255,255,0.0)),linear-gradient(120deg,#c7c1bb,#b7b0a9,#d8d2cb)]" />
+        )}
 
-            {/* Start Date & Check-in Time */}
-            <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
-              <span>Started {startDate}</span>
-              {goal.check_in_time && (
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {goal.check_in_time}
-                </span>
-              )}
-            </div>
+        {/* Soft overlay like screenshot */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+      </div>
 
-            {/* Status Badges */}
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              <Badge variant={goal.is_locked ? "secondary" : "default"} className="text-xs">
-                {goal.is_locked ? "Locked" : "Active"}
-              </Badge>
-              {streak > 0 && (
-                <Badge variant="outline" className="text-xs">
-                  🔥 Day {streak}
-                </Badge>
-              )}
-              <Badge variant="outline" className="text-xs">
-                Conviction {goal.conviction}/10
-              </Badge>
-            </div>
-
-            {/* Last 7 Days History */}
-            <div className="flex items-center gap-1 mb-3">
-              <span className="text-xs text-muted-foreground mr-2">Last 7 days:</span>
-              {last7DaysHistory.map((day, idx) => (
-                <div
-                  key={idx}
-                  className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
-                    day.completed 
-                      ? "bg-primary text-primary-foreground" 
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                  title={format(day.date, "MMM d")}
-                >
-                  {day.completed ? <Check className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
-                </div>
-              ))}
-            </div>
-
-            {/* Momentum Bar */}
-            <div className="space-y-1 mb-3">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Momentum</span>
-                <span>{momentum}%</span>
-              </div>
-              <Progress value={momentum} className="h-1.5" />
-            </div>
-
-            {/* Last Saved Proof */}
-            {lastProof && (
-              <div className="text-xs text-muted-foreground truncate">
-                <span className="text-foreground/70">Last proof:</span>{" "}
-                {lastProof.text}
-              </div>
-            )}
+      <div className="relative flex min-h-[340px] flex-col justify-between p-6 lg:p-8">
+        {/* Top row */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
+            <Pill>{goal.is_completed ? "Completed" : "Active"}</Pill>
+            <Pill>Day {day}</Pill>
+            <Pill>Conviction {goal.conviction}/10</Pill>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col gap-1 shrink-0">
-            {onEdit && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit();
-                }}
-                title="Edit goal"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-            )}
+          <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-9 w-9 rounded-full bg-white/15 text-white hover:bg-white/25"
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/manifest/history/${goal.id}`);
+                onEdit();
               }}
-              title="View history"
+              aria-label="Edit"
             >
-              <History className="h-4 w-4" />
+              <Pencil className="h-4 w-4" />
             </Button>
-            {onDelete && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete();
-                }}
-                title="Delete goal"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full bg-white/15 text-white hover:bg-white/25"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              aria-label="Delete"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </div>
         </div>
-      </CardContent>
-    </Card>
+
+        {/* Bottom content */}
+        <div className="space-y-4">
+          <h3 className="font-serif text-[40px] leading-[1.12] tracking-tight text-white">{goal.title}</h3>
+
+          {/* Small proof preview (like right card vibe) */}
+          {lastProof?.text ? (
+            <div className="max-w-[520px] rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm text-white/85 backdrop-blur">
+              {lastProof.text}
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-2 text-xs text-white/70">
+              <ImageIcon className="h-4 w-4" />
+              Add a vision image or a proof to strengthen momentum.
+            </div>
+          )}
+
+          <div className="pt-2">
+            <div className="flex items-center justify-between text-[12px] tracking-wide text-white/80">
+              <span>
+                {goal.is_completed ? "COMPLETED" : "ACTIVE"} · {streak} STREAK · {momentum}% MOMENTUM
+              </span>
+              <span>{momentum}%</span>
+            </div>
+
+            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/20">
+              <div
+                className="h-full rounded-full bg-white/75"
+                style={{ width: `${Math.max(0, Math.min(100, momentum))}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

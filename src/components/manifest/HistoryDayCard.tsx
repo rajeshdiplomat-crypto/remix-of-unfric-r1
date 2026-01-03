@@ -1,256 +1,94 @@
-import { useState } from "react";
-import { format, isToday, isYesterday } from "date-fns";
-import { Check, Circle, ChevronDown, ChevronUp, Eye, Image as ImageIcon, Copy, Share2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { format, parseISO } from "date-fns";
+import { CheckCircle2, XCircle, Image as ImageIcon } from "lucide-react";
 
-interface HistoryDayData {
-  date: string;
-  practiced: boolean;
-  alignment: number;
-  visualizations: Array<{
-    id: string;
-    duration: number;
-    created_at: string;
-  }>;
-  acts: Array<{
-    id: string;
-    text: string;
-    created_at: string;
-  }>;
-  proofs: Array<{
-    id: string;
-    text?: string;
-    image_url?: string;
-    created_at: string;
-  }>;
-  growth_note?: string;
-  gratitude?: string;
-}
-
-interface HistoryDayCardProps {
-  data: HistoryDayData;
+export function HistoryDayCard({
+  data,
+  onImageClick,
+}: {
+  data: {
+    date: string;
+    practiced: boolean;
+    alignment: number;
+    visualizations: Array<{ id: string; duration: number; created_at: string }>;
+    acts: Array<{ id: string; text: string; created_at: string }>;
+    proofs: Array<{ id: string; text?: string; image_url?: string; created_at: string }>;
+    growth_note?: string;
+    gratitude?: string;
+  };
   onImageClick: (imageUrl: string) => void;
-  onUseAsMicroAction?: (text: string) => void;
-}
-
-export function HistoryDayCard({ data, onImageClick, onUseAsMicroAction }: HistoryDayCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  
-  const date = new Date(data.date);
-  
-  const getDateLabel = () => {
-    if (isToday(date)) return "Today";
-    if (isYesterday(date)) return "Yesterday";
-    return format(date, "EEE, MMM d");
-  };
-
-  const hasProofText = data.proofs.some(p => p.text);
-  const hasProofImage = data.proofs.some(p => p.image_url);
-  const proofExcerpt = data.proofs.find(p => p.text)?.text?.slice(0, 50);
-
-  const handleCelebrate = () => {
-    if (confirm("Share this proof as a celebration? (This will be visible to others)")) {
-      toast.success("Proof shared! Celebrate your progress!");
-      // Analytics: proof_shared
-    }
-  };
-
-  const handleUseAsMicroAction = (text: string) => {
-    if (onUseAsMicroAction) {
-      onUseAsMicroAction(text);
-      toast.success("Copied to Act-as-If input");
-    }
-  };
+}) {
+  const day = parseISO(data.date);
+  const images = data.proofs.filter((p) => p.image_url).slice(0, 3);
 
   return (
-    <Card className={cn(
-      "border-border/50 transition-colors",
-      data.practiced ? "bg-primary/5" : "bg-muted/30"
-    )}>
-      <CardContent className="p-3">
-        {/* Collapsed Row */}
-        <button
-          className="w-full flex items-center gap-3 text-left"
-          onClick={() => setIsExpanded(!isExpanded)}
-          aria-expanded={isExpanded}
-        >
-          {/* Status Icon */}
-          <div className={cn(
-            "flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center",
-            data.practiced ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
-          )}>
+    <div className="rounded-3xl border border-black/5 bg-white/60 backdrop-blur p-5 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
             {data.practiced ? (
-              <Check className="h-3.5 w-3.5" />
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#2f2f33] text-white px-3 py-1 text-xs">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Practiced
+              </span>
             ) : (
-              <Circle className="h-3.5 w-3.5" />
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/70 border border-black/5 text-[#2d2d31] px-3 py-1 text-xs">
+                <XCircle className="h-3.5 w-3.5 opacity-70" />
+                Pause
+              </span>
             )}
+
+            <span className="text-sm font-medium text-[#1f1f23]">{format(day, "EEE, MMM d")}</span>
           </div>
 
-          {/* Date & Info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-sm">{getDateLabel()}</span>
-              
-              {data.practiced && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                  {data.alignment}/10
-                </Badge>
-              )}
-              
-              {/* Micro icons */}
-              <div className="flex items-center gap-1 text-muted-foreground">
-                {data.visualizations.length > 0 && (
-                  <span className="text-[10px]" title={`${data.visualizations.length} visualization(s)`}>
-                    Viz×{data.visualizations.length}
-                  </span>
-                )}
-                {data.acts.length > 0 && (
-                  <span className="text-[10px]" title={`${data.acts.length} action(s)`}>
-                    Act×{data.acts.length}
-                  </span>
-                )}
-              </div>
-            </div>
-            
-            {/* Proof excerpt */}
-            {(hasProofText || hasProofImage) && (
-              <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
-                {hasProofImage && <ImageIcon className="h-3 w-3" />}
-                {data.proofs.length > 0 && (
-                  <span className="truncate">{data.proofs.length} proof(s)</span>
-                )}
-              </div>
-            )}
+          <div className="mt-2 text-sm text-muted-foreground">
+            Alignment: <span className="font-medium text-[#1f1f23]">{data.alignment}/10</span> · Acts:{" "}
+            <span className="font-medium text-[#1f1f23]">{data.acts.length}</span> · Proofs:{" "}
+            <span className="font-medium text-[#1f1f23]">{data.proofs.length}</span> · Visualize:{" "}
+            <span className="font-medium text-[#1f1f23]">{data.visualizations.length}</span>
           </div>
+        </div>
+      </div>
 
-          {/* Expand Chevron */}
-          <div className="flex-shrink-0 text-muted-foreground">
-            {isExpanded ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </div>
-        </button>
-
-        {/* Expanded Details */}
-        {isExpanded && (
-          <div className="mt-3 pt-3 border-t border-border/50 space-y-3">
-            {/* Visualizations */}
-            {data.visualizations.length > 0 && (
-              <div className="space-y-1">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Visualization(s) — {data.visualizations.length} session(s)
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {data.visualizations.map((viz) => (
-                    <Badge key={viz.id} variant="secondary" className="text-[10px]">
-                      {viz.duration}min at {format(new Date(viz.created_at), "HH:mm")}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Acts */}
-            {data.acts.length > 0 && (
-              <div className="space-y-1">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Act-as-If — {data.acts.length} action(s)
-                </span>
-                {data.acts.map((act) => (
-                  <p key={act.id} className="text-sm text-foreground bg-background/50 p-2 rounded-md">
-                    {act.text}
-                  </p>
-                ))}
-              </div>
-            )}
-
-            {/* Proofs */}
-            {data.proofs.length > 0 && (
-              <div className="space-y-2">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Proof(s) — {data.proofs.length}
-                </span>
-                {data.proofs.map((proof) => (
-                  <div key={proof.id} className="space-y-1">
-                    {proof.text && (
-                      <p className="text-sm text-foreground bg-background/50 p-2 rounded-md">
-                        {proof.text}
-                      </p>
-                    )}
-                    {proof.image_url && (
-                      <button
-                        onClick={() => onImageClick(proof.image_url!)}
-                        className="block w-full"
-                        aria-label="View proof image"
-                      >
-                        <img
-                          src={proof.image_url}
-                          alt="Proof"
-                          className="w-full h-24 object-cover rounded-md border border-border/50 hover:opacity-80 transition-opacity"
-                          loading="lazy"
-                        />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Growth Note */}
-            {data.growth_note && (
-              <div>
-                <span className="text-xs font-medium text-muted-foreground">Growth Note</span>
-                <p className="text-sm text-foreground mt-1">{data.growth_note}</p>
-              </div>
-            )}
-
-            {/* Gratitude (collapsed by default - just show if present) */}
-            {data.gratitude && (
-              <details className="text-sm">
-                <summary className="text-xs font-medium text-muted-foreground cursor-pointer">
-                  Gratitude
-                </summary>
-                <p className="text-foreground mt-1 pl-2">{data.gratitude}</p>
-              </details>
-            )}
-
-            {/* Timestamp */}
-            <p className="text-[10px] text-muted-foreground">
-              Saved at {format(date, "HH:mm")} — Check-in
-            </p>
-
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2 pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs"
-                onClick={handleCelebrate}
+      {/* Proof text snippets */}
+      {data.proofs.some((p) => p.text) && (
+        <div className="mt-4 space-y-2">
+          {data.proofs
+            .filter((p) => p.text)
+            .slice(0, 2)
+            .map((p) => (
+              <div
+                key={p.id}
+                className="rounded-2xl border border-black/5 bg-white/55 px-4 py-3 text-sm text-[#2d2d31]"
               >
-                <Share2 className="h-3 w-3 mr-1" />
-                Celebrate
-              </Button>
-              {hasProofText && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs"
-                  onClick={() => handleUseAsMicroAction(data.proofs.find(p => p.text)?.text || "")}
-                >
-                  <Copy className="h-3 w-3 mr-1" />
-                  Use as micro-action
-                </Button>
-              )}
-            </div>
+                {p.text}
+              </div>
+            ))}
+        </div>
+      )}
+
+      {/* Image thumbs */}
+      {images.length > 0 && (
+        <div className="mt-4 flex items-center gap-3">
+          <div className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+            <ImageIcon className="h-4 w-4" />
+            Images
           </div>
-        )}
-      </CardContent>
-    </Card>
+
+          <div className="flex gap-2">
+            {images.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => p.image_url && onImageClick(p.image_url)}
+                className="h-12 w-12 overflow-hidden rounded-xl border border-black/5 bg-white/40"
+                title="Open image"
+              >
+                {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
+                <img src={p.image_url!} alt="" className="h-full w-full object-cover" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

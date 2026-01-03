@@ -1,56 +1,27 @@
-import { useEffect, useCallback } from "react";
 import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
-interface ProofLightboxProps {
-  imageUrl: string;
-  onClose: () => void;
-}
-
-export function ProofLightbox({ imageUrl, onClose }: ProofLightboxProps) {
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    },
-    [onClose]
-  );
-
-  useEffect(() => {
-    document.addEventListener("keydown", handleKeyDown);
-    document.body.style.overflow = "hidden";
-    
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [handleKeyDown]);
-
+export function ProofLightbox({ imageUrl, onClose }: { imageUrl: string; onClose: () => void }) {
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label="Proof image viewer"
     >
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute top-4 right-4 text-white hover:bg-white/20"
-        onClick={onClose}
-        aria-label="Close lightbox"
-      >
-        <X className="h-6 w-6" />
-      </Button>
-      
-      <img
-        src={imageUrl}
-        alt="Proof"
-        className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
+      <div
+        className="relative max-w-4xl w-full overflow-hidden rounded-3xl border border-white/10 bg-black/30 backdrop-blur shadow-[0_30px_100px_rgba(0,0,0,0.45)]"
         onClick={(e) => e.stopPropagation()}
-      />
+      >
+        <button
+          onClick={onClose}
+          className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25"
+          aria-label="Close"
+        >
+          <X className="h-5 w-5" />
+        </button>
+
+        <img src={imageUrl} alt="" className="w-full h-auto object-contain bg-black/20" />
+      </div>
     </div>
   );
 }
