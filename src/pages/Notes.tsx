@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Search, Settings, FileText, ChevronDown, Zap, ArrowUpDown, Pin, Clock, Layers } from "lucide-react";
+import { Plus, Search, Settings, FileText, ChevronDown, Zap, ArrowUpDown, Pin, Clock, Layers, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +20,7 @@ import { NotesBoardView } from "@/components/notes/NotesBoardView";
 import { NotesMindMapView } from "@/components/notes/NotesMindMapView";
 import { NotesViewSwitcher, type NotesViewType } from "@/components/notes/NotesViewSwitcher";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ImageFirstCard } from "@/components/ImageFirstCard";
 
 export interface NoteGroup {
   id: string;
@@ -513,38 +514,87 @@ export default function Notes() {
             <StatCard label="Active groups" value={`${insights.activeGroups}`} icon={<Layers className="h-5 w-5" />} />
           </div>
 
-          {/* Pinned */}
+          {/* Pinned - First note uses ImageFirstCard */}
           {pinnedNotes.length > 0 && (
-            <div className="rounded-2xl border border-border/50 bg-card shadow-sm">
-              <div className="p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Pinned</p>
-                  <p className="text-sm text-muted-foreground mt-1">Fast access to what matters.</p>
+            <div className="space-y-4">
+              {/* First pinned note as ImageFirstCard */}
+              <ImageFirstCard
+                title={pinnedNotes[0].title || "Untitled"}
+                subtitle={getGroupName(pinnedNotes[0].groupId)}
+                meta={[
+                  "Pinned",
+                  formatDistanceToNow(new Date(pinnedNotes[0].updatedAt), { addSuffix: true }),
+                ]}
+                onClick={() => handleNoteClick(pinnedNotes[0])}
+                ariaLabel={pinnedNotes[0].title || "Untitled note"}
+                actions={
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNoteClick(pinnedNotes[0]);
+                      }}
+                      title="Edit"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteNote(pinnedNotes[0].id);
+                      }}
+                      title="Delete"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </>
+                }
+              >
+                <p className="text-sm text-muted-foreground line-clamp-3">
+                  {pinnedNotes[0].plainText || "No content"}
+                </p>
+              </ImageFirstCard>
+
+              {/* Remaining pinned notes */}
+              {pinnedNotes.length > 1 && (
+                <div className="rounded-2xl border border-border/50 bg-card shadow-sm">
+                  <div className="p-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">More Pinned</p>
+                      <p className="text-sm text-muted-foreground mt-1">Fast access to what matters.</p>
+                    </div>
+                  </div>
+
+                  <div className="px-4 pb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {pinnedNotes.slice(1).map((n) => (
+                      <button
+                        key={n.id}
+                        onClick={() => handleNoteClick(n)}
+                        className="text-left rounded-2xl border border-border/40 bg-background/60 hover:bg-background/80 hover:shadow-sm transition-all p-4"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-foreground truncate">{n.title || "Untitled"}</p>
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{n.plainText || "No content"}</p>
+                          </div>
+                          <Pin className="h-4 w-4 text-muted-foreground" />
+                        </div>
+
+                        <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{getGroupName(n.groupId)}</span>
+                          <span>{formatDistanceToNow(new Date(n.updatedAt), { addSuffix: true })}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-
-              <div className="px-4 pb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {pinnedNotes.map((n) => (
-                  <button
-                    key={n.id}
-                    onClick={() => handleNoteClick(n)}
-                    className="text-left rounded-2xl border border-border/40 bg-background/60 hover:bg-background/80 hover:shadow-sm transition-all p-4"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-foreground truncate">{n.title || "Untitled"}</p>
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{n.plainText || "No content"}</p>
-                      </div>
-                      <Pin className="h-4 w-4 text-muted-foreground" />
-                    </div>
-
-                    <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{getGroupName(n.groupId)}</span>
-                      <span>{formatDistanceToNow(new Date(n.updatedAt), { addSuffix: true })}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
+              )}
             </div>
           )}
 

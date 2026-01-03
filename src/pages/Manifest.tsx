@@ -2,13 +2,18 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, Pencil, History, Trash2 } from "lucide-react";
 import { subDays, parseISO, isSameDay, format, differenceInDays } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 import { ManifestTopBar } from "@/components/manifest/ManifestTopBar";
 import { ManifestCard } from "@/components/manifest/ManifestCard";
 import { ManifestCreateModal } from "@/components/manifest/ManifestCreateModal";
 import { ManifestPracticePanel } from "@/components/manifest/ManifestPracticePanel";
+import { ImageFirstCard } from "@/components/ImageFirstCard";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,6 +54,7 @@ function loadAllPractices(): Record<string, ManifestDailyPractice> {
 
 export default function Manifest() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [goals, setGoals] = useState<ManifestGoal[]>([]);
   const [proofs, setProofs] = useState<ManifestProof[]>([]);
   const [practices, setPractices] = useState<ManifestDailyPractice[]>([]);
@@ -362,8 +368,92 @@ export default function Manifest() {
           </div>
         ) : (
           <div className="space-y-4">
-            {activeGoals.map((goal) => {
+            {activeGoals.map((goal, index) => {
               const { streak, momentum, lastProof } = getGoalMetrics(goal);
+              const startDate = goal.start_date
+                ? format(parseISO(goal.start_date), "MMM d, yyyy")
+                : goal.created_at
+                ? format(parseISO(goal.created_at), "MMM d, yyyy")
+                : "—";
+
+              // First card uses ImageFirstCard (Zara-style)
+              if (index === 0) {
+                return (
+                  <ImageFirstCard
+                    key={goal.id}
+                    coverImage={goal.vision_image_url}
+                    title={goal.title}
+                    subtitle={`Started ${startDate} • Conviction ${goal.conviction}/10`}
+                    meta={[
+                      goal.is_locked ? "Locked" : "Active",
+                      streak > 0 ? `🔥 Day ${streak}` : "",
+                    ].filter(Boolean)}
+                    onClick={() => handleSelectGoal(goal)}
+                    ariaLabel={goal.title}
+                    actions={
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditGoal(goal);
+                          }}
+                          title="Edit goal"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/manifest/history/${goal.id}`);
+                          }}
+                          title="View history"
+                        >
+                          <History className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingGoal(goal);
+                          }}
+                          title="Delete goal"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    }
+                  >
+                    <div className="space-y-3">
+                      {/* Momentum Bar */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Momentum</span>
+                          <span>{momentum}%</span>
+                        </div>
+                        <Progress value={momentum} className="h-1.5" />
+                      </div>
+
+                      {/* Last Saved Proof */}
+                      {lastProof && (
+                        <div className="text-sm text-muted-foreground truncate">
+                          <span className="text-foreground/70">Last proof:</span>{" "}
+                          {lastProof.text}
+                        </div>
+                      )}
+                    </div>
+                  </ImageFirstCard>
+                );
+              }
+
+              // Other cards use original ManifestCard
               return (
                 <ManifestCard
                   key={goal.id}

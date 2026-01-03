@@ -5,12 +5,13 @@ import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PenLine, Search, ChevronDown } from "lucide-react";
+import { PenLine, Search, ChevronDown, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { DiaryFeedCard } from "@/components/diary/DiaryFeedCard";
 import { DiarySidebar } from "@/components/diary/DiarySidebar";
 import { JournalQuestionCard } from "@/components/diary/JournalQuestionCard";
+import { ImageFirstCard } from "@/components/ImageFirstCard";
 import { useFeedEvents } from "@/components/diary/useFeedEvents";
 import { useDiaryMetrics } from "@/components/diary/useDiaryMetrics";
 import { cn } from "@/lib/utils";
@@ -449,8 +450,50 @@ export default function Diary() {
         ) : (
           <ScrollArea className="h-[calc(100vh-280px)]">
             <div className="space-y-4 pr-2">
-              {sortedEvents.map((event) =>
-                event.type === "journal_question" ? (
+              {sortedEvents.map((event, index) => {
+                // First event uses ImageFirstCard (Zara-style)
+                if (index === 0) {
+                  const mediaArray = event.media as any[] | null;
+                  const coverImage = mediaArray?.[0]?.url || undefined;
+                  
+                  return (
+                    <ImageFirstCard
+                      key={event.id}
+                      coverImage={coverImage}
+                      title={event.title}
+                      subtitle={event.summary || event.content_preview?.substring(0, 80)}
+                      meta={[
+                        event.source_module.charAt(0).toUpperCase() + event.source_module.slice(1),
+                        format(new Date(event.created_at), "MMM d, yyyy"),
+                      ]}
+                      onClick={() => handleNavigateToSource(event)}
+                      ariaLabel={event.title}
+                      actions={
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleNavigateToSource(event);
+                          }}
+                          title="Open in module"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      }
+                    >
+                      {event.content_preview && (
+                        <p className="text-sm text-muted-foreground line-clamp-3">
+                          {event.content_preview}
+                        </p>
+                      )}
+                    </ImageFirstCard>
+                  );
+                }
+
+                // Other events use existing components
+                return event.type === "journal_question" ? (
                   <JournalQuestionCard
                     key={event.id}
                     eventId={event.id}
@@ -491,8 +534,8 @@ export default function Diary() {
                     onToggleSave={toggleSave}
                     onNavigateToSource={handleNavigateToSource}
                   />
-                ),
-              )}
+                );
+              })}
             </div>
           </ScrollArea>
         )}
