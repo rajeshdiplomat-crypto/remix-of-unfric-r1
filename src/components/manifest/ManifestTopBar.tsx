@@ -1,11 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Plus, Flame, Target, TrendingUp } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ManifestTopBarProps {
   activeCount: number;
@@ -14,12 +9,7 @@ interface ManifestTopBarProps {
   onNewManifest: () => void;
 }
 
-export function ManifestTopBar({
-  activeCount,
-  streak,
-  avgMomentum,
-  onNewManifest,
-}: ManifestTopBarProps) {
+export function ManifestTopBar({ activeCount, streak, avgMomentum, onNewManifest }: ManifestTopBarProps) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-lg bg-card border border-border/50">
       <div className="flex flex-wrap items-center gap-4 sm:gap-6">
@@ -51,9 +41,7 @@ export function ManifestTopBar({
               </div>
             </TooltipTrigger>
             <TooltipContent>
-              <p className="text-xs max-w-xs">
-                Momentum measures how consistently this assumption is being practiced.
-              </p>
+              <p className="text-xs max-w-xs">Momentum measures how consistently this assumption is being practiced.</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Clock } from "lucide-react";
 import { format, startOfWeek, endOfWeek, isWithinInterval, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,9 +22,22 @@ interface HistoryDay {
   date: string;
   practiced: boolean;
   alignment: number;
-  visualizations: Array<{ id: string; duration: number; created_at: string }>;
-  acts: Array<{ id: string; text: string; created_at: string }>;
-  proofs: Array<{ id: string; text?: string; image_url?: string; created_at: string }>;
+  visualizations: Array<{
+    id: string;
+    duration: number;
+    created_at: string;
+  }>;
+  acts: Array<{
+    id: string;
+    text: string;
+    created_at: string;
+  }>;
+  proofs: Array<{
+    id: string;
+    text?: string;
+    image_url?: string;
+    created_at: string;
+  }>;
   growth_note?: string;
   gratitude?: string;
 }
@@ -37,36 +51,12 @@ interface WeekGroup {
   proofsCount: number;
 }
 
+// Helper to load goal extras from localStorage
 function loadGoalExtras(goalId: string): Partial<ManifestGoal> {
   const stored = localStorage.getItem(GOAL_EXTRAS_KEY);
   if (!stored) return {};
   const all = JSON.parse(stored);
   return all[goalId] || {};
-}
-
-function FilterPill({
-  active,
-  children,
-  onClick,
-}: {
-  active: boolean;
-  children: React.ReactNode;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={[
-        "px-3 py-1.5 text-sm rounded-full border transition-colors",
-        "shadow-[0_10px_30px_rgba(0,0,0,0.06)]",
-        active
-          ? "bg-[#2f2f33] text-white border-transparent"
-          : "bg-white/65 text-[#2d2d31] border-black/5 hover:bg-white/80",
-      ].join(" ")}
-    >
-      {children}
-    </button>
-  );
 }
 
 export default function ManifestHistory() {
@@ -80,6 +70,7 @@ export default function ManifestHistory() {
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [historyData, setHistoryData] = useState<HistoryDay[]>([]);
 
+  // Load goal info from Supabase + local extras
   useEffect(() => {
     async function fetchGoal() {
       if (!goalId || !user) {
@@ -130,6 +121,7 @@ export default function ManifestHistory() {
     fetchGoal();
   }, [goalId, user]);
 
+  // Load history data
   useEffect(() => {
     if (!goalId) return;
 
@@ -164,6 +156,7 @@ export default function ManifestHistory() {
     setHistoryData(goalPractices);
   }, [goalId]);
 
+  // Filter data
   const filteredData = historyData.filter((day) => {
     switch (filter) {
       case "practiced":
@@ -179,6 +172,7 @@ export default function ManifestHistory() {
     }
   });
 
+  // Group by week
   const weekGroups: WeekGroup[] = [];
   filteredData.forEach((day) => {
     const dayDate = parseISO(day.date);
@@ -188,13 +182,21 @@ export default function ManifestHistory() {
     let group = weekGroups.find((g) => isWithinInterval(dayDate, { start: g.weekStart, end: g.weekEnd }));
 
     if (!group) {
-      group = { weekStart, weekEnd, days: [], avgAlignment: 0, actDays: 0, proofsCount: 0 };
+      group = {
+        weekStart,
+        weekEnd,
+        days: [],
+        avgAlignment: 0,
+        actDays: 0,
+        proofsCount: 0,
+      };
       weekGroups.push(group);
     }
 
     group.days.push(day);
   });
 
+  // Calculate week summaries
   weekGroups.forEach((group) => {
     const practicedDays = group.days.filter((d) => d.practiced);
     group.avgAlignment =
@@ -207,6 +209,7 @@ export default function ManifestHistory() {
 
   weekGroups.sort((a, b) => b.weekStart.getTime() - a.weekStart.getTime());
 
+  // Calculate totals
   const totalDays = historyData.length;
   const totalProofs = historyData.reduce((sum, d) => sum + d.proofs.length, 0);
   const practicedDays = historyData.filter((d) => d.practiced);
@@ -215,6 +218,7 @@ export default function ManifestHistory() {
       ? Math.round((practicedDays.reduce((sum, d) => sum + d.alignment, 0) / practicedDays.length) * 10) / 10
       : 0;
 
+  // Calculate best streak
   let bestStreak = 0;
   let currentStreak = 0;
   const sortedByDateAsc = [...historyData].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -222,15 +226,23 @@ export default function ManifestHistory() {
     if (day.practiced) {
       currentStreak++;
       bestStreak = Math.max(bestStreak, currentStreak);
-    } else currentStreak = 0;
+    } else {
+      currentStreak = 0;
+    }
   });
 
-  const handleImageClick = (imageUrl: string) => setLightboxImage(imageUrl);
+  const handleFilterChange = (newFilter: FilterType) => {
+    setFilter(newFilter);
+  };
+
+  const handleImageClick = (imageUrl: string) => {
+    setLightboxImage(imageUrl);
+  };
 
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-4rem)] w-full bg-[#f6f1ed] px-4 lg:px-6 py-10">
-        <div className="mx-auto max-w-[820px] text-center py-12">
+      <div className="flex-1 w-full px-4 lg:px-6 py-4">
+        <div className="text-center py-12">
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
@@ -239,8 +251,8 @@ export default function ManifestHistory() {
 
   if (!goal) {
     return (
-      <div className="min-h-[calc(100vh-4rem)] w-full bg-[#f6f1ed] px-4 lg:px-6 py-10">
-        <div className="mx-auto max-w-[820px] text-center py-12">
+      <div className="flex-1 w-full px-4 lg:px-6 py-4">
+        <div className="text-center py-12">
           <p className="text-muted-foreground">Goal not found</p>
           <Button variant="link" asChild className="mt-2">
             <Link to="/manifest">Back to Manifestations</Link>
@@ -251,82 +263,87 @@ export default function ManifestHistory() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] w-full bg-[#f6f1ed]">
-      <div className="mx-auto max-w-[980px] px-4 lg:px-6 py-8 lg:py-10">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/manifest")}
-          className="mb-6 rounded-full bg-white/60 backdrop-blur border border-black/5 shadow-[0_10px_30px_rgba(0,0,0,0.06)]"
-        >
+    <div className="flex-1 w-full px-4 lg:px-6 py-4">
+      {/* Header */}
+      <div className="mb-6">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/manifest")} className="mb-4">
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          Back to Manifestations
         </Button>
 
-        <div className="rounded-3xl border border-black/5 bg-white/60 backdrop-blur p-6 lg:p-8 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
-          <h1 className="font-serif text-3xl lg:text-4xl tracking-tight text-[#1f1f23]">Practice History</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{goal.title}</p>
-
-          <div className="mt-4 text-sm text-muted-foreground">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-2xl font-semibold text-foreground">Practice History</h1>
+          <h2 className="text-lg text-muted-foreground">{goal.title}</h2>
+          <p className="text-sm text-muted-foreground">
             Practicing: {totalDays} days · {totalProofs} proofs · Avg {avgAlignment}/10 · Best streak: {bestStreak}
-          </div>
-
-          <div className="mt-5 flex flex-wrap gap-2">
-            <FilterPill active={filter === "all"} onClick={() => setFilter("all")}>
-              All days
-            </FilterPill>
-            <FilterPill active={filter === "practiced"} onClick={() => setFilter("practiced")}>
-              Practiced
-            </FilterPill>
-            <FilterPill active={filter === "pauses"} onClick={() => setFilter("pauses")}>
-              Pauses
-            </FilterPill>
-            <FilterPill active={filter === "with-proofs"} onClick={() => setFilter("with-proofs")}>
-              With proofs
-            </FilterPill>
-            <FilterPill active={filter === "with-images"} onClick={() => setFilter("with-images")}>
-              With images
-            </FilterPill>
-          </div>
+          </p>
         </div>
 
-        <div className="mt-8 space-y-8">
-          {weekGroups.length === 0 ? (
-            <div className="text-center py-14 rounded-3xl border border-black/5 bg-white/55 backdrop-blur shadow-[0_18px_55px_rgba(0,0,0,0.06)]">
-              <Clock className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-              <p className="text-sm text-muted-foreground">Your practice history will appear here as you continue.</p>
-            </div>
-          ) : (
-            weekGroups.map((week, weekIndex) => (
-              <div key={week.weekStart.toISOString()}>
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Week of {format(week.weekStart, "MMM d")}–{format(week.weekEnd, "d")}
-                  </span>
-                  <div className="flex-1 h-px bg-black/10" />
-                </div>
-
-                <div className="space-y-3">
-                  {week.days.map((day) => (
-                    <HistoryDayCard key={day.date} data={day} onImageClick={handleImageClick} />
-                  ))}
-                </div>
-
-                <div className="mt-4 p-4 rounded-2xl border border-black/5 bg-white/55 backdrop-blur shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-medium text-[#1f1f23]">Week summary:</span> Avg alignment {week.avgAlignment}
-                    /10 · {week.actDays} act-as-if days · {week.proofsCount} proofs
-                  </p>
-                </div>
-
-                {weekIndex < weekGroups.length - 1 && <Separator className="my-8 opacity-60" />}
-              </div>
-            ))
-          )}
+        {/* Filter Chips */}
+        <div className="flex flex-wrap gap-2 mt-4">
+          {[
+            { key: "all" as FilterType, label: "All days" },
+            { key: "practiced" as FilterType, label: "Practiced only" },
+            { key: "pauses" as FilterType, label: "Pauses" },
+            { key: "with-proofs" as FilterType, label: "With proofs" },
+            { key: "with-images" as FilterType, label: "With images" },
+          ].map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => handleFilterChange(key)}
+              className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
+                filter === key
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-muted-foreground border-border hover:border-primary/50"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
-
-        {lightboxImage && <ProofLightbox imageUrl={lightboxImage} onClose={() => setLightboxImage(null)} />}
       </div>
+
+      {/* Timeline Content */}
+      <div className="max-w-2xl space-y-6">
+        {weekGroups.length === 0 ? (
+          <div className="text-center py-12">
+            <Clock className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+            <p className="text-sm text-muted-foreground">Your practice history will appear here as you continue.</p>
+          </div>
+        ) : (
+          weekGroups.map((week, weekIndex) => (
+            <div key={week.weekStart.toISOString()}>
+              {/* Week Header */}
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Week of {format(week.weekStart, "MMM d")}–{format(week.weekEnd, "d")}
+                </span>
+                <div className="flex-1 h-px bg-border/50" />
+              </div>
+
+              {/* Day Cards */}
+              <div className="space-y-3">
+                {week.days.map((day) => (
+                  <HistoryDayCard key={day.date} data={day} onImageClick={handleImageClick} />
+                ))}
+              </div>
+
+              {/* Weekly Summary */}
+              <div className="mt-4 p-4 bg-muted/30 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium">Week summary:</span> Avg alignment {week.avgAlignment}/10 ·{" "}
+                  {week.actDays} act-as-if days · {week.proofsCount} proofs
+                </p>
+              </div>
+
+              {weekIndex < weekGroups.length - 1 && <Separator className="my-6" />}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Lightbox */}
+      {lightboxImage && <ProofLightbox imageUrl={lightboxImage} onClose={() => setLightboxImage(null)} />}
     </div>
   );
 }
