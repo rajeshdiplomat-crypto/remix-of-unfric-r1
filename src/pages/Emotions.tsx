@@ -399,7 +399,7 @@ export default function Emotions() {
   };
 
   return (
-    <div className="flex flex-col w-full flex-1 -mx-6 -mt-6">
+    <div className="flex flex-col w-full flex-1">
       {/* Full-bleed Hero */}
       <PageHero
         storageKey="emotion_hero_src"
@@ -410,7 +410,7 @@ export default function Emotions() {
       />
 
       {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 px-6 pt-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8">
         {/* LEFT: Check-in + Patterns (scrollable) */}
         <div className="overflow-y-auto space-y-6 pr-1">
 

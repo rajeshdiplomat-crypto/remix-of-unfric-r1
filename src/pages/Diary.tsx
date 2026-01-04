@@ -385,12 +385,12 @@ export default function Diary() {
   }
 
   return (
-    <div className="flex flex-col w-full flex-1 -mx-6 -mt-6">
+    <div className="flex flex-col w-full flex-1">
       {/* Full-bleed Hero */}
       <DiaryHero />
 
       {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 w-full px-6 pt-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 w-full">
         {/* Main Feed */}
         <div className="min-w-0">
 
