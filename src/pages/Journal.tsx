@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { format } from "date-fns";
 import { Settings, Save, Check, BookOpen, Maximize2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -357,11 +358,11 @@ export default function Journal() {
     return () => window.removeEventListener("keydown", handleEscape);
   }, [isFullPage]);
 
-  // Full page mode
+  // Full page mode - render via portal to escape layout stacking context
   if (isFullPage) {
-    return (
+    return createPortal(
       <div
-        className="fixed inset-0 z-[100] flex flex-col isolate overflow-hidden"
+        className="fixed inset-0 z-[100] flex flex-col overflow-hidden"
         style={{
           backgroundColor: currentSkin.pageBg,
           color: currentSkin.text,
@@ -429,7 +430,8 @@ export default function Journal() {
             />
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
