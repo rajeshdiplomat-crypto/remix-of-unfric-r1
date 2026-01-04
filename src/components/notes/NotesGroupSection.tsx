@@ -67,70 +67,73 @@ export function NotesGroupSection({
 
   return (
     <div className={focusModeClasses}>
-      <div className="rounded-xl border border-border/40 bg-card shadow-sm hover:shadow-md transition-shadow duration-200">
-        {/* Compact Card Header */}
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full px-4 py-3 text-left hover:bg-muted/5 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            {/* Cover image thumbnail */}
-            <div className="h-8 w-8 rounded-lg overflow-hidden shrink-0">
-              <img
-                src={getPresetImage("notes", group.id)}
-                alt=""
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            {/* Main content */}
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-medium text-foreground truncate">{group.name}</h2>
-                <span className="text-xs text-muted-foreground/60">({allGroupNotes.length})</span>
-                {pinnedCount > 0 && (
-                  <span className="flex items-center gap-0.5 text-xs text-muted-foreground/50">
-                    <Pin className="h-2.5 w-2.5" />
-                    {pinnedCount}
-                  </span>
-                )}
-                {mostRecentUpdate && <NotesActivityDot updatedAt={mostRecentUpdate} size="sm" />}
-              </div>
-
-              {/* Last edited + preview */}
-              {mostRecentNote && (
-                <p className="mt-0.5 text-xs text-muted-foreground/50 truncate">
-                  {formatDistanceToNow(new Date(mostRecentNote.updatedAt), { addSuffix: true })}
-                  {mostRecentNote.title && ` · ${mostRecentNote.title}`}
-                </p>
-              )}
-            </div>
-
-            {/* Quick actions */}
-            <div className="flex items-center gap-1 shrink-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onAddNote(group.id, null);
-                }}
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </Button>
-
-              <div className="h-6 w-6 flex items-center justify-center rounded-lg">
-                {isExpanded ? (
-                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/60" />
-                ) : (
-                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
-                )}
-              </div>
-            </div>
+      <div className="rounded-xl border border-border/40 bg-card shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+        <div className="flex">
+          {/* Left: Wide Cover Image */}
+          <div className="w-32 shrink-0 overflow-hidden rounded-l-xl">
+            <img
+              src={getPresetImage("notes", group.id)}
+              alt=""
+              className="w-full h-full object-cover min-h-[100px]"
+            />
           </div>
-        </button>
+
+          {/* Right: Header & Content */}
+          <div className="flex-1">
+            {/* Compact Card Header */}
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="w-full px-4 py-3 text-left hover:bg-muted/5 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                {/* Main content */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-sm font-medium text-foreground truncate">{group.name}</h2>
+                    <span className="text-xs text-muted-foreground/60">({allGroupNotes.length})</span>
+                    {pinnedCount > 0 && (
+                      <span className="flex items-center gap-0.5 text-xs text-muted-foreground/50">
+                        <Pin className="h-2.5 w-2.5" />
+                        {pinnedCount}
+                      </span>
+                    )}
+                    {mostRecentUpdate && <NotesActivityDot updatedAt={mostRecentUpdate} size="sm" />}
+                  </div>
+
+                  {/* Last edited + preview */}
+                  {mostRecentNote && (
+                    <p className="mt-0.5 text-xs text-muted-foreground/50 truncate">
+                      {formatDistanceToNow(new Date(mostRecentNote.updatedAt), { addSuffix: true })}
+                      {mostRecentNote.title && ` · ${mostRecentNote.title}`}
+                    </p>
+                  )}
+                </div>
+
+                {/* Quick actions */}
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onAddNote(group.id, null);
+                    }}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+
+                  <div className="h-6 w-6 flex items-center justify-center rounded-lg">
+                    {isExpanded ? (
+                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/60" />
+                    ) : (
+                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </button>
 
         {/* Expanded Body */}
         {isExpanded && (
@@ -248,6 +251,8 @@ export function NotesGroupSection({
             </div>
           </div>
         )}
+          </div>
+        </div>
       </div>
     </div>
   );

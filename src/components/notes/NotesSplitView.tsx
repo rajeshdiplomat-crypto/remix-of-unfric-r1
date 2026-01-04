@@ -173,7 +173,7 @@ export function NotesSplitView({
   // Full page mode
   if (isFullPage && selectedNote) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col bg-background">
+      <div className="fixed inset-0 z-[100] flex flex-col bg-background isolate overflow-hidden">
         {/* Minimal header */}
         <div className="flex items-center justify-between px-8 py-3 border-b border-border/50">
           <div className="flex items-center gap-3">
