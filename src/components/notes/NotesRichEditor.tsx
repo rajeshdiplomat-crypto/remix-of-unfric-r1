@@ -488,7 +488,7 @@ export function NotesRichEditor({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col flex-1 min-h-0">
       {/* Top Bar with Breadcrumb */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-border/30 shrink-0">
         <div className="flex items-center gap-3">
@@ -763,7 +763,7 @@ export function NotesRichEditor({
       </div>
 
       {/* Editor Content */}
-      <div className="flex-1 min-h-0 overflow-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-6 py-8 pb-24">
           {/* Tags Display */}
           {tags.length > 0 && (
