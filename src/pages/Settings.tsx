@@ -12,7 +12,7 @@ export default function Settings() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto space-y-6 w-full">
+      <div className="w-full space-y-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
             Settings
@@ -27,7 +27,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 w-full pb-8">
+    <div className="w-full space-y-6 pb-8">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
           Settings

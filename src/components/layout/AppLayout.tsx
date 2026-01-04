@@ -19,7 +19,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Main content with top padding for fixed header */}
       <main className="flex-1 flex flex-col w-full min-w-0">
-        <div className="flex-1 flex flex-col overflow-auto px-6 lg:px-10 py-6">
+        <div className="flex-1 flex flex-col overflow-auto">
           {children}
         </div>
       </main>

@@ -721,7 +721,7 @@ export default function Trackers() {
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col w-full flex-1 -mx-6 -mt-6">
+      <div className="flex flex-col w-full flex-1">
         {/* Full-bleed Hero */}
         <PageHero
           storageKey="tracker_hero_src"
@@ -732,7 +732,7 @@ export default function Trackers() {
         />
 
         {/* Content Grid */}
-        <div className="w-full flex flex-col lg:flex-row gap-6 px-6 pt-8">
+        <div className="w-full flex flex-col lg:flex-row gap-6">
           {/* LEFT */}
           <div className="flex-1 min-w-0 space-y-6">
 

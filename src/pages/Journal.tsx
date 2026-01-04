@@ -349,7 +349,7 @@ export default function Journal() {
 
   return (
     <div
-      className="flex flex-col w-full flex-1 -mx-6 -mt-6"
+      className="flex flex-col w-full flex-1"
       style={{
         backgroundColor: currentSkin.pageBg,
         color: currentSkin.text,
@@ -366,7 +366,7 @@ export default function Journal() {
       />
 
       {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 w-full px-6 pt-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 w-full">
         {/* Main Editor Area */}
         <div className="flex flex-col min-w-0">
           <div className="flex-1 flex flex-col">
