@@ -93,6 +93,27 @@ export function NotesRichEditor({
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const isUndoRedo = useRef(false);
+  
+  // Selection preservation for toolbar interactions
+  const savedSelection = useRef<Range | null>(null);
+  
+  const saveSelection = useCallback(() => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      savedSelection.current = sel.getRangeAt(0).cloneRange();
+    }
+  }, []);
+
+  const restoreSelection = useCallback(() => {
+    if (savedSelection.current && editorRef.current) {
+      editorRef.current.focus();
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(savedSelection.current);
+      }
+    }
+  }, []);
 
   // Auto-focus title for new notes
   useEffect(() => {
@@ -163,7 +184,7 @@ export function NotesRichEditor({
   };
 
   const execCommand = (command: string, value?: string) => {
-    editorRef.current?.focus();
+    restoreSelection();
     document.execCommand(command, false, value);
     updateFormattingState();
     saveToHistory();
@@ -519,7 +540,7 @@ export function NotesRichEditor({
           </Button>
           <div className="w-px h-6 bg-border mx-1" />
           
-          <Select value={currentFont} onValueChange={handleFontChange}>
+          <Select value={currentFont} onValueChange={handleFontChange} onOpenChange={(open) => { if (open) saveSelection(); }}>
             <SelectTrigger className="w-24 h-8">
               <SelectValue />
             </SelectTrigger>
@@ -532,7 +553,7 @@ export function NotesRichEditor({
             </SelectContent>
           </Select>
           
-          <Select value={currentSize} onValueChange={handleSizeChange}>
+          <Select value={currentSize} onValueChange={handleSizeChange} onOpenChange={(open) => { if (open) saveSelection(); }}>
             <SelectTrigger className="w-16 h-8">
               <SelectValue />
             </SelectTrigger>
@@ -549,6 +570,7 @@ export function NotesRichEditor({
             variant={isBold ? "secondary" : "ghost"} 
             size="icon" 
             className="h-8 w-8" 
+            onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}
             onClick={() => execCommand("bold")}
             title="Bold"
           >
@@ -558,6 +580,7 @@ export function NotesRichEditor({
             variant={isItalic ? "secondary" : "ghost"} 
             size="icon" 
             className="h-8 w-8" 
+            onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}
             onClick={() => execCommand("italic")}
             title="Italic"
           >
@@ -567,6 +590,7 @@ export function NotesRichEditor({
             variant={isUnderline ? "secondary" : "ghost"} 
             size="icon" 
             className="h-8 w-8" 
+            onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}
             onClick={() => execCommand("underline")}
             title="Underline"
           >
@@ -576,7 +600,7 @@ export function NotesRichEditor({
           <div className="w-px h-6 bg-border mx-1" />
 
           {/* Text Color */}
-          <Popover>
+          <Popover onOpenChange={(open) => { if (open) saveSelection(); }}>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8" title="Text Color">
                 <Palette className="h-4 w-4" />
@@ -601,7 +625,7 @@ export function NotesRichEditor({
           </Popover>
 
           {/* Highlight Color */}
-          <Popover>
+          <Popover onOpenChange={(open) => { if (open) saveSelection(); }}>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8" title="Highlight">
                 <Highlighter className="h-4 w-4" />
@@ -630,6 +654,7 @@ export function NotesRichEditor({
             variant="ghost" 
             size="icon" 
             className="h-8 w-8" 
+            onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}
             onClick={handleClearFormatting}
             title="Clear Formatting"
           >
@@ -638,13 +663,13 @@ export function NotesRichEditor({
           
           <div className="w-px h-6 bg-border mx-1" />
           
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand("justifyLeft")} title="Align Left">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={() => execCommand("justifyLeft")} title="Align Left">
             <AlignLeft className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand("justifyCenter")} title="Align Center">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={() => execCommand("justifyCenter")} title="Align Center">
             <AlignCenter className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand("justifyRight")} title="Align Right">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={() => execCommand("justifyRight")} title="Align Right">
             <AlignRight className="h-4 w-4" />
           </Button>
           
@@ -654,6 +679,7 @@ export function NotesRichEditor({
             variant={isBulletList ? "secondary" : "ghost"} 
             size="icon" 
             className="h-8 w-8" 
+            onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}
             onClick={handleBulletList}
             title="Bullet List (Tab to nest, Shift+Tab to outdent)"
           >
@@ -663,12 +689,13 @@ export function NotesRichEditor({
             variant={isNumberedList ? "secondary" : "ghost"} 
             size="icon" 
             className="h-8 w-8" 
+            onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}
             onClick={handleNumberedList}
             title="Numbered List (Tab to nest, Shift+Tab to outdent)"
           >
             <ListOrdered className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={insertChecklist} title="Checklist">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={insertChecklist} title="Checklist">
             <CheckSquare className="h-4 w-4" />
           </Button>
           
@@ -688,7 +715,7 @@ export function NotesRichEditor({
 
       {/* Editor Content */}
       <div className="flex-1 overflow-auto">
-        <div className="max-w-3xl mx-auto px-6 py-8">
+        <div className="max-w-3xl px-4 py-6">
           {/* Tags Display */}
           {tags.length > 0 && (
             <div className="flex gap-1 mb-4">
