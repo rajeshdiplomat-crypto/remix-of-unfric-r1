@@ -7,10 +7,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
   ArrowLeft, Tag, Undo2, Redo2, Bold, Italic, Underline, AlignLeft, AlignCenter, 
-  AlignRight, List, ListOrdered, CheckSquare, Link2, Image, Pencil, X, ChevronRight
+  AlignRight, List, ListOrdered, CheckSquare, Link2, Image, Pencil, X, ChevronRight,
+  Palette, Highlighter, RemoveFormatting
 } from "lucide-react";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 import { NotesScribbleCanvas } from "./NotesScribbleCanvas";
+import { cn } from "@/lib/utils";
 
 interface NotesRichEditorProps {
   note: Note;
@@ -30,6 +32,28 @@ const FONTS = [
 ];
 
 const FONT_SIZES = ["12", "14", "16", "18", "20", "24", "28", "32"];
+
+const TEXT_COLORS = [
+  { label: "Default", value: "" },
+  { label: "Red", value: "#ef4444" },
+  { label: "Orange", value: "#f97316" },
+  { label: "Yellow", value: "#eab308" },
+  { label: "Green", value: "#22c55e" },
+  { label: "Blue", value: "#3b82f6" },
+  { label: "Purple", value: "#a855f7" },
+  { label: "Pink", value: "#ec4899" },
+  { label: "Gray", value: "#6b7280" },
+];
+
+const HIGHLIGHT_COLORS = [
+  { label: "None", value: "" },
+  { label: "Yellow", value: "#fef08a" },
+  { label: "Green", value: "#bbf7d0" },
+  { label: "Blue", value: "#bfdbfe" },
+  { label: "Pink", value: "#fbcfe8" },
+  { label: "Purple", value: "#e9d5ff" },
+  { label: "Orange", value: "#fed7aa" },
+];
 
 export function NotesRichEditor({ 
   note, 
@@ -167,19 +191,47 @@ export function NotesRichEditor({
 
   const handleFontChange = (font: string) => {
     setCurrentFont(font);
-    execCommand("fontName", font);
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
+      execCommand("fontName", font);
+    }
   };
 
   const handleSizeChange = (size: string) => {
     setCurrentSize(size);
     const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
+    if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
       const range = selection.getRangeAt(0);
       const span = document.createElement("span");
       span.style.fontSize = `${size}px`;
-      range.surroundContents(span);
-      saveToHistory();
+      try {
+        range.surroundContents(span);
+        saveToHistory();
+      } catch {
+        // Partial selection - fallback
+        execCommand("fontSize", "7");
+      }
     }
+  };
+
+  const handleTextColor = (color: string) => {
+    if (color) {
+      execCommand("foreColor", color);
+    } else {
+      execCommand("removeFormat");
+    }
+  };
+
+  const handleHighlight = (color: string) => {
+    if (color) {
+      execCommand("hiliteColor", color);
+    } else {
+      execCommand("hiliteColor", "transparent");
+    }
+  };
+
+  const handleClearFormatting = () => {
+    execCommand("removeFormat");
   };
 
   // Handle bullet list with proper Enter/Backspace behavior
@@ -253,6 +305,7 @@ export function NotesRichEditor({
   const insertImageWithResize = (src: string) => {
     const imgHtml = `<div class="note-image-wrapper" contenteditable="false" style="position: relative; display: inline-block; max-width: 100%;">
       <img src="${src}" alt="Image" class="note-image" style="max-width: 100%; height: auto; display: block; cursor: pointer;" />
+      <button class="image-delete-btn" style="position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; background: hsl(var(--destructive)); color: white; border: none; border-radius: 50%; cursor: pointer; opacity: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1;" title="Delete image">×</button>
       <div class="resize-handle" style="position: absolute; right: 0; bottom: 0; width: 12px; height: 12px; background: hsl(var(--primary)); cursor: se-resize; border-radius: 2px; opacity: 0;" />
     </div><br/>`;
     execCommand("insertHTML", imgHtml);
@@ -262,20 +315,35 @@ export function NotesRichEditor({
   const setupImageResizing = () => {
     setTimeout(() => {
       if (!editorRef.current) return;
-      const images = editorRef.current.querySelectorAll(".note-image-wrapper");
-      images.forEach((wrapper) => {
+      const wrappers = editorRef.current.querySelectorAll(".note-image-wrapper");
+      wrappers.forEach((wrapper) => {
         const img = wrapper.querySelector("img") as HTMLImageElement;
         const handle = wrapper.querySelector(".resize-handle") as HTMLDivElement;
+        const deleteBtn = wrapper.querySelector(".image-delete-btn") as HTMLButtonElement;
         
         if (!img || !handle) return;
         
-        // Show handle on hover
+        // Show handle and delete button on hover
         wrapper.addEventListener("mouseenter", () => {
           handle.style.opacity = "1";
+          if (deleteBtn) deleteBtn.style.opacity = "1";
         });
         wrapper.addEventListener("mouseleave", () => {
-          if (!resizingImage) handle.style.opacity = "0";
+          if (!resizingImage) {
+            handle.style.opacity = "0";
+            if (deleteBtn) deleteBtn.style.opacity = "0";
+          }
         });
+
+        // Handle delete button click
+        if (deleteBtn) {
+          deleteBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            wrapper.remove();
+            saveToHistory();
+          });
+        }
         
         // Handle resize
         handle.addEventListener("mousedown", (e) => {
@@ -506,6 +574,69 @@ export function NotesRichEditor({
           </Button>
           
           <div className="w-px h-6 bg-border mx-1" />
+
+          {/* Text Color */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" title="Text Color">
+                <Palette className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2" align="start">
+              <div className="flex flex-wrap gap-1 max-w-[180px]">
+                {TEXT_COLORS.map((color) => (
+                  <button
+                    key={color.value || 'default'}
+                    onClick={() => handleTextColor(color.value)}
+                    className={cn(
+                      "h-6 w-6 rounded border border-border/50 hover:scale-110 transition-transform",
+                      !color.value && "bg-foreground"
+                    )}
+                    style={{ backgroundColor: color.value || undefined }}
+                    title={color.label}
+                  />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Highlight Color */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" title="Highlight">
+                <Highlighter className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2" align="start">
+              <div className="flex flex-wrap gap-1 max-w-[180px]">
+                {HIGHLIGHT_COLORS.map((color) => (
+                  <button
+                    key={color.value || 'none'}
+                    onClick={() => handleHighlight(color.value)}
+                    className={cn(
+                      "h-6 w-6 rounded border border-border/50 hover:scale-110 transition-transform",
+                      !color.value && "bg-background relative after:absolute after:inset-0 after:bg-[linear-gradient(45deg,transparent_45%,hsl(var(--destructive))_45%,hsl(var(--destructive))_55%,transparent_55%)]"
+                    )}
+                    style={{ backgroundColor: color.value || undefined }}
+                    title={color.label}
+                  />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Clear Formatting */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8" 
+            onClick={handleClearFormatting}
+            title="Clear Formatting"
+          >
+            <RemoveFormatting className="h-4 w-4" />
+          </Button>
+          
+          <div className="w-px h-6 bg-border mx-1" />
           
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand("justifyLeft")} title="Align Left">
             <AlignLeft className="h-4 w-4" />
@@ -587,7 +718,6 @@ export function NotesRichEditor({
             onBlur={handleSave}
             onKeyDown={handleKeyDown}
             className="min-h-[400px] outline-none text-foreground leading-relaxed focus:outline-none [&_ul]:list-disc [&_ul]:ml-6 [&_ol]:list-decimal [&_ol]:ml-6 [&_li]:my-1 [&_ul_ul]:list-circle [&_ol_ol]:list-lower-alpha"
-            style={{ fontFamily: currentFont, fontSize: `${currentSize}px` }}
             data-placeholder="Start typing here..."
           />
         </div>

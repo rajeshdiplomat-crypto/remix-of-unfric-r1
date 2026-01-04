@@ -61,7 +61,7 @@ export function JournalSidebarPanel({
 
   return (
     <div 
-      className="w-[400px] flex-shrink-0 sticky top-4 max-h-[calc(50vh-40px)] overflow-auto space-y-4 pr-2"
+      className="w-[400px] flex-shrink-0 sticky top-4 max-h-[calc(100vh-120px)] overflow-auto space-y-4 pr-2"
       style={skin ? { backgroundColor: skin.panelBg } : undefined}
     >
       {/* Calendar Card */}

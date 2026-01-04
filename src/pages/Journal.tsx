@@ -458,7 +458,14 @@ export default function Journal() {
         {/* Main Editor Area */}
         <div className="flex flex-col min-w-0">
           <div className="flex-1 flex flex-col">
-        <div className="flex items-center justify-end mb-4">
+        <div className="flex items-center justify-between mb-4">
+          {/* Date and Day - Left side */}
+          <span 
+            className="text-sm font-light tracking-wide uppercase"
+            style={{ color: currentSkin.text }}
+          >
+            {format(selectedDate, "EEEE, MMMM d, yyyy")}
+          </span>
           <div className="flex items-center gap-2">
             <span
               className="text-xs flex items-center gap-1"
