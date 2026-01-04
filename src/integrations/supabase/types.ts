@@ -525,27 +525,36 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
           created_at: string
+          focus_areas: string[] | null
           full_name: string | null
           id: string
           updated_at: string
           user_id: string
+          username: string | null
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
+          focus_areas?: string[] | null
           full_name?: string | null
           id?: string
           updated_at?: string
           user_id: string
+          username?: string | null
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
+          focus_areas?: string[] | null
           full_name?: string | null
           id?: string
           updated_at?: string
           user_id?: string
+          username?: string | null
         }
         Relationships: []
       }
@@ -618,22 +627,52 @@ export type Database = {
       user_settings: {
         Row: {
           created_at: string
+          daily_reset_time: string | null
+          date_format: string | null
+          default_home_screen: string | null
           id: string
           note_skin_preference: string | null
+          notification_diary_prompt: boolean | null
+          notification_emotion_checkin: boolean | null
+          notification_task_reminder: boolean | null
+          privacy_blur_sensitive: boolean | null
+          privacy_passcode_enabled: boolean | null
+          start_of_week: string | null
+          timezone: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          daily_reset_time?: string | null
+          date_format?: string | null
+          default_home_screen?: string | null
           id?: string
           note_skin_preference?: string | null
+          notification_diary_prompt?: boolean | null
+          notification_emotion_checkin?: boolean | null
+          notification_task_reminder?: boolean | null
+          privacy_blur_sensitive?: boolean | null
+          privacy_passcode_enabled?: boolean | null
+          start_of_week?: string | null
+          timezone?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          daily_reset_time?: string | null
+          date_format?: string | null
+          default_home_screen?: string | null
           id?: string
           note_skin_preference?: string | null
+          notification_diary_prompt?: boolean | null
+          notification_emotion_checkin?: boolean | null
+          notification_task_reminder?: boolean | null
+          privacy_blur_sensitive?: boolean | null
+          privacy_passcode_enabled?: boolean | null
+          start_of_week?: string | null
+          timezone?: string | null
           updated_at?: string
           user_id?: string
         }
