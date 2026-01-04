@@ -33,8 +33,8 @@ import { ProfileEditPopover } from "./ProfileEditPopover";
 
 const mainNavItems = [
   { title: "Diary", url: "/diary", icon: BookOpen },
-  { title: "My Emotions", url: "/emotions", icon: Heart },
-  { title: "My Journal", url: "/journal", icon: PenLine },
+  { title: "Emotions", url: "/emotions", icon: Heart },
+  { title: "Journal", url: "/journal", icon: PenLine },
   { title: "Manifest", url: "/manifest", icon: Sparkles },
   { title: "Trackers", url: "/trackers", icon: BarChart3 },
 ];
@@ -53,17 +53,17 @@ export function AppSidebar() {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/30 bg-sidebar">
+    <Sidebar collapsible="icon" className="border-r border-border bg-sidebar">
       <SidebarHeader className="p-4">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-3">
             <img 
               src="/favicon.png" 
               alt="inbalance logo" 
-              className="h-8 w-8 rounded-lg object-cover"
+              className="h-8 w-8 object-cover"
             />
             {!collapsed && (
-              <span className="font-semibold text-lg text-foreground">inbalance</span>
+              <span className="text-xs font-normal uppercase tracking-zara-wide text-foreground">inbalance</span>
             )}
           </div>
           <div className="flex items-center gap-1">
@@ -75,7 +75,7 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-muted-foreground/70 text-xs uppercase tracking-wider">Main</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-muted-foreground text-[10px] uppercase tracking-zara-wider font-normal">Main</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNavItems.map((item) => (
@@ -87,8 +87,8 @@ export function AppSidebar() {
                   >
                     <NavLink
                       to={item.url}
-                      className="flex items-center gap-3 rounded-lg transition-colors"
-                      activeClassName="bg-primary/10 text-primary"
+                      className="flex items-center gap-3 transition-colors text-xs uppercase tracking-zara font-light"
+                      activeClassName="bg-foreground/5 text-foreground"
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
@@ -101,7 +101,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-muted-foreground/70 text-xs uppercase tracking-wider">Productivity</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-muted-foreground text-[10px] uppercase tracking-zara-wider font-normal">Productivity</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {productivityItems.map((item) => (
@@ -113,8 +113,8 @@ export function AppSidebar() {
                   >
                     <NavLink
                       to={item.url}
-                      className="flex items-center gap-3 rounded-lg transition-colors"
-                      activeClassName="bg-primary/10 text-primary"
+                      className="flex items-center gap-3 transition-colors text-xs uppercase tracking-zara font-light"
+                      activeClassName="bg-foreground/5 text-foreground"
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
@@ -137,8 +137,8 @@ export function AppSidebar() {
                 >
                   <NavLink
                     to="/settings"
-                    className="flex items-center gap-3 rounded-lg transition-colors"
-                    activeClassName="bg-primary/10 text-primary"
+                    className="flex items-center gap-3 transition-colors text-xs uppercase tracking-zara font-light"
+                    activeClassName="bg-foreground/5 text-foreground"
                   >
                     <Settings className="h-4 w-4" />
                     <span>Settings</span>
@@ -159,10 +159,10 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-3 border-t border-border/30">
+      <SidebarFooter className="p-3 border-t border-border">
         <div className="flex items-center justify-between">
           {!collapsed && (
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="text-[10px] text-muted-foreground truncate uppercase tracking-zara">
               {user?.email}
             </p>
           )}
@@ -172,7 +172,7 @@ export function AppSidebar() {
                 variant="ghost"
                 size="icon"
                 onClick={signOut}
-                className="h-8 w-8 flex-shrink-0 hover:bg-destructive/10 hover:text-destructive"
+                className="h-8 w-8 flex-shrink-0 hover:bg-muted"
               >
                 <LogOut className="h-4 w-4" />
               </Button>

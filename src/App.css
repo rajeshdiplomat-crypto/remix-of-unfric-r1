@@ -1,14 +1,13 @@
-/* VISUAL TOKENS - src/App.css */
+/* ZARA-INSPIRED VISUAL TOKENS - src/App.css */
 :root {
-  --accent-blue: 199 89% 48%; /* #0ea5ff */
-  --radius-card: 12px;
-  --radius-sm: 8px;
-  --radius-pill: 9999px;
-  --card-shadow: 0 6px 18px hsl(210 20% 15% / 0.06);
-  --card-shadow-hover: 0 10px 30px hsl(210 20% 15% / 0.08);
-  --card-shadow-active: 0 4px 12px hsl(210 20% 15% / 0.04);
-  --gutter-lg: 2.5rem; /* 40px */
-  --gutter-md: 1.5rem; /* 24px */
+  --radius-card: 0px;
+  --radius-sm: 0px;
+  --radius-pill: 0px;
+  --card-shadow: none;
+  --card-shadow-hover: 0 2px 8px hsl(0 0% 0% / 0.08);
+  --card-shadow-active: none;
+  --gutter-lg: 2.5rem;
+  --gutter-md: 1.5rem;
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;
   --space-md: 1rem;
@@ -38,108 +37,100 @@
 
 /* Smooth hover transitions for interactive elements */
 button, a, [role="button"], .interactive {
-  transition: transform var(--transition-fast) ease, 
-              background-color var(--transition-medium) ease, 
-              box-shadow var(--transition-medium) ease,
-              border-color var(--transition-medium) ease;
+  transition: background-color var(--transition-medium) ease, 
+              border-color var(--transition-medium) ease,
+              color var(--transition-fast) ease;
 }
 
-/* Cards - UI card styling */
+/* Cards - Zara-style flat styling */
 .ui-card {
   background: hsl(var(--card));
-  border-radius: var(--radius-card);
-  box-shadow: var(--card-shadow);
-  border: 1px solid hsl(var(--border) / 0.5);
+  border-radius: 0;
+  box-shadow: none;
+  border: 1px solid hsl(var(--border));
   padding: var(--space-lg);
   margin-bottom: 1.25rem;
-  transition: transform var(--transition-fast) ease, 
-              box-shadow var(--transition-medium) ease;
+  transition: border-color var(--transition-medium) ease;
 }
 
-/* Interactive lift effect */
-.interactive:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--card-shadow-hover);
+.ui-card:hover {
+  border-color: hsl(var(--foreground) / 0.3);
 }
 
-/* Active press effect */
-.interactive:active,
-.ui-card:active {
-  transform: translateY(-1px);
-  box-shadow: var(--card-shadow-active);
-}
-
-/* Primary button - pill style */
+/* Primary button - sharp, minimal */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
-  border-radius: var(--radius-pill);
-  padding: 0.625rem 1.25rem;
-  font-weight: 500;
+  border-radius: 0;
+  padding: 0.75rem 1.5rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.75rem;
   border: none;
   cursor: pointer;
-  transition: transform var(--transition-fast) ease, 
-              box-shadow var(--transition-medium) ease,
-              background-color var(--transition-medium) ease;
+  transition: background-color var(--transition-medium) ease;
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px hsl(var(--primary) / 0.35);
+  background: hsl(var(--foreground) / 0.85);
 }
 
-.btn-primary:active {
-  transform: translateY(0);
-}
-
-/* Ghost button */
+/* Ghost button - minimal */
 .btn-ghost {
   background: transparent;
   color: hsl(var(--foreground));
-  border: 1px solid hsl(var(--border) / 0.5);
-  border-radius: var(--radius-sm);
-  padding: 0.5rem 1rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0;
+  padding: 0.75rem 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.75rem;
+  font-weight: 400;
 }
 
 .btn-ghost:hover {
-  background: hsl(var(--muted) / 0.5);
+  background: hsl(var(--muted));
+  border-color: hsl(var(--foreground) / 0.3);
 }
 
-/* Chips / tags */
+/* Chips / tags - Zara style */
 .chip {
   display: inline-flex;
   align-items: center;
-  height: 36px;
-  padding: 0 0.875rem;
-  border-radius: var(--radius-pill);
-  background: hsl(var(--muted) / 0.3);
-  font-size: 0.875rem;
-  font-weight: 500;
-  border: 1px solid hsl(var(--border) / 0.3);
-  transition: background var(--transition-fast) ease,
-              border-color var(--transition-fast) ease;
+  height: 32px;
+  padding: 0 1rem;
+  border-radius: 0;
+  background: transparent;
+  font-size: 0.7rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border: 1px solid hsl(var(--border));
+  transition: border-color var(--transition-fast) ease,
+              background-color var(--transition-fast) ease;
 }
 
 .chip:hover {
-  background: hsl(var(--muted) / 0.5);
+  border-color: hsl(var(--foreground) / 0.4);
 }
 
 .chip.active {
-  background: hsl(var(--primary) / 0.1);
-  border-color: hsl(var(--primary) / 0.3);
-  color: hsl(var(--primary));
+  background: hsl(var(--foreground));
+  border-color: hsl(var(--foreground));
+  color: hsl(var(--background));
 }
 
 /* Separators */
 .separator {
-  border-top: 1px solid hsl(var(--border) / 0.5);
+  border-top: 1px solid hsl(var(--border));
   margin: var(--space-lg) 0;
 }
 
-/* Gutter helper to apply wide gutters across pages */
+/* Gutter helper */
 .px-main {
   padding-left: var(--gutter-lg);
   padding-right: var(--gutter-lg);
@@ -165,10 +156,10 @@ button, a, [role="button"], .interactive {
   overflow: hidden;
 }
 
-/* Focus ring - enhanced */
+/* Focus ring - minimal */
 :focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.25);
+  box-shadow: 0 0 0 1px hsl(var(--ring));
 }
 
 /* Reduced motion support */
@@ -179,7 +170,13 @@ button, a, [role="button"], .interactive {
   }
 }
 
-/* Legacy styles preserved for backwards compatibility */
+/* Zara-style uppercase headings */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 300;
+  letter-spacing: 0.02em;
+}
+
+/* Legacy styles */
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -188,26 +185,7 @@ button, a, [role="button"], .interactive {
 }
 
 .logo:hover {
-  filter: drop-shadow(0 0 2em hsl(var(--primary) / 0.6));
-}
-
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em hsl(199 89% 48% / 0.6));
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+  filter: brightness(0.8);
 }
 
 .card-style {
