@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Share2, MoreHorizontal, X, Clock, Trash2, ChevronRight, FileText, Folder, FolderOpen, ChevronDown } from "lucide-react";
+import { Plus, Share2, MoreHorizontal, X, Clock, Trash2, ChevronRight, FileText, Folder, FolderOpen, ChevronDown, Maximize2, Check, Save } from "lucide-react";
 import { NotesRichEditor } from "./NotesRichEditor";
 import { NotesActivityDot, getMostRecentUpdate } from "./NotesActivityDot";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -36,6 +36,7 @@ export function NotesSplitView({
   const { toast } = useToast();
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showCreationToast, setShowCreationToast] = useState(false);
+  const [isFullPage, setIsFullPage] = useState(false);
   
   // Focus mode state - track which groups/folders were expanded before editing
   const [preEditExpandedState, setPreEditExpandedState] = useState<{
@@ -159,6 +160,74 @@ export function NotesSplitView({
 
   // Determine if we're in focus mode
   const isInFocusMode = !!selectedNote;
+
+  // Escape key to exit full page mode
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isFullPage) setIsFullPage(false);
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [isFullPage]);
+
+  // Full page mode
+  if (isFullPage && selectedNote) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col bg-background">
+        {/* Minimal header */}
+        <div className="flex items-center justify-between px-8 py-3 border-b border-border/50">
+          <div className="flex items-center gap-3">
+            <Badge
+              variant="secondary"
+              style={{
+                backgroundColor: `${getGroupColor(selectedNote.groupId)}20`,
+                color: getGroupColor(selectedNote.groupId),
+              }}
+            >
+              {groups.find((g) => g.id === selectedNote.groupId)?.name}
+            </Badge>
+            <span className="text-sm font-light tracking-wide">
+              {selectedNote.title || "Untitled"}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              {lastSaved ? (
+                <>
+                  <Check className="h-3 w-3" /> Saved
+                </>
+              ) : (
+                "Not saved yet"
+              )}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsFullPage(false)}
+              className="rounded-lg"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Centered editor */}
+        <div className="flex-1 overflow-auto">
+          <div className="max-w-3xl mx-auto w-full px-8 py-6">
+            <NotesRichEditor
+              note={selectedNote}
+              groups={groups}
+              folders={folders}
+              onSave={handleSave}
+              onBack={() => setIsFullPage(false)}
+              lastSaved={lastSaved}
+              showBreadcrumb={false}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-[calc(100vh-120px)] border border-border rounded-lg overflow-hidden bg-card">
@@ -334,6 +403,15 @@ export function NotesSplitView({
                 </span>
               </div>
               <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setIsFullPage(true)}
+                  title="Full page mode"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8">

@@ -53,13 +53,13 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
             size="icon"
             onClick={onMenuClick}
             className={cn(
-              "h-12 w-12 hover:bg-transparent transition-all duration-300",
+              "h-14 w-14 hover:bg-transparent transition-all duration-300",
               isScrolled
                 ? "text-foreground"
                 : "text-foreground [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
             )}
           >
-            <Menu className="h-7 w-7" strokeWidth={2.5} />
+            <Menu className="h-8 w-8" strokeWidth={2.5} />
           </Button>
           <NavLink to="/diary" className="flex items-center">
             <span
