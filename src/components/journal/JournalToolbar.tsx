@@ -77,9 +77,7 @@ export function JournalToolbar({
     }
   }, [editor]);
 
-  if (!editor) {
-    return null;
-  }
+  const isDisabled = !editor;
 
   const ToolButton = ({
     icon: Icon,
@@ -99,7 +97,7 @@ export function JournalToolbar({
       variant="ghost"
       size="sm"
       onClick={onClick}
-      disabled={disabled}
+      disabled={disabled || isDisabled}
       title={title}
       className={cn(
         "h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/50",
@@ -112,19 +110,20 @@ export function JournalToolbar({
 
   const Divider = () => <div className="w-px h-6 bg-border/50 mx-1" />;
 
+
   return (
     <div className="flex items-center gap-1 bg-card border border-border/50 rounded-lg px-3 py-2 shadow-sm sticky top-0 z-20 flex-wrap">
       {/* Undo / Redo */}
       <ToolButton
         icon={Undo2}
-        onClick={() => editor.chain().focus().undo().run()}
-        disabled={!editor.can().undo()}
+        onClick={() => editor?.chain().focus().undo().run()}
+        disabled={!editor?.can().undo()}
         title="Undo"
       />
       <ToolButton
         icon={Redo2}
-        onClick={() => editor.chain().focus().redo().run()}
-        disabled={!editor.can().redo()}
+        onClick={() => editor?.chain().focus().redo().run()}
+        disabled={!editor?.can().redo()}
         title="Redo"
       />
 
@@ -170,20 +169,20 @@ export function JournalToolbar({
       {/* Text Formatting */}
       <ToolButton
         icon={Bold}
-        onClick={() => editor.chain().focus().toggleBold().run()}
-        active={editor.isActive("bold")}
+        onClick={() => editor?.chain().focus().toggleBold().run()}
+        active={editor?.isActive("bold")}
         title="Bold"
       />
       <ToolButton
         icon={Italic}
-        onClick={() => editor.chain().focus().toggleItalic().run()}
-        active={editor.isActive("italic")}
+        onClick={() => editor?.chain().focus().toggleItalic().run()}
+        active={editor?.isActive("italic")}
         title="Italic"
       />
       <ToolButton
         icon={UnderlineIcon}
-        onClick={() => editor.chain().focus().toggleUnderline().run()}
-        active={editor.isActive("underline")}
+        onClick={() => editor?.chain().focus().toggleUnderline().run()}
+        active={editor?.isActive("underline")}
         title="Underline"
       />
 
@@ -192,20 +191,20 @@ export function JournalToolbar({
       {/* Alignment */}
       <ToolButton
         icon={AlignLeft}
-        onClick={() => editor.chain().focus().setTextAlign("left").run()}
-        active={editor.isActive({ textAlign: "left" })}
+        onClick={() => editor?.chain().focus().setTextAlign("left").run()}
+        active={editor?.isActive({ textAlign: "left" })}
         title="Align Left"
       />
       <ToolButton
         icon={AlignCenter}
-        onClick={() => editor.chain().focus().setTextAlign("center").run()}
-        active={editor.isActive({ textAlign: "center" })}
+        onClick={() => editor?.chain().focus().setTextAlign("center").run()}
+        active={editor?.isActive({ textAlign: "center" })}
         title="Align Center"
       />
       <ToolButton
         icon={AlignRight}
-        onClick={() => editor.chain().focus().setTextAlign("right").run()}
-        active={editor.isActive({ textAlign: "right" })}
+        onClick={() => editor?.chain().focus().setTextAlign("right").run()}
+        active={editor?.isActive({ textAlign: "right" })}
         title="Align Right"
       />
 
@@ -214,20 +213,20 @@ export function JournalToolbar({
       {/* Lists */}
       <ToolButton
         icon={List}
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
-        active={editor.isActive("bulletList")}
+        onClick={() => editor?.chain().focus().toggleBulletList().run()}
+        active={editor?.isActive("bulletList")}
         title="Bullet List"
       />
       <ToolButton
         icon={ListOrdered}
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        active={editor.isActive("orderedList")}
+        onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+        active={editor?.isActive("orderedList")}
         title="Numbered List"
       />
       <ToolButton
         icon={CheckSquare}
-        onClick={() => editor.chain().focus().toggleTaskList().run()}
-        active={editor.isActive("taskList")}
+        onClick={() => editor?.chain().focus().toggleTaskList().run()}
+        active={editor?.isActive("taskList")}
         title="Checklist"
       />
 
@@ -238,7 +237,7 @@ export function JournalToolbar({
       <ToolButton
         icon={Link}
         onClick={setLink}
-        active={editor.isActive("link")}
+        active={editor?.isActive("link")}
         title="Insert Link"
       />
     </div>

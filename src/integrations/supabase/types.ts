@@ -229,6 +229,7 @@ export type Database = {
       }
       habits: {
         Row: {
+          cover_image_url: string | null
           created_at: string
           description: string | null
           frequency: string | null
@@ -238,6 +239,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
           frequency?: string | null
@@ -247,6 +249,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
           frequency?: string | null
@@ -406,6 +409,7 @@ export type Database = {
       manifest_goals: {
         Row: {
           affirmations: string[] | null
+          cover_image_url: string | null
           created_at: string
           description: string | null
           feeling_when_achieved: string | null
@@ -417,6 +421,7 @@ export type Database = {
         }
         Insert: {
           affirmations?: string[] | null
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
           feeling_when_achieved?: string | null
@@ -428,6 +433,7 @@ export type Database = {
         }
         Update: {
           affirmations?: string[] | null
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
           feeling_when_achieved?: string | null
@@ -481,6 +487,7 @@ export type Database = {
         Row: {
           category: string | null
           content: string | null
+          cover_image_url: string | null
           created_at: string
           has_checklist: boolean | null
           id: string
@@ -495,6 +502,7 @@ export type Database = {
         Insert: {
           category?: string | null
           content?: string | null
+          cover_image_url?: string | null
           created_at?: string
           has_checklist?: boolean | null
           id?: string
@@ -509,6 +517,7 @@ export type Database = {
         Update: {
           category?: string | null
           content?: string | null
+          cover_image_url?: string | null
           created_at?: string
           has_checklist?: boolean | null
           id?: string
