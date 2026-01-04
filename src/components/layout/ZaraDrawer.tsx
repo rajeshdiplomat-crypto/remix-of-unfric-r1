@@ -67,6 +67,13 @@ export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
 
         {/* Navigation content */}
         <div className="flex flex-col h-full pt-16 pb-8 px-8 overflow-y-auto">
+          {/* Logo */}
+          <NavLink to="/diary" onClick={onClose} className="mb-8">
+            <span className="text-lg font-normal uppercase tracking-zara-wide text-foreground">
+              inbalance
+            </span>
+          </NavLink>
+
           {/* Main navigation */}
           <nav className="space-y-6">
             {mainNavItems.map((item) => (

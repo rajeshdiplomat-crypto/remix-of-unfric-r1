@@ -410,7 +410,7 @@ export default function Emotions() {
       />
 
       {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 px-6 lg:px-8 pt-6">
         {/* LEFT: Check-in + Patterns (scrollable) */}
         <div className="overflow-y-auto space-y-6 pr-1">
 

@@ -517,7 +517,7 @@ export default function Tasks() {
         subtitle={PAGE_HERO_TEXT.tasks.subtitle}
       />
 
-      <div className="w-full flex-1 min-h-0">
+      <div className="w-full flex-1 min-h-0 px-6 lg:px-8 pt-6">
         <div className="w-full min-w-0 flex flex-col gap-6 min-h-0">
           <TasksHeader
             view={view}

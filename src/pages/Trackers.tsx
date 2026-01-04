@@ -732,16 +732,12 @@ export default function Trackers() {
         />
 
         {/* Content Grid */}
-        <div className="w-full flex flex-col lg:flex-row gap-6">
+        <div className="w-full flex flex-col lg:flex-row gap-6 px-6 lg:px-8 pt-6">
           {/* LEFT */}
           <div className="flex-1 min-w-0 space-y-6">
 
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">Activity Tracker</h1>
-              <p className="text-sm text-muted-foreground mt-1">Monitor commitments, consistency, and momentum.</p>
-            </div>
+          <div className="flex flex-col sm:flex-row sm:items-end justify-end gap-4">
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <Button variant="outline" size="sm" onClick={handleExport} className="h-10 rounded-full gap-2 shadow-sm">

@@ -1,1 +1,4 @@
 project_id = "gorwqtdpsuudptjdysjd"
+
+[functions.generate-hero-image]
+verify_jwt = false
