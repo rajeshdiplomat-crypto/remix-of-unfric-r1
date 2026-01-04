@@ -133,7 +133,7 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
         <Button
           variant="ghost"
           size="icon"
-          className={`absolute top-4 right-4 z-20 bg-background/20 hover:bg-background/40 backdrop-blur-sm transition-opacity duration-300 ${
+          className={`absolute top-[4.5rem] right-4 z-20 bg-background/20 hover:bg-background/40 backdrop-blur-sm transition-opacity duration-300 ${
             hovering ? (isHovering ? "opacity-100" : "opacity-0") : ""
           }`}
         >
@@ -190,7 +190,7 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
   // Default placeholder with Zara-style editorial aesthetic
   if (!mediaSrc) {
     return (
-      <div className="relative w-full h-[50vh] bg-foreground/5 flex items-end justify-start overflow-hidden">
+      <div className="relative w-full h-[calc(50vh+3.5rem)] bg-foreground/5 flex items-end justify-start overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
         {textOverlay}
         {editDialog(false)}
@@ -200,7 +200,7 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
 
   return (
     <div
-      className="relative w-full h-[50vh] overflow-hidden"
+      className="relative w-full h-[calc(50vh+3.5rem)] overflow-hidden"
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
