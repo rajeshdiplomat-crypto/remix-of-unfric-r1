@@ -230,7 +230,7 @@ export function NotesSplitView({
   }
 
   return (
-    <div className="flex h-[calc(100vh-120px)] border border-border rounded-lg overflow-hidden bg-card">
+    <div className="flex h-[calc(50vh-40px)] border border-border rounded-lg overflow-hidden bg-card">
       {/* Left Panel - Notes List with Focus Mode */}
       <div className="w-72 border-r border-border flex flex-col">
         <div className="p-3 border-b border-border flex items-center justify-between">

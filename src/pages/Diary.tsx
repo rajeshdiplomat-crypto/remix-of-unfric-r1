@@ -448,7 +448,7 @@ export default function Diary() {
             </p>
           </Card>
         ) : (
-          <ScrollArea className="h-[calc(100vh-280px)]">
+          <ScrollArea className="flex-1 min-h-0">
             <div className="space-y-4 pr-2">
               {sortedEvents.map((event) =>
                 event.type === "journal_question" ? (
