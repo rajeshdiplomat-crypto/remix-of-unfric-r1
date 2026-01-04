@@ -15,6 +15,7 @@ import { BoardView } from "@/components/tasks/BoardView";
 import { UnifiedTaskDrawer } from "@/components/tasks/UnifiedTaskDrawer";
 import { DeepFocusPrompt } from "@/components/tasks/DeepFocusPromptModal";
 import PremiumDeepFocus from "@/pages/PremiumDeepFocus";
+import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 
 import {
   QuadrantTask,
@@ -507,7 +508,16 @@ export default function Tasks() {
 
   return (
     <div className="h-full w-full flex flex-col bg-background overflow-x-hidden">
-      <div className="w-full flex-1 min-h-0">
+      {/* Hero */}
+      <PageHero
+        storageKey="tasks_hero_src"
+        typeKey="tasks_hero_type"
+        badge={PAGE_HERO_TEXT.tasks.badge}
+        title={PAGE_HERO_TEXT.tasks.title}
+        subtitle={PAGE_HERO_TEXT.tasks.subtitle}
+      />
+
+      <div className="w-full flex-1 min-h-0 mt-6">
         <div className="w-full min-w-0 flex flex-col gap-6 min-h-0">
           <TasksHeader
             view={view}

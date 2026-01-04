@@ -9,7 +9,7 @@ import { ManifestTopBar } from "@/components/manifest/ManifestTopBar";
 import { ManifestCard } from "@/components/manifest/ManifestCard";
 import { ManifestCreateModal } from "@/components/manifest/ManifestCreateModal";
 import { ManifestPracticePanel } from "@/components/manifest/ManifestPracticePanel";
-import { PageHeroMedia, HERO_TEXT } from "@/components/common/PageHeroMedia";
+import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 
 import {
   AlertDialog,
@@ -311,12 +311,12 @@ export default function Manifest() {
       {/* LEFT: Board */}
       <div className="overflow-y-auto space-y-6 pb-6 pr-1">
         {/* Hero Media Block */}
-        <PageHeroMedia
-          storageKey="manifest_page_hero_media"
-          typeKey="manifest_page_hero_media_type"
-          badge={HERO_TEXT.manifest.badge}
-          title={HERO_TEXT.manifest.title}
-          subtitle={HERO_TEXT.manifest.subtitle}
+        <PageHero
+          storageKey="manifest_hero_src"
+          typeKey="manifest_hero_type"
+          badge={PAGE_HERO_TEXT.manifest.badge}
+          title={PAGE_HERO_TEXT.manifest.title}
+          subtitle={PAGE_HERO_TEXT.manifest.subtitle}
         />
 
         <ManifestTopBar

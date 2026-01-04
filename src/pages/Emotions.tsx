@@ -17,7 +17,7 @@ import { EmotionContextFieldsEnhanced } from "@/components/emotions/EmotionConte
 import { StrategiesPanelEnhanced } from "@/components/emotions/StrategiesPanelEnhanced";
 import { PatternsDashboardEnhanced } from "@/components/emotions/PatternsDashboardEnhanced";
 import { CheckinReminders } from "@/components/emotions/CheckinReminders";
-import { PageHeroMedia, HERO_TEXT } from "@/components/common/PageHeroMedia";
+import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 export default function Emotions() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -403,12 +403,12 @@ export default function Emotions() {
       {/* LEFT: Check-in + Patterns (scrollable) */}
       <div className="overflow-y-auto space-y-6 pr-1">
         {/* Hero Media Block */}
-        <PageHeroMedia
-          storageKey="emotion_page_hero_media"
-          typeKey="emotion_page_hero_media_type"
-          badge={HERO_TEXT.emotion.badge}
-          title={HERO_TEXT.emotion.title}
-          subtitle={HERO_TEXT.emotion.subtitle}
+        <PageHero
+          storageKey="emotion_hero_src"
+          typeKey="emotion_hero_type"
+          badge={PAGE_HERO_TEXT.emotions.badge}
+          title={PAGE_HERO_TEXT.emotions.title}
+          subtitle={PAGE_HERO_TEXT.emotions.subtitle}
         />
 
         {/* How are you feeling - Check-in section */}

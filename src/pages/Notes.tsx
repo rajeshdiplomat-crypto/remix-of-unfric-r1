@@ -20,6 +20,7 @@ import { NotesBoardView } from "@/components/notes/NotesBoardView";
 import { NotesMindMapView } from "@/components/notes/NotesMindMapView";
 import { NotesViewSwitcher, type NotesViewType } from "@/components/notes/NotesViewSwitcher";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 
 export interface NoteGroup {
   id: string;
@@ -385,7 +386,16 @@ export default function Notes() {
   if (viewMode === "overview") {
     return (
       <div className="w-full flex-1 pb-24 max-w-[1400px] mx-auto">
-        <div className="w-full space-y-6">
+        {/* Hero */}
+        <PageHero
+          storageKey="notes_hero_src"
+          typeKey="notes_hero_type"
+          badge={PAGE_HERO_TEXT.notes.badge}
+          title={PAGE_HERO_TEXT.notes.title}
+          subtitle={PAGE_HERO_TEXT.notes.subtitle}
+        />
+
+        <div className="w-full space-y-6 mt-6">
           {/* Header */}
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">

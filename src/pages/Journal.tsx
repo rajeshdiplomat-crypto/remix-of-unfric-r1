@@ -9,6 +9,7 @@ import { JournalTiptapEditor, TiptapEditorRef } from "@/components/journal/Journ
 import { JournalToolbar } from "@/components/journal/JournalToolbar";
 import { JournalSidebarPanel } from "@/components/journal/JournalSidebarPanel";
 import { JournalSettingsModal } from "@/components/journal/JournalSettingsModal";
+import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import {
   JournalEntry,
   JournalTemplate,
@@ -356,8 +357,17 @@ export default function Journal() {
       }}
     >
       {/* Main Editor Area */}
-      <div className="flex flex-col min-w-0 p-6">
-        {/* Header */}
+      <div className="flex flex-col min-w-0">
+        {/* Hero */}
+        <PageHero
+          storageKey="journal_hero_src"
+          typeKey="journal_hero_type"
+          badge={PAGE_HERO_TEXT.journal.badge}
+          title={PAGE_HERO_TEXT.journal.title}
+          subtitle={PAGE_HERO_TEXT.journal.subtitle}
+        />
+        
+        <div className="p-6 flex-1 flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-2xl font-semibold flex items-center gap-2">
@@ -432,6 +442,7 @@ export default function Journal() {
             fontSize={fontSize}
           />
         )}
+        </div>
       </div>
 
       {/* Right Sidebar */}
