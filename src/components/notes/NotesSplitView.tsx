@@ -3,7 +3,8 @@ import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Share2, MoreHorizontal, X, Clock, Trash2, ChevronRight, FileText, Folder, FolderOpen, ChevronDown, Maximize2, Check, Save } from "lucide-react";
+import { Plus, Share2, MoreHorizontal, X, Clock, Trash2, ChevronRight, FileText, Folder, FolderOpen, ChevronDown, Maximize2, Check, Save, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { NotesRichEditor } from "./NotesRichEditor";
 import { NotesActivityDot, getMostRecentUpdate } from "./NotesActivityDot";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -50,6 +51,9 @@ export function NotesSplitView({
   // Track if note was just created (for confirmation message)
   const [isNewNote, setIsNewNote] = useState(false);
   const prevNoteId = useRef<string | null>(null);
+  
+  // Sidebar collapse state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Enter focus mode when a note is selected
   useEffect(() => {
@@ -232,15 +236,31 @@ export function NotesSplitView({
   return (
     <div className="flex h-[calc(100vh-200px)] border border-border rounded-lg overflow-hidden bg-card">
       {/* Left Panel - Notes List with Focus Mode */}
-      <div className="w-72 border-r border-border flex flex-col">
+      <div className={cn(
+        "border-r border-border flex flex-col transition-all duration-300",
+        isSidebarCollapsed ? "w-12" : "w-72"
+      )}>
         <div className="p-3 border-b border-border flex items-center justify-between">
-          <h2 className="font-semibold text-sm text-foreground">
-            {isInFocusMode ? "Context" : "Notes"}
-          </h2>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onCreateNote}>
-            <Plus className="h-4 w-4" />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-7 w-7"
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          >
+            {isSidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
           </Button>
+          {!isSidebarCollapsed && (
+            <>
+              <h2 className="font-semibold text-sm text-foreground flex-1 ml-2">
+                {isInFocusMode ? "Context" : "Notes"}
+              </h2>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onCreateNote}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </>
+          )}
         </div>
+        {!isSidebarCollapsed && (
         <ScrollArea className="flex-1">
           <div className="p-2 space-y-1">
             {sortedGroups.map((group) => {
@@ -372,6 +392,7 @@ export function NotesSplitView({
             })}
           </div>
         </ScrollArea>
+        )}
       </div>
 
       {/* Right Panel - Editor */}
