@@ -79,11 +79,16 @@ export function AllTasksList({
     const isCompleted = task.is_completed || !!task.completed_at;
     const status = computeTaskStatus(task);
 
+    const isOngoing = status === 'ongoing';
+    
     return (
       <div
         className={cn(
-          "group p-3 bg-background rounded-xl border border-border/50 transition-all",
+          "group p-3 rounded-xl border transition-all",
           "hover:shadow-md hover:border-border cursor-pointer",
+          isOngoing 
+            ? "bg-primary/5 border-l-2 border-l-primary border-border/50" 
+            : "bg-background border-border/50",
           isCompleted && "opacity-60",
         )}
       >

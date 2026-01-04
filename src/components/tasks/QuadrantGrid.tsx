@@ -51,7 +51,9 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
         case 'date':
           return task.date_bucket === quadrantId;
         case 'time':
-          return task.time_of_day === quadrantId;
+          // Only show today's tasks in Time of Day mode
+          const isToday = task.date_bucket === 'today';
+          return isToday && task.time_of_day === quadrantId;
       }
       return false;
     });
@@ -104,12 +106,17 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
             const isCompleted = task.is_completed || !!task.completed_at;
             const status = computeTaskStatus(task);
             
+            const isOngoing = status === 'ongoing';
+            
             return (
               <div
                 key={task.id}
                 className={cn(
-                  "flex items-center justify-between p-3 rounded-xl bg-background/50 border border-border/30",
-                  "hover:bg-background hover:border-border transition-all cursor-pointer group",
+                  "flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer group",
+                  isOngoing 
+                    ? "bg-primary/5 border-l-2 border-l-primary border border-border/30" 
+                    : "bg-background/50 border border-border/30",
+                  "hover:bg-background hover:border-border",
                   isCompleted && "opacity-60"
                 )}
               >
