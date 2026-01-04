@@ -62,6 +62,7 @@ import { ActivityImageUpload, loadActivityImage, saveActivityImage } from "@/com
 import { ActivityDetailPanel } from "@/components/trackers/ActivityDetailPanel";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
+import { getPresetImage } from "@/lib/presetImages";
 
 interface ActivityItem {
   id: string;
@@ -1004,102 +1005,113 @@ export default function Trackers() {
                   )}
                   onClick={() => selectActivity(activity)}
                 >
-                  <div className="p-4">
-                    <div className="flex items-start gap-3">
-                      <div onClick={(e) => e.stopPropagation()} className="pt-0.5">
-                        <Checkbox
-                          checked={selectedActivities.has(activity.id)}
-                          onCheckedChange={(checked) => {
-                            setSelectedActivities((prev) => {
-                              const next = new Set(prev);
-                              if (checked) next.add(activity.id);
-                              else next.delete(activity.id);
-                              return next;
-                            });
-                          }}
-                        />
-                      </div>
-
-                      <div
-                        className="h-10 w-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: `hsl(${category.color} / 0.14)` }}
-                      >
-                        <Target className="h-5 w-5" style={{ color: `hsl(${category.color})` }} />
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-sm font-semibold truncate">{activity.name}</h3>
-
-                          <Badge variant="secondary" className="rounded-full text-[11px]">
-                            {category.label.split(" ")[0]}
-                          </Badge>
-
-                          {currentStreak > 0 && (
-                            <Badge variant="outline" className="rounded-full text-[11px] gap-1">
-                              <Flame className="h-3.5 w-3.5 text-orange-500" />
-                              {currentStreak}
-                            </Badge>
-                          )}
-
-                          <Badge
-                            className={cn(
-                              "rounded-full text-[11px] border",
-                              status === "active" && "bg-green-500/10 text-green-700 border-green-500/15",
-                              status === "completed" && "bg-primary/10 text-primary border-primary/15",
-                              status === "upcoming" && "bg-orange-500/10 text-orange-700 border-orange-500/15",
-                            )}
-                          >
-                            {status}
-                          </Badge>
-                        </div>
-
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{activity.description}</p>
-
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <CalendarDays className="h-3.5 w-3.5" />
-                            {format(parseISO(activity.startDate), "MMM d")} → {format(getEndDate(activity), "MMM d")} (
-                            {activity.habitDays} sessions)
-                          </span>
-                          <span className="font-medium text-foreground">{daysLeft} days left</span>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs">
-                          <span className="text-muted-foreground">
-                            <span className="font-medium text-foreground">{completedSessions}</span>/{scheduledSessions}{" "}
-                            sessions
-                          </span>
-                          <span className="text-muted-foreground">
-                            <span className="font-medium text-foreground">{sessionsLeft}</span> left
-                          </span>
-                          <span className="font-medium text-foreground">{percent}% complete</span>
-                        </div>
-
-                        <Progress value={percent} className="h-1.5 mt-2" />
-                      </div>
-
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => selectActivity(activity)}>View Details</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openEditDialog(activity)}>Edit</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleDelete(activity.id)} className="text-destructive">
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                  <div className="flex">
+                    {/* Left: Cover Image */}
+                    <div className="w-20 shrink-0 relative overflow-hidden">
+                      <img
+                        src={loadActivityImage(activity.id) || getPresetImage("trackers", activity.category)}
+                        alt=""
+                        className="w-full h-full object-cover min-h-[160px]"
+                      />
                     </div>
 
-                    {/* Tracker grid */}
-                    <div className="mt-4 pl-[52px]">
+                    {/* Right: Card Content */}
+                    <div className="flex-1 p-4">
+                      <div className="flex items-start gap-3">
+                        <div onClick={(e) => e.stopPropagation()} className="pt-0.5">
+                          <Checkbox
+                            checked={selectedActivities.has(activity.id)}
+                            onCheckedChange={(checked) => {
+                              setSelectedActivities((prev) => {
+                                const next = new Set(prev);
+                                if (checked) next.add(activity.id);
+                                else next.delete(activity.id);
+                                return next;
+                              });
+                            }}
+                          />
+                        </div>
+
+                        <div
+                          className="h-10 w-10 rounded-2xl flex items-center justify-center flex-shrink-0"
+                          style={{ backgroundColor: `hsl(${category.color} / 0.14)` }}
+                        >
+                          <Target className="h-5 w-5" style={{ color: `hsl(${category.color})` }} />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-sm font-semibold truncate">{activity.name}</h3>
+
+                            <Badge variant="secondary" className="rounded-full text-[11px]">
+                              {category.label.split(" ")[0]}
+                            </Badge>
+
+                            {currentStreak > 0 && (
+                              <Badge variant="outline" className="rounded-full text-[11px] gap-1">
+                                <Flame className="h-3.5 w-3.5 text-orange-500" />
+                                {currentStreak}
+                              </Badge>
+                            )}
+
+                            <Badge
+                              className={cn(
+                                "rounded-full text-[11px] border",
+                                status === "active" && "bg-green-500/10 text-green-700 border-green-500/15",
+                                status === "completed" && "bg-primary/10 text-primary border-primary/15",
+                                status === "upcoming" && "bg-orange-500/10 text-orange-700 border-orange-500/15",
+                              )}
+                            >
+                              {status}
+                            </Badge>
+                          </div>
+
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{activity.description}</p>
+
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <CalendarDays className="h-3.5 w-3.5" />
+                              {format(parseISO(activity.startDate), "MMM d")} → {format(getEndDate(activity), "MMM d")} (
+                              {activity.habitDays} sessions)
+                            </span>
+                            <span className="font-medium text-foreground">{daysLeft} days left</span>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs">
+                            <span className="text-muted-foreground">
+                              <span className="font-medium text-foreground">{completedSessions}</span>/{scheduledSessions}{" "}
+                              sessions
+                            </span>
+                            <span className="text-muted-foreground">
+                              <span className="font-medium text-foreground">{sessionsLeft}</span> left
+                            </span>
+                            <span className="font-medium text-foreground">{percent}% complete</span>
+                          </div>
+
+                          <Progress value={percent} className="h-1.5 mt-2" />
+                        </div>
+
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => selectActivity(activity)}>View Details</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openEditDialog(activity)}>Edit</DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleDelete(activity.id)} className="text-destructive">
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+
+                      {/* Tracker grid */}
+                      <div className="mt-4 pl-[52px]">
                       {viewMode === "week" && (
                         <div className="flex gap-2">
                           {weekDays.map((day, idx) => {
@@ -1191,21 +1203,22 @@ export default function Trackers() {
                           </div>
                         </ScrollArea>
                       )}
-                    </div>
+                      </div>
 
-                    {/* Quick insight row */}
-                    <div className="mt-3 pl-[52px] flex items-center gap-4 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Flame className="h-3.5 w-3.5 text-orange-500" />
-                        <span>Streak: {currentStreak}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Zap className="h-3.5 w-3.5 text-yellow-500" />
-                        <span>Best: {longestStreak}</span>
-                      </div>
-                      <div className="hidden sm:flex items-center gap-1">
-                        <Lightbulb className="h-3.5 w-3.5 text-primary" />
-                        <span>Best on {insights.bestDay}</span>
+                      {/* Quick insight row */}
+                      <div className="mt-3 pl-[52px] flex items-center gap-4 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Flame className="h-3.5 w-3.5 text-orange-500" />
+                          <span>Streak: {currentStreak}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Zap className="h-3.5 w-3.5 text-yellow-500" />
+                          <span>Best: {longestStreak}</span>
+                        </div>
+                        <div className="hidden sm:flex items-center gap-1">
+                          <Lightbulb className="h-3.5 w-3.5 text-primary" />
+                          <span>Best on {insights.bestDay}</span>
+                        </div>
                       </div>
                     </div>
                   </div>

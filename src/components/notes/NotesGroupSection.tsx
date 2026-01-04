@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { NotesFolderSection } from "./NotesFolderSection";
 import { NotesNoteRow } from "./NotesNoteRow";
 import { NotesActivityDot, getMostRecentUpdate } from "./NotesActivityDot";
+import { getPresetImage } from "@/lib/presetImages";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 
 interface NotesGroupSectionProps {
@@ -73,11 +74,14 @@ export function NotesGroupSection({
           className="w-full px-4 py-3 text-left hover:bg-muted/5 transition-colors"
         >
           <div className="flex items-center gap-3">
-            {/* Color dot badge */}
-            <div 
-              className="h-2.5 w-2.5 rounded-full shrink-0 ring-2 ring-background"
-              style={{ backgroundColor: group.color }}
-            />
+            {/* Cover image thumbnail */}
+            <div className="h-8 w-8 rounded-lg overflow-hidden shrink-0">
+              <img
+                src={getPresetImage("notes", group.id)}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            </div>
 
             {/* Main content */}
             <div className="min-w-0 flex-1">

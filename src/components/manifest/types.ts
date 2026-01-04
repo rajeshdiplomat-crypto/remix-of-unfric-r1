@@ -4,6 +4,7 @@ export interface ManifestGoal {
   title: string; // The assumption (present tense)
   category: string;
   vision_image_url?: string;
+  cover_image_url?: string; // Cover image for card display
   start_date?: string;
   live_from_end?: string;
   act_as_if: string;

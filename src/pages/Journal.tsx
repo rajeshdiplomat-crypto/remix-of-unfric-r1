@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { format } from "date-fns";
-import { Settings, Save, Check, BookOpen } from "lucide-react";
+import { Settings, Save, Check, BookOpen, Maximize2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -106,6 +106,7 @@ export default function Journal() {
   const [isSaved, setIsSaved] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isFullPage, setIsFullPage] = useState(false);
   const [fontFamily, setFontFamily] = useState("Inter");
   const [fontSize, setFontSize] = useState(16);
 
@@ -347,6 +348,91 @@ export default function Journal() {
     setIsSaved(false);
   };
 
+  // Escape key to exit full page mode
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isFullPage) setIsFullPage(false);
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [isFullPage]);
+
+  // Full page mode
+  if (isFullPage) {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex flex-col"
+        style={{
+          backgroundColor: currentSkin.pageBg,
+          color: currentSkin.text,
+        }}
+      >
+        {/* Minimal header */}
+        <div
+          className="flex items-center justify-between px-8 py-3 border-b"
+          style={{ borderColor: currentSkin.border }}
+        >
+          <span className="text-sm font-light tracking-wide uppercase">
+            {format(selectedDate, "EEEE, MMMM d")}
+          </span>
+          <div className="flex items-center gap-3">
+            <span
+              className="text-xs flex items-center gap-1"
+              style={{ color: currentSkin.mutedText }}
+            >
+              {isSaved ? (
+                <>
+                  <Check className="h-3 w-3" /> Saved
+                </>
+              ) : (
+                "Not saved yet"
+              )}
+            </span>
+            <Button size="sm" onClick={handleSave} disabled={isSaved}>
+              <Save className="h-4 w-4 mr-1" />
+              Save
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsFullPage(false)}
+              className="rounded-lg"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Centered editor */}
+        <div className="flex-1 overflow-auto">
+          <div className="max-w-3xl mx-auto w-full px-8 py-6">
+            <div className="mb-4">
+              <JournalToolbar
+                editor={editorRef.current?.editor || null}
+                fontFamily={fontFamily}
+                fontSize={fontSize}
+                onFontFamilyChange={setFontFamily}
+                onFontSizeChange={setFontSize}
+              />
+            </div>
+            <JournalTiptapEditor
+              ref={editorRef}
+              content={content}
+              onChange={handleContentChange}
+              skinStyles={{
+                editorPaperBg: currentSkin.editorPaperBg,
+                text: currentSkin.text,
+                mutedText: currentSkin.mutedText,
+              }}
+              fontFamily={fontFamily}
+              fontSize={fontSize}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="flex flex-col w-full flex-1"
@@ -384,6 +470,15 @@ export default function Journal() {
                 "Not saved yet"
               )}
             </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsFullPage(true)}
+              style={{ borderColor: currentSkin.border, color: currentSkin.text }}
+              title="Full page mode"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
             <Button
               variant="outline"
               size="sm"
