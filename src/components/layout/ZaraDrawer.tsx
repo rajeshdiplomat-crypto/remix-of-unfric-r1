@@ -5,63 +5,57 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
-
-const mainNavItems = [
-  { title: "Diary", url: "/diary" },
-  { title: "Emotions", url: "/emotions" },
-  { title: "Journal", url: "/journal" },
-  { title: "Manifest", url: "/manifest" },
-  { title: "Trackers", url: "/trackers" },
-];
-
-const productivityItems = [
-  { title: "Notes", url: "/notes" },
-  { title: "Tasks", url: "/tasks" },
-];
-
+const mainNavItems = [{
+  title: "Diary",
+  url: "/diary"
+}, {
+  title: "Emotions",
+  url: "/emotions"
+}, {
+  title: "Journal",
+  url: "/journal"
+}, {
+  title: "Manifest",
+  url: "/manifest"
+}, {
+  title: "Trackers",
+  url: "/trackers"
+}];
+const productivityItems = [{
+  title: "Notes",
+  url: "/notes"
+}, {
+  title: "Tasks",
+  url: "/tasks"
+}];
 interface ZaraDrawerProps {
   open: boolean;
   onClose: () => void;
 }
-
-export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
+export function ZaraDrawer({
+  open,
+  onClose
+}: ZaraDrawerProps) {
   const location = useLocation();
-  const { user, signOut } = useAuth();
-
+  const {
+    user,
+    signOut
+  } = useAuth();
   const isActive = (path: string) => location.pathname === path;
-
   const handleSignOut = () => {
     signOut();
     onClose();
   };
-
-  return (
-    <>
+  return <>
       {/* Overlay */}
-      <div
-        className={cn(
-          "fixed inset-0 z-50 bg-foreground/20 transition-opacity duration-300",
-          open ? "opacity-100" : "opacity-0 pointer-events-none"
-        )}
-        onClick={onClose}
-      />
+      <div className={cn("fixed inset-0 z-50 bg-foreground/20 transition-opacity duration-300", open ? "opacity-100" : "opacity-0 pointer-events-none")} onClick={onClose} />
 
       {/* Drawer */}
-      <div
-        className={cn(
-          "fixed top-0 left-0 z-50 h-full w-full max-w-sm bg-background transition-transform duration-300 ease-out",
-          open ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
+      <div className={cn("fixed top-0 left-0 z-50 h-full w-full max-w-sm bg-background transition-transform duration-300 ease-out", open ? "translate-x-0" : "-translate-x-full")}>
         {/* Close button */}
-        <div className="absolute top-6 right-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="h-14 w-14 hover:bg-transparent"
-          >
-            <X className="h-8 w-8" strokeWidth={1.5} />
+        <div className="absolute top-4 right-4">
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-10 w-10 hover:bg-transparent">
+            <X className="h-5 w-5" />
           </Button>
         </div>
 
@@ -69,28 +63,16 @@ export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
         <div className="flex flex-col h-full pt-16 pb-8 px-8 overflow-y-auto">
           {/* Logo */}
           <NavLink to="/diary" onClick={onClose} className="mb-8">
-            <span className="text-5xl font-extralight uppercase tracking-[0.5em] text-foreground leading-relaxed">
+            <span className="font-light uppercase tracking-[0.4em] text-foreground text-4xl">
               inbalance
             </span>
           </NavLink>
 
           {/* Main navigation */}
           <nav className="space-y-6">
-            {mainNavItems.map((item) => (
-              <NavLink
-                key={item.title}
-                to={item.url}
-                onClick={onClose}
-                className={cn(
-                  "text-sm font-light uppercase tracking-zara-wide transition-colors",
-                  isActive(item.url)
-                    ? "text-foreground border-b border-foreground pb-0.5 inline-block"
-                    : "text-muted-foreground hover:text-foreground block"
-                )}
-              >
+            {mainNavItems.map(item => <NavLink key={item.title} to={item.url} onClick={onClose} className={cn("text-sm font-light uppercase tracking-zara-wide transition-colors", isActive(item.url) ? "text-foreground border-b border-foreground pb-0.5 inline-block" : "text-muted-foreground hover:text-foreground block")}>
                 {item.title}
-              </NavLink>
-            ))}
+              </NavLink>)}
           </nav>
 
           {/* Divider */}
@@ -98,21 +80,9 @@ export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
 
           {/* Productivity section */}
           <nav className="space-y-6">
-            {productivityItems.map((item) => (
-              <NavLink
-                key={item.title}
-                to={item.url}
-                onClick={onClose}
-                className={cn(
-                  "text-sm font-light uppercase tracking-zara-wide transition-colors",
-                  isActive(item.url)
-                    ? "text-foreground border-b border-foreground pb-0.5 inline-block"
-                    : "text-muted-foreground hover:text-foreground block"
-                )}
-              >
+            {productivityItems.map(item => <NavLink key={item.title} to={item.url} onClick={onClose} className={cn("text-sm font-light uppercase tracking-zara-wide transition-colors", isActive(item.url) ? "text-foreground border-b border-foreground pb-0.5 inline-block" : "text-muted-foreground hover:text-foreground block")}>
                 {item.title}
-              </NavLink>
-            ))}
+              </NavLink>)}
           </nav>
 
           {/* Divider */}
@@ -120,16 +90,7 @@ export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
 
           {/* Settings & Account */}
           <nav className="space-y-6">
-            <NavLink
-              to="/settings"
-              onClick={onClose}
-              className={cn(
-                "text-sm font-light uppercase tracking-zara-wide transition-colors",
-                isActive("/settings")
-                  ? "text-foreground border-b border-foreground pb-0.5 inline-block"
-                  : "text-muted-foreground hover:text-foreground block"
-              )}
-            >
+            <NavLink to="/settings" onClick={onClose} className={cn("text-sm font-light uppercase tracking-zara-wide transition-colors", isActive("/settings") ? "text-foreground border-b border-foreground pb-0.5 inline-block" : "text-muted-foreground hover:text-foreground block")}>
               Settings
             </NavLink>
           </nav>
@@ -145,22 +106,16 @@ export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
             </div>
 
             {/* User email */}
-            {user?.email && (
-              <p className="text-[11px] font-light text-muted-foreground truncate uppercase tracking-zara">
+            {user?.email && <p className="text-[11px] font-light text-muted-foreground truncate uppercase tracking-zara">
                 {user.email}
-              </p>
-            )}
+              </p>}
 
             {/* Sign out */}
-            <button
-              onClick={handleSignOut}
-              className="text-sm font-light uppercase tracking-zara-wide text-muted-foreground hover:text-foreground transition-colors"
-            >
+            <button onClick={handleSignOut} className="text-sm font-light uppercase tracking-zara-wide text-muted-foreground hover:text-foreground transition-colors">
               Sign Out
             </button>
           </div>
         </div>
       </div>
-    </>
-  );
+    </>;
 }
