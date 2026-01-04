@@ -59,9 +59,10 @@ export default {
   			}
   		},
   		borderRadius: {
-  			lg: 'var(--radius)',
-  			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
+  			lg: '0px',
+  			md: '0px',
+  			sm: '0px',
+  			DEFAULT: '0px'
   		},
   		keyframes: {
   			'accordion-down': {
@@ -88,38 +89,29 @@ export default {
 		fontFamily: {
 			sans: [
 				'Inter',
-				'DM Sans',
+				'Helvetica Neue',
+				'Arial',
 				'ui-sans-serif',
 				'system-ui',
 				'-apple-system',
-				'BlinkMacSystemFont',
-				'Segoe UI',
-				'Roboto',
-				'Helvetica Neue',
-				'Arial',
-				'Noto Sans',
 				'sans-serif'
 			],
 			serif: [
-				'Crimson Pro',
-				'ui-serif',
-				'Georgia',
-				'Cambria',
 				'Times New Roman',
-				'Times',
+				'Georgia',
+				'ui-serif',
 				'serif'
 			],
 			mono: [
 				'SF Mono',
 				'ui-monospace',
-				'SFMono-Regular',
-				'Menlo',
-				'Monaco',
-				'Consolas',
-				'Liberation Mono',
-				'Courier New',
 				'monospace'
 			]
+		},
+		letterSpacing: {
+			'zara': '0.1em',
+			'zara-wide': '0.15em',
+			'zara-wider': '0.2em'
 		},
   		boxShadow: {
   			'2xs': 'var(--shadow-2xs)',
