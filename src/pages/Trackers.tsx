@@ -61,7 +61,7 @@ import { BarChart, Bar, ResponsiveContainer } from "recharts";
 import { ActivityImageUpload, loadActivityImage, saveActivityImage } from "@/components/trackers/ActivityImageUpload";
 import { ActivityDetailPanel } from "@/components/trackers/ActivityDetailPanel";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { PageHeroMedia, HERO_TEXT } from "@/components/common/PageHeroMedia";
+import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 
 interface ActivityItem {
   id: string;
@@ -725,12 +725,12 @@ export default function Trackers() {
         {/* LEFT */}
         <div className="flex-1 min-w-0 space-y-6">
           {/* Hero Media Block */}
-          <PageHeroMedia
-            storageKey="tracker_page_hero_media"
-            typeKey="tracker_page_hero_media_type"
-            badge={HERO_TEXT.tracker.badge}
-            title={HERO_TEXT.tracker.title}
-            subtitle={HERO_TEXT.tracker.subtitle}
+          <PageHero
+            storageKey="tracker_hero_src"
+            typeKey="tracker_hero_type"
+            badge={PAGE_HERO_TEXT.trackers.badge}
+            title={PAGE_HERO_TEXT.trackers.title}
+            subtitle={PAGE_HERO_TEXT.trackers.subtitle}
           />
 
           {/* Header */}
