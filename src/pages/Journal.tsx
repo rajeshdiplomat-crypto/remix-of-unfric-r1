@@ -454,10 +454,10 @@ export default function Journal() {
       />
 
       {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 w-full px-6 lg:px-8 pt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 w-full px-6 lg:px-8 pt-6 flex-1 pb-4">
         {/* Main Editor Area */}
-        <div className="flex flex-col min-w-0">
-          <div className="flex-1 flex flex-col">
+        <div className="flex flex-col min-w-0 min-h-0">
+          <div className="flex-1 flex flex-col min-h-0">
         <div className="flex items-center justify-between mb-4">
           {/* Date and Day - Left side */}
           <span 

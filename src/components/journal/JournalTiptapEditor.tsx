@@ -61,7 +61,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, JournalTiptapEdit
       },
       editorProps: {
         attributes: {
-          class: "prose prose-sm sm:prose lg:prose-lg max-w-none focus:outline-none min-h-[400px] px-8 py-6",
+          class: "prose prose-sm sm:prose lg:prose-lg max-w-none focus:outline-none min-h-[200px] h-full px-8 py-6",
         },
       },
     });
@@ -78,16 +78,16 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, JournalTiptapEdit
     }, [content, editor]);
 
     return (
-      <div
-        className={cn("rounded-xl border border-border/50 min-h-[500px] transition-colors")}
-        style={{
+    <div
+      className={cn("rounded-xl border border-border/50 flex-1 min-h-[300px] transition-colors")}
+      style={{
           backgroundColor: skinStyles?.editorPaperBg || "hsl(var(--card))",
           color: skinStyles?.text || "hsl(var(--foreground))",
         }}
       >
         <EditorContent editor={editor} />
         <style>{`
-          .ProseMirror { min-height: 400px; }
+          .ProseMirror { min-height: 200px; height: 100%; }
           .ProseMirror p.is-editor-empty:first-child::before {
             color: ${skinStyles?.mutedText || "hsl(var(--muted-foreground))"};
             content: attr(data-placeholder);
