@@ -54,7 +54,7 @@ export function ZaraDrawer({
       <div className={cn("fixed top-0 left-0 z-50 h-full w-full max-w-sm bg-background transition-transform duration-300 ease-out", open ? "translate-x-0" : "-translate-x-full")}>
         {/* Close button */}
         <div className="absolute top-4 right-4">
-          <Button variant="ghost" size="icon" onClick={onClose} className="hover:bg-transparent border-0 w-[50px] h-[50px]">
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-10 hover:bg-transparent w-[40px] border-2">
             <X className="h-5 w-5" />
           </Button>
         </div>

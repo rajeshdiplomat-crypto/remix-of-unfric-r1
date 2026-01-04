@@ -1,28 +1,25 @@
 import { ReactNode, useState } from "react";
 import { ZaraHeader } from "./ZaraHeader";
 import { ZaraDrawer } from "./ZaraDrawer";
-
 interface AppLayoutProps {
   children: ReactNode;
 }
-
-export function AppLayout({ children }: AppLayoutProps) {
+export function AppLayout({
+  children
+}: AppLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-
-  return (
-    <div className="min-h-screen flex flex-col w-full bg-background overflow-x-hidden">
+  return <div className="min-h-screen flex flex-col w-full bg-background overflow-x-hidden">
       {/* Fixed header */}
       <ZaraHeader onMenuClick={() => setDrawerOpen(true)} />
 
       {/* Full-screen drawer */}
-      <ZaraDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <ZaraDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} className="border-0" />
 
       {/* Main content with top padding for fixed header */}
       <main className="flex-1 flex flex-col w-full min-w-0">
-        <div className="flex-1 flex flex-col overflow-auto pb-32">
+        <div className="flex-1 flex flex-col overflow-auto pb-16">
           {children}
         </div>
       </main>
-    </div>
-  );
+    </div>;
 }
