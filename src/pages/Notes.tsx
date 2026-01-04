@@ -637,8 +637,9 @@ export default function Notes() {
   // EDITOR (Split View)
   // =========================
   return (
-    <div className="fixed inset-x-0 top-14 bottom-0 z-40 bg-background p-4">
-      <NotesSplitView
+    <div className="fixed inset-x-0 top-14 bottom-0 z-40 bg-background flex flex-col">
+      <div className="flex-1 min-h-0 p-4">
+        <NotesSplitView
         notes={filteredNotes}
         groups={groups}
         folders={folders}
@@ -650,6 +651,7 @@ export default function Notes() {
         onCreateNote={handleQuickNote}
         className="h-full w-full"
       />
+      </div>
     </div>
   );
 }

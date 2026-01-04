@@ -219,7 +219,7 @@ export function NotesSplitView({
   }
 
   return (
-    <div className={cn("flex min-h-0 border border-border rounded-lg overflow-hidden bg-card", className)}>
+    <div className={cn("flex h-full border border-border rounded-lg overflow-hidden bg-card", className)}>
       {/* Left Panel - Notes List with Focus Mode (Collapsible) */}
       <div 
         className={cn(
@@ -467,7 +467,7 @@ export function NotesSplitView({
             </div>
 
             {/* Editor Content */}
-            <div className="flex-1 min-h-0 overflow-auto">
+            <div className="flex-1 overflow-auto">
               <NotesRichEditor
                 note={selectedNote}
                 groups={groups}
