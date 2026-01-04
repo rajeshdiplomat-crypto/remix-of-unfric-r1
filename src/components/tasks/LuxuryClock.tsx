@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Clock, Play, Pause, RotateCcw } from "lucide-react";
+import { Play, Pause, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTimezone } from "@/hooks/useTimezone";
 
 type ClockMode = 'digital' | 'analog';
 
@@ -13,6 +14,7 @@ export function LuxuryClock() {
     const stored = localStorage.getItem(STORAGE_KEY);
     return (stored as ClockMode) || 'digital';
   });
+  const { timezone, getTimeInTimezone } = useTimezone();
 
   // Stopwatch state
   const [stopwatchTime, setStopwatchTime] = useState(0);
@@ -50,11 +52,9 @@ export function LuxuryClock() {
     setStopwatchTime(0);
   };
 
-  // Analog clock calculations
-  const hours = time.getHours() % 12;
-  const minutes = time.getMinutes();
-  const seconds = time.getSeconds();
-  const hourDeg = (hours * 30) + (minutes * 0.5);
+  // Analog clock calculations using timezone
+  const { hours, minutes, seconds } = getTimeInTimezone(time);
+  const hourDeg = (hours % 12 * 30) + (minutes * 0.5);
   const minuteDeg = (minutes * 6) + (seconds * 0.1);
   const secondDeg = seconds * 6;
 
@@ -93,14 +93,16 @@ export function LuxuryClock() {
             {time.toLocaleTimeString('en-US', { 
               hour: '2-digit', 
               minute: '2-digit',
-              hour12: true 
+              hour12: true,
+              timeZone: timezone
             }).replace(' ', '')}
           </div>
           <div className="text-xs text-muted-foreground text-center mt-1">
             {time.toLocaleDateString('en-US', { 
               weekday: 'long', 
               month: 'short', 
-              day: 'numeric' 
+              day: 'numeric',
+              timeZone: timezone
             })}
           </div>
         </div>

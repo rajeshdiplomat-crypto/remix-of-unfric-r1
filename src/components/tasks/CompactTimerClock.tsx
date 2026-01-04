@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-
+import { useTimezone } from "@/hooks/useTimezone";
 type Mode = 'stopwatch' | 'timer';
 type ClockDisplay = 'digital' | 'analog';
 
@@ -35,6 +35,7 @@ export function CompactTimerClock() {
   const [time, setTime] = useState(new Date());
   const [clockDisplay, setClockDisplay] = useState<ClockDisplay>('analog'); // Default to analog
   const [isExpanded, setIsExpanded] = useState(false);
+  const { timezone, getTimeInTimezone } = useTimezone();
   
   // Timer/Stopwatch state
   const [mode, setMode] = useState<Mode>('stopwatch');
@@ -267,16 +268,15 @@ export function CompactTimerClock() {
   const currentTime = time.toLocaleTimeString('en-US', { 
     hour: '2-digit', 
     minute: '2-digit',
-    hour12: true 
+    hour12: true,
+    timeZone: timezone
   });
 
   const isActive = stopwatchRunning || timerRunning;
 
-  // Analog clock calculations
-  const hours = time.getHours() % 12;
-  const minutes = time.getMinutes();
-  const seconds = time.getSeconds();
-  const hourDeg = (hours * 30) + (minutes * 0.5);
+  // Analog clock calculations using timezone
+  const { hours, minutes, seconds } = getTimeInTimezone(time);
+  const hourDeg = (hours % 12 * 30) + (minutes * 0.5);
   const minuteDeg = (minutes * 6) + (seconds * 0.1);
   const secondDeg = seconds * 6;
 
@@ -421,7 +421,7 @@ export function CompactTimerClock() {
             )}
 
             <div className="text-xs text-muted-foreground mt-2">
-              {time.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+              {time.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: timezone })}
             </div>
           </div>
 

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Timer, Play, Pause, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTimezone } from "@/hooks/useTimezone";
 
 const TIMER_PRESETS = [
   { label: "5m", minutes: 5 },
@@ -18,6 +18,7 @@ export function LargeClockWidget() {
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerMinutes, setTimerMinutes] = useState(25);
   const [timerRemaining, setTimerRemaining] = useState(25 * 60);
+  const { timezone, getTimeInTimezone } = useTimezone();
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
@@ -53,9 +54,7 @@ export function LargeClockWidget() {
     } catch {}
   };
 
-  const hours = time.getHours();
-  const minutes = time.getMinutes();
-  const seconds = time.getSeconds();
+  const { hours, minutes, seconds } = getTimeInTimezone(time);
 
   // Calculate hand rotations
   const hourDeg = (hours % 12) * 30 + minutes * 0.5;
@@ -132,10 +131,22 @@ export function LargeClockWidget() {
 
         {/* Digital time */}
         <p className="text-2xl font-bold text-foreground">
-          {format(time, 'h:mm:ss a')}
+          {time.toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true,
+            timeZone: timezone
+          })}
         </p>
         <p className="text-sm text-muted-foreground mb-4">
-          {format(time, 'EEEE, MMMM d, yyyy')}
+          {time.toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            month: 'long', 
+            day: 'numeric',
+            year: 'numeric',
+            timeZone: timezone
+          })}
         </p>
 
         {/* Timer Section */}
