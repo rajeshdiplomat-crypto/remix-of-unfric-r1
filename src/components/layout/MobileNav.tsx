@@ -60,11 +60,16 @@ export function MobileNav({ onNavigate }: MobileNavProps) {
 
   return (
     <div className="h-full flex flex-col bg-card">
-      {/* Header - ZARA-style large title */}
-      <div className="pt-20 pb-8 px-6">
-        <h1 className="text-5xl font-bold tracking-tight text-foreground animate-title-reveal">
-          inbalance
-        </h1>
+      {/* Header */}
+      <div className="p-4 border-b border-border">
+        <div className="flex items-center gap-3">
+          <img 
+            src="/favicon.png" 
+            alt="inbalance logo" 
+            className="h-10 w-10 rounded-xl object-cover"
+          />
+          <span className="font-bold text-xl text-foreground">inbalance</span>
+        </div>
       </div>
 
       {/* Navigation */}
