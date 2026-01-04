@@ -60,43 +60,43 @@ export function ZaraDrawer({
         </div>
 
         {/* Navigation content */}
-        <div className="flex flex-col h-full pt-16 pb-8 px-8 overflow-y-auto">
+        <div className="flex flex-col h-full pt-12 pb-6 px-6 overflow-y-auto">
           {/* Logo */}
-          <NavLink to="/diary" onClick={onClose} className="mb-8">
+          <NavLink to="/diary" onClick={onClose} className="mb-6">
             <span className="font-light uppercase tracking-[0.4em] text-foreground text-4xl">
               inbalance
             </span>
           </NavLink>
 
           {/* Main navigation */}
-          <nav className="space-y-6">
+          <nav className="space-y-4">
             {mainNavItems.map(item => <NavLink key={item.title} to={item.url} onClick={onClose} className={cn("text-sm font-light uppercase tracking-zara-wide transition-colors", isActive(item.url) ? "text-foreground border-b border-foreground pb-0.5 inline-block" : "text-muted-foreground hover:text-foreground block")}>
                 {item.title}
               </NavLink>)}
           </nav>
 
           {/* Divider */}
-          <div className="my-8 border-t border-border" />
+          <div className="my-5 border-t border-border" />
 
           {/* Productivity section */}
-          <nav className="space-y-6">
+          <nav className="space-y-4">
             {productivityItems.map(item => <NavLink key={item.title} to={item.url} onClick={onClose} className={cn("text-sm font-light uppercase tracking-zara-wide transition-colors", isActive(item.url) ? "text-foreground border-b border-foreground pb-0.5 inline-block" : "text-muted-foreground hover:text-foreground block")}>
                 {item.title}
               </NavLink>)}
           </nav>
 
           {/* Divider */}
-          <div className="my-8 border-t border-border" />
+          <div className="my-5 border-t border-border" />
 
           {/* Settings & Account */}
-          <nav className="space-y-6">
+          <nav className="space-y-4">
             <NavLink to="/settings" onClick={onClose} className={cn("text-sm font-light uppercase tracking-zara-wide transition-colors", isActive("/settings") ? "text-foreground border-b border-foreground pb-0.5 inline-block" : "text-muted-foreground hover:text-foreground block")}>
               Settings
             </NavLink>
           </nav>
 
           {/* Footer */}
-          <div className="mt-auto pt-8 space-y-6">
+          <div className="mt-auto pt-6 space-y-4">
             {/* Theme toggle */}
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-light uppercase tracking-zara-wide text-muted-foreground">
