@@ -500,19 +500,17 @@ export default function Diary() {
       </div>
 
       {/* Right Sidebar */}
-      <aside className="hidden lg:block">
-        <div className="sticky top-4 h-[calc(100vh-2rem)] overflow-y-auto">
-          <DiarySidebar
-            metrics={metrics}
-            chartData={chartData}
-            smartInsight={smartInsight}
-            timeRange={timeRange}
-            onTimeRangeChange={setTimeRange}
-            filter={filter}
-            onFilterChange={setFilter}
-            onQuickAction={handleQuickAction}
-          />
-        </div>
+      <aside className="hidden lg:flex flex-col h-full overflow-y-auto">
+        <DiarySidebar
+          metrics={metrics}
+          chartData={chartData}
+          smartInsight={smartInsight}
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          filter={filter}
+          onFilterChange={setFilter}
+          onQuickAction={handleQuickAction}
+        />
       </aside>
     </div>
     </div>

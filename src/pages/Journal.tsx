@@ -543,7 +543,7 @@ export default function Journal() {
       </div>
 
       {/* Right Sidebar */}
-      <div className="p-4 pl-0">
+      <aside className="hidden lg:flex flex-col h-full overflow-y-auto p-4 pl-0">
         <JournalSidebarPanel
           selectedDate={selectedDate}
           onDateSelect={setSelectedDate}
@@ -551,7 +551,7 @@ export default function Journal() {
           onInsertPrompt={handleInsertPrompt}
           skin={currentSkin}
         />
-      </div>
+      </aside>
 
       {/* Settings Modal */}
       <JournalSettingsModal
