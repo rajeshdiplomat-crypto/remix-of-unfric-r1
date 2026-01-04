@@ -1,8 +1,8 @@
-CREATE EXTENSION IF NOT EXISTS "pg_graphql" WITH SCHEMA "graphql";
+CREATE EXTENSION IF NOT EXISTS "pg_graphql";
 CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "extensions";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA "extensions";
-CREATE EXTENSION IF NOT EXISTS "plpgsql" WITH SCHEMA "pg_catalog";
-CREATE EXTENSION IF NOT EXISTS "supabase_vault" WITH SCHEMA "vault";
+CREATE EXTENSION IF NOT EXISTS "plpgsql";
+CREATE EXTENSION IF NOT EXISTS "supabase_vault";
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
 BEGIN;
 
@@ -85,6 +85,68 @@ CREATE TABLE public.emotions (
 
 
 --
+-- Name: feed_comments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.feed_comments (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    feed_event_id uuid NOT NULL,
+    parent_comment_id uuid,
+    text text NOT NULL,
+    is_edited boolean DEFAULT false,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: feed_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.feed_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    type text NOT NULL,
+    source_module text NOT NULL,
+    source_id text,
+    title text NOT NULL,
+    summary text,
+    content_preview text,
+    media jsonb DEFAULT '[]'::jsonb,
+    metadata jsonb DEFAULT '{}'::jsonb,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT feed_events_source_module_check CHECK ((source_module = ANY (ARRAY['tasks'::text, 'journal'::text, 'notes'::text, 'mindmap'::text, 'trackers'::text, 'manifest'::text, 'focus'::text, 'emotions'::text]))),
+    CONSTRAINT feed_events_type_check CHECK ((type = ANY (ARRAY['create'::text, 'update'::text, 'publish'::text, 'complete'::text, 'checkin'::text, 'focus_end'::text, 'streak_milestone'::text, 'journal_question'::text])))
+);
+
+
+--
+-- Name: feed_reactions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.feed_reactions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    feed_event_id uuid NOT NULL,
+    emoji text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: feed_saves; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.feed_saves (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    feed_event_id uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: habit_completions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -110,6 +172,20 @@ CREATE TABLE public.habits (
     target_days integer[] DEFAULT '{1,2,3,4,5,6,7}'::integer[],
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT habits_frequency_check CHECK ((frequency = ANY (ARRAY['daily'::text, 'weekly'::text, 'custom'::text])))
+);
+
+
+--
+-- Name: journal_answers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.journal_answers (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    journal_entry_id uuid NOT NULL,
+    question_id text NOT NULL,
+    answer_text text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -229,7 +305,10 @@ CREATE TABLE public.profiles (
     full_name text,
     avatar_url text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    username text,
+    bio text,
+    focus_areas text[] DEFAULT '{}'::text[]
 );
 
 
@@ -247,6 +326,16 @@ CREATE TABLE public.tasks (
     is_completed boolean DEFAULT false,
     completed_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
+    due_time text,
+    urgency text DEFAULT 'low'::text,
+    importance text DEFAULT 'low'::text,
+    time_of_day text DEFAULT 'morning'::text,
+    started_at timestamp with time zone,
+    reminder_at timestamp with time zone,
+    alarm_enabled boolean DEFAULT false,
+    subtasks jsonb DEFAULT '[]'::jsonb,
+    tags text[] DEFAULT '{}'::text[],
+    total_focus_minutes integer DEFAULT 0,
     CONSTRAINT tasks_priority_check CHECK ((priority = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text])))
 );
 
@@ -260,7 +349,17 @@ CREATE TABLE public.user_settings (
     user_id uuid NOT NULL,
     note_skin_preference text DEFAULT 'default'::text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    timezone text DEFAULT 'UTC'::text,
+    start_of_week text DEFAULT 'monday'::text,
+    daily_reset_time text DEFAULT '00:00'::text,
+    date_format text DEFAULT 'MM/DD/YYYY'::text,
+    default_home_screen text DEFAULT 'diary'::text,
+    notification_diary_prompt boolean DEFAULT true,
+    notification_task_reminder boolean DEFAULT true,
+    notification_emotion_checkin boolean DEFAULT true,
+    privacy_passcode_enabled boolean DEFAULT false,
+    privacy_blur_sensitive boolean DEFAULT false
 );
 
 
@@ -270,6 +369,54 @@ CREATE TABLE public.user_settings (
 
 ALTER TABLE ONLY public.emotions
     ADD CONSTRAINT emotions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: feed_comments feed_comments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.feed_comments
+    ADD CONSTRAINT feed_comments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: feed_events feed_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.feed_events
+    ADD CONSTRAINT feed_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: feed_reactions feed_reactions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.feed_reactions
+    ADD CONSTRAINT feed_reactions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: feed_reactions feed_reactions_user_id_feed_event_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.feed_reactions
+    ADD CONSTRAINT feed_reactions_user_id_feed_event_id_key UNIQUE (user_id, feed_event_id);
+
+
+--
+-- Name: feed_saves feed_saves_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.feed_saves
+    ADD CONSTRAINT feed_saves_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: feed_saves feed_saves_user_id_feed_event_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.feed_saves
+    ADD CONSTRAINT feed_saves_user_id_feed_event_id_key UNIQUE (user_id, feed_event_id);
 
 
 --
@@ -294,6 +441,14 @@ ALTER TABLE ONLY public.habit_completions
 
 ALTER TABLE ONLY public.habits
     ADD CONSTRAINT habits_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: journal_answers journal_answers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.journal_answers
+    ADD CONSTRAINT journal_answers_pkey PRIMARY KEY (id);
 
 
 --
@@ -393,6 +548,76 @@ ALTER TABLE ONLY public.user_settings
 
 
 --
+-- Name: idx_feed_comments_event; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_feed_comments_event ON public.feed_comments USING btree (feed_event_id);
+
+
+--
+-- Name: idx_feed_events_source; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_feed_events_source ON public.feed_events USING btree (user_id, source_module);
+
+
+--
+-- Name: idx_feed_events_user_created; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_feed_events_user_created ON public.feed_events USING btree (user_id, created_at DESC);
+
+
+--
+-- Name: idx_feed_reactions_event; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_feed_reactions_event ON public.feed_reactions USING btree (feed_event_id);
+
+
+--
+-- Name: idx_feed_saves_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_feed_saves_user ON public.feed_saves USING btree (user_id);
+
+
+--
+-- Name: idx_journal_answers_entry_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_journal_answers_entry_id ON public.journal_answers USING btree (journal_entry_id);
+
+
+--
+-- Name: idx_journal_answers_question_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_journal_answers_question_id ON public.journal_answers USING btree (question_id);
+
+
+--
+-- Name: profiles_username_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX profiles_username_unique ON public.profiles USING btree (lower(username)) WHERE (username IS NOT NULL);
+
+
+--
+-- Name: feed_comments update_feed_comments_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_feed_comments_updated_at BEFORE UPDATE ON public.feed_comments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: journal_answers update_journal_answers_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_journal_answers_updated_at BEFORE UPDATE ON public.journal_answers FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
 -- Name: journal_entries update_journal_entries_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -443,6 +668,38 @@ ALTER TABLE ONLY public.emotions
 
 
 --
+-- Name: feed_comments feed_comments_feed_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.feed_comments
+    ADD CONSTRAINT feed_comments_feed_event_id_fkey FOREIGN KEY (feed_event_id) REFERENCES public.feed_events(id) ON DELETE CASCADE;
+
+
+--
+-- Name: feed_comments feed_comments_parent_comment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.feed_comments
+    ADD CONSTRAINT feed_comments_parent_comment_id_fkey FOREIGN KEY (parent_comment_id) REFERENCES public.feed_comments(id) ON DELETE CASCADE;
+
+
+--
+-- Name: feed_reactions feed_reactions_feed_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.feed_reactions
+    ADD CONSTRAINT feed_reactions_feed_event_id_fkey FOREIGN KEY (feed_event_id) REFERENCES public.feed_events(id) ON DELETE CASCADE;
+
+
+--
+-- Name: feed_saves feed_saves_feed_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.feed_saves
+    ADD CONSTRAINT feed_saves_feed_event_id_fkey FOREIGN KEY (feed_event_id) REFERENCES public.feed_events(id) ON DELETE CASCADE;
+
+
+--
 -- Name: habit_completions habit_completions_habit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -464,6 +721,14 @@ ALTER TABLE ONLY public.habit_completions
 
 ALTER TABLE ONLY public.habits
     ADD CONSTRAINT habits_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: journal_answers journal_answers_journal_entry_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.journal_answers
+    ADD CONSTRAINT journal_answers_journal_entry_id_fkey FOREIGN KEY (journal_entry_id) REFERENCES public.journal_entries(id) ON DELETE CASCADE;
 
 
 --
@@ -539,6 +804,13 @@ ALTER TABLE ONLY public.user_settings
 
 
 --
+-- Name: feed_comments Users can CRUD own comments; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Users can CRUD own comments" ON public.feed_comments USING ((auth.uid() = user_id));
+
+
+--
 -- Name: habit_completions Users can CRUD own completions; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -553,6 +825,13 @@ CREATE POLICY "Users can CRUD own emotions" ON public.emotions USING ((auth.uid(
 
 
 --
+-- Name: feed_events Users can CRUD own feed events; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Users can CRUD own feed events" ON public.feed_events USING ((auth.uid() = user_id));
+
+
+--
 -- Name: manifest_goals Users can CRUD own goals; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -564,6 +843,15 @@ CREATE POLICY "Users can CRUD own goals" ON public.manifest_goals USING ((auth.u
 --
 
 CREATE POLICY "Users can CRUD own habits" ON public.habits USING ((auth.uid() = user_id));
+
+
+--
+-- Name: journal_answers Users can CRUD own journal answers; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Users can CRUD own journal answers" ON public.journal_answers USING ((EXISTS ( SELECT 1
+   FROM public.journal_entries
+  WHERE ((journal_entries.id = journal_answers.journal_entry_id) AND (journal_entries.user_id = auth.uid())))));
 
 
 --
@@ -602,6 +890,20 @@ CREATE POLICY "Users can CRUD own prompts" ON public.journal_prompts USING ((aut
 
 
 --
+-- Name: feed_reactions Users can CRUD own reactions; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Users can CRUD own reactions" ON public.feed_reactions USING ((auth.uid() = user_id));
+
+
+--
+-- Name: feed_saves Users can CRUD own saves; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Users can CRUD own saves" ON public.feed_saves USING ((auth.uid() = user_id));
+
+
+--
 -- Name: user_settings Users can CRUD own settings; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -630,6 +932,15 @@ CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING
 
 
 --
+-- Name: feed_comments Users can view comments on accessible events; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Users can view comments on accessible events" ON public.feed_comments FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM public.feed_events
+  WHERE ((feed_events.id = feed_comments.feed_event_id) AND (feed_events.user_id = auth.uid())))));
+
+
+--
 -- Name: profiles Users can view own profile; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -643,6 +954,30 @@ CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (
 ALTER TABLE public.emotions ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: feed_comments; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.feed_comments ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: feed_events; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.feed_events ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: feed_reactions; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.feed_reactions ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: feed_saves; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.feed_saves ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: habit_completions; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -653,6 +988,12 @@ ALTER TABLE public.habit_completions ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.habits ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: journal_answers; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.journal_answers ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: journal_entries; Type: ROW SECURITY; Schema: public; Owner: -
