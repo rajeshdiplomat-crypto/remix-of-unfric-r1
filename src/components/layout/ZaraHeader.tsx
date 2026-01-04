@@ -1,4 +1,4 @@
-import { Menu } from "lucide-react";
+import { Menu, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavLink } from "@/components/NavLink";
 import { useEffect, useState } from "react";
@@ -59,13 +59,13 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
             size="icon"
             onClick={onMenuClick}
             className={cn(
-              "h-14 w-14 hover:bg-transparent transition-all duration-300",
+              "h-16 w-16 hover:bg-transparent transition-all duration-300",
               isScrolled
                 ? "text-foreground"
                 : "text-foreground [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
             )}
           >
-            <Menu className="h-8 w-8" strokeWidth={2.5} />
+            <Menu className="h-10 w-10" strokeWidth={2} />
           </Button>
           <NavLink to="/diary" className="flex items-center">
             <span
@@ -112,17 +112,20 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
           </nav>
 
           {/* Sign Out button */}
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={handleSignOut}
             className={cn(
-              "text-[11px] font-light uppercase tracking-zara-wide hover:text-foreground transition-all duration-300 hidden md:block",
+              "h-10 w-10 hover:bg-transparent transition-all duration-300 hidden md:flex",
               isScrolled
-                ? "text-foreground/60"
-                : "text-foreground/70 [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
+                ? "text-foreground/60 hover:text-foreground"
+                : "text-foreground/70 hover:text-foreground [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
             )}
+            title="Sign Out"
           >
-            Sign Out
-          </button>
+            <LogOut className="h-5 w-5" />
+          </Button>
 
           {/* Settings link only on mobile */}
           <NavLink

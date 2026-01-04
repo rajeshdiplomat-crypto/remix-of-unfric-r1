@@ -150,7 +150,7 @@ function StrategyCard({
   onStart: () => void;
 }) {
   return (
-    <Card className={`transition-all hover:shadow-md ${isRecommended ? 'border-primary/30 bg-primary/5' : ''}`}>
+    <Card className={`transition-all hover:shadow-md rounded-xl ${isRecommended ? 'border-primary/30 bg-primary/5' : ''}`}>
       <CardContent className="p-3">
         <div className="flex items-center gap-3">
           <div 

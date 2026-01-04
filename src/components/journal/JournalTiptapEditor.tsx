@@ -80,7 +80,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, JournalTiptapEdit
 
     return (
       <div
-        className={cn("rounded-lg border border-border/50 min-h-[500px] transition-colors")}
+        className={cn("rounded-xl border border-border/50 min-h-[500px] transition-colors")}
         style={{
           backgroundColor: skinStyles?.editorPaperBg || "hsl(var(--card))",
           color: skinStyles?.text || "hsl(var(--foreground))",

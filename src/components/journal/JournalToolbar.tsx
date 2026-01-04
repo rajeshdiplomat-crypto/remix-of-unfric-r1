@@ -99,10 +99,10 @@ export function JournalToolbar({
       onClick={onClick}
       disabled={disabled || isDisabled}
       title={title}
-      className={cn(
-        "h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/50",
-        active && "bg-primary/10 text-primary"
-      )}
+    className={cn(
+      "h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-transparent rounded-none",
+      active && "text-foreground border-b-2 border-foreground"
+    )}
     >
       <Icon className="h-4 w-4" />
     </Button>
@@ -112,7 +112,7 @@ export function JournalToolbar({
 
 
   return (
-    <div className="flex items-center gap-1 bg-card border border-border/50 rounded-lg px-3 py-2 shadow-sm sticky top-0 z-20 flex-wrap">
+    <div className="flex items-center gap-1 bg-card border border-border/50 rounded-xl px-3 py-2 shadow-sm sticky top-0 z-20 flex-wrap">
       {/* Undo / Redo */}
       <ToolButton
         icon={Undo2}
