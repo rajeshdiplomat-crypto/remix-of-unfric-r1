@@ -41,14 +41,14 @@ export function TopFocusBar({ tasks, onStartFocus }: TopFocusBarProps) {
     : "";
 
   return (
-    <Card className="rounded-xl border border-border/40 bg-card/40 backdrop-blur-sm shadow-sm">
+    <Card className="rounded-xl border border-border bg-background shadow-sm">
       <CardContent className={cn("flex items-center", collapsed ? "py-0.5 px-2 gap-1" : "py-1.5 px-2 gap-1.5")}>
         {/* Left icon */}
         <div
           className={cn(
             "rounded-lg flex items-center justify-center shrink-0",
             collapsed ? "h-5 w-5" : "h-6 w-6",
-            "bg-primary/10 text-primary",
+            "bg-muted text-foreground",
           )}
         >
           <Play className={cn(collapsed ? "h-2.5 w-2.5" : "h-3 w-3")} />
@@ -78,13 +78,13 @@ export function TopFocusBar({ tasks, onStartFocus }: TopFocusBarProps) {
               {topTask.urgency === "high" && (
                 <Badge
                   variant="outline"
-                  className="h-3.5 px-1 text-[8px] bg-destructive/10 text-destructive border-destructive/30"
+                  className="h-3.5 px-1 text-[8px] bg-muted text-foreground border-border"
                 >
                   Urgent
                 </Badge>
               )}
               {topTask.importance === "high" && (
-                <Badge variant="outline" className="h-3.5 px-1 text-[8px] bg-primary/10 text-primary border-primary/30">
+                <Badge variant="outline" className="h-3.5 px-1 text-[8px] bg-muted text-foreground border-border">
                   Important
                 </Badge>
               )}
@@ -100,6 +100,7 @@ export function TopFocusBar({ tasks, onStartFocus }: TopFocusBarProps) {
         {/* Right actions */}
         <div className="flex items-center gap-1 shrink-0">
           <Button
+            variant="outline"
             onClick={() => onStartFocus(topTask)}
             className={cn("rounded-lg", collapsed ? "h-5 px-1.5 text-[9px]" : "h-6 px-2 text-[10px]")}
           >
@@ -110,7 +111,7 @@ export function TopFocusBar({ tasks, onStartFocus }: TopFocusBarProps) {
             variant="ghost"
             size="icon"
             onClick={() => setCollapsed((v) => !v)}
-            className={cn("rounded-lg border border-border/40 bg-background/60", collapsed ? "h-5 w-5" : "h-6 w-6")}
+            className={cn("rounded-lg border border-border bg-background", collapsed ? "h-5 w-5" : "h-6 w-6")}
             aria-label={collapsed ? "Expand" : "Collapse"}
           >
             {collapsed ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}

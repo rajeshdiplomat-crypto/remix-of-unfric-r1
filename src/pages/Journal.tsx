@@ -361,7 +361,7 @@ export default function Journal() {
   if (isFullPage) {
     return (
       <div
-        className="fixed inset-0 z-50 flex flex-col"
+        className="fixed inset-0 z-[100] flex flex-col isolate overflow-hidden"
         style={{
           backgroundColor: currentSkin.pageBg,
           color: currentSkin.text,

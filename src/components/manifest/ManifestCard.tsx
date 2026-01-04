@@ -73,7 +73,7 @@ export function ManifestCard({
 
   return (
     <Card
-      className={`relative cursor-pointer transition-all duration-200 overflow-hidden hover:shadow-md ${
+      className={`relative cursor-pointer transition-all duration-200 overflow-hidden hover:shadow-md rounded-2xl ${
         isSelected 
           ? "ring-2 ring-primary border-primary border-l-4 border-l-primary shadow-md" 
           : "border-border/40 hover:border-border/60"
@@ -86,7 +86,7 @@ export function ManifestCard({
       <div className="flex">
         {/* Left: Cover Image */}
         <div 
-          className="w-24 shrink-0 relative overflow-hidden"
+          className="w-40 shrink-0 relative overflow-hidden rounded-l-2xl"
           onClick={(e) => e.stopPropagation()}
         >
           <EntryImageUpload
@@ -94,23 +94,12 @@ export function ManifestCard({
             presetType="manifest"
             category={goal.category || "other"}
             onImageChange={handleCoverImageChange}
-            className="w-full h-full min-h-[180px]"
+            className="w-full h-full min-h-[200px]"
           />
         </div>
 
         {/* Right: Card Content */}
         <CardContent className="p-5 relative flex-1">
-          {/* Vision Image Background */}
-          {goal.vision_image_url && (
-            <div
-              className="absolute inset-0 opacity-15 pointer-events-none"
-              style={{
-                backgroundImage: `url(${goal.vision_image_url})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-            />
-          )}
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               {/* Assumption Text */}
