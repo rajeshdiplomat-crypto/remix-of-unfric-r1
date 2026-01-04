@@ -3,11 +3,12 @@ import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Share2, MoreHorizontal, X, Clock, Trash2, ChevronRight, FileText, Folder, FolderOpen, ChevronDown, Maximize2, Check, Save } from "lucide-react";
+import { Plus, MoreHorizontal, X, Trash2, ChevronRight, FileText, Folder, FolderOpen, ChevronDown, Maximize2, Check, PanelLeftClose, PanelLeft } from "lucide-react";
 import { NotesRichEditor } from "./NotesRichEditor";
 import { NotesActivityDot, getMostRecentUpdate } from "./NotesActivityDot";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 
 interface NotesSplitViewProps {
@@ -20,6 +21,7 @@ interface NotesSplitViewProps {
   onDeleteNote: (noteId: string) => void;
   onBack: () => void;
   onCreateNote: () => void;
+  className?: string;
 }
 
 export function NotesSplitView({
@@ -32,11 +34,12 @@ export function NotesSplitView({
   onDeleteNote,
   onBack,
   onCreateNote,
+  className,
 }: NotesSplitViewProps) {
   const { toast } = useToast();
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [showCreationToast, setShowCreationToast] = useState(false);
   const [isFullPage, setIsFullPage] = useState(false);
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
   
   // Focus mode state - track which groups/folders were expanded before editing
   const [preEditExpandedState, setPreEditExpandedState] = useState<{
@@ -100,20 +103,6 @@ export function NotesSplitView({
 
   const getGroupColor = (groupId: string) => {
     return groups.find((g) => g.id === groupId)?.color || "hsl(215, 20%, 65%)";
-  };
-
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) {
-      return format(date, "h:mm a");
-    } else if (diffDays === 1) {
-      return "Yesterday";
-    } else {
-      return format(date, "MMM d");
-    }
   };
 
   const handleSave = (note: Note) => {
@@ -230,18 +219,38 @@ export function NotesSplitView({
   }
 
   return (
-    <div className="flex h-[calc(100vh-200px)] border border-border rounded-lg overflow-hidden bg-card">
-      {/* Left Panel - Notes List with Focus Mode */}
-      <div className="w-72 border-r border-border flex flex-col">
-        <div className="p-3 border-b border-border flex items-center justify-between">
-          <h2 className="font-semibold text-sm text-foreground">
-            {isInFocusMode ? "Context" : "Notes"}
-          </h2>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onCreateNote}>
-            <Plus className="h-4 w-4" />
-          </Button>
+    <div className={cn("flex min-h-0 border border-border rounded-lg overflow-hidden bg-card", className)}>
+      {/* Left Panel - Notes List with Focus Mode (Collapsible) */}
+      <div 
+        className={cn(
+          "border-r border-border flex flex-col min-h-0 transition-[width] duration-200 overflow-hidden",
+          leftCollapsed ? "w-14" : "w-72"
+        )}
+      >
+        <div className="p-3 border-b border-border flex items-center justify-between shrink-0">
+          {!leftCollapsed && (
+            <h2 className="font-semibold text-sm text-foreground">
+              {isInFocusMode ? "Context" : "Notes"}
+            </h2>
+          )}
+          <div className={cn("flex items-center gap-1", leftCollapsed && "mx-auto")}>
+            {!leftCollapsed && (
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onCreateNote}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            )}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-7 w-7" 
+              onClick={() => setLeftCollapsed(!leftCollapsed)}
+              title={leftCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {leftCollapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+            </Button>
+          </div>
         </div>
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="p-2 space-y-1">
             {sortedGroups.map((group) => {
               const groupNotes = notes.filter((note) => note.groupId === group.id);
@@ -254,6 +263,29 @@ export function NotesSplitView({
               const focusModeClass = isInFocusMode && !isFocusedGroup 
                 ? "opacity-40" 
                 : "";
+
+              // Collapsed mode - show only group headers
+              if (leftCollapsed) {
+                return (
+                  <button
+                    key={group.id}
+                    onClick={() => {
+                      setLeftCollapsed(false);
+                      setExpandedGroups(new Set([group.id]));
+                    }}
+                    className={cn(
+                      "w-full p-2 flex items-center justify-center rounded transition-colors hover:bg-muted/30",
+                      focusModeClass
+                    )}
+                    title={group.name}
+                  >
+                    <span 
+                      className="h-3 w-3 rounded-full" 
+                      style={{ backgroundColor: group.color }} 
+                    />
+                  </button>
+                );
+              }
 
               return (
                 <div key={group.id} className={focusModeClass}>
@@ -375,11 +407,11 @@ export function NotesSplitView({
       </div>
 
       {/* Right Panel - Editor */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         {selectedNote ? (
           <>
             {/* Editor Header */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-border/30">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-border/30 shrink-0">
               <div className="flex items-center gap-2">
                 <Badge
                   variant="secondary"
@@ -435,7 +467,7 @@ export function NotesSplitView({
             </div>
 
             {/* Editor Content */}
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 min-h-0 overflow-auto">
               <NotesRichEditor
                 note={selectedNote}
                 groups={groups}

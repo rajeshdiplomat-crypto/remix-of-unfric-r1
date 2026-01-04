@@ -637,16 +637,19 @@ export default function Notes() {
   // EDITOR (Split View)
   // =========================
   return (
-    <NotesSplitView
-      notes={filteredNotes}
-      groups={groups}
-      folders={folders}
-      selectedNote={selectedNote}
-      onSelectNote={setSelectedNote}
-      onSaveNote={handleSaveNote}
-      onDeleteNote={handleDeleteNote}
-      onBack={handleBackToOverview}
-      onCreateNote={handleQuickNote}
-    />
+    <div className="fixed inset-x-0 top-14 bottom-0 z-40 bg-background">
+      <NotesSplitView
+        notes={filteredNotes}
+        groups={groups}
+        folders={folders}
+        selectedNote={selectedNote}
+        onSelectNote={setSelectedNote}
+        onSaveNote={handleSaveNote}
+        onDeleteNote={handleDeleteNote}
+        onBack={handleBackToOverview}
+        onCreateNote={handleQuickNote}
+        className="h-full"
+      />
+    </div>
   );
 }
