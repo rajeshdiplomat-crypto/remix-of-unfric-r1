@@ -75,17 +75,17 @@ export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
           </NavLink>
 
           {/* Main navigation */}
-          <nav className="space-y-8">
+          <nav className="space-y-6">
             {mainNavItems.map((item) => (
               <NavLink
                 key={item.title}
                 to={item.url}
                 onClick={onClose}
                 className={cn(
-                  "block text-xl font-medium uppercase tracking-zara-wide transition-colors",
+                  "text-sm font-light uppercase tracking-zara-wide transition-colors",
                   isActive(item.url)
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "text-foreground border-b border-foreground pb-0.5 inline-block"
+                    : "text-muted-foreground hover:text-foreground block"
                 )}
               >
                 {item.title}
@@ -97,17 +97,17 @@ export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
           <div className="my-8 border-t border-border" />
 
           {/* Productivity section */}
-          <nav className="space-y-8">
+          <nav className="space-y-6">
             {productivityItems.map((item) => (
               <NavLink
                 key={item.title}
                 to={item.url}
                 onClick={onClose}
                 className={cn(
-                  "block text-xl font-medium uppercase tracking-zara-wide transition-colors",
+                  "text-sm font-light uppercase tracking-zara-wide transition-colors",
                   isActive(item.url)
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "text-foreground border-b border-foreground pb-0.5 inline-block"
+                    : "text-muted-foreground hover:text-foreground block"
                 )}
               >
                 {item.title}
@@ -119,15 +119,15 @@ export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
           <div className="my-8 border-t border-border" />
 
           {/* Settings & Account */}
-          <nav className="space-y-8">
+          <nav className="space-y-6">
             <NavLink
               to="/settings"
               onClick={onClose}
               className={cn(
-                "block text-xl font-medium uppercase tracking-zara-wide transition-colors",
+                "text-sm font-light uppercase tracking-zara-wide transition-colors",
                 isActive("/settings")
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "text-foreground border-b border-foreground pb-0.5 inline-block"
+                  : "text-muted-foreground hover:text-foreground block"
               )}
             >
               Settings
