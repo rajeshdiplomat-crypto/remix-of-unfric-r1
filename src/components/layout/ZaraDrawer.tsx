@@ -69,7 +69,7 @@ export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
         <div className="flex flex-col h-full pt-16 pb-8 px-8 overflow-y-auto">
           {/* Logo */}
           <NavLink to="/diary" onClick={onClose} className="mb-8">
-            <span className="text-lg font-normal uppercase tracking-zara-wide text-foreground">
+            <span className="text-3xl font-light uppercase tracking-[0.4em] text-foreground">
               inbalance
             </span>
           </NavLink>
