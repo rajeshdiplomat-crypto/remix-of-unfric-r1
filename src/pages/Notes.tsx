@@ -21,6 +21,7 @@ import { NotesMindMapView } from "@/components/notes/NotesMindMapView";
 import { NotesViewSwitcher, type NotesViewType } from "@/components/notes/NotesViewSwitcher";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
+import { cn } from "@/lib/utils";
 
 export interface NoteGroup {
   id: string;
@@ -474,35 +475,37 @@ export default function Notes() {
               </div>
             </div>
 
-            {/* Filter chips */}
+            {/* Filter chips - Underlined style */}
             <div className="px-4 pb-4">
-              <div className="flex gap-2 overflow-auto no-scrollbar">
-                <Button
-                  variant="outline"
-                  size="sm"
+              <div className="flex gap-4 overflow-auto no-scrollbar">
+                <button
                   onClick={() => setFilterGroupId("all")}
-                  className={`h-9 rounded-full px-4 ${
-                    filterGroupId === "all" ? "bg-primary/10 text-primary border-primary/30" : "text-foreground/80"
-                  }`}
+                  className={cn(
+                    "h-6 px-0 text-[10px] uppercase tracking-wider font-light whitespace-nowrap transition-colors border-b",
+                    filterGroupId === "all"
+                      ? "text-foreground border-foreground"
+                      : "text-muted-foreground hover:text-foreground border-transparent"
+                  )}
                 >
                   All
-                </Button>
+                </button>
 
                 {sortedGroups.map((group) => {
                   const active = filterGroupId === group.id;
                   return (
-                    <Button
+                    <button
                       key={group.id}
-                      variant="outline"
-                      size="sm"
                       onClick={() => setFilterGroupId(group.id)}
-                      className={`h-9 rounded-full px-4 ${
-                        active ? "bg-primary/10 text-primary border-primary/30" : "text-foreground/80"
-                      }`}
+                      className={cn(
+                        "h-6 px-0 text-[10px] uppercase tracking-wider font-light whitespace-nowrap transition-colors border-b flex items-center gap-1.5",
+                        active
+                          ? "text-foreground border-foreground"
+                          : "text-muted-foreground hover:text-foreground border-transparent"
+                      )}
                     >
-                      <span className="h-2.5 w-2.5 rounded-full mr-2" style={{ backgroundColor: group.color }} />
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: group.color }} />
                       {group.name}
-                    </Button>
+                    </button>
                   );
                 })}
               </div>

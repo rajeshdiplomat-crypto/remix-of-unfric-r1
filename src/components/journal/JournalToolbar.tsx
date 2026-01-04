@@ -7,6 +7,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Undo2,
   Redo2,
   Bold,
@@ -20,6 +25,9 @@ import {
   CheckSquare,
   Image,
   Link,
+  Palette,
+  Highlighter,
+  RemoveFormatting,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Editor } from "@tiptap/react";
@@ -44,6 +52,28 @@ const FONT_FAMILIES = [
 ];
 
 const FONT_SIZES = [12, 14, 16, 18, 20, 24, 28, 32];
+
+const TEXT_COLORS = [
+  { label: "Default", value: "" },
+  { label: "Red", value: "#ef4444" },
+  { label: "Orange", value: "#f97316" },
+  { label: "Yellow", value: "#eab308" },
+  { label: "Green", value: "#22c55e" },
+  { label: "Blue", value: "#3b82f6" },
+  { label: "Purple", value: "#a855f7" },
+  { label: "Pink", value: "#ec4899" },
+  { label: "Gray", value: "#6b7280" },
+];
+
+const HIGHLIGHT_COLORS = [
+  { label: "None", value: "" },
+  { label: "Yellow", value: "#fef08a" },
+  { label: "Green", value: "#bbf7d0" },
+  { label: "Blue", value: "#bfdbfe" },
+  { label: "Pink", value: "#fbcfe8" },
+  { label: "Purple", value: "#e9d5ff" },
+  { label: "Orange", value: "#fed7aa" },
+];
 
 export function JournalToolbar({
   editor,
@@ -75,6 +105,15 @@ export function JournalToolbar({
     if (url) {
       editor.chain().focus().setImage({ src: url }).run();
     }
+  }, [editor]);
+
+  const handleFontFamilyChange = useCallback((font: string) => {
+    onFontFamilyChange(font);
+    editor?.chain().focus().setFontFamily(font).run();
+  }, [editor, onFontFamilyChange]);
+
+  const clearFormatting = useCallback(() => {
+    editor?.chain().focus().unsetAllMarks().clearNodes().run();
   }, [editor]);
 
   const isDisabled = !editor;
@@ -130,7 +169,7 @@ export function JournalToolbar({
       <Divider />
 
       {/* Font Family */}
-      <Select value={fontFamily} onValueChange={onFontFamilyChange}>
+      <Select value={editor?.getAttributes('textStyle').fontFamily || fontFamily} onValueChange={handleFontFamilyChange}>
         <SelectTrigger className="h-8 w-[120px] text-xs border-0 bg-muted/30">
           <SelectValue />
         </SelectTrigger>
@@ -184,6 +223,94 @@ export function JournalToolbar({
         onClick={() => editor?.chain().focus().toggleUnderline().run()}
         active={editor?.isActive("underline")}
         title="Underline"
+      />
+
+      <Divider />
+
+      {/* Text Color */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={isDisabled}
+            title="Text Color"
+            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-transparent rounded-none"
+          >
+            <Palette className="h-4 w-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-2" align="start">
+          <div className="flex flex-wrap gap-1 max-w-[180px]">
+            {TEXT_COLORS.map((color) => (
+              <button
+                key={color.value || 'default'}
+                onClick={() => {
+                  if (color.value) {
+                    editor?.chain().focus().setColor(color.value).run();
+                  } else {
+                    editor?.chain().focus().unsetColor().run();
+                  }
+                }}
+                className={cn(
+                  "h-6 w-6 rounded border border-border/50 hover:scale-110 transition-transform",
+                  !color.value && "bg-foreground"
+                )}
+                style={{ backgroundColor: color.value || undefined }}
+                title={color.label}
+              />
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      {/* Highlight Color */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={isDisabled}
+            title="Highlight"
+            className={cn(
+              "h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-transparent rounded-none",
+              editor?.isActive("highlight") && "text-foreground border-b-2 border-foreground"
+            )}
+          >
+            <Highlighter className="h-4 w-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-2" align="start">
+          <div className="flex flex-wrap gap-1 max-w-[180px]">
+            {HIGHLIGHT_COLORS.map((color) => (
+              <button
+                key={color.value || 'none'}
+                onClick={() => {
+                  if (color.value) {
+                    editor?.chain().focus().toggleHighlight({ color: color.value }).run();
+                  } else {
+                    editor?.chain().focus().unsetHighlight().run();
+                  }
+                }}
+                className={cn(
+                  "h-6 w-6 rounded border border-border/50 hover:scale-110 transition-transform",
+                  !color.value && "bg-background relative after:absolute after:inset-0 after:bg-[linear-gradient(45deg,transparent_45%,hsl(var(--destructive))_45%,hsl(var(--destructive))_55%,transparent_55%)]"
+                )}
+                style={{ backgroundColor: color.value || undefined }}
+                title={color.label}
+              />
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      {/* Clear Formatting */}
+      <ToolButton
+        icon={RemoveFormatting}
+        onClick={clearFormatting}
+        title="Clear Formatting"
       />
 
       <Divider />

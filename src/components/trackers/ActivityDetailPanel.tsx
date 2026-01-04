@@ -350,7 +350,7 @@ export function ActivityDetailPanel({
   return (
     <div className="w-full lg:w-[380px] xl:w-[400px] lg:sticky lg:top-6">
       <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
-        <ScrollArea className="lg:max-h-[calc(50vh-40px)]">
+        <ScrollArea className="lg:max-h-[calc(100vh-120px)]">
           {/* Cover */}
           {imageUrl ? (
             <div className="relative h-36 w-full">

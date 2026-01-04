@@ -7,6 +7,10 @@ import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
+import { TextStyle } from "@tiptap/extension-text-style";
+import FontFamily from "@tiptap/extension-font-family";
+import { Color } from "@tiptap/extension-color";
+import Highlight from "@tiptap/extension-highlight";
 import { useEffect, forwardRef, useImperativeHandle } from "react";
 import { cn } from "@/lib/utils";
 
@@ -27,14 +31,17 @@ export interface TiptapEditorRef {
 }
 
 export const JournalTiptapEditor = forwardRef<TiptapEditorRef, JournalTiptapEditorProps>(
-  ({ content, onChange, skinStyles, fontFamily = "Inter", fontSize = 16 }, ref) => {
+  ({ content, onChange, skinStyles }, ref) => {
     const editor = useEditor({
       extensions: [
         StarterKit.configure({
           heading: { levels: [1, 2, 3] },
-          // Disable built-in extensions we're replacing with custom configs
           strike: false,
         }),
+        TextStyle,
+        FontFamily,
+        Color,
+        Highlight.configure({ multicolor: true }),
         Placeholder.configure({
           placeholder: ({ node }) => {
             if (node.type.name === "heading") return "";
@@ -55,7 +62,6 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, JournalTiptapEdit
       editorProps: {
         attributes: {
           class: "prose prose-sm sm:prose lg:prose-lg max-w-none focus:outline-none min-h-[400px] px-8 py-6",
-          style: `font-family: ${fontFamily}, sans-serif; font-size: ${fontSize}px;`,
         },
       },
     });
@@ -70,13 +76,6 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, JournalTiptapEdit
         }
       }
     }, [content, editor]);
-
-    useEffect(() => {
-      if (editor) {
-        editor.view.dom.style.fontFamily = `${fontFamily}, sans-serif`;
-        editor.view.dom.style.fontSize = `${fontSize}px`;
-      }
-    }, [fontFamily, fontSize, editor]);
 
     return (
       <div
@@ -108,6 +107,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, JournalTiptapEdit
           .ProseMirror ul[data-type="taskList"] li input { margin-top: 0.25rem; cursor: pointer; }
           .ProseMirror img { max-width: 100%; border-radius: 0.5rem; margin: 1rem 0; }
           .ProseMirror a { color: hsl(210 60% 50%); text-decoration: underline; }
+          .ProseMirror mark { background-color: #fef08a; padding: 0.125em 0; }
         `}</style>
       </div>
     );

@@ -75,7 +75,7 @@ export function NotesBoardView({
               </div>
 
               {/* Content */}
-              <ScrollArea className="max-h-[calc(50vh-100px)]">
+              <ScrollArea className="max-h-[calc(100vh-280px)]">
                 <div className="p-4 space-y-3">
                   {/* Direct notes */}
                   {groupNotes
