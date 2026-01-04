@@ -4,6 +4,7 @@ import { NavLink } from "@/components/NavLink";
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ZaraHeaderProps {
   onMenuClick: () => void;
@@ -22,6 +23,11 @@ const modules = [
 export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
+  const { signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -46,7 +52,7 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
       }`}
     >
       <div className="flex items-center justify-between h-14 px-4 lg:px-8">
-        {/* Left: Hamburger + Title + Module Nav */}
+        {/* Left: Hamburger + Logo */}
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -73,9 +79,12 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
               inbalance
             </span>
           </NavLink>
+        </div>
 
-          {/* Module Navigation - hidden on mobile */}
-          <nav className="hidden md:flex items-center gap-6 ml-6">
+        {/* Right: Module Nav + Sign Out */}
+        <div className="flex items-center gap-6">
+          {/* Module Navigation */}
+          <nav className="hidden md:flex items-center gap-6">
             {modules.map((module) => (
               <NavLink
                 key={module.path}
@@ -101,11 +110,21 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
               </NavLink>
             ))}
           </nav>
-        </div>
 
-        {/* Right: Empty or minimal */}
-        <div className="flex items-center gap-6">
-          {/* Settings link only on mobile where nav is hidden */}
+          {/* Sign Out button */}
+          <button
+            onClick={handleSignOut}
+            className={cn(
+              "text-[11px] font-light uppercase tracking-zara-wide hover:text-foreground transition-all duration-300 hidden md:block",
+              isScrolled
+                ? "text-foreground/60"
+                : "text-foreground/70 [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
+            )}
+          >
+            Sign Out
+          </button>
+
+          {/* Settings link only on mobile */}
           <NavLink
             to="/settings"
             className={cn(
