@@ -249,10 +249,10 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
               <button
                 key={key}
                 onClick={() => handleFilterChange(key)}
-                className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
+                className={`px-2.5 py-1 text-xs transition-colors ${
                   filter === key
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                    ? "text-foreground border-b border-foreground"
+                    : "text-muted-foreground border-b border-transparent hover:text-foreground"
                 }`}
               >
                 {label}

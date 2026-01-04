@@ -212,7 +212,7 @@ export function AllTasksList({
         className="flex-1 flex flex-col min-h-0"
       >
         <div className="px-3 pt-3">
-          <TabsList className="w-full grid grid-cols-5 h-8 bg-muted/30">
+          <TabsList className="w-full grid grid-cols-5 h-8 bg-transparent gap-1">
             <TabsTrigger value="all" className="text-xs px-1">
               All ({counts.all})
             </TabsTrigger>

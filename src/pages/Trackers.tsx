@@ -885,10 +885,10 @@ export default function Trackers() {
                   variant="ghost"
                   size="sm"
                   className={cn(
-                    "h-8 rounded-full px-3",
+                    "h-8 px-3 rounded-none",
                     categoryFilter === "all"
-                      ? "bg-muted/50 text-foreground"
-                      : "text-muted-foreground hover:text-foreground",
+                      ? "text-foreground border-b border-foreground"
+                      : "text-muted-foreground hover:text-foreground border-b border-transparent",
                   )}
                   onClick={() => setCategoryFilter("all")}
                 >
@@ -901,10 +901,10 @@ export default function Trackers() {
                     variant="ghost"
                     size="sm"
                     className={cn(
-                      "h-8 rounded-full px-3",
+                      "h-8 px-3 rounded-none",
                       categoryFilter === cat.id
-                        ? "bg-muted/50 text-foreground"
-                        : "text-muted-foreground hover:text-foreground",
+                        ? "text-foreground border-b border-foreground"
+                        : "text-muted-foreground hover:text-foreground border-b border-transparent",
                     )}
                     onClick={() => setCategoryFilter(cat.id)}
                   >
@@ -1007,7 +1007,7 @@ export default function Trackers() {
                 >
                   <div className="flex">
                     {/* Left: Cover Image */}
-                    <div className="w-20 shrink-0 relative overflow-hidden">
+                    <div className="w-40 shrink-0 relative overflow-hidden">
                       <img
                         src={loadActivityImage(activity.id) || getPresetImage("trackers", activity.category)}
                         alt=""

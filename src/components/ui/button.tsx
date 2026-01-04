@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap text-xs font-normal uppercase tracking-zara ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-xs font-normal uppercase tracking-zara ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -15,8 +15,8 @@ const buttonVariants = cva(
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-muted hover:text-foreground",
         link: "text-foreground underline-offset-4 hover:underline",
-        chip: "bg-transparent text-foreground border border-border hover:border-foreground/40 font-normal",
-        chipActive: "bg-foreground text-background border border-foreground font-normal",
+        chip: "bg-transparent text-muted-foreground border-b border-transparent hover:text-foreground rounded-none font-normal",
+        chipActive: "bg-transparent text-foreground border-b border-foreground rounded-none font-normal",
       },
       size: {
         default: "h-10 px-6",
