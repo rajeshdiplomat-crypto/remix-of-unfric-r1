@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { DiaryFeedCard } from "@/components/diary/DiaryFeedCard";
 import { DiarySidebar } from "@/components/diary/DiarySidebar";
 import { JournalQuestionCard } from "@/components/diary/JournalQuestionCard";
+import { DiaryHero } from "@/components/diary/DiaryHero";
 import { useFeedEvents } from "@/components/diary/useFeedEvents";
 import { useDiaryMetrics } from "@/components/diary/useDiaryMetrics";
 import { cn } from "@/lib/utils";
@@ -384,14 +385,14 @@ export default function Diary() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 w-full flex-1">
-      {/* Main Feed */}
-      <div className="min-w-0">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground">Your Diary</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">A timeline of everything you do in inbalance</p>
-        </div>
+    <div className="flex flex-col w-full flex-1 -mx-6 -mt-6">
+      {/* Full-bleed Hero */}
+      <DiaryHero />
+
+      {/* Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 w-full px-6 pt-8">
+        {/* Main Feed */}
+        <div className="min-w-0">
 
         {/* Search Bar */}
         <div className="mb-4">
@@ -513,6 +514,7 @@ export default function Diary() {
           />
         </div>
       </aside>
+    </div>
     </div>
   );
 }
