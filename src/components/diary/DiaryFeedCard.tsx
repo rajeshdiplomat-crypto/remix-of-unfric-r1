@@ -49,6 +49,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { getPresetImage } from "@/lib/presetImages";
 import type { FeedEvent, FeedReaction, FeedComment, ModuleConfig, SourceModule } from "./types";
 
 // Reaction types matching JournalQuestionCard
@@ -152,6 +153,17 @@ export function DiaryFeedCard({
   // Get module initial for avatar
   const moduleInitial = config.label.charAt(0).toUpperCase();
 
+  // Get cover image - prioritize media, then metadata, then preset
+  const getModulePresetType = (module: string): "manifest" | "trackers" | "notes" => {
+    if (module === "manifest") return "manifest";
+    if (module === "trackers") return "trackers";
+    return "notes";
+  };
+  
+  const coverImageUrl = event.media?.[0] 
+    || metadata?.cover_image_url 
+    || getPresetImage(getModulePresetType(event.source_module), metadata?.category || "default");
+
   const handleCopyLink = () => {
     const shareUrl = `${window.location.origin}/share/feed/${event.id}`;
     navigator.clipboard.writeText(shareUrl);
@@ -197,16 +209,28 @@ export function DiaryFeedCard({
 
   return (
     <Card className="overflow-hidden bg-card border-border/40 shadow-[0_6px_18px_hsl(210_29%_8%/0.06)] hover:shadow-[0_10px_30px_hsl(210_29%_8%/0.08)] transition-all duration-200 rounded-[10px]">
-      {/* Header with Avatar - matching JournalQuestionCard */}
-      <div className="px-4 pt-4 pb-2">
-        <div className="flex items-center justify-between" role="banner">
-          {/* Left: Avatar + Label block */}
-          <div className="flex items-center gap-3">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback className={cn("text-xs font-medium", config.bgColor, config.color)}>
-                <IconComponent className="h-4 w-4" />
-              </AvatarFallback>
-            </Avatar>
+      <div className="flex">
+        {/* Left: Cover Image */}
+        <div className="w-40 shrink-0 relative overflow-hidden rounded-l-[10px]">
+          <img
+            src={coverImageUrl}
+            alt=""
+            className="w-full h-full object-cover min-h-[180px]"
+          />
+        </div>
+
+        {/* Right: Content */}
+        <div className="flex-1 min-w-0">
+          {/* Header with Avatar - matching JournalQuestionCard */}
+          <div className="px-4 pt-4 pb-2">
+            <div className="flex items-center justify-between" role="banner">
+              {/* Left: Avatar + Label block */}
+              <div className="flex items-center gap-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className={cn("text-xs font-medium", config.bgColor, config.color)}>
+                    <IconComponent className="h-4 w-4" />
+                  </AvatarFallback>
+                </Avatar>
             
             <div className="flex flex-col">
               <TooltipProvider>
@@ -355,17 +379,17 @@ export function DiaryFeedCard({
           </div>
         )}
 
-        {/* Media grid */}
-        {event.media && event.media.length > 0 && (
+        {/* Additional media grid - skip first image since it's shown on the left */}
+        {event.media && event.media.length > 1 && (
           <div
             className={cn(
               "grid gap-2 mt-3",
-              event.media.length === 1 && "grid-cols-1",
-              event.media.length === 2 && "grid-cols-2",
-              event.media.length >= 3 && "grid-cols-3",
+              event.media.length === 2 && "grid-cols-1",
+              event.media.length === 3 && "grid-cols-2",
+              event.media.length >= 4 && "grid-cols-3",
             )}
           >
-            {event.media.slice(0, 4).map((url, i) => (
+            {event.media.slice(1, 4).map((url, i) => (
               <img key={i} src={url} alt="" className="rounded-lg w-full h-24 object-cover" />
             ))}
           </div>
@@ -580,6 +604,8 @@ export function DiaryFeedCard({
           </div>
         )}
       </CardContent>
+        </div>
+      </div>
     </Card>
   );
 }
