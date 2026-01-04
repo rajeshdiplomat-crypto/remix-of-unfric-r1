@@ -1,9 +1,8 @@
 import { ReactNode, useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
+import { ZaraDrawer, ZaraDrawerContent } from "@/components/ui/zara-drawer";
+import { MenuToggle } from "./MenuToggle";
 import { MobileNav } from "./MobileNav";
 
 interface AppLayoutProps {
@@ -21,18 +20,17 @@ function LayoutContent({ children }: AppLayoutProps) {
       </div>
       
       <main className="flex-1 flex flex-col w-full min-w-0">
-        {/* Mobile menu - only visible on mobile */}
+        {/* Mobile menu - ZARA-style drawer */}
         <div className="md:hidden">
-          <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9 fixed top-3 left-3 z-50 bg-card/80 backdrop-blur-sm border border-border">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-[280px]">
+          <MenuToggle 
+            isOpen={mobileNavOpen} 
+            onClick={() => setMobileNavOpen(!mobileNavOpen)} 
+          />
+          <ZaraDrawer open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+            <ZaraDrawerContent>
               <MobileNav onNavigate={() => setMobileNavOpen(false)} />
-            </SheetContent>
-          </Sheet>
+            </ZaraDrawerContent>
+          </ZaraDrawer>
         </div>
         
         <div className="flex-1 flex flex-col overflow-auto px-6 lg:px-10 py-6">
