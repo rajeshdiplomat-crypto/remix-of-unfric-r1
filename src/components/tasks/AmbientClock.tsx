@@ -1,18 +1,17 @@
 import { useState, useEffect } from "react";
+import { useTimezone } from "@/hooks/useTimezone";
 
 export function AmbientClock() {
   const [time, setTime] = useState(new Date());
+  const { timezone, getTimeInTimezone } = useTimezone();
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // Analog clock calculations
-  const hours = time.getHours() % 12;
-  const minutes = time.getMinutes();
-  const seconds = time.getSeconds();
-  const hourDeg = (hours * 30) + (minutes * 0.5);
+  const { hours, minutes, seconds } = getTimeInTimezone(time);
+  const hourDeg = (hours % 12 * 30) + (minutes * 0.5);
   const minuteDeg = (minutes * 6) + (seconds * 0.1);
   const secondDeg = seconds * 6;
 
@@ -79,7 +78,8 @@ export function AmbientClock() {
         {time.toLocaleTimeString('en-US', { 
           hour: '2-digit', 
           minute: '2-digit',
-          hour12: true 
+          hour12: true,
+          timeZone: timezone
         })}
       </div>
       
@@ -88,7 +88,8 @@ export function AmbientClock() {
         {time.toLocaleDateString('en-US', { 
           weekday: 'short', 
           month: 'short', 
-          day: 'numeric' 
+          day: 'numeric',
+          timeZone: timezone
         })}
       </div>
     </div>

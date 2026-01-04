@@ -1,17 +1,16 @@
 import { useEffect, useState } from "react";
-import { format } from "date-fns";
+import { useTimezone } from "@/hooks/useTimezone";
 
 export function TasksClockCard() {
   const [time, setTime] = useState(new Date());
+  const { timezone, getTimeInTimezone } = useTimezone();
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  const hours = time.getHours();
-  const minutes = time.getMinutes();
-  const seconds = time.getSeconds();
+  const { hours, minutes, seconds } = getTimeInTimezone(time);
 
   // Calculate hand rotations
   const hourDeg = (hours % 12) * 30 + minutes * 0.5;
@@ -69,10 +68,20 @@ export function TasksClockCard() {
 
       {/* Digital time */}
       <p className="text-lg font-semibold text-foreground mt-2">
-        {format(time, 'h:mm a')}
+        {time.toLocaleTimeString('en-US', { 
+          hour: 'numeric', 
+          minute: '2-digit',
+          hour12: true,
+          timeZone: timezone
+        })}
       </p>
       <p className="text-sm text-muted-foreground">
-        {format(time, 'EEE, MMM d')}
+        {time.toLocaleDateString('en-US', { 
+          weekday: 'short', 
+          month: 'short', 
+          day: 'numeric',
+          timeZone: timezone
+        })}
       </p>
     </div>
   );
