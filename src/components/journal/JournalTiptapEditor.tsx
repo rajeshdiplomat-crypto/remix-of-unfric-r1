@@ -60,6 +60,34 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, JournalTiptapEdit
         onChange(JSON.stringify(editor.getJSON()));
       },
       editorProps: {
+        handleKeyDown: (view, event) => {
+          const editorInstance = view.state;
+          
+          // Tab for list indent
+          if (event.key === 'Tab' && !event.shiftKey) {
+            const { $from } = editorInstance.selection;
+            const listItem = $from.node(-1);
+            if (listItem?.type.name === 'listItem' || listItem?.type.name === 'taskItem') {
+              event.preventDefault();
+              // Use the editor commands through the view
+              const tr = view.state.tr;
+              view.dispatch(tr);
+              return true;
+            }
+          }
+          
+          // Shift+Tab for list outdent
+          if (event.key === 'Tab' && event.shiftKey) {
+            const { $from } = editorInstance.selection;
+            const listItem = $from.node(-1);
+            if (listItem?.type.name === 'listItem' || listItem?.type.name === 'taskItem') {
+              event.preventDefault();
+              return true;
+            }
+          }
+          
+          return false;
+        },
         attributes: {
           class: "prose prose-sm sm:prose lg:prose-lg max-w-none focus:outline-none min-h-[200px] h-full px-8 py-6",
         },
@@ -105,7 +133,8 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, JournalTiptapEdit
           .ProseMirror ul[data-type="taskList"] { list-style: none; padding-left: 0; }
           .ProseMirror ul[data-type="taskList"] li { display: flex; align-items: flex-start; gap: 0.5rem; }
           .ProseMirror ul[data-type="taskList"] li input { margin-top: 0.25rem; cursor: pointer; }
-          .ProseMirror img { max-width: 100%; border-radius: 0.5rem; margin: 1rem 0; }
+          .ProseMirror img { max-width: 100%; border-radius: 0.5rem; margin: 1rem 0; cursor: pointer; }
+          .ProseMirror img:hover { outline: 2px solid hsl(var(--primary)); }
           .ProseMirror a { color: hsl(210 60% 50%); text-decoration: underline; }
           .ProseMirror mark { background-color: #fef08a; padding: 0.125em 0; }
         `}</style>

@@ -12,6 +12,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
   Undo2,
   Redo2,
   Bold,
@@ -28,10 +35,12 @@ import {
   Palette,
   Highlighter,
   RemoveFormatting,
+  Pencil,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Editor } from "@tiptap/react";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
+import { NotesScribbleCanvas } from "@/components/notes/NotesScribbleCanvas";
 
 interface JournalToolbarProps {
   editor: Editor | null;
@@ -82,29 +91,62 @@ export function JournalToolbar({
   onFontFamilyChange,
   onFontSizeChange,
 }: JournalToolbarProps) {
-  const setLink = useCallback(() => {
+  // Dialog states
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [scribbleOpen, setScribbleOpen] = useState(false);
+
+  const openLinkDialog = useCallback(() => {
     if (!editor) return;
-
-    const previousUrl = editor.getAttributes("link").href;
-    const url = window.prompt("URL", previousUrl);
-
-    if (url === null) return;
-
-    if (url === "") {
-      editor.chain().focus().extendMarkRange("link").unsetLink().run();
-      return;
-    }
-
-    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+    const previousUrl = editor.getAttributes("link").href || "";
+    setLinkUrl(previousUrl);
+    setLinkDialogOpen(true);
   }, [editor]);
 
-  const addImage = useCallback(() => {
+  const handleInsertLink = useCallback(() => {
     if (!editor) return;
 
-    const url = window.prompt("Image URL");
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
+    if (linkUrl === "") {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+    } else {
+      editor.chain().focus().extendMarkRange("link").setLink({ href: linkUrl }).run();
     }
+
+    setLinkUrl("");
+    setLinkDialogOpen(false);
+  }, [editor, linkUrl]);
+
+  const openImageDialog = useCallback(() => {
+    setImageUrl("");
+    setImageDialogOpen(true);
+  }, []);
+
+  const handleInsertImage = useCallback(() => {
+    if (imageUrl && editor) {
+      editor.chain().focus().setImage({ src: imageUrl }).run();
+      setImageUrl("");
+      setImageDialogOpen(false);
+    }
+  }, [editor, imageUrl]);
+
+  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editor) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      editor.chain().focus().setImage({ src: dataUrl }).run();
+    };
+    reader.readAsDataURL(file);
+    setImageDialogOpen(false);
+  }, [editor]);
+
+  const handleSaveScribble = useCallback((dataUrl: string) => {
+    editor?.chain().focus().setImage({ src: dataUrl }).run();
+    setScribbleOpen(false);
   }, [editor]);
 
   const handleFontFamilyChange = useCallback((font: string) => {
@@ -135,20 +177,20 @@ export function JournalToolbar({
       type="button"
       variant="ghost"
       size="sm"
+      onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       disabled={disabled || isDisabled}
       title={title}
-    className={cn(
-      "h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-transparent rounded-none",
-      active && "text-foreground border-b-2 border-foreground"
-    )}
+      className={cn(
+        "h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-transparent rounded-none",
+        active && "text-foreground border-b-2 border-foreground"
+      )}
     >
       <Icon className="h-4 w-4" />
     </Button>
   );
 
   const Divider = () => <div className="w-px h-6 bg-border/50 mx-1" />;
-
 
   return (
     <div className="flex items-center gap-1 bg-card border border-border/50 rounded-xl px-3 py-2 shadow-sm sticky top-0 z-20 flex-wrap">
@@ -170,7 +212,10 @@ export function JournalToolbar({
 
       {/* Font Family */}
       <Select value={editor?.getAttributes('textStyle').fontFamily || fontFamily} onValueChange={handleFontFamilyChange}>
-        <SelectTrigger className="h-8 w-[120px] text-xs border-0 bg-muted/30">
+        <SelectTrigger 
+          className="h-8 w-[120px] text-xs border-0 bg-muted/30"
+          onMouseDown={(e) => e.preventDefault()}
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -191,7 +236,10 @@ export function JournalToolbar({
         value={fontSize.toString()}
         onValueChange={(v) => onFontSizeChange(parseInt(v))}
       >
-        <SelectTrigger className="h-8 w-[70px] text-xs border-0 bg-muted/30">
+        <SelectTrigger 
+          className="h-8 w-[70px] text-xs border-0 bg-muted/30"
+          onMouseDown={(e) => e.preventDefault()}
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -234,6 +282,7 @@ export function JournalToolbar({
             type="button"
             variant="ghost"
             size="sm"
+            onMouseDown={(e) => e.preventDefault()}
             disabled={isDisabled}
             title="Text Color"
             className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-transparent rounded-none"
@@ -246,6 +295,7 @@ export function JournalToolbar({
             {TEXT_COLORS.map((color) => (
               <button
                 key={color.value || 'default'}
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
                   if (color.value) {
                     editor?.chain().focus().setColor(color.value).run();
@@ -272,6 +322,7 @@ export function JournalToolbar({
             type="button"
             variant="ghost"
             size="sm"
+            onMouseDown={(e) => e.preventDefault()}
             disabled={isDisabled}
             title="Highlight"
             className={cn(
@@ -287,6 +338,7 @@ export function JournalToolbar({
             {HIGHLIGHT_COLORS.map((color) => (
               <button
                 key={color.value || 'none'}
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
                   if (color.value) {
                     editor?.chain().focus().toggleHighlight({ color: color.value }).run();
@@ -360,12 +412,82 @@ export function JournalToolbar({
       <Divider />
 
       {/* Media */}
-      <ToolButton icon={Image} onClick={addImage} title="Insert Image" />
+      <ToolButton icon={Image} onClick={openImageDialog} title="Insert Image" />
       <ToolButton
         icon={Link}
-        onClick={setLink}
+        onClick={openLinkDialog}
         active={editor?.isActive("link")}
         title="Insert Link"
+      />
+      <ToolButton icon={Pencil} onClick={() => setScribbleOpen(true)} title="Draw" />
+
+      {/* Image Dialog */}
+      <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Insert Image</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Image URL</label>
+              <Input
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://..."
+                onKeyDown={(e) => e.key === 'Enter' && handleInsertImage()}
+              />
+            </div>
+            <div className="text-center text-sm text-muted-foreground">or</div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Upload Image</label>
+              <Input type="file" accept="image/*" onChange={handleImageUpload} />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setImageDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button className="flex-1" onClick={handleInsertImage} disabled={!imageUrl}>
+                Insert
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Link Dialog */}
+      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Insert Link</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">URL</label>
+              <Input
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                placeholder="https://..."
+                onKeyDown={(e) => e.key === 'Enter' && handleInsertLink()}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setLinkDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button className="flex-1" onClick={handleInsertLink}>
+                {linkUrl ? "Insert" : "Remove Link"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Scribble Canvas */}
+      <NotesScribbleCanvas
+        open={scribbleOpen}
+        onOpenChange={setScribbleOpen}
+        onSave={handleSaveScribble}
+        initialData={null}
       />
     </div>
   );
