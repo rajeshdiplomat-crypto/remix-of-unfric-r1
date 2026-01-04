@@ -399,17 +399,20 @@ export default function Emotions() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 h-[calc(100vh-4rem)]">
-      {/* LEFT: Check-in + Patterns (scrollable) */}
-      <div className="overflow-y-auto space-y-6 pr-1">
-        {/* Hero Media Block */}
-        <PageHero
-          storageKey="emotion_hero_src"
-          typeKey="emotion_hero_type"
-          badge={PAGE_HERO_TEXT.emotions.badge}
-          title={PAGE_HERO_TEXT.emotions.title}
-          subtitle={PAGE_HERO_TEXT.emotions.subtitle}
-        />
+    <div className="flex flex-col w-full flex-1 -mx-6 -mt-6">
+      {/* Full-bleed Hero */}
+      <PageHero
+        storageKey="emotion_hero_src"
+        typeKey="emotion_hero_type"
+        badge={PAGE_HERO_TEXT.emotions.badge}
+        title={PAGE_HERO_TEXT.emotions.title}
+        subtitle={PAGE_HERO_TEXT.emotions.subtitle}
+      />
+
+      {/* Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 px-6 pt-8">
+        {/* LEFT: Check-in + Patterns (scrollable) */}
+        <div className="overflow-y-auto space-y-6 pr-1">
 
         {/* How are you feeling - Check-in section */}
         <Card className="border-border/40 shadow-sm">
@@ -748,6 +751,7 @@ export default function Emotions() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </div>
     </div>
   );
 }

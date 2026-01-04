@@ -721,17 +721,20 @@ export default function Trackers() {
 
   return (
     <TooltipProvider>
-      <div className="w-full flex flex-col lg:flex-row gap-6">
-        {/* LEFT */}
-        <div className="flex-1 min-w-0 space-y-6">
-          {/* Hero Media Block */}
-          <PageHero
-            storageKey="tracker_hero_src"
-            typeKey="tracker_hero_type"
-            badge={PAGE_HERO_TEXT.trackers.badge}
-            title={PAGE_HERO_TEXT.trackers.title}
-            subtitle={PAGE_HERO_TEXT.trackers.subtitle}
-          />
+      <div className="flex flex-col w-full flex-1 -mx-6 -mt-6">
+        {/* Full-bleed Hero */}
+        <PageHero
+          storageKey="tracker_hero_src"
+          typeKey="tracker_hero_type"
+          badge={PAGE_HERO_TEXT.trackers.badge}
+          title={PAGE_HERO_TEXT.trackers.title}
+          subtitle={PAGE_HERO_TEXT.trackers.subtitle}
+        />
+
+        {/* Content Grid */}
+        <div className="w-full flex flex-col lg:flex-row gap-6 px-6 pt-8">
+          {/* LEFT */}
+          <div className="flex-1 min-w-0 space-y-6">
 
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -1388,6 +1391,7 @@ export default function Trackers() {
           onSkipDay={handleSkipDay}
           onImageChange={handleImageChange}
         />
+        </div>
       </div>
     </TooltipProvider>
   );
