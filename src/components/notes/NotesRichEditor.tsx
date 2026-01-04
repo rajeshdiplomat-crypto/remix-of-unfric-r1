@@ -79,7 +79,6 @@ export function NotesRichEditor({
   
   const editorRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
-  const savedRangeRef = useRef<Range | null>(null);
   const [currentFont, setCurrentFont] = useState(FONTS[0].value);
   const [currentSize, setCurrentSize] = useState("16");
   
@@ -94,11 +93,6 @@ export function NotesRichEditor({
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const isUndoRedo = useRef(false);
-
-  // Enable styleWithCSS for better formatting
-  useEffect(() => {
-    document.execCommand("styleWithCSS", false, "true");
-  }, []);
 
   // Auto-focus title for new notes
   useEffect(() => {
@@ -118,28 +112,6 @@ export function NotesRichEditor({
     }
   }, [note.id]);
 
-  // Save/restore selection helpers
-  const saveSelection = useCallback(() => {
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      // Only save if selection is inside editor
-      if (editorRef.current?.contains(range.commonAncestorContainer)) {
-        savedRangeRef.current = range.cloneRange();
-      }
-    }
-  }, []);
-
-  const restoreSelection = useCallback(() => {
-    if (savedRangeRef.current && editorRef.current) {
-      const selection = window.getSelection();
-      if (selection) {
-        selection.removeAllRanges();
-        selection.addRange(savedRangeRef.current);
-      }
-    }
-  }, []);
-
   // Save to history on content change
   const saveToHistory = useCallback(() => {
     if (!editorRef.current || isUndoRedo.current) return;
@@ -157,27 +129,17 @@ export function NotesRichEditor({
 
   // Update formatting state on selection change
   const updateFormattingState = useCallback(() => {
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      if (editorRef.current?.contains(range.commonAncestorContainer)) {
-        setIsBold(document.queryCommandState("bold"));
-        setIsItalic(document.queryCommandState("italic"));
-        setIsUnderline(document.queryCommandState("underline"));
-        setIsBulletList(document.queryCommandState("insertUnorderedList"));
-        setIsNumberedList(document.queryCommandState("insertOrderedList"));
-      }
-    }
+    setIsBold(document.queryCommandState("bold"));
+    setIsItalic(document.queryCommandState("italic"));
+    setIsUnderline(document.queryCommandState("underline"));
+    setIsBulletList(document.queryCommandState("insertUnorderedList"));
+    setIsNumberedList(document.queryCommandState("insertOrderedList"));
   }, []);
 
   useEffect(() => {
-    const handleSelectionChange = () => {
-      updateFormattingState();
-      saveSelection();
-    };
-    document.addEventListener("selectionchange", handleSelectionChange);
-    return () => document.removeEventListener("selectionchange", handleSelectionChange);
-  }, [updateFormattingState, saveSelection]);
+    document.addEventListener("selectionchange", updateFormattingState);
+    return () => document.removeEventListener("selectionchange", updateFormattingState);
+  }, [updateFormattingState]);
 
   // Auto-save effect
   useEffect(() => {
@@ -201,13 +163,10 @@ export function NotesRichEditor({
   };
 
   const execCommand = (command: string, value?: string) => {
-    restoreSelection();
-    editorRef.current?.focus({ preventScroll: true });
-    restoreSelection();
+    editorRef.current?.focus();
     document.execCommand(command, false, value);
     updateFormattingState();
     saveToHistory();
-    saveSelection();
   };
 
   const handleUndo = () => {
@@ -234,7 +193,6 @@ export function NotesRichEditor({
     setCurrentFont(font);
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
-      restoreSelection();
       execCommand("fontName", font);
     }
   };
@@ -243,16 +201,12 @@ export function NotesRichEditor({
     setCurrentSize(size);
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
-      restoreSelection();
-      editorRef.current?.focus({ preventScroll: true });
-      restoreSelection();
       const range = selection.getRangeAt(0);
       const span = document.createElement("span");
       span.style.fontSize = `${size}px`;
       try {
         range.surroundContents(span);
         saveToHistory();
-        saveSelection();
       } catch {
         // Partial selection - fallback
         execCommand("fontSize", "7");
@@ -261,24 +215,18 @@ export function NotesRichEditor({
   };
 
   const handleTextColor = (color: string) => {
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
-      if (color) {
-        execCommand("foreColor", color);
-      } else {
-        execCommand("removeFormat");
-      }
+    if (color) {
+      execCommand("foreColor", color);
+    } else {
+      execCommand("removeFormat");
     }
   };
 
   const handleHighlight = (color: string) => {
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
-      if (color) {
-        execCommand("hiliteColor", color);
-      } else {
-        execCommand("hiliteColor", "transparent");
-      }
+    if (color) {
+      execCommand("hiliteColor", color);
+    } else {
+      execCommand("hiliteColor", "transparent");
     }
   };
 
@@ -341,7 +289,6 @@ export function NotesRichEditor({
   const handleInsertLink = () => {
     if (!linkUrl) return;
     const text = linkText || linkUrl;
-    restoreSelection();
     execCommand("insertHTML", `<a href="${linkUrl}" target="_blank" class="text-primary underline">${text}</a>`);
     setLinkDialogOpen(false);
     setLinkUrl("");
@@ -474,23 +421,10 @@ export function NotesRichEditor({
     setupImageResizing();
   };
 
-  const handleEditorMouseUp = () => {
-    saveSelection();
-  };
-
-  const handleEditorKeyUp = () => {
-    saveSelection();
-  };
-
-  // Prevent toolbar from stealing focus
-  const preventFocusLoss = (e: React.MouseEvent) => {
-    e.preventDefault();
-  };
-
   return (
-    <div className="flex flex-col flex-1 min-h-0">
+    <div className="flex flex-col h-full">
       {/* Top Bar with Breadcrumb */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-border/30 shrink-0">
+      <div className="flex items-center justify-between px-6 py-3 border-b border-border/30">
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
@@ -561,14 +495,13 @@ export function NotesRichEditor({
       </div>
 
       {/* Toolbar */}
-      <div className="px-6 py-3 border-b border-border/30 shrink-0">
+      <div className="px-6 py-3 border-b border-border/30">
         <div className="flex items-center gap-1 flex-wrap">
           <Button 
             variant="ghost" 
             size="icon" 
             className="h-8 w-8" 
             onClick={handleUndo}
-            onMouseDown={preventFocusLoss}
             disabled={historyIndex <= 0}
             title="Undo"
           >
@@ -579,7 +512,6 @@ export function NotesRichEditor({
             size="icon" 
             className="h-8 w-8" 
             onClick={handleRedo}
-            onMouseDown={preventFocusLoss}
             disabled={historyIndex >= history.length - 1}
             title="Redo"
           >
@@ -588,7 +520,7 @@ export function NotesRichEditor({
           <div className="w-px h-6 bg-border mx-1" />
           
           <Select value={currentFont} onValueChange={handleFontChange}>
-            <SelectTrigger className="w-24 h-8" onMouseDown={preventFocusLoss}>
+            <SelectTrigger className="w-24 h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -601,7 +533,7 @@ export function NotesRichEditor({
           </Select>
           
           <Select value={currentSize} onValueChange={handleSizeChange}>
-            <SelectTrigger className="w-16 h-8" onMouseDown={preventFocusLoss}>
+            <SelectTrigger className="w-16 h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -618,7 +550,6 @@ export function NotesRichEditor({
             size="icon" 
             className="h-8 w-8" 
             onClick={() => execCommand("bold")}
-            onMouseDown={preventFocusLoss}
             title="Bold"
           >
             <Bold className="h-4 w-4" />
@@ -628,7 +559,6 @@ export function NotesRichEditor({
             size="icon" 
             className="h-8 w-8" 
             onClick={() => execCommand("italic")}
-            onMouseDown={preventFocusLoss}
             title="Italic"
           >
             <Italic className="h-4 w-4" />
@@ -638,7 +568,6 @@ export function NotesRichEditor({
             size="icon" 
             className="h-8 w-8" 
             onClick={() => execCommand("underline")}
-            onMouseDown={preventFocusLoss}
             title="Underline"
           >
             <Underline className="h-4 w-4" />
@@ -649,7 +578,7 @@ export function NotesRichEditor({
           {/* Text Color */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" title="Text Color" onMouseDown={preventFocusLoss}>
+              <Button variant="ghost" size="icon" className="h-8 w-8" title="Text Color">
                 <Palette className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
@@ -659,7 +588,6 @@ export function NotesRichEditor({
                   <button
                     key={color.value || 'default'}
                     onClick={() => handleTextColor(color.value)}
-                    onMouseDown={preventFocusLoss}
                     className={cn(
                       "h-6 w-6 rounded border border-border/50 hover:scale-110 transition-transform",
                       !color.value && "bg-foreground"
@@ -675,7 +603,7 @@ export function NotesRichEditor({
           {/* Highlight Color */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" title="Highlight" onMouseDown={preventFocusLoss}>
+              <Button variant="ghost" size="icon" className="h-8 w-8" title="Highlight">
                 <Highlighter className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
@@ -685,7 +613,6 @@ export function NotesRichEditor({
                   <button
                     key={color.value || 'none'}
                     onClick={() => handleHighlight(color.value)}
-                    onMouseDown={preventFocusLoss}
                     className={cn(
                       "h-6 w-6 rounded border border-border/50 hover:scale-110 transition-transform",
                       !color.value && "bg-background relative after:absolute after:inset-0 after:bg-[linear-gradient(45deg,transparent_45%,hsl(var(--destructive))_45%,hsl(var(--destructive))_55%,transparent_55%)]"
@@ -704,7 +631,6 @@ export function NotesRichEditor({
             size="icon" 
             className="h-8 w-8" 
             onClick={handleClearFormatting}
-            onMouseDown={preventFocusLoss}
             title="Clear Formatting"
           >
             <RemoveFormatting className="h-4 w-4" />
@@ -712,13 +638,13 @@ export function NotesRichEditor({
           
           <div className="w-px h-6 bg-border mx-1" />
           
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand("justifyLeft")} onMouseDown={preventFocusLoss} title="Align Left">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand("justifyLeft")} title="Align Left">
             <AlignLeft className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand("justifyCenter")} onMouseDown={preventFocusLoss} title="Align Center">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand("justifyCenter")} title="Align Center">
             <AlignCenter className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand("justifyRight")} onMouseDown={preventFocusLoss} title="Align Right">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => execCommand("justifyRight")} title="Align Right">
             <AlignRight className="h-4 w-4" />
           </Button>
           
@@ -729,7 +655,6 @@ export function NotesRichEditor({
             size="icon" 
             className="h-8 w-8" 
             onClick={handleBulletList}
-            onMouseDown={preventFocusLoss}
             title="Bullet List (Tab to nest, Shift+Tab to outdent)"
           >
             <List className="h-4 w-4" />
@@ -739,32 +664,31 @@ export function NotesRichEditor({
             size="icon" 
             className="h-8 w-8" 
             onClick={handleNumberedList}
-            onMouseDown={preventFocusLoss}
             title="Numbered List (Tab to nest, Shift+Tab to outdent)"
           >
             <ListOrdered className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={insertChecklist} onMouseDown={preventFocusLoss} title="Checklist">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={insertChecklist} title="Checklist">
             <CheckSquare className="h-4 w-4" />
           </Button>
           
           <div className="w-px h-6 bg-border mx-1" />
           
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setImageDialogOpen(true)} onMouseDown={preventFocusLoss} title="Insert Image">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setImageDialogOpen(true)} title="Insert Image">
             <Image className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setLinkDialogOpen(true)} onMouseDown={preventFocusLoss} title="Insert Link">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setLinkDialogOpen(true)} title="Insert Link">
             <Link2 className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setScribbleOpen(true)} onMouseDown={preventFocusLoss} title="Draw">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setScribbleOpen(true)} title="Draw">
             <Pencil className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
       {/* Editor Content */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-6 py-8 pb-24">
+      <div className="flex-1 overflow-auto">
+        <div className="max-w-3xl mx-auto px-6 py-8">
           {/* Tags Display */}
           {tags.length > 0 && (
             <div className="flex gap-1 mb-4">
@@ -793,8 +717,6 @@ export function NotesRichEditor({
             onInput={handleContentInput}
             onBlur={handleSave}
             onKeyDown={handleKeyDown}
-            onMouseUp={handleEditorMouseUp}
-            onKeyUp={handleEditorKeyUp}
             className="min-h-[400px] outline-none text-foreground leading-relaxed focus:outline-none [&_ul]:list-disc [&_ul]:ml-6 [&_ol]:list-decimal [&_ol]:ml-6 [&_li]:my-1 [&_ul_ul]:list-circle [&_ol_ol]:list-lower-alpha"
             data-placeholder="Start typing here..."
           />
