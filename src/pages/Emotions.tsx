@@ -477,7 +477,7 @@ export default function Emotions() {
 
       {/* RIGHT: Strategies Panel + Recent Check-ins (always mounted, sticky, independently scrollable) */}
       <aside
-        className="hidden lg:flex flex-col h-full overflow-y-auto border-l border-border/50 bg-card p-4"
+        className="hidden lg:flex flex-col h-full overflow-y-auto border-l border-border/50 bg-card p-4 rounded-xl"
         tabIndex={-1}
         aria-label="Strategies panel"
       >

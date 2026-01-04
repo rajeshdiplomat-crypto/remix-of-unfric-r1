@@ -54,14 +54,14 @@ export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
         )}
       >
         {/* Close button */}
-        <div className="absolute top-4 right-4">
+        <div className="absolute top-6 right-6">
           <Button
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="h-10 w-10 hover:bg-transparent"
+            className="h-14 w-14 hover:bg-transparent"
           >
-            <X className="h-5 w-5" />
+            <X className="h-8 w-8" strokeWidth={1.5} />
           </Button>
         </div>
 
@@ -69,7 +69,7 @@ export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
         <div className="flex flex-col h-full pt-16 pb-8 px-8 overflow-y-auto">
           {/* Logo */}
           <NavLink to="/diary" onClick={onClose} className="mb-8">
-            <span className="text-3xl font-light uppercase tracking-[0.4em] text-foreground">
+            <span className="text-5xl font-extralight uppercase tracking-[0.5em] text-foreground leading-relaxed">
               inbalance
             </span>
           </NavLink>

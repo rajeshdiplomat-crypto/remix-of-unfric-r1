@@ -408,17 +408,17 @@ export default function Diary() {
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1">
+        <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
           {FILTER_TABS.map((tab) => (
             <Button
               key={tab.value}
               variant="ghost"
               size="sm"
               className={cn(
-                "h-6 px-3 text-sm rounded-xl whitespace-nowrap",
+                "h-8 px-0 text-xs uppercase tracking-zara-wide font-light rounded-none whitespace-nowrap hover:bg-transparent",
                 filter === tab.value
-                  ? "bg-muted text-foreground font-medium"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                  ? "text-foreground border-b border-foreground"
+                  : "text-muted-foreground hover:text-foreground border-b border-transparent",
               )}
               onClick={() => setFilter(tab.value as SourceModule | "all" | "saved")}
             >
