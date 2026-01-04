@@ -390,7 +390,7 @@ export default function Diary() {
       <DiaryHero />
 
       {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 w-full px-6 lg:px-8 pt-6">
         {/* Main Feed */}
         <div className="min-w-0">
 

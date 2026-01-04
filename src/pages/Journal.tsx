@@ -366,20 +366,11 @@ export default function Journal() {
       />
 
       {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 w-full px-6 lg:px-8 pt-6">
         {/* Main Editor Area */}
         <div className="flex flex-col min-w-0">
           <div className="flex-1 flex flex-col">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-2xl font-semibold flex items-center gap-2">
-              <BookOpen className="h-6 w-6" />
-              Journal
-            </h1>
-            <p className="text-sm" style={{ color: currentSkin.mutedText }}>
-              {format(selectedDate, "EEEE, MMMM d, yyyy")}
-            </p>
-          </div>
+        <div className="flex items-center justify-end mb-4">
           <div className="flex items-center gap-2">
             <span
               className="text-xs flex items-center gap-1"

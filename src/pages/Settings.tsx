@@ -27,7 +27,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="w-full space-y-6 pb-8">
+    <div className="w-full space-y-6 pb-8 px-6 lg:px-8 pt-6">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
           Settings

@@ -395,15 +395,9 @@ export default function Notes() {
           subtitle={PAGE_HERO_TEXT.notes.subtitle}
         />
 
-        <div className="w-full space-y-6">
+        <div className="w-full space-y-6 px-6 lg:px-8 pt-6">
           {/* Header */}
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0">
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">Notes</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Your life atlas — everything in one calm, premium view
-              </p>
-            </div>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-end">
 
             <div className="flex items-center gap-2 lg:justify-end">
               <DropdownMenu>

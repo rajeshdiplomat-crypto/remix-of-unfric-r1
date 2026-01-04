@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Camera, Play, Pause, Volume2, VolumeX } from "lucide-react";
+import { Camera, Play, Pause, Volume2, VolumeX, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 type MediaType = "image" | "video" | null;
 
@@ -35,6 +36,18 @@ function saveHeroMedia(storageKey: string, typeKey: string, src: string | null, 
   }
 }
 
+// Derive page type from storage key
+function getPageTypeFromStorageKey(storageKey: string): string {
+  if (storageKey.includes("diary")) return "diary";
+  if (storageKey.includes("emotion")) return "emotions";
+  if (storageKey.includes("journal")) return "journal";
+  if (storageKey.includes("manifest")) return "manifest";
+  if (storageKey.includes("notes")) return "notes";
+  if (storageKey.includes("tasks")) return "tasks";
+  if (storageKey.includes("tracker")) return "trackers";
+  return "diary";
+}
+
 export const PAGE_HERO_TEXT = {
   diary: { badge: "YOUR PERSONAL SPACE", title: "DIARY", subtitle: "A curated timeline of your thoughts, tasks, and moments" },
   emotions: { badge: "CHECK-IN", title: "EMOTIONS", subtitle: "Understand your patterns and nurture your well-being" },
@@ -52,6 +65,7 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const [isHovering, setIsHovering] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -89,6 +103,55 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
     setMediaType(null);
     saveHeroMedia(storageKey, typeKey, null, null);
     setDialogOpen(false);
+  };
+
+  const handleGenerateAI = async () => {
+    setIsGenerating(true);
+    try {
+      const pageType = getPageTypeFromStorageKey(storageKey);
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-hero-image`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ pageType }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 429) {
+          toast.error("Rate limit exceeded. Please try again later.");
+          return;
+        }
+        if (response.status === 402) {
+          toast.error("AI credits exhausted. Please add credits to continue.");
+          return;
+        }
+        throw new Error(errorData.error || "Failed to generate image");
+      }
+
+      const data = await response.json();
+      
+      if (data.imageUrl) {
+        setMediaSrc(data.imageUrl);
+        setMediaType("image");
+        saveHeroMedia(storageKey, typeKey, data.imageUrl, "image");
+        setDialogOpen(false);
+        toast.success("AI hero image generated!");
+      } else {
+        throw new Error("No image received");
+      }
+    } catch (error) {
+      console.error("Error generating AI image:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to generate image");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const togglePlay = () => {
@@ -160,6 +223,19 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
             onChange={(e) => handleFileUpload(e, "video")}
           />
           <Button
+            variant="default"
+            className="w-full justify-start uppercase tracking-wider text-xs gap-2"
+            onClick={handleGenerateAI}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            {isGenerating ? "GENERATING..." : "GENERATE AI IMAGE"}
+          </Button>
+          <Button
             variant="outline"
             className="w-full justify-start uppercase tracking-wider text-xs"
             onClick={() => imageInputRef.current?.click()}
@@ -213,7 +289,7 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
             loop
             muted={isMuted}
             playsInline
-            className="w-full h-full object-cover grayscale"
+            className="w-full h-full object-cover"
           />
           {/* Video controls */}
           <div
@@ -243,7 +319,7 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
         <img
           src={mediaSrc}
           alt={`${title} hero`}
-          className="w-full h-full object-cover grayscale"
+          className="w-full h-full object-cover"
         />
       )}
 
