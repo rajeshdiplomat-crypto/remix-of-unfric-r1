@@ -637,7 +637,7 @@ export default function Notes() {
   // EDITOR (Split View)
   // =========================
   return (
-    <div className="fixed inset-x-0 top-14 bottom-0 z-40 bg-background">
+    <div className="fixed inset-x-0 top-14 bottom-0 z-40 bg-background p-4">
       <NotesSplitView
         notes={filteredNotes}
         groups={groups}
@@ -648,7 +648,7 @@ export default function Notes() {
         onDeleteNote={handleDeleteNote}
         onBack={handleBackToOverview}
         onCreateNote={handleQuickNote}
-        className="h-full"
+        className="h-full w-full"
       />
     </div>
   );

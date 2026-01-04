@@ -81,9 +81,12 @@ export function NotesGroupSection({
           {/* Right: Header & Content */}
           <div className="flex-1">
             {/* Compact Card Header */}
-            <button
+            <div
               onClick={() => setIsExpanded(!isExpanded)}
-              className="w-full px-4 py-3 text-left hover:bg-muted/5 transition-colors"
+              className="w-full px-4 py-3 text-left hover:bg-muted/5 transition-colors cursor-pointer"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === "Enter" && setIsExpanded(!isExpanded)}
             >
               <div className="flex items-center gap-3">
                 {/* Main content */}
@@ -133,7 +136,7 @@ export function NotesGroupSection({
                   </div>
                 </div>
               </div>
-            </button>
+            </div>
 
         {/* Expanded Body */}
         {isExpanded && (
