@@ -59,7 +59,7 @@ export function DiarySidebar({
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 h-full overflow-y-auto">
       {/* Performance Snapshot */}
       <Card className="bg-card border-border/40">
         <CardHeader className="pb-3">

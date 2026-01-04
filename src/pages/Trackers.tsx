@@ -733,9 +733,9 @@ export default function Trackers() {
         />
 
         {/* Content Grid */}
-        <div className="w-full flex flex-col lg:flex-row gap-6 px-6 lg:px-8 pt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 px-6 lg:px-8 pt-6">
           {/* LEFT */}
-          <div className="flex-1 min-w-0 space-y-6">
+          <div className="min-w-0 space-y-6">
 
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-end justify-end gap-4">
@@ -1393,13 +1393,15 @@ export default function Trackers() {
         </div>
 
         {/* RIGHT */}
-        <ActivityDetailPanel
-          activity={currentSelectedActivity}
-          onEdit={openEditDialog}
-          onToggleCompletion={toggleCompletion}
-          onSkipDay={handleSkipDay}
-          onImageChange={handleImageChange}
-        />
+        <aside className="hidden lg:flex flex-col h-full overflow-y-auto">
+          <ActivityDetailPanel
+            activity={currentSelectedActivity}
+            onEdit={openEditDialog}
+            onToggleCompletion={toggleCompletion}
+            onSkipDay={handleSkipDay}
+            onImageChange={handleImageChange}
+          />
+        </aside>
         </div>
       </div>
     </TooltipProvider>

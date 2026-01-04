@@ -299,7 +299,7 @@ export function ActivityDetailPanel({
   // Empty state
   if (!activity) {
     return (
-      <div className="w-full lg:w-[380px] xl:w-[400px] lg:sticky lg:top-6">
+      <div className="w-full h-full">
         <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
           <div className="p-4 border-b border-border/50">
             <div className="flex items-center gap-3">
@@ -348,9 +348,9 @@ export function ActivityDetailPanel({
   const sessionHistory = getSessionHistory(activity);
 
   return (
-    <div className="w-full lg:w-[380px] xl:w-[400px] lg:sticky lg:top-6">
-      <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
-        <ScrollArea className="lg:max-h-[calc(100vh-120px)]">
+    <div className="w-full h-full">
+      <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden h-full">
+        <ScrollArea className="h-full">
           {/* Cover */}
           {imageUrl ? (
             <div className="relative h-36 w-full">
