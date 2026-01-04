@@ -333,11 +333,15 @@ export function NotesRichEditor({
     setupImageResizing();
   };
 
-  const setupImageResizing = () => {
+  const setupImageResizing = useCallback(() => {
     setTimeout(() => {
       if (!editorRef.current) return;
       const wrappers = editorRef.current.querySelectorAll(".note-image-wrapper");
       wrappers.forEach((wrapper) => {
+        // Prevent duplicate event listeners
+        if (wrapper.getAttribute('data-resizing-setup')) return;
+        wrapper.setAttribute('data-resizing-setup', 'true');
+        
         const img = wrapper.querySelector("img") as HTMLImageElement;
         const handle = wrapper.querySelector(".resize-handle") as HTMLDivElement;
         const deleteBtn = wrapper.querySelector(".image-delete-btn") as HTMLButtonElement;
@@ -395,7 +399,14 @@ export function NotesRichEditor({
         });
       });
     }, 100);
-  };
+  }, [resizingImage, saveToHistory]);
+
+  // Set up image resizing/delete for existing images when content loads
+  useEffect(() => {
+    if (editorRef.current) {
+      setupImageResizing();
+    }
+  }, [note.id, setupImageResizing]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
