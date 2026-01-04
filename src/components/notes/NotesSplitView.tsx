@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Share2, MoreHorizontal, X, Clock, Trash2, ChevronRight, FileText, Folder, FolderOpen, ChevronDown, Maximize2, Check, Save, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Plus, Share2, MoreHorizontal, X, Clock, Trash2, ChevronRight, ChevronLeft, FileText, Folder, FolderOpen, ChevronDown, Maximize2, Check, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotesRichEditor } from "./NotesRichEditor";
 import { NotesActivityDot, getMostRecentUpdate } from "./NotesActivityDot";
@@ -247,7 +247,7 @@ export function NotesSplitView({
             className="h-7 w-7"
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           >
-            {isSidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+            {isSidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </Button>
           {!isSidebarCollapsed && (
             <>
