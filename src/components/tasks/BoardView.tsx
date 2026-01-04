@@ -104,7 +104,10 @@ export function BoardView({
 
         {/* Task List */}
         <div className="flex-1 p-3 space-y-2 overflow-y-auto min-h-[200px] max-h-[500px]">
-          {columnTasks.map((task) => (
+          {columnTasks.map((task) => {
+            const isOngoing = computeTaskStatus(task) === 'ongoing';
+            
+            return (
             <div
               key={task.id}
               draggable
@@ -113,8 +116,11 @@ export function BoardView({
                 onDragStart(e, task);
               }}
               className={cn(
-                "group p-3 bg-background rounded-xl border border-border/30",
-                "hover:shadow-md hover:border-border transition-all cursor-pointer",
+                "group p-3 rounded-xl border transition-all cursor-pointer",
+                isOngoing 
+                  ? "bg-primary/5 border-l-2 border-l-primary border-border/30" 
+                  : "bg-background border-border/30",
+                "hover:shadow-md hover:border-border",
                 task.is_completed && "opacity-60"
               )}
             >
@@ -165,7 +171,8 @@ export function BoardView({
                 )}
               </div>
             </div>
-          ))}
+          );
+          })}
 
           {columnTasks.length === 0 && (
             <div className="flex items-center justify-center h-20 text-muted-foreground/60 text-sm italic">

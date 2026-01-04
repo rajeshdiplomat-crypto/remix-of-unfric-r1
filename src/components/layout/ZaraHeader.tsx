@@ -2,13 +2,26 @@ import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavLink } from "@/components/NavLink";
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 interface ZaraHeaderProps {
   onMenuClick: () => void;
 }
 
+const modules = [
+  { name: "DIARY", path: "/diary" },
+  { name: "EMOTIONS", path: "/emotions" },
+  { name: "JOURNAL", path: "/journal" },
+  { name: "MANIFEST", path: "/manifest" },
+  { name: "TRACKERS", path: "/trackers" },
+  { name: "NOTES", path: "/notes" },
+  { name: "TASKS", path: "/tasks" },
+];
+
 export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -22,6 +35,8 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const isActive = (path: string) => location.pathname === path;
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ease-out ${
@@ -31,52 +46,74 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
       }`}
     >
       <div className="flex items-center justify-between h-14 px-4 lg:px-8">
-        {/* Left: Hamburger + Title */}
+        {/* Left: Hamburger + Title + Module Nav */}
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={onMenuClick}
-            className={`h-10 w-10 hover:bg-transparent transition-all duration-300 ${
+            className={cn(
+              "h-12 w-12 hover:bg-transparent transition-all duration-300",
               isScrolled
                 ? "text-foreground"
                 : "text-foreground [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
-            }`}
+            )}
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-7 w-7" strokeWidth={2.5} />
           </Button>
           <NavLink to="/diary" className="flex items-center">
             <span
-              className={`text-lg font-normal uppercase tracking-zara-wide transition-all duration-300 ${
+              className={cn(
+                "text-lg font-normal uppercase tracking-zara-wide transition-all duration-300",
                 isScrolled
                   ? "text-foreground"
                   : "text-foreground [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
-              }`}
+              )}
             >
               inbalance
             </span>
           </NavLink>
+
+          {/* Module Navigation - hidden on mobile */}
+          <nav className="hidden md:flex items-center gap-6 ml-6">
+            {modules.map((module) => (
+              <NavLink
+                key={module.path}
+                to={module.path}
+                className={cn(
+                  "text-[11px] font-light uppercase tracking-zara-wide transition-all duration-300",
+                  isActive(module.path)
+                    ? cn(
+                        "border-b pb-0.5",
+                        isScrolled
+                          ? "text-foreground border-foreground"
+                          : "text-foreground border-foreground [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
+                      )
+                    : cn(
+                        "hover:text-foreground",
+                        isScrolled
+                          ? "text-foreground/60"
+                          : "text-foreground/70 [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
+                      )
+                )}
+              >
+                {module.name}
+              </NavLink>
+            ))}
+          </nav>
         </div>
 
-        {/* Right: Links */}
+        {/* Right: Empty or minimal */}
         <div className="flex items-center gap-6">
+          {/* Settings link only on mobile where nav is hidden */}
           <NavLink
             to="/settings"
-            className={`text-[11px] font-light uppercase tracking-zara-wide hover:text-muted-foreground transition-all duration-300 hidden sm:inline ${
+            className={cn(
+              "text-[11px] font-light uppercase tracking-zara-wide hover:text-foreground transition-all duration-300 md:hidden",
               isScrolled
-                ? "text-foreground"
-                : "text-foreground [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
-            }`}
-          >
-            Help
-          </NavLink>
-          <NavLink
-            to="/settings"
-            className={`text-[11px] font-light uppercase tracking-zara-wide hover:text-muted-foreground transition-all duration-300 ${
-              isScrolled
-                ? "text-foreground"
-                : "text-foreground [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
-            }`}
+                ? "text-foreground/60"
+                : "text-foreground/70 [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
+            )}
           >
             Settings
           </NavLink>

@@ -75,14 +75,14 @@ export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
           </NavLink>
 
           {/* Main navigation */}
-          <nav className="space-y-6">
+          <nav className="space-y-8">
             {mainNavItems.map((item) => (
               <NavLink
                 key={item.title}
                 to={item.url}
                 onClick={onClose}
                 className={cn(
-                  "block text-sm font-light uppercase tracking-zara-wide transition-colors",
+                  "block text-xl font-medium uppercase tracking-zara-wide transition-colors",
                   isActive(item.url)
                     ? "text-foreground"
                     : "text-muted-foreground hover:text-foreground"
@@ -97,14 +97,14 @@ export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
           <div className="my-8 border-t border-border" />
 
           {/* Productivity section */}
-          <nav className="space-y-6">
+          <nav className="space-y-8">
             {productivityItems.map((item) => (
               <NavLink
                 key={item.title}
                 to={item.url}
                 onClick={onClose}
                 className={cn(
-                  "block text-sm font-light uppercase tracking-zara-wide transition-colors",
+                  "block text-xl font-medium uppercase tracking-zara-wide transition-colors",
                   isActive(item.url)
                     ? "text-foreground"
                     : "text-muted-foreground hover:text-foreground"
@@ -119,12 +119,12 @@ export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
           <div className="my-8 border-t border-border" />
 
           {/* Settings & Account */}
-          <nav className="space-y-6">
+          <nav className="space-y-8">
             <NavLink
               to="/settings"
               onClick={onClose}
               className={cn(
-                "block text-sm font-light uppercase tracking-zara-wide transition-colors",
+                "block text-xl font-medium uppercase tracking-zara-wide transition-colors",
                 isActive("/settings")
                   ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground"
