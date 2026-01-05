@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,7 +14,6 @@ import { QuadrantGrid } from "@/components/tasks/QuadrantGrid";
 import { BoardView } from "@/components/tasks/BoardView";
 import { UnifiedTaskDrawer } from "@/components/tasks/UnifiedTaskDrawer";
 import { DeepFocusPrompt } from "@/components/tasks/DeepFocusPromptModal";
-import PremiumDeepFocus from "@/pages/PremiumDeepFocus";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 
 import {
@@ -180,10 +179,6 @@ export default function Tasks() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const location = useLocation();
-  useParams();
-
-  const isFocusMode = location.pathname.includes("/focus/");
 
   const [view, setView] = useState<"board" | "quadrant">("quadrant");
   const [quadrantMode, setQuadrantMode] = useState<QuadrantMode>("urgent-important");
@@ -481,26 +476,6 @@ export default function Tasks() {
     );
   }
 
-  if (isFocusMode) {
-    return (
-      <PremiumDeepFocus
-        tasks={tasks}
-        onUpdateTask={async (updated) => {
-          setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-          if (user) {
-            await supabase
-              .from("tasks")
-              .update({
-                is_completed: updated.is_completed,
-                completed_at: updated.completed_at,
-              })
-              .eq("id", updated.id)
-              .eq("user_id", user.id);
-          }
-        }}
-      />
-    );
-  }
 
   const gridCols = allTasksCollapsed
     ? "xl:grid-cols-[72px_minmax(0,1fr)]"

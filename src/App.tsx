@@ -20,6 +20,7 @@ import ManifestHistory from "./pages/ManifestHistory";
 import Trackers from "./pages/Trackers";
 import Notes from "./pages/Notes";
 import Tasks from "./pages/Tasks";
+import TaskFocus from "./pages/TaskFocus";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -47,6 +48,25 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Fullscreen route without AppLayout/PageTransition (for focus mode)
+function ProtectedFullscreenRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
@@ -70,7 +90,7 @@ const App = () => (
                     <Route path="/trackers" element={<ProtectedRoute><Trackers /></ProtectedRoute>} />
                     <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
                     <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-                    <Route path="/tasks/focus/:taskId" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+                    <Route path="/tasks/focus/:taskId" element={<ProtectedFullscreenRoute><TaskFocus /></ProtectedFullscreenRoute>} />
                     <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
