@@ -209,15 +209,27 @@ export default function Notes() {
   const [notesView, setNotesView] = useState<NotesViewType>("atlas");
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_NOTES, JSON.stringify(notes));
+    try {
+      localStorage.setItem(STORAGE_KEY_NOTES, JSON.stringify(notes));
+    } catch (e) {
+      console.warn("Could not save notes to localStorage - quota exceeded. Data will sync to cloud.");
+    }
   }, [notes]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_GROUPS, JSON.stringify(groups));
+    try {
+      localStorage.setItem(STORAGE_KEY_GROUPS, JSON.stringify(groups));
+    } catch (e) {
+      console.warn("Could not save groups to localStorage");
+    }
   }, [groups]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_FOLDERS, JSON.stringify(folders));
+    try {
+      localStorage.setItem(STORAGE_KEY_FOLDERS, JSON.stringify(folders));
+    } catch (e) {
+      console.warn("Could not save folders to localStorage");
+    }
   }, [folders]);
 
   const sortedGroups = useMemo(() => [...groups].sort((a, b) => a.sortOrder - b.sortOrder), [groups]);

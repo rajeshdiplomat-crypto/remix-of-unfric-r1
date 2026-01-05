@@ -27,12 +27,22 @@ function loadHeroMedia(storageKey: string, typeKey: string): { src: string | nul
 }
 
 function saveHeroMedia(storageKey: string, typeKey: string, src: string | null, type: MediaType) {
-  if (src && type) {
-    localStorage.setItem(storageKey, src);
-    localStorage.setItem(typeKey, type);
-  } else {
-    localStorage.removeItem(storageKey);
-    localStorage.removeItem(typeKey);
+  try {
+    if (src && type) {
+      // Only store URLs (not base64 data) to prevent quota issues
+      if (src.startsWith("http")) {
+        localStorage.setItem(storageKey, src);
+        localStorage.setItem(typeKey, type);
+      } else {
+        // For base64 data, don't store - it exceeds localStorage quota
+        console.warn("Skipping localStorage save for large base64 media - use URL instead");
+      }
+    } else {
+      localStorage.removeItem(storageKey);
+      localStorage.removeItem(typeKey);
+    }
+  } catch (e) {
+    console.warn("Could not save hero media to localStorage - quota exceeded");
   }
 }
 
@@ -78,24 +88,24 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
     setMediaType(loaded.type);
   }, [storageKey, typeKey]);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: "image" | "video") => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: "image" | "video") => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (file.size > 50 * 1024 * 1024) {
-      alert("File too large. Max 50MB.");
+      toast.error("File too large. Max 50MB.");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const result = ev.target?.result as string;
-      setMediaSrc(result);
-      setMediaType(type);
-      saveHeroMedia(storageKey, typeKey, result, type);
-      setDialogOpen(false);
-    };
-    reader.readAsDataURL(file);
+    // Create object URL for immediate display (memory-only, no storage issues)
+    const objectUrl = URL.createObjectURL(file);
+    setMediaSrc(objectUrl);
+    setMediaType(type);
+    setDialogOpen(false);
+    
+    // Note: Object URLs are session-only and will be lost on page refresh
+    // For persistence, the AI-generated images (which return URLs) are recommended
+    toast.success(`${type === "image" ? "Image" : "Video"} added! Note: Upload will reset on refresh. Use AI generation for persistent images.`);
   };
 
   const handleRemove = () => {
