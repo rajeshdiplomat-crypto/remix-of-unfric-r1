@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { format } from "date-fns";
 import { Settings, Save, Check, BookOpen, Maximize2, X } from "lucide-react";
@@ -98,6 +98,9 @@ export default function Journal() {
   const { user } = useAuth();
   const { toast } = useToast();
   const editorRef = useRef<TiptapEditorRef>(null);
+  
+  // Track editor availability for toolbar - refs don't cause re-renders
+  const [editorReady, setEditorReady] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -110,6 +113,18 @@ export default function Journal() {
   const [isFullPage, setIsFullPage] = useState(false);
   const [fontFamily, setFontFamily] = useState("Inter");
   const [fontSize, setFontSize] = useState(16);
+
+  // Check for editor readiness after content state is defined
+  useEffect(() => {
+    setEditorReady(false); // Reset when content changes
+    const checkEditor = setInterval(() => {
+      if (editorRef.current?.editor) {
+        setEditorReady(true);
+        clearInterval(checkEditor);
+      }
+    }, 50);
+    return () => clearInterval(checkEditor);
+  }, [content]);
 
   const [template, setTemplate] = useState<JournalTemplate>(() => {
     const saved = localStorage.getItem("journal_template");
@@ -408,8 +423,8 @@ export default function Journal() {
         <div className="flex-1 overflow-auto">
           <div className="max-w-3xl mx-auto w-full px-8 py-6">
             <div className="mb-4">
-              <JournalToolbar
-                editor={editorRef.current?.editor || null}
+            <JournalToolbar
+                editor={editorReady ? editorRef.current?.editor ?? null : null}
                 fontFamily={fontFamily}
                 fontSize={fontSize}
                 onFontFamilyChange={setFontFamily}
@@ -506,7 +521,7 @@ export default function Journal() {
         {/* Toolbar */}
         <div className="mb-4">
           <JournalToolbar
-            editor={editorRef.current?.editor || null}
+            editor={editorReady ? editorRef.current?.editor ?? null : null}
             fontFamily={fontFamily}
             fontSize={fontSize}
             onFontFamilyChange={setFontFamily}

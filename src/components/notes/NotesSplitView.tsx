@@ -338,7 +338,7 @@ export function NotesSplitView({
                                 {folderNotes.map((note) => (
                                   <div
                                     key={note.id}
-                                    className={`p-2 rounded cursor-pointer transition-colors flex items-start gap-2 ${
+                                    className={`p-2 rounded cursor-pointer transition-colors flex items-start gap-2 group ${
                                       selectedNote?.id === note.id
                                         ? "bg-primary/10 border border-primary/30"
                                         : "hover:bg-muted/30"
@@ -346,12 +346,37 @@ export function NotesSplitView({
                                     onClick={() => onSelectNote(note)}
                                   >
                                     <FileText className="h-3 w-3 mt-0.5 text-muted-foreground/50 shrink-0" />
-                                    <div className="flex-1 min-w-0">
+                              <div className="flex-1 min-w-0">
                                       <h3 className="text-sm text-foreground line-clamp-1">
                                         {note.title || "Untitled"}
                                       </h3>
                                     </div>
-                                    <NotesActivityDot updatedAt={note.updatedAt} size="sm" />
+                                    <div className="flex items-center gap-1">
+                                      <NotesActivityDot updatedAt={note.updatedAt} size="sm" />
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                          <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                          >
+                                            <MoreHorizontal className="h-3 w-3" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuItem
+                                            className="text-destructive"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              onDeleteNote(note.id);
+                                            }}
+                                          >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Delete
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
@@ -366,7 +391,7 @@ export function NotesSplitView({
                         .map((note) => (
                           <div
                             key={note.id}
-                            className={`p-2 rounded cursor-pointer transition-colors flex items-start gap-2 ${
+                            className={`p-2 rounded cursor-pointer transition-colors flex items-start gap-2 group ${
                               selectedNote?.id === note.id
                                 ? "bg-primary/10 border border-primary/30"
                                 : "hover:bg-muted/30"
@@ -382,7 +407,32 @@ export function NotesSplitView({
                                 {note.plainText || "No content"}
                               </p>
                             </div>
-                            <NotesActivityDot updatedAt={note.updatedAt} size="sm" />
+                            <div className="flex items-center gap-1">
+                              <NotesActivityDot updatedAt={note.updatedAt} size="sm" />
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <MoreHorizontal className="h-3 w-3" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    className="text-destructive"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onDeleteNote(note.id);
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </div>
                         ))}
                     </div>
@@ -463,6 +513,7 @@ export function NotesSplitView({
                 folders={folders}
                 onSave={handleSave}
                 onBack={handleBack}
+                onDelete={() => onDeleteNote(selectedNote.id)}
                 lastSaved={lastSaved}
                 showBreadcrumb={true}
               />
