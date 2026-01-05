@@ -11,8 +11,10 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import FontFamily from "@tiptap/extension-font-family";
 import { Color } from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
-import { useEffect, forwardRef, useImperativeHandle } from "react";
+import { useEffect, forwardRef, useImperativeHandle, useCallback, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 
 interface JournalTiptapEditorProps {
   content: string;
@@ -32,6 +34,9 @@ export interface TiptapEditorRef {
 
 export const JournalTiptapEditor = forwardRef<TiptapEditorRef, JournalTiptapEditorProps>(
   ({ content, onChange, skinStyles }, ref) => {
+    const editorContainerRef = useRef<HTMLDivElement>(null);
+    const [resizingImage, setResizingImage] = useState<HTMLImageElement | null>(null);
+    
     const editor = useEditor({
       extensions: [
         StarterKit.configure({
@@ -105,8 +110,92 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, JournalTiptapEdit
       }
     }, [content, editor]);
 
+    // Insert image with resize/delete wrapper
+    const insertImageWithResize = useCallback((src: string) => {
+      if (!editor) return;
+      const imgHtml = `<div class="journal-image-wrapper" contenteditable="false" style="position: relative; display: inline-block; max-width: 100%;">
+        <img src="${src}" alt="Image" class="journal-image" style="max-width: 100%; height: auto; display: block; cursor: pointer;" />
+        <button class="journal-image-delete-btn" style="position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; background: hsl(var(--destructive)); color: white; border: none; border-radius: 50%; cursor: pointer; opacity: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1;" title="Delete image">×</button>
+        <div class="journal-resize-handle" style="position: absolute; right: 0; bottom: 0; width: 12px; height: 12px; background: hsl(var(--primary)); cursor: se-resize; border-radius: 2px; opacity: 0;" />
+      </div><br/>`;
+      editor.chain().focus().insertContent(imgHtml).run();
+      setTimeout(() => setupImageResizing(), 100);
+    }, [editor]);
+
+    // Setup image resizing/delete controls
+    const setupImageResizing = useCallback(() => {
+      if (!editorContainerRef.current) return;
+      const wrappers = editorContainerRef.current.querySelectorAll(".journal-image-wrapper");
+      wrappers.forEach((wrapper) => {
+        if (wrapper.getAttribute('data-resizing-setup')) return;
+        wrapper.setAttribute('data-resizing-setup', 'true');
+        
+        const img = wrapper.querySelector("img") as HTMLImageElement;
+        const handle = wrapper.querySelector(".journal-resize-handle") as HTMLDivElement;
+        const deleteBtn = wrapper.querySelector(".journal-image-delete-btn") as HTMLButtonElement;
+        
+        if (!img || !handle) return;
+        
+        // Show handle and delete button on hover
+        wrapper.addEventListener("mouseenter", () => {
+          handle.style.opacity = "1";
+          if (deleteBtn) deleteBtn.style.opacity = "1";
+        });
+        wrapper.addEventListener("mouseleave", () => {
+          if (!resizingImage) {
+            handle.style.opacity = "0";
+            if (deleteBtn) deleteBtn.style.opacity = "0";
+          }
+        });
+
+        // Handle delete button click
+        if (deleteBtn) {
+          deleteBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            wrapper.remove();
+          });
+        }
+        
+        // Handle resize
+        handle.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          setResizingImage(img);
+          const startX = e.clientX;
+          const startWidth = img.offsetWidth;
+          
+          const onMouseMove = (moveEvent: MouseEvent) => {
+            const newWidth = Math.min(
+              Math.max(100, startWidth + (moveEvent.clientX - startX)),
+              editorContainerRef.current?.offsetWidth || 800
+            );
+            img.style.width = `${newWidth}px`;
+            img.style.height = "auto";
+          };
+          
+          const onMouseUp = () => {
+            setResizingImage(null);
+            handle.style.opacity = "0";
+            document.removeEventListener("mousemove", onMouseMove);
+            document.removeEventListener("mouseup", onMouseUp);
+          };
+          
+          document.addEventListener("mousemove", onMouseMove);
+          document.addEventListener("mouseup", onMouseUp);
+        });
+      });
+    }, [resizingImage]);
+
+    // Set up image resizing for existing images when content loads
+    useEffect(() => {
+      if (editorContainerRef.current) {
+        setupImageResizing();
+      }
+    }, [content, setupImageResizing]);
+
     return (
     <div
+      ref={editorContainerRef}
       className={cn("rounded-xl border border-border/50 flex-1 min-h-[300px] transition-colors")}
       style={{
           backgroundColor: skinStyles?.editorPaperBg || "hsl(var(--card))",
@@ -135,6 +224,9 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, JournalTiptapEdit
           .ProseMirror ul[data-type="taskList"] li input { margin-top: 0.25rem; cursor: pointer; }
           .ProseMirror img { max-width: 100%; border-radius: 0.5rem; margin: 1rem 0; cursor: pointer; }
           .ProseMirror img:hover { outline: 2px solid hsl(var(--primary)); }
+          .ProseMirror .journal-image-wrapper { margin: 1rem 0; }
+          .ProseMirror .journal-image-wrapper:hover .journal-image-delete-btn,
+          .ProseMirror .journal-image-wrapper:hover .journal-resize-handle { opacity: 1 !important; }
           .ProseMirror a { color: hsl(210 60% 50%); text-decoration: underline; }
           .ProseMirror mark { background-color: #fef08a; padding: 0.125em 0; }
         `}</style>

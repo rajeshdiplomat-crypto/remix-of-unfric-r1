@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { 
   ArrowLeft, Tag, Undo2, Redo2, Bold, Italic, Underline, AlignLeft, AlignCenter, 
   AlignRight, List, ListOrdered, CheckSquare, Link2, Image, Pencil, X, ChevronRight,
-  Palette, Highlighter, RemoveFormatting
+  Palette, Highlighter, RemoveFormatting, Trash2
 } from "lucide-react";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 import { NotesScribbleCanvas } from "./NotesScribbleCanvas";
@@ -20,6 +20,7 @@ interface NotesRichEditorProps {
   folders?: NoteFolder[];
   onSave: (note: Note) => void;
   onBack: () => void;
+  onDelete?: () => void;
   lastSaved?: Date | null;
   showBreadcrumb?: boolean;
 }
@@ -60,7 +61,8 @@ export function NotesRichEditor({
   groups, 
   folders = [], 
   onSave, 
-  onBack, 
+  onBack,
+  onDelete, 
   lastSaved, 
   showBreadcrumb = true 
 }: NotesRichEditorProps) {
@@ -483,7 +485,7 @@ export function NotesRichEditor({
           )}
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">{formatLastSaved()}</span>
           <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
             <PopoverTrigger asChild>
@@ -523,6 +525,21 @@ export function NotesRichEditor({
               </div>
             </PopoverContent>
           </Popover>
+          {onDelete && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={() => {
+                if (confirm("Delete this note?")) {
+                  onDelete();
+                }
+              }}
+              title="Delete note"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
 
