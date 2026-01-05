@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Sparkles, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -109,146 +106,176 @@ export default function Auth() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
+        <div className="animate-pulse text-muted-foreground uppercase tracking-[0.2em] text-xs">
+          Loading...
+        </div>
       </div>
     );
   }
 
-  const getTitle = () => {
+  const getSectionTitle = () => {
     switch (mode) {
       case "signup":
-        return "Create Account";
+        return "CREATE ACCOUNT";
       case "forgot-password":
-        return "Reset Password";
+        return "RESET PASSWORD";
       case "verify-email":
-        return "Verify Email";
+        return "VERIFY EMAIL";
       default:
-        return "Welcome Back";
-    }
-  };
-
-  const getDescription = () => {
-    switch (mode) {
-      case "signup":
-        return "Sign up to start your inbalance journey";
-      case "forgot-password":
-        return "Enter your email and we'll send you a reset link";
-      case "verify-email":
-        return "We've sent a verification email. Please check your inbox.";
-      default:
-        return "Sign in to continue your inbalance journey";
+        return "LOG IN";
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center space-y-4">
-          <div className="mx-auto h-16 w-16 rounded-2xl bg-primary flex items-center justify-center">
-            <Sparkles className="h-8 w-8 text-primary-foreground" />
-          </div>
-          <div>
-            <CardTitle className="text-2xl font-bold">{getTitle()}</CardTitle>
-            <CardDescription className="mt-2">{getDescription()}</CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-background">
+      {/* Left side - Form */}
+      <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 md:px-16 xl:px-24 py-12 lg:py-0">
+        <div className="max-w-md mx-auto w-full">
+          {/* Brand name */}
+          <h1 className="font-serif text-4xl lg:text-5xl tracking-wide mb-16 text-foreground">
+            INBALANCE
+          </h1>
+
+          {/* Section title */}
+          <h2 className="text-xs uppercase tracking-[0.2em] font-normal mb-10 text-foreground">
+            {getSectionTitle()}
+          </h2>
+
           {mode === "verify-email" ? (
-            <div className="space-y-4">
-              <p className="text-center text-sm text-muted-foreground">
+            <div className="space-y-8">
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                We've sent a verification email to your inbox. Please check and click the link to verify your account.
+              </p>
+              <p className="text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
                 Didn't receive the email?
               </p>
               <Button
                 onClick={handleResendVerification}
                 variant="outline"
-                className="w-full"
+                className="w-full h-12 uppercase tracking-[0.15em] text-xs font-normal border-foreground hover:bg-foreground hover:text-background transition-all"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Sending..." : "Resend Verification Email"}
+                {isSubmitting ? "SENDING..." : "RESEND VERIFICATION EMAIL"}
               </Button>
-              <Button
-                variant="ghost"
-                className="w-full"
+              <button
+                type="button"
                 onClick={() => setMode("signin")}
+                className="flex items-center gap-2 text-[11px] uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground transition-colors"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Sign In
-              </Button>
+                <ArrowLeft className="h-3 w-3" />
+                Back to Log In
+              </button>
             </div>
           ) : (
             <>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
+              <form onSubmit={handleSubmit} className="space-y-8">
+                {/* Email field */}
+                <div>
+                  <label 
+                    htmlFor="email" 
+                    className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground block mb-3"
+                  >
+                    Email
+                  </label>
+                  <input
                     id="email"
                     type="email"
-                    placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={isSubmitting}
+                    className="w-full bg-transparent border-0 border-b border-border focus:border-foreground outline-none py-3 text-sm text-foreground transition-colors placeholder:text-muted-foreground/50"
+                    placeholder=""
                   />
                 </div>
+
+                {/* Password field */}
                 {mode !== "forgot-password" && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="password">Password</Label>
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <label 
+                        htmlFor="password" 
+                        className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground"
+                      >
+                        Password
+                      </label>
                       {mode === "signin" && (
                         <button
                           type="button"
                           onClick={() => setMode("forgot-password")}
-                          className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                          className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground transition-colors"
                         >
                           Forgot password?
                         </button>
                       )}
                     </div>
-                    <Input
+                    <input
                       id="password"
                       type="password"
-                      placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       disabled={isSubmitting}
+                      className="w-full bg-transparent border-0 border-b border-border focus:border-foreground outline-none py-3 text-sm text-foreground transition-colors"
                     />
                   </div>
                 )}
-                <Button type="submit" className="w-full h-12" disabled={isSubmitting}>
-                  {isSubmitting
-                    ? "Please wait..."
-                    : mode === "forgot-password"
-                    ? "Send Reset Link"
-                    : mode === "signup"
-                    ? "Create Account"
-                    : "Sign In"}
-                </Button>
+
+                {/* Submit button */}
+                <div className="pt-4">
+                  <Button 
+                    type="submit" 
+                    variant="outline"
+                    className="w-full h-12 uppercase tracking-[0.15em] text-xs font-normal border-foreground hover:bg-foreground hover:text-background transition-all"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting
+                      ? "PLEASE WAIT..."
+                      : mode === "forgot-password"
+                      ? "SEND RESET LINK"
+                      : mode === "signup"
+                      ? "CREATE ACCOUNT"
+                      : "LOG IN"}
+                  </Button>
+                </div>
               </form>
-              <div className="text-center space-y-2">
+
+              {/* Mode toggle */}
+              <div className="mt-16 pt-8 border-t border-border">
                 {mode === "forgot-password" ? (
                   <button
                     type="button"
                     onClick={() => setMode("signin")}
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center justify-center w-full"
+                    className="flex items-center gap-2 text-[11px] uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    <ArrowLeft className="h-4 w-4 mr-1" />
-                    Back to Sign In
+                    <ArrowLeft className="h-3 w-3" />
+                    Back to Log In
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    className="text-[11px] uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {mode === "signup"
-                      ? "Already have an account? Sign in"
-                      : "Don't have an account? Sign up"}
+                      ? "Already have an account? Log in"
+                      : "Don't have an account? Create one"}
                   </button>
                 )}
               </div>
             </>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+
+      {/* Right side - Full-bleed image */}
+      <div className="hidden lg:block w-1/2 relative bg-muted">
+        <img 
+          src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=1999&auto=format&fit=crop"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover grayscale"
+        />
+        {/* Subtle overlay for better contrast */}
+        <div className="absolute inset-0 bg-background/10" />
+      </div>
     </div>
   );
 }
