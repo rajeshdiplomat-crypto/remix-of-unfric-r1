@@ -272,7 +272,7 @@ export default function PremiumDeepFocus({ tasks, onUpdateTask }: PremiumDeepFoc
 
   if (!task) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-black">
+      <div className="fixed inset-0 flex items-center justify-center bg-black z-[100]">
         <div className="text-center">
           <p className="text-white/60">Task not found</p>
           <Button variant="link" onClick={() => navigate('/tasks')} className="text-white">Return to Tasks</Button>
@@ -284,7 +284,7 @@ export default function PremiumDeepFocus({ tasks, onUpdateTask }: PremiumDeepFoc
   // Session Summary Modal
   if (showSummary) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
+      <div className="fixed inset-0 flex items-center justify-center p-4 z-[100] bg-black">
         {/* Background */}
         <div 
           className="absolute inset-0"
@@ -346,10 +346,10 @@ export default function PremiumDeepFocus({ tasks, onUpdateTask }: PremiumDeepFoc
   }
 
   return (
-    <div className="fixed inset-0 overflow-hidden">
+    <div className="fixed inset-0 overflow-hidden bg-black z-[100]">
       {/* Immersive Background */}
       <div 
-        className="absolute inset-0 transition-all duration-1000"
+        className="absolute inset-0 transition-all duration-1000 bg-black"
         style={{
           backgroundImage: `url(${currentWallpaper.url})`,
           backgroundSize: 'cover',
