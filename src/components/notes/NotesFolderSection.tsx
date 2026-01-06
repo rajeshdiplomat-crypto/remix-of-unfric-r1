@@ -10,6 +10,7 @@ interface NotesFolderSectionProps {
   group: NoteGroup;
   selectedNoteId?: string;
   onNoteClick: (note: Note) => void;
+  onDeleteNote?: (noteId: string) => void;
   onAddNote: (folderId: string) => void;
 }
 
@@ -19,6 +20,7 @@ export function NotesFolderSection({
   group,
   selectedNoteId,
   onNoteClick,
+  onDeleteNote,
   onAddNote,
 }: NotesFolderSectionProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -78,6 +80,7 @@ export function NotesFolderSection({
                   isIndented
                   isSelected={selectedNoteId === note.id}
                   onClick={() => onNoteClick(note)}
+                  onDelete={onDeleteNote}
                   showActivityDot
                 />
               ))}

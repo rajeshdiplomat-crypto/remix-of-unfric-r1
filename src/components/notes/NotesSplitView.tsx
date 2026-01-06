@@ -177,9 +177,12 @@ export function NotesSplitView({
   // Full page mode
   if (isFullPage && selectedNote) {
     return (
-      <div className="fixed inset-0 z-[100] flex flex-col bg-background isolate overflow-hidden">
+      <div className="fixed inset-0 z-[100] flex flex-col bg-background isolate overflow-hidden min-h-screen">
+        {/* Background fallback to prevent blank screen */}
+        <div className="absolute inset-0 bg-background -z-10" />
+        
         {/* Minimal header */}
-        <div className="flex items-center justify-between px-8 py-3 border-b border-border/50">
+        <div className="flex items-center justify-between px-8 py-3 border-b border-border/50 bg-background">
           <div className="flex items-center gap-3">
             <Badge
               variant="secondary"
@@ -205,6 +208,17 @@ export function NotesSplitView({
               )}
             </span>
             <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                handleSave(selectedNote);
+              }}
+              className="gap-2"
+            >
+              <Save className="h-4 w-4" />
+              Save
+            </Button>
+            <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsFullPage(false)}
@@ -216,7 +230,7 @@ export function NotesSplitView({
         </div>
 
         {/* Centered editor */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto bg-background">
           <div className="max-w-3xl mx-auto w-full px-8 py-6">
             <NotesRichEditor
               note={selectedNote}
@@ -224,6 +238,7 @@ export function NotesSplitView({
               folders={folders}
               onSave={handleSave}
               onBack={() => setIsFullPage(false)}
+              onDelete={() => onDeleteNote(selectedNote.id)}
               lastSaved={lastSaved}
               showBreadcrumb={false}
             />

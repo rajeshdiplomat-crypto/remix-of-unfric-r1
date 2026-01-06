@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { 
   ArrowLeft, Tag, Undo2, Redo2, Bold, Italic, Underline, AlignLeft, AlignCenter, 
   AlignRight, List, ListOrdered, CheckSquare, Link2, Image, Pencil, X, ChevronRight,
-  Palette, Highlighter, RemoveFormatting, Trash2
+  Palette, Highlighter, RemoveFormatting, Trash2, Save, Check
 } from "lucide-react";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 import { NotesScribbleCanvas } from "./NotesScribbleCanvas";
@@ -485,13 +485,35 @@ export function NotesRichEditor({
           )}
         </div>
         
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">{formatLastSaved()}</span>
+        <div className="flex items-center gap-3">
+          {/* Last saved status */}
+          <span className="text-xs text-muted-foreground/70 hidden sm:flex items-center gap-1">
+            {lastSaved ? <Check className="h-3 w-3" /> : null}
+            {formatLastSaved()}
+          </span>
+          
+          {/* Save button */}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-2"
+            onClick={handleSave}
+          >
+            <Save className="h-4 w-4" />
+            Save
+          </Button>
+          
+          {/* Tags popover */}
           <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
                 <Tag className="h-4 w-4" />
-                Add tags
+                <span className="hidden sm:inline">Tags</span>
+                {tags.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
+                    {tags.length}
+                  </Badge>
+                )}
               </Button>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-64">
@@ -525,11 +547,13 @@ export function NotesRichEditor({
               </div>
             </PopoverContent>
           </Popover>
+          
+          {/* Delete button */}
           {onDelete && (
             <Button 
               variant="ghost" 
-              size="sm" 
-              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              size="icon"
+              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
               onClick={() => {
                 if (confirm("Delete this note?")) {
                   onDelete();

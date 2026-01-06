@@ -1,6 +1,7 @@
 import { format } from "date-fns";
-import { FileText, Clock } from "lucide-react";
+import { FileText, Clock, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { NotesActivityDot } from "./NotesActivityDot";
 import type { Note, NoteGroup } from "@/pages/Notes";
 
@@ -10,6 +11,7 @@ interface NotesNoteRowProps {
   isIndented?: boolean;
   isSelected?: boolean;
   onClick: () => void;
+  onDelete?: (noteId: string) => void;
   showActivityDot?: boolean;
 }
 
@@ -19,6 +21,7 @@ export function NotesNoteRow({
   isIndented = false,
   isSelected = false,
   onClick,
+  onDelete,
   showActivityDot = false,
 }: NotesNoteRowProps) {
   const formatDate = (dateStr: string) => {
@@ -34,6 +37,13 @@ export function NotesNoteRow({
       return format(date, "EEEE");
     } else {
       return format(date, "MMM d");
+    }
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete && confirm("Delete this note?")) {
+      onDelete(note.id);
     }
   };
 
@@ -54,7 +64,6 @@ export function NotesNoteRow({
           <h4 className="text-sm text-foreground/90 truncate">
             {note.title || "Untitled Note"}
           </h4>
-          {/* Very subtle activity dot on note level */}
           {showActivityDot && (
             <NotesActivityDot updatedAt={note.updatedAt} size="sm" className="opacity-60" />
           )}
@@ -66,24 +75,38 @@ export function NotesNoteRow({
         )}
       </div>
 
-      <div className="flex items-center gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-        {note.tags.length > 0 && (
-          <div className="hidden sm:flex gap-1">
-            {note.tags.slice(0, 2).map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0 bg-muted/50 text-muted-foreground/70 border-0">
-                {tag}
-              </Badge>
-            ))}
-            {note.tags.length > 2 && (
-              <span className="text-[10px] text-muted-foreground/50">+{note.tags.length - 2}</span>
-            )}
-          </div>
-        )}
-        <span className="text-[10px] text-muted-foreground/40 flex items-center gap-0.5">
-          <Clock className="h-2.5 w-2.5" />
-          {formatDate(note.updatedAt)}
-        </span>
-      </div>
+      {/* Always visible date/time */}
+      <span className="text-[10px] text-muted-foreground/60 flex items-center gap-0.5 shrink-0">
+        <Clock className="h-2.5 w-2.5" />
+        {formatDate(note.updatedAt)}
+      </span>
+
+      {/* Tags on hover */}
+      {note.tags.length > 0 && (
+        <div className="hidden sm:flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          {note.tags.slice(0, 2).map((tag) => (
+            <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0 bg-muted/50 text-muted-foreground/70 border-0">
+              {tag}
+            </Badge>
+          ))}
+          {note.tags.length > 2 && (
+            <span className="text-[10px] text-muted-foreground/50">+{note.tags.length - 2}</span>
+          )}
+        </div>
+      )}
+
+      {/* Delete icon - always visible */}
+      {onDelete && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 shrink-0 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10"
+          onClick={handleDelete}
+          title="Delete note"
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      )}
     </div>
   );
 }
