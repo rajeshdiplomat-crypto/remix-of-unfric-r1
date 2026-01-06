@@ -580,6 +580,7 @@ export default function Notes() {
                     notes={filteredNotes}
                     selectedNoteId={selectedNote?.id}
                     onNoteClick={handleNoteClick}
+                    onDeleteNote={handleDeleteNote}
                     onAddNote={handleCreateNote}
                     onAddFolder={handleCreateFolder}
                   />
