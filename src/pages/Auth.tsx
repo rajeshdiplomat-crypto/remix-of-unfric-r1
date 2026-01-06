@@ -214,7 +214,7 @@ export default function Auth() {
           <div className="max-w-sm mx-auto w-full">
             {/* Brand name */}
             <h1 className="font-serif text-4xl lg:text-5xl tracking-[0.3em] mb-16 text-foreground">
-              INBALANCE
+              AMBALANCED
             </h1>
 
             {/* Section title */}

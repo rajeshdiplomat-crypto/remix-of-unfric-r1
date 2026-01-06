@@ -76,7 +76,7 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
                   : "text-foreground [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
               )}
             >
-              inbalance
+              ambalanced
             </span>
           </NavLink>
         </div>

@@ -64,7 +64,7 @@ export function ZaraDrawer({
           {/* Logo */}
           <NavLink to="/diary" onClick={onClose} className="mb-6">
             <span className="font-light uppercase tracking-[0.4em] text-foreground text-4xl">
-              inbalance
+              ambalanced
             </span>
           </NavLink>
 

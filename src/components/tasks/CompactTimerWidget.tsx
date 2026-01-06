@@ -11,7 +11,7 @@ const TIMER_PRESETS = [
   { label: "45", minutes: 45 },
 ];
 
-const STORAGE_KEY = 'inbalance-compact-timer';
+const STORAGE_KEY = 'ambalanced-compact-timer';
 
 interface TimerState {
   mode: 'stopwatch' | 'timer';

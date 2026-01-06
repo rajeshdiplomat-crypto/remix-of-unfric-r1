@@ -17,7 +17,7 @@ interface CustomThemeContextValue {
 
 const CustomThemeContext = createContext<CustomThemeContextValue | null>(null);
 
-const STORAGE_KEY = 'inbalance-custom-theme';
+const STORAGE_KEY = 'ambalanced-custom-theme';
 
 const DEFAULT_COLORS: CustomColors = {
   background: '#F0F4F8',
