@@ -64,10 +64,10 @@ export function MobileNav({ onNavigate }: MobileNavProps) {
         <div className="flex items-center gap-3">
           <img 
             src="/favicon.png" 
-            alt="inbalance logo" 
+            alt="ambalanced logo" 
             className="h-10 w-10 object-cover"
           />
-          <span className="text-xs font-normal uppercase tracking-zara-wide text-foreground">inbalance</span>
+          <span className="text-xs font-normal uppercase tracking-zara-wide text-foreground">ambalanced</span>
         </div>
       </div>
 

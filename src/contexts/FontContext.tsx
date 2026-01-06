@@ -59,7 +59,7 @@ interface FontContextValue {
 
 const FontContext = createContext<FontContextValue | null>(null);
 
-const STORAGE_KEY = 'inbalance-font-pair';
+const STORAGE_KEY = 'ambalanced-font-pair';
 
 // Track loaded fonts to avoid duplicates
 const loadedFonts = new Set<string>();

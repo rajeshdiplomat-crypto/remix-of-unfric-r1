@@ -68,7 +68,7 @@ export function PrivacySection({ settings, onUpdate, saving }: PrivacySectionPro
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `inbalance-backup-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `ambalanced-backup-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

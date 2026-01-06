@@ -59,11 +59,11 @@ export function AppSidebar() {
           <div className="flex items-center gap-3">
             <img 
               src="/favicon.png" 
-              alt="inbalance logo" 
+              alt="ambalanced logo" 
               className="h-8 w-8 object-cover"
             />
             {!collapsed && (
-              <span className="text-xs font-normal uppercase tracking-zara-wide text-foreground">inbalance</span>
+              <span className="text-xs font-normal uppercase tracking-zara-wide text-foreground">ambalanced</span>
             )}
           </div>
           <div className="flex items-center gap-1">
