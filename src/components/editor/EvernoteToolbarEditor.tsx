@@ -13,9 +13,10 @@ import Highlight from '@tiptap/extension-highlight';
 import FontFamily from '@tiptap/extension-font-family';
 import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
-import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, useRef, forwardRef, useImperativeHandle, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { EditorToolbar } from './EditorToolbar';
+import { ImageControlsOverlay } from './ImageControlsOverlay';
 import { FontSize } from './extensions/FontSize';
 import type { EvernoteToolbarEditorProps, SaveStatus } from './types';
 import type { Editor } from '@tiptap/react';
@@ -44,6 +45,8 @@ export const EvernoteToolbarEditor = forwardRef<EvernoteToolbarEditorRef, Everno
   ) => {
     const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
     const lastSavedContentRef = useRef<string>(initialContentRich);
+    const editorContainerRef = useRef<HTMLDivElement>(null);
+    const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null);
 
     const editor = useEditor({
       extensions: [
@@ -71,7 +74,7 @@ export const EvernoteToolbarEditor = forwardRef<EvernoteToolbarEditorRef, Everno
           inline: true,
           allowBase64: true,
           HTMLAttributes: {
-            class: 'max-w-full h-auto rounded cursor-pointer',
+            class: 'max-w-full h-auto rounded cursor-pointer hover:opacity-90 transition-opacity',
           },
         }),
         TaskList.configure({
@@ -108,7 +111,7 @@ export const EvernoteToolbarEditor = forwardRef<EvernoteToolbarEditorRef, Everno
             '[&_ul[data-type="taskList"]_li_label]:flex [&_ul[data-type="taskList"]_li_label]:items-center',
             '[&_ul[data-type="taskList"]_li_label_input]:mr-2 [&_ul[data-type="taskList"]_li_label_input]:h-4 [&_ul[data-type="taskList"]_li_label_input]:w-4',
             '[&_a]:text-primary [&_a]:underline',
-            '[&_img]:max-w-full [&_img]:h-auto [&_img]:rounded',
+            '[&_img]:max-w-full [&_img]:h-auto [&_img]:rounded [&_img]:cursor-pointer',
             '[&_p]:my-2 [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:my-4',
             '[&_h2]:text-xl [&_h2]:font-semibold [&_h2]:my-3',
             '[&_h3]:text-lg [&_h3]:font-medium [&_h3]:my-2'
@@ -137,6 +140,12 @@ export const EvernoteToolbarEditor = forwardRef<EvernoteToolbarEditorRef, Everno
               editor?.chain().focus().liftListItem('taskItem').run();
               return true;
             }
+          }
+          // Handle Delete/Backspace for selected image
+          if ((event.key === 'Delete' || event.key === 'Backspace') && selectedImage) {
+            event.preventDefault();
+            deleteSelectedImage();
+            return true;
           }
           return false;
         },
@@ -182,6 +191,79 @@ export const EvernoteToolbarEditor = forwardRef<EvernoteToolbarEditorRef, Everno
       },
     });
 
+    // Delete selected image
+    const deleteSelectedImage = () => {
+      if (!selectedImage || !editor) return;
+      
+      try {
+        const pos = editor.view.posAtDOM(selectedImage, 0);
+        editor.chain().focus().deleteRange({ from: pos, to: pos + 1 }).run();
+      } catch {
+        // Fallback: find and delete the image node
+        selectedImage.remove();
+        // Trigger content update
+        if (editor) {
+          const html = editor.getHTML();
+          const text = editor.getText();
+          onContentChange?.({ contentRich: html, plainText: text });
+        }
+      }
+      setSelectedImage(null);
+    };
+
+    // Handle image resize
+    const handleImageResize = (newWidth: number) => {
+      if (!selectedImage) return;
+      selectedImage.style.width = `${newWidth}px`;
+      selectedImage.style.height = 'auto';
+      
+      // Trigger content change for autosave
+      if (editor) {
+        const html = editor.getHTML();
+        const text = editor.getText();
+        onContentChange?.({ contentRich: html, plainText: text });
+        onSaveStatusChange?.('unsaved');
+      }
+    };
+
+    // Image click selection
+    useEffect(() => {
+      if (!editor || !editorContainerRef.current) return;
+
+      const container = editorContainerRef.current;
+
+      const handleClick = (e: MouseEvent) => {
+        const target = e.target as HTMLElement;
+        
+        // Check if clicked on image
+        if (target.tagName === 'IMG') {
+          e.preventDefault();
+          e.stopPropagation();
+          setSelectedImage(target as HTMLImageElement);
+        } else if (!target.closest('.image-controls-overlay')) {
+          // Clicked outside image and not on controls
+          setSelectedImage(null);
+        }
+      };
+
+      container.addEventListener('click', handleClick);
+      return () => container.removeEventListener('click', handleClick);
+    }, [editor]);
+
+    // Deselect image on editor focus
+    useEffect(() => {
+      if (!editor) return;
+
+      const handleFocus = () => {
+        // Don't deselect if clicking inside the editor on an image
+      };
+
+      editor.on('focus', handleFocus);
+      return () => {
+        editor.off('focus', handleFocus);
+      };
+    }, [editor]);
+
     // Expose editor methods via ref
     useImperativeHandle(ref, () => ({
       editor,
@@ -194,6 +276,7 @@ export const EvernoteToolbarEditor = forwardRef<EvernoteToolbarEditorRef, Everno
       if (editor && initialContentRich !== editor.getHTML()) {
         editor.commands.setContent(initialContentRich);
         lastSavedContentRef.current = initialContentRich;
+        setSelectedImage(null);
       }
     }, [initialContentRich, editor]);
 
@@ -240,15 +323,28 @@ export const EvernoteToolbarEditor = forwardRef<EvernoteToolbarEditorRef, Everno
     }, [editor]);
 
     return (
-      <div className={cn('flex flex-col', className)}>
-        {/* Toolbar */}
-        <div className="border-b border-border/30 px-4 py-2">
+      <div className={cn('flex flex-col h-full', className)}>
+        {/* Toolbar - Full width with glassmorphism */}
+        <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/30 px-6 py-3">
           <EditorToolbar editor={editor} />
         </div>
 
         {/* Editor Content */}
-        <div className="flex-1 overflow-auto px-4 py-4">
-          <EditorContent editor={editor} />
+        <div 
+          ref={editorContainerRef} 
+          className="flex-1 overflow-auto px-6 py-6 relative"
+        >
+          <EditorContent editor={editor} className="max-w-none" />
+          
+          {/* Image Controls Overlay */}
+          {selectedImage && editorContainerRef.current && (
+            <ImageControlsOverlay
+              image={selectedImage}
+              onDelete={deleteSelectedImage}
+              onResize={handleImageResize}
+              containerRef={editorContainerRef}
+            />
+          )}
         </div>
       </div>
     );

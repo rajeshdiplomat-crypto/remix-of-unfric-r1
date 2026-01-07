@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Share2, MoreHorizontal, X, Clock, Trash2, ChevronRight, ChevronLeft, FileText, Folder, FolderOpen, ChevronDown, Maximize2, Check, Save } from "lucide-react";
+import { Plus, MoreHorizontal, X, Trash2, ChevronRight, ChevronLeft, FileText, Folder, FolderOpen, ChevronDown, Maximize2, Check, Save, Minimize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotesRichEditor } from "./NotesRichEditor";
 import { NotesActivityDot, getMostRecentUpdate } from "./NotesActivityDot";
@@ -174,31 +175,29 @@ export function NotesSplitView({
     return () => window.removeEventListener("keydown", handleEscape);
   }, [isFullPage]);
 
-  // Full page mode
+  // Full page mode - use portal to escape any parent layouts
   if (isFullPage && selectedNote) {
-    return (
-      <div className="fixed inset-0 z-[100] flex flex-col bg-background isolate overflow-hidden min-h-screen">
-        {/* Background fallback to prevent blank screen */}
-        <div className="absolute inset-0 bg-background -z-10" />
-        
+    return createPortal(
+      <div className="fixed inset-0 z-[9999] flex flex-col bg-background">
         {/* Minimal header */}
-        <div className="flex items-center justify-between px-8 py-3 border-b border-border/50 bg-background">
+        <div className="flex items-center justify-between px-6 py-3 border-b border-border/30 bg-background/95 backdrop-blur-sm">
           <div className="flex items-center gap-3">
             <Badge
               variant="secondary"
+              className="text-xs"
               style={{
-                backgroundColor: `${getGroupColor(selectedNote.groupId)}20`,
+                backgroundColor: `${getGroupColor(selectedNote.groupId)}15`,
                 color: getGroupColor(selectedNote.groupId),
               }}
             >
               {groups.find((g) => g.id === selectedNote.groupId)?.name}
             </Badge>
-            <span className="text-sm font-light tracking-wide">
+            <span className="text-sm font-light tracking-wide text-foreground/80">
               {selectedNote.title || "Untitled"}
             </span>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground flex items-center gap-1 mr-2">
               {lastSaved ? (
                 <>
                   <Check className="h-3 w-3" /> Saved
@@ -210,43 +209,42 @@ export function NotesSplitView({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                handleSave(selectedNote);
-              }}
-              className="gap-2"
+              onClick={() => handleSave(selectedNote)}
+              className="gap-2 h-8"
             >
-              <Save className="h-4 w-4" />
+              <Save className="h-3.5 w-3.5" />
               Save
             </Button>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsFullPage(false)}
-              className="rounded-lg"
+              className="h-8 w-8"
+              title="Exit full screen (Esc)"
             >
-              <X className="h-4 w-4" />
+              <Minimize2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        {/* Centered editor */}
-        <div className="flex-1 overflow-auto bg-background">
-          <div className="max-w-3xl mx-auto w-full px-8 py-6">
-            <NotesRichEditor
-              note={selectedNote}
-              groups={groups}
-              folders={folders}
-              onSave={handleSave}
-              onBack={() => setIsFullPage(false)}
-              onDelete={() => onDeleteNote(selectedNote.id)}
-              lastSaved={lastSaved}
-              showBreadcrumb={false}
-            />
-          </div>
+        {/* Full-screen editor */}
+        <div className="flex-1 overflow-hidden">
+          <NotesRichEditor
+            note={selectedNote}
+            groups={groups}
+            folders={folders}
+            onSave={handleSave}
+            onBack={() => setIsFullPage(false)}
+            onDelete={() => onDeleteNote(selectedNote.id)}
+            lastSaved={lastSaved}
+            showBreadcrumb={false}
+          />
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
+
 
   return (
     <div className="flex h-[calc(100vh-80px)] border border-border rounded-lg overflow-hidden bg-card">
