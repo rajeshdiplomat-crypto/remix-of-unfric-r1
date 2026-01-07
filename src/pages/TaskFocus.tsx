@@ -447,7 +447,7 @@ export default function TaskFocus() {
       {settings.showQuotes && !settings.zenMode && (
         <div
           className={cn(
-            "absolute top-6 right-41 max-w-xs text-right transition-all duration-700 z-20",
+            "absolute top-6 right-40 max-w-xs text-right transition-all duration-700 z-20",
             quoteVisible ? "opacity-100" : "opacity-0",
           )}
         >
