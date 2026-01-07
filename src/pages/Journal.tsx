@@ -162,6 +162,7 @@ export default function Journal() {
             : JSON.stringify(e.text_formatting) || "",
         mood: e.daily_feeling || undefined,
         tags: e.tags || [],
+        imagesData: Array.isArray(e.images_data) ? (e.images_data as string[]) : [],
       }));
       setEntries(mappedEntries);
     };
@@ -205,6 +206,7 @@ export default function Journal() {
           contentJSON,
           mood: entryData.daily_feeling || undefined,
           tags: entryData.tags || [],
+          imagesData: Array.isArray(entryData.images_data) ? (entryData.images_data as string[]) : [],
         });
         setCurrentAnswers(answersData || []);
         
@@ -541,18 +543,44 @@ export default function Journal() {
             <p style={{ color: currentSkin.mutedText }}>Loading...</p>
           </div>
         ) : (
-          <JournalTiptapEditor
-            ref={editorRef}
-            content={content}
-            onChange={handleContentChange}
-            skinStyles={{
-              editorPaperBg: currentSkin.editorPaperBg,
-              text: currentSkin.text,
-              mutedText: currentSkin.mutedText,
-            }}
-            fontFamily={fontFamily}
-            fontSize={fontSize}
-          />
+          <div className="flex flex-col gap-4">
+            <JournalTiptapEditor
+              ref={editorRef}
+              content={content}
+              onChange={handleContentChange}
+              skinStyles={{
+                editorPaperBg: currentSkin.editorPaperBg,
+                text: currentSkin.text,
+                mutedText: currentSkin.mutedText,
+              }}
+              fontFamily={fontFamily}
+              fontSize={fontSize}
+            />
+            
+            {/* Display attached images */}
+            {currentEntry?.imagesData && currentEntry.imagesData.length > 0 && (
+              <div 
+                className="rounded-lg border p-4"
+                style={{ backgroundColor: currentSkin.editorPaperBg, borderColor: currentSkin.border }}
+              >
+                <p className="text-sm font-medium mb-3" style={{ color: currentSkin.mutedText }}>
+                  Attached Images
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {currentEntry.imagesData.map((url, i) => (
+                    <div key={i} className="aspect-square rounded-lg overflow-hidden">
+                      <img
+                        src={url}
+                        alt={`Attached ${i + 1}`}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
+                        onClick={() => window.open(url, '_blank')}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         )}
         </div>
       </div>
