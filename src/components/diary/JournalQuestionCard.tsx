@@ -182,7 +182,7 @@ export function JournalQuestionCard({
     .slice(0, 3);
 
   return (
-    <Card className="overflow-hidden bg-card border-border/40 shadow-sm hover:shadow-md transition-shadow rounded-xl">
+    <Card className="overflow-hidden max-w-full bg-card border-border/40 shadow-sm hover:shadow-md transition-shadow rounded-xl">
       {/* Header with Avatar */}
       <div className="px-4 pt-4 pb-2">
         <div className="flex items-center justify-between" role="banner">
@@ -336,91 +336,97 @@ export function JournalQuestionCard({
         )}
 
         {/* Actions: Reactions · Comment · Share */}
-        <div className="flex items-center gap-4 mt-4 pt-3 border-t border-border/50">
+        <div className="flex items-center mt-4 pt-3 border-t border-border/50">
           {/* Reactions */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                aria-pressed={!!userReaction}
-                className={cn(
-                  "flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-2 py-1",
-                  userReaction && "text-primary"
-                )}
-              >
-                {userReaction ? (
-                  <span className="text-base">
-                    {REACTION_TYPES.find(r => r.type === userReaction)?.emoji}
-                  </span>
-                ) : (
-                  <ThumbsUp className="h-4 w-4" />
-                )}
-                <span>{userReaction ? REACTION_TYPES.find(r => r.type === userReaction)?.label : 'React'}</span>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-2" side="top">
-              <div className="flex gap-1">
-                {REACTION_TYPES.map((reaction) => (
-                  <button
-                    key={reaction.type}
-                    onClick={() => handleToggleReaction(reaction.type)}
-                    aria-pressed={userReaction === reaction.type}
-                    className={cn(
-                      "text-xl p-1.5 rounded hover:bg-muted transition-transform hover:scale-125",
-                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                      userReaction === reaction.type && "bg-primary/20"
-                    )}
-                    title={reaction.label}
-                  >
-                    {reaction.emoji}
-                  </button>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
+          <div className="flex-1 flex justify-center">
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  aria-pressed={!!userReaction}
+                  className={cn(
+                    "flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-2 py-1",
+                    userReaction && "text-primary"
+                  )}
+                >
+                  {userReaction ? (
+                    <span className="text-base">
+                      {REACTION_TYPES.find(r => r.type === userReaction)?.emoji}
+                    </span>
+                  ) : (
+                    <ThumbsUp className="h-4 w-4" />
+                  )}
+                  <span>{userReaction ? REACTION_TYPES.find(r => r.type === userReaction)?.label : 'React'}</span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-2" side="top">
+                <div className="flex gap-1">
+                  {REACTION_TYPES.map((reaction) => (
+                    <button
+                      key={reaction.type}
+                      onClick={() => handleToggleReaction(reaction.type)}
+                      aria-pressed={userReaction === reaction.type}
+                      className={cn(
+                        "text-xl p-1.5 rounded hover:bg-muted transition-transform hover:scale-125",
+                        "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        userReaction === reaction.type && "bg-primary/20"
+                      )}
+                      title={reaction.label}
+                    >
+                      {reaction.emoji}
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
 
           {/* Comment */}
-          <button
-            onClick={() => setShowComposer(!showComposer)}
-            aria-pressed={showComposer}
-            className={cn(
-              "flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-2 py-1",
-              showComposer && "text-primary"
-            )}
-          >
-            <MessageCircle className="h-4 w-4" />
-            <span>Comment</span>
-          </button>
+          <div className="flex-1 flex justify-center">
+            <button
+              onClick={() => setShowComposer(!showComposer)}
+              aria-pressed={showComposer}
+              className={cn(
+                "flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-2 py-1",
+                showComposer && "text-primary"
+              )}
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span>Comment</span>
+            </button>
+          </div>
 
           {/* Share */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className={cn(
-                  "flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-2 py-1"
-                )}
-              >
-                <Share2 className="h-4 w-4" />
-                <span>Share</span>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-48">
-              <DropdownMenuItem onClick={handleCopyLink}>
-                <Copy className="h-4 w-4 mr-2" />
-                Copy link
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleShareToX}>
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Share to X
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleEmbed}>
-                <Code className="h-4 w-4 mr-2" />
-                Embed
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex-1 flex justify-center">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={cn(
+                    "flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-2 py-1"
+                  )}
+                >
+                  <Share2 className="h-4 w-4" />
+                  <span>Share</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                <DropdownMenuItem onClick={handleCopyLink}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy link
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleShareToX}>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Share to X
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleEmbed}>
+                  <Code className="h-4 w-4 mr-2" />
+                  Embed
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         {/* Inline Comment Composer */}
