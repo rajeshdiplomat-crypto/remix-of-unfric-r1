@@ -103,7 +103,13 @@ const FOCUS_QUOTES = [
   { text: "Small steps every day lead to big results.", author: "" },
   { text: "Breathe. You're doing better than you think.", author: "" },
 ];
-
+const SOUND_URLS: Record<string, string> = {
+  rain: "https://cdn.pixabay.com/audio/2022/05/13/audio_257112709d.mp3",
+  ocean: "https://cdn.pixabay.com/audio/2022/06/07/audio_b9bd4170e4.mp3",
+  fireplace: "https://cdn.pixabay.com/audio/2021/08/09/audio_dc39bde808.mp3",
+  forest: "https://cdn.pixabay.com/audio/2022/03/10/audio_4dedf5bf94.mp3",
+  night: "https://cdn.pixabay.com/audio/2022/08/02/audio_884fe92c21.mp3",
+};
 const CLOCK_STYLES = [
   { id: "default", name: "Default", fontClass: "font-bold" },
   { id: "minimal", name: "Minimal", fontClass: "font-extralight" },
