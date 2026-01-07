@@ -249,31 +249,31 @@ export function NotesRichEditor({
       </div>
 
       {/* Editor Content */}
-      <div className="flex-1 overflow-auto">
-        <div className="max-w-3xl mx-auto">
-          {/* Tags Display */}
-          {tags.length > 0 && (
-            <div className="flex gap-1 px-4 pt-4">
-              {tags.map((tag) => (
-                <Badge key={tag} variant="outline" className="text-xs">
-                  #{tag}
-                </Badge>
-              ))}
-            </div>
-          )}
-
-          {/* Title */}
-          <div className="px-4 pt-4">
-            <Input
-              ref={titleRef}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Untitled Note"
-              className="text-3xl font-semibold border-none bg-transparent p-0 h-auto focus-visible:ring-0 text-foreground"
-            />
+      <div className="flex-1 overflow-hidden flex flex-col">
+        {/* Tags Display */}
+        {tags.length > 0 && (
+          <div className="flex gap-1 px-6 pt-4 max-w-4xl mx-auto w-full">
+            {tags.map((tag) => (
+              <Badge key={tag} variant="outline" className="text-xs">
+                #{tag}
+              </Badge>
+            ))}
           </div>
+        )}
 
-          {/* Tiptap Editor */}
+        {/* Title */}
+        <div className="px-6 pt-4 max-w-4xl mx-auto w-full">
+          <Input
+            ref={titleRef}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Untitled Note"
+            className="text-3xl font-semibold border-none bg-transparent p-0 h-auto focus-visible:ring-0 text-foreground"
+          />
+        </div>
+
+        {/* Tiptap Editor - Full width toolbar, constrained content */}
+        <div className="flex-1 overflow-hidden">
           <EvernoteToolbarEditor
             ref={editorRef}
             initialContentRich={note.contentRich || note.plainText || ''}
@@ -282,7 +282,7 @@ export function NotesRichEditor({
             onSaveStatusChange={setSaveStatus}
             autosaveDebounce={1500}
             placeholder="Start typing here..."
-            className="min-h-[400px]"
+            className="h-full"
           />
         </div>
       </div>

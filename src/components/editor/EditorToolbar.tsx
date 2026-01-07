@@ -117,14 +117,23 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
     editor.chain().focus().unsetAllMarks().run();
   };
 
+  // Fix: Use onMouseDown to prevent focus stealing, then run command
+  const runCommand = (command: () => boolean) => {
+    return (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      command();
+    };
+  };
+
   const ToolButton = ({ 
-    onClick, 
+    onMouseDown, 
     active, 
     disabled, 
     children, 
     tooltip 
   }: { 
-    onClick: () => void; 
+    onMouseDown: (e: React.MouseEvent) => void; 
     active?: boolean; 
     disabled?: boolean; 
     children: React.ReactNode; 
@@ -133,268 +142,313 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
     <TooltipProvider delayDuration={300}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            variant={active ? 'secondary' : 'ghost'}
-            size="icon"
-            className="h-8 w-8"
-            onClick={onClick}
+          <button
+            type="button"
+            className={cn(
+              "h-9 w-9 flex items-center justify-center rounded-lg transition-all duration-150",
+              "hover:bg-muted/60 hover:-translate-y-0.5",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+              "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0",
+              active && "bg-primary/10 text-primary shadow-sm"
+            )}
+            onMouseDown={onMouseDown}
             disabled={disabled}
           >
             {children}
-          </Button>
+          </button>
         </TooltipTrigger>
-        <TooltipContent side="bottom" className="text-xs">
+        <TooltipContent side="bottom" className="text-xs font-normal">
           {tooltip}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
 
-  const Divider = () => <div className="w-px h-6 bg-border mx-1" />;
+  const Divider = () => (
+    <div className="w-px h-6 mx-2 bg-gradient-to-b from-transparent via-border/50 to-transparent" />
+  );
+
+  const ToolGroup = ({ children, label }: { children: React.ReactNode; label?: string }) => (
+    <div className="flex items-center gap-0.5">
+      {children}
+    </div>
+  );
 
   return (
-    <div className="flex items-center gap-1 flex-wrap">
+    <div className="flex items-center gap-1 flex-wrap py-1">
       {/* History */}
-      <ToolButton
-        onClick={() => editor.chain().focus().undo().run()}
-        disabled={!editor.can().undo()}
-        tooltip="Undo (Ctrl+Z)"
-      >
-        <Undo2 className="h-4 w-4" />
-      </ToolButton>
-      <ToolButton
-        onClick={() => editor.chain().focus().redo().run()}
-        disabled={!editor.can().redo()}
-        tooltip="Redo (Ctrl+Shift+Z)"
-      >
-        <Redo2 className="h-4 w-4" />
-      </ToolButton>
+      <ToolGroup>
+        <ToolButton
+          onMouseDown={runCommand(() => editor.chain().focus().undo().run())}
+          disabled={!editor.can().undo()}
+          tooltip="Undo (Ctrl+Z)"
+        >
+          <Undo2 className="h-4 w-4" />
+        </ToolButton>
+        <ToolButton
+          onMouseDown={runCommand(() => editor.chain().focus().redo().run())}
+          disabled={!editor.can().redo()}
+          tooltip="Redo (Ctrl+Shift+Z)"
+        >
+          <Redo2 className="h-4 w-4" />
+        </ToolButton>
+      </ToolGroup>
 
       <Divider />
 
-      {/* Font Family */}
-      <Select value={getCurrentFontFamily()} onValueChange={handleFontFamilyChange}>
-        <SelectTrigger className="w-28 h-8 text-xs">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {FONT_FAMILIES.map((font) => (
-            <SelectItem 
-              key={font.value} 
-              value={font.value}
-              style={{ fontFamily: font.fontFamily }}
-            >
-              {font.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {/* Typography */}
+      <ToolGroup>
+        <Select value={getCurrentFontFamily()} onValueChange={handleFontFamilyChange}>
+          <SelectTrigger className="w-28 h-9 text-xs border-none bg-transparent hover:bg-muted/60 transition-colors">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {FONT_FAMILIES.map((font) => (
+              <SelectItem 
+                key={font.value} 
+                value={font.value}
+                style={{ fontFamily: font.fontFamily }}
+              >
+                {font.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      {/* Font Size */}
-      <Select value={getCurrentFontSize()} onValueChange={handleFontSizeChange}>
-        <SelectTrigger className="w-16 h-8 text-xs">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {FONT_SIZES.map((size) => (
-            <SelectItem key={size} value={size}>{size}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        <Select value={getCurrentFontSize()} onValueChange={handleFontSizeChange}>
+          <SelectTrigger className="w-16 h-9 text-xs border-none bg-transparent hover:bg-muted/60 transition-colors">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {FONT_SIZES.map((size) => (
+              <SelectItem key={size} value={size}>{size}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </ToolGroup>
 
       <Divider />
 
       {/* Inline Formatting */}
-      <ToolButton
-        onClick={() => editor.chain().focus().toggleBold().run()}
-        active={editor.isActive('bold')}
-        tooltip="Bold (Ctrl+B)"
-      >
-        <Bold className="h-4 w-4" />
-      </ToolButton>
-      <ToolButton
-        onClick={() => editor.chain().focus().toggleItalic().run()}
-        active={editor.isActive('italic')}
-        tooltip="Italic (Ctrl+I)"
-      >
-        <Italic className="h-4 w-4" />
-      </ToolButton>
-      <ToolButton
-        onClick={() => editor.chain().focus().toggleUnderline().run()}
-        active={editor.isActive('underline')}
-        tooltip="Underline (Ctrl+U)"
-      >
-        <Underline className="h-4 w-4" />
-      </ToolButton>
+      <ToolGroup>
+        <ToolButton
+          onMouseDown={runCommand(() => editor.chain().focus().toggleBold().run())}
+          active={editor.isActive('bold')}
+          tooltip="Bold (Ctrl+B)"
+        >
+          <Bold className="h-4 w-4" />
+        </ToolButton>
+        <ToolButton
+          onMouseDown={runCommand(() => editor.chain().focus().toggleItalic().run())}
+          active={editor.isActive('italic')}
+          tooltip="Italic (Ctrl+I)"
+        >
+          <Italic className="h-4 w-4" />
+        </ToolButton>
+        <ToolButton
+          onMouseDown={runCommand(() => editor.chain().focus().toggleUnderline().run())}
+          active={editor.isActive('underline')}
+          tooltip="Underline (Ctrl+U)"
+        >
+          <Underline className="h-4 w-4" />
+        </ToolButton>
+        <ToolButton
+          onMouseDown={runCommand(() => editor.chain().focus().toggleStrike().run())}
+          active={editor.isActive('strike')}
+          tooltip="Strikethrough"
+        >
+          <Strikethrough className="h-4 w-4" />
+        </ToolButton>
+      </ToolGroup>
 
       <Divider />
 
       {/* Colors */}
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Palette className="h-4 w-4" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-2" align="start">
-          <div className="flex flex-wrap gap-1 max-w-[180px]">
-            {TEXT_COLORS.map((color) => (
-              <button
-                key={color.value || 'default'}
-                onClick={() => handleTextColor(color.value)}
-                className={cn(
-                  'h-6 w-6 rounded border border-border/50 hover:scale-110 transition-transform',
-                  !color.value && 'bg-foreground'
-                )}
-                style={{ backgroundColor: color.value || undefined }}
-                title={color.label}
-              />
-            ))}
-          </div>
-        </PopoverContent>
-      </Popover>
+      <ToolGroup>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-muted/60 transition-all duration-150 hover:-translate-y-0.5"
+            >
+              <Palette className="h-4 w-4" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-3" align="start">
+            <p className="text-xs font-medium text-muted-foreground mb-2">Text Color</p>
+            <div className="flex flex-wrap gap-1.5 max-w-[200px]">
+              {TEXT_COLORS.map((color) => (
+                <button
+                  key={color.value || 'default'}
+                  onClick={() => handleTextColor(color.value)}
+                  className={cn(
+                    'h-7 w-7 rounded-lg border border-border/50 hover:scale-110 transition-all duration-150 hover:shadow-md',
+                    !color.value && 'bg-foreground'
+                  )}
+                  style={{ backgroundColor: color.value || undefined }}
+                  title={color.label}
+                />
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
 
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Highlighter className="h-4 w-4" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-2" align="start">
-          <div className="flex flex-wrap gap-1 max-w-[180px]">
-            {HIGHLIGHT_COLORS.map((color) => (
-              <button
-                key={color.value || 'none'}
-                onClick={() => handleHighlight(color.value)}
-                className={cn(
-                  'h-6 w-6 rounded border border-border/50 hover:scale-110 transition-transform',
-                  !color.value && 'bg-background relative after:absolute after:inset-0 after:bg-[linear-gradient(45deg,transparent_45%,hsl(var(--destructive))_45%,hsl(var(--destructive))_55%,transparent_55%)]'
-                )}
-                style={{ backgroundColor: color.value || undefined }}
-                title={color.label}
-              />
-            ))}
-          </div>
-        </PopoverContent>
-      </Popover>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-muted/60 transition-all duration-150 hover:-translate-y-0.5"
+            >
+              <Highlighter className="h-4 w-4" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-3" align="start">
+            <p className="text-xs font-medium text-muted-foreground mb-2">Highlight</p>
+            <div className="flex flex-wrap gap-1.5 max-w-[200px]">
+              {HIGHLIGHT_COLORS.map((color) => (
+                <button
+                  key={color.value || 'none'}
+                  onClick={() => handleHighlight(color.value)}
+                  className={cn(
+                    'h-7 w-7 rounded-lg border border-border/50 hover:scale-110 transition-all duration-150 hover:shadow-md',
+                    !color.value && 'bg-background relative after:absolute after:inset-0 after:bg-[linear-gradient(45deg,transparent_45%,hsl(var(--destructive))_45%,hsl(var(--destructive))_55%,transparent_55%)]'
+                  )}
+                  style={{ backgroundColor: color.value || undefined }}
+                  title={color.label}
+                />
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      </ToolGroup>
 
       <Divider />
 
       {/* Lists */}
-      <ToolButton
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
-        active={editor.isActive('bulletList')}
-        tooltip="Bullet List"
-      >
-        <List className="h-4 w-4" />
-      </ToolButton>
-      <ToolButton
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        active={editor.isActive('orderedList')}
-        tooltip="Numbered List"
-      >
-        <ListOrdered className="h-4 w-4" />
-      </ToolButton>
-      <ToolButton
-        onClick={() => editor.chain().focus().toggleTaskList().run()}
-        active={editor.isActive('taskList')}
-        tooltip="Checklist"
-      >
-        <CheckSquare className="h-4 w-4" />
-      </ToolButton>
+      <ToolGroup>
+        <ToolButton
+          onMouseDown={runCommand(() => editor.chain().focus().toggleBulletList().run())}
+          active={editor.isActive('bulletList')}
+          tooltip="Bullet List"
+        >
+          <List className="h-4 w-4" />
+        </ToolButton>
+        <ToolButton
+          onMouseDown={runCommand(() => editor.chain().focus().toggleOrderedList().run())}
+          active={editor.isActive('orderedList')}
+          tooltip="Numbered List"
+        >
+          <ListOrdered className="h-4 w-4" />
+        </ToolButton>
+        <ToolButton
+          onMouseDown={runCommand(() => editor.chain().focus().toggleTaskList().run())}
+          active={editor.isActive('taskList')}
+          tooltip="Checklist"
+        >
+          <CheckSquare className="h-4 w-4" />
+        </ToolButton>
+      </ToolGroup>
 
       <Divider />
 
       {/* Alignment */}
-      <ToolButton
-        onClick={() => editor.chain().focus().setTextAlign('left').run()}
-        active={editor.isActive({ textAlign: 'left' })}
-        tooltip="Align Left"
-      >
-        <AlignLeft className="h-4 w-4" />
-      </ToolButton>
-      <ToolButton
-        onClick={() => editor.chain().focus().setTextAlign('center').run()}
-        active={editor.isActive({ textAlign: 'center' })}
-        tooltip="Align Center"
-      >
-        <AlignCenter className="h-4 w-4" />
-      </ToolButton>
-      <ToolButton
-        onClick={() => editor.chain().focus().setTextAlign('right').run()}
-        active={editor.isActive({ textAlign: 'right' })}
-        tooltip="Align Right"
-      >
-        <AlignRight className="h-4 w-4" />
-      </ToolButton>
+      <ToolGroup>
+        <ToolButton
+          onMouseDown={runCommand(() => editor.chain().focus().setTextAlign('left').run())}
+          active={editor.isActive({ textAlign: 'left' })}
+          tooltip="Align Left"
+        >
+          <AlignLeft className="h-4 w-4" />
+        </ToolButton>
+        <ToolButton
+          onMouseDown={runCommand(() => editor.chain().focus().setTextAlign('center').run())}
+          active={editor.isActive({ textAlign: 'center' })}
+          tooltip="Align Center"
+        >
+          <AlignCenter className="h-4 w-4" />
+        </ToolButton>
+        <ToolButton
+          onMouseDown={runCommand(() => editor.chain().focus().setTextAlign('right').run())}
+          active={editor.isActive({ textAlign: 'right' })}
+          tooltip="Align Right"
+        >
+          <AlignRight className="h-4 w-4" />
+        </ToolButton>
+      </ToolGroup>
 
       <Divider />
 
       {/* Indent/Outdent */}
-      <ToolButton
-        onClick={() => {
-          if (editor.isActive('listItem')) {
-            editor.chain().focus().sinkListItem('listItem').run();
-          }
-        }}
-        disabled={!editor.isActive('listItem')}
-        tooltip="Indent (Tab)"
-      >
-        <Indent className="h-4 w-4" />
-      </ToolButton>
-      <ToolButton
-        onClick={() => {
-          if (editor.isActive('listItem')) {
-            editor.chain().focus().liftListItem('listItem').run();
-          }
-        }}
-        disabled={!editor.isActive('listItem')}
-        tooltip="Outdent (Shift+Tab)"
-      >
-        <Outdent className="h-4 w-4" />
-      </ToolButton>
+      <ToolGroup>
+        <ToolButton
+          onMouseDown={runCommand(() => {
+            if (editor.isActive('listItem')) {
+              return editor.chain().focus().sinkListItem('listItem').run();
+            }
+            return false;
+          })}
+          disabled={!editor.isActive('listItem')}
+          tooltip="Indent (Tab)"
+        >
+          <Indent className="h-4 w-4" />
+        </ToolButton>
+        <ToolButton
+          onMouseDown={runCommand(() => {
+            if (editor.isActive('listItem')) {
+              return editor.chain().focus().liftListItem('listItem').run();
+            }
+            return false;
+          })}
+          disabled={!editor.isActive('listItem')}
+          tooltip="Outdent (Shift+Tab)"
+        >
+          <Outdent className="h-4 w-4" />
+        </ToolButton>
+      </ToolGroup>
 
       <Divider />
 
       {/* Media */}
-      <ToolButton
-        onClick={() => setLinkDialogOpen(true)}
-        active={editor.isActive('link')}
-        tooltip="Insert Link"
-      >
-        <Link2 className="h-4 w-4" />
-      </ToolButton>
-      <ToolButton
-        onClick={() => setImageDialogOpen(true)}
-        tooltip="Insert Image"
-      >
-        <Image className="h-4 w-4" />
-      </ToolButton>
+      <ToolGroup>
+        <ToolButton
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setLinkDialogOpen(true);
+          }}
+          active={editor.isActive('link')}
+          tooltip="Insert Link"
+        >
+          <Link2 className="h-4 w-4" />
+        </ToolButton>
+        <ToolButton
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setImageDialogOpen(true);
+          }}
+          tooltip="Insert Image"
+        >
+          <Image className="h-4 w-4" />
+        </ToolButton>
+      </ToolGroup>
 
       <Divider />
 
       {/* More Menu */}
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
+          <button
+            type="button"
+            className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-muted/60 transition-all duration-150 hover:-translate-y-0.5"
+          >
             <MoreHorizontal className="h-4 w-4" />
-          </Button>
+          </button>
         </PopoverTrigger>
-        <PopoverContent className="w-48 p-1" align="start">
-          <div className="flex flex-col">
+        <PopoverContent className="w-52 p-1.5" align="start">
+          <div className="flex flex-col gap-0.5">
             <Button
               variant="ghost"
               size="sm"
-              className="justify-start gap-2 h-8"
-              onClick={() => editor.chain().focus().toggleStrike().run()}
-            >
-              <Strikethrough className="h-4 w-4" />
-              Strikethrough
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="justify-start gap-2 h-8"
+              className="justify-start gap-2 h-9 font-normal"
               onClick={() => editor.chain().focus().toggleSuperscript().run()}
             >
               <Superscript className="h-4 w-4" />
@@ -403,17 +457,17 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="justify-start gap-2 h-8"
+              className="justify-start gap-2 h-9 font-normal"
               onClick={() => editor.chain().focus().toggleSubscript().run()}
             >
               <Subscript className="h-4 w-4" />
               Subscript
             </Button>
-            <div className="h-px bg-border my-1" />
+            <div className="h-px bg-border/50 my-1" />
             <Button
               variant="ghost"
               size="sm"
-              className="justify-start gap-2 h-8"
+              className="justify-start gap-2 h-9 font-normal"
               onClick={simplifyFormatting}
             >
               <RemoveFormatting className="h-4 w-4" />
@@ -422,17 +476,17 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="justify-start gap-2 h-8 text-destructive hover:text-destructive"
+              className="justify-start gap-2 h-9 font-normal text-destructive hover:text-destructive"
               onClick={clearFormatting}
             >
               <X className="h-4 w-4" />
               Remove All Formatting
             </Button>
-            <div className="h-px bg-border my-1" />
+            <div className="h-px bg-border/50 my-1" />
             <Button
               variant="ghost"
               size="sm"
-              className="justify-start gap-2 h-8"
+              className="justify-start gap-2 h-9 font-normal"
               onClick={() => setScribbleOpen(true)}
             >
               <Paperclip className="h-4 w-4" />
@@ -500,6 +554,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
                 type="file"
                 accept="image/*"
                 onChange={handleImageUpload}
+                className="cursor-pointer"
               />
             </div>
             <div className="flex gap-2">
@@ -507,19 +562,18 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
                 Cancel
               </Button>
               <Button className="flex-1" onClick={handleInsertImage} disabled={!imageUrl}>
-                Insert URL
+                Insert
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Scribble Dialog */}
+      {/* Scribble Canvas */}
       <NotesScribbleCanvas
         open={scribbleOpen}
         onOpenChange={setScribbleOpen}
         onSave={handleSaveScribble}
-        initialData={null}
       />
     </div>
   );
