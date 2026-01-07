@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
   Play,
@@ -13,28 +11,104 @@ import {
   RotateCcw,
   Check,
   Clock,
-  Timer,
   Hourglass,
-  ChevronUp,
-  ChevronDown,
-  ListChecks,
+  Timer,
+  Sparkles,
+  Volume2,
+  VolumeX,
+  ArrowUp,
+  ArrowDown,
+  RefreshCcw,
 } from "lucide-react";
 import { QuadrantTask, Subtask } from "@/components/tasks/types";
 
-const TIMER_PRESETS = [
-  { label: "25", minutes: 25 },
-  { label: "50", minutes: 50 },
-  { label: "90", minutes: 90 },
-];
-
 type FocusMode = "countdown" | "pomodoro" | "stopwatch";
 type PomodoroPhase = "focus" | "break";
+type AmbientNoise = "off" | "white" | "pink" | "brown";
 
-function formatTime(seconds: number): string {
-  const s = Math.max(0, Math.floor(seconds));
+const COUNTDOWN_PRESETS = [
+  { label: "25 min", minutes: 25 },
+  { label: "50 min", minutes: 50 },
+  { label: "90 min", minutes: 90 },
+];
+
+const POMODORO_PRESETS = [
+  { label: "25/5", focus: 25, break: 5 },
+  { label: "50/10", focus: 50, break: 10 },
+  { label: "90/15", focus: 90, break: 15 },
+];
+
+const QUOTES = [
+  "One thing. Done well.",
+  "Start gently. Stay steady.",
+  "Clarity over intensity.",
+  "Small progress, repeated, becomes momentum.",
+  "Focus is a form of self-respect.",
+  "Do the next right thing.",
+];
+
+function pad2(n: number) {
+  return n.toString().padStart(2, "0");
+}
+
+function formatMMSS(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
   const m = Math.floor(s / 60);
   const r = s % 60;
-  return `${m.toString().padStart(2, "0")}:${r.toString().padStart(2, "0")}`;
+  return `${pad2(m)}:${pad2(r)}`;
+}
+
+function clamp01(n: number) {
+  return Math.min(1, Math.max(0, n));
+}
+
+/**
+ * Very lightweight noise generator (no external assets).
+ * "Workable ambient sounds" without needing MP3 files.
+ */
+function createNoiseNode(ctx: AudioContext, type: AmbientNoise) {
+  const bufferSize = 4096;
+  const node = ctx.createScriptProcessor(bufferSize, 1, 1);
+
+  // pink/brown helpers
+  let b0 = 0,
+    b1 = 0,
+    b2 = 0,
+    b3 = 0,
+    b4 = 0,
+    b5 = 0,
+    b6 = 0;
+  let lastOut = 0;
+
+  node.onaudioprocess = (e) => {
+    const out = e.outputBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+
+      if (type === "white") {
+        out[i] = white;
+      } else if (type === "pink") {
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.969 * b2 + white * 0.153852;
+        b3 = 0.8665 * b3 + white * 0.3104856;
+        b4 = 0.55 * b4 + white * 0.5329522;
+        b5 = -0.7616 * b5 - white * 0.016898;
+        const pink = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+        b6 = white * 0.115926;
+        out[i] = pink * 0.11;
+      } else if (type === "brown") {
+        // brown = integrated white noise
+        const brown = (lastOut + 0.02 * white) / 1.02;
+        lastOut = brown;
+        out[i] = brown * 3.5;
+      } else {
+        out[i] = 0;
+      }
+    }
+  };
+
+  return node;
 }
 
 export default function TaskFocus() {
@@ -47,36 +121,79 @@ export default function TaskFocus() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Focus modes
+  // ---- Focus session state
   const [mode, setMode] = useState<FocusMode>("countdown");
 
-  // Countdown
-  const [timerMinutes, setTimerMinutes] = useState(25);
-  const [secondsRemaining, setSecondsRemaining] = useState(25 * 60);
+  // countdown
+  const [countdownMinutes, setCountdownMinutes] = useState(25);
+  const [countdownRemaining, setCountdownRemaining] = useState(25 * 60);
 
-  // Pomodoro
+  // pomodoro
+  const [pomoFocusMinutes, setPomoFocusMinutes] = useState(25);
+  const [pomoBreakMinutes, setPomoBreakMinutes] = useState(5);
   const [pomoPhase, setPomoPhase] = useState<PomodoroPhase>("focus");
-  const [pomoFocusMin, setPomoFocusMin] = useState(25);
-  const [pomoBreakMin, setPomoBreakMin] = useState(5);
-  const [pomoCycles, setPomoCycles] = useState(0);
+  const [pomoRemaining, setPomoRemaining] = useState(25 * 60);
+  const [autoAdvance, setAutoAdvance] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("inbalance_focus_auto_advance") === "1";
+    } catch {
+      return true;
+    }
+  });
 
-  // Stopwatch
-  const [secondsElapsed, setSecondsElapsed] = useState(0);
+  // stopwatch
+  const [stopwatchSeconds, setStopwatchSeconds] = useState(0);
 
-  // Common running state
+  // running / accounting
   const [isRunning, setIsRunning] = useState(false);
-
-  // Session tracking
-  const [sessionSeconds, setSessionSeconds] = useState(0);
-
-  // Subtask saving state (small UX)
-  const [savingSubtasks, setSavingSubtasks] = useState(false);
+  const [sessionFocusSeconds, setSessionFocusSeconds] = useState(0); // counts only focus time (not breaks)
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const clockRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [now, setNow] = useState(() => new Date());
 
-  // Fetch task from database
+  // ---- Intention / notes (local-only, per task)
+  const [intention, setIntention] = useState("");
+  const [sessionNote, setSessionNote] = useState("");
+
+  // ---- Subtasks (editable)
+  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  const subtaskSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ---- Quote
+  const [quote, setQuote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+
+  // ---- Ambient sound (noise)
+  const [noise, setNoise] = useState<AmbientNoise>("off");
+  const [volume, setVolume] = useState<number>(() => {
+    try {
+      const v = Number(localStorage.getItem("inbalance_focus_noise_volume"));
+      return Number.isFinite(v) ? clamp01(v) : 0.18;
+    } catch {
+      return 0.18;
+    }
+  });
+
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const noiseNodeRef = useRef<ScriptProcessorNode | null>(null);
+  const gainRef = useRef<GainNode | null>(null);
+
+  // ---- Background (optional)
+  const bg = useMemo(() => {
+    try {
+      const raw = localStorage.getItem("inbalance_focus_bg");
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as { type?: "image" | "video"; url?: string; overlay?: number };
+      if (!parsed?.url) return null;
+      return {
+        type: parsed.type ?? "image",
+        url: parsed.url,
+        overlay: typeof parsed.overlay === "number" ? clamp01(parsed.overlay) : 0.55,
+      };
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // ---- Fetch task
   useEffect(() => {
     async function fetchTask() {
       if (!taskId) {
@@ -84,7 +201,6 @@ export default function TaskFocus() {
         setLoading(false);
         return;
       }
-
       if (!user) {
         setError("Please log in to access focus mode");
         setLoading(false);
@@ -129,182 +245,278 @@ export default function TaskFocus() {
       };
 
       setTask(fetchedTask);
+      setSubtasks(fetchedTask.subtasks || []);
+
+      // restore intention/note
+      try {
+        const key = `inbalance_focus_meta_${fetchedTask.id}`;
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw) as { intention?: string; note?: string };
+          setIntention(parsed.intention ?? "");
+          setSessionNote(parsed.note ?? "");
+        }
+      } catch {
+        // ignore
+      }
+
       setLoading(false);
     }
 
     fetchTask();
   }, [taskId, user]);
 
-  // Live clock (nice premium touch)
+  // ---- Persist intention/note locally
   useEffect(() => {
-    clockRef.current = setInterval(() => setNow(new Date()), 20_000);
-    return () => {
-      if (clockRef.current) clearInterval(clockRef.current);
-    };
-  }, []);
+    if (!task) return;
+    try {
+      const key = `inbalance_focus_meta_${task.id}`;
+      localStorage.setItem(key, JSON.stringify({ intention, note: sessionNote }));
+    } catch {
+      // ignore
+    }
+  }, [task, intention, sessionNote]);
 
-  // Timer tick
+  // ---- Audio noise lifecycle
   useEffect(() => {
-    if (!isRunning) return;
+    // cleanup helper
+    const stop = () => {
+      try {
+        noiseNodeRef.current?.disconnect();
+        gainRef.current?.disconnect();
+      } catch {}
+      noiseNodeRef.current = null;
+      gainRef.current = null;
+
+      try {
+        audioCtxRef.current?.close();
+      } catch {}
+      audioCtxRef.current = null;
+    };
+
+    if (noise === "off") {
+      stop();
+      return;
+    }
+
+    // start
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const gain = ctx.createGain();
+      gain.gain.value = clamp01(volume) * 0.35; // keep it subtle / luxury
+      const node = createNoiseNode(ctx, noise);
+
+      node.connect(gain);
+      gain.connect(ctx.destination);
+
+      audioCtxRef.current = ctx;
+      gainRef.current = gain;
+      noiseNodeRef.current = node;
+    } catch {
+      toast({ title: "Audio not available", description: "Your browser blocked audio playback." });
+      setNoise("off");
+    }
+
+    return () => stop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [noise]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("inbalance_focus_noise_volume", String(clamp01(volume)));
+    } catch {}
+    if (gainRef.current) {
+      gainRef.current.gain.value = clamp01(volume) * 0.35;
+    }
+  }, [volume]);
+
+  // ---- Timer engine (single interval)
+  useEffect(() => {
+    if (!isRunning) {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = null;
+      return;
+    }
 
     intervalRef.current = setInterval(() => {
-      setSessionSeconds((s) => s + 1);
-
+      // Stopwatch: count up (always counts as focus time)
       if (mode === "stopwatch") {
-        setSecondsElapsed((s) => s + 1);
+        setStopwatchSeconds((s) => s + 1);
+        setSessionFocusSeconds((s) => s + 1);
         return;
       }
 
-      // countdown / pomodoro
-      setSecondsRemaining((prev) => {
-        if (prev <= 1) {
-          // session done for this block
-          setIsRunning(false);
-
-          if (mode === "pomodoro") {
-            if (pomoPhase === "focus") {
-              toast({ title: "Focus block complete", description: "Take a short break." });
-              setPomoPhase("break");
-              return pomoBreakMin * 60;
-            } else {
-              toast({ title: "Break complete", description: "Back to focus." });
-              setPomoPhase("focus");
-              setPomoCycles((c) => c + 1);
-              return pomoFocusMin * 60;
-            }
+      // Countdown
+      if (mode === "countdown") {
+        setCountdownRemaining((prev) => {
+          if (prev <= 1) {
+            // stop
+            setIsRunning(false);
+            toast({ title: "Focus complete", description: "Clean finish. Save your session?" });
+            return 0;
           }
+          setSessionFocusSeconds((s) => s + 1);
+          return prev - 1;
+        });
+        return;
+      }
 
-          toast({ title: "Timer complete!", description: "Great focus session!" });
-          return 0;
+      // Pomodoro
+      setPomoRemaining((prev) => {
+        if (prev <= 1) {
+          // phase transition
+          if (pomoPhase === "focus") {
+            toast({ title: "Focus block done", description: "Take a short break." });
+            setPomoPhase("break");
+            return pomoBreakMinutes * 60;
+          } else {
+            toast({ title: "Break done", description: "Back to focus." });
+            setPomoPhase("focus");
+            return pomoFocusMinutes * 60;
+          }
         }
+
+        if (pomoPhase === "focus") setSessionFocusSeconds((s) => s + 1);
         return prev - 1;
       });
     }, 1000);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = null;
     };
-  }, [isRunning, mode, toast, pomoPhase, pomoBreakMin, pomoFocusMin]);
+    // we intentionally read pomoPhase/pomoFocusMinutes/pomoBreakMinutes live via state closures
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRunning, mode, toast]);
 
-  const sessionMinutes = useMemo(() => Math.floor(sessionSeconds / 60), [sessionSeconds]);
+  // ---- Auto-advance behavior for pomodoro (optional)
+  useEffect(() => {
+    if (mode !== "pomodoro") return;
+    if (!autoAdvance && isRunning) {
+      // if auto-advance is disabled, pause at phase boundaries.
+      // We detect boundary when remaining resets exactly to a full phase length.
+      const full = pomoPhase === "focus" ? pomoFocusMinutes * 60 : pomoBreakMinutes * 60;
+      if (pomoRemaining === full) setIsRunning(false);
+    }
+  }, [autoAdvance, mode, isRunning, pomoRemaining, pomoPhase, pomoFocusMinutes, pomoBreakMinutes]);
 
-  const headerFocusMinutes = useMemo(() => {
-    const base = task?.total_focus_minutes || 0;
-    return base + sessionMinutes;
-  }, [task?.total_focus_minutes, sessionMinutes]);
+  // ---- Derived values
+  const focusedMinutesThisSession = useMemo(() => Math.floor(sessionFocusSeconds / 60), [sessionFocusSeconds]);
 
-  const dueLabel = useMemo(() => {
-    if (!task?.due_date) return "";
-    const d = new Date(task.due_date);
-    const date = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-    return `${date}${task.due_time ? ` • ${task.due_time}` : ""}`;
-  }, [task?.due_date, task?.due_time]);
+  const totalFocused = useMemo(() => {
+    if (!task) return 0;
+    return (task.total_focus_minutes || 0) + focusedMinutesThisSession;
+  }, [task, focusedMinutesThisSession]);
 
-  const displaySeconds = useMemo(() => {
-    if (mode === "stopwatch") return secondsElapsed;
-    return secondsRemaining;
-  }, [mode, secondsElapsed, secondsRemaining]);
+  const greeting = useMemo(() => {
+    const h = new Date().getHours();
+    if (h < 5) return "Late night focus";
+    if (h < 12) return "Good morning";
+    if (h < 17) return "Good afternoon";
+    if (h < 21) return "Good evening";
+    return "Good night";
+  }, []);
 
-  const ringProgress = useMemo(() => {
+  const primarySubtask = useMemo(() => {
+    const open = subtasks?.filter((s) => !s.completed) ?? [];
+    return open[0] ?? null;
+  }, [subtasks]);
+
+  const progress = useMemo(() => {
     if (mode === "stopwatch") return 0;
+    if (mode === "countdown") {
+      const total = countdownMinutes * 60;
+      if (!total) return 0;
+      return clamp01((total - countdownRemaining) / total);
+    }
+    // pomodoro
+    const total = (pomoPhase === "focus" ? pomoFocusMinutes : pomoBreakMinutes) * 60;
+    if (!total) return 0;
+    return clamp01((total - pomoRemaining) / total);
+  }, [mode, countdownMinutes, countdownRemaining, pomoPhase, pomoFocusMinutes, pomoBreakMinutes, pomoRemaining]);
 
-    const total =
-      mode === "pomodoro" ? (pomoPhase === "focus" ? pomoFocusMin * 60 : pomoBreakMin * 60) : timerMinutes * 60;
+  const timeLabel = useMemo(() => {
+    if (mode === "stopwatch") return formatMMSS(stopwatchSeconds);
+    if (mode === "countdown") return formatMMSS(countdownRemaining);
+    return formatMMSS(pomoRemaining);
+  }, [mode, stopwatchSeconds, countdownRemaining, pomoRemaining]);
 
-    if (total <= 0) return 0;
-    const done = total - secondsRemaining;
-    return Math.max(0, Math.min(100, (done / total) * 100));
-  }, [mode, secondsRemaining, timerMinutes, pomoPhase, pomoFocusMin, pomoBreakMin]);
-
-  const handleStart = () => {
-    if (!isRunning) setIsRunning(true);
+  // ---- Controls
+  const start = async () => {
+    // first user action should resume AudioContext if needed
+    if (noise !== "off" && audioCtxRef.current?.state === "suspended") {
+      try {
+        await audioCtxRef.current.resume();
+      } catch {}
+    }
+    setIsRunning(true);
   };
 
-  const handlePause = () => {
-    if (isRunning) setIsRunning(false);
-  };
+  const pause = () => setIsRunning(false);
 
-  const handleReset = () => {
+  const reset = () => {
     setIsRunning(false);
+    setSessionFocusSeconds(0);
 
-    if (mode === "stopwatch") {
-      setSecondsElapsed(0);
-    } else if (mode === "pomodoro") {
-      setPomoPhase("focus");
-      setSecondsRemaining(pomoFocusMin * 60);
-      setPomoCycles(0);
-    } else {
-      setSecondsRemaining(timerMinutes * 60);
-    }
+    setStopwatchSeconds(0);
+
+    setCountdownRemaining(countdownMinutes * 60);
+
+    setPomoPhase("focus");
+    setPomoRemaining(pomoFocusMinutes * 60);
   };
 
-  const handlePresetChange = (minutes: number) => {
-    // only impacts countdown for now
-    setTimerMinutes(minutes);
-    setSecondsRemaining(minutes * 60);
+  const setCountdownPreset = (m: number) => {
+    setMode("countdown");
     setIsRunning(false);
+    setCountdownMinutes(m);
+    setCountdownRemaining(m * 60);
   };
 
-  const setModeSafe = (next: FocusMode) => {
+  const setPomodoroPreset = (f: number, b: number) => {
+    setMode("pomodoro");
     setIsRunning(false);
-
-    // Reset display to something sensible for each mode
-    if (next === "countdown") {
-      setSecondsRemaining(timerMinutes * 60);
-    }
-    if (next === "pomodoro") {
-      setPomoPhase("focus");
-      setSecondsRemaining(pomoFocusMin * 60);
-      setPomoCycles(0);
-    }
-    if (next === "stopwatch") {
-      setSecondsElapsed(0);
-    }
-
-    setMode(next);
+    setPomoFocusMinutes(f);
+    setPomoBreakMinutes(b);
+    setPomoPhase("focus");
+    setPomoRemaining(f * 60);
   };
 
-  const persistSubtasks = async (updated: Subtask[]) => {
+  const saveSubtasks = (next: Subtask[]) => {
+    setSubtasks(next);
+
     if (!task || !user) return;
-    setSavingSubtasks(true);
+    if (subtaskSaveTimer.current) clearTimeout(subtaskSaveTimer.current);
 
-    // optimistic UI
-    setTask({ ...task, subtasks: updated });
-
-    const { error: updateError } = await supabase
-      .from("tasks")
-      .update({ subtasks: updated as any })
-      .eq("id", task.id)
-      .eq("user_id", user.id);
-
-    setSavingSubtasks(false);
-
-    if (updateError) {
-      toast({ title: "Could not save subtasks", variant: "destructive" });
-    }
+    subtaskSaveTimer.current = setTimeout(async () => {
+      await supabase
+        .from("tasks")
+        .update({ subtasks: next as any })
+        .eq("id", task.id)
+        .eq("user_id", user.id);
+    }, 350);
   };
 
-  const toggleSubtask = async (subId: string) => {
-    if (!task) return;
-    const updated = (task.subtasks || []).map((s) => (s.id === subId ? { ...s, completed: !s.completed } : s));
-    await persistSubtasks(updated);
+  const toggleSubtask = (idx: number) => {
+    const next = [...subtasks];
+    const current = next[idx];
+    next[idx] = { ...current, completed: !current.completed };
+    saveSubtasks(next);
   };
 
-  const moveSubtask = async (index: number, dir: -1 | 1) => {
-    if (!task) return;
-    const arr = [...(task.subtasks || [])];
-    const next = index + dir;
-    if (next < 0 || next >= arr.length) return;
-    const temp = arr[index];
-    arr[index] = arr[next];
-    arr[next] = temp;
-    await persistSubtasks(arr);
+  const moveSubtask = (idx: number, dir: -1 | 1) => {
+    const to = idx + dir;
+    if (to < 0 || to >= subtasks.length) return;
+    const next = [...subtasks];
+    const [item] = next.splice(idx, 1);
+    next.splice(to, 0, item);
+    saveSubtasks(next);
   };
 
-  const handleSaveSession = async () => {
+  const saveSession = async () => {
     if (!task || !user) return;
 
-    const totalMinutes = task.total_focus_minutes + sessionMinutes;
+    const totalMinutes = (task.total_focus_minutes || 0) + focusedMinutesThisSession;
 
     const { error: updateError } = await supabase
       .from("tasks")
@@ -317,14 +529,11 @@ export default function TaskFocus() {
       return;
     }
 
-    toast({
-      title: "Session saved!",
-      description: sessionMinutes > 0 ? `Added ${sessionMinutes} minutes of focus time` : "Nothing to add yet.",
-    });
+    toast({ title: "Session saved", description: `Added ${focusedMinutesThisSession} min of focus` });
     navigate("/tasks");
   };
 
-  const handleMarkComplete = async () => {
+  const markComplete = async () => {
     if (!task || !user) return;
 
     const { error: updateError } = await supabase
@@ -332,7 +541,7 @@ export default function TaskFocus() {
       .update({
         is_completed: true,
         completed_at: new Date().toISOString(),
-        total_focus_minutes: task.total_focus_minutes + sessionMinutes,
+        total_focus_minutes: (task.total_focus_minutes || 0) + focusedMinutesThisSession,
       })
       .eq("id", task.id)
       .eq("user_id", user.id);
@@ -342,11 +551,13 @@ export default function TaskFocus() {
       return;
     }
 
-    toast({ title: "Task completed!", description: "Great work!" });
+    toast({ title: "Task completed", description: "Beautiful work." });
     navigate("/tasks");
   };
 
-  // Loading state
+  const refreshQuote = () => setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+
+  // ---- Loading / errors
   if (loading) {
     return (
       <div className="min-h-[100dvh] bg-background flex items-center justify-center">
@@ -355,7 +566,6 @@ export default function TaskFocus() {
     );
   }
 
-  // Error state
   if (error || !task) {
     return (
       <div className="min-h-[100dvh] bg-background flex items-center justify-center">
@@ -370,329 +580,455 @@ export default function TaskFocus() {
     );
   }
 
-  const circumference = 2 * Math.PI * 120;
-  const dashOffset = circumference * (1 - ringProgress / 100);
-
-  const greeting =
-    now.getHours() < 12
-      ? "Good morning"
-      : now.getHours() < 17
-        ? "Good afternoon"
-        : now.getHours() < 21
-          ? "Good evening"
-          : "Good night";
-
+  // ---- UI
   return (
-    <div className="min-h-[100dvh] bg-background">
-      {/* Premium background wash (theme-safe) */}
-      <div className="pointer-events-none fixed inset-0 bg-gradient-to-b from-background via-background to-muted/20" />
+    <div className="min-h-[100dvh] relative overflow-hidden bg-background">
+      {/* Background (optional) */}
+      {bg?.type === "image" && (
+        <img src={bg.url} alt="" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
+      )}
+      {bg?.type === "video" && (
+        <video className="absolute inset-0 h-full w-full object-cover" autoPlay muted loop playsInline src={bg.url} />
+      )}
+      {/* Overlay to keep it luxury & readable */}
+      <div className="absolute inset-0 bg-background/70" style={{ opacity: bg ? bg.overlay : 1 }} />
+      {/* Subtle vignette */}
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-background/0 via-background/20 to-background/60" />
 
-      {/* Header */}
-      <header className="relative z-10 border-b border-border/60 bg-background/70 backdrop-blur">
-        <div className="mx-auto max-w-6xl px-5 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/tasks")} className="rounded-2xl">
+      <div className="relative z-10 min-h-[100dvh] flex flex-col">
+        {/* Header */}
+        <header className="px-5 sm:px-8 py-4 flex items-start justify-between">
+          <div className="flex items-start gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/tasks")} className="rounded-xl">
               <ArrowLeft className="w-5 h-5" />
             </Button>
 
-            <div className="min-w-0">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Deep Focus • {greeting}</p>
-              <h1 className="text-base font-semibold truncate">{task.title}</h1>
-              {dueLabel ? <p className="text-xs text-muted-foreground truncate">Due {dueLabel}</p> : null}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Deep Focus</span>
+                <span className="text-[10px] text-muted-foreground">•</span>
+                <span className="text-[10px] text-muted-foreground">{greeting}</span>
+              </div>
+              <h1 className="text-lg sm:text-xl font-semibold leading-tight">{task.title}</h1>
+
+              {task.due_date && (
+                <div className="text-xs text-muted-foreground">
+                  Due{" "}
+                  {new Date(task.due_date).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                  {task.due_time ? ` • ${task.due_time}` : ""}
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="w-4 h-4" />
-            <span className="hidden sm:inline">{headerFocusMinutes} min focused</span>
-            <span className="sm:hidden">{headerFocusMinutes}m</span>
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock className="w-4 h-4" />
+              <span>{totalFocused} min focused</span>
+            </div>
+
+            <div className="hidden sm:flex items-center gap-2">
+              <Button variant="outline" size="sm" className="rounded-xl h-8 px-3" onClick={refreshQuote}>
+                <RefreshCcw className="h-3.5 w-3.5 mr-2" />
+                Quote
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-xl h-8 px-3"
+                onClick={() => setNoise((v) => (v === "off" ? "pink" : "off"))}
+              >
+                {noise === "off" ? (
+                  <>
+                    <VolumeX className="h-3.5 w-3.5 mr-2" />
+                    Sound
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="h-3.5 w-3.5 mr-2" />
+                    Sound
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Content */}
-      <main className="relative z-10 mx-auto max-w-6xl px-5 py-8">
-        <div className="grid gap-6 lg:grid-cols-[1.25fr_.85fr] items-start">
-          {/* LEFT — Timer */}
-          <Card className="rounded-3xl border-border/70 bg-card/80 backdrop-blur shadow-sm">
-            <div className="p-6 sm:p-7">
-              {/* Mode Switch */}
-              <div className="flex flex-wrap gap-2 items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="rounded-full bg-muted/10 border-border">
-                    {mode === "pomodoro" ? "Pomodoro" : mode === "stopwatch" ? "Stopwatch" : "Countdown"}
-                  </Badge>
-                  {mode === "pomodoro" && (
-                    <Badge variant="outline" className="rounded-full bg-muted/10 border-border">
-                      {pomoPhase === "focus" ? "Focus" : "Break"} • Cycles {pomoCycles}
-                    </Badge>
-                  )}
-                </div>
-
-                <div className="flex gap-2">
+        {/* Main */}
+        <main className="flex-1 px-5 sm:px-8 pb-8">
+          <div className="grid gap-5 lg:grid-cols-[1.25fr_0.95fr] items-start">
+            {/* LEFT: Timer card */}
+            <section className="rounded-3xl border border-border/60 bg-background/55 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.08)] overflow-hidden">
+              <div className="px-5 sm:px-7 pt-6 pb-5 border-b border-border/50">
+                {/* Mode pills */}
+                <div className="flex flex-wrap gap-2">
                   <Button
                     variant={mode === "countdown" ? "default" : "outline"}
                     size="sm"
-                    className="rounded-2xl"
-                    onClick={() => setModeSafe("countdown")}
-                    disabled={isRunning}
+                    className="rounded-full h-8 px-4"
+                    onClick={() => {
+                      setIsRunning(false);
+                      setMode("countdown");
+                      setCountdownRemaining(countdownMinutes * 60);
+                    }}
                   >
-                    <Hourglass className="h-4 w-4 mr-2" />
+                    <Hourglass className="h-3.5 w-3.5 mr-2" />
                     Countdown
                   </Button>
+
                   <Button
                     variant={mode === "pomodoro" ? "default" : "outline"}
                     size="sm"
-                    className="rounded-2xl"
-                    onClick={() => setModeSafe("pomodoro")}
-                    disabled={isRunning}
+                    className="rounded-full h-8 px-4"
+                    onClick={() => {
+                      setIsRunning(false);
+                      setMode("pomodoro");
+                      setPomoPhase("focus");
+                      setPomoRemaining(pomoFocusMinutes * 60);
+                    }}
                   >
-                    <Timer className="h-4 w-4 mr-2" />
+                    <Timer className="h-3.5 w-3.5 mr-2" />
                     Pomodoro
                   </Button>
+
                   <Button
                     variant={mode === "stopwatch" ? "default" : "outline"}
                     size="sm"
-                    className="rounded-2xl"
-                    onClick={() => setModeSafe("stopwatch")}
-                    disabled={isRunning}
+                    className="rounded-full h-8 px-4"
+                    onClick={() => {
+                      setIsRunning(false);
+                      setMode("stopwatch");
+                      setStopwatchSeconds(0);
+                    }}
                   >
-                    <Clock className="h-4 w-4 mr-2" />
+                    <Clock className="h-3.5 w-3.5 mr-2" />
                     Stopwatch
+                  </Button>
+                </div>
+
+                {/* Presets */}
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  {mode === "countdown" &&
+                    COUNTDOWN_PRESETS.map((p) => (
+                      <Button
+                        key={p.minutes}
+                        variant={countdownMinutes === p.minutes ? "default" : "outline"}
+                        size="sm"
+                        className="rounded-full h-8 px-4"
+                        onClick={() => setCountdownPreset(p.minutes)}
+                        disabled={isRunning}
+                      >
+                        {p.label}
+                      </Button>
+                    ))}
+
+                  {mode === "pomodoro" &&
+                    POMODORO_PRESETS.map((p) => (
+                      <Button
+                        key={p.label}
+                        variant={pomoFocusMinutes === p.focus && pomoBreakMinutes === p.break ? "default" : "outline"}
+                        size="sm"
+                        className="rounded-full h-8 px-4"
+                        onClick={() => setPomodoroPreset(p.focus, p.break)}
+                        disabled={isRunning}
+                      >
+                        {p.label}
+                      </Button>
+                    ))}
+
+                  {mode === "pomodoro" && (
+                    <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span className="capitalize">{pomoPhase}</span>
+                      <span className="text-muted-foreground/60">•</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 rounded-full px-3"
+                        onClick={() => {
+                          const next = !autoAdvance;
+                          setAutoAdvance(next);
+                          try {
+                            localStorage.setItem("inbalance_focus_auto_advance", next ? "1" : "0");
+                          } catch {}
+                        }}
+                      >
+                        Auto-advance: {autoAdvance ? "On" : "Off"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Clock ring */}
+              <div className="px-5 sm:px-7 py-7">
+                <div className="flex items-center justify-center">
+                  <div className="relative w-[280px] h-[280px] sm:w-[320px] sm:h-[320px]">
+                    <svg className="w-full h-full -rotate-90">
+                      <circle
+                        cx="160"
+                        cy="160"
+                        r="145"
+                        fill="none"
+                        stroke="hsl(var(--border))"
+                        strokeOpacity="0.6"
+                        strokeWidth="10"
+                      />
+                      <circle
+                        cx="160"
+                        cy="160"
+                        r="145"
+                        fill="none"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth="10"
+                        strokeDasharray={2 * Math.PI * 145}
+                        strokeDashoffset={2 * Math.PI * 145 * (1 - progress)}
+                        strokeLinecap="round"
+                        style={{ transition: "stroke-dashoffset 800ms ease" }}
+                      />
+                    </svg>
+
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <div className="text-[52px] sm:text-[64px] font-semibold tracking-[-0.02em]">{timeLabel}</div>
+                      <div className="mt-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                        {mode === "stopwatch" ? "elapsed" : "remaining"}
+                      </div>
+
+                      {focusedMinutesThisSession > 0 && (
+                        <div className="mt-3 text-sm text-muted-foreground">
+                          This session: <span className="text-foreground">{focusedMinutesThisSession} min</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Controls */}
+                <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+                  {!isRunning ? (
+                    <Button size="lg" className="rounded-2xl px-7 h-12" onClick={start}>
+                      <Play className="w-5 h-5 mr-2" />
+                      Start
+                    </Button>
+                  ) : (
+                    <Button size="lg" variant="outline" className="rounded-2xl px-7 h-12" onClick={pause}>
+                      <Pause className="w-5 h-5 mr-2" />
+                      Pause
+                    </Button>
+                  )}
+
+                  <Button size="lg" variant="ghost" className="rounded-2xl px-6 h-12" onClick={reset}>
+                    <RotateCcw className="w-5 h-5 mr-2" />
+                    Reset
+                  </Button>
+                </div>
+
+                {/* Bottom actions */}
+                <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+                  <Button variant="outline" className="rounded-2xl h-11 px-6" onClick={saveSession}>
+                    Save & Exit
+                  </Button>
+                  <Button className="rounded-2xl h-11 px-6" onClick={markComplete}>
+                    <Check className="w-4 h-4 mr-2" />
+                    Mark Complete
+                  </Button>
+                </div>
+              </div>
+            </section>
+
+            {/* RIGHT: Intention + Subtasks + Ambient */}
+            <aside className="space-y-5">
+              {/* Quote */}
+              <div className="rounded-3xl border border-border/60 bg-background/55 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.08)]">
+                <div className="px-5 sm:px-7 py-5 flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Focus cue</div>
+                    <div className="mt-2 text-base font-medium leading-snug">{quote}</div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-xl"
+                    onClick={refreshQuote}
+                    aria-label="Refresh quote"
+                  >
+                    <RefreshCcw className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
 
-              {/* Presets (Countdown only) */}
-              {mode === "countdown" && (
-                <div className="mt-5 flex gap-2 justify-center">
-                  {TIMER_PRESETS.map((preset) => (
-                    <Button
-                      key={preset.minutes}
-                      variant={timerMinutes === preset.minutes ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => handlePresetChange(preset.minutes)}
-                      disabled={isRunning}
-                      className="rounded-2xl"
-                    >
-                      {preset.label} min
-                    </Button>
-                  ))}
-                </div>
-              )}
+              {/* Intention */}
+              <div className="rounded-3xl border border-border/60 bg-background/55 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.08)]">
+                <div className="px-5 sm:px-7 py-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Intention</div>
+                      <div className="mt-1 text-sm text-muted-foreground">Keep it simple. One outcome.</div>
+                    </div>
+                  </div>
 
-              {/* Pomodoro controls (simple, no extra UI libs) */}
-              {mode === "pomodoro" && (
-                <div className="mt-5 flex flex-wrap gap-2 justify-center">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-2xl"
-                    disabled={isRunning}
-                    onClick={() => {
-                      setPomoFocusMin(25);
-                      setPomoBreakMin(5);
-                      setSecondsRemaining(25 * 60);
-                      setPomoPhase("focus");
-                      setPomoCycles(0);
-                    }}
-                  >
-                    25/5
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-2xl"
-                    disabled={isRunning}
-                    onClick={() => {
-                      setPomoFocusMin(50);
-                      setPomoBreakMin(10);
-                      setSecondsRemaining(50 * 60);
-                      setPomoPhase("focus");
-                      setPomoCycles(0);
-                    }}
-                  >
-                    50/10
-                  </Button>
-                </div>
-              )}
+                  <input
+                    value={intention}
+                    onChange={(e) => setIntention(e.target.value)}
+                    placeholder="e.g., Finish the first draft (no perfecting)"
+                    className="w-full h-11 rounded-2xl border border-border/60 bg-background/60 px-4 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                  />
 
-              {/* Ring + Time */}
-              <div className="mt-8 flex items-center justify-center">
-                <div className="relative w-72 h-72">
-                  <svg className="w-full h-full -rotate-90">
-                    <circle
-                      cx="144"
-                      cy="144"
-                      r="120"
-                      fill="none"
-                      stroke="hsl(var(--muted))"
-                      strokeWidth="10"
-                      opacity={0.35}
-                    />
-                    {mode !== "stopwatch" && (
-                      <circle
-                        cx="144"
-                        cy="144"
-                        r="120"
-                        fill="none"
-                        stroke="hsl(var(--primary))"
-                        strokeWidth="10"
-                        strokeDasharray={circumference}
-                        strokeDashoffset={dashOffset}
-                        strokeLinecap="round"
-                        className="transition-all duration-700"
-                      />
+                  <textarea
+                    value={sessionNote}
+                    onChange={(e) => setSessionNote(e.target.value)}
+                    placeholder="Optional note — what does “done” look like?"
+                    className="w-full min-h-[90px] rounded-2xl border border-border/60 bg-background/60 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* Subtasks */}
+              <div className="rounded-3xl border border-border/60 bg-background/55 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.08)]">
+                <div className="px-5 sm:px-7 py-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Focus to-dos</div>
+                      <div className="mt-1 text-sm text-muted-foreground">One priority at a time.</div>
+                    </div>
+
+                    {primarySubtask ? (
+                      <span className="text-xs rounded-full border border-border/60 bg-background/60 px-3 py-1 text-muted-foreground">
+                        Next: <span className="text-foreground">{primarySubtask.title}</span>
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No subtasks</span>
                     )}
-                  </svg>
+                  </div>
 
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                    <div className="text-6xl font-light tracking-wide text-foreground">
-                      {formatTime(displaySeconds)}
-                    </div>
-                    <div className="mt-2 text-xs text-muted-foreground">
-                      {mode === "stopwatch"
-                        ? "Elapsed"
-                        : mode === "pomodoro"
-                          ? pomoPhase === "focus"
-                            ? "Focus block"
-                            : "Break block"
-                          : "Remaining"}
-                    </div>
+                  <div className="mt-4 space-y-2">
+                    {subtasks?.length ? (
+                      subtasks.map((s, idx) => (
+                        <div
+                          key={(s as any).id ?? `${s.title}-${idx}`}
+                          className="flex items-center gap-2 rounded-2xl border border-border/50 bg-background/50 px-3 py-2"
+                        >
+                          <button
+                            onClick={() => toggleSubtask(idx)}
+                            className="h-6 w-6 rounded-lg border border-border/60 bg-background/60 flex items-center justify-center"
+                            aria-label={s.completed ? "Mark incomplete" : "Mark complete"}
+                            type="button"
+                          >
+                            {s.completed ? (
+                              <Check className="h-4 w-4" />
+                            ) : (
+                              <span className="h-2 w-2 rounded-full bg-muted-foreground/50" />
+                            )}
+                          </button>
 
-                    {sessionMinutes > 0 && (
-                      <div className="mt-3 text-xs text-muted-foreground">
-                        Session: <span className="text-foreground">{sessionMinutes} min</span>
+                          <div className="min-w-0 flex-1">
+                            <div
+                              className={`text-sm truncate ${s.completed ? "text-muted-foreground line-through" : "text-foreground"}`}
+                            >
+                              {s.title}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-xl"
+                              onClick={() => moveSubtask(idx, -1)}
+                              disabled={idx === 0}
+                              aria-label="Move up"
+                            >
+                              <ArrowUp className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-xl"
+                              onClick={() => moveSubtask(idx, 1)}
+                              disabled={idx === subtasks.length - 1}
+                              aria-label="Move down"
+                            >
+                              <ArrowDown className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-2xl border border-border/50 bg-background/50 px-4 py-4 text-sm text-muted-foreground">
+                        No subtasks yet — add them from the Tasks page.
                       </div>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Controls */}
-              <div className="mt-8 flex flex-wrap gap-3 items-center justify-center">
-                {!isRunning ? (
-                  <Button size="lg" onClick={handleStart} className="rounded-2xl px-6">
-                    <Play className="w-5 h-5 mr-2" />
-                    Start
-                  </Button>
-                ) : (
-                  <Button size="lg" variant="outline" onClick={handlePause} className="rounded-2xl px-6">
-                    <Pause className="w-5 h-5 mr-2" />
-                    Pause
-                  </Button>
-                )}
-
-                <Button size="lg" variant="ghost" onClick={handleReset} className="rounded-2xl px-6">
-                  <RotateCcw className="w-5 h-5 mr-2" />
-                  Reset
-                </Button>
-              </div>
-
-              {/* Actions */}
-              <div className="mt-8 flex flex-wrap gap-3 justify-center">
-                <Button variant="outline" onClick={handleSaveSession} className="rounded-2xl px-6">
-                  Save & Exit
-                </Button>
-                <Button onClick={handleMarkComplete} className="rounded-2xl px-6">
-                  <Check className="w-4 h-4 mr-2" />
-                  Mark Complete
-                </Button>
-              </div>
-            </div>
-          </Card>
-
-          {/* RIGHT — Intention + subtasks */}
-          <Card className="rounded-3xl border-border/70 bg-card/80 backdrop-blur shadow-sm">
-            <div className="p-6 sm:p-7 space-y-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Intention</p>
-                  <h2 className="mt-1 text-sm font-semibold">One thing. Done well.</h2>
-                </div>
-
-                <Badge variant="outline" className="rounded-full bg-muted/10 border-border">
-                  <ListChecks className="h-3.5 w-3.5 mr-1" />
-                  {task.subtasks?.length || 0}
-                </Badge>
-              </div>
-
-              {task.description ? (
-                <div className="rounded-2xl border border-border bg-muted/10 p-4">
-                  <p className="text-sm text-foreground leading-relaxed">{task.description}</p>
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-border bg-muted/10 p-4">
-                  <p className="text-sm text-muted-foreground">Add a description to make this focus session clearer.</p>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Subtasks</p>
-                  {savingSubtasks ? <span className="text-xs text-muted-foreground">Saving…</span> : null}
-                </div>
-
-                <div className="space-y-2">
-                  {(task.subtasks || []).length === 0 ? (
-                    <div className="rounded-2xl border border-border bg-muted/10 p-4">
-                      <p className="text-sm text-muted-foreground">
-                        No subtasks yet — keep it simple, or add subtasks from the Tasks page.
-                      </p>
+              {/* Ambient */}
+              <div className="rounded-3xl border border-border/60 bg-background/55 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.08)]">
+                <div className="px-5 sm:px-7 py-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Ambient</div>
+                      <div className="mt-1 text-sm text-muted-foreground">Subtle, non-distracting sound.</div>
                     </div>
-                  ) : (
-                    (task.subtasks || []).map((s, idx) => (
-                      <div
-                        key={s.id}
-                        className="rounded-2xl border border-border bg-background/50 p-3 flex items-start gap-3"
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-full h-8 px-4"
+                      onClick={() => setNoise((v) => (v === "off" ? "pink" : "off"))}
+                    >
+                      {noise === "off" ? (
+                        <>
+                          <VolumeX className="h-3.5 w-3.5 mr-2" />
+                          Off
+                        </>
+                      ) : (
+                        <>
+                          <Volume2 className="h-3.5 w-3.5 mr-2" />
+                          On
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {(["off", "pink", "brown", "white"] as AmbientNoise[]).map((t) => (
+                      <Button
+                        key={t}
+                        variant={noise === t ? "default" : "outline"}
+                        size="sm"
+                        className="rounded-full h-8 px-4 capitalize"
+                        onClick={() => setNoise(t)}
                       >
-                        <button
-                          onClick={() => toggleSubtask(s.id)}
-                          className="mt-0.5 h-5 w-5 rounded-md border border-border flex items-center justify-center"
-                          aria-label={s.completed ? "Mark incomplete" : "Mark complete"}
-                        >
-                          {s.completed ? <Check className="h-4 w-4" /> : null}
-                        </button>
+                        {t}
+                      </Button>
+                    ))}
+                  </div>
 
-                        <div className="min-w-0 flex-1">
-                          <p
-                            className={`text-sm ${s.completed ? "line-through text-muted-foreground" : "text-foreground"}`}
-                          >
-                            {s.title}
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-xl"
-                            onClick={() => moveSubtask(idx, -1)}
-                            disabled={idx === 0}
-                            aria-label="Move up"
-                          >
-                            <ChevronUp className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-xl"
-                            onClick={() => moveSubtask(idx, 1)}
-                            disabled={idx === (task.subtasks?.length || 0) - 1}
-                            aria-label="Move down"
-                          >
-                            <ChevronDown className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  )}
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground w-14">Vol</span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      value={volume}
+                      onChange={(e) => setVolume(Number(e.target.value))}
+                      className="w-full"
+                      aria-label="Ambient volume"
+                    />
+                    <span className="text-xs text-muted-foreground w-12 text-right">{Math.round(volume * 100)}%</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Card>
-        </div>
-      </main>
+            </aside>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
