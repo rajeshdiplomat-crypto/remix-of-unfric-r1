@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import logo from "@/assets/logo.png";
 
 type AuthMode = "signin" | "signup" | "forgot-password" | "verify-email";
 
@@ -213,9 +214,11 @@ export default function Auth() {
         <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 md:px-16 xl:px-24 py-12 lg:py-0">
           <div className="max-w-sm mx-auto w-full">
             {/* Brand name */}
-            <h1 className="font-serif text-4xl lg:text-5xl tracking-[0.3em] mb-16 text-foreground">
-              AMBALANCED
-            </h1>
+            <img 
+              src={logo} 
+              alt="ambalanced" 
+              className="h-12 lg:h-14 mb-16 dark:invert" 
+            />
 
             {/* Section title */}
             <h2 className="text-xs uppercase tracking-[0.2em] font-normal mb-10 text-foreground">

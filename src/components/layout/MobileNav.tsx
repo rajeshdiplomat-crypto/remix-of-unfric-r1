@@ -17,6 +17,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import logo from "@/assets/logo.png";
 
 const mainNavItems = [
   { title: "Diary", url: "/diary", icon: BookOpen },
@@ -62,12 +63,7 @@ export function MobileNav({ onNavigate }: MobileNavProps) {
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <img 
-            src="/favicon.png" 
-            alt="ambalanced logo" 
-            className="h-10 w-10 object-cover"
-          />
-          <span className="text-xs font-normal uppercase tracking-zara-wide text-foreground">ambalanced</span>
+          <img src={logo} alt="ambalanced" className="h-8 dark:invert" />
         </div>
       </div>
 
