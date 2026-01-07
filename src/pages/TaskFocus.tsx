@@ -581,6 +581,11 @@ export default function TaskFocus() {
               </div>
               <Tabs value={settingsTab} onValueChange={setSettingsTab}>
                 <TabsList className="w-full grid grid-cols-4 bg-white/5 rounded-xl p-1">
+  <TabsTrigger value="themes" className="rounded-lg text-xs text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10"><Palette className="h-4 w-4" /></TabsTrigger>
+  <TabsTrigger value="clock" className="rounded-lg text-xs text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10"><Clock className="h-4 w-4" /></TabsTrigger>
+  <TabsTrigger value="sounds" className="rounded-lg text-xs text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10"><Volume2 className="h-4 w-4" /></TabsTrigger>
+  <TabsTrigger value="quotes" className="rounded-lg text-xs text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10"><Quote className="h-4 w-4" /></TabsTrigger>
+</TabsList>
                   <TabsTrigger value="themes" className="rounded-lg text-xs">
                     <Palette className="h-4 w-4" />
                   </TabsTrigger>
