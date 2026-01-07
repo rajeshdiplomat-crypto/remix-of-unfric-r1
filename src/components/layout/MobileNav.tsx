@@ -63,7 +63,7 @@ export function MobileNav({ onNavigate }: MobileNavProps) {
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <img src={logo} alt="ambalanced" className="h-36 dark:invert" />
+          <img src={logo} alt="ambalanced" className="h-72 dark:invert" />
         </div>
       </div>
 
