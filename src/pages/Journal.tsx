@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useMemo, useCallback, useSyncExternalStore } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { format } from "date-fns";
-import { Settings, Save, Check, BookOpen, Maximize2, X } from "lucide-react";
+import { Settings, Save, Check, Maximize2, X, ImagePlus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -113,6 +113,9 @@ export default function Journal() {
   const [isFullPage, setIsFullPage] = useState(false);
   const [fontFamily, setFontFamily] = useState("Inter");
   const [fontSize, setFontSize] = useState(16);
+  const [attachedImages, setAttachedImages] = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Check for editor readiness after content state is defined
   useEffect(() => {
@@ -197,6 +200,7 @@ export default function Journal() {
             ? entryData.text_formatting
             : JSON.stringify(entryData.text_formatting) || "";
 
+        const images = Array.isArray(entryData.images_data) ? (entryData.images_data as string[]) : [];
         setCurrentEntry({
           id: entryData.id,
           entryDate: entryData.entry_date,
@@ -206,8 +210,9 @@ export default function Journal() {
           contentJSON,
           mood: entryData.daily_feeling || undefined,
           tags: entryData.tags || [],
-          imagesData: Array.isArray(entryData.images_data) ? (entryData.images_data as string[]) : [],
+          imagesData: images,
         });
+        setAttachedImages(images);
         setCurrentAnswers(answersData || []);
         
         // If we have answers, rebuild content from them
@@ -224,6 +229,7 @@ export default function Journal() {
         setCurrentEntry(null);
         setCurrentAnswers([]);
         setContent(initialContent);
+        setAttachedImages([]);
       }
       setIsSaved(true);
       setIsLoading(false);
@@ -270,6 +276,7 @@ export default function Journal() {
           .from("journal_entries")
           .update({
             text_formatting: content,
+            images_data: attachedImages,
             updated_at: new Date().toISOString(),
           })
           .eq("id", currentEntry.id);
@@ -304,6 +311,7 @@ export default function Journal() {
             user_id: user.id,
             entry_date: dateStr,
             text_formatting: content,
+            images_data: attachedImages,
           })
           .select()
           .single();
@@ -363,6 +371,44 @@ export default function Journal() {
 
   const handleInsertPrompt = (prompt: string) => {
     editorRef.current?.editor?.chain().focus().insertContent(`\n\n${prompt}\n\n`).run();
+    setIsSaved(false);
+  };
+
+  const handleImageUpload = async (files: FileList | null) => {
+    if (!files || !user) return;
+    setIsUploading(true);
+
+    const uploadedUrls: string[] = [];
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith("image/")) continue;
+      if (file.size > 5 * 1024 * 1024) {
+        toast({ title: "File too large", description: "Max 5MB per image", variant: "destructive" });
+        continue;
+      }
+
+      const ext = file.name.split(".").pop();
+      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from("journal-images").upload(path, file);
+      
+      if (error) {
+        console.error("Upload error:", error);
+        toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+        continue;
+      }
+
+      const { data: urlData } = supabase.storage.from("journal-images").getPublicUrl(path);
+      uploadedUrls.push(urlData.publicUrl);
+    }
+
+    if (uploadedUrls.length > 0) {
+      setAttachedImages((prev) => [...prev, ...uploadedUrls]);
+      setIsSaved(false);
+    }
+    setIsUploading(false);
+  };
+
+  const removeImage = (index: number) => {
+    setAttachedImages((prev) => prev.filter((_, i) => i !== index));
     setIsSaved(false);
   };
 
@@ -513,6 +559,23 @@ export default function Journal() {
             >
               <Settings className="h-4 w-4" />
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              style={{ borderColor: currentSkin.border, color: currentSkin.text }}
+            >
+              {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => handleImageUpload(e.target.files)}
+            />
             <Button size="sm" onClick={handleSave} disabled={isSaved}>
               <Save className="h-4 w-4 mr-1" />
               Save
@@ -558,7 +621,7 @@ export default function Journal() {
             />
             
             {/* Display attached images */}
-            {currentEntry?.imagesData && currentEntry.imagesData.length > 0 && (
+            {attachedImages.length > 0 && (
               <div 
                 className="rounded-lg border p-4"
                 style={{ backgroundColor: currentSkin.editorPaperBg, borderColor: currentSkin.border }}
@@ -567,14 +630,20 @@ export default function Journal() {
                   Attached Images
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {currentEntry.imagesData.map((url, i) => (
-                    <div key={i} className="aspect-square rounded-lg overflow-hidden">
+                  {attachedImages.map((url, i) => (
+                    <div key={i} className="aspect-square rounded-lg overflow-hidden relative group">
                       <img
                         src={url}
                         alt={`Attached ${i + 1}`}
                         className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
                         onClick={() => window.open(url, '_blank')}
                       />
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeImage(i); }}
+                        className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
                     </div>
                   ))}
                 </div>
