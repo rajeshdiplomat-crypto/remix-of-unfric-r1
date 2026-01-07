@@ -9,6 +9,7 @@ export interface JournalEntry {
   contentJSON: string; // TipTap JSON content
   mood?: string;
   tags?: string[];
+  imagesData?: string[]; // Attached image URLs
 }
 
 export interface JournalQuestion {

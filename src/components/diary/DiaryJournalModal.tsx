@@ -8,12 +8,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ImagePlus, X, Loader2, Send } from "lucide-react";
+import { ImagePlus, X, Loader2, Send, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface DiaryJournalModalProps {
@@ -31,9 +29,9 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
   const [attachedImages, setAttachedImages] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+  const processFiles = async (files: FileList | File[]) => {
     if (!files || files.length === 0) return;
 
     setIsUploading(true);
@@ -79,6 +77,34 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
     // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) await processFiles(files);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      await processFiles(files);
     }
   };
 
@@ -166,11 +192,26 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
           <DialogTitle className="text-lg font-semibold">New Journal Entry</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div 
+          className="space-y-4 relative"
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          {/* Drag overlay */}
+          {isDragging && (
+            <div className="absolute inset-0 z-10 bg-primary/10 border-2 border-dashed border-primary rounded-lg flex items-center justify-center">
+              <div className="flex flex-col items-center gap-2 text-primary">
+                <Upload className="h-8 w-8" />
+                <span className="font-medium">Drop images here</span>
+              </div>
+            </div>
+          )}
+
           {/* Text input */}
           <div>
             <Textarea
-              placeholder="What's on your mind?"
+              placeholder="What's on your mind? (Drag & drop images here)"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               className="min-h-[120px] resize-none border-border/50 focus:border-primary"
