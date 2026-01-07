@@ -1,22 +1,21 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { format } from "date-fns";
-import { Settings, Save, Check, Maximize2, X, ImagePlus, Loader2 } from "lucide-react";
+import { Settings, Save, Check, Maximize2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { JournalTiptapEditor, TiptapEditorRef } from "@/components/journal/JournalTiptapEditor";
-import { JournalToolbar } from "@/components/journal/JournalToolbar";
+import { EvernoteToolbarEditor, EvernoteToolbarEditorRef } from "@/components/editor/EvernoteToolbarEditor";
 import { JournalSidebarPanel } from "@/components/journal/JournalSidebarPanel";
 import { JournalSettingsModal } from "@/components/journal/JournalSettingsModal";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
+import { extractImagesFromHTML, isJSONContent, tiptapJSONToHTML } from "@/lib/editorUtils";
 import {
   JournalEntry,
   JournalTemplate,
   JOURNAL_SKINS,
   DEFAULT_TEMPLATE,
-  DEFAULT_QUESTIONS,
 } from "@/components/journal/types";
 
 interface JournalAnswer {
@@ -28,79 +27,60 @@ interface JournalAnswer {
   updated_at: string;
 }
 
-const generateInitialContent = (questions: { text: string }[]) => {
-  const content = {
-    type: "doc",
-    content: questions.flatMap((q) => [
-      { type: "heading", attrs: { level: 2, textAlign: "left" }, content: [{ type: "text", text: q.text }] },
-      { type: "paragraph", attrs: { textAlign: "left" }, content: [] },
-    ]),
-  };
-  return JSON.stringify(content);
+// Generate initial HTML content with questions as headings
+const generateInitialHTMLContent = (questions: { text: string }[]) => {
+  return questions.map(q => `<h2>${q.text}</h2><p></p>`).join('');
 };
 
-// Extract answers from TipTap content based on question headings
-const extractAnswersFromContent = (contentJSON: string, questions: { id: string; text: string }[]): { question_id: string; answer_text: string }[] => {
-  try {
-    const parsed = typeof contentJSON === "string" ? JSON.parse(contentJSON) : contentJSON;
-    if (!parsed?.content) return [];
-
-    const answers: { question_id: string; answer_text: string }[] = [];
-    let currentQuestionId: string | null = null;
-    let currentAnswerParts: string[] = [];
-
-    const extractText = (node: any): string => {
-      if (!node) return "";
-      if (node.text) return node.text;
-      if (node.content && Array.isArray(node.content)) {
-        return node.content.map(extractText).join("");
+// Extract answers from HTML content based on question headings
+const extractAnswersFromHTMLContent = (html: string, questions: { id: string; text: string }[]): { question_id: string; answer_text: string }[] => {
+  if (!html) return [];
+  
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const answers: { question_id: string; answer_text: string }[] = [];
+  
+  // Find all h2 elements
+  const headings = doc.querySelectorAll('h2');
+  
+  headings.forEach((heading) => {
+    const headingText = heading.textContent?.trim() || '';
+    const matchedQuestion = questions.find(q => q.text === headingText);
+    
+    if (matchedQuestion) {
+      // Collect all sibling elements until the next h2
+      let answerParts: string[] = [];
+      let sibling = heading.nextElementSibling;
+      
+      while (sibling && sibling.tagName !== 'H2') {
+        const text = sibling.textContent?.trim();
+        if (text) answerParts.push(text);
+        sibling = sibling.nextElementSibling;
       }
-      return "";
-    };
-
-    for (const node of parsed.content) {
-      if (node.type === "heading" && node.attrs?.level === 2) {
-        // Save previous answer if exists
-        if (currentQuestionId) {
-          answers.push({
-            question_id: currentQuestionId,
-            answer_text: currentAnswerParts.join("\n").trim(),
-          });
-        }
-
-        // Find matching question
-        const headingText = extractText(node).trim();
-        const matchedQuestion = questions.find((q) => q.text === headingText);
-        currentQuestionId = matchedQuestion?.id || null;
-        currentAnswerParts = [];
-      } else if (currentQuestionId) {
-        // Collect answer content
-        const text = extractText(node);
-        if (text) currentAnswerParts.push(text);
-      }
-    }
-
-    // Save last answer
-    if (currentQuestionId) {
+      
       answers.push({
-        question_id: currentQuestionId,
-        answer_text: currentAnswerParts.join("\n").trim(),
+        question_id: matchedQuestion.id,
+        answer_text: answerParts.join('\n'),
       });
     }
+  });
+  
+  return answers;
+};
 
-    return answers;
-  } catch {
-    return [];
-  }
+// Rebuild HTML content from answers
+const rebuildHTMLFromAnswers = (answers: JournalAnswer[], questions: { id: string; text: string }[]) => {
+  return questions.map(q => {
+    const answer = answers.find(a => a.question_id === q.id);
+    const answerText = answer?.answer_text || '';
+    return `<h2>${q.text}</h2><p>${answerText}</p>`;
+  }).join('');
 };
 
 export default function Journal() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const editorRef = useRef<TiptapEditorRef>(null);
-  
-  // Track editor availability for toolbar - refs don't cause re-renders
-  const [editorReady, setEditorReady] = useState(false);
+  const editorRef = useRef<EvernoteToolbarEditorRef>(null);
 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -111,23 +91,6 @@ export default function Journal() {
   const [isLoading, setIsLoading] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isFullPage, setIsFullPage] = useState(false);
-  const [fontFamily, setFontFamily] = useState("Inter");
-  const [fontSize, setFontSize] = useState(16);
-  const [attachedImages, setAttachedImages] = useState<string[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Check for editor readiness after content state is defined
-  useEffect(() => {
-    setEditorReady(false); // Reset when content changes
-    const checkEditor = setInterval(() => {
-      if (editorRef.current?.editor) {
-        setEditorReady(true);
-        clearInterval(checkEditor);
-      }
-    }, 50);
-    return () => clearInterval(checkEditor);
-  }, [content]);
 
   const [template, setTemplate] = useState<JournalTemplate>(() => {
     const saved = localStorage.getItem("journal_template");
@@ -195,10 +158,15 @@ export default function Journal() {
           .select("*")
           .eq("journal_entry_id", entryData.id);
 
-        const contentJSON =
-          typeof entryData.text_formatting === "string"
-            ? entryData.text_formatting
-            : JSON.stringify(entryData.text_formatting) || "";
+        // Get the content and convert from JSON to HTML if necessary
+        let contentToUse = typeof entryData.text_formatting === "string"
+          ? entryData.text_formatting
+          : JSON.stringify(entryData.text_formatting) || "";
+        
+        // Convert legacy JSON content to HTML
+        if (isJSONContent(contentToUse)) {
+          contentToUse = tiptapJSONToHTML(contentToUse);
+        }
 
         const images = Array.isArray(entryData.images_data) ? (entryData.images_data as string[]) : [];
         setCurrentEntry({
@@ -207,29 +175,27 @@ export default function Journal() {
           createdAt: entryData.created_at,
           updatedAt: entryData.updated_at,
           title: entryData.daily_feeling || "Untitled",
-          contentJSON,
+          contentJSON: contentToUse,
           mood: entryData.daily_feeling || undefined,
           tags: entryData.tags || [],
           imagesData: images,
         });
-        setAttachedImages(images);
         setCurrentAnswers(answersData || []);
         
-        // If we have answers, rebuild content from them
-        if (answersData && answersData.length > 0) {
-          const rebuiltContent = rebuildContentFromAnswers(answersData, template.questions);
+        // If we have answers but empty content, rebuild from answers
+        if (answersData && answersData.length > 0 && !contentToUse.trim()) {
+          const rebuiltContent = rebuildHTMLFromAnswers(answersData, template.questions);
           setContent(rebuiltContent);
         } else {
-          setContent(contentJSON);
+          setContent(contentToUse);
         }
       } else {
         const initialContent = template.applyOnNewEntry
-          ? generateInitialContent(template.questions)
-          : JSON.stringify({ type: "doc", content: [{ type: "paragraph" }] });
+          ? generateInitialHTMLContent(template.questions)
+          : '<p></p>';
         setCurrentEntry(null);
         setCurrentAnswers([]);
         setContent(initialContent);
-        setAttachedImages([]);
       }
       setIsSaved(true);
       setIsLoading(false);
@@ -238,45 +204,33 @@ export default function Journal() {
     fetchOrCreateEntry();
   }, [selectedDate, user, template.applyOnNewEntry, template.questions]);
 
-  // Rebuild TipTap content from answers
-  const rebuildContentFromAnswers = (answers: JournalAnswer[], questions: { id: string; text: string }[]) => {
-    const content = {
-      type: "doc",
-      content: questions.flatMap((q) => {
-        const answer = answers.find((a) => a.question_id === q.id);
-        const answerContent = answer?.answer_text 
-          ? [{ type: "text", text: answer.answer_text }]
-          : [];
-        
-        return [
-          { type: "heading", attrs: { level: 2, textAlign: "left" }, content: [{ type: "text", text: q.text }] },
-          { type: "paragraph", attrs: { textAlign: "left" }, content: answerContent },
-        ];
-      }),
-    };
-    return JSON.stringify(content);
-  };
-
-  const handleContentChange = useCallback((newContent: string) => {
-    setContent(newContent);
+  const handleContentChange = useCallback(({ contentRich, plainText }: { contentRich: string; plainText: string }) => {
+    setContent(contentRich);
     setIsSaved(false);
   }, []);
 
   const handleSave = async () => {
     if (!user) return;
     const dateStr = format(selectedDate, "yyyy-MM-dd");
+    
+    // Get content from editor
+    const contentHTML = editorRef.current?.getHTML() || content;
+    const contentPlainText = editorRef.current?.getText() || '';
+    
+    // Extract inline images from the HTML content
+    const inlineImages = extractImagesFromHTML(contentHTML);
 
     try {
-      // Extract answers from current content
-      const extractedAnswers = extractAnswersFromContent(content, template.questions);
+      // Extract answers from current HTML content
+      const extractedAnswers = extractAnswersFromHTMLContent(contentHTML, template.questions);
 
       if (currentEntry) {
         // Update entry
         await supabase
           .from("journal_entries")
           .update({
-            text_formatting: content,
-            images_data: attachedImages,
+            text_formatting: contentHTML,
+            images_data: inlineImages.length > 0 ? inlineImages : null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", currentEntry.id);
@@ -303,6 +257,24 @@ export default function Journal() {
               });
           }
         }
+
+        // Update feed event with inline images
+        const { data: existingFeedEvent } = await supabase
+          .from("feed_events")
+          .select("id")
+          .eq("source_id", currentEntry.id)
+          .eq("source_module", "journal")
+          .maybeSingle();
+
+        if (existingFeedEvent) {
+          await supabase
+            .from("feed_events")
+            .update({
+              content_preview: contentPlainText.substring(0, 500),
+              media: inlineImages.length > 0 ? inlineImages : null,
+            })
+            .eq("id", existingFeedEvent.id);
+        }
       } else {
         // Create new entry
         const { data: newEntry } = await supabase
@@ -310,8 +282,8 @@ export default function Journal() {
           .insert({
             user_id: user.id,
             entry_date: dateStr,
-            text_formatting: content,
-            images_data: attachedImages,
+            text_formatting: contentHTML,
+            images_data: inlineImages.length > 0 ? inlineImages : null,
           })
           .select()
           .single();
@@ -328,14 +300,30 @@ export default function Journal() {
             await supabase.from("journal_answers").insert(answersToInsert);
           }
 
+          // Create feed event with inline images
+          await supabase.from("feed_events").insert({
+            user_id: user.id,
+            type: "journal_entry",
+            source_module: "journal",
+            source_id: newEntry.id,
+            title: `Journal Entry - ${format(selectedDate, "MMMM d, yyyy")}`,
+            content_preview: contentPlainText.substring(0, 500),
+            media: inlineImages.length > 0 ? inlineImages : null,
+            metadata: {
+              journal_date: dateStr,
+              entry_id: newEntry.id,
+            },
+          });
+
           const entry: JournalEntry = {
             id: newEntry.id,
             entryDate: newEntry.entry_date,
             createdAt: newEntry.created_at,
             updatedAt: newEntry.updated_at,
             title: "Untitled",
-            contentJSON: content,
+            contentJSON: contentHTML,
             tags: [],
+            imagesData: inlineImages,
           };
           setCurrentEntry(entry);
           setEntries((prev) => [entry, ...prev]);
@@ -370,45 +358,7 @@ export default function Journal() {
   };
 
   const handleInsertPrompt = (prompt: string) => {
-    editorRef.current?.editor?.chain().focus().insertContent(`\n\n${prompt}\n\n`).run();
-    setIsSaved(false);
-  };
-
-  const handleImageUpload = async (files: FileList | null) => {
-    if (!files || !user) return;
-    setIsUploading(true);
-
-    const uploadedUrls: string[] = [];
-    for (const file of Array.from(files)) {
-      if (!file.type.startsWith("image/")) continue;
-      if (file.size > 5 * 1024 * 1024) {
-        toast({ title: "File too large", description: "Max 5MB per image", variant: "destructive" });
-        continue;
-      }
-
-      const ext = file.name.split(".").pop();
-      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error } = await supabase.storage.from("journal-images").upload(path, file);
-      
-      if (error) {
-        console.error("Upload error:", error);
-        toast({ title: "Upload failed", description: error.message, variant: "destructive" });
-        continue;
-      }
-
-      const { data: urlData } = supabase.storage.from("journal-images").getPublicUrl(path);
-      uploadedUrls.push(urlData.publicUrl);
-    }
-
-    if (uploadedUrls.length > 0) {
-      setAttachedImages((prev) => [...prev, ...uploadedUrls]);
-      setIsSaved(false);
-    }
-    setIsUploading(false);
-  };
-
-  const removeImage = (index: number) => {
-    setAttachedImages((prev) => prev.filter((_, i) => i !== index));
+    editorRef.current?.editor?.chain().focus().insertContent(`<p>${prompt}</p>`).run();
     setIsSaved(false);
   };
 
@@ -467,29 +417,17 @@ export default function Journal() {
           </div>
         </div>
 
-        {/* Centered editor */}
+        {/* Centered editor with Evernote toolbar */}
         <div className="flex-1 overflow-auto">
           <div className="max-w-3xl mx-auto w-full px-8 py-6">
-            <div className="mb-4">
-            <JournalToolbar
-                editor={editorReady ? editorRef.current?.editor ?? null : null}
-                fontFamily={fontFamily}
-                fontSize={fontSize}
-                onFontFamilyChange={setFontFamily}
-                onFontSizeChange={setFontSize}
-              />
-            </div>
-            <JournalTiptapEditor
+            <EvernoteToolbarEditor
               ref={editorRef}
-              content={content}
-              onChange={handleContentChange}
-              skinStyles={{
-                editorPaperBg: currentSkin.editorPaperBg,
-                text: currentSkin.text,
-                mutedText: currentSkin.mutedText,
-              }}
-              fontFamily={fontFamily}
-              fontSize={fontSize}
+              initialContentRich={content}
+              onContentChange={handleContentChange}
+              onSave={handleSave}
+              autosaveDebounce={1500}
+              placeholder="Start writing your journal entry..."
+              className="min-h-[500px]"
             />
           </div>
         </div>
@@ -521,159 +459,96 @@ export default function Journal() {
         {/* Main Editor Area */}
         <div className="flex flex-col min-w-0 min-h-0">
           <div className="flex-1 flex flex-col min-h-0">
-        <div className="flex items-center justify-between mb-4">
-          {/* Date and Day - Left side */}
-          <span 
-            className="text-sm font-light tracking-wide uppercase"
-            style={{ color: currentSkin.text }}
-          >
-            {format(selectedDate, "EEEE, MMMM d, yyyy")}
-          </span>
-          <div className="flex items-center gap-2">
-            <span
-              className="text-xs flex items-center gap-1"
-              style={{ color: currentSkin.mutedText }}
-            >
-              {isSaved ? (
-                <>
-                  <Check className="h-3 w-3" /> Saved
-                </>
-              ) : (
-                "Not saved yet"
-              )}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsFullPage(true)}
-              style={{ borderColor: currentSkin.border, color: currentSkin.text }}
-              title="Full page mode"
-            >
-              <Maximize2 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSettingsOpen(true)}
-              style={{ borderColor: currentSkin.border, color: currentSkin.text }}
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-              style={{ borderColor: currentSkin.border, color: currentSkin.text }}
-            >
-              {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={(e) => handleImageUpload(e.target.files)}
-            />
-            <Button size="sm" onClick={handleSave} disabled={isSaved}>
-              <Save className="h-4 w-4 mr-1" />
-              Save
-            </Button>
-          </div>
-        </div>
-
-        {/* Toolbar */}
-        <div className="mb-4">
-          <JournalToolbar
-            editor={editorReady ? editorRef.current?.editor ?? null : null}
-            fontFamily={fontFamily}
-            fontSize={fontSize}
-            onFontFamilyChange={setFontFamily}
-            onFontSizeChange={setFontSize}
-          />
-        </div>
-
-        {/* Editor */}
-        {isLoading ? (
-          <div
-            className="flex-1 rounded-lg border flex items-center justify-center"
-            style={{
-              backgroundColor: currentSkin.editorPaperBg,
-              borderColor: currentSkin.border,
-            }}
-          >
-            <p style={{ color: currentSkin.mutedText }}>Loading...</p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            <JournalTiptapEditor
-              ref={editorRef}
-              content={content}
-              onChange={handleContentChange}
-              skinStyles={{
-                editorPaperBg: currentSkin.editorPaperBg,
-                text: currentSkin.text,
-                mutedText: currentSkin.mutedText,
-              }}
-              fontFamily={fontFamily}
-              fontSize={fontSize}
-            />
-            
-            {/* Display attached images */}
-            {attachedImages.length > 0 && (
-              <div 
-                className="rounded-lg border p-4"
-                style={{ backgroundColor: currentSkin.editorPaperBg, borderColor: currentSkin.border }}
+            <div className="flex items-center justify-between mb-4">
+              {/* Date and Day - Left side */}
+              <span 
+                className="text-sm font-light tracking-wide uppercase"
+                style={{ color: currentSkin.text }}
               >
-                <p className="text-sm font-medium mb-3" style={{ color: currentSkin.mutedText }}>
-                  Attached Images
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {attachedImages.map((url, i) => (
-                    <div key={i} className="aspect-square rounded-lg overflow-hidden relative group">
-                      <img
-                        src={url}
-                        alt={`Attached ${i + 1}`}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
-                        onClick={() => window.open(url, '_blank')}
-                      />
-                      <button
-                        onClick={(e) => { e.stopPropagation(); removeImage(i); }}
-                        className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                {format(selectedDate, "EEEE, MMMM d, yyyy")}
+              </span>
+              <div className="flex items-center gap-2">
+                <span
+                  className="text-xs flex items-center gap-1"
+                  style={{ color: currentSkin.mutedText }}
+                >
+                  {isSaved ? (
+                    <>
+                      <Check className="h-3 w-3" /> Saved
+                    </>
+                  ) : (
+                    "Not saved yet"
+                  )}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsFullPage(true)}
+                  style={{ borderColor: currentSkin.border, color: currentSkin.text }}
+                  title="Full page mode"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSettingsOpen(true)}
+                  style={{ borderColor: currentSkin.border, color: currentSkin.text }}
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+                <Button size="sm" onClick={handleSave} disabled={isSaved}>
+                  <Save className="h-4 w-4 mr-1" />
+                  Save
+                </Button>
               </div>
+            </div>
+
+            {/* Editor with integrated toolbar */}
+            {isLoading ? (
+              <div
+                className="flex-1 rounded-lg border flex items-center justify-center"
+                style={{
+                  backgroundColor: currentSkin.editorPaperBg,
+                  borderColor: currentSkin.border,
+                }}
+              >
+                <p style={{ color: currentSkin.mutedText }}>Loading...</p>
+              </div>
+            ) : (
+              <EvernoteToolbarEditor
+                ref={editorRef}
+                initialContentRich={content}
+                onContentChange={handleContentChange}
+                onSave={handleSave}
+                autosaveDebounce={1500}
+                placeholder="Start writing your journal entry..."
+                className="min-h-[400px]"
+              />
             )}
           </div>
-        )}
         </div>
-      </div>
 
-      {/* Right Sidebar */}
-      <aside className="hidden lg:flex flex-col h-full overflow-y-auto p-4 pl-0">
-        <JournalSidebarPanel
-          selectedDate={selectedDate}
-          onDateSelect={setSelectedDate}
-          entries={entries}
-          onInsertPrompt={handleInsertPrompt}
-          skin={currentSkin}
+        {/* Right Sidebar */}
+        <aside className="hidden lg:flex flex-col h-full overflow-y-auto p-4 pl-0">
+          <JournalSidebarPanel
+            selectedDate={selectedDate}
+            onDateSelect={setSelectedDate}
+            entries={entries}
+            onInsertPrompt={handleInsertPrompt}
+            skin={currentSkin}
+          />
+        </aside>
+
+        {/* Settings Modal */}
+        <JournalSettingsModal
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          template={template}
+          onTemplateChange={handleTemplateChange}
+          currentSkinId={currentSkinId}
+          onSkinChange={handleSkinChange}
         />
-      </aside>
-
-      {/* Settings Modal */}
-      <JournalSettingsModal
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-        template={template}
-        onTemplateChange={handleTemplateChange}
-        currentSkinId={currentSkinId}
-        onSkinChange={handleSkinChange}
-      />
       </div>
     </div>
   );

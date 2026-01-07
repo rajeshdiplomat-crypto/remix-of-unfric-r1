@@ -122,19 +122,15 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
     const dateStr = format(new Date(), "yyyy-MM-dd");
 
     try {
-      // Create journal entry with the content
+      // Create journal entry with the content as HTML
+      const contentHTML = `<p>${content}</p>`;
       const { data: newEntry, error: entryError } = await supabase
         .from("journal_entries")
         .insert({
           user_id: user.id,
           entry_date: dateStr,
           daily_feeling: content.substring(0, 100), // First 100 chars as title
-          text_formatting: JSON.stringify({
-            type: "doc",
-            content: [
-              { type: "paragraph", attrs: { textAlign: "left" }, content: [{ type: "text", text: content }] },
-            ],
-          }),
+          text_formatting: contentHTML,
           images_data: attachedImages.length > 0 ? attachedImages : null,
         })
         .select()
