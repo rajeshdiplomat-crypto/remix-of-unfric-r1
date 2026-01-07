@@ -65,7 +65,7 @@ export function AppSidebar() {
                 className="h-8 w-8 object-cover"
               />
             ) : (
-              <img src={logo} alt="ambalanced" className="h-[3.75rem] dark:invert" />
+              <img src={logo} alt="ambalanced" className="h-[7.5rem] dark:invert" />
             )}
           </div>
           <div className="flex items-center gap-1">
