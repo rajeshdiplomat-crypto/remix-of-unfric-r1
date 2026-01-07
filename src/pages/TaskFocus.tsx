@@ -635,4 +635,7 @@ export default function TaskFocus() {
           </div>
         </>
       )}
+     </div>
+  );
+}
 }
