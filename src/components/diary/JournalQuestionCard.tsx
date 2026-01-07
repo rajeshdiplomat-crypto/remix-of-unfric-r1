@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import DOMPurify from "dompurify";
 import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
@@ -160,16 +160,17 @@ export function JournalQuestionCard({
     .sort(([, a], [, b]) => b - a)
     .slice(0, 3);
 
-  const actionBtn =
-    "w-full h-9 px-3 rounded-lg flex items-center justify-center gap-2 " +
-    "text-sm text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors " +
-    "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+  const actionCellBase =
+    "w-full flex items-center justify-center gap-2 px-3 py-2 text-sm " +
+    "text-muted-foreground hover:text-foreground hover:bg-muted/25 transition-colors " +
+    "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 
   return (
     <Card className="overflow-hidden bg-card border-border/40 shadow-sm hover:shadow-md transition-shadow rounded-xl">
+      {/* Header */}
       <div className="px-4 pt-4 pb-2">
         <div className="flex items-center justify-between" role="banner">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <Avatar className="h-8 w-8">
               <AvatarImage src={authorAvatarUrl} alt={authorName} className="object-cover" />
               <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
@@ -177,11 +178,11 @@ export function JournalQuestionCard({
               </AvatarFallback>
             </Avatar>
 
-            <div className="flex flex-col">
+            <div className="flex flex-col min-w-0">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="text-sm font-semibold text-foreground cursor-default">
+                    <span className="text-sm font-semibold text-foreground cursor-default truncate">
                       Journal | {formattedJournalDate}
                     </span>
                   </TooltipTrigger>
@@ -194,7 +195,7 @@ export function JournalQuestionCard({
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="text-xs text-muted-foreground cursor-default">{formattedEntryDate}</span>
+                    <span className="text-xs text-muted-foreground cursor-default truncate">{formattedEntryDate}</span>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
                     <p className="text-xs font-mono">{fullEntryDate}</p>
@@ -226,6 +227,7 @@ export function JournalQuestionCard({
         </div>
       </div>
 
+      {/* Body */}
       <CardContent className="px-4 pb-4 pt-2">
         <h3 className="text-base font-medium text-foreground mb-2">{questionLabel}</h3>
 
@@ -298,18 +300,23 @@ export function JournalQuestionCard({
           </div>
         )}
 
-        {/* ✅ Equal-width actions row */}
-        <div className="mt-4 pt-3 border-t border-border/50">
-          <div className="grid grid-cols-3 gap-2 w-full">
+        {/* ✅ FIXED ACTION BAR: equal width, full stretch */}
+        <div className="mt-4 pt-3 border-t border-border/50 -mx-4">
+          <div className="grid grid-cols-3 divide-x divide-border/60">
+            {/* React */}
             <Popover>
               <PopoverTrigger asChild>
-                <button aria-pressed={!!userReaction} className={cn(actionBtn, userReaction && "text-primary")}>
+                <button aria-pressed={!!userReaction} className={cn(actionCellBase, userReaction && "text-primary")}>
                   {userReaction ? (
-                    <span className="text-base">{REACTION_TYPES.find((r) => r.type === userReaction)?.emoji}</span>
+                    <span className="text-[15px] leading-none">
+                      {REACTION_TYPES.find((r) => r.type === userReaction)?.emoji}
+                    </span>
                   ) : (
                     <ThumbsUp className="h-4 w-4" />
                   )}
-                  <span>{userReaction ? REACTION_TYPES.find((r) => r.type === userReaction)?.label : "React"}</span>
+                  <span className="truncate">
+                    {userReaction ? REACTION_TYPES.find((r) => r.type === userReaction)?.label : "React"}
+                  </span>
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-2" side="top">
@@ -333,23 +340,25 @@ export function JournalQuestionCard({
               </PopoverContent>
             </Popover>
 
+            {/* Comment */}
             <button
               onClick={() => setShowComposer(!showComposer)}
               aria-pressed={showComposer}
-              className={cn(actionBtn, showComposer && "text-primary")}
+              className={cn(actionCellBase, showComposer && "text-primary")}
             >
               <MessageCircle className="h-4 w-4" />
-              <span>Comment</span>
+              <span className="truncate">Comment</span>
             </button>
 
+            {/* Share */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className={actionBtn}>
+                <button className={actionCellBase}>
                   <Share2 className="h-4 w-4" />
-                  <span>Share</span>
+                  <span className="truncate">Share</span>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={handleCopyLink}>
                   <Copy className="h-4 w-4 mr-2" />
                   Copy link
@@ -367,6 +376,7 @@ export function JournalQuestionCard({
           </div>
         </div>
 
+        {/* Inline Comment Composer */}
         {showComposer && (
           <div className="mt-3 pt-3 border-t border-border/30">
             <div className="flex gap-2">

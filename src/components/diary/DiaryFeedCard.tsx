@@ -131,7 +131,7 @@ export function DiaryFeedCard({
   const dueDate = metadata?.due_date;
   const subtasks = metadata?.subtasks as { text: string; completed: boolean }[] | undefined;
   const tags = metadata?.tags as string[] | undefined;
-  const entryDateStr = metadata?.entry_date;
+  const entryDateStr = metadata?.entry_date; // For emotions, journal entries, etc.
 
   // Date formatting - entry_date for display, created_at for logged time
   const displayDate = entryDateStr ? new Date(entryDateStr + "T12:00:00") : new Date(event.created_at);
@@ -200,10 +200,10 @@ export function DiaryFeedCard({
     setEditText("");
   };
 
-  const actionBtn =
-    "w-full h-9 px-3 rounded-lg flex items-center justify-center gap-2 " +
-    "text-sm text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors " +
-    "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+  const actionCellBase =
+    "w-full flex items-center justify-center gap-2 px-3 py-2 text-sm " +
+    "text-muted-foreground hover:text-foreground hover:bg-muted/25 transition-colors " +
+    "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 
   return (
     <Card className="overflow-hidden bg-card border-border/40 shadow-[0_6px_18px_hsl(210_29%_8%/0.06)] hover:shadow-[0_10px_30px_hsl(210_29%_8%/0.08)] transition-all duration-200 rounded-[10px]">
@@ -218,18 +218,19 @@ export function DiaryFeedCard({
           {/* Header */}
           <div className="px-4 pt-4 pb-2">
             <div className="flex items-center justify-between" role="banner">
-              <div className="flex items-center gap-3">
+              {/* Left: Avatar + Label block */}
+              <div className="flex items-center gap-3 min-w-0">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className={cn("text-xs font-medium", config.bgColor, config.color)}>
                     <IconComponent className="h-4 w-4" />
                   </AvatarFallback>
                 </Avatar>
 
-                <div className="flex flex-col">
+                <div className="flex flex-col min-w-0">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span className="text-sm font-semibold text-foreground cursor-default">
+                        <span className="text-sm font-semibold text-foreground cursor-default truncate">
                           {config.label} | {formattedDate}
                         </span>
                       </TooltipTrigger>
@@ -242,7 +243,7 @@ export function DiaryFeedCard({
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span className="text-xs text-muted-foreground cursor-default">{formattedTime}</span>
+                        <span className="text-xs text-muted-foreground cursor-default truncate">{formattedTime}</span>
                       </TooltipTrigger>
                       <TooltipContent side="bottom">
                         <p className="text-xs font-mono">{fullDate}</p>
@@ -252,6 +253,7 @@ export function DiaryFeedCard({
                 </div>
               </div>
 
+              {/* Right: More menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
@@ -274,7 +276,9 @@ export function DiaryFeedCard({
             </div>
           </div>
 
+          {/* Body */}
           <CardContent className="px-4 pb-4 pt-2">
+            {/* Title */}
             <h3
               className="text-base font-medium text-foreground mb-2 cursor-pointer hover:underline"
               onClick={() => onNavigateToSource(event)}
@@ -282,6 +286,7 @@ export function DiaryFeedCard({
               {event.type === "complete" ? `Completed: ${event.title}` : event.title}
             </h3>
 
+            {/* Content */}
             {contentPreview ? (
               <>
                 <div
@@ -304,6 +309,7 @@ export function DiaryFeedCard({
               </>
             ) : null}
 
+            {/* Subtasks */}
             {subtasks && subtasks.length > 0 && (
               <div className="space-y-1.5 mt-3">
                 {subtasks.map((task, i) => (
@@ -322,6 +328,7 @@ export function DiaryFeedCard({
               </div>
             )}
 
+            {/* Tags */}
             {tags && tags.length > 0 && (
               <div className="flex items-center gap-2 mt-3 flex-wrap">
                 {tags.map((tag, i) => (
@@ -332,6 +339,7 @@ export function DiaryFeedCard({
               </div>
             )}
 
+            {/* Priority & Due */}
             {(priority || dueDate) && (
               <div className="flex items-center gap-2 mt-3 flex-wrap">
                 {priority && (
@@ -357,6 +365,7 @@ export function DiaryFeedCard({
               </div>
             )}
 
+            {/* Extra media grid */}
             {event.media && event.media.length > 1 && (
               <div
                 className={cn(
@@ -372,6 +381,7 @@ export function DiaryFeedCard({
               </div>
             )}
 
+            {/* Reaction summary */}
             {totalReactions > 0 && (
               <div className="flex items-center gap-2 py-2 mt-2">
                 <div className="flex -space-x-1">
@@ -387,18 +397,22 @@ export function DiaryFeedCard({
               </div>
             )}
 
-            {/* ✅ Equal-width actions row */}
-            <div className="mt-4 pt-3 border-t border-border/50">
-              <div className="grid grid-cols-3 gap-2 w-full">
+            {/* ✅ FIXED ACTION BAR: equal width, full stretch */}
+            <div className="mt-4 pt-3 border-t border-border/50 -mx-4">
+              <div className="grid grid-cols-3 divide-x divide-border/60">
+                {/* React */}
                 <Popover>
                   <PopoverTrigger asChild>
-                    <button aria-pressed={!!userReaction} className={cn(actionBtn, userReaction && "text-primary")}>
+                    <button
+                      aria-pressed={!!userReaction}
+                      className={cn(actionCellBase, userReaction && "text-primary")}
+                    >
                       {userReaction ? (
-                        <span className="text-base">{userReaction}</span>
+                        <span className="text-[15px] leading-none">{userReaction}</span>
                       ) : (
                         <ThumbsUp className="h-4 w-4" />
                       )}
-                      <span>
+                      <span className="truncate">
                         {userReaction
                           ? REACTION_TYPES.find((r) => r.emoji === userReaction)?.label || "React"
                           : "React"}
@@ -426,23 +440,25 @@ export function DiaryFeedCard({
                   </PopoverContent>
                 </Popover>
 
+                {/* Comment */}
                 <button
                   onClick={() => setShowComments(!showComments)}
                   aria-pressed={showComments}
-                  className={cn(actionBtn, showComments && "text-primary")}
+                  className={cn(actionCellBase, showComments && "text-primary")}
                 >
                   <MessageCircle className="h-4 w-4" />
-                  <span>Comment</span>
+                  <span className="truncate">Comment</span>
                 </button>
 
+                {/* Share */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className={actionBtn}>
+                    <button className={actionCellBase}>
                       <Share2 className="h-4 w-4" />
-                      <span>Share</span>
+                      <span className="truncate">Share</span>
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuContent align="end" className="w-48">
                     <DropdownMenuItem onClick={handleCopyLink}>
                       <Copy className="h-4 w-4 mr-2" />
                       Copy link
@@ -460,8 +476,10 @@ export function DiaryFeedCard({
               </div>
             </div>
 
+            {/* Comments section */}
             {showComments && (
               <div className="mt-3 pt-3 border-t border-border/30 space-y-3">
+                {/* Comment input */}
                 <div className="flex gap-2">
                   <Input
                     placeholder="Write a comment..."
@@ -475,6 +493,7 @@ export function DiaryFeedCard({
                   </Button>
                 </div>
 
+                {/* Comments list */}
                 {topLevelComments.map((comment) => (
                   <div key={comment.id} className="space-y-2">
                     <div className="bg-muted/30 rounded-lg p-3">
@@ -528,6 +547,7 @@ export function DiaryFeedCard({
                       )}
                     </div>
 
+                    {/* Replies */}
                     {getReplies(comment.id).map((reply) => (
                       <div key={reply.id} className="ml-6 bg-muted/20 rounded-lg p-3">
                         <p className="text-sm">{reply.text}</p>
@@ -543,6 +563,7 @@ export function DiaryFeedCard({
                       </div>
                     ))}
 
+                    {/* Reply input */}
                     {replyingTo === comment.id && (
                       <div className="ml-6 flex gap-2">
                         <Input
