@@ -60,32 +60,36 @@ const ModuleSection = ({ title, description, features, imageSrc, imageLeft }: Mo
 const modules = [
   {
     title: "DIARY",
-    description: "Your daily companion for reflection and growth. Capture moments, track patterns, and celebrate your journey with an elegant feed-style experience.",
+    description:
+      "Your daily companion for reflection and growth. Capture moments, track patterns, and celebrate your journey with an elegant feed-style experience.",
     features: ["Daily check-ins", "Photo memories", "AI-powered insights", "Weekly summaries"],
     imageSrc: "https://images.unsplash.com/photo-1517842645767-c639042777db?w=1200&h=1600&fit=crop&q=80",
-    imageLeft: true
+    imageLeft: true,
   },
   {
     title: "EMOTIONS",
-    description: "Track your emotional journey with beautiful visualizations. Understand your patterns, discover triggers, and nurture your mental wellness.",
+    description:
+      "Track your emotional journey with beautiful visualizations. Understand your patterns, discover triggers, and nurture your mental wellness.",
     features: ["Emotion tracking", "Pattern recognition", "Coping strategies", "Guided exercises"],
     imageSrc: "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=1200&h=1600&fit=crop&q=80",
-    imageLeft: false
+    imageLeft: false,
   },
   {
     title: "JOURNAL",
-    description: "A sanctuary for your thoughts and ideas. Write freely with a rich editor, organize with prompts, and let your creativity flow.",
+    description:
+      "A sanctuary for your thoughts and ideas. Write freely with a rich editor, organize with prompts, and let your creativity flow.",
     features: ["Rich text editor", "Daily prompts", "Drawing canvas", "Auto-save"],
     imageSrc: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=1200&h=1600&fit=crop&q=80",
-    imageLeft: true
+    imageLeft: true,
   },
   {
     title: "MANIFEST",
-    description: "Visualize and attract your dreams into reality. Set intentions, practice affirmations, and track your manifestation journey.",
+    description:
+      "Visualize and attract your dreams into reality. Set intentions, practice affirmations, and track your manifestation journey.",
     features: ["Vision boards", "Daily affirmations", "Visualization mode", "Progress tracking"],
     imageSrc: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&h=1600&fit=crop&q=80",
-    imageLeft: false
-  }
+    imageLeft: false,
+  },
 ];
 
 export default function Auth() {
@@ -104,7 +108,7 @@ export default function Auth() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email) {
       toast.error("Please enter your email");
       return;
@@ -186,9 +190,7 @@ export default function Auth() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground uppercase tracking-[0.2em] text-xs">
-          Loading...
-        </div>
+        <div className="animate-pulse text-muted-foreground uppercase tracking-[0.2em] text-xs">Loading...</div>
       </div>
     );
   }
@@ -214,11 +216,7 @@ export default function Auth() {
         <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 md:px-16 xl:px-24 py-12 lg:py-0">
           <div className="max-w-sm mx-auto w-full">
             {/* Brand name */}
-            <img 
-              src={logo} 
-              alt="ambalanced" 
-              className="h-12 lg:h-16 mb-16 dark:invert" 
-            />
+            <img src={logo} alt="ambalanced" className="h-12 lg:h-16 mb-19 dark:invert" />
 
             {/* Section title */}
             <h2 className="text-xs uppercase tracking-[0.2em] font-normal mb-10 text-foreground">
@@ -255,8 +253,8 @@ export default function Auth() {
                 <form onSubmit={handleSubmit} className="space-y-8">
                   {/* Email field */}
                   <div>
-                    <label 
-                      htmlFor="email" 
+                    <label
+                      htmlFor="email"
                       className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground block mb-3"
                     >
                       Email
@@ -276,8 +274,8 @@ export default function Auth() {
                   {mode !== "forgot-password" && (
                     <div>
                       <div className="flex items-center justify-between mb-3">
-                        <label 
-                          htmlFor="password" 
+                        <label
+                          htmlFor="password"
                           className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground"
                         >
                           Password
@@ -305,8 +303,8 @@ export default function Auth() {
 
                   {/* Submit button */}
                   <div className="pt-4">
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       variant="outline"
                       className="w-full h-12 uppercase tracking-[0.15em] text-xs font-normal border-foreground hover:bg-foreground hover:text-background transition-all"
                       disabled={isSubmitting}
@@ -314,10 +312,10 @@ export default function Auth() {
                       {isSubmitting
                         ? "PLEASE WAIT..."
                         : mode === "forgot-password"
-                        ? "SEND RESET LINK"
-                        : mode === "signup"
-                        ? "CREATE ACCOUNT"
-                        : "LOG IN"}
+                          ? "SEND RESET LINK"
+                          : mode === "signup"
+                            ? "CREATE ACCOUNT"
+                            : "LOG IN"}
                     </Button>
                   </div>
                 </form>
@@ -339,9 +337,7 @@ export default function Auth() {
                       onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
                       className="text-[11px] uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      {mode === "signup"
-                        ? "Already have an account? Log in"
-                        : "Don't have an account? Create one"}
+                      {mode === "signup" ? "Already have an account? Log in" : "Don't have an account? Create one"}
                     </button>
                   )}
                 </div>
@@ -352,7 +348,7 @@ export default function Auth() {
 
         {/* Right side - Full-bleed image */}
         <div className="hidden lg:block w-1/2 relative bg-muted">
-          <img 
+          <img
             src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=1999&auto=format&fit=crop"
             alt=""
             className="absolute inset-0 w-full h-full object-cover grayscale"
