@@ -217,7 +217,7 @@ export default function Auth() {
             <img 
               src={logo} 
               alt="ambalanced" 
-              className="h-8 lg:h-10 mb-16 dark:invert" 
+              className="h-24 lg:h-[7.5rem] mb-16 dark:invert" 
             />
 
             {/* Section title */}
