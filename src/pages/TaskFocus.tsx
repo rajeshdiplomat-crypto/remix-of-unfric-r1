@@ -229,6 +229,47 @@ export default function TaskFocus() {
       setLoading(false);
     }
     fetchTask();
+    // Audio refs for ambient sounds
+    const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
+
+    // Sound URLs (using free ambient sound sources)
+    const SOUND_URLS: Record<string, string> = {
+      rain: "https://cdn.pixabay.com/audio/2022/05/13/audio_257112709d.mp3",
+      ocean: "https://cdn.pixabay.com/audio/2022/06/07/audio_b9bd4170e4.mp3",
+      fireplace: "https://cdn.pixabay.com/audio/2021/08/09/audio_dc39bde808.mp3",
+      forest: "https://cdn.pixabay.com/audio/2022/03/10/audio_4dedf5bf94.mp3",
+      "coffee-shop": "https://cdn.pixabay.com/audio/2022/10/30/audio_3c7cd49d9e.mp3",
+      night: "https://cdn.pixabay.com/audio/2022/08/02/audio_884fe92c21.mp3",
+    };
+
+    // Effect to handle sound playback
+    useEffect(() => {
+      Object.entries(settings.ambientVolumes).forEach(([soundId, volume]) => {
+        const url = SOUND_URLS[soundId];
+        if (!url) return;
+
+        if (volume > 0) {
+          if (!audioRefs.current[soundId]) {
+            const audio = new Audio(url);
+            audio.loop = true;
+            audioRefs.current[soundId] = audio;
+          }
+          audioRefs.current[soundId].volume = volume / 100;
+          audioRefs.current[soundId].play().catch(() => {});
+        } else {
+          if (audioRefs.current[soundId]) {
+            audioRefs.current[soundId].pause();
+          }
+        }
+      });
+
+      return () => {
+        Object.values(audioRefs.current).forEach((audio) => {
+          audio.pause();
+          audio.src = "";
+        });
+      };
+    }, [settings.ambientVolumes]);
   }, [taskId, user]);
 
   useEffect(() => {
