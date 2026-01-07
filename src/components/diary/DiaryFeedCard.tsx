@@ -115,6 +115,11 @@ export function DiaryFeedCard({
   const IconComponent = config.icon;
   const userReaction = reactions.find((r) => r.user_id === currentUserId)?.emoji;
 
+  // Check if this is a journal entry (gets Facebook-style layout with optional image)
+  const isJournalEntry = event.source_module === 'journal';
+  // Check if user actually attached media (not preset images)
+  const hasUserAttachedMedia = event.media && event.media.length > 0;
+
   // Group reactions by emoji
   const reactionCounts: Record<string, number> = {};
   reactions.forEach((r) => {
@@ -149,20 +154,6 @@ export function DiaryFeedCard({
   // Content expansion
   const contentPreview = event.content_preview || event.summary || "";
   const needsReadMore = contentPreview.length > 140;
-
-  // Get module initial for avatar
-  const moduleInitial = config.label.charAt(0).toUpperCase();
-
-  // Get cover image - prioritize media, then metadata, then preset
-  const getModulePresetType = (module: string): "manifest" | "trackers" | "notes" => {
-    if (module === "manifest") return "manifest";
-    if (module === "trackers") return "trackers";
-    return "notes";
-  };
-  
-  const coverImageUrl = event.media?.[0] 
-    || metadata?.cover_image_url 
-    || getPresetImage(getModulePresetType(event.source_module), metadata?.category || "default");
 
   const handleCopyLink = () => {
     const shareUrl = `${window.location.origin}/share/feed/${event.id}`;
@@ -209,17 +200,8 @@ export function DiaryFeedCard({
 
   return (
     <Card className="overflow-hidden max-w-full bg-card border-border/40 shadow-[0_6px_18px_hsl(210_29%_8%/0.06)] hover:shadow-[0_10px_30px_hsl(210_29%_8%/0.08)] transition-all duration-200 rounded-[10px]">
-      <div className="flex">
-        {/* Left: Cover Image */}
-        <div className="w-40 shrink-0 relative overflow-hidden rounded-l-[10px]">
-          <img
-            src={coverImageUrl}
-            alt=""
-            className="w-full h-full object-cover min-h-[180px]"
-          />
-        </div>
-
-        {/* Right: Content */}
+      {/* All modules now use vertical layout - no left-side images */}
+      <div className="flex flex-col">
         <div className="flex-1 min-w-0">
           {/* Header with Avatar - matching JournalQuestionCard */}
           <div className="px-4 pt-4 pb-2">
@@ -379,18 +361,27 @@ export function DiaryFeedCard({
           </div>
         )}
 
-        {/* Additional media grid - skip first image since it's shown on the left */}
-        {event.media && event.media.length > 1 && (
+        {/* Media grid - only for journal entries with user-attached images */}
+        {isJournalEntry && hasUserAttachedMedia && (
           <div
             className={cn(
-              "grid gap-2 mt-3",
-              event.media.length === 2 && "grid-cols-1",
-              event.media.length === 3 && "grid-cols-2",
-              event.media.length >= 4 && "grid-cols-3",
+              "mt-3",
+              event.media!.length === 1 && "w-full",
+              event.media!.length > 1 && "grid gap-2",
+              event.media!.length === 2 && "grid-cols-2",
+              event.media!.length >= 3 && "grid-cols-3",
             )}
           >
-            {event.media.slice(1, 4).map((url, i) => (
-              <img key={i} src={url} alt="" className="rounded-lg w-full h-24 object-cover" />
+            {event.media!.slice(0, 4).map((url, i) => (
+              <img 
+                key={i} 
+                src={url} 
+                alt="" 
+                className={cn(
+                  "rounded-lg object-cover",
+                  event.media!.length === 1 ? "w-full max-h-80" : "w-full h-32"
+                )} 
+              />
             ))}
           </div>
         )}
