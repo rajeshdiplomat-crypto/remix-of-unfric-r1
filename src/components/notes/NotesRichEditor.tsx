@@ -2,17 +2,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { 
-  ArrowLeft, Tag, Undo2, Redo2, Bold, Italic, Underline, AlignLeft, AlignCenter, 
-  AlignRight, List, ListOrdered, CheckSquare, Link2, Image, Pencil, X, ChevronRight,
-  Palette, Highlighter, RemoveFormatting, Trash2, Save, Check
-} from "lucide-react";
+import { ArrowLeft, Tag, X, ChevronRight, Trash2, Save, Check, Loader2 } from "lucide-react";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
-import { NotesScribbleCanvas } from "./NotesScribbleCanvas";
-import { cn } from "@/lib/utils";
+import { EvernoteToolbarEditor, type EvernoteToolbarEditorRef } from "@/components/editor/EvernoteToolbarEditor";
+import type { SaveStatus } from "@/components/editor/types";
 
 interface NotesRichEditorProps {
   note: Note;
@@ -24,37 +18,6 @@ interface NotesRichEditorProps {
   lastSaved?: Date | null;
   showBreadcrumb?: boolean;
 }
-
-const FONTS = [
-  { value: "Inter, sans-serif", label: "Inter" },
-  { value: "Georgia, serif", label: "Georgia" },
-  { value: "'Courier New', monospace", label: "Mono" },
-  { value: "'Playfair Display', serif", label: "Playfair" },
-];
-
-const FONT_SIZES = ["12", "14", "16", "18", "20", "24", "28", "32"];
-
-const TEXT_COLORS = [
-  { label: "Default", value: "" },
-  { label: "Red", value: "#ef4444" },
-  { label: "Orange", value: "#f97316" },
-  { label: "Yellow", value: "#eab308" },
-  { label: "Green", value: "#22c55e" },
-  { label: "Blue", value: "#3b82f6" },
-  { label: "Purple", value: "#a855f7" },
-  { label: "Pink", value: "#ec4899" },
-  { label: "Gray", value: "#6b7280" },
-];
-
-const HIGHLIGHT_COLORS = [
-  { label: "None", value: "" },
-  { label: "Yellow", value: "#fef08a" },
-  { label: "Green", value: "#bbf7d0" },
-  { label: "Blue", value: "#bfdbfe" },
-  { label: "Pink", value: "#fbcfe8" },
-  { label: "Purple", value: "#e9d5ff" },
-  { label: "Orange", value: "#fed7aa" },
-];
 
 export function NotesRichEditor({ 
   note, 
@@ -70,52 +33,12 @@ export function NotesRichEditor({
   const [tags, setTags] = useState<string[]>(note.tags);
   const [newTag, setNewTag] = useState("");
   const [tagPopoverOpen, setTagPopoverOpen] = useState(false);
-  const [scribbleOpen, setScribbleOpen] = useState(false);
-  const [scribbleData, setScribbleData] = useState<string | null>(null);
-  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
-  const [linkUrl, setLinkUrl] = useState("");
-  const [linkText, setLinkText] = useState("");
-  const [imageDialogOpen, setImageDialogOpen] = useState(false);
-  const [imageUrl, setImageUrl] = useState("");
-  const [resizingImage, setResizingImage] = useState<HTMLImageElement | null>(null);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
+  const [contentRich, setContentRich] = useState(note.contentRich || note.plainText || '');
+  const [plainText, setPlainText] = useState(note.plainText || '');
   
-  const editorRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
-  const [currentFont, setCurrentFont] = useState(FONTS[0].value);
-  const [currentSize, setCurrentSize] = useState("16");
-  
-  // Track formatting state
-  const [isBold, setIsBold] = useState(false);
-  const [isItalic, setIsItalic] = useState(false);
-  const [isUnderline, setIsUnderline] = useState(false);
-  const [isBulletList, setIsBulletList] = useState(false);
-  const [isNumberedList, setIsNumberedList] = useState(false);
-
-  // Undo/Redo history
-  const [history, setHistory] = useState<string[]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-  const isUndoRedo = useRef(false);
-  
-  // Selection preservation for toolbar interactions
-  const savedSelection = useRef<Range | null>(null);
-  
-  const saveSelection = useCallback(() => {
-    const sel = window.getSelection();
-    if (sel && sel.rangeCount > 0) {
-      savedSelection.current = sel.getRangeAt(0).cloneRange();
-    }
-  }, []);
-
-  const restoreSelection = useCallback(() => {
-    if (savedSelection.current && editorRef.current) {
-      editorRef.current.focus();
-      const sel = window.getSelection();
-      if (sel) {
-        sel.removeAllRanges();
-        sel.addRange(savedSelection.current);
-      }
-    }
-  }, []);
+  const editorRef = useRef<EvernoteToolbarEditorRef>(null);
 
   // Auto-focus title for new notes
   useEffect(() => {
@@ -124,179 +47,50 @@ export function NotesRichEditor({
     }
   }, [note.id]);
 
+  // Sync state when note changes
   useEffect(() => {
     setTitle(note.title);
     setTags(note.tags);
-    if (editorRef.current) {
-      editorRef.current.innerHTML = note.contentRich || note.plainText || "";
-      // Initialize history
-      setHistory([note.contentRich || note.plainText || ""]);
-      setHistoryIndex(0);
-    }
+    setContentRich(note.contentRich || note.plainText || '');
+    setPlainText(note.plainText || '');
+    setSaveStatus('saved');
   }, [note.id]);
 
-  // Save to history on content change
-  const saveToHistory = useCallback(() => {
-    if (!editorRef.current || isUndoRedo.current) return;
-    const content = editorRef.current.innerHTML;
-    setHistory(prev => {
-      const newHistory = prev.slice(0, historyIndex + 1);
-      // Only add if different from last
-      if (newHistory[newHistory.length - 1] !== content) {
-        newHistory.push(content);
-      }
-      return newHistory.slice(-50);
-    });
-    setHistoryIndex(prev => Math.min(prev + 1, 49));
-  }, [historyIndex]);
-
-  // Update formatting state on selection change
-  const updateFormattingState = useCallback(() => {
-    setIsBold(document.queryCommandState("bold"));
-    setIsItalic(document.queryCommandState("italic"));
-    setIsUnderline(document.queryCommandState("underline"));
-    setIsBulletList(document.queryCommandState("insertUnorderedList"));
-    setIsNumberedList(document.queryCommandState("insertOrderedList"));
-  }, []);
-
-  useEffect(() => {
-    document.addEventListener("selectionchange", updateFormattingState);
-    return () => document.removeEventListener("selectionchange", updateFormattingState);
-  }, [updateFormattingState]);
-
-  // Auto-save effect
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      handleSave();
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [title, tags]);
-
-  const handleSave = () => {
-    if (!editorRef.current) return;
-    const contentRich = editorRef.current.innerHTML;
-    const plainText = editorRef.current.textContent || "";
+  const handleSave = useCallback(() => {
+    const currentContent = editorRef.current?.getHTML() || contentRich;
+    const currentText = editorRef.current?.getText() || plainText;
+    
     onSave({
       ...note,
       title,
-      contentRich,
-      plainText,
+      contentRich: currentContent,
+      plainText: currentText,
       tags,
     });
-  };
+  }, [note, title, tags, contentRich, plainText, onSave]);
 
-  const execCommand = (command: string, value?: string) => {
-    restoreSelection();
-    document.execCommand(command, false, value);
-    updateFormattingState();
-    saveToHistory();
-  };
+  const handleContentChange = useCallback(({ contentRich: newRich, plainText: newPlain }: { contentRich: string; plainText: string }) => {
+    setContentRich(newRich);
+    setPlainText(newPlain);
+  }, []);
 
-  const handleUndo = () => {
-    if (historyIndex > 0 && editorRef.current) {
-      isUndoRedo.current = true;
-      const newIndex = historyIndex - 1;
-      setHistoryIndex(newIndex);
-      editorRef.current.innerHTML = history[newIndex];
-      isUndoRedo.current = false;
-    }
-  };
+  const handleEditorSave = useCallback(({ contentRich: newRich, plainText: newPlain }: { contentRich: string; plainText: string }) => {
+    onSave({
+      ...note,
+      title,
+      contentRich: newRich,
+      plainText: newPlain,
+      tags,
+    });
+  }, [note, title, tags, onSave]);
 
-  const handleRedo = () => {
-    if (historyIndex < history.length - 1 && editorRef.current) {
-      isUndoRedo.current = true;
-      const newIndex = historyIndex + 1;
-      setHistoryIndex(newIndex);
-      editorRef.current.innerHTML = history[newIndex];
-      isUndoRedo.current = false;
-    }
-  };
-
-  const handleFontChange = (font: string) => {
-    setCurrentFont(font);
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
-      execCommand("fontName", font);
-    }
-  };
-
-  const handleSizeChange = (size: string) => {
-    setCurrentSize(size);
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
-      const range = selection.getRangeAt(0);
-      const span = document.createElement("span");
-      span.style.fontSize = `${size}px`;
-      try {
-        range.surroundContents(span);
-        saveToHistory();
-      } catch {
-        // Partial selection - fallback
-        execCommand("fontSize", "7");
-      }
-    }
-  };
-
-  const handleTextColor = (color: string) => {
-    if (color) {
-      execCommand("foreColor", color);
-    } else {
-      execCommand("removeFormat");
-    }
-  };
-
-  const handleHighlight = (color: string) => {
-    if (color) {
-      execCommand("hiliteColor", color);
-    } else {
-      execCommand("hiliteColor", "transparent");
-    }
-  };
-
-  const handleClearFormatting = () => {
-    execCommand("removeFormat");
-  };
-
-  // Handle bullet list with proper Enter/Backspace behavior
-  const handleBulletList = () => {
-    execCommand("insertUnorderedList");
-  };
-
-  // Handle numbered list with proper Enter/Backspace behavior
-  const handleNumberedList = () => {
-    execCommand("insertOrderedList");
-  };
-
-  // Handle Tab for list nesting
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Tab") {
-      e.preventDefault();
-      if (isBulletList || isNumberedList) {
-        if (e.shiftKey) {
-          execCommand("outdent");
-        } else {
-          execCommand("indent");
-        }
-      }
-    }
-    
-    // Handle Backspace on empty list item
-    if (e.key === "Backspace") {
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const li = range.startContainer.parentElement?.closest("li");
-        if (li && li.textContent === "") {
-          e.preventDefault();
-          if (isBulletList) {
-            execCommand("insertUnorderedList");
-          } else if (isNumberedList) {
-            execCommand("insertOrderedList");
-          }
-        }
-      }
-    }
-  };
+  // Autosave title and tags changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleSave();
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [title, tags]);
 
   const handleAddTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {
@@ -309,150 +103,38 @@ export function NotesRichEditor({
     setTags(tags.filter((t) => t !== tagToRemove));
   };
 
-  const handleInsertLink = () => {
-    if (!linkUrl) return;
-    const text = linkText || linkUrl;
-    execCommand("insertHTML", `<a href="${linkUrl}" target="_blank" class="text-primary underline">${text}</a>`);
-    setLinkDialogOpen(false);
-    setLinkUrl("");
-    setLinkText("");
-  };
-
-  const handleInsertImage = () => {
-    if (!imageUrl) return;
-    insertImageWithResize(imageUrl);
-    setImageDialogOpen(false);
-    setImageUrl("");
-  };
-
-  const insertImageWithResize = (src: string) => {
-    const imgHtml = `<div class="note-image-wrapper" contenteditable="false" style="position: relative; display: inline-block; max-width: 100%;">
-      <img src="${src}" alt="Image" class="note-image" style="max-width: 100%; height: auto; display: block; cursor: pointer;" />
-      <button class="image-delete-btn" style="position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; background: hsl(var(--destructive)); color: white; border: none; border-radius: 50%; cursor: pointer; opacity: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1;" title="Delete image">×</button>
-      <div class="resize-handle" style="position: absolute; right: 0; bottom: 0; width: 12px; height: 12px; background: hsl(var(--primary)); cursor: se-resize; border-radius: 2px; opacity: 0;" />
-    </div><br/>`;
-    execCommand("insertHTML", imgHtml);
-    setupImageResizing();
-  };
-
-  const setupImageResizing = useCallback(() => {
-    setTimeout(() => {
-      if (!editorRef.current) return;
-      const wrappers = editorRef.current.querySelectorAll(".note-image-wrapper");
-      wrappers.forEach((wrapper) => {
-        // Prevent duplicate event listeners
-        if (wrapper.getAttribute('data-resizing-setup')) return;
-        wrapper.setAttribute('data-resizing-setup', 'true');
-        
-        const img = wrapper.querySelector("img") as HTMLImageElement;
-        const handle = wrapper.querySelector(".resize-handle") as HTMLDivElement;
-        const deleteBtn = wrapper.querySelector(".image-delete-btn") as HTMLButtonElement;
-        
-        if (!img || !handle) return;
-        
-        // Show handle and delete button on hover
-        wrapper.addEventListener("mouseenter", () => {
-          handle.style.opacity = "1";
-          if (deleteBtn) deleteBtn.style.opacity = "1";
-        });
-        wrapper.addEventListener("mouseleave", () => {
-          if (!resizingImage) {
-            handle.style.opacity = "0";
-            if (deleteBtn) deleteBtn.style.opacity = "0";
-          }
-        });
-
-        // Handle delete button click
-        if (deleteBtn) {
-          deleteBtn.addEventListener("click", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            wrapper.remove();
-            saveToHistory();
-          });
-        }
-        
-        // Handle resize
-        handle.addEventListener("mousedown", (e) => {
-          e.preventDefault();
-          setResizingImage(img);
-          const startX = e.clientX;
-          const startWidth = img.offsetWidth;
-          
-          const onMouseMove = (moveEvent: MouseEvent) => {
-            const newWidth = Math.min(
-              Math.max(100, startWidth + (moveEvent.clientX - startX)),
-              editorRef.current?.offsetWidth || 800
-            );
-            img.style.width = `${newWidth}px`;
-            img.style.height = "auto";
-          };
-          
-          const onMouseUp = () => {
-            setResizingImage(null);
-            handle.style.opacity = "0";
-            saveToHistory();
-            document.removeEventListener("mousemove", onMouseMove);
-            document.removeEventListener("mouseup", onMouseUp);
-          };
-          
-          document.addEventListener("mousemove", onMouseMove);
-          document.addEventListener("mouseup", onMouseUp);
-        });
-      });
-    }, 100);
-  }, [resizingImage, saveToHistory]);
-
-  // Set up image resizing/delete for existing images when content loads
-  useEffect(() => {
-    if (editorRef.current) {
-      setupImageResizing();
-    }
-  }, [note.id, setupImageResizing]);
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      insertImageWithResize(dataUrl);
-    };
-    reader.readAsDataURL(file);
-    setImageDialogOpen(false);
-  };
-
-  const handleSaveScribble = (dataUrl: string) => {
-    setScribbleData(dataUrl);
-    insertImageWithResize(dataUrl);
-    setScribbleOpen(false);
-  };
-
-  const insertChecklist = () => {
-    execCommand("insertHTML", `
-      <div class="flex items-start gap-2 my-1">
-        <input type="checkbox" class="mt-1 h-4 w-4 rounded border-border" />
-        <span contenteditable="true">Checklist item</span>
-      </div>
-    `);
-  };
-
   const group = groups.find((g) => g.id === note.groupId);
   const folder = folders.find((f) => f.id === note.folderId);
 
   const formatLastSaved = () => {
-    if (!lastSaved) return "Not saved";
+    if (!lastSaved) return null;
     const now = new Date();
     const diff = now.getTime() - lastSaved.getTime();
-    if (diff < 60000) return "Last edited just now";
-    if (diff < 3600000) return `Last edited ${Math.floor(diff / 60000)} min ago`;
-    return `Last edited at ${lastSaved.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+    if (diff < 60000) return "Just now";
+    if (diff < 3600000) return `${Math.floor(diff / 60000)} min ago`;
+    return lastSaved.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  const handleContentInput = () => {
-    saveToHistory();
-    setupImageResizing();
+  const getSaveStatusDisplay = () => {
+    switch (saveStatus) {
+      case 'saving':
+        return (
+          <span className="flex items-center gap-1 text-muted-foreground">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Saving...
+          </span>
+        );
+      case 'unsaved':
+        return <span className="text-muted-foreground">Unsaved</span>;
+      case 'saved':
+      default:
+        return (
+          <span className="flex items-center gap-1 text-muted-foreground">
+            <Check className="h-3 w-3" />
+            {formatLastSaved() ? `Saved ${formatLastSaved()}` : 'Saved'}
+          </span>
+        );
+    }
   };
 
   return (
@@ -486,10 +168,9 @@ export function NotesRichEditor({
         </div>
         
         <div className="flex items-center gap-3">
-          {/* Last saved status */}
-          <span className="text-xs text-muted-foreground/70 hidden sm:flex items-center gap-1">
-            {lastSaved ? <Check className="h-3 w-3" /> : null}
-            {formatLastSaved()}
+          {/* Save status */}
+          <span className="text-xs hidden sm:flex items-center">
+            {getSaveStatusDisplay()}
           </span>
           
           {/* Save button */}
@@ -567,210 +248,12 @@ export function NotesRichEditor({
         </div>
       </div>
 
-      {/* Toolbar */}
-      <div className="px-6 py-3 border-b border-border/30">
-        <div className="flex items-center gap-1 flex-wrap">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8" 
-            onClick={handleUndo}
-            disabled={historyIndex <= 0}
-            title="Undo"
-          >
-            <Undo2 className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8" 
-            onClick={handleRedo}
-            disabled={historyIndex >= history.length - 1}
-            title="Redo"
-          >
-            <Redo2 className="h-4 w-4" />
-          </Button>
-          <div className="w-px h-6 bg-border mx-1" />
-          
-          <Select value={currentFont} onValueChange={handleFontChange} onOpenChange={(open) => { if (open) saveSelection(); }}>
-            <SelectTrigger className="w-24 h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {FONTS.map((font) => (
-                <SelectItem key={font.value} value={font.value} style={{ fontFamily: font.value }}>
-                  {font.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <Select value={currentSize} onValueChange={handleSizeChange} onOpenChange={(open) => { if (open) saveSelection(); }}>
-            <SelectTrigger className="w-16 h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {FONT_SIZES.map((size) => (
-                <SelectItem key={size} value={size}>{size}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <div className="w-px h-6 bg-border mx-1" />
-          
-          <Button 
-            variant={isBold ? "secondary" : "ghost"} 
-            size="icon" 
-            className="h-8 w-8" 
-            onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}
-            onClick={() => execCommand("bold")}
-            title="Bold"
-          >
-            <Bold className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant={isItalic ? "secondary" : "ghost"} 
-            size="icon" 
-            className="h-8 w-8" 
-            onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}
-            onClick={() => execCommand("italic")}
-            title="Italic"
-          >
-            <Italic className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant={isUnderline ? "secondary" : "ghost"} 
-            size="icon" 
-            className="h-8 w-8" 
-            onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}
-            onClick={() => execCommand("underline")}
-            title="Underline"
-          >
-            <Underline className="h-4 w-4" />
-          </Button>
-          
-          <div className="w-px h-6 bg-border mx-1" />
-
-          {/* Text Color */}
-          <Popover onOpenChange={(open) => { if (open) saveSelection(); }}>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" title="Text Color">
-                <Palette className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-2" align="start">
-              <div className="flex flex-wrap gap-1 max-w-[180px]">
-                {TEXT_COLORS.map((color) => (
-                  <button
-                    key={color.value || 'default'}
-                    onClick={() => handleTextColor(color.value)}
-                    className={cn(
-                      "h-6 w-6 rounded border border-border/50 hover:scale-110 transition-transform",
-                      !color.value && "bg-foreground"
-                    )}
-                    style={{ backgroundColor: color.value || undefined }}
-                    title={color.label}
-                  />
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          {/* Highlight Color */}
-          <Popover onOpenChange={(open) => { if (open) saveSelection(); }}>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" title="Highlight">
-                <Highlighter className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-2" align="start">
-              <div className="flex flex-wrap gap-1 max-w-[180px]">
-                {HIGHLIGHT_COLORS.map((color) => (
-                  <button
-                    key={color.value || 'none'}
-                    onClick={() => handleHighlight(color.value)}
-                    className={cn(
-                      "h-6 w-6 rounded border border-border/50 hover:scale-110 transition-transform",
-                      !color.value && "bg-background relative after:absolute after:inset-0 after:bg-[linear-gradient(45deg,transparent_45%,hsl(var(--destructive))_45%,hsl(var(--destructive))_55%,transparent_55%)]"
-                    )}
-                    style={{ backgroundColor: color.value || undefined }}
-                    title={color.label}
-                  />
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          {/* Clear Formatting */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8" 
-            onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}
-            onClick={handleClearFormatting}
-            title="Clear Formatting"
-          >
-            <RemoveFormatting className="h-4 w-4" />
-          </Button>
-          
-          <div className="w-px h-6 bg-border mx-1" />
-          
-          <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={() => execCommand("justifyLeft")} title="Align Left">
-            <AlignLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={() => execCommand("justifyCenter")} title="Align Center">
-            <AlignCenter className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={() => execCommand("justifyRight")} title="Align Right">
-            <AlignRight className="h-4 w-4" />
-          </Button>
-          
-          <div className="w-px h-6 bg-border mx-1" />
-          
-          <Button 
-            variant={isBulletList ? "secondary" : "ghost"} 
-            size="icon" 
-            className="h-8 w-8" 
-            onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}
-            onClick={handleBulletList}
-            title="Bullet List (Tab to nest, Shift+Tab to outdent)"
-          >
-            <List className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant={isNumberedList ? "secondary" : "ghost"} 
-            size="icon" 
-            className="h-8 w-8" 
-            onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}
-            onClick={handleNumberedList}
-            title="Numbered List (Tab to nest, Shift+Tab to outdent)"
-          >
-            <ListOrdered className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => { e.preventDefault(); saveSelection(); }} onClick={insertChecklist} title="Checklist">
-            <CheckSquare className="h-4 w-4" />
-          </Button>
-          
-          <div className="w-px h-6 bg-border mx-1" />
-          
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setImageDialogOpen(true)} title="Insert Image">
-            <Image className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setLinkDialogOpen(true)} title="Insert Link">
-            <Link2 className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setScribbleOpen(true)} title="Draw">
-            <Pencil className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
       {/* Editor Content */}
       <div className="flex-1 overflow-auto">
-        <div className="max-w-3xl px-4 py-6">
+        <div className="max-w-3xl mx-auto">
           {/* Tags Display */}
           {tags.length > 0 && (
-            <div className="flex gap-1 mb-4">
+            <div className="flex gap-1 px-4 pt-4">
               {tags.map((tag) => (
                 <Badge key={tag} variant="outline" className="text-xs">
                   #{tag}
@@ -780,106 +263,29 @@ export function NotesRichEditor({
           )}
 
           {/* Title */}
-          <Input
-            ref={titleRef}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Untitled Note"
-            className="text-3xl font-semibold border-none bg-transparent p-0 h-auto focus-visible:ring-0 text-foreground mb-4"
-          />
+          <div className="px-4 pt-4">
+            <Input
+              ref={titleRef}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Untitled Note"
+              className="text-3xl font-semibold border-none bg-transparent p-0 h-auto focus-visible:ring-0 text-foreground"
+            />
+          </div>
 
-          {/* Rich Text Content */}
-          <div
+          {/* Tiptap Editor */}
+          <EvernoteToolbarEditor
             ref={editorRef}
-            contentEditable
-            suppressContentEditableWarning
-            onInput={handleContentInput}
-            onBlur={handleSave}
-            onKeyDown={handleKeyDown}
-            className="min-h-[400px] outline-none text-foreground leading-relaxed focus:outline-none [&_ul]:list-disc [&_ul]:ml-6 [&_ol]:list-decimal [&_ol]:ml-6 [&_li]:my-1 [&_ul_ul]:list-circle [&_ol_ol]:list-lower-alpha"
-            data-placeholder="Start typing here..."
+            initialContentRich={note.contentRich || note.plainText || ''}
+            onContentChange={handleContentChange}
+            onSave={handleEditorSave}
+            onSaveStatusChange={setSaveStatus}
+            autosaveDebounce={1500}
+            placeholder="Start typing here..."
+            className="min-h-[400px]"
           />
         </div>
       </div>
-
-      {/* Link Dialog */}
-      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Insert Link</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">URL</label>
-              <Input
-                value={linkUrl}
-                onChange={(e) => setLinkUrl(e.target.value)}
-                placeholder="https://..."
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Display Text (optional)</label>
-              <Input
-                value={linkText}
-                onChange={(e) => setLinkText(e.target.value)}
-                placeholder="Link text"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setLinkDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button className="flex-1" onClick={handleInsertLink} disabled={!linkUrl}>
-                Insert
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Image Dialog */}
-      <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Insert Image</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Image URL</label>
-              <Input
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://..."
-              />
-            </div>
-            <div className="text-center text-sm text-muted-foreground">or</div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Upload Image</label>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setImageDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button className="flex-1" onClick={handleInsertImage} disabled={!imageUrl}>
-                Insert URL
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Scribble Dialog */}
-      <NotesScribbleCanvas
-        open={scribbleOpen}
-        onOpenChange={setScribbleOpen}
-        onSave={handleSaveScribble}
-        initialData={scribbleData}
-      />
     </div>
   );
 }
