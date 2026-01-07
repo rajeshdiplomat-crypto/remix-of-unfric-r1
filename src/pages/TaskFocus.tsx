@@ -91,11 +91,11 @@ const AMBIENT_SOUNDS = [
   { id: "night", name: "Night", icon: Moon },
 ];
 const SOUND_URLS: Record<string, string> = {
-  rain: "https://cdn.pixabay.com/audio/2022/05/13/audio_257112709d.mp3",
-  ocean: "https://cdn.pixabay.com/audio/2022/06/07/audio_b9bd4170e4.mp3",
-  fireplace: "https://cdn.pixabay.com/audio/2021/08/09/audio_dc39bde808.mp3",
-  forest: "https://cdn.pixabay.com/audio/2022/03/10/audio_4dedf5bf94.mp3",
-  night: "https://cdn.pixabay.com/audio/2022/08/02/audio_884fe92c21.mp3",
+  rain: "https://www.soundjay.com/nature/sounds/rain-01.mp3",
+  ocean: "https://www.soundjay.com/nature/sounds/ocean-wave-1.mp3",
+  fireplace: "https://www.soundjay.com/nature/sounds/campfire-1.mp3",
+  forest: "https://www.soundjay.com/nature/sounds/forest-1.mp3",
+  night: "https://www.soundjay.com/nature/sounds/crickets-1.mp3",
 };
 const FOCUS_QUOTES = [
   { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
