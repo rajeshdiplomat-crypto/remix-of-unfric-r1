@@ -73,10 +73,10 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
               src={logo} 
               alt="ambalanced" 
               className={cn(
-                "h-6 transition-all duration-300",
+                "h-6 w-auto object-contain transition-all duration-300",
                 isScrolled ? "" : "[filter:drop-shadow(0_1px_3px_rgba(0,0,0,0.3))]",
                 "dark:invert"
-              )} 
+              )}
             />
           </NavLink>
         </div>

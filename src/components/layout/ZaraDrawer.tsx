@@ -64,7 +64,7 @@ export function ZaraDrawer({
         <div className="flex flex-col h-full pt-12 pb-6 px-6 overflow-y-auto">
           {/* Logo */}
           <NavLink to="/diary" onClick={onClose} className="mb-6">
-            <img src={logo} alt="ambalanced" className="h-10 dark:invert" />
+            <img src={logo} alt="ambalanced" className="h-10 w-auto object-contain dark:invert" />
           </NavLink>
 
           {/* Main navigation */}
