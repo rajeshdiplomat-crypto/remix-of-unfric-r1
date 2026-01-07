@@ -97,7 +97,6 @@ const SOUND_URLS: Record<string, string> = {
   forest: "https://cdn.pixabay.com/audio/2022/03/10/audio_4dedf5bf94.mp3",
   night: "https://cdn.pixabay.com/audio/2022/08/02/audio_884fe92c21.mp3",
 };
-
 const FOCUS_QUOTES = [
   { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
   { text: "Focus on being productive instead of busy.", author: "Tim Ferriss" },
