@@ -563,69 +563,184 @@ export default function TaskFocus() {
         </div>
       </div>
 
-            {showSettings && (
+      {showSettings && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setShowSettings(false)} />
           <div className="fixed top-0 right-0 h-full w-96 bg-black/80 backdrop-blur-2xl border-l border-white/10 z-50 overflow-y-auto">
             <div className="p-6 space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-white">Settings</h3>
-                <Button variant="ghost" size="icon" onClick={() => setShowSettings(false)} className="text-white/60 hover:text-white hover:bg-white/10 rounded-xl">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowSettings(false)}
+                  className="text-white/60 hover:text-white hover:bg-white/10 rounded-xl"
+                >
                   <X className="h-5 w-5" />
                 </Button>
               </div>
               <Tabs value={settingsTab} onValueChange={setSettingsTab}>
                 <TabsList className="w-full grid grid-cols-4 bg-white/5 rounded-xl p-1">
-                  <TabsTrigger value="themes" className="rounded-lg text-xs text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10"><Palette className="h-4 w-4" /></TabsTrigger>
-                  <TabsTrigger value="clock" className="rounded-lg text-xs text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10"><Clock className="h-4 w-4" /></TabsTrigger>
-                  <TabsTrigger value="sounds" className="rounded-lg text-xs text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10"><Volume2 className="h-4 w-4" /></TabsTrigger>
-                  <TabsTrigger value="quotes" className="rounded-lg text-xs text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10"><Quote className="h-4 w-4" /></TabsTrigger>
+                  <TabsTrigger
+                    value="themes"
+                    className="rounded-lg text-xs text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10"
+                  >
+                    <Palette className="h-4 w-4" />
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="clock"
+                    className="rounded-lg text-xs text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10"
+                  >
+                    <Clock className="h-4 w-4" />
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="sounds"
+                    className="rounded-lg text-xs text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10"
+                  >
+                    <Volume2 className="h-4 w-4" />
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="quotes"
+                    className="rounded-lg text-xs text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10"
+                  >
+                    <Quote className="h-4 w-4" />
+                  </TabsTrigger>
                 </TabsList>
                 <TabsContent value="themes" className="space-y-4 mt-4">
                   <div className="flex gap-2 p-1 bg-white/5 rounded-xl">
-                    <Button variant="ghost" size="sm" onClick={() => setSettings(s => ({ ...s, themeType: 'gradient' }))} className={cn("flex-1 rounded-lg", settings.themeType === 'gradient' ? "bg-white/10 text-white" : "text-white/50")}>Gradients</Button>
-                    <Button variant="ghost" size="sm" onClick={() => setSettings(s => ({ ...s, themeType: 'wallpaper' }))} className={cn("flex-1 rounded-lg", settings.themeType === 'wallpaper' ? "bg-white/10 text-white" : "text-white/50")}>Wallpapers</Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSettings((s) => ({ ...s, themeType: "gradient" }))}
+                      className={cn(
+                        "flex-1 rounded-lg",
+                        settings.themeType === "gradient" ? "bg-white/10 text-white" : "text-white/50",
+                      )}
+                    >
+                      Gradients
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSettings((s) => ({ ...s, themeType: "wallpaper" }))}
+                      className={cn(
+                        "flex-1 rounded-lg",
+                        settings.themeType === "wallpaper" ? "bg-white/10 text-white" : "text-white/50",
+                      )}
+                    >
+                      Wallpapers
+                    </Button>
                   </div>
                   <div className="grid grid-cols-4 gap-2">
-                    {(settings.themeType === 'gradient' ? GRADIENT_THEMES : WALLPAPER_THEMES).map(theme => (
-                      <button key={theme.id} onClick={() => setSettings(s => ({ ...s, themeId: theme.id }))} className={cn("aspect-square rounded-xl overflow-hidden border-2 transition-all", settings.themeId === theme.id ? "border-primary ring-2 ring-primary/30" : "border-transparent hover:border-white/30")} style={settings.themeType === 'gradient' ? { background: (theme as any).value } : undefined}>
-                        {settings.themeType === 'wallpaper' && <img src={(theme as any).url} alt={theme.name} className="w-full h-full object-cover" />}
+                    {(settings.themeType === "gradient" ? GRADIENT_THEMES : WALLPAPER_THEMES).map((theme) => (
+                      <button
+                        key={theme.id}
+                        onClick={() => setSettings((s) => ({ ...s, themeId: theme.id }))}
+                        className={cn(
+                          "aspect-square rounded-xl overflow-hidden border-2 transition-all",
+                          settings.themeId === theme.id
+                            ? "border-primary ring-2 ring-primary/30"
+                            : "border-transparent hover:border-white/30",
+                        )}
+                        style={settings.themeType === "gradient" ? { background: (theme as any).value } : undefined}
+                      >
+                        {settings.themeType === "wallpaper" && (
+                          <img src={(theme as any).url} alt={theme.name} className="w-full h-full object-cover" />
+                        )}
                       </button>
                     ))}
                   </div>
                 </TabsContent>
                 <TabsContent value="clock" className="space-y-4 mt-4">
                   <div className="grid grid-cols-2 gap-2">
-                    {CLOCK_STYLES.map(style => (
-                      <button key={style.id} onClick={() => setSettings(s => ({ ...s, clockStyle: style.id }))} className={cn("p-4 rounded-xl border text-center", settings.clockStyle === style.id ? "border-primary bg-primary/10" : "border-white/10 hover:border-white/30")}>
+                    {CLOCK_STYLES.map((style) => (
+                      <button
+                        key={style.id}
+                        onClick={() => setSettings((s) => ({ ...s, clockStyle: style.id }))}
+                        className={cn(
+                          "p-4 rounded-xl border text-center",
+                          settings.clockStyle === style.id
+                            ? "border-primary bg-primary/10"
+                            : "border-white/10 hover:border-white/30",
+                        )}
+                      >
                         <span className={cn("text-2xl text-white", style.fontClass)}>12:00</span>
                         <p className="text-xs text-white/50 mt-1">{style.name}</p>
                       </button>
                     ))}
                   </div>
-                  <div className="flex items-center justify-between py-3 border-t border-white/10"><span className="text-sm text-white/80">24-Hour</span><Switch checked={settings.is24Hour} onCheckedChange={(c) => setSettings(s => ({ ...s, is24Hour: c }))} /></div>
-                  <div className="flex items-center justify-between py-3 border-t border-white/10"><span className="text-sm text-white/80">Show Seconds</span><Switch checked={settings.showSeconds} onCheckedChange={(c) => setSettings(s => ({ ...s, showSeconds: c }))} /></div>
-                  <div className="flex items-center justify-between py-3 border-t border-white/10"><span className="text-sm text-white/80">Show Greeting</span><Switch checked={settings.showGreeting} onCheckedChange={(c) => setSettings(s => ({ ...s, showGreeting: c }))} /></div>
+                  <div className="flex items-center justify-between py-3 border-t border-white/10">
+                    <span className="text-sm text-white/80">24-Hour</span>
+                    <Switch
+                      checked={settings.is24Hour}
+                      onCheckedChange={(c) => setSettings((s) => ({ ...s, is24Hour: c }))}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between py-3 border-t border-white/10">
+                    <span className="text-sm text-white/80">Show Seconds</span>
+                    <Switch
+                      checked={settings.showSeconds}
+                      onCheckedChange={(c) => setSettings((s) => ({ ...s, showSeconds: c }))}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between py-3 border-t border-white/10">
+                    <span className="text-sm text-white/80">Show Greeting</span>
+                    <Switch
+                      checked={settings.showGreeting}
+                      onCheckedChange={(c) => setSettings((s) => ({ ...s, showGreeting: c }))}
+                    />
+                  </div>
                 </TabsContent>
                 <TabsContent value="sounds" className="space-y-4 mt-4">
                   <p className="text-xs text-white/50">Mix ambient sounds for your focus environment.</p>
-                  {AMBIENT_SOUNDS.map(sound => {
+                  {AMBIENT_SOUNDS.map((sound) => {
                     const Icon = sound.icon;
                     const volume = settings.ambientVolumes[sound.id] || 0;
                     return (
                       <div key={sound.id} className="space-y-2">
-                        <div className="flex items-center justify-between"><div className="flex items-center gap-2"><Icon className="h-4 w-4 text-white/50" /><span className="text-sm text-white/80">{sound.name}</span></div><span className="text-xs text-white/40">{volume}%</span></div>
-                        <Slider value={[volume]} onValueChange={([v]) => setSettings(s => ({ ...s, ambientVolumes: { ...s.ambientVolumes, [sound.id]: v } }))} max={100} step={1} className="w-full" />
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Icon className="h-4 w-4 text-white/50" />
+                            <span className="text-sm text-white/80">{sound.name}</span>
+                          </div>
+                          <span className="text-xs text-white/40">{volume}%</span>
+                        </div>
+                        <Slider
+                          value={[volume]}
+                          onValueChange={([v]) =>
+                            setSettings((s) => ({ ...s, ambientVolumes: { ...s.ambientVolumes, [sound.id]: v } }))
+                          }
+                          max={100}
+                          step={1}
+                          className="w-full"
+                        />
                       </div>
                     );
                   })}
                 </TabsContent>
                 <TabsContent value="quotes" className="space-y-4 mt-4">
-                  <div className="flex items-center justify-between py-3"><span className="text-sm text-white/80">Show Quotes</span><Switch checked={settings.showQuotes} onCheckedChange={(c) => setSettings(s => ({ ...s, showQuotes: c }))} /></div>
+                  <div className="flex items-center justify-between py-3">
+                    <span className="text-sm text-white/80">Show Quotes</span>
+                    <Switch
+                      checked={settings.showQuotes}
+                      onCheckedChange={(c) => setSettings((s) => ({ ...s, showQuotes: c }))}
+                    />
+                  </div>
                   {settings.showQuotes && (
                     <div className="flex gap-2">
-                      {[5, 10, 15, 30].map(min => (
-                        <Button key={min} variant="ghost" size="sm" onClick={() => setSettings(s => ({ ...s, quoteFrequency: min }))} className={cn("flex-1 rounded-lg", settings.quoteFrequency === min ? "bg-white/10 text-white" : "text-white/50")}>{min}m</Button>
+                      {[5, 10, 15, 30].map((min) => (
+                        <Button
+                          key={min}
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSettings((s) => ({ ...s, quoteFrequency: min }))}
+                          className={cn(
+                            "flex-1 rounded-lg",
+                            settings.quoteFrequency === min ? "bg-white/10 text-white" : "text-white/50",
+                          )}
+                        >
+                          {min}m
+                        </Button>
                       ))}
                     </div>
                   )}
@@ -635,7 +750,6 @@ export default function TaskFocus() {
           </div>
         </>
       )}
-     </div>
+    </div>
   );
-}
 }
