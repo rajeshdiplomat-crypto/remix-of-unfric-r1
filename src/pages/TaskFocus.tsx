@@ -1,46 +1,40 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
-import { ArrowLeft, Play, Pause, RotateCcw, Check, Clock, Timer, Sparkles, Maximize2, Minimize2 } from "lucide-react";
-
-import { format } from "date-fns";
+import {
+  ArrowLeft,
+  Play,
+  Pause,
+  RotateCcw,
+  Check,
+  Clock,
+  Timer,
+  Hourglass,
+  ChevronUp,
+  ChevronDown,
+  ListChecks,
+} from "lucide-react";
 import { QuadrantTask, Subtask } from "@/components/tasks/types";
 
 const TIMER_PRESETS = [
-  { label: "25 min", minutes: 25 },
-  { label: "50 min", minutes: 50 },
-  { label: "90 min", minutes: 90 },
-] as const;
+  { label: "25", minutes: 25 },
+  { label: "50", minutes: 50 },
+  { label: "90", minutes: 90 },
+];
 
-type TimerMode = "countdown" | "stopwatch" | "pomodoro";
+type FocusMode = "countdown" | "pomodoro" | "stopwatch";
 type PomodoroPhase = "focus" | "break";
 
-const POMODORO = {
-  focusMin: 25,
-  shortBreakMin: 5,
-  longBreakMin: 15,
-  roundsPerSet: 4,
-} as const;
-
-function formatMMSS(totalSeconds: number): string {
-  const s = Math.max(0, Math.floor(totalSeconds));
+function formatTime(seconds: number): string {
+  const s = Math.max(0, Math.floor(seconds));
   const m = Math.floor(s / 60);
   const r = s % 60;
   return `${m.toString().padStart(2, "0")}:${r.toString().padStart(2, "0")}`;
-}
-
-function getGreeting(d: Date) {
-  const h = d.getHours();
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  return "Good evening";
 }
 
 export default function TaskFocus() {
@@ -53,35 +47,34 @@ export default function TaskFocus() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // UI
-  const [clearMode, setClearMode] = useState(false);
+  // Focus modes
+  const [mode, setMode] = useState<FocusMode>("countdown");
 
-  // Clock/Greeting
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 30_000);
-    return () => clearInterval(id);
-  }, []);
-
-  // Timer Modes
-  const [mode, setMode] = useState<TimerMode>("countdown");
-
-  // Countdown & Pomodoro share secondsRemaining
+  // Countdown
   const [timerMinutes, setTimerMinutes] = useState(25);
   const [secondsRemaining, setSecondsRemaining] = useState(25 * 60);
 
+  // Pomodoro
+  const [pomoPhase, setPomoPhase] = useState<PomodoroPhase>("focus");
+  const [pomoFocusMin, setPomoFocusMin] = useState(25);
+  const [pomoBreakMin, setPomoBreakMin] = useState(5);
+  const [pomoCycles, setPomoCycles] = useState(0);
+
   // Stopwatch
-  const [stopwatchSeconds, setStopwatchSeconds] = useState(0);
+  const [secondsElapsed, setSecondsElapsed] = useState(0);
 
-  // Pomodoro state
-  const [pomodoroPhase, setPomodoroPhase] = useState<PomodoroPhase>("focus");
-  const [pomodoroRound, setPomodoroRound] = useState(1);
-
-  // Running + session tracking
+  // Common running state
   const [isRunning, setIsRunning] = useState(false);
-  const [focusedSeconds, setFocusedSeconds] = useState(0);
 
-  const sessionMinutes = useMemo(() => Math.floor(focusedSeconds / 60), [focusedSeconds]);
+  // Session tracking
+  const [sessionSeconds, setSessionSeconds] = useState(0);
+
+  // Subtask saving state (small UX)
+  const [savingSubtasks, setSavingSubtasks] = useState(false);
+
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const clockRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [now, setNow] = useState(() => new Date());
 
   // Fetch task from database
   useEffect(() => {
@@ -142,90 +135,86 @@ export default function TaskFocus() {
     fetchTask();
   }, [taskId, user]);
 
-  // Main ticking interval (single interval, stable)
+  // Live clock (nice premium touch)
+  useEffect(() => {
+    clockRef.current = setInterval(() => setNow(new Date()), 20_000);
+    return () => {
+      if (clockRef.current) clearInterval(clockRef.current);
+    };
+  }, []);
+
+  // Timer tick
   useEffect(() => {
     if (!isRunning) return;
 
-    const id = setInterval(() => {
-      // Stopwatch
+    intervalRef.current = setInterval(() => {
+      setSessionSeconds((s) => s + 1);
+
       if (mode === "stopwatch") {
-        setStopwatchSeconds((s) => s + 1);
-        setFocusedSeconds((s) => s + 1);
+        setSecondsElapsed((s) => s + 1);
         return;
       }
 
-      // Countdown or Pomodoro
+      // countdown / pomodoro
       setSecondsRemaining((prev) => {
-        const next = prev - 1;
-
-        // count focus time only when appropriate
-        const shouldCountFocus = mode === "countdown" || (mode === "pomodoro" && pomodoroPhase === "focus");
-        if (shouldCountFocus) setFocusedSeconds((s) => s + 1);
-
-        if (next > 0) return next;
-
-        // Reached 0
-        if (mode === "countdown") {
+        if (prev <= 1) {
+          // session done for this block
           setIsRunning(false);
-          toast({ title: "Timer complete!", description: "Great focus session." });
+
+          if (mode === "pomodoro") {
+            if (pomoPhase === "focus") {
+              toast({ title: "Focus block complete", description: "Take a short break." });
+              setPomoPhase("break");
+              return pomoBreakMin * 60;
+            } else {
+              toast({ title: "Break complete", description: "Back to focus." });
+              setPomoPhase("focus");
+              setPomoCycles((c) => c + 1);
+              return pomoFocusMin * 60;
+            }
+          }
+
+          toast({ title: "Timer complete!", description: "Great focus session!" });
           return 0;
         }
-
-        // Pomodoro phase switch (auto-continues)
-        if (pomodoroPhase === "focus") {
-          const isLongBreak = pomodoroRound >= POMODORO.roundsPerSet;
-          const breakMin = isLongBreak ? POMODORO.longBreakMin : POMODORO.shortBreakMin;
-
-          setPomodoroPhase("break");
-          toast({
-            title: "Focus complete",
-            description: isLongBreak ? "Long break time." : "Short break time.",
-          });
-
-          return breakMin * 60;
-        } else {
-          // break -> focus
-          const nextRound = pomodoroRound >= POMODORO.roundsPerSet ? 1 : pomodoroRound + 1;
-          setPomodoroRound(nextRound);
-          setPomodoroPhase("focus");
-          toast({ title: "Back to focus", description: "Let’s continue." });
-          return POMODORO.focusMin * 60;
-        }
+        return prev - 1;
       });
     }, 1000);
 
-    return () => clearInterval(id);
-  }, [isRunning, mode, pomodoroPhase, pomodoroRound, toast]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement | null)?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement | null)?.isContentEditable) return;
-
-      if (e.code === "Space") {
-        e.preventDefault();
-        setIsRunning((r) => !r);
-        return;
-      }
-
-      if (e.key === "r" || e.key === "R") {
-        e.preventDefault();
-        handleReset();
-        return;
-      }
-
-      if (mode === "countdown" && !isRunning) {
-        if (e.key === "1") handlePresetChange(25);
-        if (e.key === "2") handlePresetChange(50);
-        if (e.key === "3") handlePresetChange(90);
-      }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
+  }, [isRunning, mode, toast, pomoPhase, pomoBreakMin, pomoFocusMin]);
 
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, isRunning, timerMinutes]);
+  const sessionMinutes = useMemo(() => Math.floor(sessionSeconds / 60), [sessionSeconds]);
+
+  const headerFocusMinutes = useMemo(() => {
+    const base = task?.total_focus_minutes || 0;
+    return base + sessionMinutes;
+  }, [task?.total_focus_minutes, sessionMinutes]);
+
+  const dueLabel = useMemo(() => {
+    if (!task?.due_date) return "";
+    const d = new Date(task.due_date);
+    const date = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return `${date}${task.due_time ? ` • ${task.due_time}` : ""}`;
+  }, [task?.due_date, task?.due_time]);
+
+  const displaySeconds = useMemo(() => {
+    if (mode === "stopwatch") return secondsElapsed;
+    return secondsRemaining;
+  }, [mode, secondsElapsed, secondsRemaining]);
+
+  const ringProgress = useMemo(() => {
+    if (mode === "stopwatch") return 0;
+
+    const total =
+      mode === "pomodoro" ? (pomoPhase === "focus" ? pomoFocusMin * 60 : pomoBreakMin * 60) : timerMinutes * 60;
+
+    if (total <= 0) return 0;
+    const done = total - secondsRemaining;
+    return Math.max(0, Math.min(100, (done / total) * 100));
+  }, [mode, secondsRemaining, timerMinutes, pomoPhase, pomoFocusMin, pomoBreakMin]);
 
   const handleStart = () => {
     if (!isRunning) setIsRunning(true);
@@ -239,53 +228,77 @@ export default function TaskFocus() {
     setIsRunning(false);
 
     if (mode === "stopwatch") {
-      setStopwatchSeconds(0);
-      return;
+      setSecondsElapsed(0);
+    } else if (mode === "pomodoro") {
+      setPomoPhase("focus");
+      setSecondsRemaining(pomoFocusMin * 60);
+      setPomoCycles(0);
+    } else {
+      setSecondsRemaining(timerMinutes * 60);
     }
-
-    if (mode === "pomodoro") {
-      setPomodoroPhase("focus");
-      setPomodoroRound(1);
-      setSecondsRemaining(POMODORO.focusMin * 60);
-      return;
-    }
-
-    // countdown
-    setSecondsRemaining(timerMinutes * 60);
   };
 
   const handlePresetChange = (minutes: number) => {
-    if (isRunning) return;
-    setMode("countdown");
+    // only impacts countdown for now
     setTimerMinutes(minutes);
     setSecondsRemaining(minutes * 60);
-    setPomodoroPhase("focus");
-    setPomodoroRound(1);
-    setStopwatchSeconds(0);
+    setIsRunning(false);
   };
 
-  const applyMode = (nextMode: TimerMode) => {
-    if (isRunning) return;
+  const setModeSafe = (next: FocusMode) => {
     setIsRunning(false);
-    setMode(nextMode);
 
-    if (nextMode === "stopwatch") {
-      setStopwatchSeconds(0);
-      return;
+    // Reset display to something sensible for each mode
+    if (next === "countdown") {
+      setSecondsRemaining(timerMinutes * 60);
+    }
+    if (next === "pomodoro") {
+      setPomoPhase("focus");
+      setSecondsRemaining(pomoFocusMin * 60);
+      setPomoCycles(0);
+    }
+    if (next === "stopwatch") {
+      setSecondsElapsed(0);
     }
 
-    if (nextMode === "pomodoro") {
-      setPomodoroPhase("focus");
-      setPomodoroRound(1);
-      setSecondsRemaining(POMODORO.focusMin * 60);
-      return;
-    }
+    setMode(next);
+  };
 
-    // countdown
-    setTimerMinutes(25);
-    setSecondsRemaining(25 * 60);
-    setPomodoroPhase("focus");
-    setPomodoroRound(1);
+  const persistSubtasks = async (updated: Subtask[]) => {
+    if (!task || !user) return;
+    setSavingSubtasks(true);
+
+    // optimistic UI
+    setTask({ ...task, subtasks: updated });
+
+    const { error: updateError } = await supabase
+      .from("tasks")
+      .update({ subtasks: updated as any })
+      .eq("id", task.id)
+      .eq("user_id", user.id);
+
+    setSavingSubtasks(false);
+
+    if (updateError) {
+      toast({ title: "Could not save subtasks", variant: "destructive" });
+    }
+  };
+
+  const toggleSubtask = async (subId: string) => {
+    if (!task) return;
+    const updated = (task.subtasks || []).map((s) => (s.id === subId ? { ...s, completed: !s.completed } : s));
+    await persistSubtasks(updated);
+  };
+
+  const moveSubtask = async (index: number, dir: -1 | 1) => {
+    if (!task) return;
+    const arr = [...(task.subtasks || [])];
+    const next = index + dir;
+    if (next < 0 || next >= arr.length) return;
+    const temp = arr[index];
+    arr[index] = arr[next];
+    arr[next] = temp;
+    await persistSubtasks(arr);
   };
 
   const handleSaveSession = async () => {
@@ -306,7 +319,7 @@ export default function TaskFocus() {
 
     toast({
       title: "Session saved!",
-      description: sessionMinutes > 0 ? `Added ${sessionMinutes} min of focus time` : "Saved. Nice work.",
+      description: sessionMinutes > 0 ? `Added ${sessionMinutes} minutes of focus time` : "Nothing to add yet.",
     });
     navigate("/tasks");
   };
@@ -357,341 +370,329 @@ export default function TaskFocus() {
     );
   }
 
-  const totalFocusedLabel = `${task.total_focus_minutes + sessionMinutes} min focused`;
-  const dueLabel = task.due_date
-    ? `${format(new Date(task.due_date), "MMM d")}${task.due_time ? ` • ${task.due_time}` : ""}`
-    : null;
-
-  const timerTitle =
-    mode === "pomodoro"
-      ? pomodoroPhase === "focus"
-        ? `Pomodoro • Focus (${pomodoroRound}/${POMODORO.roundsPerSet})`
-        : `Pomodoro • Break (${pomodoroRound}/${POMODORO.roundsPerSet})`
-      : mode === "stopwatch"
-        ? "Stopwatch"
-        : "Countdown";
-
-  const displayTime = mode === "stopwatch" ? formatMMSS(stopwatchSeconds) : formatMMSS(secondsRemaining);
-
-  const progress = useMemo(() => {
-    if (mode === "stopwatch") return 0;
-
-    const total =
-      mode === "pomodoro"
-        ? pomodoroPhase === "focus"
-          ? POMODORO.focusMin * 60
-          : (pomodoroRound >= POMODORO.roundsPerSet ? POMODORO.longBreakMin : POMODORO.shortBreakMin) * 60
-        : timerMinutes * 60;
-
-    if (total <= 0) return 0;
-    const elapsed = Math.max(0, total - secondsRemaining);
-    return (elapsed / total) * 100;
-  }, [mode, pomodoroPhase, pomodoroRound, secondsRemaining, timerMinutes]);
-
   const circumference = 2 * Math.PI * 120;
-  const dashOffset = circumference * (1 - Math.min(100, Math.max(0, progress)) / 100);
+  const dashOffset = circumference * (1 - ringProgress / 100);
+
+  const greeting =
+    now.getHours() < 12
+      ? "Good morning"
+      : now.getHours() < 17
+        ? "Good afternoon"
+        : now.getHours() < 21
+          ? "Good evening"
+          : "Good night";
 
   return (
-    <div className="min-h-[100dvh] bg-background relative overflow-hidden">
-      {/* Soft, theme-safe backdrop */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background via-background to-muted/30" />
+    <div className="min-h-[100dvh] bg-background">
+      {/* Premium background wash (theme-safe) */}
+      <div className="pointer-events-none fixed inset-0 bg-gradient-to-b from-background via-background to-muted/20" />
 
-      <div className="relative mx-auto w-full max-w-6xl px-4 md:px-6 py-5">
-        {/* Header */}
-        {!clearMode && (
-          <header className="mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-3 min-w-0">
-              <Button variant="ghost" size="icon" onClick={() => navigate("/tasks")} className="rounded-xl">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
+      {/* Header */}
+      <header className="relative z-10 border-b border-border/60 bg-background/70 backdrop-blur">
+        <div className="mx-auto max-w-6xl px-5 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/tasks")} className="rounded-2xl">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
 
-              <div className="min-w-0">
-                <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground flex items-center gap-2">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Deep Focus
-                </p>
-                <h1 className="text-lg font-medium truncate">{task.title}</h1>
-              </div>
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Deep Focus • {greeting}</p>
+              <h1 className="text-base font-semibold truncate">{task.title}</h1>
+              {dueLabel ? <p className="text-xs text-muted-foreground truncate">Due {dueLabel}</p> : null}
             </div>
+          </div>
 
-            <div className="flex items-center gap-2">
-              <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock className="w-4 h-4" />
-                <span>{format(now, "h:mm a")}</span>
-              </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Clock className="w-4 h-4" />
+            <span className="hidden sm:inline">{headerFocusMinutes} min focused</span>
+            <span className="sm:hidden">{headerFocusMinutes}m</span>
+          </div>
+        </div>
+      </header>
 
-              <Button variant="outline" onClick={() => setClearMode(true)} className="rounded-xl">
-                <Maximize2 className="w-4 h-4 mr-2" />
-                Clear mode
-              </Button>
-            </div>
-          </header>
-        )}
-
-        {/* Main */}
-        <main className={clearMode ? "grid place-items-center" : "grid gap-6 items-start lg:grid-cols-[1.25fr_0.75fr]"}>
-          {/* Left: Timer */}
-          <section className={clearMode ? "w-full max-w-xl" : ""}>
-            <Card className="rounded-2xl border-border bg-card/95 shadow-sm">
-              <CardContent className="p-6 md:p-8">
-                {clearMode && (
-                  <div className="mb-5 flex items-center justify-between">
-                    <Button variant="ghost" size="icon" onClick={() => navigate("/tasks")} className="rounded-xl">
-                      <ArrowLeft className="w-5 h-5" />
-                    </Button>
-
-                    <div className="text-center">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                        {getGreeting(now)}
-                      </p>
-                      <p className="text-sm text-muted-foreground">{format(now, "h:mm a")}</p>
-                    </div>
-
-                    <Button variant="outline" onClick={() => setClearMode(false)} className="rounded-xl">
-                      <Minimize2 className="w-4 h-4 mr-2" />
-                      Exit
-                    </Button>
-                  </div>
-                )}
-
-                {/* Mode switch */}
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-                  <div className="min-w-0">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground flex items-center gap-2">
-                      <Timer className="h-3.5 w-3.5" />
-                      {timerTitle}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {mode === "pomodoro"
-                        ? "Work in focused intervals with breaks."
-                        : mode === "stopwatch"
-                          ? "Open-ended deep work session."
-                          : "Set a duration and stay in the zone."}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-1 rounded-2xl border border-border bg-muted/30 p-1">
-                    <Button
-                      variant={mode === "countdown" ? "secondary" : "ghost"}
-                      size="sm"
-                      className="rounded-xl text-xs"
-                      onClick={() => applyMode("countdown")}
-                      disabled={isRunning}
-                    >
-                      Countdown
-                    </Button>
-                    <Button
-                      variant={mode === "stopwatch" ? "secondary" : "ghost"}
-                      size="sm"
-                      className="rounded-xl text-xs"
-                      onClick={() => applyMode("stopwatch")}
-                      disabled={isRunning}
-                    >
-                      Stopwatch
-                    </Button>
-                    <Button
-                      variant={mode === "pomodoro" ? "secondary" : "ghost"}
-                      size="sm"
-                      className="rounded-xl text-xs"
-                      onClick={() => applyMode("pomodoro")}
-                      disabled={isRunning}
-                    >
-                      Pomodoro
-                    </Button>
-                  </div>
+      {/* Content */}
+      <main className="relative z-10 mx-auto max-w-6xl px-5 py-8">
+        <div className="grid gap-6 lg:grid-cols-[1.25fr_.85fr] items-start">
+          {/* LEFT — Timer */}
+          <Card className="rounded-3xl border-border/70 bg-card/80 backdrop-blur shadow-sm">
+            <div className="p-6 sm:p-7">
+              {/* Mode Switch */}
+              <div className="flex flex-wrap gap-2 items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="rounded-full bg-muted/10 border-border">
+                    {mode === "pomodoro" ? "Pomodoro" : mode === "stopwatch" ? "Stopwatch" : "Countdown"}
+                  </Badge>
+                  {mode === "pomodoro" && (
+                    <Badge variant="outline" className="rounded-full bg-muted/10 border-border">
+                      {pomoPhase === "focus" ? "Focus" : "Break"} • Cycles {pomoCycles}
+                    </Badge>
+                  )}
                 </div>
 
-                {/* Presets (countdown only) */}
-                {mode === "countdown" && (
-                  <div className="flex flex-wrap gap-2 mb-7">
-                    {TIMER_PRESETS.map((preset) => (
-                      <Button
-                        key={preset.minutes}
-                        variant={timerMinutes === preset.minutes ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => handlePresetChange(preset.minutes)}
-                        disabled={isRunning}
-                        className="rounded-xl"
-                      >
-                        {preset.label}
-                      </Button>
-                    ))}
-                  </div>
-                )}
+                <div className="flex gap-2">
+                  <Button
+                    variant={mode === "countdown" ? "default" : "outline"}
+                    size="sm"
+                    className="rounded-2xl"
+                    onClick={() => setModeSafe("countdown")}
+                    disabled={isRunning}
+                  >
+                    <Hourglass className="h-4 w-4 mr-2" />
+                    Countdown
+                  </Button>
+                  <Button
+                    variant={mode === "pomodoro" ? "default" : "outline"}
+                    size="sm"
+                    className="rounded-2xl"
+                    onClick={() => setModeSafe("pomodoro")}
+                    disabled={isRunning}
+                  >
+                    <Timer className="h-4 w-4 mr-2" />
+                    Pomodoro
+                  </Button>
+                  <Button
+                    variant={mode === "stopwatch" ? "default" : "outline"}
+                    size="sm"
+                    className="rounded-2xl"
+                    onClick={() => setModeSafe("stopwatch")}
+                    disabled={isRunning}
+                  >
+                    <Clock className="h-4 w-4 mr-2" />
+                    Stopwatch
+                  </Button>
+                </div>
+              </div>
 
-                {/* Timer display */}
-                <div className="flex items-center justify-center">
-                  <div className="relative w-72 h-72 md:w-80 md:h-80">
-                    <svg className="w-full h-full -rotate-90">
+              {/* Presets (Countdown only) */}
+              {mode === "countdown" && (
+                <div className="mt-5 flex gap-2 justify-center">
+                  {TIMER_PRESETS.map((preset) => (
+                    <Button
+                      key={preset.minutes}
+                      variant={timerMinutes === preset.minutes ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handlePresetChange(preset.minutes)}
+                      disabled={isRunning}
+                      className="rounded-2xl"
+                    >
+                      {preset.label} min
+                    </Button>
+                  ))}
+                </div>
+              )}
+
+              {/* Pomodoro controls (simple, no extra UI libs) */}
+              {mode === "pomodoro" && (
+                <div className="mt-5 flex flex-wrap gap-2 justify-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-2xl"
+                    disabled={isRunning}
+                    onClick={() => {
+                      setPomoFocusMin(25);
+                      setPomoBreakMin(5);
+                      setSecondsRemaining(25 * 60);
+                      setPomoPhase("focus");
+                      setPomoCycles(0);
+                    }}
+                  >
+                    25/5
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-2xl"
+                    disabled={isRunning}
+                    onClick={() => {
+                      setPomoFocusMin(50);
+                      setPomoBreakMin(10);
+                      setSecondsRemaining(50 * 60);
+                      setPomoPhase("focus");
+                      setPomoCycles(0);
+                    }}
+                  >
+                    50/10
+                  </Button>
+                </div>
+              )}
+
+              {/* Ring + Time */}
+              <div className="mt-8 flex items-center justify-center">
+                <div className="relative w-72 h-72">
+                  <svg className="w-full h-full -rotate-90">
+                    <circle
+                      cx="144"
+                      cy="144"
+                      r="120"
+                      fill="none"
+                      stroke="hsl(var(--muted))"
+                      strokeWidth="10"
+                      opacity={0.35}
+                    />
+                    {mode !== "stopwatch" && (
                       <circle
-                        cx="50%"
-                        cy="50%"
+                        cx="144"
+                        cy="144"
                         r="120"
                         fill="none"
-                        stroke="hsl(var(--muted))"
+                        stroke="hsl(var(--primary))"
                         strokeWidth="10"
-                        opacity={0.55}
+                        strokeDasharray={circumference}
+                        strokeDashoffset={dashOffset}
+                        strokeLinecap="round"
+                        className="transition-all duration-700"
                       />
-                      {mode !== "stopwatch" && (
-                        <circle
-                          cx="50%"
-                          cy="50%"
-                          r="120"
-                          fill="none"
-                          stroke="hsl(var(--primary))"
-                          strokeWidth="10"
-                          strokeDasharray={circumference}
-                          strokeDashoffset={dashOffset}
-                          strokeLinecap="round"
-                          className="motion-safe:transition-[stroke-dashoffset] motion-safe:duration-500"
-                        />
-                      )}
-                    </svg>
+                    )}
+                  </svg>
 
-                    <div className="absolute inset-0 grid place-items-center text-center">
-                      {mode === "pomodoro" && (
-                        <div className="mb-3 flex items-center justify-center gap-2">
-                          <Badge variant="outline" className="rounded-full">
-                            {pomodoroPhase === "focus" ? "Focus" : "Break"}
-                          </Badge>
-                          <Badge variant="outline" className="rounded-full">
-                            Round {pomodoroRound}/{POMODORO.roundsPerSet}
-                          </Badge>
-                        </div>
-                      )}
-
-                      <div className="text-6xl font-light tracking-tight tabular-nums">{displayTime}</div>
-
-                      <div className="mt-2 text-sm text-muted-foreground">
-                        Session: {formatMMSS(focusedSeconds)} • Total: {totalFocusedLabel}
-                      </div>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <div className="text-6xl font-light tracking-wide text-foreground">
+                      {formatTime(displaySeconds)}
                     </div>
-                  </div>
-                </div>
-
-                {/* Controls */}
-                <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-                  {!isRunning ? (
-                    <Button size="lg" onClick={handleStart} className="rounded-2xl px-7">
-                      <Play className="w-5 h-5 mr-2" />
-                      Start
-                    </Button>
-                  ) : (
-                    <Button size="lg" variant="outline" onClick={handlePause} className="rounded-2xl px-7">
-                      <Pause className="w-5 h-5 mr-2" />
-                      Pause
-                    </Button>
-                  )}
-
-                  <Button size="lg" variant="ghost" onClick={handleReset} className="rounded-2xl px-6">
-                    <RotateCcw className="w-5 h-5 mr-2" />
-                    Reset
-                  </Button>
-                </div>
-
-                {/* Actions */}
-                <div className="mt-8 flex flex-col sm:flex-row gap-3 sm:justify-between">
-                  <Button variant="outline" onClick={handleSaveSession} className="rounded-2xl">
-                    Save & Exit
-                  </Button>
-
-                  <Button onClick={handleMarkComplete} className="rounded-2xl">
-                    <Check className="w-4 h-4 mr-2" />
-                    Mark Complete
-                  </Button>
-                </div>
-
-                <div className="mt-5 text-xs text-muted-foreground text-center">
-                  Shortcuts: <span className="font-medium">Space</span> start/pause •{" "}
-                  <span className="font-medium">R</span> reset • <span className="font-medium">1/2/3</span> presets
-                </div>
-              </CardContent>
-            </Card>
-          </section>
-
-          {/* Right: Details panel */}
-          {!clearMode && (
-            <aside className="lg:sticky lg:top-6">
-              <Card className="rounded-2xl border-border bg-card/95 shadow-sm">
-                <CardContent className="p-6">
-                  <div className="mb-4">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{getGreeting(now)}</p>
-                    <div className="mt-1 flex items-center justify-between gap-3">
-                      <div className="text-sm text-muted-foreground">{format(now, "EEE, MMM d")}</div>
-                      <div className="text-sm text-muted-foreground">{format(now, "h:mm a")}</div>
-                    </div>
-                  </div>
-
-                  <div className="h-px bg-border my-5" />
-
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap gap-2">
-                      {task.urgency === "high" && (
-                        <Badge variant="outline" className="rounded-full">
-                          Urgent
-                        </Badge>
-                      )}
-                      {task.importance === "high" && (
-                        <Badge variant="outline" className="rounded-full">
-                          Important
-                        </Badge>
-                      )}
-                      {!!dueLabel && (
-                        <Badge variant="outline" className="rounded-full">
-                          Due {dueLabel}
-                        </Badge>
-                      )}
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      {mode === "stopwatch"
+                        ? "Elapsed"
+                        : mode === "pomodoro"
+                          ? pomoPhase === "focus"
+                            ? "Focus block"
+                            : "Break block"
+                          : "Remaining"}
                     </div>
 
-                    {!!task.description && (
-                      <div>
-                        <p className="text-sm font-medium">Intent</p>
-                        <p className="text-sm text-muted-foreground leading-relaxed">{task.description}</p>
+                    {sessionMinutes > 0 && (
+                      <div className="mt-3 text-xs text-muted-foreground">
+                        Session: <span className="text-foreground">{sessionMinutes} min</span>
                       </div>
                     )}
+                  </div>
+                </div>
+              </div>
 
-                    {Array.isArray(task.tags) && task.tags.length > 0 && (
-                      <div>
-                        <p className="text-sm font-medium mb-2">Tags</p>
-                        <div className="flex flex-wrap gap-2">
-                          {task.tags.slice(0, 8).map((t) => (
-                            <Badge key={t} variant="secondary" className="rounded-full">
-                              {t}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+              {/* Controls */}
+              <div className="mt-8 flex flex-wrap gap-3 items-center justify-center">
+                {!isRunning ? (
+                  <Button size="lg" onClick={handleStart} className="rounded-2xl px-6">
+                    <Play className="w-5 h-5 mr-2" />
+                    Start
+                  </Button>
+                ) : (
+                  <Button size="lg" variant="outline" onClick={handlePause} className="rounded-2xl px-6">
+                    <Pause className="w-5 h-5 mr-2" />
+                    Pause
+                  </Button>
+                )}
 
-                    <div className="h-px bg-border my-5" />
+                <Button size="lg" variant="ghost" onClick={handleReset} className="rounded-2xl px-6">
+                  <RotateCcw className="w-5 h-5 mr-2" />
+                  Reset
+                </Button>
+              </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-2xl border border-border bg-muted/20 p-3">
-                        <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">This session</p>
-                        <p className="mt-1 text-lg font-medium tabular-nums">{formatMMSS(focusedSeconds)}</p>
-                      </div>
+              {/* Actions */}
+              <div className="mt-8 flex flex-wrap gap-3 justify-center">
+                <Button variant="outline" onClick={handleSaveSession} className="rounded-2xl px-6">
+                  Save & Exit
+                </Button>
+                <Button onClick={handleMarkComplete} className="rounded-2xl px-6">
+                  <Check className="w-4 h-4 mr-2" />
+                  Mark Complete
+                </Button>
+              </div>
+            </div>
+          </Card>
 
-                      <div className="rounded-2xl border border-border bg-muted/20 p-3">
-                        <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Total focus</p>
-                        <p className="mt-1 text-lg font-medium tabular-nums">
-                          {task.total_focus_minutes + sessionMinutes}m
-                        </p>
-                      </div>
-                    </div>
+          {/* RIGHT — Intention + subtasks */}
+          <Card className="rounded-3xl border-border/70 bg-card/80 backdrop-blur shadow-sm">
+            <div className="p-6 sm:p-7 space-y-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Intention</p>
+                  <h2 className="mt-1 text-sm font-semibold">One thing. Done well.</h2>
+                </div>
 
+                <Badge variant="outline" className="rounded-full bg-muted/10 border-border">
+                  <ListChecks className="h-3.5 w-3.5 mr-1" />
+                  {task.subtasks?.length || 0}
+                </Badge>
+              </div>
+
+              {task.description ? (
+                <div className="rounded-2xl border border-border bg-muted/10 p-4">
+                  <p className="text-sm text-foreground leading-relaxed">{task.description}</p>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-border bg-muted/10 p-4">
+                  <p className="text-sm text-muted-foreground">Add a description to make this focus session clearer.</p>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Subtasks</p>
+                  {savingSubtasks ? <span className="text-xs text-muted-foreground">Saving…</span> : null}
+                </div>
+
+                <div className="space-y-2">
+                  {(task.subtasks || []).length === 0 ? (
                     <div className="rounded-2xl border border-border bg-muted/10 p-4">
-                      <p className="text-sm font-medium">Tip</p>
-                      <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
-                        Keep one clear outcome in mind. If you get distracted, write it down and come back.
+                      <p className="text-sm text-muted-foreground">
+                        No subtasks yet — keep it simple, or add subtasks from the Tasks page.
                       </p>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </aside>
-          )}
-        </main>
-      </div>
+                  ) : (
+                    (task.subtasks || []).map((s, idx) => (
+                      <div
+                        key={s.id}
+                        className="rounded-2xl border border-border bg-background/50 p-3 flex items-start gap-3"
+                      >
+                        <button
+                          onClick={() => toggleSubtask(s.id)}
+                          className="mt-0.5 h-5 w-5 rounded-md border border-border flex items-center justify-center"
+                          aria-label={s.completed ? "Mark incomplete" : "Mark complete"}
+                        >
+                          {s.completed ? <Check className="h-4 w-4" /> : null}
+                        </button>
+
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className={`text-sm ${s.completed ? "line-through text-muted-foreground" : "text-foreground"}`}
+                          >
+                            {s.title}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-xl"
+                            onClick={() => moveSubtask(idx, -1)}
+                            disabled={idx === 0}
+                            aria-label="Move up"
+                          >
+                            <ChevronUp className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-xl"
+                            onClick={() => moveSubtask(idx, 1)}
+                            disabled={idx === (task.subtasks?.length || 0) - 1}
+                            aria-label="Move down"
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </main>
     </div>
   );
 }
