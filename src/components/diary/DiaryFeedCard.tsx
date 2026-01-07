@@ -201,9 +201,11 @@ export function DiaryFeedCard({
   };
 
   const actionCellBase =
-    "w-full flex items-center justify-center gap-2 px-3 py-2 text-sm " +
-    "text-muted-foreground hover:text-foreground hover:bg-muted/25 transition-colors " +
-    "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+    "w-full flex items-center justify-center gap-2 py-2.5 text-sm " +
+    "text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors " +
+    "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  
+  const actionCellWithBorder = actionCellBase + " border-r border-border/50";
 
   return (
     <Card className="overflow-hidden bg-card border-border/40 shadow-[0_6px_18px_hsl(210_29%_8%/0.06)] hover:shadow-[0_10px_30px_hsl(210_29%_8%/0.08)] transition-all duration-200 rounded-[10px]">
@@ -398,21 +400,21 @@ export function DiaryFeedCard({
             )}
 
             {/* ✅ FIXED ACTION BAR: equal width, full stretch */}
-            <div className="mt-4 pt-3 border-t border-border/50 -mx-4">
-              <div className="grid grid-cols-3 divide-x divide-border/60">
+            <div className="mt-4 pt-3 border-t border-border/50">
+              <div className="grid grid-cols-3 w-full">
                 {/* React */}
                 <Popover>
                   <PopoverTrigger asChild>
                     <button
                       aria-pressed={!!userReaction}
-                      className={cn(actionCellBase, userReaction && "text-primary")}
+                      className={cn(actionCellWithBorder, userReaction && "text-primary")}
                     >
                       {userReaction ? (
                         <span className="text-[15px] leading-none">{userReaction}</span>
                       ) : (
                         <ThumbsUp className="h-4 w-4" />
                       )}
-                      <span className="truncate">
+                      <span>
                         {userReaction
                           ? REACTION_TYPES.find((r) => r.emoji === userReaction)?.label || "React"
                           : "React"}
@@ -444,10 +446,10 @@ export function DiaryFeedCard({
                 <button
                   onClick={() => setShowComments(!showComments)}
                   aria-pressed={showComments}
-                  className={cn(actionCellBase, showComments && "text-primary")}
+                  className={cn(actionCellWithBorder, showComments && "text-primary")}
                 >
                   <MessageCircle className="h-4 w-4" />
-                  <span className="truncate">Comment</span>
+                  <span>Comment</span>
                 </button>
 
                 {/* Share */}
@@ -455,7 +457,7 @@ export function DiaryFeedCard({
                   <DropdownMenuTrigger asChild>
                     <button className={actionCellBase}>
                       <Share2 className="h-4 w-4" />
-                      <span className="truncate">Share</span>
+                      <span>Share</span>
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">

@@ -161,9 +161,11 @@ export function JournalQuestionCard({
     .slice(0, 3);
 
   const actionCellBase =
-    "w-full flex items-center justify-center gap-2 px-3 py-2 text-sm " +
-    "text-muted-foreground hover:text-foreground hover:bg-muted/25 transition-colors " +
-    "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+    "w-full flex items-center justify-center gap-2 py-2.5 text-sm " +
+    "text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors " +
+    "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  
+  const actionCellWithBorder = actionCellBase + " border-r border-border/50";
 
   return (
     <Card className="overflow-hidden bg-card border-border/40 shadow-sm hover:shadow-md transition-shadow rounded-xl">
@@ -301,12 +303,12 @@ export function JournalQuestionCard({
         )}
 
         {/* ✅ FIXED ACTION BAR: equal width, full stretch */}
-        <div className="mt-4 pt-3 border-t border-border/50 -mx-4">
-          <div className="grid grid-cols-3 divide-x divide-border/60">
+        <div className="mt-4 pt-3 border-t border-border/50">
+          <div className="grid grid-cols-3 w-full">
             {/* React */}
             <Popover>
               <PopoverTrigger asChild>
-                <button aria-pressed={!!userReaction} className={cn(actionCellBase, userReaction && "text-primary")}>
+                <button aria-pressed={!!userReaction} className={cn(actionCellWithBorder, userReaction && "text-primary")}>
                   {userReaction ? (
                     <span className="text-[15px] leading-none">
                       {REACTION_TYPES.find((r) => r.type === userReaction)?.emoji}
@@ -314,7 +316,7 @@ export function JournalQuestionCard({
                   ) : (
                     <ThumbsUp className="h-4 w-4" />
                   )}
-                  <span className="truncate">
+                  <span>
                     {userReaction ? REACTION_TYPES.find((r) => r.type === userReaction)?.label : "React"}
                   </span>
                 </button>
@@ -344,10 +346,10 @@ export function JournalQuestionCard({
             <button
               onClick={() => setShowComposer(!showComposer)}
               aria-pressed={showComposer}
-              className={cn(actionCellBase, showComposer && "text-primary")}
+              className={cn(actionCellWithBorder, showComposer && "text-primary")}
             >
               <MessageCircle className="h-4 w-4" />
-              <span className="truncate">Comment</span>
+              <span>Comment</span>
             </button>
 
             {/* Share */}
@@ -355,7 +357,7 @@ export function JournalQuestionCard({
               <DropdownMenuTrigger asChild>
                 <button className={actionCellBase}>
                   <Share2 className="h-4 w-4" />
-                  <span className="truncate">Share</span>
+                  <span>Share</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
