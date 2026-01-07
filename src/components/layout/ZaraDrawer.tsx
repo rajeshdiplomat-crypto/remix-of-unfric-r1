@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
+import logo from "@/assets/logo.png";
 const mainNavItems = [{
   title: "Diary",
   url: "/diary"
@@ -63,9 +64,7 @@ export function ZaraDrawer({
         <div className="flex flex-col h-full pt-12 pb-6 px-6 overflow-y-auto">
           {/* Logo */}
           <NavLink to="/diary" onClick={onClose} className="mb-6">
-            <span className="font-light uppercase tracking-[0.4em] text-foreground text-4xl">
-              ambalanced
-            </span>
+            <img src={logo} alt="ambalanced" className="h-10 dark:invert" />
           </NavLink>
 
           {/* Main navigation */}

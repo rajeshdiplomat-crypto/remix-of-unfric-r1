@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import logo from "@/assets/logo.png";
 
 interface ZaraHeaderProps {
   onMenuClick: () => void;
@@ -68,16 +69,15 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
             <Menu className="h-10 w-10" strokeWidth={2} />
           </Button>
           <NavLink to="/diary" className="flex items-center">
-            <span
+            <img 
+              src={logo} 
+              alt="ambalanced" 
               className={cn(
-                "text-lg font-normal uppercase tracking-zara-wide transition-all duration-300",
-                isScrolled
-                  ? "text-foreground"
-                  : "text-foreground [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
-              )}
-            >
-              ambalanced
-            </span>
+                "h-6 transition-all duration-300",
+                isScrolled ? "" : "[filter:drop-shadow(0_1px_3px_rgba(0,0,0,0.3))]",
+                "dark:invert"
+              )} 
+            />
           </NavLink>
         </div>
 

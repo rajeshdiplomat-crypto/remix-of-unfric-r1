@@ -30,6 +30,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { ProfileEditPopover } from "./ProfileEditPopover";
+import logo from "@/assets/logo.png";
 
 const mainNavItems = [
   { title: "Diary", url: "/diary", icon: BookOpen },
@@ -57,13 +58,14 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-3">
-            <img 
-              src="/favicon.png" 
-              alt="ambalanced logo" 
-              className="h-8 w-8 object-cover"
-            />
-            {!collapsed && (
-              <span className="text-xs font-normal uppercase tracking-zara-wide text-foreground">ambalanced</span>
+            {collapsed ? (
+              <img 
+                src="/favicon.png" 
+                alt="ambalanced logo" 
+                className="h-8 w-8 object-cover"
+              />
+            ) : (
+              <img src={logo} alt="ambalanced" className="h-6 dark:invert" />
             )}
           </div>
           <div className="flex items-center gap-1">
