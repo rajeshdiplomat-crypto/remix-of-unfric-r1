@@ -12,6 +12,7 @@ import { DiaryFeedCard } from "@/components/diary/DiaryFeedCard";
 import { DiarySidebar } from "@/components/diary/DiarySidebar";
 import { JournalQuestionCard } from "@/components/diary/JournalQuestionCard";
 import { DiaryHero } from "@/components/diary/DiaryHero";
+import { DiaryJournalModal } from "@/components/diary/DiaryJournalModal";
 import { useFeedEvents } from "@/components/diary/useFeedEvents";
 import { useDiaryMetrics } from "@/components/diary/useDiaryMetrics";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,7 @@ export default function Diary() {
   const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState<TimeRange>("week");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isJournalModalOpen, setIsJournalModalOpen] = useState(false);
 
   const {
     events,
@@ -340,7 +342,7 @@ export default function Diary() {
         navigate("/tasks");
         break;
       case "journal":
-        navigate("/journal");
+        setIsJournalModalOpen(true);
         break;
       case "note":
         navigate("/notes");
@@ -358,6 +360,10 @@ export default function Diary() {
         navigate("/emotions");
         break;
     }
+  };
+
+  const handleJournalSuccess = () => {
+    seedFeedEvents();
   };
 
   // Filter events based on search
@@ -513,6 +519,13 @@ export default function Diary() {
         />
       </aside>
     </div>
+
+      {/* Journal Entry Modal */}
+      <DiaryJournalModal
+        open={isJournalModalOpen}
+        onOpenChange={setIsJournalModalOpen}
+        onSuccess={handleJournalSuccess}
+      />
     </div>
   );
 }
