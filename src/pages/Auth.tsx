@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";anced" classNa
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -216,7 +216,7 @@ export default function Auth() {
         <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 md:px-16 xl:px-24 py-12 lg:py-0">
           <div className="max-w-sm mx-auto w-full">
             {/* Brand name */}
-            <img src={logo} alt="ambalanced" className="h-12 lg:h-16 mb-16 dark:invert" />
+            <img src={logo} alt="ambalanced" className="h-12 lg:h-20 mb-19 dark:invert" />
 
             {/* Section title */}
             <h2 className="text-xs uppercase tracking-[0.2em] font-normal mb-10 text-foreground">
