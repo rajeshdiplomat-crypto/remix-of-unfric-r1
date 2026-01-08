@@ -290,7 +290,7 @@ export function NotesRichEditor({
       <div className="flex-1 overflow-hidden flex flex-col">
         {/* Tags Display */}
         {tags.length > 0 && (
-          <div className="flex gap-1 px-6 pt-4 max-w-4xl mx-auto w-full">
+          <div className={`flex gap-1 px-6 pt-4 ${isFullPage ? '' : 'max-w-4xl mx-auto'} w-full`}>
             {tags.map((tag) => (
               <Badge key={tag} variant="outline" className="text-xs">
                 #{tag}
@@ -300,7 +300,7 @@ export function NotesRichEditor({
         )}
 
         {/* Title */}
-        <div className="px-6 pt-4 max-w-4xl mx-auto w-full">
+        <div className={`px-6 pt-4 ${isFullPage ? '' : 'max-w-4xl mx-auto'} w-full`}>
           <Input
             ref={titleRef}
             value={title}
@@ -322,6 +322,7 @@ export function NotesRichEditor({
             placeholder="Start typing here..."
             className="h-full"
             fullWidthToolbar={isFullPage}
+            contentMaxWidth={!isFullPage}
           />
         </div>
       </div>
