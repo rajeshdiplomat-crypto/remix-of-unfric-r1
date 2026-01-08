@@ -12,11 +12,13 @@ import FontFamily from "@tiptap/extension-font-family";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import { Extension } from "@tiptap/core";
-import { useEffect, forwardRef, useImperativeHandle, useState } from "react";
+import { useEffect, forwardRef, useImperativeHandle, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,6 +50,7 @@ import {
   Code,
   Minus,
   Strikethrough,
+  ImagePlus,
 } from "lucide-react";
 
 // Font size extension
@@ -89,20 +92,46 @@ export interface TiptapEditorRef {
   editor: ReturnType<typeof useEditor> | null;
 }
 
+// Extended fonts
 const FONTS = [
-  { value: "sans", label: "Sans Serif", css: "Inter, system-ui, sans-serif" },
-  { value: "serif", label: "Serif", css: "Georgia, Cambria, serif" },
-  { value: "mono", label: "Mono", css: '"SF Mono", monospace' },
+  { value: "inter", label: "Inter", css: "Inter, system-ui, sans-serif" },
+  { value: "arial", label: "Arial", css: "Arial, Helvetica, sans-serif" },
+  { value: "georgia", label: "Georgia", css: "Georgia, Cambria, serif" },
+  { value: "times", label: "Times New Roman", css: '"Times New Roman", Times, serif' },
+  { value: "verdana", label: "Verdana", css: "Verdana, Geneva, sans-serif" },
+  { value: "helvetica", label: "Helvetica", css: "Helvetica Neue, Helvetica, sans-serif" },
+  { value: "garamond", label: "Garamond", css: "Garamond, Baskerville, serif" },
+  { value: "courier", label: "Courier New", css: '"Courier New", Courier, monospace' },
+  { value: "trebuchet", label: "Trebuchet MS", css: '"Trebuchet MS", sans-serif' },
+  { value: "palatino", label: "Palatino", css: '"Palatino Linotype", Palatino, serif' },
+  { value: "tahoma", label: "Tahoma", css: "Tahoma, Geneva, sans-serif" },
+  { value: "mono", label: "Monospace", css: '"SF Mono", "Fira Code", monospace' },
 ];
 
-const SIZES = ["12", "14", "16", "18", "20", "24", "32"];
+const SIZES = ["10", "12", "14", "16", "18", "20", "24", "28", "32", "40"];
+const TEXT_COLORS = ["#1a1a1a", "#dc2626", "#ea580c", "#16a34a", "#2563eb", "#7c3aed", "#db2777", "#0891b2"];
+const HIGHLIGHT_COLORS = ["#fef08a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#fed7aa", "#e9d5ff", "#fecaca"];
 
-const TEXT_COLORS = ["#1a1a1a", "#dc2626", "#ea580c", "#16a34a", "#2563eb", "#7c3aed", "#db2777"];
-const HIGHLIGHT_COLORS = ["#fef08a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#fed7aa", "#e9d5ff"];
+const BG_PRESETS = [
+  { id: "none", label: "None", value: "transparent" },
+  { id: "white", label: "White", value: "#ffffff" },
+  { id: "cream", label: "Cream", value: "#fffbeb" },
+  { id: "mint", label: "Mint", value: "#ecfdf5" },
+  { id: "lavender", label: "Lavender", value: "#f5f3ff" },
+  { id: "sky", label: "Sky", value: "#f0f9ff" },
+  { id: "rose", label: "Rose", value: "#fff1f2" },
+  { id: "warm", label: "Warm", value: "#fef7ef" },
+];
 
 export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content, onChange, skinStyles }, ref) => {
-  const [font, setFont] = useState("sans");
+  const [font, setFont] = useState("inter");
   const [size, setSize] = useState("16");
+  const [editorBg, setEditorBg] = useState("transparent");
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
     extensions: [
@@ -113,7 +142,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
       TaskList,
       TaskItem.configure({ nested: true }),
       Link.configure({ openOnClick: false }),
-      Image.configure({ inline: true }),
+      Image.configure({ inline: false }),
       TextStyle,
       FontFamily,
       FontSize,
@@ -143,21 +172,44 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
     setSize(v);
     if (editor) (editor.chain().focus() as any).setFontSize(v).run();
   };
+  const handleInsertLink = () => {
+    if (!linkUrl || !editor) return;
+    const url = linkUrl.startsWith("http") ? linkUrl : `https://${linkUrl}`;
+    editor.state.selection.empty
+      ? editor.chain().focus().insertContent(`<a href="${url}">${url}</a>`).run()
+      : editor.chain().focus().setLink({ href: url }).run();
+    setLinkDialogOpen(false);
+    setLinkUrl("");
+  };
+  const handleInsertImage = () => {
+    if (!imageUrl || !editor) return;
+    editor.chain().focus().setImage({ src: imageUrl }).run();
+    setImageDialogOpen(false);
+    setImageUrl("");
+  };
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editor) return;
+    const reader = new FileReader();
+    reader.onload = (ev) =>
+      editor
+        .chain()
+        .focus()
+        .setImage({ src: ev.target?.result as string })
+        .run();
+    reader.readAsDataURL(file);
+    setImageDialogOpen(false);
+  };
 
   const ToolBtn = ({ onClick, active, disabled, children, title }: any) => (
     <button
       type="button"
       title={title}
       disabled={disabled}
-      onMouseDown={(e) => {
-        e.preventDefault();
-        onClick();
-      }}
+      onClick={onClick}
       className={cn(
-        "h-8 w-8 flex items-center justify-center rounded-lg transition-all duration-200",
-        "text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm",
-        "disabled:opacity-30 disabled:pointer-events-none",
-        active && "bg-white shadow-sm text-primary ring-1 ring-primary/20",
+        "h-8 w-8 flex items-center justify-center rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100 disabled:opacity-30 disabled:pointer-events-none",
+        active && "bg-slate-100 text-primary shadow-sm",
       )}
     >
       {children}
@@ -166,12 +218,18 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
 
   if (!editor) return null;
 
+  const bgStyle =
+    editorBg === "transparent"
+      ? { backgroundColor: skinStyles?.editorPaperBg || "#fff" }
+      : { backgroundColor: editorBg };
+
   return (
     <div className="rounded-xl border overflow-hidden bg-white shadow-sm" style={{ borderColor: "hsl(var(--border))" }}>
-      {/* MODERN TOOLBAR */}
-      <div className="bg-gradient-to-r from-slate-50 to-slate-100/80 border-b border-slate-200/60">
-        <div className="flex items-center h-12 px-3 gap-1 overflow-x-auto">
-          {/* Undo/Redo */}
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+
+      {/* TOOLBAR */}
+      <div className="bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm relative z-50">
+        <div className="flex items-center h-11 px-2 gap-0.5 overflow-x-auto">
           <ToolBtn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
             <Undo2 className="h-4 w-4" />
           </ToolBtn>
@@ -180,47 +238,45 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
           </ToolBtn>
           <div className="w-px h-5 bg-slate-200 mx-1" />
 
-          {/* Heading */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="h-8 px-2 flex items-center gap-1 rounded-lg text-sm font-medium text-slate-700 hover:bg-white/80 hover:shadow-sm transition-all">
-                <Type className="h-4 w-4" /> Aa <ChevronDown className="h-3 w-3" />
+              <button className="h-8 px-2 flex items-center gap-1 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-all">
+                <Type className="h-4 w-4" />
+                <ChevronDown className="h-3 w-3" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="min-w-[120px]">
+            <DropdownMenuContent className="z-[9999]">
               <DropdownMenuItem onClick={() => editor.chain().focus().setParagraph().run()}>Normal</DropdownMenuItem>
               <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
-                <span className="font-bold">Heading 1</span>
+                Heading 1
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
-                <span className="font-semibold">Heading 2</span>
+                Heading 2
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>
-                <span className="font-medium">Heading 3</span>
+                Heading 3
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Font */}
           <Select value={font} onValueChange={handleFontChange}>
-            <SelectTrigger className="h-8 w-24 text-xs border-0 bg-white/60 hover:bg-white shadow-sm rounded-lg">
+            <SelectTrigger className="h-8 w-28 text-xs border-0 bg-slate-50 hover:bg-slate-100 rounded-lg">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[9999] max-h-72">
               {FONTS.map((f) => (
-                <SelectItem key={f.value} value={f.value}>
+                <SelectItem key={f.value} value={f.value} style={{ fontFamily: f.css }}>
                   {f.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
 
-          {/* Size */}
           <Select value={size} onValueChange={handleSizeChange}>
-            <SelectTrigger className="h-8 w-16 text-xs border-0 bg-white/60 hover:bg-white shadow-sm rounded-lg">
+            <SelectTrigger className="h-8 w-14 text-xs border-0 bg-slate-50 hover:bg-slate-100 rounded-lg">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[9999]">
               {SIZES.map((s) => (
                 <SelectItem key={s} value={s}>
                   {s}
@@ -230,16 +286,21 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
           </Select>
           <div className="w-px h-5 bg-slate-200 mx-1" />
 
-          {/* Colors */}
           <Popover>
             <PopoverTrigger asChild>
-              <button className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-white/80 hover:shadow-sm">
-                <Palette className="h-4 w-4 text-slate-600" />
+              <button className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100">
+                <Palette className="h-4 w-4 text-slate-500" />
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-2" align="start">
-              <p className="text-xs text-slate-500 mb-2">Text Color</p>
-              <div className="flex gap-1">
+            <PopoverContent className="w-auto p-2 z-[9999]" align="start">
+              <p className="text-xs text-slate-400 mb-2">Text Color</p>
+              <div className="flex gap-1.5 flex-wrap max-w-32">
+                <button
+                  onClick={() => editor.chain().focus().unsetColor().run()}
+                  className="h-6 w-6 rounded-full border-2 border-slate-200 bg-white hover:scale-110 transition text-xs"
+                >
+                  ×
+                </button>
                 {TEXT_COLORS.map((c) => (
                   <button
                     key={c}
@@ -252,7 +313,6 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
             </PopoverContent>
           </Popover>
 
-          {/* Format */}
           <ToolBtn
             onClick={() => editor.chain().focus().toggleBold().run()}
             active={editor.isActive("bold")}
@@ -275,21 +335,20 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
             <UnderlineIcon className="h-4 w-4" />
           </ToolBtn>
 
-          {/* Highlight */}
           <Popover>
             <PopoverTrigger asChild>
-              <button className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-white/80 hover:shadow-sm">
-                <Highlighter className="h-4 w-4 text-slate-600" />
+              <button className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100">
+                <Highlighter className="h-4 w-4 text-slate-500" />
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-2" align="start">
-              <p className="text-xs text-slate-500 mb-2">Highlight</p>
-              <div className="flex gap-1">
+            <PopoverContent className="w-auto p-2 z-[9999]" align="start">
+              <p className="text-xs text-slate-400 mb-2">Highlight</p>
+              <div className="flex gap-1.5 flex-wrap max-w-32">
                 <button
                   onClick={() => editor.chain().focus().unsetHighlight().run()}
                   className="h-6 w-6 rounded border border-slate-200 bg-white hover:scale-110 transition text-xs"
                 >
-                  ✕
+                  ×
                 </button>
                 {HIGHLIGHT_COLORS.map((c) => (
                   <button
@@ -304,7 +363,6 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
           </Popover>
           <div className="w-px h-5 bg-slate-200 mx-1" />
 
-          {/* Lists */}
           <ToolBtn
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             active={editor.isActive("bulletList")}
@@ -322,13 +380,12 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
           <ToolBtn
             onClick={() => editor.chain().focus().toggleTaskList().run()}
             active={editor.isActive("taskList")}
-            title="Checklist"
+            title="Todo"
           >
             <CheckSquare className="h-4 w-4" />
           </ToolBtn>
           <div className="w-px h-5 bg-slate-200 mx-1" />
 
-          {/* Alignment */}
           <ToolBtn
             onClick={() => editor.chain().focus().setTextAlign("left").run()}
             active={editor.isActive({ textAlign: "left" })}
@@ -352,36 +409,49 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
           </ToolBtn>
           <div className="w-px h-5 bg-slate-200 mx-1" />
 
-          {/* Link & Image */}
-          <ToolBtn
-            onClick={() => {
-              const url = prompt("Image URL");
-              if (url) editor.chain().focus().setImage({ src: url }).run();
-            }}
-            title="Image"
-          >
-            <ImageIcon className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn
-            onClick={() => {
-              const url = prompt("Link URL");
-              if (url) editor.chain().focus().setLink({ href: url }).run();
-            }}
-            active={editor.isActive("link")}
-            title="Link"
-          >
+          <ToolBtn onClick={() => setLinkDialogOpen(true)} active={editor.isActive("link")} title="Link">
             <LinkIcon className="h-4 w-4" />
           </ToolBtn>
+          <ToolBtn onClick={() => setImageDialogOpen(true)} title="Image">
+            <ImageIcon className="h-4 w-4" />
+          </ToolBtn>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100"
+                title="Background"
+              >
+                <ImagePlus className="h-4 w-4 text-slate-500" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-3 z-[9999]" align="start">
+              <p className="text-xs font-medium text-slate-500 mb-2">Background</p>
+              <div className="grid grid-cols-4 gap-2">
+                {BG_PRESETS.map((bg) => (
+                  <button
+                    key={bg.id}
+                    onClick={() => setEditorBg(bg.value)}
+                    title={bg.label}
+                    className={cn(
+                      "h-8 w-8 rounded-lg border-2 hover:scale-105 transition",
+                      editorBg === bg.value ? "border-primary ring-2 ring-primary/20" : "border-slate-200",
+                    )}
+                    style={{ backgroundColor: bg.value === "transparent" ? "#fff" : bg.value }}
+                  />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
           <div className="w-px h-5 bg-slate-200 mx-1" />
 
-          {/* More */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="h-8 px-2 flex items-center gap-1 rounded-lg text-sm text-slate-600 hover:bg-white/80 hover:shadow-sm transition-all">
+              <button className="h-8 px-2 flex items-center rounded-lg text-slate-500 hover:bg-slate-100">
                 <MoreHorizontal className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="z-[9999]">
               <DropdownMenuItem onClick={() => editor.chain().focus().toggleStrike().run()}>
                 <Strikethrough className="h-4 w-4 mr-2" /> Strikethrough
               </DropdownMenuItem>
@@ -401,12 +471,11 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <div className="flex-1" />
+          <div className="flex-1 min-w-4" />
 
-          {/* AI */}
           <button
             onClick={() => alert("AI coming soon!")}
-            className="h-8 px-3 flex items-center gap-1.5 rounded-lg text-sm font-medium bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-sm hover:shadow-md transition-all"
+            className="h-8 px-3 flex items-center gap-1.5 rounded-lg text-sm font-medium bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow hover:shadow-md transition-all"
           >
             <Sparkles className="h-3.5 w-3.5" /> AI
           </button>
@@ -415,15 +484,59 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
 
       {/* Editor Content */}
       <div
-        style={{
-          backgroundColor: skinStyles?.editorPaperBg || "#fff",
-          color: skinStyles?.text || "#1e293b",
-          wordBreak: "break-word",
-          overflowWrap: "anywhere",
-        }}
+        style={{ ...bgStyle, color: skinStyles?.text || "#1e293b", wordBreak: "break-word", overflowWrap: "anywhere" }}
       >
         <EditorContent editor={editor} />
       </div>
+
+      {/* Link Dialog */}
+      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+        <DialogContent className="max-w-sm z-[99999]">
+          <DialogHeader>
+            <DialogTitle>Insert Link</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <Input
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              placeholder="https://example.com"
+              onKeyDown={(e) => e.key === "Enter" && handleInsertLink()}
+            />
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setLinkDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button className="flex-1" onClick={handleInsertLink}>
+                Insert
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Dialog */}
+      <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
+        <DialogContent className="max-w-sm z-[99999]">
+          <DialogHeader>
+            <DialogTitle>Insert Image</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Paste image URL..." />
+            <div className="text-center text-sm text-slate-400">— or —</div>
+            <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
+              <ImageIcon className="h-4 w-4 mr-2" /> Upload from Computer
+            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setImageDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button className="flex-1" onClick={handleInsertImage} disabled={!imageUrl}>
+                Insert
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <style>{`
         .ProseMirror { min-height: 300px; word-break: break-word; overflow-wrap: anywhere; }
@@ -436,14 +549,14 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
         .ProseMirror ul { list-style: disc; padding-left: 1.5rem; }
         .ProseMirror ol { list-style: decimal; padding-left: 1.5rem; }
         .ProseMirror blockquote { border-left: 3px solid #e2e8f0; padding-left: 1rem; color: #64748b; font-style: italic; }
-        .ProseMirror pre { background: #f1f5f9; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
+        .ProseMirror pre { background: #f1f5f9; padding: 1rem; border-radius: 0.5rem; }
         .ProseMirror code { background: #f1f5f9; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-family: monospace; }
         .ProseMirror hr { border: none; border-top: 2px solid #e2e8f0; margin: 1.5rem 0; }
         .ProseMirror ul[data-type="taskList"] { list-style: none; padding-left: 0; }
         .ProseMirror ul[data-type="taskList"] li { display: flex; align-items: flex-start; gap: 0.5rem; }
         .ProseMirror ul[data-type="taskList"] input { accent-color: #10b981; }
         .ProseMirror li[data-checked="true"] > div { text-decoration: line-through; color: #94a3b8; }
-        .ProseMirror img { max-width: 100%; border-radius: 0.5rem; }
+        .ProseMirror img { max-width: 100%; border-radius: 0.5rem; margin: 1rem 0; }
         .ProseMirror a { color: #3b82f6; text-decoration: underline; }
       `}</style>
     </div>
