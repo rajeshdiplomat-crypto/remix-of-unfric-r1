@@ -61,6 +61,10 @@ import {
   PenTool,
   Eraser,
   Trash2,
+  Pen,
+  Pencil,
+  Brush,
+  Circle,
 } from "lucide-react";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 
@@ -211,7 +215,40 @@ const FONTS = [
 const SIZES = ["10", "12", "14", "16", "18", "20", "24", "28", "32", "40", "48"];
 const TEXT_COLORS = ["#1a1a1a", "#dc2626", "#ea580c", "#16a34a", "#2563eb", "#7c3aed", "#db2777", "#0891b2"];
 const HIGHLIGHT_COLORS = ["#fef08a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#fed7aa", "#e9d5ff", "#fecaca"];
-const SCRIBBLE_COLORS = ["#1a1a1a", "#dc2626", "#2563eb", "#16a34a", "#7c3aed", "#ea580c", "#db2777"];
+const SCRIBBLE_COLORS = [
+  "#1a1a1a",
+  "#dc2626",
+  "#2563eb",
+  "#16a34a",
+  "#7c3aed",
+  "#ea580c",
+  "#db2777",
+  "#0891b2",
+  "#f59e0b",
+];
+
+// Pen types with different styles
+const PEN_TYPES = [
+  { id: "pen", label: "Pen", icon: Pen, opacity: 1, shadow: false },
+  { id: "pencil", label: "Pencil", icon: Pencil, opacity: 0.7, shadow: false },
+  { id: "marker", label: "Marker", icon: PenTool, opacity: 0.5, shadow: true },
+  { id: "brush", label: "Brush", icon: Brush, opacity: 0.8, shadow: false },
+];
+
+const PEN_WIDTHS = [
+  { value: 1, label: "Extra Fine" },
+  { value: 2, label: "Fine" },
+  { value: 4, label: "Medium" },
+  { value: 6, label: "Thick" },
+  { value: 10, label: "Extra Thick" },
+];
+
+const ERASER_SIZES = [
+  { value: 10, label: "Small" },
+  { value: 20, label: "Medium" },
+  { value: 40, label: "Large" },
+  { value: 60, label: "Extra Large" },
+];
 
 const BG_PRESETS = [
   { id: "none", label: "None", value: "#ffffff" },
@@ -223,6 +260,14 @@ const BG_PRESETS = [
   { id: "slate", label: "Slate", value: "#f8fafc" },
   { id: "warm", label: "Warm", value: "#fef7ef" },
 ];
+
+// Stroke data for stroke eraser
+interface Stroke {
+  points: { x: number; y: number }[];
+  color: string;
+  width: number;
+  penType: string;
+}
 
 export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEditorProps) {
   const [title, setTitle] = useState(note.title);
@@ -239,13 +284,19 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
   const [editorBg, setEditorBg] = useState("#ffffff");
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Scribble overlay state
+  // Advanced Scribble State
   const [scribbleMode, setScribbleMode] = useState(false);
   const [scribbleColor, setScribbleColor] = useState("#1a1a1a");
-  const [scribbleBrush, setScribbleBrush] = useState(3);
-  const [scribbleTool, setScribbleTool] = useState<"pen" | "eraser">("pen");
-  const [scribbleData, setScribbleData] = useState<string | null>(note.scribbleData || null);
+  const [penWidth, setPenWidth] = useState(2);
+  const [penType, setPenType] = useState("pen");
+  const [tool, setTool] = useState<"pen" | "eraser" | "stroke-eraser">("pen");
+  const [eraserSize, setEraserSize] = useState(20);
   const [isDrawing, setIsDrawing] = useState(false);
+
+  // Strokes for undo and stroke eraser
+  const [strokes, setStrokes] = useState<Stroke[]>([]);
+  const [currentStroke, setCurrentStroke] = useState<Stroke | null>(null);
+  const [undoStack, setUndoStack] = useState<Stroke[][]>([]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -282,22 +333,56 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     },
   });
 
-  // Initialize canvas when scribble mode is enabled
+  // Redraw all strokes on canvas
+  const redrawCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    strokes.forEach((stroke) => {
+      if (stroke.points.length < 2) return;
+      const pt = PEN_TYPES.find((p) => p.id === stroke.penType) || PEN_TYPES[0];
+
+      ctx.beginPath();
+      ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+      for (let i = 1; i < stroke.points.length; i++) {
+        ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+      }
+      ctx.strokeStyle = stroke.color;
+      ctx.lineWidth = stroke.width;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.globalAlpha = pt.opacity;
+      if (pt.shadow) {
+        ctx.shadowColor = stroke.color;
+        ctx.shadowBlur = stroke.width;
+      } else {
+        ctx.shadowBlur = 0;
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+    });
+  }, [strokes]);
+
+  // Initialize canvas
   useEffect(() => {
     if (scribbleMode && canvasRef.current && containerRef.current) {
       const canvas = canvasRef.current;
       const container = containerRef.current;
       canvas.width = container.offsetWidth;
-      canvas.height = container.offsetHeight;
-
-      const ctx = canvas.getContext("2d");
-      if (ctx && scribbleData) {
-        const img = new Image();
-        img.onload = () => ctx.drawImage(img, 0, 0);
-        img.src = scribbleData;
-      }
+      canvas.height = Math.max(container.offsetHeight, 500);
+      redrawCanvas();
     }
-  }, [scribbleMode]);
+  }, [scribbleMode, redrawCanvas]);
+
+  // Redraw when strokes change
+  useEffect(() => {
+    if (scribbleMode) redrawCanvas();
+  }, [strokes, scribbleMode, redrawCanvas]);
 
   useEffect(() => {
     if (editor && note.contentRich !== editor.getHTML()) {
@@ -307,7 +392,12 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     setTitle(note.title);
     setTags(note.tags);
     setSaveStatus("saved");
-    setScribbleData(note.scribbleData || null);
+    // Load strokes if saved
+    if (note.scribbleStrokes) {
+      try {
+        setStrokes(JSON.parse(note.scribbleStrokes));
+      } catch (e) {}
+    }
   }, [note.id, editor]);
 
   const handleSave = useCallback(() => {
@@ -322,23 +412,32 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
       tags,
       updatedAt: new Date().toISOString(),
     };
-    if (scribbleData) noteData.scribbleData = scribbleData;
+    if (strokes.length > 0) noteData.scribbleStrokes = JSON.stringify(strokes);
     onSave(noteData);
     lastSavedContent.current = html;
     setTimeout(() => setSaveStatus("saved"), 500);
-  }, [editor, note, title, tags, scribbleData, onSave]);
+  }, [editor, note, title, tags, strokes, onSave]);
 
-  // Scribble drawing handlers
+  // Canvas position helper
   const getCanvasPos = (e: React.MouseEvent) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
-    };
+    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+  };
+
+  // Check if point is near a stroke (for stroke eraser)
+  const findStrokeAtPoint = (x: number, y: number): number => {
+    for (let i = strokes.length - 1; i >= 0; i--) {
+      const stroke = strokes[i];
+      for (const point of stroke.points) {
+        const dist = Math.sqrt((point.x - x) ** 2 + (point.y - y) ** 2);
+        if (dist < stroke.width + 5) return i;
+      }
+    }
+    return -1;
   };
 
   const startDrawing = (e: React.MouseEvent) => {
@@ -346,6 +445,10 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     const pos = getCanvasPos(e);
     lastPos.current = pos;
     setIsDrawing(true);
+
+    if (tool === "pen") {
+      setCurrentStroke({ points: [pos], color: scribbleColor, width: penWidth, penType });
+    }
   };
 
   const draw = (e: React.MouseEvent) => {
@@ -356,34 +459,75 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     if (!ctx) return;
 
     const pos = getCanvasPos(e);
-    ctx.beginPath();
-    ctx.moveTo(lastPos.current.x, lastPos.current.y);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.strokeStyle = scribbleTool === "eraser" ? "rgba(255,255,255,1)" : scribbleColor;
-    ctx.lineWidth = scribbleTool === "eraser" ? scribbleBrush * 4 : scribbleBrush;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.globalCompositeOperation = scribbleTool === "eraser" ? "destination-out" : "source-over";
-    ctx.stroke();
+
+    if (tool === "pen" && currentStroke) {
+      // Add point to current stroke
+      setCurrentStroke((prev) => (prev ? { ...prev, points: [...prev.points, pos] } : null));
+
+      // Draw line segment
+      const pt = PEN_TYPES.find((p) => p.id === penType) || PEN_TYPES[0];
+      ctx.beginPath();
+      ctx.moveTo(lastPos.current.x, lastPos.current.y);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.strokeStyle = scribbleColor;
+      ctx.lineWidth = penWidth;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.globalAlpha = pt.opacity;
+      if (pt.shadow) {
+        ctx.shadowColor = scribbleColor;
+        ctx.shadowBlur = penWidth;
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+    } else if (tool === "eraser") {
+      // Simple eraser - erase pixels
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, eraserSize / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = "source-over";
+    } else if (tool === "stroke-eraser") {
+      // Stroke eraser - remove entire stroke
+      const strokeIndex = findStrokeAtPoint(pos.x, pos.y);
+      if (strokeIndex >= 0) {
+        setUndoStack((prev) => [...prev, [...strokes]]);
+        setStrokes((prev) => prev.filter((_, i) => i !== strokeIndex));
+      }
+    }
+
     lastPos.current = pos;
   };
 
   const stopDrawing = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
-    if (canvasRef.current) {
-      setScribbleData(canvasRef.current.toDataURL());
+
+    if (tool === "pen" && currentStroke && currentStroke.points.length > 1) {
+      setUndoStack((prev) => [...prev, [...strokes]]);
+      setStrokes((prev) => [...prev, currentStroke]);
+      setCurrentStroke(null);
       setSaveStatus("unsaved");
     }
   };
 
+  const handleUndo = () => {
+    if (undoStack.length === 0) return;
+    const previousState = undoStack[undoStack.length - 1];
+    setUndoStack((prev) => prev.slice(0, -1));
+    setStrokes(previousState);
+    setSaveStatus("unsaved");
+  };
+
   const clearScribble = () => {
+    setUndoStack((prev) => [...prev, [...strokes]]);
+    setStrokes([]);
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    setScribbleData(null);
+    if (canvas) {
+      const ctx = canvas.getContext("2d");
+      if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
     setSaveStatus("unsaved");
   };
 
@@ -457,7 +601,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     <div className={containerClass} style={{ backgroundColor: editorBg }}>
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
-      {/* TOOLBAR */}
+      {/* MAIN TOOLBAR */}
       <div className="shrink-0 bg-white border-b border-slate-200 relative z-[100]">
         <div className="flex items-center h-11 px-2 gap-0.5 overflow-x-auto">
           <ToolBtn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
@@ -759,61 +903,133 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
         </div>
       </div>
 
-      {/* Scribble Toolbar - shows when scribble mode is active */}
+      {/* SCRIBBLE TOOLBAR */}
       {scribbleMode && (
-        <div className="shrink-0 bg-amber-50 border-b border-amber-200 px-3 py-2 flex items-center gap-2">
-          <span className="text-xs font-medium text-amber-700 mr-2">✏️ Scribble Mode</span>
-          <div className="flex gap-1">
-            {SCRIBBLE_COLORS.map((c) => (
-              <button
-                key={c}
-                onClick={() => {
-                  setScribbleColor(c);
-                  setScribbleTool("pen");
-                }}
-                className={cn(
-                  "w-5 h-5 rounded-full border-2 transition-transform hover:scale-110",
-                  scribbleColor === c && scribbleTool === "pen" ? "border-amber-600 scale-110" : "border-slate-300",
-                )}
-                style={{ backgroundColor: c }}
-              />
-            ))}
+        <div className="shrink-0 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200 px-3 py-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-semibold text-amber-700">✏️ Scribble</span>
+
+            {/* Undo */}
+            <button
+              onClick={handleUndo}
+              disabled={undoStack.length === 0}
+              className="p-1.5 rounded-lg hover:bg-amber-100 disabled:opacity-30"
+              title="Undo"
+            >
+              <Undo2 className="h-4 w-4" />
+            </button>
+
+            <div className="w-px h-5 bg-amber-300" />
+
+            {/* Colors */}
+            <div className="flex gap-1">
+              {SCRIBBLE_COLORS.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => {
+                    setScribbleColor(c);
+                    setTool("pen");
+                  }}
+                  className={cn(
+                    "w-5 h-5 rounded-full border-2 transition-transform hover:scale-110",
+                    scribbleColor === c && tool === "pen"
+                      ? "border-amber-700 scale-110 ring-2 ring-amber-300"
+                      : "border-white shadow",
+                  )}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+
+            <div className="w-px h-5 bg-amber-300" />
+
+            {/* Pen Types */}
+            <div className="flex gap-0.5">
+              {PEN_TYPES.map((pt) => (
+                <button
+                  key={pt.id}
+                  onClick={() => {
+                    setPenType(pt.id);
+                    setTool("pen");
+                  }}
+                  className={cn(
+                    "p-1.5 rounded-lg transition-all",
+                    penType === pt.id && tool === "pen" ? "bg-amber-200 shadow-inner" : "hover:bg-amber-100",
+                  )}
+                  title={pt.label}
+                >
+                  <pt.icon className="h-4 w-4" />
+                </button>
+              ))}
+            </div>
+
+            {/* Pen Width */}
+            <select
+              value={penWidth}
+              onChange={(e) => setPenWidth(Number(e.target.value))}
+              className="h-7 text-xs border border-amber-300 rounded px-1 bg-white"
+            >
+              {PEN_WIDTHS.map((w) => (
+                <option key={w.value} value={w.value}>
+                  {w.label}
+                </option>
+              ))}
+            </select>
+
+            <div className="w-px h-5 bg-amber-300" />
+
+            {/* Erasers */}
+            <button
+              onClick={() => setTool("eraser")}
+              className={cn(
+                "p-1.5 rounded-lg flex items-center gap-1",
+                tool === "eraser" ? "bg-amber-200" : "hover:bg-amber-100",
+              )}
+              title="Simple Eraser"
+            >
+              <Eraser className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setTool("stroke-eraser")}
+              className={cn(
+                "p-1.5 rounded-lg flex items-center gap-1 text-xs",
+                tool === "stroke-eraser" ? "bg-amber-200" : "hover:bg-amber-100",
+              )}
+              title="Stroke Eraser (removes entire line)"
+            >
+              <Circle className="h-4 w-4" />
+            </button>
+
+            {/* Eraser Size (only for simple eraser) */}
+            {tool === "eraser" && (
+              <select
+                value={eraserSize}
+                onChange={(e) => setEraserSize(Number(e.target.value))}
+                className="h-7 text-xs border border-amber-300 rounded px-1 bg-white"
+              >
+                {ERASER_SIZES.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            <div className="flex-1" />
+
+            <button
+              onClick={clearScribble}
+              className="px-2 py-1 text-xs rounded-lg bg-red-100 text-red-600 hover:bg-red-200 flex items-center gap-1"
+            >
+              <Trash2 className="h-3 w-3" /> Clear All
+            </button>
+            <button
+              onClick={() => setScribbleMode(false)}
+              className="px-3 py-1 text-xs font-medium rounded-lg bg-amber-500 text-white hover:bg-amber-600"
+            >
+              Done
+            </button>
           </div>
-          <div className="w-px h-5 bg-amber-300 mx-1" />
-          <button
-            onClick={() => setScribbleTool("pen")}
-            className={cn("p-1.5 rounded-lg", scribbleTool === "pen" ? "bg-amber-200" : "hover:bg-amber-100")}
-          >
-            <PenTool className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => setScribbleTool("eraser")}
-            className={cn("p-1.5 rounded-lg", scribbleTool === "eraser" ? "bg-amber-200" : "hover:bg-amber-100")}
-          >
-            <Eraser className="h-4 w-4" />
-          </button>
-          <select
-            value={scribbleBrush}
-            onChange={(e) => setScribbleBrush(Number(e.target.value))}
-            className="h-7 text-xs border border-amber-300 rounded px-1 bg-white"
-          >
-            <option value={2}>Fine</option>
-            <option value={4}>Medium</option>
-            <option value={8}>Thick</option>
-          </select>
-          <div className="flex-1" />
-          <button
-            onClick={clearScribble}
-            className="px-2 py-1 text-xs rounded-lg bg-red-100 text-red-600 hover:bg-red-200 flex items-center gap-1"
-          >
-            <Trash2 className="h-3 w-3" /> Clear
-          </button>
-          <button
-            onClick={() => setScribbleMode(false)}
-            className="px-2 py-1 text-xs rounded-lg bg-amber-200 text-amber-700 hover:bg-amber-300"
-          >
-            Done
-          </button>
         </div>
       )}
 
@@ -866,14 +1082,12 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
             onMouseMove={draw}
             onMouseUp={stopDrawing}
             onMouseLeave={stopDrawing}
-            className="absolute inset-0 w-full h-full cursor-crosshair"
-            style={{ touchAction: "none", pointerEvents: scribbleMode ? "auto" : "none" }}
+            className="absolute inset-0 w-full h-full"
+            style={{
+              touchAction: "none",
+              cursor: tool === "pen" ? "crosshair" : tool === "eraser" ? "cell" : "pointer",
+            }}
           />
-        )}
-
-        {/* Show saved scribble when not in scribble mode */}
-        {!scribbleMode && scribbleData && (
-          <img src={scribbleData} className="absolute inset-0 w-full h-full pointer-events-none" alt="" />
         )}
       </div>
 
