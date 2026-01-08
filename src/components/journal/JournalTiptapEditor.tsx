@@ -1,4 +1,4 @@
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, NodeViewWrapper, NodeViewProps } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import TextAlign from "@tiptap/extension-text-align";
@@ -6,12 +6,12 @@ import Underline from "@tiptap/extension-underline";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import Link from "@tiptap/extension-link";
-import Image from "@tiptap/extension-image";
 import { TextStyle } from "@tiptap/extension-text-style";
 import FontFamily from "@tiptap/extension-font-family";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
-import { Extension } from "@tiptap/core";
+import { Extension, Node, mergeAttributes } from "@tiptap/core";
+import { ReactNodeViewRenderer } from "@tiptap/react";
 import { useEffect, forwardRef, useImperativeHandle, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -83,6 +83,111 @@ const FontSize = Extension.create({
   },
 });
 
+// Resizable Image Component
+function ResizableImageComponent({ node, updateAttributes, selected }: NodeViewProps) {
+  const [isResizing, setIsResizing] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const startX = useRef(0);
+  const startWidth = useRef(0);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    startX.current = e.clientX;
+    startWidth.current = imgRef.current?.offsetWidth || 300;
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      const diff = e.clientX - startX.current;
+      const newWidth = Math.max(100, Math.min(800, startWidth.current + diff));
+      updateAttributes({ width: newWidth });
+    };
+
+    const handleMouseUp = () => setIsResizing(false);
+
+    if (isResizing) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+    }
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing, updateAttributes]);
+
+  return (
+    <NodeViewWrapper className="relative inline-block my-2">
+      <div className={cn("relative inline-block", selected && "ring-2 ring-primary rounded-lg")}>
+        <img
+          ref={imgRef}
+          src={node.attrs.src}
+          alt={node.attrs.alt || ""}
+          style={{ width: node.attrs.width ? `${node.attrs.width}px` : "auto", maxWidth: "100%" }}
+          className="rounded-lg"
+          draggable={false}
+        />
+        {selected && (
+          <>
+            <div
+              onMouseDown={handleMouseDown}
+              className="absolute right-0 top-0 bottom-0 w-3 cursor-ew-resize bg-primary/20 hover:bg-primary/40 rounded-r-lg flex items-center justify-center"
+            >
+              <div className="w-1 h-8 bg-primary/60 rounded" />
+            </div>
+            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-0.5 rounded">
+              {node.attrs.width || "auto"}px
+            </div>
+          </>
+        )}
+      </div>
+    </NodeViewWrapper>
+  );
+}
+
+// Custom Resizable Image Extension
+const ResizableImage = Node.create({
+  name: "resizableImage",
+  group: "block",
+  atom: true,
+  draggable: true,
+
+  addAttributes() {
+    return {
+      src: { default: null },
+      alt: { default: null },
+      title: { default: null },
+      width: { default: null },
+    };
+  },
+
+  parseHTML() {
+    return [{ tag: "img[src]" }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return [
+      "img",
+      mergeAttributes(HTMLAttributes, { style: HTMLAttributes.width ? `width: ${HTMLAttributes.width}px` : "" }),
+    ];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(ResizableImageComponent);
+  },
+
+  addCommands() {
+    return {
+      setResizableImage:
+        (options: { src: string; alt?: string; title?: string; width?: number }) =>
+        ({ commands }: any) => {
+          return commands.insertContent({ type: this.name, attrs: options });
+        },
+    };
+  },
+});
+
 interface Props {
   content: string;
   onChange: (content: string) => void;
@@ -92,7 +197,6 @@ export interface TiptapEditorRef {
   editor: ReturnType<typeof useEditor> | null;
 }
 
-// Extended fonts
 const FONTS = [
   { value: "inter", label: "Inter", css: "Inter, system-ui, sans-serif" },
   { value: "arial", label: "Arial", css: "Arial, Helvetica, sans-serif" },
@@ -142,7 +246,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
       TaskList,
       TaskItem.configure({ nested: true }),
       Link.configure({ openOnClick: false }),
-      Image.configure({ inline: false }),
+      ResizableImage, // Use custom resizable image
       TextStyle,
       FontFamily,
       FontSize,
@@ -181,22 +285,19 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
     setLinkDialogOpen(false);
     setLinkUrl("");
   };
+
   const handleInsertImage = () => {
     if (!imageUrl || !editor) return;
-    editor.chain().focus().setImage({ src: imageUrl }).run();
+    (editor.commands as any).setResizableImage({ src: imageUrl });
     setImageDialogOpen(false);
     setImageUrl("");
   };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editor) return;
     const reader = new FileReader();
-    reader.onload = (ev) =>
-      editor
-        .chain()
-        .focus()
-        .setImage({ src: ev.target?.result as string })
-        .run();
+    reader.onload = (ev) => (editor.commands as any).setResizableImage({ src: ev.target?.result as string });
     reader.readAsDataURL(file);
     setImageDialogOpen(false);
   };
@@ -556,7 +657,6 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
         .ProseMirror ul[data-type="taskList"] li { display: flex; align-items: flex-start; gap: 0.5rem; }
         .ProseMirror ul[data-type="taskList"] input { accent-color: #10b981; }
         .ProseMirror li[data-checked="true"] > div { text-decoration: line-through; color: #94a3b8; }
-        .ProseMirror img { max-width: 100%; border-radius: 0.5rem; margin: 1rem 0; }
         .ProseMirror a { color: #3b82f6; text-decoration: underline; }
       `}</style>
     </div>
