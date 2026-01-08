@@ -185,180 +185,6 @@ const ResizableImage = Node.create({
   },
 });
 
-// Scribble/Drawing Component
-function ScribbleComponent({ node, updateAttributes, selected, deleteNode }: NodeViewProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [color, setColor] = useState(node.attrs.penColor || "#1a1a1a");
-  const [brushSize, setBrushSize] = useState(node.attrs.brushSize || 3);
-  const [tool, setTool] = useState<"pen" | "eraser">("pen");
-  const lastPos = useRef({ x: 0, y: 0 });
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    if (node.attrs.drawing) {
-      const img = new Image();
-      img.onload = () => ctx.drawImage(img, 0, 0);
-      img.src = node.attrs.drawing;
-    } else {
-      ctx.fillStyle = "#fafafa";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-  }, []);
-
-  const startDrawing = (e: React.MouseEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    lastPos.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    setIsDrawing(true);
-  };
-
-  const draw = (e: React.MouseEvent) => {
-    if (!isDrawing) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    ctx.beginPath();
-    ctx.moveTo(lastPos.current.x, lastPos.current.y);
-    ctx.lineTo(x, y);
-    ctx.strokeStyle = tool === "eraser" ? "#fafafa" : color;
-    ctx.lineWidth = tool === "eraser" ? brushSize * 3 : brushSize;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.stroke();
-    lastPos.current = { x, y };
-  };
-
-  const stopDrawing = () => {
-    if (!isDrawing) return;
-    setIsDrawing(false);
-    const canvas = canvasRef.current;
-    if (canvas) {
-      updateAttributes({ drawing: canvas.toDataURL(), penColor: color, brushSize });
-    }
-  };
-
-  const clearCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.fillStyle = "#fafafa";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    updateAttributes({ drawing: canvas.toDataURL() });
-  };
-
-  const colors = ["#1a1a1a", "#dc2626", "#2563eb", "#16a34a", "#7c3aed", "#ea580c", "#db2777"];
-
-  return (
-    <NodeViewWrapper className="my-3">
-      <div
-        className={cn(
-          "relative rounded-xl border-2 overflow-hidden",
-          selected ? "border-primary shadow-lg" : "border-slate-200",
-        )}
-      >
-        {/* Toolbar */}
-        <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border-b border-slate-200">
-          <span className="text-xs font-medium text-slate-500 mr-2">✏️ Scribble</span>
-          <div className="flex gap-1">
-            {colors.map((c) => (
-              <button
-                key={c}
-                onClick={() => {
-                  setColor(c);
-                  setTool("pen");
-                }}
-                className={cn(
-                  "w-5 h-5 rounded-full border-2 transition-transform hover:scale-110",
-                  color === c && tool === "pen" ? "border-slate-800 scale-110" : "border-slate-300",
-                )}
-                style={{ backgroundColor: c }}
-              />
-            ))}
-          </div>
-          <div className="w-px h-5 bg-slate-300 mx-1" />
-          <button
-            onClick={() => setTool("pen")}
-            className={cn("p-1.5 rounded-lg", tool === "pen" ? "bg-slate-200" : "hover:bg-slate-100")}
-          >
-            <PenTool className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => setTool("eraser")}
-            className={cn("p-1.5 rounded-lg", tool === "eraser" ? "bg-slate-200" : "hover:bg-slate-100")}
-          >
-            <Eraser className="h-4 w-4" />
-          </button>
-          <select
-            value={brushSize}
-            onChange={(e) => setBrushSize(Number(e.target.value))}
-            className="h-7 text-xs border rounded px-1 bg-white"
-          >
-            <option value={2}>Fine</option>
-            <option value={4}>Medium</option>
-            <option value={8}>Thick</option>
-          </select>
-          <div className="flex-1" />
-          <button onClick={clearCanvas} className="p-1.5 rounded-lg hover:bg-red-50 text-red-500" title="Clear">
-            <Trash2 className="h-4 w-4" />
-          </button>
-          <button onClick={deleteNode} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400" title="Remove">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        {/* Canvas */}
-        <canvas
-          ref={canvasRef}
-          width={600}
-          height={200}
-          onMouseDown={startDrawing}
-          onMouseMove={draw}
-          onMouseUp={stopDrawing}
-          onMouseLeave={stopDrawing}
-          className="w-full cursor-crosshair bg-[#fafafa]"
-          style={{ touchAction: "none" }}
-        />
-      </div>
-    </NodeViewWrapper>
-  );
-}
-
-const ScribbleBlock = Node.create({
-  name: "scribbleBlock",
-  group: "block",
-  atom: true,
-  draggable: true,
-  addAttributes() {
-    return { drawing: { default: null }, penColor: { default: "#1a1a1a" }, brushSize: { default: 3 } };
-  },
-  parseHTML() {
-    return [{ tag: "div[data-scribble]" }];
-  },
-  renderHTML({ HTMLAttributes }) {
-    return ["div", mergeAttributes(HTMLAttributes, { "data-scribble": "true" })];
-  },
-  addNodeView() {
-    return ReactNodeViewRenderer(ScribbleComponent);
-  },
-  addCommands() {
-    return {
-      insertScribble:
-        () =>
-        ({ commands }: any) =>
-          commands.insertContent({ type: this.name }),
-    };
-  },
-});
-
 interface NotesRichEditorProps {
   note: Note;
   groups: NoteGroup[];
@@ -385,6 +211,7 @@ const FONTS = [
 const SIZES = ["10", "12", "14", "16", "18", "20", "24", "28", "32", "40", "48"];
 const TEXT_COLORS = ["#1a1a1a", "#dc2626", "#ea580c", "#16a34a", "#2563eb", "#7c3aed", "#db2777", "#0891b2"];
 const HIGHLIGHT_COLORS = ["#fef08a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#fed7aa", "#e9d5ff", "#fecaca"];
+const SCRIBBLE_COLORS = ["#1a1a1a", "#dc2626", "#2563eb", "#16a34a", "#7c3aed", "#ea580c", "#db2777"];
 
 const BG_PRESETS = [
   { id: "none", label: "None", value: "#ffffff" },
@@ -412,6 +239,17 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
   const [editorBg, setEditorBg] = useState("#ffffff");
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // Scribble overlay state
+  const [scribbleMode, setScribbleMode] = useState(false);
+  const [scribbleColor, setScribbleColor] = useState("#1a1a1a");
+  const [scribbleBrush, setScribbleBrush] = useState(3);
+  const [scribbleTool, setScribbleTool] = useState<"pen" | "eraser">("pen");
+  const [scribbleData, setScribbleData] = useState<string | null>(note.scribbleData || null);
+  const [isDrawing, setIsDrawing] = useState(false);
+
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const lastPos = useRef({ x: 0, y: 0 });
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedContent = useRef(note.contentRich || "");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -424,7 +262,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
       Underline,
       Link.configure({ openOnClick: false }),
       ResizableImage,
-      ScribbleBlock,
       TaskList,
       TaskItem.configure({ nested: true }),
       TextStyle,
@@ -445,6 +282,23 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     },
   });
 
+  // Initialize canvas when scribble mode is enabled
+  useEffect(() => {
+    if (scribbleMode && canvasRef.current && containerRef.current) {
+      const canvas = canvasRef.current;
+      const container = containerRef.current;
+      canvas.width = container.offsetWidth;
+      canvas.height = container.offsetHeight;
+
+      const ctx = canvas.getContext("2d");
+      if (ctx && scribbleData) {
+        const img = new Image();
+        img.onload = () => ctx.drawImage(img, 0, 0);
+        img.src = scribbleData;
+      }
+    }
+  }, [scribbleMode]);
+
   useEffect(() => {
     if (editor && note.contentRich !== editor.getHTML()) {
       editor.commands.setContent(note.contentRich || "");
@@ -453,23 +307,85 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     setTitle(note.title);
     setTags(note.tags);
     setSaveStatus("saved");
+    setScribbleData(note.scribbleData || null);
   }, [note.id, editor]);
 
   const handleSave = useCallback(() => {
     if (!editor) return;
     setSaveStatus("saving");
     const html = editor.getHTML();
-    onSave({
+    const noteData: any = {
       ...note,
       title,
       contentRich: html,
       plainText: editor.getText(),
       tags,
       updatedAt: new Date().toISOString(),
-    });
+    };
+    if (scribbleData) noteData.scribbleData = scribbleData;
+    onSave(noteData);
     lastSavedContent.current = html;
     setTimeout(() => setSaveStatus("saved"), 500);
-  }, [editor, note, title, tags, onSave]);
+  }, [editor, note, title, tags, scribbleData, onSave]);
+
+  // Scribble drawing handlers
+  const getCanvasPos = (e: React.MouseEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
+    };
+  };
+
+  const startDrawing = (e: React.MouseEvent) => {
+    if (!scribbleMode) return;
+    const pos = getCanvasPos(e);
+    lastPos.current = pos;
+    setIsDrawing(true);
+  };
+
+  const draw = (e: React.MouseEvent) => {
+    if (!isDrawing || !scribbleMode) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const pos = getCanvasPos(e);
+    ctx.beginPath();
+    ctx.moveTo(lastPos.current.x, lastPos.current.y);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.strokeStyle = scribbleTool === "eraser" ? "rgba(255,255,255,1)" : scribbleColor;
+    ctx.lineWidth = scribbleTool === "eraser" ? scribbleBrush * 4 : scribbleBrush;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.globalCompositeOperation = scribbleTool === "eraser" ? "destination-out" : "source-over";
+    ctx.stroke();
+    lastPos.current = pos;
+  };
+
+  const stopDrawing = () => {
+    if (!isDrawing) return;
+    setIsDrawing(false);
+    if (canvasRef.current) {
+      setScribbleData(canvasRef.current.toDataURL());
+      setSaveStatus("unsaved");
+    }
+  };
+
+  const clearScribble = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setScribbleData(null);
+    setSaveStatus("unsaved");
+  };
 
   const handleFontChange = (v: string) => {
     setCurrentFont(v);
@@ -513,9 +429,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     reader.onload = (ev) => (editor.commands as any).setResizableImage({ src: ev.target?.result as string });
     reader.readAsDataURL(file);
     setImageDialogOpen(false);
-  };
-  const handleInsertScribble = () => {
-    if (editor) (editor.commands as any).insertScribble();
   };
 
   const group = groups.find((g) => g.id === note.groupId);
@@ -730,7 +643,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           <ToolBtn onClick={() => setImageDialogOpen(true)} title="Image">
             <ImageIcon className="h-4 w-4" />
           </ToolBtn>
-          <ToolBtn onClick={handleInsertScribble} title="Scribble">
+          <ToolBtn onClick={() => setScribbleMode(!scribbleMode)} active={scribbleMode} title="Scribble Mode">
             <PenTool className="h-4 w-4" />
           </ToolBtn>
 
@@ -846,8 +759,66 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+      {/* Scribble Toolbar - shows when scribble mode is active */}
+      {scribbleMode && (
+        <div className="shrink-0 bg-amber-50 border-b border-amber-200 px-3 py-2 flex items-center gap-2">
+          <span className="text-xs font-medium text-amber-700 mr-2">✏️ Scribble Mode</span>
+          <div className="flex gap-1">
+            {SCRIBBLE_COLORS.map((c) => (
+              <button
+                key={c}
+                onClick={() => {
+                  setScribbleColor(c);
+                  setScribbleTool("pen");
+                }}
+                className={cn(
+                  "w-5 h-5 rounded-full border-2 transition-transform hover:scale-110",
+                  scribbleColor === c && scribbleTool === "pen" ? "border-amber-600 scale-110" : "border-slate-300",
+                )}
+                style={{ backgroundColor: c }}
+              />
+            ))}
+          </div>
+          <div className="w-px h-5 bg-amber-300 mx-1" />
+          <button
+            onClick={() => setScribbleTool("pen")}
+            className={cn("p-1.5 rounded-lg", scribbleTool === "pen" ? "bg-amber-200" : "hover:bg-amber-100")}
+          >
+            <PenTool className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setScribbleTool("eraser")}
+            className={cn("p-1.5 rounded-lg", scribbleTool === "eraser" ? "bg-amber-200" : "hover:bg-amber-100")}
+          >
+            <Eraser className="h-4 w-4" />
+          </button>
+          <select
+            value={scribbleBrush}
+            onChange={(e) => setScribbleBrush(Number(e.target.value))}
+            className="h-7 text-xs border border-amber-300 rounded px-1 bg-white"
+          >
+            <option value={2}>Fine</option>
+            <option value={4}>Medium</option>
+            <option value={8}>Thick</option>
+          </select>
+          <div className="flex-1" />
+          <button
+            onClick={clearScribble}
+            className="px-2 py-1 text-xs rounded-lg bg-red-100 text-red-600 hover:bg-red-200 flex items-center gap-1"
+          >
+            <Trash2 className="h-3 w-3" /> Clear
+          </button>
+          <button
+            onClick={() => setScribbleMode(false)}
+            className="px-2 py-1 text-xs rounded-lg bg-amber-200 text-amber-700 hover:bg-amber-300"
+          >
+            Done
+          </button>
+        </div>
+      )}
+
+      {/* Content with Scribble Overlay */}
+      <div ref={containerRef} className="flex-1 overflow-y-auto overflow-x-hidden relative">
         <div className="px-4 py-3" style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>
           <Input
             value={title}
@@ -886,6 +857,24 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           </div>
           <EditorContent editor={editor} />
         </div>
+
+        {/* Scribble Canvas Overlay */}
+        {scribbleMode && (
+          <canvas
+            ref={canvasRef}
+            onMouseDown={startDrawing}
+            onMouseMove={draw}
+            onMouseUp={stopDrawing}
+            onMouseLeave={stopDrawing}
+            className="absolute inset-0 w-full h-full cursor-crosshair"
+            style={{ touchAction: "none", pointerEvents: scribbleMode ? "auto" : "none" }}
+          />
+        )}
+
+        {/* Show saved scribble when not in scribble mode */}
+        {!scribbleMode && scribbleData && (
+          <img src={scribbleData} className="absolute inset-0 w-full h-full pointer-events-none" alt="" />
+        )}
       </div>
 
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
