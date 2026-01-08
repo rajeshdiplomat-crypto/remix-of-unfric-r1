@@ -186,10 +186,8 @@ export function NotesSplitView({
           folders={folders}
           onSave={handleSave}
           onBack={() => setIsFullPage(false)}
-          onDelete={() => onDeleteNote(selectedNote.id)}
           lastSaved={lastSaved}
           showBreadcrumb={true}
-          isFullPage={true}
         />
       </div>,
       document.body
