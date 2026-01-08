@@ -363,8 +363,11 @@ export default function Notes() {
   const handleSaveNote = async (updatedNote: Note) => {
     const noteWithTimestamp = { ...updatedNote, updatedAt: new Date().toISOString() };
     setNotes(notes.map((n) => (n.id === updatedNote.id ? noteWithTimestamp : n)));
+    // Also update selectedNote so it stays in sync
+    if (selectedNote?.id === updatedNote.id) {
+      setSelectedNote(noteWithTimestamp);
+    }
     await syncNoteToSupabase(noteWithTimestamp);
-    toast({ title: "Note saved" });
   };
 
   const handleDeleteNote = async (noteId: string) => {
