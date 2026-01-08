@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, NodeViewWrapper, NodeViewProps } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import TextAlign from "@tiptap/extension-text-align";
@@ -12,7 +12,8 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import FontFamily from "@tiptap/extension-font-family";
-import { Extension } from "@tiptap/core";
+import { Extension, Node, mergeAttributes } from "@tiptap/core";
+import { ReactNodeViewRenderer } from "@tiptap/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -61,6 +62,7 @@ import {
 } from "lucide-react";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 
+// Font Size Extension
 const FontSize = Extension.create({
   name: "fontSize",
   addOptions() {
@@ -86,6 +88,113 @@ const FontSize = Extension.create({
         (fontSize: string) =>
         ({ chain }: any) =>
           chain().setMark("textStyle", { fontSize }).run(),
+    };
+  },
+});
+
+// Resizable Image Component
+function ResizableImageComponent({ node, updateAttributes, selected }: NodeViewProps) {
+  const [isResizing, setIsResizing] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const startX = useRef(0);
+  const startWidth = useRef(0);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    startX.current = e.clientX;
+    startWidth.current = imgRef.current?.offsetWidth || 300;
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      const diff = e.clientX - startX.current;
+      const newWidth = Math.max(100, Math.min(800, startWidth.current + diff));
+      updateAttributes({ width: newWidth });
+    };
+
+    const handleMouseUp = () => setIsResizing(false);
+
+    if (isResizing) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+    }
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing, updateAttributes]);
+
+  return (
+    <NodeViewWrapper className="relative inline-block my-2">
+      <div className={cn("relative inline-block", selected && "ring-2 ring-primary rounded-lg")}>
+        <img
+          ref={imgRef}
+          src={node.attrs.src}
+          alt={node.attrs.alt || ""}
+          style={{ width: node.attrs.width ? `${node.attrs.width}px` : "auto", maxWidth: "100%" }}
+          className="rounded-lg"
+          draggable={false}
+        />
+        {selected && (
+          <>
+            {/* Resize handle - right edge */}
+            <div
+              onMouseDown={handleMouseDown}
+              className="absolute right-0 top-0 bottom-0 w-3 cursor-ew-resize bg-primary/20 hover:bg-primary/40 rounded-r-lg flex items-center justify-center"
+            >
+              <div className="w-1 h-8 bg-primary/60 rounded" />
+            </div>
+            {/* Width indicator */}
+            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-0.5 rounded">
+              {node.attrs.width || "auto"}px
+            </div>
+          </>
+        )}
+      </div>
+    </NodeViewWrapper>
+  );
+}
+
+// Custom Resizable Image Extension
+const ResizableImage = Node.create({
+  name: "resizableImage",
+  group: "block",
+  atom: true,
+  draggable: true,
+
+  addAttributes() {
+    return {
+      src: { default: null },
+      alt: { default: null },
+      title: { default: null },
+      width: { default: null },
+    };
+  },
+
+  parseHTML() {
+    return [{ tag: "img[src]" }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return [
+      "img",
+      mergeAttributes(HTMLAttributes, { style: HTMLAttributes.width ? `width: ${HTMLAttributes.width}px` : "" }),
+    ];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(ResizableImageComponent);
+  },
+
+  addCommands() {
+    return {
+      setResizableImage:
+        (options: { src: string; alt?: string; title?: string; width?: number }) =>
+        ({ commands }: any) => {
+          return commands.insertContent({ type: this.name, attrs: options });
+        },
     };
   },
 });
@@ -154,7 +263,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Underline,
       Link.configure({ openOnClick: false }),
-      Image.configure({ inline: false, allowBase64: true }),
+      ResizableImage, // Use custom resizable image
       TaskList,
       TaskItem.configure({ nested: true }),
       TextStyle,
@@ -231,22 +340,19 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     setLinkDialogOpen(false);
     setLinkUrl("");
   };
+
   const handleInsertImage = () => {
     if (!imageUrl || !editor) return;
-    editor.chain().focus().setImage({ src: imageUrl }).run();
+    (editor.commands as any).setResizableImage({ src: imageUrl });
     setImageDialogOpen(false);
     setImageUrl("");
   };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editor) return;
     const reader = new FileReader();
-    reader.onload = (ev) =>
-      editor
-        .chain()
-        .focus()
-        .setImage({ src: ev.target?.result as string })
-        .run();
+    reader.onload = (ev) => (editor.commands as any).setResizableImage({ src: ev.target?.result as string });
     reader.readAsDataURL(file);
     setImageDialogOpen(false);
   };
@@ -288,7 +394,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           </ToolBtn>
           <div className="w-px h-5 bg-slate-200 mx-1" />
 
-          {/* Heading */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="h-8 px-2 flex items-center gap-1 rounded-md text-sm text-slate-600 hover:bg-slate-100">
@@ -310,7 +415,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Font */}
           <Select value={currentFont} onValueChange={handleFontChange}>
             <SelectTrigger className="h-8 w-24 text-xs border-0 bg-slate-50 hover:bg-slate-100 rounded-md">
               <SelectValue />
@@ -324,7 +428,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
             </SelectContent>
           </Select>
 
-          {/* Size */}
           <Select value={currentSize} onValueChange={handleSizeChange}>
             <SelectTrigger className="h-8 w-14 text-xs border-0 bg-slate-50 hover:bg-slate-100 rounded-md">
               <SelectValue />
@@ -339,7 +442,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           </Select>
           <div className="w-px h-5 bg-slate-200 mx-1" />
 
-          {/* Color */}
           <Popover>
             <PopoverTrigger asChild>
               <button className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-slate-100">
@@ -388,7 +490,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
             <UnderlineIcon className="h-4 w-4" />
           </ToolBtn>
 
-          {/* Highlight */}
           <Popover>
             <PopoverTrigger asChild>
               <button className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-slate-100">
@@ -469,7 +570,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
             <ImageIcon className="h-4 w-4" />
           </ToolBtn>
 
-          {/* Background */}
           <Popover>
             <PopoverTrigger asChild>
               <button
@@ -498,7 +598,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
             </PopoverContent>
           </Popover>
 
-          {/* More */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-slate-100">
@@ -525,7 +624,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* AI */}
           <button
             onClick={() => alert("AI coming soon!")}
             className="h-8 px-3 flex items-center gap-1.5 rounded-md text-sm font-medium bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow hover:shadow-md"
@@ -535,7 +633,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
 
           <div className="flex-1 min-w-4" />
 
-          {/* Status & Actions */}
           <span
             className={cn(
               "text-xs px-2 py-1 rounded-full font-medium",
@@ -585,7 +682,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
         </div>
       </div>
 
-      {/* Content - NO MAX WIDTH, FULL WIDTH */}
+      {/* Content */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="px-4 py-3" style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>
           <Input
@@ -695,7 +792,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
         .ProseMirror ul[data-type="taskList"] li { display: flex; align-items: flex-start; gap: 0.5rem; }
         .ProseMirror ul[data-type="taskList"] input { accent-color: #10b981; }
         .ProseMirror li[data-checked="true"] > div { text-decoration: line-through; color: #94a3b8; }
-        .ProseMirror img { max-width: 100%; border-radius: 0.5rem; margin: 0.5rem 0; }
         .ProseMirror a { color: #3b82f6; text-decoration: underline; }
       `}</style>
     </div>
