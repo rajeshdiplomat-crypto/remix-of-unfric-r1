@@ -286,45 +286,43 @@ export function NotesRichEditor({
         </div>
       </div>
 
-      {/* Editor Content */}
+      {/* Editor Content - Toolbar first, then title and content */}
       <div className="flex-1 overflow-hidden flex flex-col">
-        {/* Tags Display */}
-        {tags.length > 0 && (
-          <div className={`flex gap-1 px-6 pt-4 ${isFullPage ? '' : 'max-w-4xl mx-auto'} w-full`}>
-            {tags.map((tag) => (
-              <Badge key={tag} variant="outline" className="text-xs">
-                #{tag}
-              </Badge>
-            ))}
-          </div>
-        )}
-
-        {/* Title */}
-        <div className={`px-6 pt-4 ${isFullPage ? '' : 'max-w-4xl mx-auto'} w-full`}>
-          <Input
-            ref={titleRef}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Untitled Note"
-            className="text-3xl font-semibold border-none bg-transparent p-0 h-auto focus-visible:ring-0 text-foreground"
-          />
-        </div>
-
-        {/* Tiptap Editor - Full width toolbar in full page mode, constrained content */}
-        <div className="flex-1 overflow-hidden">
-          <EvernoteToolbarEditor
-            ref={editorRef}
-            initialContentRich={note.contentRich || note.plainText || ''}
-            onContentChange={handleContentChange}
-            onSave={handleEditorSave}
-            onSaveStatusChange={setSaveStatus}
-            autosaveDebounce={1500}
-            placeholder="Start typing here..."
-            className="h-full"
-            fullWidthToolbar={isFullPage}
-            contentMaxWidth={!isFullPage}
-          />
-        </div>
+        {/* Tiptap Editor with integrated title */}
+        <EvernoteToolbarEditor
+          ref={editorRef}
+          initialContentRich={note.contentRich || note.plainText || ''}
+          onContentChange={handleContentChange}
+          onSave={handleEditorSave}
+          onSaveStatusChange={setSaveStatus}
+          autosaveDebounce={1500}
+          placeholder="Start typing here..."
+          className="h-full"
+          fullWidthToolbar={isFullPage}
+          contentMaxWidth={!isFullPage}
+          titleSlot={
+            <div className="space-y-2">
+              {/* Tags Display */}
+              {tags.length > 0 && (
+                <div className="flex gap-1 flex-wrap">
+                  {tags.map((tag) => (
+                    <Badge key={tag} variant="outline" className="text-xs">
+                      #{tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              {/* Title */}
+              <Input
+                ref={titleRef}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Untitled Note"
+                className="text-3xl font-semibold border-none bg-transparent p-0 h-auto focus-visible:ring-0 text-foreground"
+              />
+            </div>
+          }
+        />
       </div>
     </div>
   );

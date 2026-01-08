@@ -477,9 +477,8 @@ export function NotesSplitView({
                 folders={folders}
                 onSave={handleSave}
                 onBack={handleBack}
-                onDelete={() => onDeleteNote(selectedNote.id)}
                 lastSaved={lastSaved}
-                showBreadcrumb={true}
+                showBreadcrumb={false}
               />
             </div>
           </>
