@@ -19,6 +19,13 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import {
   Undo2,
@@ -44,6 +51,7 @@ import {
   Heading2,
   Heading3,
   Save,
+  MoreHorizontal,
 } from "lucide-react";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 
@@ -89,68 +97,36 @@ interface NotesRichEditorProps {
 const FONT_FAMILIES = [
   { value: "inter", label: "Inter", css: "Inter, system-ui, sans-serif" },
   { value: "georgia", label: "Georgia", css: "Georgia, serif" },
-  { value: "times", label: "Times", css: '"Times New Roman", Times, serif' },
+  { value: "times", label: "Times New Roman", css: '"Times New Roman", Times, serif' },
   { value: "arial", label: "Arial", css: "Arial, Helvetica, sans-serif" },
   { value: "verdana", label: "Verdana", css: "Verdana, Geneva, sans-serif" },
-  { value: "roboto", label: "Roboto", css: "Roboto, sans-serif" },
-  { value: "opensans", label: "Open Sans", css: '"Open Sans", sans-serif' },
   { value: "lora", label: "Lora", css: "Lora, serif" },
-  { value: "playfair", label: "Playfair", css: '"Playfair Display", serif' },
-  { value: "mono", label: "Mono", css: '"JetBrains Mono", monospace' },
+  { value: "playfair", label: "Playfair Display", css: '"Playfair Display", serif' },
+  { value: "mono", label: "Monospace", css: '"SF Mono", "Fira Code", monospace' },
 ];
 
-const FONT_SIZES = ["12", "14", "16", "18", "20", "24", "28", "32", "36", "48"];
+const FONT_SIZES = ["12", "14", "16", "18", "20", "24", "28", "32", "40"];
 
 const TEXT_COLORS = [
-  { value: "", label: "Default" },
-  { value: "#000000", label: "Black" },
-  { value: "#dc2626", label: "Red" },
-  { value: "#16a34a", label: "Green" },
-  { value: "#2563eb", label: "Blue" },
-  { value: "#7c3aed", label: "Purple" },
-  { value: "#ea580c", label: "Orange" },
-  { value: "#db2777", label: "Pink" },
+  { value: "", label: "Default", color: "currentColor" },
+  { value: "#1a1a1a", label: "Black", color: "#1a1a1a" },
+  { value: "#dc2626", label: "Red", color: "#dc2626" },
+  { value: "#ea580c", label: "Orange", color: "#ea580c" },
+  { value: "#16a34a", label: "Green", color: "#16a34a" },
+  { value: "#2563eb", label: "Blue", color: "#2563eb" },
+  { value: "#7c3aed", label: "Purple", color: "#7c3aed" },
+  { value: "#db2777", label: "Pink", color: "#db2777" },
 ];
 
 const HIGHLIGHT_COLORS = [
-  { value: "", label: "None" },
-  { value: "#fef08a", label: "Yellow" },
-  { value: "#bbf7d0", label: "Green" },
-  { value: "#bfdbfe", label: "Blue" },
-  { value: "#fbcfe8", label: "Pink" },
-  { value: "#fed7aa", label: "Orange" },
+  { value: "", label: "None", color: "transparent" },
+  { value: "#fef08a", label: "Yellow", color: "#fef08a" },
+  { value: "#bbf7d0", label: "Green", color: "#bbf7d0" },
+  { value: "#bfdbfe", label: "Blue", color: "#bfdbfe" },
+  { value: "#fbcfe8", label: "Pink", color: "#fbcfe8" },
+  { value: "#fed7aa", label: "Orange", color: "#fed7aa" },
+  { value: "#e9d5ff", label: "Purple", color: "#e9d5ff" },
 ];
-
-const ToolBtn = ({
-  onClick,
-  active,
-  disabled,
-  children,
-  title,
-}: {
-  onClick: () => void;
-  active?: boolean;
-  disabled?: boolean;
-  children: React.ReactNode;
-  title: string;
-}) => (
-  <button
-    type="button"
-    title={title}
-    disabled={disabled}
-    onMouseDown={(e) => {
-      e.preventDefault();
-      onClick();
-    }}
-    className={cn(
-      "h-8 w-8 flex items-center justify-center rounded-md transition-all hover:bg-accent",
-      "disabled:opacity-40",
-      active && "bg-primary/10 text-primary",
-    )}
-  >
-    {children}
-  </button>
-);
 
 export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: NotesRichEditorProps) {
   const [title, setTitle] = useState(note.title);
@@ -171,17 +147,17 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
-      Placeholder.configure({ placeholder: "Start writing..." }),
+      Placeholder.configure({ placeholder: "Start writing your note..." }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Underline,
-      Link.configure({ openOnClick: false }),
+      Link.configure({ openOnClick: false, HTMLAttributes: { class: "text-primary underline hover:text-primary/80" } }),
       Image.configure({
         inline: false,
         allowBase64: true,
-        HTMLAttributes: { class: "max-w-full h-auto rounded-lg my-3" },
+        HTMLAttributes: { class: "max-w-full h-auto rounded-lg my-4 shadow-sm" },
       }),
-      TaskList,
-      TaskItem.configure({ nested: true }),
+      TaskList.configure({ HTMLAttributes: { class: "not-prose space-y-1" } }),
+      TaskItem.configure({ nested: true, HTMLAttributes: { class: "flex items-start gap-2" } }),
       TextStyle,
       Color,
       Highlight.configure({ multicolor: true }),
@@ -192,19 +168,21 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
     editorProps: {
       attributes: {
         class: cn(
-          "focus:outline-none min-h-[300px] py-4",
-          "[&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-3 [&_h1]:mt-4",
-          "[&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mb-2 [&_h2]:mt-3",
-          "[&_h3]:text-lg [&_h3]:font-medium [&_h3]:mb-2 [&_h3]:mt-2",
-          "[&_p]:my-1.5 [&_p]:leading-relaxed",
-          "[&_strong]:font-bold",
-          "[&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2",
-          "[&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2",
+          "focus:outline-none min-h-[280px] text-foreground leading-relaxed",
+          "prose prose-sm sm:prose-base max-w-none",
+          "prose-headings:font-semibold prose-headings:text-foreground",
+          "prose-h1:text-2xl prose-h1:mt-6 prose-h1:mb-3",
+          "prose-h2:text-xl prose-h2:mt-5 prose-h2:mb-2",
+          "prose-h3:text-lg prose-h3:mt-4 prose-h3:mb-2",
+          "prose-p:my-2 prose-p:text-foreground",
+          "prose-strong:font-bold prose-strong:text-foreground",
+          "prose-ul:my-2 prose-ul:pl-5 prose-ol:my-2 prose-ol:pl-5",
+          "prose-li:my-0.5",
           '[&_ul[data-type="taskList"]]:list-none [&_ul[data-type="taskList"]]:pl-0',
           '[&_ul[data-type="taskList"]_li]:flex [&_ul[data-type="taskList"]_li]:items-start [&_ul[data-type="taskList"]_li]:gap-2',
-          '[&_ul[data-type="taskList"]_input]:accent-primary [&_ul[data-type="taskList"]_input]:mt-1',
-          '[&_li[data-checked="true"]]:text-muted-foreground [&_li[data-checked="true"]]:line-through',
-          "[&_a]:text-primary [&_a]:underline",
+          '[&_ul[data-type="taskList"]_li_label]:flex [&_ul[data-type="taskList"]_li_label]:items-center [&_ul[data-type="taskList"]_li_label]:gap-2',
+          '[&_ul[data-type="taskList"]_input[type="checkbox"]]:w-4 [&_ul[data-type="taskList"]_input[type="checkbox"]]:h-4 [&_ul[data-type="taskList"]_input[type="checkbox"]]:accent-primary [&_ul[data-type="taskList"]_input[type="checkbox"]]:rounded',
+          '[&_li[data-checked="true"]_div]:line-through [&_li[data-checked="true"]_div]:text-muted-foreground',
         ),
       },
     },
@@ -213,7 +191,7 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
       if (html !== lastSavedContent.current) {
         setSaveStatus("unsaved");
         if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
-        autosaveTimer.current = setTimeout(() => handleSave(), 3000);
+        autosaveTimer.current = setTimeout(() => handleSave(), 4000);
       }
     },
   });
@@ -241,18 +219,18 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
       updatedAt: new Date().toISOString(),
     });
     lastSavedContent.current = html;
-    setTimeout(() => setSaveStatus("saved"), 500);
+    setTimeout(() => setSaveStatus("saved"), 600);
   }, [editor, note, title, tags, onSave]);
 
-  const handleFontChange = (fontValue: string) => {
-    setCurrentFont(fontValue);
-    const font = FONT_FAMILIES.find((f) => f.value === fontValue);
+  const handleFontChange = (v: string) => {
+    setCurrentFont(v);
+    const font = FONT_FAMILIES.find((f) => f.value === v);
     if (font && editor) editor.chain().focus().setFontFamily(font.css).run();
   };
 
-  const handleSizeChange = (size: string) => {
-    setCurrentSize(size);
-    if (editor) (editor.chain().focus() as any).setFontSize(size).run();
+  const handleSizeChange = (v: string) => {
+    setCurrentSize(v);
+    if (editor) (editor.chain().focus() as any).setFontSize(v).run();
   };
 
   const handleAddTag = () => {
@@ -301,54 +279,92 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
   const group = groups.find((g) => g.id === note.groupId);
   if (!editor) return null;
 
+  const ToolBtn = ({
+    onClick,
+    active,
+    disabled,
+    children,
+    title: btnTitle,
+  }: {
+    onClick: () => void;
+    active?: boolean;
+    disabled?: boolean;
+    children: React.ReactNode;
+    title: string;
+  }) => (
+    <button
+      type="button"
+      title={btnTitle}
+      disabled={disabled}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        onClick();
+      }}
+      className={cn(
+        "h-8 w-8 flex items-center justify-center rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-accent",
+        "disabled:opacity-40 disabled:pointer-events-none",
+        active && "bg-accent text-foreground",
+      )}
+    >
+      {children}
+    </button>
+  );
+
+  const Divider = () => <div className="w-px h-6 bg-border mx-0.5 shrink-0" />;
+
   return (
-    <div className="flex flex-col h-full bg-background">
-      {/* Toolbar - Theme Matching */}
-      <div className="sticky top-0 z-40 bg-muted/80 backdrop-blur border-b">
-        <div className="flex items-center gap-0.5 px-3 py-2 overflow-x-auto">
+    <div className="flex flex-col h-full bg-background overflow-hidden">
+      {/* Premium Toolbar */}
+      <div className="shrink-0 border-b bg-card/80 backdrop-blur-sm">
+        <div className="flex items-center px-2 py-1.5 gap-0.5 overflow-x-auto">
+          {/* Undo/Redo */}
           <ToolBtn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
             <Undo2 className="h-4 w-4" />
           </ToolBtn>
           <ToolBtn onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo">
             <Redo2 className="h-4 w-4" />
           </ToolBtn>
-          <div className="w-px h-5 bg-border mx-1" />
+          <Divider />
+
+          {/* Headings */}
           <ToolBtn
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
             active={editor.isActive("heading", { level: 1 })}
-            title="H1"
+            title="Heading 1"
           >
             <Heading1 className="h-4 w-4" />
           </ToolBtn>
           <ToolBtn
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
             active={editor.isActive("heading", { level: 2 })}
-            title="H2"
+            title="Heading 2"
           >
             <Heading2 className="h-4 w-4" />
           </ToolBtn>
           <ToolBtn
             onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
             active={editor.isActive("heading", { level: 3 })}
-            title="H3"
+            title="Heading 3"
           >
             <Heading3 className="h-4 w-4" />
           </ToolBtn>
-          <div className="w-px h-5 bg-border mx-1" />
+          <Divider />
+
+          {/* Font & Size */}
           <Select value={currentFont} onValueChange={handleFontChange}>
-            <SelectTrigger className="w-24 h-7 text-xs">
+            <SelectTrigger className="h-7 w-[90px] text-xs border-0 bg-muted/50 hover:bg-muted">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {FONT_FAMILIES.map((f) => (
-                <SelectItem key={f.value} value={f.value} style={{ fontFamily: f.css }}>
+                <SelectItem key={f.value} value={f.value} className="text-sm" style={{ fontFamily: f.css }}>
                   {f.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Select value={currentSize} onValueChange={handleSizeChange}>
-            <SelectTrigger className="w-14 h-7 text-xs">
+            <SelectTrigger className="h-7 w-[52px] text-xs border-0 bg-muted/50 hover:bg-muted">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -359,7 +375,9 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
               ))}
             </SelectContent>
           </Select>
-          <div className="w-px h-5 bg-border mx-1" />
+          <Divider />
+
+          {/* Text Formatting */}
           <ToolBtn
             onClick={() => editor.chain().focus().toggleBold().run()}
             active={editor.isActive("bold")}
@@ -384,29 +402,36 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
           <ToolBtn
             onClick={() => editor.chain().focus().toggleStrike().run()}
             active={editor.isActive("strike")}
-            title="Strike"
+            title="Strikethrough"
           >
             <Strikethrough className="h-4 w-4" />
           </ToolBtn>
-          <div className="w-px h-5 bg-border mx-1" />
+          <Divider />
+
+          {/* Colors */}
           <Popover>
             <PopoverTrigger asChild>
-              <button className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-accent">
+              <button
+                className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"
+                title="Text Color"
+              >
                 <Palette className="h-4 w-4" />
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-2">
-              <div className="flex gap-1 flex-wrap max-w-[140px]">
+            <PopoverContent className="w-auto p-3" align="start">
+              <p className="text-xs font-medium mb-2 text-muted-foreground">Text Color</p>
+              <div className="grid grid-cols-4 gap-1.5">
                 {TEXT_COLORS.map((c) => (
                   <button
-                    key={c.value || "d"}
+                    key={c.value || "default"}
                     onClick={() =>
                       c.value
                         ? editor.chain().focus().setColor(c.value).run()
                         : editor.chain().focus().unsetColor().run()
                     }
-                    className="h-5 w-5 rounded border hover:scale-110"
-                    style={{ backgroundColor: c.value || "#fff" }}
+                    className="h-7 w-7 rounded-md border border-border hover:scale-110 transition-transform shadow-sm"
+                    style={{ backgroundColor: c.color }}
+                    title={c.label}
                   />
                 ))}
               </div>
@@ -414,39 +439,46 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
           </Popover>
           <Popover>
             <PopoverTrigger asChild>
-              <button className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-accent">
+              <button
+                className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"
+                title="Highlight"
+              >
                 <Highlighter className="h-4 w-4" />
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-2">
-              <div className="flex gap-1 flex-wrap max-w-[120px]">
+            <PopoverContent className="w-auto p-3" align="start">
+              <p className="text-xs font-medium mb-2 text-muted-foreground">Highlight</p>
+              <div className="grid grid-cols-4 gap-1.5">
                 {HIGHLIGHT_COLORS.map((c) => (
                   <button
-                    key={c.value || "n"}
+                    key={c.value || "none"}
                     onClick={() =>
                       c.value
                         ? editor.chain().focus().setHighlight({ color: c.value }).run()
                         : editor.chain().focus().unsetHighlight().run()
                     }
-                    className="h-5 w-5 rounded border hover:scale-110"
-                    style={{ backgroundColor: c.value || "transparent" }}
+                    className="h-7 w-7 rounded-md border border-border hover:scale-110 transition-transform shadow-sm"
+                    style={{ backgroundColor: c.color }}
+                    title={c.label}
                   />
                 ))}
               </div>
             </PopoverContent>
           </Popover>
-          <div className="w-px h-5 bg-border mx-1" />
+          <Divider />
+
+          {/* Lists */}
           <ToolBtn
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             active={editor.isActive("bulletList")}
-            title="List"
+            title="Bullet List"
           >
             <List className="h-4 w-4" />
           </ToolBtn>
           <ToolBtn
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             active={editor.isActive("orderedList")}
-            title="Numbers"
+            title="Numbered List"
           >
             <ListOrdered className="h-4 w-4" />
           </ToolBtn>
@@ -457,154 +489,174 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
           >
             <CheckSquare className="h-4 w-4" />
           </ToolBtn>
-          <div className="w-px h-5 bg-border mx-1" />
+          <Divider />
+
+          {/* Alignment */}
           <ToolBtn
             onClick={() => editor.chain().focus().setTextAlign("left").run()}
             active={editor.isActive({ textAlign: "left" })}
-            title="Left"
+            title="Align Left"
           >
             <AlignLeft className="h-4 w-4" />
           </ToolBtn>
           <ToolBtn
             onClick={() => editor.chain().focus().setTextAlign("center").run()}
             active={editor.isActive({ textAlign: "center" })}
-            title="Center"
+            title="Align Center"
           >
             <AlignCenter className="h-4 w-4" />
           </ToolBtn>
           <ToolBtn
             onClick={() => editor.chain().focus().setTextAlign("right").run()}
             active={editor.isActive({ textAlign: "right" })}
-            title="Right"
+            title="Align Right"
           >
             <AlignRight className="h-4 w-4" />
           </ToolBtn>
-          <div className="w-px h-5 bg-border mx-1" />
-          <ToolBtn onClick={() => setLinkDialogOpen(true)} active={editor.isActive("link")} title="Link">
+          <Divider />
+
+          {/* Media */}
+          <ToolBtn onClick={() => setLinkDialogOpen(true)} active={editor.isActive("link")} title="Insert Link">
             <Link2 className="h-4 w-4" />
           </ToolBtn>
-          <ToolBtn onClick={() => setImageDialogOpen(true)} title="Image">
+          <ToolBtn onClick={() => setImageDialogOpen(true)} title="Insert Image">
             <ImageIcon className="h-4 w-4" />
           </ToolBtn>
-          <div className="w-px h-5 bg-border mx-1" />
-          <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => alert("AI coming soon!")}>
-            <Sparkles className="h-3 w-3" /> AI
-          </Button>
-          <div className="flex-1 min-w-2" />
-          <span
-            className={cn(
-              "text-xs px-2 py-1 rounded-full whitespace-nowrap",
-              saveStatus === "saving" && "bg-amber-100 text-amber-700",
-              saveStatus === "saved" && "bg-green-100 text-green-700",
-              saveStatus === "unsaved" && "bg-muted text-muted-foreground",
-            )}
+          <Divider />
+
+          {/* AI */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => alert("AI Edit coming soon!")}
           >
-            {saveStatus === "saving" && (
-              <>
-                <Loader2 className="h-3 w-3 animate-spin inline mr-1" />
-                Saving
-              </>
-            )}
-            {saveStatus === "saved" && (
-              <>
-                <Check className="h-3 w-3 inline mr-1" />
-                Saved
-              </>
-            )}
-            {saveStatus === "unsaved" && "Unsaved"}
-          </span>
-          <Button size="sm" className="h-7 ml-2 gap-1 text-xs" onClick={handleSave}>
-            <Save className="h-3 w-3" /> Save
+            <Sparkles className="h-3.5 w-3.5" /> AI
           </Button>
+
+          {/* Spacer + Save */}
+          <div className="flex-1 min-w-4" />
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span
+              className={cn(
+                "text-xs px-2 py-0.5 rounded",
+                saveStatus === "saving" && "text-amber-600 bg-amber-50",
+                saveStatus === "saved" && "text-emerald-600 bg-emerald-50",
+                saveStatus === "unsaved" && "text-muted-foreground bg-muted",
+              )}
+            >
+              {saveStatus === "saving" && (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin inline mr-1" />
+                  Saving...
+                </>
+              )}
+              {saveStatus === "saved" && (
+                <>
+                  <Check className="h-3 w-3 inline mr-1" />
+                  Saved
+                </>
+              )}
+              {saveStatus === "unsaved" && "Unsaved"}
+            </span>
+            <Button size="sm" className="h-7 gap-1 text-xs" onClick={handleSave}>
+              <Save className="h-3.5 w-3.5" /> Save
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Content - Minimal padding */}
+      {/* Content Area */}
       <div className="flex-1 overflow-auto">
-        <div className="max-w-none px-4 py-3">
-          {/* Title after toolbar */}
+        <div className="p-4">
+          {/* Title */}
           <Input
             value={title}
             onChange={(e) => handleTitleChange(e.target.value)}
             placeholder="Untitled Note"
-            className="text-2xl font-bold border-none bg-transparent p-0 h-auto focus-visible:ring-0 mb-3"
+            className="text-xl sm:text-2xl font-semibold border-none bg-transparent px-0 h-auto focus-visible:ring-0 placeholder:text-muted-foreground/50 mb-3"
           />
 
           {/* Tags */}
-          {group && (
-            <div className="flex items-center gap-2 mb-3 flex-wrap">
-              <Badge variant="secondary">{group.name}</Badge>
-              {tags.map((tag) => (
-                <Badge key={tag} variant="outline" className="text-xs">
-                  #{tag}
-                </Badge>
-              ))}
-              <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-6 text-xs">
-                    + Tag
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            {group && (
+              <Badge variant="secondary" className="font-medium">
+                {group.name}
+              </Badge>
+            )}
+            {tags.map((tag) => (
+              <Badge key={tag} variant="outline" className="text-xs font-normal">
+                #{tag}
+              </Badge>
+            ))}
+            <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-6 text-xs text-muted-foreground hover:text-foreground">
+                  + Tag
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-48 p-2" align="start">
+                <div className="flex gap-1.5">
+                  <Input
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    placeholder="Add tag..."
+                    className="h-8 text-sm"
+                    onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
+                  />
+                  <Button size="sm" className="h-8 px-2" onClick={handleAddTag}>
+                    +
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-44">
-                  <div className="flex gap-2">
-                    <Input
-                      value={newTag}
-                      onChange={(e) => setNewTag(e.target.value)}
-                      placeholder="Tag"
-                      className="h-7"
-                      onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
-                    />
-                    <Button size="sm" className="h-7" onClick={handleAddTag}>
-                      +
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-          )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
 
+          {/* Editor */}
           <EditorContent editor={editor} />
         </div>
       </div>
 
+      {/* Link Dialog */}
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Insert Link</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 pt-2">
+          <div className="space-y-4 pt-2">
             <Input
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
-              placeholder="https://..."
+              placeholder="https://example.com"
               onKeyDown={(e) => e.key === "Enter" && handleInsertLink()}
             />
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setLinkDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button className="flex-1" onClick={handleInsertLink}>
-                Insert
+              <Button className="flex-1" onClick={handleInsertLink} disabled={!linkUrl}>
+                Insert Link
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
+      {/* Image Dialog */}
       <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Insert Image</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 pt-2">
+          <div className="space-y-4 pt-2">
             <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Image URL..." />
-            <p className="text-center text-xs text-muted-foreground">or</p>
-            <Input type="file" accept="image/*" onChange={handleImageUpload} />
+            <div className="text-center text-sm text-muted-foreground">— or —</div>
+            <Input type="file" accept="image/*" onChange={handleImageUpload} className="cursor-pointer" />
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setImageDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button className="flex-1" onClick={handleInsertImage}>
+              <Button className="flex-1" onClick={handleInsertImage} disabled={!imageUrl}>
                 Insert
               </Button>
             </div>
