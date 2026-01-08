@@ -51,6 +51,10 @@ import {
   Minus,
   Strikethrough,
   ImagePlus,
+  PenTool,
+  Eraser,
+  Trash2,
+  X,
 } from "lucide-react";
 
 // Font size extension
@@ -104,9 +108,7 @@ function ResizableImageComponent({ node, updateAttributes, selected }: NodeViewP
       const newWidth = Math.max(100, Math.min(800, startWidth.current + diff));
       updateAttributes({ width: newWidth });
     };
-
     const handleMouseUp = () => setIsResizing(false);
-
     if (isResizing) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
@@ -146,44 +148,202 @@ function ResizableImageComponent({ node, updateAttributes, selected }: NodeViewP
   );
 }
 
-// Custom Resizable Image Extension
 const ResizableImage = Node.create({
   name: "resizableImage",
   group: "block",
   atom: true,
   draggable: true,
-
   addAttributes() {
-    return {
-      src: { default: null },
-      alt: { default: null },
-      title: { default: null },
-      width: { default: null },
-    };
+    return { src: { default: null }, alt: { default: null }, title: { default: null }, width: { default: null } };
   },
-
   parseHTML() {
     return [{ tag: "img[src]" }];
   },
-
   renderHTML({ HTMLAttributes }) {
     return [
       "img",
       mergeAttributes(HTMLAttributes, { style: HTMLAttributes.width ? `width: ${HTMLAttributes.width}px` : "" }),
     ];
   },
-
   addNodeView() {
     return ReactNodeViewRenderer(ResizableImageComponent);
   },
-
   addCommands() {
     return {
       setResizableImage:
         (options: { src: string; alt?: string; title?: string; width?: number }) =>
-        ({ commands }: any) => {
-          return commands.insertContent({ type: this.name, attrs: options });
-        },
+        ({ commands }: any) =>
+          commands.insertContent({ type: this.name, attrs: options }),
+    };
+  },
+});
+
+// Scribble/Drawing Component
+function ScribbleComponent({ node, updateAttributes, selected, deleteNode }: NodeViewProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [color, setColor] = useState(node.attrs.penColor || "#1a1a1a");
+  const [brushSize, setBrushSize] = useState(node.attrs.brushSize || 3);
+  const [tool, setTool] = useState<"pen" | "eraser">("pen");
+  const lastPos = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    if (node.attrs.drawing) {
+      const img = new Image();
+      img.onload = () => ctx.drawImage(img, 0, 0);
+      img.src = node.attrs.drawing;
+    } else {
+      ctx.fillStyle = "#fafafa";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+  }, []);
+
+  const startDrawing = (e: React.MouseEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    lastPos.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    setIsDrawing(true);
+  };
+
+  const draw = (e: React.MouseEvent) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    ctx.beginPath();
+    ctx.moveTo(lastPos.current.x, lastPos.current.y);
+    ctx.lineTo(x, y);
+    ctx.strokeStyle = tool === "eraser" ? "#fafafa" : color;
+    ctx.lineWidth = tool === "eraser" ? brushSize * 3 : brushSize;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.stroke();
+    lastPos.current = { x, y };
+  };
+
+  const stopDrawing = () => {
+    if (!isDrawing) return;
+    setIsDrawing(false);
+    const canvas = canvasRef.current;
+    if (canvas) updateAttributes({ drawing: canvas.toDataURL(), penColor: color, brushSize });
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.fillStyle = "#fafafa";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    updateAttributes({ drawing: canvas.toDataURL() });
+  };
+
+  const colors = ["#1a1a1a", "#dc2626", "#2563eb", "#16a34a", "#7c3aed", "#ea580c", "#db2777"];
+
+  return (
+    <NodeViewWrapper className="my-3">
+      <div
+        className={cn(
+          "relative rounded-xl border-2 overflow-hidden",
+          selected ? "border-primary shadow-lg" : "border-slate-200",
+        )}
+      >
+        <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border-b border-slate-200">
+          <span className="text-xs font-medium text-slate-500 mr-2">✏️ Scribble</span>
+          <div className="flex gap-1">
+            {colors.map((c) => (
+              <button
+                key={c}
+                onClick={() => {
+                  setColor(c);
+                  setTool("pen");
+                }}
+                className={cn(
+                  "w-5 h-5 rounded-full border-2 transition-transform hover:scale-110",
+                  color === c && tool === "pen" ? "border-slate-800 scale-110" : "border-slate-300",
+                )}
+                style={{ backgroundColor: c }}
+              />
+            ))}
+          </div>
+          <div className="w-px h-5 bg-slate-300 mx-1" />
+          <button
+            onClick={() => setTool("pen")}
+            className={cn("p-1.5 rounded-lg", tool === "pen" ? "bg-slate-200" : "hover:bg-slate-100")}
+          >
+            <PenTool className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setTool("eraser")}
+            className={cn("p-1.5 rounded-lg", tool === "eraser" ? "bg-slate-200" : "hover:bg-slate-100")}
+          >
+            <Eraser className="h-4 w-4" />
+          </button>
+          <select
+            value={brushSize}
+            onChange={(e) => setBrushSize(Number(e.target.value))}
+            className="h-7 text-xs border rounded px-1 bg-white"
+          >
+            <option value={2}>Fine</option>
+            <option value={4}>Medium</option>
+            <option value={8}>Thick</option>
+          </select>
+          <div className="flex-1" />
+          <button onClick={clearCanvas} className="p-1.5 rounded-lg hover:bg-red-50 text-red-500" title="Clear">
+            <Trash2 className="h-4 w-4" />
+          </button>
+          <button onClick={deleteNode} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400" title="Remove">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <canvas
+          ref={canvasRef}
+          width={600}
+          height={200}
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+          className="w-full cursor-crosshair bg-[#fafafa]"
+          style={{ touchAction: "none" }}
+        />
+      </div>
+    </NodeViewWrapper>
+  );
+}
+
+const ScribbleBlock = Node.create({
+  name: "scribbleBlock",
+  group: "block",
+  atom: true,
+  draggable: true,
+  addAttributes() {
+    return { drawing: { default: null }, penColor: { default: "#1a1a1a" }, brushSize: { default: 3 } };
+  },
+  parseHTML() {
+    return [{ tag: "div[data-scribble]" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["div", mergeAttributes(HTMLAttributes, { "data-scribble": "true" })];
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(ScribbleComponent);
+  },
+  addCommands() {
+    return {
+      insertScribble:
+        () =>
+        ({ commands }: any) =>
+          commands.insertContent({ type: this.name }),
     };
   },
 });
@@ -246,7 +406,8 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
       TaskList,
       TaskItem.configure({ nested: true }),
       Link.configure({ openOnClick: false }),
-      ResizableImage, // Use custom resizable image
+      ResizableImage,
+      ScribbleBlock,
       TextStyle,
       FontFamily,
       FontSize,
@@ -285,14 +446,12 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
     setLinkDialogOpen(false);
     setLinkUrl("");
   };
-
   const handleInsertImage = () => {
     if (!imageUrl || !editor) return;
     (editor.commands as any).setResizableImage({ src: imageUrl });
     setImageDialogOpen(false);
     setImageUrl("");
   };
-
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editor) return;
@@ -300,6 +459,9 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
     reader.onload = (ev) => (editor.commands as any).setResizableImage({ src: ev.target?.result as string });
     reader.readAsDataURL(file);
     setImageDialogOpen(false);
+  };
+  const handleInsertScribble = () => {
+    if (editor) (editor.commands as any).insertScribble();
   };
 
   const ToolBtn = ({ onClick, active, disabled, children, title }: any) => (
@@ -309,7 +471,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "h-8 w-8 flex items-center justify-center rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100 disabled:opacity-30 disabled:pointer-events-none",
+        "h-8 w-8 flex items-center justify-center rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100 disabled:opacity-30",
         active && "bg-slate-100 text-primary shadow-sm",
       )}
     >
@@ -328,7 +490,6 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
     <div className="rounded-xl border overflow-hidden bg-white shadow-sm" style={{ borderColor: "hsl(var(--border))" }}>
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
-      {/* TOOLBAR */}
       <div className="bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm relative z-50">
         <div className="flex items-center h-11 px-2 gap-0.5 overflow-x-auto">
           <ToolBtn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
@@ -341,7 +502,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="h-8 px-2 flex items-center gap-1 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-all">
+              <button className="h-8 px-2 flex items-center gap-1 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100">
                 <Type className="h-4 w-4" />
                 <ChevronDown className="h-3 w-3" />
               </button>
@@ -398,7 +559,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
               <div className="flex gap-1.5 flex-wrap max-w-32">
                 <button
                   onClick={() => editor.chain().focus().unsetColor().run()}
-                  className="h-6 w-6 rounded-full border-2 border-slate-200 bg-white hover:scale-110 transition text-xs"
+                  className="h-6 w-6 rounded-full border-2 border-slate-200 bg-white text-xs"
                 >
                   ×
                 </button>
@@ -447,7 +608,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
               <div className="flex gap-1.5 flex-wrap max-w-32">
                 <button
                   onClick={() => editor.chain().focus().unsetHighlight().run()}
-                  className="h-6 w-6 rounded border border-slate-200 bg-white hover:scale-110 transition text-xs"
+                  className="h-6 w-6 rounded border border-slate-200 bg-white text-xs"
                 >
                   ×
                 </button>
@@ -516,6 +677,9 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
           <ToolBtn onClick={() => setImageDialogOpen(true)} title="Image">
             <ImageIcon className="h-4 w-4" />
           </ToolBtn>
+          <ToolBtn onClick={handleInsertScribble} title="Scribble">
+            <PenTool className="h-4 w-4" />
+          </ToolBtn>
 
           <Popover>
             <PopoverTrigger asChild>
@@ -583,14 +747,12 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
         </div>
       </div>
 
-      {/* Editor Content */}
       <div
         style={{ ...bgStyle, color: skinStyles?.text || "#1e293b", wordBreak: "break-word", overflowWrap: "anywhere" }}
       >
         <EditorContent editor={editor} />
       </div>
 
-      {/* Link Dialog */}
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
         <DialogContent className="max-w-sm z-[99999]">
           <DialogHeader>
@@ -615,7 +777,6 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
         </DialogContent>
       </Dialog>
 
-      {/* Image Dialog */}
       <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
         <DialogContent className="max-w-sm z-[99999]">
           <DialogHeader>
