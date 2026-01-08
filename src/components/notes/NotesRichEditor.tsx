@@ -25,6 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import {
@@ -54,6 +55,7 @@ import {
   Minus,
   Strikethrough,
   Palette,
+  ImagePlus,
 } from "lucide-react";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 
@@ -95,17 +97,42 @@ interface NotesRichEditorProps {
   onBack: () => void;
 }
 
+// Extended font list
 const FONTS = [
-  { value: "sans", label: "Sans Serif", css: "Inter, system-ui, sans-serif" },
-  { value: "serif", label: "Serif", css: "Georgia, Cambria, serif" },
-  { value: "mono", label: "Mono", css: '"SF Mono", monospace' },
+  { value: "inter", label: "Inter", css: "Inter, system-ui, sans-serif" },
+  { value: "arial", label: "Arial", css: "Arial, Helvetica, sans-serif" },
+  { value: "georgia", label: "Georgia", css: "Georgia, Cambria, serif" },
+  { value: "times", label: "Times New Roman", css: '"Times New Roman", Times, serif' },
+  { value: "verdana", label: "Verdana", css: "Verdana, Geneva, sans-serif" },
+  { value: "helvetica", label: "Helvetica", css: "Helvetica Neue, Helvetica, sans-serif" },
+  { value: "garamond", label: "Garamond", css: "Garamond, Baskerville, serif" },
+  { value: "courier", label: "Courier New", css: '"Courier New", Courier, monospace' },
+  { value: "trebuchet", label: "Trebuchet MS", css: '"Trebuchet MS", sans-serif' },
+  { value: "palatino", label: "Palatino", css: '"Palatino Linotype", Palatino, serif' },
+  { value: "tahoma", label: "Tahoma", css: "Tahoma, Geneva, sans-serif" },
+  { value: "mono", label: "Monospace", css: '"SF Mono", "Fira Code", monospace' },
 ];
 
-const SIZES = ["12", "14", "16", "18", "20", "24", "32"];
+const SIZES = ["10", "12", "14", "16", "18", "20", "24", "28", "32", "40", "48"];
 
-const TEXT_COLORS = ["#1a1a1a", "#dc2626", "#ea580c", "#16a34a", "#2563eb", "#7c3aed", "#db2777"];
+const TEXT_COLORS = ["#1a1a1a", "#dc2626", "#ea580c", "#16a34a", "#2563eb", "#7c3aed", "#db2777", "#0891b2"];
+const HIGHLIGHT_COLORS = ["#fef08a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#fed7aa", "#e9d5ff", "#fecaca"];
 
-const HIGHLIGHT_COLORS = ["#fef08a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#fed7aa", "#e9d5ff"];
+// Background presets
+const BG_PRESETS = [
+  { id: "none", label: "None", value: "transparent" },
+  { id: "white", label: "White", value: "#ffffff" },
+  { id: "cream", label: "Cream", value: "#fffbeb" },
+  { id: "mint", label: "Mint", value: "#ecfdf5" },
+  { id: "lavender", label: "Lavender", value: "#f5f3ff" },
+  { id: "sky", label: "Sky", value: "#f0f9ff" },
+  { id: "rose", label: "Rose", value: "#fff1f2" },
+  { id: "slate", label: "Slate", value: "#f8fafc" },
+  { id: "warm", label: "Warm", value: "#fef7ef" },
+  { id: "gradient1", label: "Gradient Blue", value: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)" },
+  { id: "gradient2", label: "Gradient Peach", value: "linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)" },
+  { id: "gradient3", label: "Gradient Mint", value: "linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%)" },
+];
 
 export function NotesRichEditor({ note, groups, onSave }: NotesRichEditorProps) {
   const [title, setTitle] = useState(note.title);
@@ -117,11 +144,13 @@ export function NotesRichEditor({ note, groups, onSave }: NotesRichEditorProps) 
   const [linkUrl, setLinkUrl] = useState("");
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
-  const [currentFont, setCurrentFont] = useState("sans");
+  const [currentFont, setCurrentFont] = useState("inter");
   const [currentSize, setCurrentSize] = useState("16");
+  const [editorBg, setEditorBg] = useState("transparent");
 
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedContent = useRef(note.contentRich || "");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
     extensions: [
@@ -130,7 +159,11 @@ export function NotesRichEditor({ note, groups, onSave }: NotesRichEditorProps) 
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Underline,
       Link.configure({ openOnClick: false }),
-      Image.configure({ inline: false, allowBase64: true }),
+      Image.configure({
+        inline: false,
+        allowBase64: true,
+        HTMLAttributes: { class: "editor-image" },
+      }),
       TaskList,
       TaskItem.configure({ nested: true }),
       TextStyle,
@@ -140,7 +173,7 @@ export function NotesRichEditor({ note, groups, onSave }: NotesRichEditorProps) 
       FontSize,
     ],
     content: note.contentRich || "",
-    editorProps: { attributes: { class: "focus:outline-none min-h-[300px]" } },
+    editorProps: { attributes: { class: "focus:outline-none min-h-[300px] px-4 py-4" } },
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
       if (html !== lastSavedContent.current) {
@@ -213,6 +246,7 @@ export function NotesRichEditor({ note, groups, onSave }: NotesRichEditorProps) 
     setImageDialogOpen(false);
     setImageUrl("");
   };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editor) return;
@@ -230,32 +264,34 @@ export function NotesRichEditor({ note, groups, onSave }: NotesRichEditorProps) 
   const group = groups.find((g) => g.id === note.groupId);
   if (!editor) return null;
 
-  // Modern glassmorphism button
+  // Modern button style
   const ToolBtn = ({ onClick, active, disabled, children, title: t }: any) => (
     <button
       type="button"
       title={t}
       disabled={disabled}
-      onMouseDown={(e) => {
-        e.preventDefault();
-        onClick();
-      }}
+      onClick={onClick}
       className={cn(
         "h-8 w-8 flex items-center justify-center rounded-lg transition-all duration-200",
-        "text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm",
+        "text-slate-500 hover:text-slate-800 hover:bg-slate-100",
         "disabled:opacity-30 disabled:pointer-events-none",
-        active && "bg-white shadow-sm text-primary ring-1 ring-primary/20",
+        active && "bg-slate-100 text-primary shadow-sm",
       )}
     >
       {children}
     </button>
   );
 
+  const bgStyle = editorBg.includes("gradient") ? { background: editorBg } : { backgroundColor: editorBg };
+
   return (
-    <div className="flex flex-col h-full w-full bg-gradient-to-br from-slate-50 to-slate-100/80 overflow-hidden">
-      {/* MODERN TOOLBAR */}
-      <div className="shrink-0 bg-white/60 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
-        <div className="flex items-center h-12 px-3 gap-1 overflow-x-auto">
+    <div className="flex flex-col h-full w-full overflow-hidden" style={bgStyle}>
+      {/* Hidden file input */}
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+
+      {/* TOOLBAR */}
+      <div className="shrink-0 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm relative z-50">
+        <div className="flex items-center h-11 px-2 gap-0.5 overflow-x-auto">
           {/* Undo/Redo */}
           <ToolBtn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
             <Undo2 className="h-4 w-4" />
@@ -268,32 +304,33 @@ export function NotesRichEditor({ note, groups, onSave }: NotesRichEditorProps) 
           {/* Heading */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="h-8 px-2 flex items-center gap-1 rounded-lg text-sm font-medium text-slate-700 hover:bg-white/80 hover:shadow-sm transition-all">
-                <Type className="h-4 w-4" /> Aa <ChevronDown className="h-3 w-3" />
+              <button className="h-8 px-2 flex items-center gap-1 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-all">
+                <Type className="h-4 w-4" />
+                <ChevronDown className="h-3 w-3" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="min-w-[120px]">
+            <DropdownMenuContent className="z-[9999]">
               <DropdownMenuItem onClick={() => editor.chain().focus().setParagraph().run()}>Normal</DropdownMenuItem>
               <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
-                <span className="font-bold">Heading 1</span>
+                Heading 1
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
-                <span className="font-semibold">Heading 2</span>
+                Heading 2
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>
-                <span className="font-medium">Heading 3</span>
+                Heading 3
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
           {/* Font */}
           <Select value={currentFont} onValueChange={handleFontChange}>
-            <SelectTrigger className="h-8 w-24 text-xs border-0 bg-white/60 hover:bg-white shadow-sm rounded-lg">
+            <SelectTrigger className="h-8 w-28 text-xs border-0 bg-slate-50 hover:bg-slate-100 rounded-lg">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[9999] max-h-72">
               {FONTS.map((f) => (
-                <SelectItem key={f.value} value={f.value}>
+                <SelectItem key={f.value} value={f.value} style={{ fontFamily: f.css }}>
                   {f.label}
                 </SelectItem>
               ))}
@@ -302,10 +339,10 @@ export function NotesRichEditor({ note, groups, onSave }: NotesRichEditorProps) 
 
           {/* Size */}
           <Select value={currentSize} onValueChange={handleSizeChange}>
-            <SelectTrigger className="h-8 w-16 text-xs border-0 bg-white/60 hover:bg-white shadow-sm rounded-lg">
+            <SelectTrigger className="h-8 w-14 text-xs border-0 bg-slate-50 hover:bg-slate-100 rounded-lg">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[9999]">
               {SIZES.map((s) => (
                 <SelectItem key={s} value={s}>
                   {s}
@@ -315,16 +352,22 @@ export function NotesRichEditor({ note, groups, onSave }: NotesRichEditorProps) 
           </Select>
           <div className="w-px h-5 bg-slate-200 mx-1" />
 
-          {/* Colors */}
+          {/* Text Color */}
           <Popover>
             <PopoverTrigger asChild>
-              <button className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-white/80 hover:shadow-sm">
-                <Palette className="h-4 w-4 text-slate-600" />
+              <button className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100">
+                <Palette className="h-4 w-4 text-slate-500" />
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-2" align="start">
-              <p className="text-xs text-slate-500 mb-2">Text Color</p>
-              <div className="flex gap-1">
+            <PopoverContent className="w-auto p-2 z-[9999]" align="start">
+              <p className="text-xs text-slate-400 mb-2">Text Color</p>
+              <div className="flex gap-1.5 flex-wrap max-w-32">
+                <button
+                  onClick={() => editor.chain().focus().unsetColor().run()}
+                  className="h-6 w-6 rounded-full border-2 border-slate-200 bg-white hover:scale-110 transition text-xs"
+                >
+                  ×
+                </button>
                 {TEXT_COLORS.map((c) => (
                   <button
                     key={c}
@@ -363,18 +406,18 @@ export function NotesRichEditor({ note, groups, onSave }: NotesRichEditorProps) 
           {/* Highlight */}
           <Popover>
             <PopoverTrigger asChild>
-              <button className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-white/80 hover:shadow-sm">
-                <Highlighter className="h-4 w-4 text-slate-600" />
+              <button className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100">
+                <Highlighter className="h-4 w-4 text-slate-500" />
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-2" align="start">
-              <p className="text-xs text-slate-500 mb-2">Highlight</p>
-              <div className="flex gap-1">
+            <PopoverContent className="w-auto p-2 z-[9999]" align="start">
+              <p className="text-xs text-slate-400 mb-2">Highlight</p>
+              <div className="flex gap-1.5 flex-wrap max-w-32">
                 <button
                   onClick={() => editor.chain().focus().unsetHighlight().run()}
                   className="h-6 w-6 rounded border border-slate-200 bg-white hover:scale-110 transition text-xs"
                 >
-                  ✕
+                  ×
                 </button>
                 {HIGHLIGHT_COLORS.map((c) => (
                   <button
@@ -407,7 +450,7 @@ export function NotesRichEditor({ note, groups, onSave }: NotesRichEditorProps) 
           <ToolBtn
             onClick={() => editor.chain().focus().toggleTaskList().run()}
             active={editor.isActive("taskList")}
-            title="Checklist"
+            title="Todo"
           >
             <CheckSquare className="h-4 w-4" />
           </ToolBtn>
@@ -444,16 +487,45 @@ export function NotesRichEditor({ note, groups, onSave }: NotesRichEditorProps) 
           <ToolBtn onClick={() => setImageDialogOpen(true)} title="Image">
             <ImageIcon className="h-4 w-4" />
           </ToolBtn>
+
+          {/* Background */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100"
+                title="Background"
+              >
+                <ImagePlus className="h-4 w-4 text-slate-500" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-3 z-[9999]" align="start">
+              <p className="text-xs font-medium text-slate-500 mb-2">Page Background</p>
+              <div className="grid grid-cols-4 gap-2">
+                {BG_PRESETS.map((bg) => (
+                  <button
+                    key={bg.id}
+                    onClick={() => setEditorBg(bg.value)}
+                    title={bg.label}
+                    className={cn(
+                      "h-10 w-10 rounded-lg border-2 hover:scale-105 transition",
+                      editorBg === bg.value ? "border-primary ring-2 ring-primary/20" : "border-slate-200",
+                    )}
+                    style={bg.value.includes("gradient") ? { background: bg.value } : { backgroundColor: bg.value }}
+                  />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
           <div className="w-px h-5 bg-slate-200 mx-1" />
 
           {/* More */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="h-8 px-2 flex items-center gap-1 rounded-lg text-sm text-slate-600 hover:bg-white/80 hover:shadow-sm transition-all">
+              <button className="h-8 px-2 flex items-center rounded-lg text-slate-500 hover:bg-slate-100">
                 <MoreHorizontal className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="z-[9999]">
               <DropdownMenuItem onClick={() => editor.chain().focus().toggleStrike().run()}>
                 <Strikethrough className="h-4 w-4 mr-2" /> Strikethrough
               </DropdownMenuItem>
@@ -476,18 +548,18 @@ export function NotesRichEditor({ note, groups, onSave }: NotesRichEditorProps) 
           {/* AI */}
           <button
             onClick={() => alert("AI coming soon!")}
-            className="h-8 px-3 flex items-center gap-1.5 rounded-lg text-sm font-medium bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-sm hover:shadow-md transition-all"
+            className="h-8 px-3 flex items-center gap-1.5 rounded-lg text-sm font-medium bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow hover:shadow-md transition-all"
           >
             <Sparkles className="h-3.5 w-3.5" /> AI
           </button>
 
-          <div className="flex-1" />
+          <div className="flex-1 min-w-4" />
 
-          {/* Save Status & Button - ONLY ONE */}
+          {/* Save Status & Button */}
           <div className="flex items-center gap-2">
             <span
               className={cn(
-                "text-xs px-2.5 py-1 rounded-full font-medium",
+                "text-xs px-2 py-1 rounded-full font-medium",
                 saveStatus === "saving" && "bg-amber-100 text-amber-700",
                 saveStatus === "saved" && "bg-emerald-100 text-emerald-700",
                 saveStatus === "unsaved" && "bg-slate-100 text-slate-500",
@@ -510,7 +582,7 @@ export function NotesRichEditor({ note, groups, onSave }: NotesRichEditorProps) 
             <Button
               size="sm"
               onClick={handleSave}
-              className="h-8 gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm hover:shadow-md border-0"
+              className="h-8 gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow hover:shadow-md border-0"
             >
               <Save className="h-3.5 w-3.5" /> Save
             </Button>
@@ -520,28 +592,28 @@ export function NotesRichEditor({ note, groups, onSave }: NotesRichEditorProps) 
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="max-w-4xl mx-auto p-6" style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>
+        <div className="max-w-4xl mx-auto p-4" style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>
           <Input
             value={title}
             onChange={(e) => handleTitleChange(e.target.value)}
             placeholder="Untitled Note"
-            className="text-2xl font-semibold border-none bg-transparent px-0 h-auto focus-visible:ring-0 mb-4"
+            className="text-2xl font-semibold border-none bg-transparent px-0 h-auto focus-visible:ring-0 mb-3"
           />
 
-          <div className="flex items-center gap-2 mb-6 flex-wrap">
-            {group && <Badge className="bg-primary/10 text-primary border-0 font-medium">{group.name}</Badge>}
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            {group && <Badge className="bg-primary/10 text-primary border-0">{group.name}</Badge>}
             {tags.map((tag) => (
-              <Badge key={tag} variant="outline" className="text-xs font-normal bg-white/50">
+              <Badge key={tag} variant="outline" className="text-xs bg-white/50">
                 #{tag}
               </Badge>
             ))}
             <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-6 text-xs text-slate-500 hover:text-slate-700">
+                <Button variant="ghost" size="sm" className="h-6 text-xs text-slate-400 hover:text-slate-600">
                   + Tag
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-48 p-2">
+              <PopoverContent className="w-48 p-2 z-[9999]">
                 <div className="flex gap-2">
                   <Input
                     value={newTag}
@@ -550,7 +622,7 @@ export function NotesRichEditor({ note, groups, onSave }: NotesRichEditorProps) 
                     className="h-8"
                     onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
                   />
-                  <Button size="sm" className="h-8 px-3" onClick={handleAddTag}>
+                  <Button size="sm" className="h-8" onClick={handleAddTag}>
                     Add
                   </Button>
                 </div>
@@ -562,9 +634,9 @@ export function NotesRichEditor({ note, groups, onSave }: NotesRichEditorProps) 
         </div>
       </div>
 
-      {/* Dialogs */}
+      {/* Link Dialog - portal to body with high z-index */}
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm z-[99999]">
           <DialogHeader>
             <DialogTitle>Insert Link</DialogTitle>
           </DialogHeader>
@@ -572,7 +644,7 @@ export function NotesRichEditor({ note, groups, onSave }: NotesRichEditorProps) 
             <Input
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
-              placeholder="https://..."
+              placeholder="https://example.com"
               onKeyDown={(e) => e.key === "Enter" && handleInsertLink()}
             />
             <div className="flex gap-2">
@@ -587,20 +659,23 @@ export function NotesRichEditor({ note, groups, onSave }: NotesRichEditorProps) 
         </DialogContent>
       </Dialog>
 
+      {/* Image Dialog */}
       <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm z-[99999]">
           <DialogHeader>
             <DialogTitle>Insert Image</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2">
-            <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Image URL..." />
-            <p className="text-center text-sm text-slate-400">or</p>
-            <Input type="file" accept="image/*" onChange={handleImageUpload} className="cursor-pointer" />
+            <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Paste image URL..." />
+            <div className="text-center text-sm text-slate-400">— or —</div>
+            <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
+              <ImageIcon className="h-4 w-4 mr-2" /> Upload from Computer
+            </Button>
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setImageDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button className="flex-1" onClick={handleInsertImage}>
+              <Button className="flex-1" onClick={handleInsertImage} disabled={!imageUrl}>
                 Insert
               </Button>
             </div>
@@ -625,8 +700,16 @@ export function NotesRichEditor({ note, groups, onSave }: NotesRichEditorProps) 
         .ProseMirror ul[data-type="taskList"] li { display: flex; align-items: flex-start; gap: 0.5rem; }
         .ProseMirror ul[data-type="taskList"] input { accent-color: #10b981; margin-top: 0.25rem; }
         .ProseMirror li[data-checked="true"] > div { text-decoration: line-through; color: #94a3b8; }
-        .ProseMirror img { max-width: 100%; border-radius: 0.5rem; margin: 1rem 0; }
         .ProseMirror a { color: #3b82f6; text-decoration: underline; }
+        .ProseMirror .editor-image { 
+          max-width: 100%; 
+          border-radius: 0.5rem; 
+          margin: 1rem 0;
+          cursor: pointer;
+          transition: box-shadow 0.2s;
+        }
+        .ProseMirror .editor-image:hover { box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3); }
+        .ProseMirror .editor-image.ProseMirror-selectednode { box-shadow: 0 0 0 3px #3b82f6; }
       `}</style>
     </div>
   );
