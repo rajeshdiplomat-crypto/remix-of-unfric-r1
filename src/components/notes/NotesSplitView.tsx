@@ -4,7 +4,7 @@ import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, MoreHorizontal, X, Trash2, ChevronRight, ChevronLeft, FileText, Folder, FolderOpen, ChevronDown, Maximize2, Check, Save, Minimize2 } from "lucide-react";
+import { Plus, MoreHorizontal, X, Trash2, ChevronRight, ChevronLeft, FileText, Folder, FolderOpen, ChevronDown, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotesRichEditor } from "./NotesRichEditor";
 import { NotesActivityDot, getMostRecentUpdate } from "./NotesActivityDot";
@@ -175,71 +175,22 @@ export function NotesSplitView({
     return () => window.removeEventListener("keydown", handleEscape);
   }, [isFullPage]);
 
-  // Full page mode - use portal to escape any parent layouts
+  // Full page mode - use portal to escape any parent layouts (NO HEADER - immersive)
   if (isFullPage && selectedNote) {
     return createPortal(
       <div className="fixed inset-0 z-[9999] flex flex-col bg-background">
-        {/* Minimal header */}
-        <div className="flex items-center justify-between px-6 py-3 border-b border-border/30 bg-background/95 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            <Badge
-              variant="secondary"
-              className="text-xs"
-              style={{
-                backgroundColor: `${getGroupColor(selectedNote.groupId)}15`,
-                color: getGroupColor(selectedNote.groupId),
-              }}
-            >
-              {groups.find((g) => g.id === selectedNote.groupId)?.name}
-            </Badge>
-            <span className="text-sm font-light tracking-wide text-foreground/80">
-              {selectedNote.title || "Untitled"}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground flex items-center gap-1 mr-2">
-              {lastSaved ? (
-                <>
-                  <Check className="h-3 w-3" /> Saved
-                </>
-              ) : (
-                "Not saved yet"
-              )}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleSave(selectedNote)}
-              className="gap-2 h-8"
-            >
-              <Save className="h-3.5 w-3.5" />
-              Save
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsFullPage(false)}
-              className="h-8 w-8"
-              title="Exit full screen (Esc)"
-            >
-              <Minimize2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Full-screen editor */}
-        <div className="flex-1 overflow-hidden">
-          <NotesRichEditor
-            note={selectedNote}
-            groups={groups}
-            folders={folders}
-            onSave={handleSave}
-            onBack={() => setIsFullPage(false)}
-            onDelete={() => onDeleteNote(selectedNote.id)}
-            lastSaved={lastSaved}
-            showBreadcrumb={false}
-          />
-        </div>
+        {/* Single clean editor - no duplicate headers */}
+        <NotesRichEditor
+          note={selectedNote}
+          groups={groups}
+          folders={folders}
+          onSave={handleSave}
+          onBack={() => setIsFullPage(false)}
+          onDelete={() => onDeleteNote(selectedNote.id)}
+          lastSaved={lastSaved}
+          showBreadcrumb={true}
+          isFullPage={true}
+        />
       </div>,
       document.body
     );

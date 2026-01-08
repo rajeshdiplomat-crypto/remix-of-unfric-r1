@@ -40,6 +40,8 @@ export const EvernoteToolbarEditor = forwardRef<EvernoteToolbarEditorRef, Everno
       placeholder = 'Start typing...',
       className,
       readOnly = false,
+      fullWidthToolbar = false,
+      contentMaxWidth = true,
     },
     ref
   ) => {
@@ -325,7 +327,10 @@ export const EvernoteToolbarEditor = forwardRef<EvernoteToolbarEditorRef, Everno
     return (
       <div className={cn('flex flex-col h-full', className)}>
         {/* Toolbar - Full width with glassmorphism */}
-        <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/30 px-6 py-3">
+        <div className={cn(
+          "sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/30 py-3",
+          fullWidthToolbar ? "px-4" : "px-6"
+        )}>
           <EditorToolbar editor={editor} />
         </div>
 
@@ -334,7 +339,9 @@ export const EvernoteToolbarEditor = forwardRef<EvernoteToolbarEditorRef, Everno
           ref={editorContainerRef} 
           className="flex-1 overflow-auto px-6 py-6 relative"
         >
-          <EditorContent editor={editor} className="max-w-none" />
+          <div className={cn(contentMaxWidth && "max-w-4xl mx-auto")}>
+            <EditorContent editor={editor} className="max-w-none" />
+          </div>
           
           {/* Image Controls Overlay */}
           {selectedImage && editorContainerRef.current && (

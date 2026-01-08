@@ -16,6 +16,10 @@ export interface EvernoteToolbarEditorProps {
   placeholder?: string;
   className?: string;
   readOnly?: boolean;
+  /** When true, toolbar uses minimal padding for full-page modes */
+  fullWidthToolbar?: boolean;
+  /** When true (default), constrains content width for readability */
+  contentMaxWidth?: boolean;
 }
 
 export interface FontOption {

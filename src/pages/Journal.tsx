@@ -417,19 +417,18 @@ export default function Journal() {
           </div>
         </div>
 
-        {/* Centered editor with Evernote toolbar */}
+        {/* Full-width editor */}
         <div className="flex-1 overflow-auto">
-          <div className="max-w-3xl mx-auto w-full px-8 py-6">
-            <EvernoteToolbarEditor
-              ref={editorRef}
-              initialContentRich={content}
-              onContentChange={handleContentChange}
-              onSave={handleSave}
-              autosaveDebounce={1500}
-              placeholder="Start writing your journal entry..."
-              className="min-h-[500px]"
-            />
-          </div>
+          <EvernoteToolbarEditor
+            ref={editorRef}
+            initialContentRich={content}
+            onContentChange={handleContentChange}
+            onSave={handleSave}
+            autosaveDebounce={1500}
+            placeholder="Start writing your journal entry..."
+            className="min-h-[500px]"
+            fullWidthToolbar={true}
+          />
         </div>
       </div>,
       document.body

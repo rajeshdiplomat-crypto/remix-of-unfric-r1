@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, Tag, X, ChevronRight, Trash2, Save, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, Tag, X, ChevronRight, Trash2, Save, Check, Loader2, Minimize2 } from "lucide-react";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 import { EvernoteToolbarEditor, type EvernoteToolbarEditorRef } from "@/components/editor/EvernoteToolbarEditor";
 import type { SaveStatus } from "@/components/editor/types";
@@ -17,6 +17,8 @@ interface NotesRichEditorProps {
   onDelete?: () => void;
   lastSaved?: Date | null;
   showBreadcrumb?: boolean;
+  /** Full page mode - shows exit button instead of back arrow */
+  isFullPage?: boolean;
 }
 
 export function NotesRichEditor({ 
@@ -27,7 +29,8 @@ export function NotesRichEditor({
   onBack,
   onDelete, 
   lastSaved, 
-  showBreadcrumb = true 
+  showBreadcrumb = true,
+  isFullPage = false,
 }: NotesRichEditorProps) {
   const [title, setTitle] = useState(note.title);
   const [tags, setTags] = useState<string[]>(note.tags);
@@ -140,30 +143,52 @@ export function NotesRichEditor({
   return (
     <div className="flex flex-col h-full">
       {/* Top Bar with Breadcrumb */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-border/30">
+      <div className="flex items-center justify-between px-6 py-3 border-b border-border/30 bg-background/95 backdrop-blur-sm">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => {
-              handleSave();
-              onBack();
-            }}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Done
-          </button>
-          
-          {/* Persistent Breadcrumb */}
-          {showBreadcrumb && group && (
-            <div className="flex items-center gap-1 text-sm text-muted-foreground/70 ml-4">
-              <span style={{ color: group.color }}>{group.name}</span>
-              {folder && (
-                <>
-                  <ChevronRight className="h-3 w-3" />
-                  <span>{folder.name}</span>
-                </>
+          {isFullPage ? (
+            <>
+              {/* Breadcrumb in full page mode */}
+              {showBreadcrumb && group && (
+                <div className="flex items-center gap-1 text-sm text-muted-foreground/70">
+                  <span style={{ color: group.color }}>{group.name}</span>
+                  {folder && (
+                    <>
+                      <ChevronRight className="h-3 w-3" />
+                      <span>{folder.name}</span>
+                    </>
+                  )}
+                </div>
               )}
-            </div>
+              <span className="text-sm font-light tracking-wide text-foreground/80">
+                {title || "Untitled"}
+              </span>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => {
+                  handleSave();
+                  onBack();
+                }}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Done
+              </button>
+              
+              {/* Persistent Breadcrumb */}
+              {showBreadcrumb && group && (
+                <div className="flex items-center gap-1 text-sm text-muted-foreground/70 ml-4">
+                  <span style={{ color: group.color }}>{group.name}</span>
+                  {folder && (
+                    <>
+                      <ChevronRight className="h-3 w-3" />
+                      <span>{folder.name}</span>
+                    </>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
         
@@ -245,6 +270,19 @@ export function NotesRichEditor({
               <Trash2 className="h-4 w-4" />
             </Button>
           )}
+          
+          {/* Exit full page button */}
+          {isFullPage && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onBack}
+              className="h-8 w-8"
+              title="Exit full screen (Esc)"
+            >
+              <Minimize2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -272,7 +310,7 @@ export function NotesRichEditor({
           />
         </div>
 
-        {/* Tiptap Editor - Full width toolbar, constrained content */}
+        {/* Tiptap Editor - Full width toolbar in full page mode, constrained content */}
         <div className="flex-1 overflow-hidden">
           <EvernoteToolbarEditor
             ref={editorRef}
@@ -283,6 +321,7 @@ export function NotesRichEditor({
             autosaveDebounce={1500}
             placeholder="Start typing here..."
             className="h-full"
+            fullWidthToolbar={isFullPage}
           />
         </div>
       </div>
