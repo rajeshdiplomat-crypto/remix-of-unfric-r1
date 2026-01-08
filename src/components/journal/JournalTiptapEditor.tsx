@@ -12,7 +12,7 @@ import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import { Extension, Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer } from "@tiptap/react";
-import { useEffect, forwardRef, useImperativeHandle, useState, useRef } from "react";
+import { useEffect, forwardRef, useImperativeHandle, useState, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,7 +54,10 @@ import {
   PenTool,
   Eraser,
   Trash2,
-  X,
+  Pen,
+  Pencil,
+  Brush,
+  Circle,
 } from "lucide-react";
 
 // Font size extension
@@ -178,180 +181,12 @@ const ResizableImage = Node.create({
   },
 });
 
-// Scribble/Drawing Component
-function ScribbleComponent({ node, updateAttributes, selected, deleteNode }: NodeViewProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [color, setColor] = useState(node.attrs.penColor || "#1a1a1a");
-  const [brushSize, setBrushSize] = useState(node.attrs.brushSize || 3);
-  const [tool, setTool] = useState<"pen" | "eraser">("pen");
-  const lastPos = useRef({ x: 0, y: 0 });
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    if (node.attrs.drawing) {
-      const img = new Image();
-      img.onload = () => ctx.drawImage(img, 0, 0);
-      img.src = node.attrs.drawing;
-    } else {
-      ctx.fillStyle = "#fafafa";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-  }, []);
-
-  const startDrawing = (e: React.MouseEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    lastPos.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    setIsDrawing(true);
-  };
-
-  const draw = (e: React.MouseEvent) => {
-    if (!isDrawing) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    ctx.beginPath();
-    ctx.moveTo(lastPos.current.x, lastPos.current.y);
-    ctx.lineTo(x, y);
-    ctx.strokeStyle = tool === "eraser" ? "#fafafa" : color;
-    ctx.lineWidth = tool === "eraser" ? brushSize * 3 : brushSize;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.stroke();
-    lastPos.current = { x, y };
-  };
-
-  const stopDrawing = () => {
-    if (!isDrawing) return;
-    setIsDrawing(false);
-    const canvas = canvasRef.current;
-    if (canvas) updateAttributes({ drawing: canvas.toDataURL(), penColor: color, brushSize });
-  };
-
-  const clearCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.fillStyle = "#fafafa";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    updateAttributes({ drawing: canvas.toDataURL() });
-  };
-
-  const colors = ["#1a1a1a", "#dc2626", "#2563eb", "#16a34a", "#7c3aed", "#ea580c", "#db2777"];
-
-  return (
-    <NodeViewWrapper className="my-3">
-      <div
-        className={cn(
-          "relative rounded-xl border-2 overflow-hidden",
-          selected ? "border-primary shadow-lg" : "border-slate-200",
-        )}
-      >
-        <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border-b border-slate-200">
-          <span className="text-xs font-medium text-slate-500 mr-2">✏️ Scribble</span>
-          <div className="flex gap-1">
-            {colors.map((c) => (
-              <button
-                key={c}
-                onClick={() => {
-                  setColor(c);
-                  setTool("pen");
-                }}
-                className={cn(
-                  "w-5 h-5 rounded-full border-2 transition-transform hover:scale-110",
-                  color === c && tool === "pen" ? "border-slate-800 scale-110" : "border-slate-300",
-                )}
-                style={{ backgroundColor: c }}
-              />
-            ))}
-          </div>
-          <div className="w-px h-5 bg-slate-300 mx-1" />
-          <button
-            onClick={() => setTool("pen")}
-            className={cn("p-1.5 rounded-lg", tool === "pen" ? "bg-slate-200" : "hover:bg-slate-100")}
-          >
-            <PenTool className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => setTool("eraser")}
-            className={cn("p-1.5 rounded-lg", tool === "eraser" ? "bg-slate-200" : "hover:bg-slate-100")}
-          >
-            <Eraser className="h-4 w-4" />
-          </button>
-          <select
-            value={brushSize}
-            onChange={(e) => setBrushSize(Number(e.target.value))}
-            className="h-7 text-xs border rounded px-1 bg-white"
-          >
-            <option value={2}>Fine</option>
-            <option value={4}>Medium</option>
-            <option value={8}>Thick</option>
-          </select>
-          <div className="flex-1" />
-          <button onClick={clearCanvas} className="p-1.5 rounded-lg hover:bg-red-50 text-red-500" title="Clear">
-            <Trash2 className="h-4 w-4" />
-          </button>
-          <button onClick={deleteNode} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400" title="Remove">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <canvas
-          ref={canvasRef}
-          width={600}
-          height={200}
-          onMouseDown={startDrawing}
-          onMouseMove={draw}
-          onMouseUp={stopDrawing}
-          onMouseLeave={stopDrawing}
-          className="w-full cursor-crosshair bg-[#fafafa]"
-          style={{ touchAction: "none" }}
-        />
-      </div>
-    </NodeViewWrapper>
-  );
-}
-
-const ScribbleBlock = Node.create({
-  name: "scribbleBlock",
-  group: "block",
-  atom: true,
-  draggable: true,
-  addAttributes() {
-    return { drawing: { default: null }, penColor: { default: "#1a1a1a" }, brushSize: { default: 3 } };
-  },
-  parseHTML() {
-    return [{ tag: "div[data-scribble]" }];
-  },
-  renderHTML({ HTMLAttributes }) {
-    return ["div", mergeAttributes(HTMLAttributes, { "data-scribble": "true" })];
-  },
-  addNodeView() {
-    return ReactNodeViewRenderer(ScribbleComponent);
-  },
-  addCommands() {
-    return {
-      insertScribble:
-        () =>
-        ({ commands }: any) =>
-          commands.insertContent({ type: this.name }),
-    };
-  },
-});
-
 interface Props {
   content: string;
   onChange: (content: string) => void;
   skinStyles?: { editorPaperBg?: string; text?: string; mutedText?: string };
+  scribbleStrokes?: string | null;
+  onScribbleChange?: (data: string | null) => void;
 }
 export interface TiptapEditorRef {
   editor: ReturnType<typeof useEditor> | null;
@@ -375,6 +210,39 @@ const FONTS = [
 const SIZES = ["10", "12", "14", "16", "18", "20", "24", "28", "32", "40"];
 const TEXT_COLORS = ["#1a1a1a", "#dc2626", "#ea580c", "#16a34a", "#2563eb", "#7c3aed", "#db2777", "#0891b2"];
 const HIGHLIGHT_COLORS = ["#fef08a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#fed7aa", "#e9d5ff", "#fecaca"];
+const SCRIBBLE_COLORS = [
+  "#1a1a1a",
+  "#dc2626",
+  "#2563eb",
+  "#16a34a",
+  "#7c3aed",
+  "#ea580c",
+  "#db2777",
+  "#0891b2",
+  "#f59e0b",
+];
+
+const PEN_TYPES = [
+  { id: "pen", label: "Pen", icon: Pen, opacity: 1, shadow: false },
+  { id: "pencil", label: "Pencil", icon: Pencil, opacity: 0.7, shadow: false },
+  { id: "marker", label: "Marker", icon: PenTool, opacity: 0.5, shadow: true },
+  { id: "brush", label: "Brush", icon: Brush, opacity: 0.8, shadow: false },
+];
+
+const PEN_WIDTHS = [
+  { value: 1, label: "Extra Fine" },
+  { value: 2, label: "Fine" },
+  { value: 4, label: "Medium" },
+  { value: 6, label: "Thick" },
+  { value: 10, label: "Extra Thick" },
+];
+
+const ERASER_SIZES = [
+  { value: 10, label: "Small" },
+  { value: 20, label: "Medium" },
+  { value: 40, label: "Large" },
+  { value: 60, label: "Extra Large" },
+];
 
 const BG_PRESETS = [
   { id: "none", label: "None", value: "transparent" },
@@ -387,420 +255,757 @@ const BG_PRESETS = [
   { id: "warm", label: "Warm", value: "#fef7ef" },
 ];
 
-export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content, onChange, skinStyles }, ref) => {
-  const [font, setFont] = useState("inter");
-  const [size, setSize] = useState("16");
-  const [editorBg, setEditorBg] = useState("transparent");
-  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
-  const [linkUrl, setLinkUrl] = useState("");
-  const [imageDialogOpen, setImageDialogOpen] = useState(false);
-  const [imageUrl, setImageUrl] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+interface Stroke {
+  points: { x: number; y: number }[];
+  color: string;
+  width: number;
+  penType: string;
+}
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
-      Placeholder.configure({ placeholder: ({ node }) => (node.type.name === "heading" ? "" : "Start writing...") }),
-      TextAlign.configure({ types: ["heading", "paragraph"] }),
-      Underline,
-      TaskList,
-      TaskItem.configure({ nested: true }),
-      Link.configure({ openOnClick: false }),
-      ResizableImage,
-      ScribbleBlock,
-      TextStyle,
-      FontFamily,
-      FontSize,
-      Color,
-      Highlight.configure({ multicolor: true }),
-    ],
-    content: content ? JSON.parse(content) : undefined,
-    onUpdate: ({ editor }) => onChange(JSON.stringify(editor.getJSON())),
-    editorProps: { attributes: { class: "focus:outline-none min-h-[300px] px-6 py-4" } },
-  });
+export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
+  ({ content, onChange, skinStyles, scribbleStrokes: initialStrokes, onScribbleChange }, ref) => {
+    const [font, setFont] = useState("inter");
+    const [size, setSize] = useState("16");
+    const [editorBg, setEditorBg] = useState("transparent");
+    const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+    const [linkUrl, setLinkUrl] = useState("");
+    const [imageDialogOpen, setImageDialogOpen] = useState(false);
+    const [imageUrl, setImageUrl] = useState("");
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useImperativeHandle(ref, () => ({ editor }));
+    // Advanced Scribble State
+    const [scribbleMode, setScribbleMode] = useState(false);
+    const [scribbleColor, setScribbleColor] = useState("#1a1a1a");
+    const [penWidth, setPenWidth] = useState(2);
+    const [penType, setPenType] = useState("pen");
+    const [tool, setTool] = useState<"pen" | "eraser" | "stroke-eraser">("pen");
+    const [eraserSize, setEraserSize] = useState(20);
+    const [isDrawing, setIsDrawing] = useState(false);
 
-  useEffect(() => {
-    if (editor && content) {
-      const cur = JSON.stringify(editor.getJSON());
-      if (cur !== content) editor.commands.setContent(JSON.parse(content));
-    }
-  }, [content, editor]);
+    const [strokes, setStrokes] = useState<Stroke[]>([]);
+    const [currentStroke, setCurrentStroke] = useState<Stroke | null>(null);
+    const [undoStack, setUndoStack] = useState<Stroke[][]>([]);
 
-  const handleFontChange = (v: string) => {
-    setFont(v);
-    const f = FONTS.find((x) => x.value === v);
-    if (f && editor) editor.chain().focus().setFontFamily(f.css).run();
-  };
-  const handleSizeChange = (v: string) => {
-    setSize(v);
-    if (editor) (editor.chain().focus() as any).setFontSize(v).run();
-  };
-  const handleInsertLink = () => {
-    if (!linkUrl || !editor) return;
-    const url = linkUrl.startsWith("http") ? linkUrl : `https://${linkUrl}`;
-    editor.state.selection.empty
-      ? editor.chain().focus().insertContent(`<a href="${url}">${url}</a>`).run()
-      : editor.chain().focus().setLink({ href: url }).run();
-    setLinkDialogOpen(false);
-    setLinkUrl("");
-  };
-  const handleInsertImage = () => {
-    if (!imageUrl || !editor) return;
-    (editor.commands as any).setResizableImage({ src: imageUrl });
-    setImageDialogOpen(false);
-    setImageUrl("");
-  };
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !editor) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => (editor.commands as any).setResizableImage({ src: ev.target?.result as string });
-    reader.readAsDataURL(file);
-    setImageDialogOpen(false);
-  };
-  const handleInsertScribble = () => {
-    if (editor) (editor.commands as any).insertScribble();
-  };
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const lastPos = useRef({ x: 0, y: 0 });
 
-  const ToolBtn = ({ onClick, active, disabled, children, title }: any) => (
-    <button
-      type="button"
-      title={title}
-      disabled={disabled}
-      onClick={onClick}
-      className={cn(
-        "h-8 w-8 flex items-center justify-center rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100 disabled:opacity-30",
-        active && "bg-slate-100 text-primary shadow-sm",
-      )}
-    >
-      {children}
-    </button>
-  );
+    const editor = useEditor({
+      extensions: [
+        StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+        Placeholder.configure({ placeholder: ({ node }) => (node.type.name === "heading" ? "" : "Start writing...") }),
+        TextAlign.configure({ types: ["heading", "paragraph"] }),
+        Underline,
+        TaskList,
+        TaskItem.configure({ nested: true }),
+        Link.configure({ openOnClick: false }),
+        ResizableImage,
+        TextStyle,
+        FontFamily,
+        FontSize,
+        Color,
+        Highlight.configure({ multicolor: true }),
+      ],
+      content: content ? JSON.parse(content) : undefined,
+      onUpdate: ({ editor }) => onChange(JSON.stringify(editor.getJSON())),
+      editorProps: { attributes: { class: "focus:outline-none min-h-[300px] px-6 py-4" } },
+    });
 
-  if (!editor) return null;
+    useImperativeHandle(ref, () => ({ editor }));
 
-  const bgStyle =
-    editorBg === "transparent"
-      ? { backgroundColor: skinStyles?.editorPaperBg || "#fff" }
-      : { backgroundColor: editorBg };
+    useEffect(() => {
+      if (editor && content) {
+        const cur = JSON.stringify(editor.getJSON());
+        if (cur !== content) editor.commands.setContent(JSON.parse(content));
+      }
+    }, [content, editor]);
 
-  return (
-    <div className="rounded-xl border overflow-hidden bg-white shadow-sm" style={{ borderColor: "hsl(var(--border))" }}>
-      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+    useEffect(() => {
+      if (initialStrokes) {
+        try {
+          setStrokes(JSON.parse(initialStrokes));
+        } catch (e) {}
+      }
+    }, [initialStrokes]);
 
-      <div className="bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm relative z-50">
-        <div className="flex items-center h-11 px-2 gap-0.5 overflow-x-auto">
-          <ToolBtn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
-            <Undo2 className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo">
-            <Redo2 className="h-4 w-4" />
-          </ToolBtn>
-          <div className="w-px h-5 bg-slate-200 mx-1" />
+    // Redraw all strokes
+    const redrawCanvas = useCallback(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="h-8 px-2 flex items-center gap-1 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100">
-                <Type className="h-4 w-4" />
-                <ChevronDown className="h-3 w-3" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="z-[9999]">
-              <DropdownMenuItem onClick={() => editor.chain().focus().setParagraph().run()}>Normal</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
-                Heading 1
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
-                Heading 2
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>
-                Heading 3
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          <Select value={font} onValueChange={handleFontChange}>
-            <SelectTrigger className="h-8 w-28 text-xs border-0 bg-slate-50 hover:bg-slate-100 rounded-lg">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="z-[9999] max-h-72">
-              {FONTS.map((f) => (
-                <SelectItem key={f.value} value={f.value} style={{ fontFamily: f.css }}>
-                  {f.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      strokes.forEach((stroke) => {
+        if (stroke.points.length < 2) return;
+        const pt = PEN_TYPES.find((p) => p.id === stroke.penType) || PEN_TYPES[0];
 
-          <Select value={size} onValueChange={handleSizeChange}>
-            <SelectTrigger className="h-8 w-14 text-xs border-0 bg-slate-50 hover:bg-slate-100 rounded-lg">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="z-[9999]">
-              {SIZES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="w-px h-5 bg-slate-200 mx-1" />
+        ctx.beginPath();
+        ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+        for (let i = 1; i < stroke.points.length; i++) {
+          ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+        }
+        ctx.strokeStyle = stroke.color;
+        ctx.lineWidth = stroke.width;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.globalAlpha = pt.opacity;
+        if (pt.shadow) {
+          ctx.shadowColor = stroke.color;
+          ctx.shadowBlur = stroke.width;
+        } else {
+          ctx.shadowBlur = 0;
+        }
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
+      });
+    }, [strokes]);
 
-          <Popover>
-            <PopoverTrigger asChild>
-              <button className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100">
-                <Palette className="h-4 w-4 text-slate-500" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-2 z-[9999]" align="start">
-              <p className="text-xs text-slate-400 mb-2">Text Color</p>
-              <div className="flex gap-1.5 flex-wrap max-w-32">
-                <button
-                  onClick={() => editor.chain().focus().unsetColor().run()}
-                  className="h-6 w-6 rounded-full border-2 border-slate-200 bg-white text-xs"
-                >
-                  ×
-                </button>
-                {TEXT_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => editor.chain().focus().setColor(c).run()}
-                    className="h-6 w-6 rounded-full border border-slate-200 hover:scale-110 transition"
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
+    useEffect(() => {
+      if (scribbleMode && canvasRef.current && containerRef.current) {
+        const canvas = canvasRef.current;
+        const container = containerRef.current;
+        canvas.width = container.offsetWidth;
+        canvas.height = Math.max(container.offsetHeight, 400);
+        redrawCanvas();
+      }
+    }, [scribbleMode, redrawCanvas]);
 
-          <ToolBtn
-            onClick={() => editor.chain().focus().toggleBold().run()}
-            active={editor.isActive("bold")}
-            title="Bold"
-          >
-            <Bold className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-            active={editor.isActive("italic")}
-            title="Italic"
-          >
-            <Italic className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn
-            onClick={() => editor.chain().focus().toggleUnderline().run()}
-            active={editor.isActive("underline")}
-            title="Underline"
-          >
-            <UnderlineIcon className="h-4 w-4" />
-          </ToolBtn>
+    useEffect(() => {
+      if (scribbleMode) redrawCanvas();
+    }, [strokes, scribbleMode, redrawCanvas]);
 
-          <Popover>
-            <PopoverTrigger asChild>
-              <button className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100">
-                <Highlighter className="h-4 w-4 text-slate-500" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-2 z-[9999]" align="start">
-              <p className="text-xs text-slate-400 mb-2">Highlight</p>
-              <div className="flex gap-1.5 flex-wrap max-w-32">
-                <button
-                  onClick={() => editor.chain().focus().unsetHighlight().run()}
-                  className="h-6 w-6 rounded border border-slate-200 bg-white text-xs"
-                >
-                  ×
-                </button>
-                {HIGHLIGHT_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => editor.chain().focus().setHighlight({ color: c }).run()}
-                    className="h-6 w-6 rounded border border-slate-200 hover:scale-110 transition"
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-          <div className="w-px h-5 bg-slate-200 mx-1" />
+    const getCanvasPos = (e: React.MouseEvent) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return { x: 0, y: 0 };
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+    };
 
-          <ToolBtn
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
-            active={editor.isActive("bulletList")}
-            title="Bullets"
-          >
-            <List className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            active={editor.isActive("orderedList")}
-            title="Numbers"
-          >
-            <ListOrdered className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn
-            onClick={() => editor.chain().focus().toggleTaskList().run()}
-            active={editor.isActive("taskList")}
-            title="Todo"
-          >
-            <CheckSquare className="h-4 w-4" />
-          </ToolBtn>
-          <div className="w-px h-5 bg-slate-200 mx-1" />
+    const findStrokeAtPoint = (x: number, y: number): number => {
+      for (let i = strokes.length - 1; i >= 0; i--) {
+        const stroke = strokes[i];
+        for (const point of stroke.points) {
+          const dist = Math.sqrt((point.x - x) ** 2 + (point.y - y) ** 2);
+          if (dist < stroke.width + 5) return i;
+        }
+      }
+      return -1;
+    };
 
-          <ToolBtn
-            onClick={() => editor.chain().focus().setTextAlign("left").run()}
-            active={editor.isActive({ textAlign: "left" })}
-            title="Left"
-          >
-            <AlignLeft className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn
-            onClick={() => editor.chain().focus().setTextAlign("center").run()}
-            active={editor.isActive({ textAlign: "center" })}
-            title="Center"
-          >
-            <AlignCenter className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn
-            onClick={() => editor.chain().focus().setTextAlign("right").run()}
-            active={editor.isActive({ textAlign: "right" })}
-            title="Right"
-          >
-            <AlignRight className="h-4 w-4" />
-          </ToolBtn>
-          <div className="w-px h-5 bg-slate-200 mx-1" />
+    const startDrawing = (e: React.MouseEvent) => {
+      if (!scribbleMode) return;
+      const pos = getCanvasPos(e);
+      lastPos.current = pos;
+      setIsDrawing(true);
 
-          <ToolBtn onClick={() => setLinkDialogOpen(true)} active={editor.isActive("link")} title="Link">
-            <LinkIcon className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn onClick={() => setImageDialogOpen(true)} title="Image">
-            <ImageIcon className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn onClick={handleInsertScribble} title="Scribble">
-            <PenTool className="h-4 w-4" />
-          </ToolBtn>
+      if (tool === "pen") {
+        setCurrentStroke({ points: [pos], color: scribbleColor, width: penWidth, penType });
+      }
+    };
 
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100"
-                title="Background"
-              >
-                <ImagePlus className="h-4 w-4 text-slate-500" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-48 p-3 z-[9999]" align="start">
-              <p className="text-xs font-medium text-slate-500 mb-2">Background</p>
-              <div className="grid grid-cols-4 gap-2">
-                {BG_PRESETS.map((bg) => (
-                  <button
-                    key={bg.id}
-                    onClick={() => setEditorBg(bg.value)}
-                    title={bg.label}
-                    className={cn(
-                      "h-8 w-8 rounded-lg border-2 hover:scale-105 transition",
-                      editorBg === bg.value ? "border-primary ring-2 ring-primary/20" : "border-slate-200",
-                    )}
-                    style={{ backgroundColor: bg.value === "transparent" ? "#fff" : bg.value }}
-                  />
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-          <div className="w-px h-5 bg-slate-200 mx-1" />
+    const draw = (e: React.MouseEvent) => {
+      if (!isDrawing || !scribbleMode) return;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="h-8 px-2 flex items-center rounded-lg text-slate-500 hover:bg-slate-100">
-                <MoreHorizontal className="h-4 w-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="z-[9999]">
-              <DropdownMenuItem onClick={() => editor.chain().focus().toggleStrike().run()}>
-                <Strikethrough className="h-4 w-4 mr-2" /> Strikethrough
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
-                <Code className="h-4 w-4 mr-2" /> Code Block
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => editor.chain().focus().toggleBlockquote().run()}>
-                <Quote className="h-4 w-4 mr-2" /> Quote
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => editor.chain().focus().setHorizontalRule().run()}>
-                <Minus className="h-4 w-4 mr-2" /> Divider
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}>
-                Clear Formatting
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+      const pos = getCanvasPos(e);
 
-          <div className="flex-1 min-w-4" />
+      if (tool === "pen" && currentStroke) {
+        setCurrentStroke((prev) => (prev ? { ...prev, points: [...prev.points, pos] } : null));
 
-          <button
-            onClick={() => alert("AI coming soon!")}
-            className="h-8 px-3 flex items-center gap-1.5 rounded-lg text-sm font-medium bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow hover:shadow-md transition-all"
-          >
-            <Sparkles className="h-3.5 w-3.5" /> AI
-          </button>
-        </div>
-      </div>
+        const pt = PEN_TYPES.find((p) => p.id === penType) || PEN_TYPES[0];
+        ctx.beginPath();
+        ctx.moveTo(lastPos.current.x, lastPos.current.y);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.strokeStyle = scribbleColor;
+        ctx.lineWidth = penWidth;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.globalAlpha = pt.opacity;
+        if (pt.shadow) {
+          ctx.shadowColor = scribbleColor;
+          ctx.shadowBlur = penWidth;
+        }
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
+      } else if (tool === "eraser") {
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, eraserSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalCompositeOperation = "source-over";
+      } else if (tool === "stroke-eraser") {
+        const strokeIndex = findStrokeAtPoint(pos.x, pos.y);
+        if (strokeIndex >= 0) {
+          setUndoStack((prev) => [...prev, [...strokes]]);
+          setStrokes((prev) => prev.filter((_, i) => i !== strokeIndex));
+        }
+      }
 
-      <div
-        style={{ ...bgStyle, color: skinStyles?.text || "#1e293b", wordBreak: "break-word", overflowWrap: "anywhere" }}
+      lastPos.current = pos;
+    };
+
+    const stopDrawing = () => {
+      if (!isDrawing) return;
+      setIsDrawing(false);
+
+      if (tool === "pen" && currentStroke && currentStroke.points.length > 1) {
+        setUndoStack((prev) => [...prev, [...strokes]]);
+        const newStrokes = [...strokes, currentStroke];
+        setStrokes(newStrokes);
+        setCurrentStroke(null);
+        onScribbleChange?.(JSON.stringify(newStrokes));
+      }
+    };
+
+    const handleUndo = () => {
+      if (undoStack.length === 0) return;
+      const previousState = undoStack[undoStack.length - 1];
+      setUndoStack((prev) => prev.slice(0, -1));
+      setStrokes(previousState);
+      onScribbleChange?.(JSON.stringify(previousState));
+    };
+
+    const clearScribble = () => {
+      setUndoStack((prev) => [...prev, [...strokes]]);
+      setStrokes([]);
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      onScribbleChange?.(null);
+    };
+
+    const handleFontChange = (v: string) => {
+      setFont(v);
+      const f = FONTS.find((x) => x.value === v);
+      if (f && editor) editor.chain().focus().setFontFamily(f.css).run();
+    };
+    const handleSizeChange = (v: string) => {
+      setSize(v);
+      if (editor) (editor.chain().focus() as any).setFontSize(v).run();
+    };
+    const handleInsertLink = () => {
+      if (!linkUrl || !editor) return;
+      const url = linkUrl.startsWith("http") ? linkUrl : `https://${linkUrl}`;
+      editor.state.selection.empty
+        ? editor.chain().focus().insertContent(`<a href="${url}">${url}</a>`).run()
+        : editor.chain().focus().setLink({ href: url }).run();
+      setLinkDialogOpen(false);
+      setLinkUrl("");
+    };
+    const handleInsertImage = () => {
+      if (!imageUrl || !editor) return;
+      (editor.commands as any).setResizableImage({ src: imageUrl });
+      setImageDialogOpen(false);
+      setImageUrl("");
+    };
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file || !editor) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => (editor.commands as any).setResizableImage({ src: ev.target?.result as string });
+      reader.readAsDataURL(file);
+      setImageDialogOpen(false);
+    };
+
+    const ToolBtn = ({ onClick, active, disabled, children, title }: any) => (
+      <button
+        type="button"
+        title={title}
+        disabled={disabled}
+        onClick={onClick}
+        className={cn(
+          "h-8 w-8 flex items-center justify-center rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100 disabled:opacity-30",
+          active && "bg-slate-100 text-primary shadow-sm",
+        )}
       >
-        <EditorContent editor={editor} />
-      </div>
+        {children}
+      </button>
+    );
 
-      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
-        <DialogContent className="max-w-sm z-[99999]">
-          <DialogHeader>
-            <DialogTitle>Insert Link</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <Input
-              value={linkUrl}
-              onChange={(e) => setLinkUrl(e.target.value)}
-              placeholder="https://example.com"
-              onKeyDown={(e) => e.key === "Enter" && handleInsertLink()}
+    if (!editor) return null;
+
+    const bgStyle =
+      editorBg === "transparent"
+        ? { backgroundColor: skinStyles?.editorPaperBg || "#fff" }
+        : { backgroundColor: editorBg };
+
+    return (
+      <div
+        className="rounded-xl border overflow-hidden bg-white shadow-sm"
+        style={{ borderColor: "hsl(var(--border))" }}
+      >
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+
+        {/* MAIN TOOLBAR */}
+        <div className="bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm relative z-50">
+          <div className="flex items-center h-11 px-2 gap-0.5 overflow-x-auto">
+            <ToolBtn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
+              <Undo2 className="h-4 w-4" />
+            </ToolBtn>
+            <ToolBtn onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo">
+              <Redo2 className="h-4 w-4" />
+            </ToolBtn>
+            <div className="w-px h-5 bg-slate-200 mx-1" />
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="h-8 px-2 flex items-center gap-1 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100">
+                  <Type className="h-4 w-4" />
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="z-[9999]">
+                <DropdownMenuItem onClick={() => editor.chain().focus().setParagraph().run()}>Normal</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
+                  Heading 1
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
+                  Heading 2
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>
+                  Heading 3
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Select value={font} onValueChange={handleFontChange}>
+              <SelectTrigger className="h-8 w-28 text-xs border-0 bg-slate-50 hover:bg-slate-100 rounded-lg">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="z-[9999] max-h-72">
+                {FONTS.map((f) => (
+                  <SelectItem key={f.value} value={f.value} style={{ fontFamily: f.css }}>
+                    {f.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={size} onValueChange={handleSizeChange}>
+              <SelectTrigger className="h-8 w-14 text-xs border-0 bg-slate-50 hover:bg-slate-100 rounded-lg">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="z-[9999]">
+                {SIZES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="w-px h-5 bg-slate-200 mx-1" />
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100">
+                  <Palette className="h-4 w-4 text-slate-500" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-2 z-[9999]" align="start">
+                <p className="text-xs text-slate-400 mb-2">Text Color</p>
+                <div className="flex gap-1.5 flex-wrap max-w-32">
+                  <button
+                    onClick={() => editor.chain().focus().unsetColor().run()}
+                    className="h-6 w-6 rounded-full border-2 border-slate-200 bg-white text-xs"
+                  >
+                    ×
+                  </button>
+                  {TEXT_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => editor.chain().focus().setColor(c).run()}
+                      className="h-6 w-6 rounded-full border border-slate-200 hover:scale-110 transition"
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            <ToolBtn
+              onClick={() => editor.chain().focus().toggleBold().run()}
+              active={editor.isActive("bold")}
+              title="Bold"
+            >
+              <Bold className="h-4 w-4" />
+            </ToolBtn>
+            <ToolBtn
+              onClick={() => editor.chain().focus().toggleItalic().run()}
+              active={editor.isActive("italic")}
+              title="Italic"
+            >
+              <Italic className="h-4 w-4" />
+            </ToolBtn>
+            <ToolBtn
+              onClick={() => editor.chain().focus().toggleUnderline().run()}
+              active={editor.isActive("underline")}
+              title="Underline"
+            >
+              <UnderlineIcon className="h-4 w-4" />
+            </ToolBtn>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100">
+                  <Highlighter className="h-4 w-4 text-slate-500" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-2 z-[9999]" align="start">
+                <p className="text-xs text-slate-400 mb-2">Highlight</p>
+                <div className="flex gap-1.5 flex-wrap max-w-32">
+                  <button
+                    onClick={() => editor.chain().focus().unsetHighlight().run()}
+                    className="h-6 w-6 rounded border border-slate-200 bg-white text-xs"
+                  >
+                    ×
+                  </button>
+                  {HIGHLIGHT_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => editor.chain().focus().setHighlight({ color: c }).run()}
+                      className="h-6 w-6 rounded border border-slate-200 hover:scale-110 transition"
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+            <div className="w-px h-5 bg-slate-200 mx-1" />
+
+            <ToolBtn
+              onClick={() => editor.chain().focus().toggleBulletList().run()}
+              active={editor.isActive("bulletList")}
+              title="Bullets"
+            >
+              <List className="h-4 w-4" />
+            </ToolBtn>
+            <ToolBtn
+              onClick={() => editor.chain().focus().toggleOrderedList().run()}
+              active={editor.isActive("orderedList")}
+              title="Numbers"
+            >
+              <ListOrdered className="h-4 w-4" />
+            </ToolBtn>
+            <ToolBtn
+              onClick={() => editor.chain().focus().toggleTaskList().run()}
+              active={editor.isActive("taskList")}
+              title="Todo"
+            >
+              <CheckSquare className="h-4 w-4" />
+            </ToolBtn>
+            <div className="w-px h-5 bg-slate-200 mx-1" />
+
+            <ToolBtn
+              onClick={() => editor.chain().focus().setTextAlign("left").run()}
+              active={editor.isActive({ textAlign: "left" })}
+              title="Left"
+            >
+              <AlignLeft className="h-4 w-4" />
+            </ToolBtn>
+            <ToolBtn
+              onClick={() => editor.chain().focus().setTextAlign("center").run()}
+              active={editor.isActive({ textAlign: "center" })}
+              title="Center"
+            >
+              <AlignCenter className="h-4 w-4" />
+            </ToolBtn>
+            <ToolBtn
+              onClick={() => editor.chain().focus().setTextAlign("right").run()}
+              active={editor.isActive({ textAlign: "right" })}
+              title="Right"
+            >
+              <AlignRight className="h-4 w-4" />
+            </ToolBtn>
+            <div className="w-px h-5 bg-slate-200 mx-1" />
+
+            <ToolBtn onClick={() => setLinkDialogOpen(true)} active={editor.isActive("link")} title="Link">
+              <LinkIcon className="h-4 w-4" />
+            </ToolBtn>
+            <ToolBtn onClick={() => setImageDialogOpen(true)} title="Image">
+              <ImageIcon className="h-4 w-4" />
+            </ToolBtn>
+            <ToolBtn onClick={() => setScribbleMode(!scribbleMode)} active={scribbleMode} title="Scribble Mode">
+              <PenTool className="h-4 w-4" />
+            </ToolBtn>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100"
+                  title="Background"
+                >
+                  <ImagePlus className="h-4 w-4 text-slate-500" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-48 p-3 z-[9999]" align="start">
+                <p className="text-xs font-medium text-slate-500 mb-2">Background</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {BG_PRESETS.map((bg) => (
+                    <button
+                      key={bg.id}
+                      onClick={() => setEditorBg(bg.value)}
+                      title={bg.label}
+                      className={cn(
+                        "h-8 w-8 rounded-lg border-2 hover:scale-105 transition",
+                        editorBg === bg.value ? "border-primary ring-2 ring-primary/20" : "border-slate-200",
+                      )}
+                      style={{ backgroundColor: bg.value === "transparent" ? "#fff" : bg.value }}
+                    />
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+            <div className="w-px h-5 bg-slate-200 mx-1" />
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="h-8 px-2 flex items-center rounded-lg text-slate-500 hover:bg-slate-100">
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="z-[9999]">
+                <DropdownMenuItem onClick={() => editor.chain().focus().toggleStrike().run()}>
+                  <Strikethrough className="h-4 w-4 mr-2" /> Strikethrough
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
+                  <Code className="h-4 w-4 mr-2" /> Code Block
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor.chain().focus().toggleBlockquote().run()}>
+                  <Quote className="h-4 w-4 mr-2" /> Quote
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor.chain().focus().setHorizontalRule().run()}>
+                  <Minus className="h-4 w-4 mr-2" /> Divider
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}>
+                  Clear Formatting
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <div className="flex-1 min-w-4" />
+
+            <button
+              onClick={() => alert("AI coming soon!")}
+              className="h-8 px-3 flex items-center gap-1.5 rounded-lg text-sm font-medium bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow hover:shadow-md transition-all"
+            >
+              <Sparkles className="h-3.5 w-3.5" /> AI
+            </button>
+          </div>
+        </div>
+
+        {/* SCRIBBLE TOOLBAR */}
+        {scribbleMode && (
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200 px-3 py-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-semibold text-amber-700">✏️ Scribble</span>
+
+              <button
+                onClick={handleUndo}
+                disabled={undoStack.length === 0}
+                className="p-1.5 rounded-lg hover:bg-amber-100 disabled:opacity-30"
+                title="Undo"
+              >
+                <Undo2 className="h-4 w-4" />
+              </button>
+
+              <div className="w-px h-5 bg-amber-300" />
+
+              <div className="flex gap-1">
+                {SCRIBBLE_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => {
+                      setScribbleColor(c);
+                      setTool("pen");
+                    }}
+                    className={cn(
+                      "w-5 h-5 rounded-full border-2 transition-transform hover:scale-110",
+                      scribbleColor === c && tool === "pen"
+                        ? "border-amber-700 scale-110 ring-2 ring-amber-300"
+                        : "border-white shadow",
+                    )}
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+              </div>
+
+              <div className="w-px h-5 bg-amber-300" />
+
+              <div className="flex gap-0.5">
+                {PEN_TYPES.map((pt) => (
+                  <button
+                    key={pt.id}
+                    onClick={() => {
+                      setPenType(pt.id);
+                      setTool("pen");
+                    }}
+                    className={cn(
+                      "p-1.5 rounded-lg transition-all",
+                      penType === pt.id && tool === "pen" ? "bg-amber-200 shadow-inner" : "hover:bg-amber-100",
+                    )}
+                    title={pt.label}
+                  >
+                    <pt.icon className="h-4 w-4" />
+                  </button>
+                ))}
+              </div>
+
+              <select
+                value={penWidth}
+                onChange={(e) => setPenWidth(Number(e.target.value))}
+                className="h-7 text-xs border border-amber-300 rounded px-1 bg-white"
+              >
+                {PEN_WIDTHS.map((w) => (
+                  <option key={w.value} value={w.value}>
+                    {w.label}
+                  </option>
+                ))}
+              </select>
+
+              <div className="w-px h-5 bg-amber-300" />
+
+              <button
+                onClick={() => setTool("eraser")}
+                className={cn(
+                  "p-1.5 rounded-lg flex items-center gap-1",
+                  tool === "eraser" ? "bg-amber-200" : "hover:bg-amber-100",
+                )}
+                title="Simple Eraser"
+              >
+                <Eraser className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setTool("stroke-eraser")}
+                className={cn(
+                  "p-1.5 rounded-lg flex items-center gap-1 text-xs",
+                  tool === "stroke-eraser" ? "bg-amber-200" : "hover:bg-amber-100",
+                )}
+                title="Stroke Eraser"
+              >
+                <Circle className="h-4 w-4" />
+              </button>
+
+              {tool === "eraser" && (
+                <select
+                  value={eraserSize}
+                  onChange={(e) => setEraserSize(Number(e.target.value))}
+                  className="h-7 text-xs border border-amber-300 rounded px-1 bg-white"
+                >
+                  {ERASER_SIZES.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              <div className="flex-1" />
+
+              <button
+                onClick={clearScribble}
+                className="px-2 py-1 text-xs rounded-lg bg-red-100 text-red-600 hover:bg-red-200 flex items-center gap-1"
+              >
+                <Trash2 className="h-3 w-3" /> Clear All
+              </button>
+              <button
+                onClick={() => setScribbleMode(false)}
+                className="px-3 py-1 text-xs font-medium rounded-lg bg-amber-500 text-white hover:bg-amber-600"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Editor Content with Scribble Overlay */}
+        <div
+          ref={containerRef}
+          className="relative"
+          style={{
+            ...bgStyle,
+            color: skinStyles?.text || "#1e293b",
+            wordBreak: "break-word",
+            overflowWrap: "anywhere",
+          }}
+        >
+          <EditorContent editor={editor} />
+
+          {scribbleMode && (
+            <canvas
+              ref={canvasRef}
+              onMouseDown={startDrawing}
+              onMouseMove={draw}
+              onMouseUp={stopDrawing}
+              onMouseLeave={stopDrawing}
+              className="absolute inset-0 w-full h-full"
+              style={{
+                touchAction: "none",
+                cursor: tool === "pen" ? "crosshair" : tool === "eraser" ? "cell" : "pointer",
+              }}
             />
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setLinkDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button className="flex-1" onClick={handleInsertLink}>
-                Insert
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          )}
+        </div>
 
-      <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
-        <DialogContent className="max-w-sm z-[99999]">
-          <DialogHeader>
-            <DialogTitle>Insert Image</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Paste image URL..." />
-            <div className="text-center text-sm text-slate-400">— or —</div>
-            <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
-              <ImageIcon className="h-4 w-4 mr-2" /> Upload from Computer
-            </Button>
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setImageDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button className="flex-1" onClick={handleInsertImage} disabled={!imageUrl}>
-                Insert
-              </Button>
+        <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+          <DialogContent className="max-w-sm z-[99999]">
+            <DialogHeader>
+              <DialogTitle>Insert Link</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <Input
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                placeholder="https://example.com"
+                onKeyDown={(e) => e.key === "Enter" && handleInsertLink()}
+              />
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setLinkDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button className="flex-1" onClick={handleInsertLink}>
+                  Insert
+                </Button>
+              </div>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
 
-      <style>{`
+        <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
+          <DialogContent className="max-w-sm z-[99999]">
+            <DialogHeader>
+              <DialogTitle>Insert Image</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Paste image URL..." />
+              <div className="text-center text-sm text-slate-400">— or —</div>
+              <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
+                <ImageIcon className="h-4 w-4 mr-2" /> Upload from Computer
+              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setImageDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button className="flex-1" onClick={handleInsertImage} disabled={!imageUrl}>
+                  Insert
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <style>{`
         .ProseMirror { min-height: 300px; word-break: break-word; overflow-wrap: anywhere; }
         .ProseMirror p.is-editor-empty:first-child::before { color: ${skinStyles?.mutedText || "#94a3b8"}; content: attr(data-placeholder); float: left; height: 0; pointer-events: none; }
         .ProseMirror h1 { font-size: 1.875rem; font-weight: 700; margin: 1.5rem 0 0.75rem; }
@@ -820,8 +1025,9 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(({ content
         .ProseMirror li[data-checked="true"] > div { text-decoration: line-through; color: #94a3b8; }
         .ProseMirror a { color: #3b82f6; text-decoration: underline; }
       `}</style>
-    </div>
-  );
-});
+      </div>
+    );
+  },
+);
 
 JournalTiptapEditor.displayName = "JournalTiptapEditor";
