@@ -12,6 +12,8 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import FontFamily from "@tiptap/extension-font-family";
+import Subscript from "@tiptap/extension-subscript";
+import Superscript from "@tiptap/extension-superscript";
 import { Extension } from "@tiptap/core";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +21,16 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import {
   Undo2,
@@ -30,6 +42,7 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  AlignJustify,
   List,
   ListOrdered,
   CheckSquare,
@@ -40,10 +53,19 @@ import {
   Sparkles,
   Loader2,
   Check,
-  Heading1,
-  Heading2,
-  Heading3,
   Save,
+  ChevronDown,
+  Plus,
+  Smile,
+  Type,
+  Subscript as SubIcon,
+  Superscript as SuperIcon,
+  MoreHorizontal,
+  Quote,
+  Code,
+  Minus,
+  Table,
+  FileText,
 } from "lucide-react";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 
@@ -82,39 +104,49 @@ interface NotesRichEditorProps {
   folders?: NoteFolder[];
   onSave: (note: Note) => void;
   onBack: () => void;
-  lastSaved?: Date | null;
-  showBreadcrumb?: boolean;
 }
 
-const FONT_FAMILIES = [
-  { value: "inter", label: "Inter", css: "Inter, system-ui, sans-serif" },
+const FONTS = [
+  { value: "sans", label: "Sans Serif", css: "Inter, -apple-system, sans-serif" },
+  { value: "serif", label: "Serif", css: "Georgia, Cambria, serif" },
+  { value: "mono", label: "Monospace", css: '"SF Mono", "Fira Code", monospace' },
+  { value: "arial", label: "Arial", css: "Arial, Helvetica, sans-serif" },
+  { value: "times", label: "Times New Roman", css: '"Times New Roman", Times, serif' },
   { value: "georgia", label: "Georgia", css: "Georgia, serif" },
-  { value: "times", label: "Times", css: '"Times New Roman", serif' },
-  { value: "arial", label: "Arial", css: "Arial, sans-serif" },
-  { value: "verdana", label: "Verdana", css: "Verdana, sans-serif" },
-  { value: "lora", label: "Lora", css: "Lora, serif" },
-  { value: "playfair", label: "Playfair", css: '"Playfair Display", serif' },
-  { value: "mono", label: "Mono", css: "monospace" },
+  { value: "verdana", label: "Verdana", css: "Verdana, Geneva, sans-serif" },
+  { value: "courier", label: "Courier New", css: '"Courier New", Courier, monospace' },
 ];
 
-const FONT_SIZES = ["12", "14", "16", "18", "20", "24", "28", "32"];
+const SIZES = ["10", "11", "12", "13", "14", "15", "16", "18", "20", "24", "28", "32", "36", "48", "72"];
 
 const TEXT_COLORS = [
-  { value: "", label: "Default", color: "currentColor" },
-  { value: "#1a1a1a", label: "Black", color: "#1a1a1a" },
-  { value: "#dc2626", label: "Red", color: "#dc2626" },
-  { value: "#16a34a", label: "Green", color: "#16a34a" },
-  { value: "#2563eb", label: "Blue", color: "#2563eb" },
-  { value: "#7c3aed", label: "Purple", color: "#7c3aed" },
+  { value: "", label: "Default" },
+  { value: "#000000", label: "Black" },
+  { value: "#374151", label: "Gray" },
+  { value: "#dc2626", label: "Red" },
+  { value: "#ea580c", label: "Orange" },
+  { value: "#ca8a04", label: "Yellow" },
+  { value: "#16a34a", label: "Green" },
+  { value: "#0891b2", label: "Cyan" },
+  { value: "#2563eb", label: "Blue" },
+  { value: "#7c3aed", label: "Purple" },
+  { value: "#db2777", label: "Pink" },
+  { value: "#84cc16", label: "Lime" },
 ];
 
 const HIGHLIGHT_COLORS = [
-  { value: "", label: "None", color: "transparent" },
-  { value: "#fef08a", label: "Yellow", color: "#fef08a" },
-  { value: "#bbf7d0", label: "Green", color: "#bbf7d0" },
-  { value: "#bfdbfe", label: "Blue", color: "#bfdbfe" },
-  { value: "#fbcfe8", label: "Pink", color: "#fbcfe8" },
+  { value: "", label: "None" },
+  { value: "#fef08a", label: "Yellow" },
+  { value: "#bbf7d0", label: "Green" },
+  { value: "#bfdbfe", label: "Blue" },
+  { value: "#fbcfe8", label: "Pink" },
+  { value: "#fed7aa", label: "Orange" },
+  { value: "#e9d5ff", label: "Purple" },
+  { value: "#fecaca", label: "Red" },
+  { value: "#d1d5db", label: "Gray" },
 ];
+
+const EMOJIS = ["😀", "😊", "🎉", "❤️", "👍", "🔥", "✨", "💡", "📝", "✅", "⭐", "🚀", "💪", "🎯", "📌", "🔔"];
 
 export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: NotesRichEditorProps) {
   const [title, setTitle] = useState(note.title);
@@ -126,8 +158,10 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
   const [linkUrl, setLinkUrl] = useState("");
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
-  const [currentFont, setCurrentFont] = useState("inter");
-  const [currentSize, setCurrentSize] = useState("16");
+  const [currentFont, setCurrentFont] = useState("sans");
+  const [currentSize, setCurrentSize] = useState("15");
+  const [currentColor, setCurrentColor] = useState("");
+  const [currentHighlight, setCurrentHighlight] = useState("");
 
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedContent = useRef(note.contentRich || "");
@@ -138,12 +172,10 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
       Placeholder.configure({ placeholder: "Start writing..." }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Underline,
+      Subscript,
+      Superscript,
       Link.configure({ openOnClick: false }),
-      Image.configure({
-        inline: false,
-        allowBase64: true,
-        HTMLAttributes: { class: "max-w-full h-auto rounded-lg my-3" },
-      }),
+      Image.configure({ inline: false, allowBase64: true }),
       TaskList,
       TaskItem.configure({ nested: true }),
       TextStyle,
@@ -155,22 +187,7 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
     content: note.contentRich || "",
     editorProps: {
       attributes: {
-        class: cn(
-          "focus:outline-none min-h-[280px] text-foreground",
-          "[&_*]:break-words [&_*]:overflow-wrap-anywhere",
-          "[&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-3 [&_h1]:mt-4",
-          "[&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mb-2 [&_h2]:mt-3",
-          "[&_h3]:text-lg [&_h3]:font-medium [&_h3]:mb-2",
-          "[&_p]:my-1.5 [&_p]:leading-relaxed",
-          "[&_strong]:font-bold",
-          "[&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2",
-          "[&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2",
-          '[&_ul[data-type="taskList"]]:list-none [&_ul[data-type="taskList"]]:pl-0',
-          '[&_ul[data-type="taskList"]_li]:flex [&_ul[data-type="taskList"]_li]:items-start [&_ul[data-type="taskList"]_li]:gap-2',
-          '[&_ul[data-type="taskList"]_input]:accent-primary',
-          '[&_li[data-checked="true"]]:text-muted-foreground [&_li[data-checked="true"]]:line-through',
-          "[&_a]:text-primary [&_a]:underline",
-        ),
+        class: "focus:outline-none min-h-[280px] text-foreground [&_*]:break-words prose prose-sm max-w-none",
       },
     },
     onUpdate: ({ editor }) => {
@@ -211,12 +228,21 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
 
   const handleFontChange = (v: string) => {
     setCurrentFont(v);
-    const f = FONT_FAMILIES.find((x) => x.value === v);
+    const f = FONTS.find((x) => x.value === v);
     if (f && editor) editor.chain().focus().setFontFamily(f.css).run();
   };
   const handleSizeChange = (v: string) => {
     setCurrentSize(v);
     if (editor) (editor.chain().focus() as any).setFontSize(v).run();
+  };
+  const handleColorChange = (v: string) => {
+    setCurrentColor(v);
+    if (editor) v ? editor.chain().focus().setColor(v).run() : editor.chain().focus().unsetColor().run();
+  };
+  const handleHighlightChange = (v: string) => {
+    setCurrentHighlight(v);
+    if (editor)
+      v ? editor.chain().focus().setHighlight({ color: v }).run() : editor.chain().focus().unsetHighlight().run();
   };
   const handleAddTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {
@@ -229,6 +255,9 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
     setTitle(v);
     setSaveStatus("unsaved");
   };
+  const insertEmoji = (emoji: string) => {
+    if (editor) editor.chain().focus().insertContent(emoji).run();
+  };
 
   const handleInsertLink = () => {
     if (!linkUrl || !editor) return;
@@ -239,7 +268,6 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
     setLinkDialogOpen(false);
     setLinkUrl("");
   };
-
   const handleInsertImage = () => {
     if (!imageUrl || !editor) return;
     editor.chain().focus().setImage({ src: imageUrl }).run();
@@ -273,7 +301,7 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
         onClick();
       }}
       className={cn(
-        "h-8 w-8 flex-shrink-0 flex items-center justify-center rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-40",
+        "h-7 w-7 flex-shrink-0 flex items-center justify-center rounded transition-colors text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-40",
         active && "bg-accent text-foreground",
       )}
     >
@@ -281,65 +309,164 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
     </button>
   );
 
+  const Divider = () => <div className="w-px h-5 bg-border mx-1 flex-shrink-0" />;
+
   return (
     <div className="flex flex-col h-full w-full bg-background overflow-hidden">
-      {/* Toolbar - with overflow scroll */}
-      <div className="flex-shrink-0 border-b bg-card/80 backdrop-blur-sm overflow-x-auto">
-        <div className="flex items-center px-2 py-1.5 gap-0.5 min-w-max">
+      {/* FULL TOOLBAR */}
+      <div className="flex-shrink-0 border-b bg-muted/30 overflow-x-auto">
+        <div className="flex items-center px-2 py-1 gap-0.5 min-w-max">
+          {/* Insert Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs">
+                <Plus className="h-3.5 w-3.5" /> Insert <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => setImageDialogOpen(true)}>
+                <ImageIcon className="h-4 w-4 mr-2" /> Image
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLinkDialogOpen(true)}>
+                <Link2 className="h-4 w-4 mr-2" /> Link
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().setHorizontalRule().run()}>
+                <Minus className="h-4 w-4 mr-2" /> Divider
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
+                <Code className="h-4 w-4 mr-2" /> Code Block
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleBlockquote().run()}>
+                <Quote className="h-4 w-4 mr-2" /> Quote
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Emoji */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                <Smile className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2">
+              <div className="grid grid-cols-8 gap-1">
+                {EMOJIS.map((e) => (
+                  <button key={e} onClick={() => insertEmoji(e)} className="h-7 w-7 hover:bg-accent rounded text-lg">
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Save */}
+          <ToolBtn onClick={handleSave} title="Save">
+            <Save className="h-4 w-4" />
+          </ToolBtn>
+          <Divider />
+
+          {/* Undo / Redo */}
           <ToolBtn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
             <Undo2 className="h-4 w-4" />
           </ToolBtn>
           <ToolBtn onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo">
             <Redo2 className="h-4 w-4" />
           </ToolBtn>
-          <div className="w-px h-5 bg-border mx-0.5 flex-shrink-0" />
-          <ToolBtn
-            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-            active={editor.isActive("heading", { level: 1 })}
-            title="H1"
-          >
-            <Heading1 className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn
-            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-            active={editor.isActive("heading", { level: 2 })}
-            title="H2"
-          >
-            <Heading2 className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn
-            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-            active={editor.isActive("heading", { level: 3 })}
-            title="H3"
-          >
-            <Heading3 className="h-4 w-4" />
-          </ToolBtn>
-          <div className="w-px h-5 bg-border mx-0.5 flex-shrink-0" />
+          <Divider />
+
+          {/* AI Edit */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-violet-600">
+                <Sparkles className="h-3.5 w-3.5" /> AI Edit <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => alert("Coming soon!")}>✨ Improve Writing</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => alert("Coming soon!")}>📝 Fix Grammar</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => alert("Coming soon!")}>🎯 Make Concise</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => alert("Coming soon!")}>📖 Expand</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Divider />
+
+          {/* Heading */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs">
+                <Type className="h-3.5 w-3.5" /> Aa <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => editor.chain().focus().setParagraph().run()}>Normal</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
+                <span className="text-xl font-bold">Heading 1</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
+                <span className="text-lg font-semibold">Heading 2</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>
+                <span className="text-base font-medium">Heading 3</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Font */}
           <Select value={currentFont} onValueChange={handleFontChange}>
-            <SelectTrigger className="h-7 w-20 text-xs flex-shrink-0">
+            <SelectTrigger className="h-7 w-[100px] text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {FONT_FAMILIES.map((f) => (
-                <SelectItem key={f.value} value={f.value}>
+              {FONTS.map((f) => (
+                <SelectItem key={f.value} value={f.value} style={{ fontFamily: f.css }}>
                   {f.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+
+          {/* Size */}
           <Select value={currentSize} onValueChange={handleSizeChange}>
-            <SelectTrigger className="h-7 w-14 text-xs flex-shrink-0">
+            <SelectTrigger className="h-7 w-[55px] text-xs">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
-              {FONT_SIZES.map((s) => (
+            <SelectContent className="max-h-60">
+              {SIZES.map((s) => (
                 <SelectItem key={s} value={s}>
                   {s}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <div className="w-px h-5 bg-border mx-0.5 flex-shrink-0" />
+          <Divider />
+
+          {/* Color */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="h-7 px-1 flex items-center gap-0.5 rounded hover:bg-accent">
+                <div
+                  className="w-4 h-4 rounded-full border"
+                  style={{ backgroundColor: currentColor || "currentColor" }}
+                />
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2">
+              <div className="grid grid-cols-6 gap-1">
+                {TEXT_COLORS.map((c) => (
+                  <button
+                    key={c.value || "d"}
+                    onClick={() => handleColorChange(c.value)}
+                    className={cn("h-6 w-6 rounded-full border-2", currentColor === c.value && "ring-2 ring-primary")}
+                    style={{ backgroundColor: c.value || "#666" }}
+                  />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Format */}
           <ToolBtn
             onClick={() => editor.chain().focus().toggleBold().run()}
             active={editor.isActive("bold")}
@@ -361,65 +488,39 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
           >
             <UnderlineIcon className="h-4 w-4" />
           </ToolBtn>
-          <ToolBtn
-            onClick={() => editor.chain().focus().toggleStrike().run()}
-            active={editor.isActive("strike")}
-            title="Strike"
-          >
-            <Strikethrough className="h-4 w-4" />
-          </ToolBtn>
-          <div className="w-px h-5 bg-border mx-0.5 flex-shrink-0" />
+
+          {/* Highlight */}
           <Popover>
             <PopoverTrigger asChild>
-              <button className="h-8 w-8 flex-shrink-0 flex items-center justify-center rounded-md hover:bg-accent">
-                <Palette className="h-4 w-4" />
+              <button className="h-7 px-1 flex items-center gap-0.5 rounded hover:bg-accent">
+                <Highlighter className="h-4 w-4" style={{ color: currentHighlight || undefined }} />
+                <ChevronDown className="h-3 w-3" />
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-2">
-              <div className="grid grid-cols-3 gap-1">
-                {TEXT_COLORS.map((c) => (
-                  <button
-                    key={c.value || "d"}
-                    onClick={() =>
-                      c.value
-                        ? editor.chain().focus().setColor(c.value).run()
-                        : editor.chain().focus().unsetColor().run()
-                    }
-                    className="h-6 w-6 rounded border"
-                    style={{ backgroundColor: c.color }}
-                  />
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-          <Popover>
-            <PopoverTrigger asChild>
-              <button className="h-8 w-8 flex-shrink-0 flex items-center justify-center rounded-md hover:bg-accent">
-                <Highlighter className="h-4 w-4" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-2">
-              <div className="grid grid-cols-3 gap-1">
+              <div className="grid grid-cols-5 gap-1">
                 {HIGHLIGHT_COLORS.map((c) => (
                   <button
                     key={c.value || "n"}
-                    onClick={() =>
-                      c.value
-                        ? editor.chain().focus().setHighlight({ color: c.value }).run()
-                        : editor.chain().focus().unsetHighlight().run()
-                    }
-                    className="h-6 w-6 rounded border"
-                    style={{ backgroundColor: c.color }}
+                    onClick={() => handleHighlightChange(c.value)}
+                    className={cn("h-6 w-6 rounded border", currentHighlight === c.value && "ring-2 ring-primary")}
+                    style={{ backgroundColor: c.value || "transparent" }}
                   />
                 ))}
               </div>
             </PopoverContent>
           </Popover>
-          <div className="w-px h-5 bg-border mx-0.5 flex-shrink-0" />
+
+          <ToolBtn onClick={() => setLinkDialogOpen(true)} active={editor.isActive("link")} title="Link">
+            <Link2 className="h-4 w-4" />
+          </ToolBtn>
+          <Divider />
+
+          {/* Lists */}
           <ToolBtn
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             active={editor.isActive("bulletList")}
-            title="List"
+            title="Bullets"
           >
             <List className="h-4 w-4" />
           </ToolBtn>
@@ -437,7 +538,9 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
           >
             <CheckSquare className="h-4 w-4" />
           </ToolBtn>
-          <div className="w-px h-5 bg-border mx-0.5 flex-shrink-0" />
+          <Divider />
+
+          {/* Alignment */}
           <ToolBtn
             onClick={() => editor.chain().focus().setTextAlign("left").run()}
             active={editor.isActive({ textAlign: "left" })}
@@ -459,23 +562,65 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
           >
             <AlignRight className="h-4 w-4" />
           </ToolBtn>
-          <div className="w-px h-5 bg-border mx-0.5 flex-shrink-0" />
-          <ToolBtn onClick={() => setLinkDialogOpen(true)} active={editor.isActive("link")} title="Link">
-            <Link2 className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn onClick={() => setImageDialogOpen(true)} title="Image">
-            <ImageIcon className="h-4 w-4" />
-          </ToolBtn>
-          <div className="w-px h-5 bg-border mx-0.5 flex-shrink-0" />
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1 text-xs flex-shrink-0"
-            onClick={() => alert("AI coming soon!")}
+          <ToolBtn
+            onClick={() => editor.chain().focus().setTextAlign("justify").run()}
+            active={editor.isActive({ textAlign: "justify" })}
+            title="Justify"
           >
-            <Sparkles className="h-3.5 w-3.5" /> AI
-          </Button>
-          <div className="flex-1 min-w-2" />
+            <AlignJustify className="h-4 w-4" />
+          </ToolBtn>
+          <Divider />
+
+          {/* Strike, Super, Sub */}
+          <ToolBtn
+            onClick={() => editor.chain().focus().toggleStrike().run()}
+            active={editor.isActive("strike")}
+            title="Strike"
+          >
+            <Strikethrough className="h-4 w-4" />
+          </ToolBtn>
+          <ToolBtn
+            onClick={() => editor.chain().focus().toggleSuperscript().run()}
+            active={editor.isActive("superscript")}
+            title="Superscript"
+          >
+            <span className="text-xs font-bold">x²</span>
+          </ToolBtn>
+          <ToolBtn
+            onClick={() => editor.chain().focus().toggleSubscript().run()}
+            active={editor.isActive("subscript")}
+            title="Subscript"
+          >
+            <span className="text-xs font-bold">x₂</span>
+          </ToolBtn>
+
+          {/* More */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs">
+                More <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
+                <Code className="h-4 w-4 mr-2" /> Code Block
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleBlockquote().run()}>
+                <Quote className="h-4 w-4 mr-2" /> Blockquote
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().setHorizontalRule().run()}>
+                <Minus className="h-4 w-4 mr-2" /> Horizontal Rule
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}>
+                Clear Formatting
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <div className="flex-1 min-w-4" />
+
+          {/* Status */}
           <span
             className={cn(
               "text-xs px-2 py-0.5 rounded flex-shrink-0",
@@ -504,7 +649,7 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
         </div>
       </div>
 
-      {/* Content - PROPER OVERFLOW HANDLING */}
+      {/* Content */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="p-4 w-full" style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>
           <Input
@@ -513,7 +658,6 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
             placeholder="Untitled Note"
             className="text-xl font-semibold border-none bg-transparent px-0 h-auto focus-visible:ring-0 mb-3 w-full"
           />
-
           <div className="flex items-center gap-2 mb-4 flex-wrap">
             {group && <Badge variant="secondary">{group.name}</Badge>}
             {tags.map((tag) => (
@@ -543,8 +687,6 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
               </PopoverContent>
             </Popover>
           </div>
-
-          {/* Editor with word break */}
           <div className="w-full" style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>
             <EditorContent editor={editor} className="w-full [&_.ProseMirror]:w-full [&_.ProseMirror]:break-words" />
           </div>
@@ -596,11 +738,7 @@ export function NotesRichEditor({ note, groups, folders = [], onSave, onBack }: 
         </DialogContent>
       </Dialog>
 
-      {/* CSS for word breaking */}
-      <style>{`
-        .ProseMirror { word-break: break-word; overflow-wrap: anywhere; width: 100%; }
-        .ProseMirror p, .ProseMirror h1, .ProseMirror h2, .ProseMirror h3, .ProseMirror li { word-break: break-word; overflow-wrap: anywhere; }
-      `}</style>
+      <style>{`.ProseMirror { word-break: break-word; overflow-wrap: anywhere; } .ProseMirror h1 { font-size: 1.75rem; font-weight: 700; margin: 1rem 0 0.5rem; } .ProseMirror h2 { font-size: 1.375rem; font-weight: 600; margin: 0.75rem 0 0.5rem; } .ProseMirror h3 { font-size: 1.125rem; font-weight: 500; margin: 0.5rem 0; } .ProseMirror p { margin: 0.5rem 0; } .ProseMirror strong { font-weight: 700; } .ProseMirror ul { list-style: disc; padding-left: 1.25rem; } .ProseMirror ol { list-style: decimal; padding-left: 1.25rem; } .ProseMirror blockquote { border-left: 3px solid hsl(var(--border)); padding-left: 1rem; margin: 0.5rem 0; color: hsl(var(--muted-foreground)); } .ProseMirror pre { background: hsl(var(--muted)); padding: 0.75rem; border-radius: 0.375rem; overflow-x: auto; } .ProseMirror code { background: hsl(var(--muted)); padding: 0.125rem 0.25rem; border-radius: 0.25rem; font-family: monospace; } .ProseMirror hr { border: none; border-top: 1px solid hsl(var(--border)); margin: 1rem 0; } .ProseMirror ul[data-type="taskList"] { list-style: none; padding-left: 0; } .ProseMirror ul[data-type="taskList"] li { display: flex; align-items: flex-start; gap: 0.5rem; } .ProseMirror ul[data-type="taskList"] input { accent-color: hsl(var(--primary)); } .ProseMirror li[data-checked="true"] > div { text-decoration: line-through; color: hsl(var(--muted-foreground)); } .ProseMirror sup { vertical-align: super; font-size: 0.75em; } .ProseMirror sub { vertical-align: sub; font-size: 0.75em; } .ProseMirror img { max-width: 100%; border-radius: 0.5rem; margin: 0.5rem 0; }`}</style>
     </div>
   );
 }
