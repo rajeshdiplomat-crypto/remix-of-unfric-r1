@@ -42,6 +42,7 @@ export const EvernoteToolbarEditor = forwardRef<EvernoteToolbarEditorRef, Everno
       readOnly = false,
       fullWidthToolbar = false,
       contentMaxWidth = true,
+      titleSlot,
     },
     ref
   ) => {
@@ -337,9 +338,11 @@ export const EvernoteToolbarEditor = forwardRef<EvernoteToolbarEditorRef, Everno
         {/* Editor Content */}
         <div 
           ref={editorContainerRef} 
-          className="flex-1 overflow-auto px-6 py-6 relative"
+          className="flex-1 overflow-auto px-6 py-4 relative"
         >
           <div className={cn(contentMaxWidth && "max-w-4xl mx-auto")}>
+            {/* Title slot above content */}
+            {titleSlot && <div className="mb-4">{titleSlot}</div>}
             <EditorContent editor={editor} className="max-w-none" />
           </div>
           

@@ -6,6 +6,8 @@ export interface EditorContent {
 export type SaveStatus = 'saved' | 'saving' | 'unsaved';
 
 export interface EvernoteToolbarEditorProps {
+  /** Optional slot to render title/tags above content but below toolbar */
+  titleSlot?: React.ReactNode;
   initialContentRich?: string;
   onContentChange?: (data: EditorContent) => void;
   onSave?: (data: EditorContent) => void;
