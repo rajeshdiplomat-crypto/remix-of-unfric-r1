@@ -122,225 +122,218 @@ export function NotesSplitView({
   const isInFocusMode = !!selectedNote;
 
   return (
-    <div className="flex h-[calc(100vh-120px)] border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
-      {/* Left Sidebar - Modern Design */}
-      <div className="w-64 min-w-[220px] max-w-[280px] border-r border-slate-100 flex flex-col bg-gradient-to-b from-slate-50 to-white">
-        <div className="p-3 border-b border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+    <div className="w-full h-[calc(100vh-80px)] p-4">
+      <div className="flex h-full border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
+        {/* Left Sidebar */}
+        <div className="w-56 shrink-0 border-r border-slate-100 flex flex-col bg-gradient-to-b from-slate-50/80 to-white overflow-hidden">
+          <div className="p-3 border-b border-slate-100 flex items-center justify-between shrink-0">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               {isInFocusMode ? "Context" : "Notes"}
             </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg"
+              onClick={onCreateNote}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg"
-            onClick={onCreateNote}
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
+
+          <ScrollArea className="flex-1">
+            <div className="p-2 space-y-0.5">
+              {sortedGroups.map((group) => {
+                const groupNotes = notes.filter((note) => note.groupId === group.id);
+                const groupFolders = folders.filter((f) => f.groupId === group.id);
+                const isGroupExpanded = expandedGroups.has(group.id);
+                const isFocusedGroup = selectedNote?.groupId === group.id;
+                const mostRecentUpdate = getMostRecentUpdate(groupNotes);
+                const focusModeClass = isInFocusMode && !isFocusedGroup ? "opacity-40" : "";
+
+                return (
+                  <div key={group.id} className={focusModeClass}>
+                    <button
+                      onClick={() => toggleGroup(group.id)}
+                      className="w-full px-2 py-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-1.5 hover:bg-slate-100/60 rounded-lg transition-colors"
+                    >
+                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: group.color }} />
+                      {isGroupExpanded ? (
+                        <ChevronDown className="h-3 w-3 text-slate-400 shrink-0" />
+                      ) : (
+                        <ChevronRight className="h-3 w-3 text-slate-400 shrink-0" />
+                      )}
+                      <span className="flex-1 text-left truncate">{group.name}</span>
+                      {mostRecentUpdate && <NotesActivityDot updatedAt={mostRecentUpdate} size="sm" />}
+                      <span className="text-slate-400/60 text-[10px] shrink-0">{groupNotes.length}</span>
+                    </button>
+
+                    {isGroupExpanded && (
+                      <div className="space-y-0.5 ml-2 border-l border-slate-100 pl-2">
+                        {groupFolders.map((folder) => {
+                          const folderNotes = groupNotes.filter((n) => n.folderId === folder.id);
+                          const isFolderExpanded = expandedFolders.has(folder.id);
+                          const isFocusedFolder = selectedNote?.folderId === folder.id;
+                          const folderMostRecent = getMostRecentUpdate(folderNotes);
+                          const folderFocusClass =
+                            isInFocusMode && selectedNote?.folderId && !isFocusedFolder ? "opacity-50" : "";
+
+                          return (
+                            <div key={folder.id} className={folderFocusClass}>
+                              <button
+                                onClick={() => toggleFolder(folder.id)}
+                                className="w-full flex items-center gap-1.5 px-2 py-1 text-[11px] text-slate-500 hover:bg-slate-100/50 rounded-lg transition-colors"
+                              >
+                                {isFolderExpanded ? (
+                                  <ChevronDown className="h-2.5 w-2.5 shrink-0" />
+                                ) : (
+                                  <ChevronRight className="h-2.5 w-2.5 shrink-0" />
+                                )}
+                                {isFolderExpanded ? (
+                                  <FolderOpen className="h-3 w-3 text-amber-500 shrink-0" />
+                                ) : (
+                                  <Folder className="h-3 w-3 text-amber-500/70 shrink-0" />
+                                )}
+                                <span className="flex-1 text-left truncate">{folder.name}</span>
+                                {folderMostRecent && <NotesActivityDot updatedAt={folderMostRecent} size="sm" />}
+                                <span className="text-slate-400/50 text-[10px] shrink-0">{folderNotes.length}</span>
+                              </button>
+
+                              {isFolderExpanded && (
+                                <div className="ml-3 space-y-0.5">
+                                  {folderNotes.map((note) => (
+                                    <div
+                                      key={note.id}
+                                      className={`p-1.5 rounded-lg cursor-pointer transition-all flex items-start gap-1.5 ${
+                                        selectedNote?.id === note.id
+                                          ? "bg-primary/10 ring-1 ring-primary/20"
+                                          : "hover:bg-slate-50"
+                                      }`}
+                                      onClick={() => onSelectNote(note)}
+                                    >
+                                      <FileText className="h-3 w-3 mt-0.5 text-slate-400 shrink-0" />
+                                      <span className="text-xs text-slate-700 truncate">
+                                        {note.title || "Untitled"}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        {groupNotes
+                          .filter((n) => !n.folderId)
+                          .map((note) => (
+                            <div
+                              key={note.id}
+                              className={`p-1.5 rounded-lg cursor-pointer transition-all flex items-start gap-1.5 ${
+                                selectedNote?.id === note.id
+                                  ? "bg-primary/10 ring-1 ring-primary/20"
+                                  : "hover:bg-slate-50"
+                              }`}
+                              onClick={() => onSelectNote(note)}
+                            >
+                              <FileText className="h-3 w-3 mt-0.5 text-slate-400 shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <span className="text-xs text-slate-700 truncate block">
+                                  {note.title || "Untitled"}
+                                </span>
+                                <span className="text-[10px] text-slate-400 truncate block">
+                                  {note.plainText?.slice(0, 30) || "No content"}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
         </div>
 
-        <ScrollArea className="flex-1">
-          <div className="p-2 space-y-0.5">
-            {sortedGroups.map((group) => {
-              const groupNotes = notes.filter((note) => note.groupId === group.id);
-              const groupFolders = folders.filter((f) => f.groupId === group.id);
-              const isGroupExpanded = expandedGroups.has(group.id);
-              const isFocusedGroup = selectedNote?.groupId === group.id;
-              const mostRecentUpdate = getMostRecentUpdate(groupNotes);
-              const focusModeClass = isInFocusMode && !isFocusedGroup ? "opacity-40" : "";
-
-              return (
-                <div key={group.id} className={focusModeClass}>
-                  {/* Group Header */}
-                  <button
-                    onClick={() => toggleGroup(group.id)}
-                    className="w-full px-2.5 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-2 hover:bg-slate-100/80 rounded-lg transition-colors"
+        {/* Right Panel - Editor */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          {selectedNote ? (
+            <>
+              <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100 bg-white shrink-0">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <Badge
+                    className="shrink-0 text-[10px]"
+                    style={{
+                      backgroundColor: `${getGroupColor(selectedNote.groupId)}20`,
+                      color: getGroupColor(selectedNote.groupId),
+                      border: "none",
+                    }}
                   >
-                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: group.color }} />
-                    {isGroupExpanded ? (
-                      <ChevronDown className="h-3 w-3 text-slate-400" />
-                    ) : (
-                      <ChevronRight className="h-3 w-3 text-slate-400" />
-                    )}
-                    <span className="flex-1 text-left truncate">{group.name}</span>
-                    {mostRecentUpdate && <NotesActivityDot updatedAt={mostRecentUpdate} size="sm" />}
-                    <span className="text-slate-400/60 text-[10px]">{groupNotes.length}</span>
-                  </button>
-
-                  {isGroupExpanded && (
-                    <div className="space-y-0.5 ml-3 border-l border-slate-100 pl-2">
-                      {/* Folders */}
-                      {groupFolders.map((folder) => {
-                        const folderNotes = groupNotes.filter((n) => n.folderId === folder.id);
-                        const isFolderExpanded = expandedFolders.has(folder.id);
-                        const isFocusedFolder = selectedNote?.folderId === folder.id;
-                        const folderMostRecent = getMostRecentUpdate(folderNotes);
-                        const folderFocusClass =
-                          isInFocusMode && selectedNote?.folderId && !isFocusedFolder ? "opacity-50" : "";
-
-                        return (
-                          <div key={folder.id} className={folderFocusClass}>
-                            <button
-                              onClick={() => toggleFolder(folder.id)}
-                              className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-slate-500 hover:bg-slate-100/60 rounded-lg transition-colors"
-                            >
-                              {isFolderExpanded ? (
-                                <ChevronDown className="h-2.5 w-2.5" />
-                              ) : (
-                                <ChevronRight className="h-2.5 w-2.5" />
-                              )}
-                              {isFolderExpanded ? (
-                                <FolderOpen className="h-3 w-3 text-amber-500" />
-                              ) : (
-                                <Folder className="h-3 w-3 text-amber-500/70" />
-                              )}
-                              <span className="flex-1 text-left truncate">{folder.name}</span>
-                              {folderMostRecent && <NotesActivityDot updatedAt={folderMostRecent} size="sm" />}
-                              <span className="text-slate-400/50 text-[10px]">{folderNotes.length}</span>
-                            </button>
-
-                            {isFolderExpanded && (
-                              <div className="ml-4 space-y-0.5">
-                                {folderNotes.map((note) => (
-                                  <div
-                                    key={note.id}
-                                    className={`p-2 rounded-lg cursor-pointer transition-all flex items-start gap-2 ${
-                                      selectedNote?.id === note.id
-                                        ? "bg-primary/10 shadow-sm ring-1 ring-primary/20"
-                                        : "hover:bg-slate-50"
-                                    }`}
-                                    onClick={() => onSelectNote(note)}
-                                  >
-                                    <FileText className="h-3 w-3 mt-0.5 text-slate-400 shrink-0" />
-                                    <div className="flex-1 min-w-0">
-                                      <h3 className="text-sm text-slate-700 truncate font-medium">
-                                        {note.title || "Untitled"}
-                                      </h3>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-
-                      {/* Notes without folder */}
-                      {groupNotes
-                        .filter((n) => !n.folderId)
-                        .map((note) => (
-                          <div
-                            key={note.id}
-                            className={`p-2 rounded-lg cursor-pointer transition-all flex items-start gap-2 ${
-                              selectedNote?.id === note.id
-                                ? "bg-primary/10 shadow-sm ring-1 ring-primary/20"
-                                : "hover:bg-slate-50"
-                            }`}
-                            onClick={() => onSelectNote(note)}
-                          >
-                            <FileText className="h-3 w-3 mt-0.5 text-slate-400 shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-sm text-slate-700 truncate font-medium">
-                                {note.title || "Untitled"}
-                              </h3>
-                              <p className="text-xs text-slate-400 truncate">{note.plainText || "No content"}</p>
-                            </div>
-                            <NotesActivityDot updatedAt={note.updatedAt} size="sm" />
-                          </div>
-                        ))}
-                    </div>
+                    {groups.find((g) => g.id === selectedNote.groupId)?.name}
+                  </Badge>
+                  {selectedNote.folderId && (
+                    <>
+                      <ChevronRight className="h-3 w-3 text-slate-300 shrink-0" />
+                      <span className="text-[10px] text-slate-500 truncate">
+                        {folders.find((f) => f.id === selectedNote.folderId)?.name}
+                      </span>
+                    </>
                   )}
+                  <span className="text-[10px] text-slate-400 ml-auto shrink-0">
+                    Edited {format(new Date(selectedNote.updatedAt), "MMM d, h:mm a")}
+                  </span>
                 </div>
-              );
-            })}
-          </div>
-        </ScrollArea>
-      </div>
-
-      {/* Right Panel - Editor */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {selectedNote ? (
-          <>
-            {/* Editor Header */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-slate-100 bg-white/80 backdrop-blur-sm shrink-0">
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <Badge
-                  className="shrink-0"
-                  style={{
-                    backgroundColor: `${getGroupColor(selectedNote.groupId)}20`,
-                    color: getGroupColor(selectedNote.groupId),
-                    border: "none",
-                  }}
-                >
-                  {groups.find((g) => g.id === selectedNote.groupId)?.name}
-                </Badge>
-                {selectedNote.folderId && (
-                  <>
-                    <ChevronRight className="h-3 w-3 text-slate-300 shrink-0" />
-                    <span className="text-xs text-slate-500 truncate">
-                      {folders.find((f) => f.id === selectedNote.folderId)?.name}
-                    </span>
-                  </>
-                )}
-                <span className="text-xs text-slate-400 ml-auto shrink-0">
-                  Last edited {format(new Date(selectedNote.updatedAt), "MMM d 'at' h:mm a")}
-                </span>
+                <div className="flex items-center gap-1 shrink-0 ml-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="z-[9999]">
+                      <DropdownMenuItem className="text-red-600" onClick={() => onDeleteNote(selectedNote.id)}>
+                        <Trash2 className="h-4 w-4 mr-2" /> Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                    onClick={handleBack}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-              <div className="flex items-center gap-1 shrink-0 ml-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="z-[9999]">
-                    <DropdownMenuItem className="text-red-600" onClick={() => onDeleteNote(selectedNote.id)}>
-                      <Trash2 className="h-4 w-4 mr-2" /> Delete Note
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+
+              <div className="flex-1 overflow-hidden">
+                <NotesRichEditor
+                  note={selectedNote}
+                  groups={groups}
+                  folders={folders}
+                  onSave={handleSave}
+                  onBack={handleBack}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 to-white">
+              <div className="text-center">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-violet-100 flex items-center justify-center mx-auto mb-3">
+                  <FileText className="h-7 w-7 text-primary/60" />
+                </div>
+                <p className="text-slate-500 text-sm mb-3">Select a note to view</p>
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                  onClick={handleBack}
+                  onClick={onCreateNote}
+                  size="sm"
+                  className="gap-2 bg-gradient-to-r from-primary to-violet-500 text-white shadow-lg"
                 >
-                  <X className="h-4 w-4" />
+                  <Plus className="h-4 w-4" /> New Note
                 </Button>
               </div>
             </div>
-
-            {/* Editor */}
-            <div className="flex-1 overflow-hidden">
-              <NotesRichEditor
-                note={selectedNote}
-                groups={groups}
-                folders={folders}
-                onSave={handleSave}
-                onBack={handleBack}
-                lastSaved={lastSaved}
-                showBreadcrumb={true}
-              />
-            </div>
-          </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 to-white">
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-violet-100 flex items-center justify-center mx-auto mb-4">
-                <FileText className="h-8 w-8 text-primary/60" />
-              </div>
-              <p className="text-slate-500 mb-3">Select a note to view</p>
-              <Button
-                onClick={onCreateNote}
-                className="gap-2 bg-gradient-to-r from-primary to-violet-500 text-white shadow-lg hover:shadow-xl transition-all"
-              >
-                <Plus className="h-4 w-4" /> New Note
-              </Button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
