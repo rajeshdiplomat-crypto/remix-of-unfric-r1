@@ -448,8 +448,9 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="justify-start gap-2 h-9 font-normal"
-              onClick={() => editor.chain().focus().toggleSuperscript().run()}
+              className="justify-start gap-2 h-9 font-normal opacity-50"
+              disabled
+              title="Superscript requires extension"
             >
               <Superscript className="h-4 w-4" />
               Superscript
@@ -457,8 +458,9 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="justify-start gap-2 h-9 font-normal"
-              onClick={() => editor.chain().focus().toggleSubscript().run()}
+              className="justify-start gap-2 h-9 font-normal opacity-50"
+              disabled
+              title="Subscript requires extension"
             >
               <Subscript className="h-4 w-4" />
               Subscript

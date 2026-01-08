@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { EvernoteToolbarEditor, EvernoteToolbarEditorRef } from "@/components/editor/EvernoteToolbarEditor";
+import { EvernoteToolbarEditor, EditorRef } from "@/components/editor/EvernoteToolbarEditor";
 import { JournalSidebarPanel } from "@/components/journal/JournalSidebarPanel";
 import { JournalSettingsModal } from "@/components/journal/JournalSettingsModal";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
@@ -80,7 +80,7 @@ const rebuildHTMLFromAnswers = (answers: JournalAnswer[], questions: { id: strin
 export default function Journal() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const editorRef = useRef<EvernoteToolbarEditorRef>(null);
+  const editorRef = useRef<EditorRef>(null);
 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -204,8 +204,8 @@ export default function Journal() {
     fetchOrCreateEntry();
   }, [selectedDate, user, template.applyOnNewEntry, template.questions]);
 
-  const handleContentChange = useCallback(({ contentRich, plainText }: { contentRich: string; plainText: string }) => {
-    setContent(contentRich);
+  const handleContentChange = useCallback(({ html, text }: { html: string; text: string }) => {
+    setContent(html);
     setIsSaved(false);
   }, []);
 
@@ -421,13 +421,12 @@ export default function Journal() {
         <div className="flex-1 overflow-auto">
           <EvernoteToolbarEditor
             ref={editorRef}
-            initialContentRich={content}
+            initialContent={content}
             onContentChange={handleContentChange}
             onSave={handleSave}
-            autosaveDebounce={1500}
+            autosaveMs={1500}
             placeholder="Start writing your journal entry..."
             className="min-h-[500px]"
-            fullWidthToolbar={true}
           />
         </div>
       </div>,
@@ -517,10 +516,10 @@ export default function Journal() {
             ) : (
               <EvernoteToolbarEditor
                 ref={editorRef}
-                initialContentRich={content}
+                initialContent={content}
                 onContentChange={handleContentChange}
                 onSave={handleSave}
-                autosaveDebounce={1500}
+                autosaveMs={1500}
                 placeholder="Start writing your journal entry..."
                 className="min-h-[400px]"
               />
