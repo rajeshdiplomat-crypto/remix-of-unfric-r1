@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
-import logo from "@/assets/logo.png";
+import { UnfricLogo } from "@/components/common/UnfricLogo";
 const mainNavItems = [{
   title: "Diary",
   url: "/diary"
@@ -64,7 +64,7 @@ export function ZaraDrawer({
         <div className="flex flex-col h-full pt-12 pb-6 px-6 overflow-y-auto">
           {/* Logo */}
           <NavLink to="/diary" onClick={onClose} className="mb-6">
-            <img src={logo} alt="ambalanced" className="h-10 w-auto object-contain dark:invert" />
+            <UnfricLogo size="lg" />
           </NavLink>
 
           {/* Main navigation */}

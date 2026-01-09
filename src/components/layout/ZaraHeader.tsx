@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
-import logo from "@/assets/logo.png";
+import { UnfricLogo } from "@/components/common/UnfricLogo";
 
 interface ZaraHeaderProps {
   onMenuClick: () => void;
@@ -69,13 +69,11 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
             <Menu className="h-10 w-10" strokeWidth={2} />
           </Button>
           <NavLink to="/diary" className="flex items-center">
-            <img 
-              src={logo} 
-              alt="ambalanced" 
+            <UnfricLogo 
+              size="md" 
               className={cn(
-                "h-6 w-auto object-contain transition-all duration-300",
-                isScrolled ? "" : "[filter:drop-shadow(0_1px_3px_rgba(0,0,0,0.3))]",
-                "dark:invert"
+                "transition-all duration-300",
+                isScrolled ? "" : "[text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
               )}
             />
           </NavLink>

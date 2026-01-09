@@ -15,7 +15,7 @@ const TIMER_PRESETS = [
   { label: "45m", minutes: 45 },
 ];
 
-const STORAGE_KEY = 'ambalanced-timer-state';
+const STORAGE_KEY = 'unfric-timer-state';
 
 interface TimerState {
   mode: Mode;
