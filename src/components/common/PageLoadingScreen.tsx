@@ -16,8 +16,6 @@ interface PageLoadingScreenProps {
   module: ModuleType;
   /** Called when loading animation completes (for transition orchestration) */
   onLoadComplete?: () => void;
-  /** Minimum display time in ms (default: 2000) */
-  minDisplayTime?: number;
 }
 
 // Inspirational quotes organized by module
@@ -34,10 +32,7 @@ const LOADING_QUOTES: Record<ModuleType, { text: string; author: string }[]> = {
     { text: "I write to discover what I know.", author: "Flannery O'Connor" },
     { text: "The pen is mightier than the sword.", author: "Edward Bulwer-Lytton" },
     { text: "There is no greater agony than bearing an untold story.", author: "Maya Angelou" },
-    {
-      text: "Start writing, no matter what. The water does not flow until the faucet is turned on.",
-      author: "Louis L'Amour",
-    },
+    { text: "Start writing, no matter what.", author: "Louis L'Amour" },
   ],
   notes: [
     { text: "Knowledge is power.", author: "Francis Bacon" },
@@ -56,12 +51,9 @@ const LOADING_QUOTES: Record<ModuleType, { text: string; author: string }[]> = {
   emotions: [
     { text: "Feelings are just visitors, let them come and go.", author: "Mooji" },
     { text: "The only way out is through.", author: "Robert Frost" },
-    {
-      text: "What lies behind us and before us are tiny matters compared to what lies within us.",
-      author: "Ralph Waldo Emerson",
-    },
+    { text: "What lies within us is what matters most.", author: "Ralph Waldo Emerson" },
     { text: "Vulnerability is the birthplace of connection.", author: "Brené Brown" },
-    { text: "Be gentle with yourself. You're doing the best you can.", author: "Unknown" },
+    { text: "Be gentle with yourself.", author: "Unknown" },
   ],
   manifest: [
     { text: "What you think, you become. What you feel, you attract.", author: "Buddha" },
@@ -71,9 +63,9 @@ const LOADING_QUOTES: Record<ModuleType, { text: string; author: string }[]> = {
     { text: "Dream it. Believe it. Build it.", author: "Unknown" },
   ],
   trackers: [
-    { text: "We are what we repeatedly do. Excellence is not an act, but a habit.", author: "Aristotle" },
+    { text: "We are what we repeatedly do.", author: "Aristotle" },
     { text: "Small daily improvements lead to stunning results.", author: "Robin Sharma" },
-    { text: "Success is the sum of small efforts repeated day in and day out.", author: "Robert Collier" },
+    { text: "Success is the sum of small efforts repeated daily.", author: "Robert Collier" },
     { text: "Consistency is more important than perfection.", author: "Unknown" },
     { text: "Progress, not perfection.", author: "Unknown" },
   ],
@@ -93,491 +85,201 @@ const LOADING_QUOTES: Record<ModuleType, { text: string; author: string }[]> = {
   ],
 };
 
-// Module-specific accent colors for the animated elements
-const MODULE_COLORS: Record<ModuleType, { gradient: string; glow: string; accent: string }> = {
-  diary: { gradient: "from-amber-500 to-orange-600", glow: "amber-500/30", accent: "amber-400" },
-  journal: { gradient: "from-violet-500 to-purple-600", glow: "violet-500/30", accent: "violet-400" },
-  notes: { gradient: "from-emerald-500 to-teal-600", glow: "emerald-500/30", accent: "emerald-400" },
-  tasks: { gradient: "from-blue-500 to-indigo-600", glow: "blue-500/30", accent: "blue-400" },
-  emotions: { gradient: "from-rose-500 to-pink-600", glow: "rose-500/30", accent: "rose-400" },
-  manifest: { gradient: "from-yellow-500 to-amber-600", glow: "yellow-500/30", accent: "yellow-400" },
-  trackers: { gradient: "from-cyan-500 to-blue-600", glow: "cyan-500/30", accent: "cyan-400" },
-  settings: { gradient: "from-slate-500 to-zinc-600", glow: "slate-500/30", accent: "slate-400" },
-  clarity: { gradient: "from-sky-500 to-blue-600", glow: "sky-500/30", accent: "sky-400" },
-};
+// Animated Logo Component with wave effect
+const AnimatedUnfricLogo = () => {
+  const letters = "unfric".split("");
 
-// Module icons as SVG components for smooth animation
-const ModuleIcon = ({ module, className }: { module: ModuleType; className?: string }) => {
-  const icons: Record<ModuleType, JSX.Element> = {
-    diary: (
-      <svg
-        className={className}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-        <path d="M8 7h6" />
-        <path d="M8 11h8" />
-      </svg>
-    ),
-    journal: (
-      <svg
-        className={className}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="m12 19 7-7 3 3-7 7-3-3z" />
-        <path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
-        <path d="m2 2 7.586 7.586" />
-        <circle cx="11" cy="11" r="2" />
-      </svg>
-    ),
-    notes: (
-      <svg
-        className={className}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M15.5 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z" />
-        <path d="M15 3v6h6" />
-        <path d="M7 13h10" />
-        <path d="M7 17h10" />
-        <path d="M7 9h2" />
-      </svg>
-    ),
-    tasks: (
-      <svg
-        className={className}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <rect x="3" y="5" width="6" height="6" rx="1" />
-        <path d="m3 17 2 2 4-4" />
-        <path d="M13 6h8" />
-        <path d="M13 12h8" />
-        <path d="M13 18h8" />
-      </svg>
-    ),
-    emotions: (
-      <svg
-        className={className}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-      </svg>
-    ),
-    manifest: (
-      <svg
-        className={className}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-      </svg>
-    ),
-    trackers: (
-      <svg
-        className={className}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M3 3v18h18" />
-        <path d="m19 9-5 5-4-4-3 3" />
-      </svg>
-    ),
-    settings: (
-      <svg
-        className={className}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-        <circle cx="12" cy="12" r="3" />
-      </svg>
-    ),
-    clarity: (
-      <svg
-        className={className}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <circle cx="12" cy="12" r="10" />
-        <circle cx="12" cy="12" r="4" />
-        <line x1="21.17" y1="8" x2="12" y2="8" />
-        <line x1="3.95" y1="6.06" x2="8.54" y2="14" />
-        <line x1="10.88" y1="21.94" x2="15.46" y2="14" />
-      </svg>
-    ),
-  };
-  return icons[module];
-};
-
-// Floating particles component
-const FloatingParticles = ({ color }: { color: string }) => {
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {[...Array(6)].map((_, i) => (
-        <div
-          key={i}
-          className={cn("absolute w-1 h-1 rounded-full opacity-40", `bg-${color}`)}
+    <div className="flex items-center justify-center gap-0.5">
+      {letters.map((letter, index) => (
+        <span
+          key={index}
+          className="inline-block text-4xl md:text-5xl font-light tracking-[0.15em] lowercase text-foreground"
           style={{
-            left: `${20 + Math.random() * 60}%`,
-            top: `${20 + Math.random() * 60}%`,
-            animation: `float-particle ${3 + Math.random() * 2}s ease-in-out infinite`,
-            animationDelay: `${i * 0.5}s`,
+            fontFamily: "'Inter', system-ui, sans-serif",
+            animation: `wave 1.5s ease-in-out infinite`,
+            animationDelay: `${index * 0.1}s`,
           }}
-        />
+        >
+          {letter}
+        </span>
       ))}
     </div>
   );
 };
 
-// Animated progress ring
-const ProgressRing = ({ progress, color }: { progress: number; color: string }) => {
-  const radius = 62;
-  const strokeWidth = 2;
-  const normalizedRadius = radius - strokeWidth * 2;
-  const circumference = normalizedRadius * 2 * Math.PI;
-  const strokeDashoffset = circumference - (progress / 100) * circumference;
-
-  return (
-    <svg height={radius * 2} width={radius * 2} className="absolute -rotate-90">
-      {/* Background ring */}
-      <circle
-        stroke="currentColor"
-        fill="transparent"
-        strokeWidth={strokeWidth}
-        r={normalizedRadius}
-        cx={radius}
-        cy={radius}
-        className="text-muted/20"
+// Animated dots loader
+const LoadingDots = () => (
+  <div className="flex gap-1.5 items-center justify-center">
+    {[0, 1, 2].map((i) => (
+      <div
+        key={i}
+        className="w-1.5 h-1.5 rounded-full bg-foreground/40"
+        style={{
+          animation: `dotPulse 1.4s ease-in-out infinite`,
+          animationDelay: `${i * 0.16}s`,
+        }}
       />
-      {/* Progress ring */}
-      <circle
-        stroke="currentColor"
-        fill="transparent"
-        strokeWidth={strokeWidth}
-        strokeDasharray={`${circumference} ${circumference}`}
-        style={{ strokeDashoffset, transition: "stroke-dashoffset 0.3s ease-out" }}
-        r={normalizedRadius}
-        cx={radius}
-        cy={radius}
-        className={cn("text-primary transition-all duration-300")}
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-};
+    ))}
+  </div>
+);
 
-export function PageLoadingScreen({ module, onLoadComplete, minDisplayTime = 2000 }: PageLoadingScreenProps) {
-  const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Math.random() * LOADING_QUOTES[module].length));
-  const [fadeIn, setFadeIn] = useState(true);
+export function PageLoadingScreen({ module, onLoadComplete }: PageLoadingScreenProps) {
+  const [quoteIndex] = useState(() => Math.floor(Math.random() * LOADING_QUOTES[module].length));
   const [isExiting, setIsExiting] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [interactionCount, setInteractionCount] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
 
   const quotes = LOADING_QUOTES[module];
-  const colors = MODULE_COLORS[module];
   const currentQuote = quotes[quoteIndex];
 
-  // Progress animation
+  // Entrance animation
   useEffect(() => {
-    const startTime = Date.now();
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const newProgress = Math.min((elapsed / minDisplayTime) * 100, 100);
-      setProgress(newProgress);
-
-      if (newProgress >= 100) {
-        clearInterval(interval);
-        setTimeout(() => {
-          setIsExiting(true);
-          setTimeout(() => {
-            onLoadComplete?.();
-          }, 500);
-        }, 200);
-      }
-    }, 50);
-
-    return () => clearInterval(interval);
-  }, [minDisplayTime, onLoadComplete]);
-
-  // Quote rotation
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setFadeIn(false);
-      setTimeout(() => {
-        setQuoteIndex((prev) => (prev + 1) % quotes.length);
-        setFadeIn(true);
-      }, 400);
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, [quotes.length]);
-
-  // Handle interaction (clicking increases progress slightly)
-  const handleInteraction = useCallback(() => {
-    setInteractionCount((prev) => prev + 1);
-    // Add a small ripple effect on click
+    const entranceTimer = setTimeout(() => setIsVisible(true), 50);
+    return () => clearTimeout(entranceTimer);
   }, []);
+
+  // Always show for exactly 1 second, then exit
+  useEffect(() => {
+    const displayTimer = setTimeout(() => {
+      setIsExiting(true);
+    }, 1000);
+
+    return () => clearTimeout(displayTimer);
+  }, []);
+
+  // Call onLoadComplete after exit animation
+  useEffect(() => {
+    if (isExiting) {
+      const exitTimer = setTimeout(() => {
+        onLoadComplete?.();
+      }, 400);
+      return () => clearTimeout(exitTimer);
+    }
+  }, [isExiting, onLoadComplete]);
 
   return (
     <>
-      {/* Global styles for animations */}
+      {/* CSS Animations */}
       <style>{`
-        @keyframes float-particle {
-          0%, 100% { transform: translateY(0) scale(1); opacity: 0.4; }
-          50% { transform: translateY(-20px) scale(1.5); opacity: 0.8; }
+        @keyframes wave {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          25% {
+            transform: translateY(-8px);
+          }
+          50% {
+            transform: translateY(0);
+          }
+          75% {
+            transform: translateY(4px);
+          }
         }
         
-        @keyframes breathe {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
+        @keyframes dotPulse {
+          0%, 80%, 100% {
+            transform: scale(0.6);
+            opacity: 0.4;
+          }
+          40% {
+            transform: scale(1);
+            opacity: 1;
+          }
         }
         
-        @keyframes shimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
+        @keyframes fadeSlideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
         
-        @keyframes orbit {
-          from { transform: rotate(0deg) translateX(50px) rotate(0deg); }
-          to { transform: rotate(360deg) translateX(50px) rotate(-360deg); }
+        @keyframes subtlePulse {
+          0%, 100% {
+            opacity: 0.6;
+          }
+          50% {
+            opacity: 1;
+          }
         }
         
-        @keyframes pulse-glow {
-          0%, 100% { opacity: 0.3; transform: scale(1); }
-          50% { opacity: 0.6; transform: scale(1.1); }
-        }
-        
-        @keyframes text-reveal {
-          from { clip-path: inset(0 100% 0 0); }
-          to { clip-path: inset(0 0 0 0); }
-        }
-        
-        @keyframes ripple {
-          0% { transform: scale(0.8); opacity: 1; }
-          100% { transform: scale(2.5); opacity: 0; }
-        }
-        
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        
-        .loading-icon-breathe {
-          animation: breathe 3s ease-in-out infinite;
-        }
-        
-        .orbit-dot {
-          animation: orbit 8s linear infinite;
-        }
-        
-        .orbit-dot-reverse {
-          animation: orbit 12s linear infinite reverse;
-        }
-        
-        .glow-pulse {
-          animation: pulse-glow 2s ease-in-out infinite;
-        }
-        
-        .shimmer-text {
-          background: linear-gradient(90deg, 
-            transparent, 
-            rgba(255,255,255,0.4), 
-            transparent
-          );
-          background-size: 200% 100%;
-          animation: shimmer 2s infinite;
+        @keyframes lineExpand {
+          from {
+            transform: scaleX(0);
+          }
+          to {
+            transform: scaleX(1);
+          }
         }
       `}</style>
 
+      {/* Full screen overlay - fixed positioning for true center */}
       <div
         className={cn(
-          "fixed inset-0 z-50 flex flex-col items-center justify-center",
-          "bg-background/95 backdrop-blur-xl",
-          "transition-all duration-500 ease-out cursor-pointer select-none",
-          isExiting && "opacity-0 scale-95 blur-sm",
+          "fixed inset-0 z-[9999]",
+          "flex flex-col items-center justify-center",
+          "bg-background",
+          "transition-all duration-400 ease-out",
+          isVisible ? "opacity-100" : "opacity-0",
+          isExiting && "opacity-0 scale-[0.98]",
         )}
-        onClick={handleInteraction}
       >
-        {/* Floating particles background */}
-        <FloatingParticles color={colors.accent} />
-
-        {/* Ambient gradient orbs */}
-        <div
-          className={cn("absolute top-1/4 left-1/4 w-64 h-64 rounded-full blur-3xl glow-pulse", `bg-${colors.glow}`)}
-        />
-        <div
-          className={cn(
-            "absolute bottom-1/3 right-1/4 w-48 h-48 rounded-full blur-3xl glow-pulse",
-            `bg-${colors.glow}`,
-          )}
-          style={{ animationDelay: "1s" }}
-        />
-
-        {/* Main content */}
-        <div className="relative flex flex-col items-center z-10">
-          {/* Icon container with orbital rings */}
-          <div className="relative mb-10">
-            {/* Outer glow */}
-            <div
-              className={cn(
-                "absolute inset-[-20px] rounded-full blur-2xl glow-pulse",
-                `bg-gradient-to-br ${colors.gradient} opacity-20`,
-              )}
-            />
-
-            {/* Progress ring */}
-            <ProgressRing progress={progress} color={colors.accent} />
-
-            {/* Orbiting dots */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="orbit-dot">
-                <div className={cn("w-2 h-2 rounded-full", `bg-gradient-to-r ${colors.gradient}`)} />
-              </div>
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="orbit-dot-reverse">
-                <div className={cn("w-1.5 h-1.5 rounded-full opacity-60", `bg-gradient-to-r ${colors.gradient}`)} />
-              </div>
-            </div>
-
-            {/* Icon circle */}
-            <div
-              className={cn(
-                "relative w-[124px] h-[124px] rounded-full flex items-center justify-center",
-                "bg-gradient-to-br from-card to-card/50",
-                "border border-border/30",
-                "shadow-2xl",
-                "loading-icon-breathe",
-              )}
-            >
-              {/* Inner gradient overlay */}
-              <div className={cn("absolute inset-2 rounded-full", `bg-gradient-to-br ${colors.gradient} opacity-10`)} />
-
-              {/* Icon */}
-              <ModuleIcon
-                module={module}
-                className={cn("w-12 h-12 relative z-10", `text-${colors.accent}`)}
-                style={{ color: `var(--${colors.accent.replace("-", "-")})` }}
-              />
-            </div>
-
-            {/* Ripple effect on interaction */}
-            {interactionCount > 0 && (
-              <div
-                key={interactionCount}
-                className={cn("absolute inset-0 rounded-full border-2", `border-${colors.accent}`)}
-                style={{ animation: "ripple 0.6s ease-out forwards" }}
-              />
+        {/* Main centered content */}
+        <div className="flex flex-col items-center justify-center gap-8">
+          {/* Animated unfric logo */}
+          <div
+            className={cn(
+              "transition-all duration-500",
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
             )}
+          >
+            <AnimatedUnfricLogo />
           </div>
 
-          {/* Module name */}
-          <h2
+          {/* Animated line separator */}
+          <div
+            className="w-16 h-px bg-foreground/20 origin-center"
+            style={{
+              animation: isVisible ? "lineExpand 0.6s ease-out 0.3s forwards" : "none",
+              transform: "scaleX(0)",
+            }}
+          />
+
+          {/* Quote section */}
+          <div
             className={cn(
-              "text-sm font-medium uppercase tracking-[0.3em] text-muted-foreground mb-8",
-              "transition-all duration-300",
+              "flex flex-col items-center gap-3 max-w-md px-6 text-center",
+              "transition-all duration-500 delay-200",
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
+            )}
+          >
+            <p className="text-base md:text-lg font-light text-foreground/80 leading-relaxed">"{currentQuote.text}"</p>
+            <p className="text-xs text-muted-foreground/60 tracking-widest uppercase">— {currentQuote.author}</p>
+          </div>
+
+          {/* Loading dots */}
+          <div className={cn("mt-4 transition-all duration-500 delay-300", isVisible ? "opacity-100" : "opacity-0")}>
+            <LoadingDots />
+          </div>
+
+          {/* Module indicator (subtle) */}
+          <p
+            className={cn(
+              "mt-6 text-[10px] text-muted-foreground/40 tracking-[0.3em] uppercase",
+              "transition-all duration-500 delay-400",
+              isVisible ? "opacity-100" : "opacity-0",
             )}
           >
             {module}
-          </h2>
-
-          {/* Quote section */}
-          <div className="relative max-w-md px-8 min-h-[100px] flex flex-col items-center justify-center">
-            {/* Quote text */}
-            <p
-              className={cn(
-                "text-xl font-light text-center text-foreground/90 leading-relaxed mb-3",
-                "transition-all duration-400",
-                fadeIn ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
-              )}
-            >
-              "{currentQuote.text}"
-            </p>
-
-            {/* Author */}
-            <p
-              className={cn(
-                "text-sm text-muted-foreground/70 font-light tracking-wide",
-                "transition-all duration-400 delay-100",
-                fadeIn ? "opacity-100" : "opacity-0",
-              )}
-            >
-              — {currentQuote.author}
-            </p>
-          </div>
-
-          {/* Progress indicator */}
-          <div className="mt-12 flex flex-col items-center gap-4">
-            {/* Progress bar */}
-            <div className="w-48 h-0.5 bg-muted/20 rounded-full overflow-hidden">
-              <div
-                className={cn("h-full rounded-full transition-all duration-300", `bg-gradient-to-r ${colors.gradient}`)}
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-
-            {/* Animated loading dots */}
-            <div className="flex gap-2">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className={cn("w-1.5 h-1.5 rounded-full", `bg-gradient-to-r ${colors.gradient}`)}
-                  style={{
-                    animation: `pulse 1.5s ease-in-out ${i * 0.15}s infinite`,
-                    opacity: 0.4 + i * 0.2,
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Subtle hint text */}
-          <p className="mt-8 text-xs text-muted-foreground/40 tracking-widest uppercase">Click anywhere to interact</p>
+          </p>
         </div>
       </div>
     </>
   );
 }
 
-// Export a version that includes skeleton fallback
 export { PageLoadingScreen as default };
