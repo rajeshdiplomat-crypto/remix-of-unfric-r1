@@ -14,8 +14,10 @@ type ModuleType =
 
 interface PageLoadingScreenProps {
   module: ModuleType;
-  /** Called when loading animation completes (for transition orchestration) */
-  onLoadComplete?: () => void;
+  /** Set to true when data is ready to show */
+  isDataReady?: boolean;
+  /** Called when loading screen finishes (after minimum display time) */
+  onFinished?: () => void;
 }
 
 // Inspirational quotes organized by module
@@ -124,10 +126,15 @@ const LoadingDots = () => (
   </div>
 );
 
-export function PageLoadingScreen({ module, onLoadComplete }: PageLoadingScreenProps) {
+// Minimum display time in milliseconds
+const MIN_DISPLAY_TIME = 2000; // 2 SECONDS
+
+export function PageLoadingScreen({ module, isDataReady = false, onFinished }: PageLoadingScreenProps) {
   const [quoteIndex] = useState(() => Math.floor(Math.random() * LOADING_QUOTES[module].length));
   const [isExiting, setIsExiting] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [hasMetMinTime, setHasMetMinTime] = useState(false);
+  const [hasExited, setHasExited] = useState(false);
 
   const quotes = LOADING_QUOTES[module];
   const currentQuote = quotes[quoteIndex];
@@ -138,24 +145,48 @@ export function PageLoadingScreen({ module, onLoadComplete }: PageLoadingScreenP
     return () => clearTimeout(entranceTimer);
   }, []);
 
-  // Show for 2 seconds, then exit
+  // Minimum display time tracker
   useEffect(() => {
-    const displayTimer = setTimeout(() => {
-      setIsExiting(true);
-    }, 2000); // <-- 2 SECONDS
+    const minTimeTimer = setTimeout(() => {
+      setHasMetMinTime(true);
+    }, MIN_DISPLAY_TIME);
 
-    return () => clearTimeout(displayTimer);
+    return () => clearTimeout(minTimeTimer);
   }, []);
 
-  // Call onLoadComplete after exit animation
+  // Exit when BOTH minimum time passed AND data is ready
   useEffect(() => {
-    if (isExiting) {
+    if (hasMetMinTime && isDataReady && !isExiting && !hasExited) {
+      setIsExiting(true);
+    }
+  }, [hasMetMinTime, isDataReady, isExiting, hasExited]);
+
+  // If no isDataReady prop provided, auto-exit after min time
+  useEffect(() => {
+    if (hasMetMinTime && !isExiting && !hasExited) {
+      // Small delay to ensure we show full 2 seconds
+      const autoExitTimer = setTimeout(() => {
+        setIsExiting(true);
+      }, 100);
+      return () => clearTimeout(autoExitTimer);
+    }
+  }, [hasMetMinTime, isExiting, hasExited]);
+
+  // Call onFinished after exit animation completes
+  useEffect(() => {
+    if (isExiting && !hasExited) {
       const exitTimer = setTimeout(() => {
-        onLoadComplete?.();
+        setHasExited(true);
+        onFinished?.();
       }, 400);
       return () => clearTimeout(exitTimer);
     }
-  }, [isExiting, onLoadComplete]);
+  }, [isExiting, hasExited, onFinished]);
+
+  // Don't render if already exited
+  if (hasExited) {
+    return null;
+  }
 
   return (
     <>
@@ -215,6 +246,7 @@ export function PageLoadingScreen({ module, onLoadComplete }: PageLoadingScreenP
           transition: "opacity 0.4s ease-out, transform 0.4s ease-out",
           opacity: isExiting ? 0 : isVisible ? 1 : 0,
           transform: isExiting ? "scale(0.98)" : "scale(1)",
+          pointerEvents: isExiting ? "none" : "auto",
         }}
       >
         {/* Main centered content */}
