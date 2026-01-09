@@ -14,13 +14,10 @@ type ModuleType =
 
 interface PageLoadingScreenProps {
   module: ModuleType;
-  /** Set to true when data is ready to show */
   isDataReady?: boolean;
-  /** Called when loading screen finishes (after minimum display time) */
   onFinished?: () => void;
 }
 
-// Inspirational quotes organized by module
 const LOADING_QUOTES: Record<ModuleType, { text: string; author: string }[]> = {
   diary: [
     { text: "Every moment is a fresh beginning.", author: "T.S. Eliot" },
@@ -87,7 +84,6 @@ const LOADING_QUOTES: Record<ModuleType, { text: string; author: string }[]> = {
   ],
 };
 
-// Animated Logo Component with wave effect
 const AnimatedUnfricLogo = () => {
   const letters = "unfric".split("");
 
@@ -96,12 +92,11 @@ const AnimatedUnfricLogo = () => {
       {letters.map((letter, index) => (
         <span
           key={index}
-          className="inline-block text-4xl md:text-5xl font-light tracking-[0.15em] lowercase"
+          className="inline-block text-4xl md:text-5xl font-light tracking-[0.15em] lowercase text-foreground"
           style={{
             fontFamily: "'Inter', system-ui, sans-serif",
             animation: `wave 1.5s ease-in-out infinite`,
             animationDelay: `${index * 0.1}s`,
-            color: "rgba(255, 255, 255, 0.95)",
           }}
         >
           {letter}
@@ -111,15 +106,13 @@ const AnimatedUnfricLogo = () => {
   );
 };
 
-// Animated dots loader
 const LoadingDots = () => (
   <div className="flex gap-1.5 items-center justify-center">
     {[0, 1, 2].map((i) => (
       <div
         key={i}
-        className="w-1.5 h-1.5 rounded-full"
+        className="w-1.5 h-1.5 rounded-full bg-foreground/50"
         style={{
-          backgroundColor: "rgba(255, 255, 255, 0.5)",
           animation: `dotPulse 1.4s ease-in-out infinite`,
           animationDelay: `${i * 0.16}s`,
         }}
@@ -128,8 +121,7 @@ const LoadingDots = () => (
   </div>
 );
 
-// Minimum display time in milliseconds
-const MIN_DISPLAY_TIME = 2000; // 2 SECONDS
+const MIN_DISPLAY_TIME = 2000;
 
 export function PageLoadingScreen({ module, isDataReady = false, onFinished }: PageLoadingScreenProps) {
   const [quoteIndex] = useState(() => Math.floor(Math.random() * LOADING_QUOTES[module].length));
@@ -141,29 +133,24 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
   const quotes = LOADING_QUOTES[module];
   const currentQuote = quotes[quoteIndex];
 
-  // Entrance animation
   useEffect(() => {
     const entranceTimer = setTimeout(() => setIsVisible(true), 50);
     return () => clearTimeout(entranceTimer);
   }, []);
 
-  // Minimum display time tracker
   useEffect(() => {
     const minTimeTimer = setTimeout(() => {
       setHasMetMinTime(true);
     }, MIN_DISPLAY_TIME);
-
     return () => clearTimeout(minTimeTimer);
   }, []);
 
-  // Exit when BOTH minimum time passed AND data is ready
   useEffect(() => {
     if (hasMetMinTime && isDataReady && !isExiting && !hasExited) {
       setIsExiting(true);
     }
   }, [hasMetMinTime, isDataReady, isExiting, hasExited]);
 
-  // If no isDataReady prop provided, auto-exit after min time
   useEffect(() => {
     if (hasMetMinTime && !isExiting && !hasExited) {
       const autoExitTimer = setTimeout(() => {
@@ -173,7 +160,6 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
     }
   }, [hasMetMinTime, isExiting, hasExited]);
 
-  // Call onFinished after exit animation completes
   useEffect(() => {
     if (isExiting && !hasExited) {
       const exitTimer = setTimeout(() => {
@@ -184,61 +170,32 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
     }
   }, [isExiting, hasExited, onFinished]);
 
-  // Don't render if already exited
   if (hasExited) {
     return null;
   }
 
   return (
     <>
-      {/* CSS Animations */}
       <style>{`
         @keyframes wave {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          25% {
-            transform: translateY(-8px);
-          }
-          50% {
-            transform: translateY(0);
-          }
-          75% {
-            transform: translateY(4px);
-          }
+          0%, 100% { transform: translateY(0); }
+          25% { transform: translateY(-8px); }
+          50% { transform: translateY(0); }
+          75% { transform: translateY(4px); }
         }
         
         @keyframes dotPulse {
-          0%, 80%, 100% {
-            transform: scale(0.6);
-            opacity: 0.4;
-          }
-          40% {
-            transform: scale(1);
-            opacity: 1;
-          }
+          0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+          40% { transform: scale(1); opacity: 1; }
         }
         
         @keyframes lineExpand {
-          from {
-            transform: scaleX(0);
-          }
-          to {
-            transform: scaleX(1);
-          }
-        }
-        
-        @keyframes subtleGlow {
-          0%, 100% {
-            opacity: 0.3;
-          }
-          50% {
-            opacity: 0.5;
-          }
+          from { transform: scaleX(0); }
+          to { transform: scaleX(1); }
         }
       `}</style>
 
-      {/* DARK FULL SCREEN OVERLAY - TRUE CENTER */}
+      {/* SOFT GRAY OVERLAY - Centered */}
       <div
         style={{
           position: "fixed",
@@ -252,44 +209,15 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          // DARK BACKGROUND with subtle gradient
-          background: "linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%)",
+          // SOFT GRAY - not too dark, not too light
+          backgroundColor: "rgba(30, 30, 30, 0.97)",
+          backdropFilter: "blur(8px)",
           transition: "opacity 0.4s ease-out, transform 0.4s ease-out",
           opacity: isExiting ? 0 : isVisible ? 1 : 0,
           transform: isExiting ? "scale(0.98)" : "scale(1)",
           pointerEvents: isExiting ? "none" : "auto",
         }}
       >
-        {/* Subtle ambient glow effects */}
-        <div
-          style={{
-            position: "absolute",
-            top: "20%",
-            left: "30%",
-            width: "300px",
-            height: "300px",
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)",
-            filter: "blur(60px)",
-            animation: "subtleGlow 4s ease-in-out infinite",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: "30%",
-            right: "25%",
-            width: "250px",
-            height: "250px",
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%)",
-            filter: "blur(60px)",
-            animation: "subtleGlow 4s ease-in-out infinite",
-            animationDelay: "2s",
-          }}
-        />
-
-        {/* Main centered content */}
         <div
           style={{
             display: "flex",
@@ -298,8 +226,6 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
             justifyContent: "center",
             gap: "2rem",
             padding: "2rem",
-            position: "relative",
-            zIndex: 1,
           }}
         >
           {/* Animated unfric logo */}
@@ -314,11 +240,8 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
 
           {/* Animated line separator */}
           <div
+            className="w-16 h-px bg-foreground/20 origin-center"
             style={{
-              width: "64px",
-              height: "1px",
-              backgroundColor: "rgba(255, 255, 255, 0.2)",
-              transformOrigin: "center",
               animation: isVisible ? "lineExpand 0.6s ease-out 0.3s forwards" : "none",
               transform: "scaleX(0)",
             }}
@@ -332,15 +255,8 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
             )}
           >
-            <p
-              style={{ color: "rgba(255, 255, 255, 0.85)" }}
-              className="text-base md:text-lg font-light leading-relaxed"
-            >
-              "{currentQuote.text}"
-            </p>
-            <p style={{ color: "rgba(255, 255, 255, 0.4)" }} className="text-xs tracking-widest uppercase">
-              — {currentQuote.author}
-            </p>
+            <p className="text-base md:text-lg font-light text-foreground/80 leading-relaxed">"{currentQuote.text}"</p>
+            <p className="text-xs text-muted-foreground/60 tracking-widest uppercase">— {currentQuote.author}</p>
           </div>
 
           {/* Loading dots */}
@@ -348,11 +264,10 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
             <LoadingDots />
           </div>
 
-          {/* Module indicator (subtle) */}
+          {/* Module indicator */}
           <p
-            style={{ color: "rgba(255, 255, 255, 0.25)" }}
             className={cn(
-              "mt-6 text-[10px] tracking-[0.3em] uppercase",
+              "mt-6 text-[10px] text-muted-foreground/40 tracking-[0.3em] uppercase",
               "transition-all duration-500 delay-400",
               isVisible ? "opacity-100" : "opacity-0",
             )}
