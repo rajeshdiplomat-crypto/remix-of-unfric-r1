@@ -200,7 +200,7 @@ export default function Auth() {
         <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 md:px-16 xl:px-24 py-12 lg:py-0">
           <div className="max-w-sm mx-auto w-full">
             {/* Brand name */}
-            <UnfricLogo size="xl" className="mb-10 my-[10px]" />
+            <UnfricLogo size="xl" className="mb-5 my-[10px]" />
 
             {/* Section title */}
             <h2 className="text-xs uppercase tracking-[0.2em] font-normal mb-10 text-foreground">
