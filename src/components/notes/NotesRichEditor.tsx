@@ -1013,10 +1013,12 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
         <div
           className="min-h-full px-6 py-4"
           style={{
+            backgroundColor: diaryMode ? editorBackground : undefined,
             paddingLeft: diaryMode && lineStyle === "college" ? "70px" : "24px",
             lineHeight: diaryMode ? `${LINE_HEIGHT}px` : undefined,
             wordBreak: "break-word",
             overflowWrap: "anywhere",
+            ...(diaryMode ? getLineStyleCSS() : {}),
           }}
         >
           <Input
