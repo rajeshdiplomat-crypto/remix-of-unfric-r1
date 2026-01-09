@@ -383,12 +383,27 @@ export default function Diary() {
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   );
 
+  const [contentReady, setContentReady] = useState(false);
+
+  useEffect(() => {
+    if (!loading || events.length > 0) {
+      const timer = setTimeout(() => setContentReady(true), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, events.length]);
+
   if (loading && events.length === 0) {
     return <PageLoadingScreen module="diary" />;
   }
 
   return (
-    <div className="flex flex-col w-full flex-1">
+    <div 
+      className={cn(
+        "flex flex-col w-full flex-1",
+        "transition-all duration-500 ease-out",
+        contentReady ? "opacity-100" : "opacity-0"
+      )}
+    >
       {/* Full-bleed Hero */}
       <DiaryHero />
 

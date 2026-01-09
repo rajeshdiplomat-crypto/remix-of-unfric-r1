@@ -5,6 +5,8 @@ type ModuleType = 'diary' | 'journal' | 'notes' | 'tasks' | 'emotions' | 'manife
 
 interface PageLoadingScreenProps {
   module: ModuleType;
+  /** Called when loading animation completes (for transition orchestration) */
+  onLoadComplete?: () => void;
 }
 
 const LOADING_QUOTES: Record<ModuleType, string[]> = {
@@ -69,9 +71,10 @@ const MODULE_ICONS: Record<ModuleType, string> = {
   settings: "⚙️",
 };
 
-export function PageLoadingScreen({ module }: PageLoadingScreenProps) {
+export function PageLoadingScreen({ module, onLoadComplete }: PageLoadingScreenProps) {
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [fadeIn, setFadeIn] = useState(true);
+  const [isExiting, setIsExiting] = useState(false);
   const quotes = LOADING_QUOTES[module];
   const icon = MODULE_ICONS[module];
 
@@ -87,8 +90,22 @@ export function PageLoadingScreen({ module }: PageLoadingScreenProps) {
     return () => clearInterval(interval);
   }, [quotes.length]);
 
+  // Handle exit animation
+  const triggerExit = () => {
+    setIsExiting(true);
+    setTimeout(() => {
+      onLoadComplete?.();
+    }, 400);
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] w-full px-6">
+    <div 
+      className={cn(
+        "flex flex-col items-center justify-center min-h-[60vh] w-full px-6",
+        "transition-all duration-400 ease-out",
+        isExiting && "opacity-0 scale-95"
+      )}
+    >
       {/* Animated Icon Container */}
       <div className="relative mb-8">
         {/* Glow effect */}
@@ -131,3 +148,6 @@ export function PageLoadingScreen({ module }: PageLoadingScreenProps) {
     </div>
   );
 }
+
+// Export a version that includes skeleton fallback
+export { PageLoadingScreen as default };
