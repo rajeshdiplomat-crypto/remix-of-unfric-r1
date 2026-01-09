@@ -22,6 +22,7 @@ import Notes from "./pages/Notes";
 import Tasks from "./pages/Tasks";
 import TaskFocus from "./pages/TaskFocus";
 import Settings from "./pages/Settings";
+import ClarityWindow from "./pages/ClarityWindow";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -92,6 +93,7 @@ const App = () => (
                     <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
                     <Route path="/tasks/focus/:taskId" element={<ProtectedFullscreenRoute><TaskFocus /></ProtectedFullscreenRoute>} />
                     <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                    <Route path="/clarity" element={<ProtectedFullscreenRoute><ClarityWindow /></ProtectedFullscreenRoute>} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </AuthProvider>
