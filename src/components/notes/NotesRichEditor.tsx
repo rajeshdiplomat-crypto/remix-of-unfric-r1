@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -110,23 +110,77 @@ interface NotesRichEditorProps {
 
 const FONTS = [
   { value: "inter", label: "Inter", css: "Inter, system-ui, sans-serif" },
+  { value: "arial", label: "Arial", css: "Arial, Helvetica, sans-serif" },
   { value: "georgia", label: "Georgia", css: "Georgia, Cambria, serif" },
   { value: "times", label: "Times", css: '"Times New Roman", Times, serif' },
+  { value: "verdana", label: "Verdana", css: "Verdana, Geneva, sans-serif" },
+  { value: "helvetica", label: "Helvetica", css: "Helvetica Neue, Helvetica, sans-serif" },
+  { value: "garamond", label: "Garamond", css: "Garamond, Baskerville, serif" },
   { value: "courier", label: "Courier", css: '"Courier New", Courier, monospace' },
-  { value: "arial", label: "Arial", css: "Arial, Helvetica, sans-serif" },
+  { value: "trebuchet", label: "Trebuchet", css: '"Trebuchet MS", sans-serif' },
+  { value: "palatino", label: "Palatino", css: '"Palatino Linotype", Palatino, serif' },
+  { value: "tahoma", label: "Tahoma", css: "Tahoma, Geneva, sans-serif" },
+  { value: "mono", label: "Mono", css: '"SF Mono", "Fira Code", monospace' },
 ];
 
-const SIZES = ["12", "14", "16", "18", "20", "24", "28", "32"];
-const TEXT_COLORS = ["#1a1a1a", "#dc2626", "#ea580c", "#16a34a", "#2563eb", "#7c3aed", "#db2777"];
-const HIGHLIGHT_COLORS = ["#fef08a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#fed7aa", "#e9d5ff"];
+const SIZES = ["10", "12", "14", "16", "18", "20", "24", "28", "32", "40", "48"];
+const TEXT_COLORS = ["#1a1a1a", "#dc2626", "#ea580c", "#16a34a", "#2563eb", "#7c3aed", "#db2777", "#0891b2"];
+const HIGHLIGHT_COLORS = ["#fef08a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#fed7aa", "#e9d5ff", "#fecaca"];
+const SCRIBBLE_COLORS = [
+  "#1a1a1a",
+  "#dc2626",
+  "#2563eb",
+  "#16a34a",
+  "#7c3aed",
+  "#ea580c",
+  "#db2777",
+  "#0891b2",
+  "#f59e0b",
+];
+
+const PEN_TYPES = [
+  { id: "pen", label: "Pen", icon: Pen, opacity: 1, shadow: false },
+  { id: "pencil", label: "Pencil", icon: Pencil, opacity: 0.7, shadow: false },
+  { id: "marker", label: "Marker", icon: PenTool, opacity: 0.5, shadow: true },
+  { id: "brush", label: "Brush", icon: Brush, opacity: 0.8, shadow: false },
+];
+
+const PEN_WIDTHS = [
+  { value: 1, label: "Extra Fine" },
+  { value: 2, label: "Fine" },
+  { value: 4, label: "Medium" },
+  { value: 6, label: "Thick" },
+  { value: 10, label: "Extra Thick" },
+];
+
+const ERASER_SIZES = [
+  { value: 10, label: "Small" },
+  { value: 20, label: "Medium" },
+  { value: 40, label: "Large" },
+  { value: 60, label: "Extra Large" },
+];
+
+const BG_PRESETS = [
+  { id: "none", label: "None", value: "#ffffff" },
+  { id: "cream", label: "Cream", value: "#fffbeb" },
+  { id: "mint", label: "Mint", value: "#ecfdf5" },
+  { id: "lavender", label: "Lavender", value: "#f5f3ff" },
+  { id: "sky", label: "Sky", value: "#f0f9ff" },
+  { id: "rose", label: "Rose", value: "#fff1f2" },
+  { id: "slate", label: "Slate", value: "#f8fafc" },
+  { id: "warm", label: "Warm", value: "#fef7ef" },
+];
 
 // Diary Themes
 const PAGE_THEMES = [
   { id: "white", label: "White", value: "#ffffff", lineColor: "#e5e7eb", textColor: "#1a1a1a" },
   { id: "cream", label: "Cream", value: "#fefce8", lineColor: "#d4c89d", textColor: "#44403c" },
   { id: "aged", label: "Antique", value: "#f5f0e1", lineColor: "#c9b896", textColor: "#5c4f3a" },
-  { id: "night", label: "Night", value: "#1e1e2e", lineColor: "#404060", textColor: "#cdd6f4" },
+  { id: "kraft", label: "Kraft", value: "#d9c7a7", lineColor: "#b8a47e", textColor: "#3d3326" },
+  { id: "night", label: "Night", value: "#1e1e2e", lineColor: "#313244", textColor: "#cdd6f4" },
   { id: "rose", label: "Rose", value: "#fff1f2", lineColor: "#fda4af", textColor: "#881337" },
+  { id: "sky", label: "Sky", value: "#f0f9ff", lineColor: "#7dd3fc", textColor: "#0c4a6e" },
+  { id: "mint", label: "Mint", value: "#f0fdf4", lineColor: "#86efac", textColor: "#14532d" },
   { id: "lavender", label: "Lavender", value: "#faf5ff", lineColor: "#d8b4fe", textColor: "#581c87" },
 ];
 
@@ -138,15 +192,13 @@ const LINE_STYLES = [
   { id: "college", label: "College", preview: "📕" },
 ];
 
-// Page dimensions
 const LINE_HEIGHT = 26;
-const LINES_PER_PAGE = 16; // Lines that fit on one diary page
-const CHARS_PER_LINE = 45; // Approximate chars per line
 
 interface Stroke {
   points: { x: number; y: number }[];
   color: string;
   width: number;
+  penType: string;
 }
 
 export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEditorProps) {
@@ -161,18 +213,21 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
   const [imageUrl, setImageUrl] = useState("");
   const [currentFont, setCurrentFont] = useState("inter");
   const [currentSize, setCurrentSize] = useState("16");
+  const [editorBg, setEditorBg] = useState("#ffffff");
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Diary States
   const [pageTheme, setPageTheme] = useState("cream");
   const [lineStyle, setLineStyle] = useState("ruled");
   const [diaryMode, setDiaryMode] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
 
-  // Scribble states
+  // Scribble States
   const [scribbleMode, setScribbleMode] = useState(false);
   const [scribbleColor, setScribbleColor] = useState("#1a1a1a");
   const [penWidth, setPenWidth] = useState(2);
+  const [penType, setPenType] = useState("pen");
+  const [tool, setTool] = useState<"pen" | "eraser" | "stroke-eraser">("pen");
+  const [eraserSize, setEraserSize] = useState(20);
   const [isDrawing, setIsDrawing] = useState(false);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [currentStroke, setCurrentStroke] = useState<Stroke | null>(null);
@@ -190,7 +245,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
-      Placeholder.configure({ placeholder: "Start writing your thoughts..." }),
+      Placeholder.configure({ placeholder: "Start writing..." }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Underline,
       Link.configure({ openOnClick: false }),
@@ -204,7 +259,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
       FontSize,
     ],
     content: note.contentRich || "",
-    editorProps: { attributes: { class: "diary-editor focus:outline-none min-h-[200px]" } },
+    editorProps: { attributes: { class: "focus:outline-none min-h-[300px]" } },
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
       if (html !== lastSavedContent.current) {
@@ -214,37 +269,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
       }
     },
   });
-
-  // Split content into pages for diary mode
-  const paginatedContent = useMemo(() => {
-    if (!editor) return [];
-    const text = editor.getText();
-    const lines = text.split("\n");
-    const pages: string[][] = [];
-    let currentPageLines: string[] = [];
-
-    for (const line of lines) {
-      // Calculate how many visual lines this text line takes
-      const wrappedLines = Math.ceil(Math.max(1, line.length) / CHARS_PER_LINE);
-
-      if (currentPageLines.length + wrappedLines > LINES_PER_PAGE) {
-        if (currentPageLines.length > 0) {
-          pages.push([...currentPageLines]);
-        }
-        currentPageLines = [line];
-      } else {
-        currentPageLines.push(line);
-      }
-    }
-
-    if (currentPageLines.length > 0) {
-      pages.push(currentPageLines);
-    }
-
-    return pages.length > 0 ? pages : [[""]];
-  }, [editor?.getText()]);
-
-  const totalPages = paginatedContent.length;
 
   // Get line style CSS
   const getLineStyleCSS = (): React.CSSProperties => {
@@ -282,13 +306,24 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     strokes.forEach((stroke) => {
       if (stroke.points.length < 2) return;
+      const pt = PEN_TYPES.find((p) => p.id === stroke.penType) || PEN_TYPES[0];
       ctx.beginPath();
       ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
       for (let i = 1; i < stroke.points.length; i++) ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
       ctx.strokeStyle = stroke.color;
       ctx.lineWidth = stroke.width;
       ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.globalAlpha = pt.opacity;
+      if (pt.shadow) {
+        ctx.shadowColor = stroke.color;
+        ctx.shadowBlur = stroke.width;
+      } else {
+        ctx.shadowBlur = 0;
+      }
       ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
     });
   }, [strokes]);
 
@@ -341,7 +376,18 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+  };
+
+  const findStrokeAtPoint = (x: number, y: number): number => {
+    for (let i = strokes.length - 1; i >= 0; i--) {
+      for (const point of strokes[i].points) {
+        if (Math.sqrt((point.x - x) ** 2 + (point.y - y) ** 2) < strokes[i].width + 5) return i;
+      }
+    }
+    return -1;
   };
 
   const startDrawing = (e: React.MouseEvent) => {
@@ -349,29 +395,54 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     const pos = getCanvasPos(e);
     lastPos.current = pos;
     setIsDrawing(true);
-    setCurrentStroke({ points: [pos], color: scribbleColor, width: penWidth });
+    if (tool === "pen") setCurrentStroke({ points: [pos], color: scribbleColor, width: penWidth, penType });
   };
 
   const draw = (e: React.MouseEvent) => {
-    if (!isDrawing || !scribbleMode || !canvasRef.current) return;
-    const ctx = canvasRef.current.getContext("2d");
+    if (!isDrawing || !scribbleMode) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
     const pos = getCanvasPos(e);
-    if (currentStroke) setCurrentStroke((prev) => (prev ? { ...prev, points: [...prev.points, pos] } : null));
-    ctx.beginPath();
-    ctx.moveTo(lastPos.current.x, lastPos.current.y);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.strokeStyle = scribbleColor;
-    ctx.lineWidth = penWidth;
-    ctx.lineCap = "round";
-    ctx.stroke();
+
+    if (tool === "pen" && currentStroke) {
+      setCurrentStroke((prev) => (prev ? { ...prev, points: [...prev.points, pos] } : null));
+      const pt = PEN_TYPES.find((p) => p.id === penType) || PEN_TYPES[0];
+      ctx.beginPath();
+      ctx.moveTo(lastPos.current.x, lastPos.current.y);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.strokeStyle = scribbleColor;
+      ctx.lineWidth = penWidth;
+      ctx.lineCap = "round";
+      ctx.globalAlpha = pt.opacity;
+      if (pt.shadow) {
+        ctx.shadowColor = scribbleColor;
+        ctx.shadowBlur = penWidth;
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+    } else if (tool === "eraser") {
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, eraserSize / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = "source-over";
+    } else if (tool === "stroke-eraser") {
+      const idx = findStrokeAtPoint(pos.x, pos.y);
+      if (idx >= 0) {
+        setUndoStack((prev) => [...prev, [...strokes]]);
+        setStrokes((prev) => prev.filter((_, i) => i !== idx));
+      }
+    }
     lastPos.current = pos;
   };
 
   const stopDrawing = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
-    if (currentStroke && currentStroke.points.length > 1) {
+    if (tool === "pen" && currentStroke && currentStroke.points.length > 1) {
       setUndoStack((prev) => [...prev, [...strokes]]);
       setStrokes((prev) => [...prev, currentStroke]);
       setCurrentStroke(null);
@@ -389,6 +460,11 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
   const clearScribble = () => {
     setUndoStack((prev) => [...prev, [...strokes]]);
     setStrokes([]);
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext("2d");
+      if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
     setSaveStatus("unsaved");
   };
 
@@ -447,22 +523,26 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
       onClick={onClick}
       className={cn(
         "h-8 w-8 flex items-center justify-center rounded-md transition-colors text-slate-500 hover:text-slate-800 hover:bg-slate-100 disabled:opacity-30",
-        active && "bg-slate-200 text-primary",
+        active && "bg-slate-100 text-primary",
       )}
     >
       {children}
     </button>
   );
 
+  const containerClass = isFullscreen
+    ? "fixed inset-0 z-[9999] flex flex-col"
+    : "flex flex-col h-full w-full overflow-hidden";
+
+  // Get background for editor
+  const editorBackground = diaryMode ? currentTheme.value : editorBg;
+  const editorTextColor = diaryMode ? currentTheme.textColor : "#1a1a1a";
+
   return (
-    <div
-      className={
-        isFullscreen ? "fixed inset-0 z-[9999] flex flex-col bg-white" : "flex flex-col h-full w-full overflow-hidden"
-      }
-    >
+    <div className={containerClass} style={{ backgroundColor: editorBackground }}>
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
-      {/* TOOLBAR */}
+      {/* MAIN TOOLBAR */}
       <div className="shrink-0 bg-white border-b border-slate-200 relative z-[100]">
         <div className="flex items-center h-11 px-2 gap-0.5 overflow-x-auto">
           <ToolBtn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
@@ -473,11 +553,32 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           </ToolBtn>
           <div className="w-px h-5 bg-slate-200 mx-1" />
 
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="h-8 px-2 flex items-center gap-1 rounded-md text-sm text-slate-600 hover:bg-slate-100">
+                <Type className="h-4 w-4" />
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="z-[99999]">
+              <DropdownMenuItem onClick={() => editor.chain().focus().setParagraph().run()}>Normal</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
+                Heading 1
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
+                Heading 2
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>
+                Heading 3
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Select value={currentFont} onValueChange={handleFontChange}>
-            <SelectTrigger className="h-8 w-24 text-xs border-0 bg-slate-50">
+            <SelectTrigger className="h-8 w-24 text-xs border-0 bg-slate-50 hover:bg-slate-100">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="z-[99999]">
+            <SelectContent className="z-[99999] max-h-72">
               {FONTS.map((f) => (
                 <SelectItem key={f.value} value={f.value}>
                   {f.label}
@@ -487,7 +588,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           </Select>
 
           <Select value={currentSize} onValueChange={handleSizeChange}>
-            <SelectTrigger className="h-8 w-14 text-xs border-0 bg-slate-50">
+            <SelectTrigger className="h-8 w-14 text-xs border-0 bg-slate-50 hover:bg-slate-100">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="z-[99999]">
@@ -499,6 +600,32 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
             </SelectContent>
           </Select>
           <div className="w-px h-5 bg-slate-200 mx-1" />
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-slate-100">
+                <Palette className="h-4 w-4 text-slate-500" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2 z-[99999]" align="start">
+              <div className="flex gap-1 flex-wrap max-w-32">
+                <button
+                  onClick={() => editor.chain().focus().unsetColor().run()}
+                  className="h-6 w-6 rounded-full border border-slate-200 bg-white text-xs"
+                >
+                  ×
+                </button>
+                {TEXT_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => editor.chain().focus().setColor(c).run()}
+                    className="h-6 w-6 rounded-full border border-slate-200"
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
 
           <ToolBtn
             onClick={() => editor.chain().focus().toggleBold().run()}
@@ -521,6 +648,32 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           >
             <UnderlineIcon className="h-4 w-4" />
           </ToolBtn>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-slate-100">
+                <Highlighter className="h-4 w-4 text-slate-500" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2 z-[99999]" align="start">
+              <div className="flex gap-1 flex-wrap max-w-32">
+                <button
+                  onClick={() => editor.chain().focus().unsetHighlight().run()}
+                  className="h-6 w-6 rounded border border-slate-200 bg-white text-xs"
+                >
+                  ×
+                </button>
+                {HIGHLIGHT_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => editor.chain().focus().setHighlight({ color: c }).run()}
+                    className="h-6 w-6 rounded border border-slate-200"
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
           <div className="w-px h-5 bg-slate-200 mx-1" />
 
           <ToolBtn
@@ -546,7 +699,30 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           </ToolBtn>
           <div className="w-px h-5 bg-slate-200 mx-1" />
 
-          <ToolBtn onClick={() => setLinkDialogOpen(true)} title="Link">
+          <ToolBtn
+            onClick={() => editor.chain().focus().setTextAlign("left").run()}
+            active={editor.isActive({ textAlign: "left" })}
+            title="Left"
+          >
+            <AlignLeft className="h-4 w-4" />
+          </ToolBtn>
+          <ToolBtn
+            onClick={() => editor.chain().focus().setTextAlign("center").run()}
+            active={editor.isActive({ textAlign: "center" })}
+            title="Center"
+          >
+            <AlignCenter className="h-4 w-4" />
+          </ToolBtn>
+          <ToolBtn
+            onClick={() => editor.chain().focus().setTextAlign("right").run()}
+            active={editor.isActive({ textAlign: "right" })}
+            title="Right"
+          >
+            <AlignRight className="h-4 w-4" />
+          </ToolBtn>
+          <div className="w-px h-5 bg-slate-200 mx-1" />
+
+          <ToolBtn onClick={() => setLinkDialogOpen(true)} active={editor.isActive("link")} title="Link">
             <Link2 className="h-4 w-4" />
           </ToolBtn>
           <ToolBtn onClick={() => setImageDialogOpen(true)} title="Image">
@@ -555,7 +731,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           <ToolBtn onClick={() => setScribbleMode(!scribbleMode)} active={scribbleMode} title="Scribble">
             <PenTool className="h-4 w-4" />
           </ToolBtn>
-          <div className="w-px h-5 bg-slate-200 mx-1" />
 
           {/* Theme Selector */}
           <DropdownMenu>
@@ -597,10 +772,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
 
           {/* Diary Mode Toggle */}
           <button
-            onClick={() => {
-              setDiaryMode(!diaryMode);
-              setCurrentPage(0);
-            }}
+            onClick={() => setDiaryMode(!diaryMode)}
             className={cn(
               "h-8 px-3 rounded-md text-xs font-medium flex items-center gap-1",
               diaryMode ? "bg-amber-100 text-amber-700" : "hover:bg-slate-100",
@@ -610,11 +782,44 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
             📖 Diary
           </button>
 
-          <div className="flex-1" />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-slate-100">
+                <MoreHorizontal className="h-4 w-4 text-slate-500" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="z-[99999]">
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleStrike().run()}>
+                <Strikethrough className="h-4 w-4 mr-2" /> Strikethrough
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
+                <Code className="h-4 w-4 mr-2" /> Code Block
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleBlockquote().run()}>
+                <Quote className="h-4 w-4 mr-2" /> Quote
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().setHorizontalRule().run()}>
+                <Minus className="h-4 w-4 mr-2" /> Divider
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}>
+                Clear Formatting
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <button
+            onClick={() => alert("AI coming soon!")}
+            className="h-8 px-3 flex items-center gap-1.5 rounded-md text-sm font-medium bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow hover:shadow-md"
+          >
+            <Sparkles className="h-3.5 w-3.5" /> AI
+          </button>
+
+          <div className="flex-1 min-w-4" />
 
           <span
             className={cn(
-              "text-xs px-2 py-1 rounded-full",
+              "text-xs px-2 py-1 rounded-full font-medium",
               saveStatus === "saving" && "bg-amber-100 text-amber-700",
               saveStatus === "saved" && "bg-emerald-100 text-emerald-700",
               saveStatus === "unsaved" && "bg-slate-100 text-slate-500",
@@ -634,12 +839,30 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
             )}
             {saveStatus === "unsaved" && "Unsaved"}
           </span>
-          <Button size="sm" onClick={handleSave} className="h-8 gap-1 bg-emerald-500 text-white">
+          <Button
+            size="sm"
+            onClick={handleSave}
+            className="h-8 gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-0"
+          >
             <Save className="h-3.5 w-3.5" /> Save
           </Button>
-          <ToolBtn onClick={() => setIsFullscreen(!isFullscreen)} title="Fullscreen">
+          <ToolBtn
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+          >
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </ToolBtn>
+          {isFullscreen && (
+            <ToolBtn
+              onClick={() => {
+                setIsFullscreen(false);
+                onBack();
+              }}
+              title="Close"
+            >
+              <X className="h-4 w-4" />
+            </ToolBtn>
+          )}
         </div>
       </div>
 
@@ -652,21 +875,46 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
               onClick={handleUndo}
               disabled={undoStack.length === 0}
               className="p-1.5 rounded-lg hover:bg-amber-100 disabled:opacity-30"
+              title="Undo"
             >
               <Undo2 className="h-4 w-4" />
             </button>
             <div className="w-px h-5 bg-amber-300" />
             <div className="flex gap-1">
-              {["#1a1a1a", "#dc2626", "#2563eb", "#16a34a", "#7c3aed"].map((c) => (
+              {SCRIBBLE_COLORS.map((c) => (
                 <button
                   key={c}
-                  onClick={() => setScribbleColor(c)}
+                  onClick={() => {
+                    setScribbleColor(c);
+                    setTool("pen");
+                  }}
                   className={cn(
-                    "w-5 h-5 rounded-full border-2",
-                    scribbleColor === c ? "border-amber-700 ring-2 ring-amber-300" : "border-white shadow",
+                    "w-5 h-5 rounded-full border-2 transition-transform hover:scale-110",
+                    scribbleColor === c && tool === "pen"
+                      ? "border-amber-700 scale-110 ring-2 ring-amber-300"
+                      : "border-white shadow",
                   )}
                   style={{ backgroundColor: c }}
                 />
+              ))}
+            </div>
+            <div className="w-px h-5 bg-amber-300" />
+            <div className="flex gap-0.5">
+              {PEN_TYPES.map((pt) => (
+                <button
+                  key={pt.id}
+                  onClick={() => {
+                    setPenType(pt.id);
+                    setTool("pen");
+                  }}
+                  className={cn(
+                    "p-1.5 rounded-lg transition-all",
+                    penType === pt.id && tool === "pen" ? "bg-amber-200 shadow-inner" : "hover:bg-amber-100",
+                  )}
+                  title={pt.label}
+                >
+                  <pt.icon className="h-4 w-4" />
+                </button>
               ))}
             </div>
             <select
@@ -674,16 +922,46 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
               onChange={(e) => setPenWidth(Number(e.target.value))}
               className="h-7 text-xs border border-amber-300 rounded px-1 bg-white"
             >
-              <option value="1">Fine</option>
-              <option value="2">Medium</option>
-              <option value="4">Thick</option>
+              {PEN_WIDTHS.map((w) => (
+                <option key={w.value} value={w.value}>
+                  {w.label}
+                </option>
+              ))}
             </select>
+            <div className="w-px h-5 bg-amber-300" />
+            <button
+              onClick={() => setTool("eraser")}
+              className={cn("p-1.5 rounded-lg", tool === "eraser" ? "bg-amber-200" : "hover:bg-amber-100")}
+              title="Eraser"
+            >
+              <Eraser className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setTool("stroke-eraser")}
+              className={cn("p-1.5 rounded-lg", tool === "stroke-eraser" ? "bg-amber-200" : "hover:bg-amber-100")}
+              title="Stroke Eraser"
+            >
+              <Circle className="h-4 w-4" />
+            </button>
+            {tool === "eraser" && (
+              <select
+                value={eraserSize}
+                onChange={(e) => setEraserSize(Number(e.target.value))}
+                className="h-7 text-xs border border-amber-300 rounded px-1 bg-white"
+              >
+                {ERASER_SIZES.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            )}
             <div className="flex-1" />
             <button
               onClick={clearScribble}
               className="px-2 py-1 text-xs rounded-lg bg-red-100 text-red-600 hover:bg-red-200 flex items-center gap-1"
             >
-              <Trash2 className="h-3 w-3" /> Clear
+              <Trash2 className="h-3 w-3" /> Clear All
             </button>
             <button
               onClick={() => setScribbleMode(false)}
@@ -695,199 +973,88 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
         </div>
       )}
 
-      {/* CONTENT AREA */}
-      {diaryMode ? (
-        /* PAGINATED DIARY MODE - Text flows to next page */
-        <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-amber-50 to-orange-50 p-4 overflow-hidden">
-          <div className="relative flex items-center gap-6">
-            {/* Prev Page */}
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
-              disabled={currentPage === 0}
-              className="w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-slate-50 disabled:opacity-30 transition-all hover:scale-105"
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </button>
-
-            {/* Book Spread */}
-            <div className="flex shadow-2xl rounded-lg overflow-hidden" style={{ perspective: "1500px" }}>
-              {/* Left Page */}
-              <div
-                className="w-[320px] h-[450px] overflow-hidden border-r-2 border-amber-300/50 relative"
-                style={{
-                  backgroundColor: currentTheme.value,
-                  ...getLineStyleCSS(),
-                  transform: "rotateY(-2deg)",
-                  transformOrigin: "right",
-                }}
-              >
-                {lineStyle === "college" && <div className="absolute left-10 top-0 bottom-0 w-[1px] bg-red-400/60" />}
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs text-muted-foreground/40">
-                  {currentPage * 2 > 0 ? currentPage * 2 : ""}
-                </div>
-                <div
-                  className="h-full p-5 overflow-hidden"
-                  style={{
-                    color: currentTheme.textColor,
-                    paddingLeft: lineStyle === "college" ? "50px" : "20px",
-                    lineHeight: `${LINE_HEIGHT}px`,
-                  }}
-                >
-                  {currentPage === 0 ? (
-                    <div className="flex items-center justify-center h-full text-4xl opacity-20">📖</div>
-                  ) : (
-                    <div style={{ whiteSpace: "pre-wrap" }}>
-                      {paginatedContent[currentPage * 2 - 1]?.join("\n") || ""}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Right Page - Shows paginated content */}
-              <div
-                className="w-[320px] h-[450px] overflow-hidden relative"
-                style={{
-                  backgroundColor: currentTheme.value,
-                  ...getLineStyleCSS(),
-                  transform: "rotateY(2deg)",
-                  transformOrigin: "left",
-                }}
-              >
-                {lineStyle === "college" && (
-                  <div className="absolute left-10 top-0 bottom-0 w-[1px] bg-red-400/60 z-10" />
-                )}
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs text-muted-foreground/40">
-                  {currentPage * 2 + 1}
-                </div>
-
-                <div
-                  className="h-full p-5 overflow-hidden"
-                  style={{
-                    color: currentTheme.textColor,
-                    paddingLeft: lineStyle === "college" ? "50px" : "20px",
-                    lineHeight: `${LINE_HEIGHT}px`,
-                  }}
-                >
-                  {currentPage === 0 ? (
-                    <>
-                      <Input
-                        value={title}
-                        onChange={(e) => handleTitleChange(e.target.value)}
-                        placeholder="Untitled"
-                        className="text-lg font-semibold border-none bg-transparent px-0 h-auto focus-visible:ring-0 mb-2"
-                        style={{ color: currentTheme.textColor, lineHeight: `${LINE_HEIGHT}px` }}
-                      />
-                      <div className="flex gap-1 mb-2 flex-wrap">
-                        {group && <Badge className="bg-primary/10 text-primary border-0 text-xs">{group.name}</Badge>}
-                        {tags.slice(0, 3).map((tag) => (
-                          <Badge key={tag} variant="outline" className="text-xs">
-                            #{tag}
-                          </Badge>
-                        ))}
-                      </div>
-                      <div
-                        style={{
-                          whiteSpace: "pre-wrap",
-                          maxHeight: `${(LINES_PER_PAGE - 4) * LINE_HEIGHT}px`,
-                          overflow: "hidden",
-                        }}
-                      >
-                        {paginatedContent[0]?.join("\n") || ""}
-                      </div>
-                    </>
-                  ) : (
-                    <div style={{ whiteSpace: "pre-wrap" }}>{paginatedContent[currentPage * 2]?.join("\n") || ""}</div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Next Page */}
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(Math.ceil(totalPages / 2), p + 1))}
-              disabled={currentPage >= Math.ceil(totalPages / 2)}
-              className="w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-slate-50 disabled:opacity-30 transition-all hover:scale-105"
-            >
-              <ChevronRight className="h-6 w-6" />
-            </button>
-          </div>
-
-          {/* Page indicator */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-amber-700 bg-white/80 px-3 py-1 rounded-full shadow">
-            Pages {currentPage * 2 + 1}-{Math.min(currentPage * 2 + 2, totalPages)} of {totalPages}
-          </div>
-        </div>
-      ) : (
-        /* NORMAL MODE with themed lines */
-        <div
-          ref={containerRef}
-          className="flex-1 overflow-y-auto relative"
-          style={{ backgroundColor: currentTheme.value, color: currentTheme.textColor, ...getLineStyleCSS() }}
-        >
-          {lineStyle === "college" && (
-            <div
-              className="absolute left-14 top-0 bottom-0 w-[1px] pointer-events-none z-10"
-              style={{ backgroundColor: "#ef4444" }}
-            />
-          )}
-
+      {/* CONTENT AREA - Same editor, different styling based on diaryMode */}
+      <div
+        ref={containerRef}
+        className="flex-1 overflow-y-auto overflow-x-hidden relative"
+        style={{
+          backgroundColor: editorBackground,
+          color: editorTextColor,
+          ...(diaryMode ? getLineStyleCSS() : {}),
+        }}
+      >
+        {/* College ruled margin */}
+        {diaryMode && lineStyle === "college" && (
           <div
-            className="min-h-full p-6"
-            style={{ paddingLeft: lineStyle === "college" ? "70px" : "24px", lineHeight: `${LINE_HEIGHT}px` }}
-          >
-            <Input
-              value={title}
-              onChange={(e) => handleTitleChange(e.target.value)}
-              placeholder="Untitled Note"
-              className="text-2xl font-semibold border-none bg-transparent px-0 h-auto focus-visible:ring-0 mb-2"
-              style={{ color: currentTheme.textColor, lineHeight: `${LINE_HEIGHT}px` }}
-            />
-            <div className="flex items-center gap-2 mb-4 flex-wrap">
-              {group && <Badge className="bg-primary/10 text-primary border-0">{group.name}</Badge>}
-              {tags.map((tag) => (
-                <Badge key={tag} variant="outline" className="text-xs">
-                  #{tag}
-                </Badge>
-              ))}
-              <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-6 text-xs text-slate-400">
-                    + Tag
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-48 p-2 z-[99999]">
-                  <div className="flex gap-2">
-                    <Input
-                      value={newTag}
-                      onChange={(e) => setNewTag(e.target.value)}
-                      placeholder="Tag"
-                      className="h-8"
-                      onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
-                    />
-                    <Button size="sm" className="h-8" onClick={handleAddTag}>
-                      Add
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-            <EditorContent editor={editor} />
-          </div>
+            className="absolute left-14 top-0 bottom-0 w-[1px] pointer-events-none z-10"
+            style={{ backgroundColor: "#ef4444" }}
+          />
+        )}
 
-          {/* Scribble Canvas */}
-          {scribbleMode && (
-            <canvas
-              ref={canvasRef}
-              onMouseDown={startDrawing}
-              onMouseMove={draw}
-              onMouseUp={stopDrawing}
-              onMouseLeave={stopDrawing}
-              className="absolute inset-0 w-full h-full"
-              style={{ touchAction: "none", cursor: "crosshair" }}
-            />
-          )}
+        <div
+          className="min-h-full px-6 py-4"
+          style={{
+            paddingLeft: diaryMode && lineStyle === "college" ? "70px" : "24px",
+            lineHeight: diaryMode ? `${LINE_HEIGHT}px` : undefined,
+            wordBreak: "break-word",
+            overflowWrap: "anywhere",
+          }}
+        >
+          <Input
+            value={title}
+            onChange={(e) => handleTitleChange(e.target.value)}
+            placeholder="Untitled Note"
+            className="text-2xl font-semibold border-none bg-transparent px-0 h-auto focus-visible:ring-0 mb-3"
+            style={{ color: editorTextColor, lineHeight: diaryMode ? `${LINE_HEIGHT}px` : undefined }}
+          />
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            {group && <Badge className="bg-primary/10 text-primary border-0">{group.name}</Badge>}
+            {tags.map((tag) => (
+              <Badge key={tag} variant="outline" className="text-xs">
+                #{tag}
+              </Badge>
+            ))}
+            <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-6 text-xs text-slate-400">
+                  + Tag
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-48 p-2 z-[99999]">
+                <div className="flex gap-2">
+                  <Input
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    placeholder="Tag"
+                    className="h-8"
+                    onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
+                  />
+                  <Button size="sm" className="h-8" onClick={handleAddTag}>
+                    Add
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+          <EditorContent editor={editor} />
         </div>
-      )}
+
+        {/* Scribble Canvas */}
+        {scribbleMode && (
+          <canvas
+            ref={canvasRef}
+            onMouseDown={startDrawing}
+            onMouseMove={draw}
+            onMouseUp={stopDrawing}
+            onMouseLeave={stopDrawing}
+            className="absolute inset-0 w-full h-full"
+            style={{
+              touchAction: "none",
+              cursor: tool === "pen" ? "crosshair" : tool === "eraser" ? "cell" : "pointer",
+            }}
+          />
+        )}
+      </div>
 
       {/* Dialogs */}
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
@@ -921,8 +1088,9 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Image URL..." />
+            <div className="text-center text-sm text-slate-400">— or —</div>
             <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
-              <ImageIcon className="h-4 w-4 mr-2" /> Upload
+              <ImageIcon className="h-4 w-4 mr-2" /> Upload from Computer
             </Button>
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setImageDialogOpen(false)}>
@@ -937,13 +1105,24 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
       </Dialog>
 
       <style>{`
-        .diary-editor { line-height: ${LINE_HEIGHT}px !important; }
-        .diary-editor p { margin: 0 !important; padding: 0 !important; line-height: ${LINE_HEIGHT}px !important; min-height: ${LINE_HEIGHT}px !important; }
-        .diary-editor h1, .diary-editor h2, .diary-editor h3 { margin: 0 !important; line-height: ${LINE_HEIGHT}px !important; }
-        .diary-editor ul, .diary-editor ol { margin: 0 !important; line-height: ${LINE_HEIGHT}px !important; }
-        .diary-editor li { line-height: ${LINE_HEIGHT}px !important; min-height: ${LINE_HEIGHT}px !important; }
-        .diary-editor blockquote { margin: 0 !important; line-height: ${LINE_HEIGHT}px !important; }
-        .diary-editor a { color: #3b82f6; text-decoration: underline; }
+        .ProseMirror { word-break: break-word; overflow-wrap: anywhere; ${diaryMode ? `line-height: ${LINE_HEIGHT}px !important;` : ""} }
+        .ProseMirror h1 { font-size: 1.875rem; font-weight: 700; ${diaryMode ? `margin: 0; line-height: ${LINE_HEIGHT}px;` : "margin: 1rem 0 0.5rem;"} }
+        .ProseMirror h2 { font-size: 1.5rem; font-weight: 600; ${diaryMode ? `margin: 0; line-height: ${LINE_HEIGHT}px;` : "margin: 0.75rem 0 0.5rem;"} }
+        .ProseMirror h3 { font-size: 1.25rem; font-weight: 600; ${diaryMode ? `margin: 0; line-height: ${LINE_HEIGHT}px;` : "margin: 0.5rem 0 0.5rem;"} }
+        .ProseMirror p { ${diaryMode ? `margin: 0 !important; line-height: ${LINE_HEIGHT}px !important; min-height: ${LINE_HEIGHT}px;` : "margin: 0.375rem 0; line-height: 1.6;"} }
+        .ProseMirror strong { font-weight: 700; }
+        .ProseMirror ul { list-style: disc; padding-left: 1.5rem; ${diaryMode ? `line-height: ${LINE_HEIGHT}px;` : ""} }
+        .ProseMirror ol { list-style: decimal; padding-left: 1.5rem; ${diaryMode ? `line-height: ${LINE_HEIGHT}px;` : ""} }
+        .ProseMirror li { ${diaryMode ? `line-height: ${LINE_HEIGHT}px; min-height: ${LINE_HEIGHT}px;` : ""} }
+        .ProseMirror blockquote { border-left: 3px solid #e2e8f0; padding-left: 1rem; color: #64748b; font-style: italic; ${diaryMode ? `line-height: ${LINE_HEIGHT}px;` : ""} }
+        .ProseMirror pre { background: #f1f5f9; padding: 0.75rem; border-radius: 0.375rem; overflow-x: auto; }
+        .ProseMirror code { background: #f1f5f9; padding: 0.125rem 0.25rem; border-radius: 0.25rem; font-family: monospace; }
+        .ProseMirror hr { border: none; border-top: 1px solid #e2e8f0; margin: 1rem 0; }
+        .ProseMirror ul[data-type="taskList"] { list-style: none; padding-left: 0; }
+        .ProseMirror ul[data-type="taskList"] li { display: flex; align-items: flex-start; gap: 0.5rem; ${diaryMode ? `line-height: ${LINE_HEIGHT}px;` : ""} }
+        .ProseMirror ul[data-type="taskList"] input { accent-color: #10b981; }
+        .ProseMirror li[data-checked="true"] > div { text-decoration: line-through; color: #94a3b8; }
+        .ProseMirror a { color: #3b82f6; text-decoration: underline; }
       `}</style>
     </div>
   );
