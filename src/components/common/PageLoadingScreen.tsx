@@ -195,7 +195,7 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
         }
       `}</style>
 
-      {/* SOFT GRAY OVERLAY - Centered */}
+      {/* VERY LIGHT TRANSPARENT OVERLAY - 2% black */}
       <div
         style={{
           position: "fixed",
@@ -209,9 +209,9 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          // SOFT GRAY - not too dark, not too light
-          backgroundColor: "rgba(30, 30, 30, 0.97)",
-          backdropFilter: "blur(8px)",
+          // 2% BLACK TRANSPARENCY - almost clear, just slight tint
+          backgroundColor: "rgba(0, 0, 0, 0.02)",
+          backdropFilter: "blur(2px)",
           transition: "opacity 0.4s ease-out, transform 0.4s ease-out",
           opacity: isExiting ? 0 : isVisible ? 1 : 0,
           transform: isExiting ? "scale(0.98)" : "scale(1)",
