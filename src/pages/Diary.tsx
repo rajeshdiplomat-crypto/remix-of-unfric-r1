@@ -16,6 +16,7 @@ import { DiaryJournalModal } from "@/components/diary/DiaryJournalModal";
 import { useFeedEvents } from "@/components/diary/useFeedEvents";
 import { useDiaryMetrics } from "@/components/diary/useDiaryMetrics";
 import { cn } from "@/lib/utils";
+import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import type { TimeRange, FeedEvent, SourceModule } from "@/components/diary/types";
 import {
   DropdownMenu,
@@ -383,11 +384,7 @@ export default function Diary() {
   );
 
   if (loading && events.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-pulse text-muted-foreground">Loading your diary...</div>
-      </div>
-    );
+    return <PageLoadingScreen module="diary" />;
   }
 
   return (

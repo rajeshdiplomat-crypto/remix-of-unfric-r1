@@ -1,4 +1,4 @@
-import { useEditor, EditorContent, NodeViewWrapper, NodeViewProps } from "@tiptap/react";
+import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import TextAlign from "@tiptap/extension-text-align";
@@ -10,8 +10,8 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import FontFamily from "@tiptap/extension-font-family";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
-import { Extension, Node, mergeAttributes } from "@tiptap/core";
-import { ReactNodeViewRenderer } from "@tiptap/react";
+import { Extension } from "@tiptap/core";
+import ImageResize from 'tiptap-extension-resize-image';
 import { useEffect, forwardRef, useImperativeHandle, useState, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -90,96 +90,6 @@ const FontSize = Extension.create({
   },
 });
 
-// Resizable Image Component
-function ResizableImageComponent({ node, updateAttributes, selected }: NodeViewProps) {
-  const [isResizing, setIsResizing] = useState(false);
-  const imgRef = useRef<HTMLImageElement>(null);
-  const startX = useRef(0);
-  const startWidth = useRef(0);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
-    startX.current = e.clientX;
-    startWidth.current = imgRef.current?.offsetWidth || 300;
-  };
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing) return;
-      const diff = e.clientX - startX.current;
-      const newWidth = Math.max(100, Math.min(800, startWidth.current + diff));
-      updateAttributes({ width: newWidth });
-    };
-    const handleMouseUp = () => setIsResizing(false);
-    if (isResizing) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-    }
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isResizing, updateAttributes]);
-
-  return (
-    <NodeViewWrapper className="relative inline-block my-2">
-      <div className={cn("relative inline-block", selected && "ring-2 ring-primary rounded-lg")}>
-        <img
-          ref={imgRef}
-          src={node.attrs.src}
-          alt={node.attrs.alt || ""}
-          style={{ width: node.attrs.width ? `${node.attrs.width}px` : "auto", maxWidth: "100%" }}
-          className="rounded-lg"
-          draggable={false}
-        />
-        {selected && (
-          <>
-            <div
-              onMouseDown={handleMouseDown}
-              className="absolute right-0 top-0 bottom-0 w-3 cursor-ew-resize bg-primary/20 hover:bg-primary/40 rounded-r-lg flex items-center justify-center"
-            >
-              <div className="w-1 h-8 bg-primary/60 rounded" />
-            </div>
-            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-0.5 rounded">
-              {node.attrs.width || "auto"}px
-            </div>
-          </>
-        )}
-      </div>
-    </NodeViewWrapper>
-  );
-}
-
-const ResizableImage = Node.create({
-  name: "resizableImage",
-  group: "block",
-  atom: true,
-  draggable: true,
-  addAttributes() {
-    return { src: { default: null }, alt: { default: null }, title: { default: null }, width: { default: null } };
-  },
-  parseHTML() {
-    return [{ tag: "img[src]" }];
-  },
-  renderHTML({ HTMLAttributes }) {
-    return [
-      "img",
-      mergeAttributes(HTMLAttributes, { style: HTMLAttributes.width ? `width: ${HTMLAttributes.width}px` : "" }),
-    ];
-  },
-  addNodeView() {
-    return ReactNodeViewRenderer(ResizableImageComponent);
-  },
-  addCommands() {
-    return {
-      setResizableImage:
-        (options: { src: string; alt?: string; title?: string; width?: number }) =>
-        ({ commands }: any) =>
-          commands.insertContent({ type: this.name, attrs: options }),
-    };
-  },
-});
 
 interface Props {
   content: string;
@@ -299,7 +209,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
         TaskList,
         TaskItem.configure({ nested: true }),
         Link.configure({ openOnClick: false }),
-        ResizableImage,
+        ImageResize,
         TextStyle,
         FontFamily,
         FontSize,

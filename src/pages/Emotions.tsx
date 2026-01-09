@@ -18,6 +18,7 @@ import { StrategiesPanelEnhanced } from "@/components/emotions/StrategiesPanelEn
 import { PatternsDashboardEnhanced } from "@/components/emotions/PatternsDashboardEnhanced";
 import { CheckinReminders } from "@/components/emotions/CheckinReminders";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
+import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 export default function Emotions() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -397,6 +398,10 @@ export default function Emotions() {
       setIsDeleting(false);
     }
   };
+
+  if (loading) {
+    return <PageLoadingScreen module="emotions" />;
+  }
 
   return (
     <div className="flex flex-col w-full flex-1">

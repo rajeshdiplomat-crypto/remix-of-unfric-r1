@@ -21,6 +21,7 @@ import { NotesMindMapView } from "@/components/notes/NotesMindMapView";
 import { NotesViewSwitcher, type NotesViewType } from "@/components/notes/NotesViewSwitcher";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
+import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { cn } from "@/lib/utils";
 
 export interface NoteGroup {
@@ -49,6 +50,7 @@ export interface Note {
   updatedAt: string;
   isPinned: boolean;
   isArchived: boolean;
+  scribbleStrokes?: string;
 }
 
 const STORAGE_KEY_GROUPS = "notes-groups";
