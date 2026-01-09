@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 type ModuleType =
@@ -138,11 +138,11 @@ export function PageLoadingScreen({ module, onLoadComplete }: PageLoadingScreenP
     return () => clearTimeout(entranceTimer);
   }, []);
 
-  // Always show for exactly 1 second, then exit
+  // Show for 2 seconds, then exit
   useEffect(() => {
     const displayTimer = setTimeout(() => {
       setIsExiting(true);
-    }, 1000);
+    }, 2000); // <-- 2 SECONDS
 
     return () => clearTimeout(displayTimer);
   }, []);
@@ -187,26 +187,6 @@ export function PageLoadingScreen({ module, onLoadComplete }: PageLoadingScreenP
           }
         }
         
-        @keyframes fadeSlideUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        @keyframes subtlePulse {
-          0%, 100% {
-            opacity: 0.6;
-          }
-          50% {
-            opacity: 1;
-          }
-        }
-        
         @keyframes lineExpand {
           from {
             transform: scaleX(0);
@@ -217,19 +197,37 @@ export function PageLoadingScreen({ module, onLoadComplete }: PageLoadingScreenP
         }
       `}</style>
 
-      {/* Full screen overlay - fixed positioning for true center */}
+      {/* FULL SCREEN FIXED OVERLAY - TRUE CENTER */}
       <div
-        className={cn(
-          "fixed inset-0 z-[9999]",
-          "flex flex-col items-center justify-center",
-          "bg-background",
-          "transition-all duration-400 ease-out",
-          isVisible ? "opacity-100" : "opacity-0",
-          isExiting && "opacity-0 scale-[0.98]",
-        )}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: "100vw",
+          height: "100vh",
+          zIndex: 99999,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "hsl(var(--background))",
+          transition: "opacity 0.4s ease-out, transform 0.4s ease-out",
+          opacity: isExiting ? 0 : isVisible ? 1 : 0,
+          transform: isExiting ? "scale(0.98)" : "scale(1)",
+        }}
       >
         {/* Main centered content */}
-        <div className="flex flex-col items-center justify-center gap-8">
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "2rem",
+            padding: "2rem",
+          }}
+        >
           {/* Animated unfric logo */}
           <div
             className={cn(
