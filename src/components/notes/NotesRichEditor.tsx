@@ -220,6 +220,8 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
   const [pageTheme, setPageTheme] = useState("cream");
   const [lineStyle, setLineStyle] = useState("ruled");
   const [diaryMode, setDiaryMode] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [isFlipping, setIsFlipping] = useState(false);
 
   // Scribble States
   const [scribbleMode, setScribbleMode] = useState(false);
@@ -529,6 +531,25 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     reader.onload = (ev) => (editor.commands as any).setResizableImage({ src: ev.target?.result as string });
     reader.readAsDataURL(file);
     setImageDialogOpen(false);
+  };
+
+  // Page flip handlers
+  const flipToNextPage = () => {
+    if (isFlipping) return;
+    setIsFlipping(true);
+    setTimeout(() => {
+      setCurrentPage((p) => p + 1);
+      setIsFlipping(false);
+    }, 400);
+  };
+
+  const flipToPrevPage = () => {
+    if (isFlipping || currentPage === 0) return;
+    setIsFlipping(true);
+    setTimeout(() => {
+      setCurrentPage((p) => Math.max(0, p - 1));
+      setIsFlipping(false);
+    }, 400);
   };
 
   const group = groups.find((g) => g.id === note.groupId);
@@ -992,90 +1013,223 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
         </div>
       )}
 
-      {/* CONTENT AREA - Same editor, different styling based on diaryMode */}
-      <div
-        ref={containerRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden relative"
-        style={{
-          backgroundColor: editorBackground,
-          color: editorTextColor,
-          ...(diaryMode ? getLineStyleCSS() : {}),
-        }}
-      >
-        {/* College ruled margin */}
-        {diaryMode && lineStyle === "college" && (
-          <div
-            className="absolute left-14 top-0 bottom-0 w-[1px] pointer-events-none z-10"
-            style={{ backgroundColor: "#ef4444" }}
-          />
-        )}
+      {/* CONTENT AREA */}
+      {diaryMode ? (
+        /* BOOK-STYLE DIARY VIEW with page flip animation */
+        <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100 p-4 overflow-hidden">
+          <div className="relative flex items-center gap-4">
+            {/* Previous Page Button */}
+            <button
+              onClick={flipToPrevPage}
+              disabled={currentPage === 0 || isFlipping}
+              className="w-12 h-12 rounded-full bg-white/90 shadow-lg flex items-center justify-center hover:bg-white disabled:opacity-30 disabled:hover:bg-white/90 transition-all hover:scale-105"
+            >
+              <ChevronLeft className="h-6 w-6 text-amber-700" />
+            </button>
 
+            {/* Book Container */}
+            <div className="relative" style={{ perspective: "2000px", perspectiveOrigin: "50% 50%" }}>
+              <div className="flex shadow-2xl rounded-lg overflow-hidden" style={{ transformStyle: "preserve-3d" }}>
+                {/* Left Page */}
+                <div
+                  className="w-[340px] h-[480px] relative overflow-hidden border-r border-amber-300/50"
+                  style={{
+                    backgroundColor: currentTheme.value,
+                    ...getLineStyleCSS(),
+                    transform: "rotateY(-2deg)",
+                    transformOrigin: "right center",
+                    boxShadow: "inset -5px 0 15px rgba(0,0,0,0.05)",
+                  }}
+                >
+                  {lineStyle === "college" && <div className="absolute left-10 top-0 bottom-0 w-[1px] bg-red-400/60" />}
+                  <div
+                    className="h-full p-6 overflow-hidden"
+                    style={{
+                      color: currentTheme.textColor,
+                      paddingLeft: lineStyle === "college" ? "50px" : "24px",
+                      lineHeight: `${LINE_HEIGHT}px`,
+                    }}
+                  >
+                    {currentPage === 0 ? (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                          <div className="text-6xl mb-4">📖</div>
+                          <div className="text-2xl font-serif" style={{ color: currentTheme.textColor }}>
+                            My Diary
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-sm opacity-50 text-center mt-8">Page {currentPage * 2}</div>
+                    )}
+                  </div>
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs opacity-40">
+                    {currentPage > 0 && currentPage * 2}
+                  </div>
+                </div>
+
+                {/* Right Page - The actual editable page */}
+                <div
+                  className={`w-[340px] h-[480px] relative overflow-hidden ${isFlipping ? "animate-page-flip" : ""}`}
+                  style={{
+                    backgroundColor: currentTheme.value,
+                    ...getLineStyleCSS(),
+                    transform: "rotateY(2deg)",
+                    transformOrigin: "left center",
+                    boxShadow: "inset 5px 0 15px rgba(0,0,0,0.05)",
+                  }}
+                >
+                  {lineStyle === "college" && (
+                    <div className="absolute left-10 top-0 bottom-0 w-[1px] bg-red-400/60 z-10" />
+                  )}
+                  <div
+                    ref={containerRef}
+                    className="h-full p-6 overflow-y-auto"
+                    style={{
+                      color: currentTheme.textColor,
+                      paddingLeft: lineStyle === "college" ? "50px" : "24px",
+                      lineHeight: `${LINE_HEIGHT}px`,
+                    }}
+                  >
+                    <Input
+                      value={title}
+                      onChange={(e) => handleTitleChange(e.target.value)}
+                      placeholder="Untitled"
+                      className="text-lg font-semibold border-none bg-transparent px-0 h-auto focus-visible:ring-0 mb-2"
+                      style={{ color: currentTheme.textColor, lineHeight: `${LINE_HEIGHT}px` }}
+                    />
+                    <div className="flex gap-1 mb-3 flex-wrap">
+                      {group && <Badge className="bg-primary/10 text-primary border-0 text-xs">{group.name}</Badge>}
+                      {tags.slice(0, 2).map((tag) => (
+                        <Badge key={tag} variant="outline" className="text-xs">
+                          #{tag}
+                        </Badge>
+                      ))}
+                    </div>
+                    <EditorContent editor={editor} />
+                  </div>
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs opacity-40">
+                    {currentPage * 2 + 1}
+                  </div>
+
+                  {/* Scribble canvas for book mode */}
+                  {scribbleMode && (
+                    <canvas
+                      ref={canvasRef}
+                      onMouseDown={startDrawing}
+                      onMouseMove={draw}
+                      onMouseUp={stopDrawing}
+                      onMouseLeave={stopDrawing}
+                      className="absolute inset-0 w-full h-full z-20"
+                      style={{ touchAction: "none", cursor: "crosshair" }}
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Book spine effect */}
+              <div
+                className="absolute left-1/2 top-0 bottom-0 w-4 -translate-x-1/2 pointer-events-none"
+                style={{
+                  background: "linear-gradient(90deg, rgba(0,0,0,0.1) 0%, transparent 50%, rgba(0,0,0,0.1) 100%)",
+                }}
+              />
+            </div>
+
+            {/* Next Page Button */}
+            <button
+              onClick={flipToNextPage}
+              disabled={isFlipping}
+              className="w-12 h-12 rounded-full bg-white/90 shadow-lg flex items-center justify-center hover:bg-white disabled:opacity-30 transition-all hover:scale-105"
+            >
+              <ChevronRight className="h-6 w-6 text-amber-700" />
+            </button>
+          </div>
+
+          {/* Page indicator */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-amber-700 bg-white/80 px-4 py-1.5 rounded-full shadow">
+            Page {currentPage * 2 + 1}
+          </div>
+        </div>
+      ) : (
+        /* NORMAL EDITOR MODE */
         <div
-          className="min-h-full px-6 py-4"
+          ref={containerRef}
+          className="flex-1 overflow-y-auto overflow-x-hidden relative"
           style={{
-            backgroundColor: diaryMode ? editorBackground : undefined,
-            paddingLeft: diaryMode && lineStyle === "college" ? "70px" : "24px",
-            lineHeight: diaryMode ? `${LINE_HEIGHT}px` : undefined,
-            wordBreak: "break-word",
-            overflowWrap: "anywhere",
-            ...(diaryMode ? getLineStyleCSS() : {}),
+            backgroundColor: editorBackground,
+            color: editorTextColor,
           }}
         >
-          <Input
-            value={title}
-            onChange={(e) => handleTitleChange(e.target.value)}
-            placeholder="Untitled Note"
-            className="text-2xl font-semibold border-none bg-transparent px-0 h-auto focus-visible:ring-0 mb-3"
-            style={{ color: editorTextColor, lineHeight: diaryMode ? `${LINE_HEIGHT}px` : undefined }}
-          />
-          <div className="flex items-center gap-2 mb-4 flex-wrap">
-            {group && <Badge className="bg-primary/10 text-primary border-0">{group.name}</Badge>}
-            {tags.map((tag) => (
-              <Badge key={tag} variant="outline" className="text-xs">
-                #{tag}
-              </Badge>
-            ))}
-            <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-6 text-xs text-slate-400">
-                  + Tag
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-48 p-2 z-[99999]">
-                <div className="flex gap-2">
-                  <Input
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="Tag"
-                    className="h-8"
-                    onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
-                  />
-                  <Button size="sm" className="h-8" onClick={handleAddTag}>
-                    Add
+          <div
+            className="min-h-full px-6 py-4"
+            style={{
+              wordBreak: "break-word",
+              overflowWrap: "anywhere",
+            }}
+          >
+            <Input
+              value={title}
+              onChange={(e) => handleTitleChange(e.target.value)}
+              placeholder="Untitled Note"
+              className="text-2xl font-semibold border-none bg-transparent px-0 h-auto focus-visible:ring-0 mb-3"
+              style={{ color: editorTextColor }}
+            />
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              {group && <Badge className="bg-primary/10 text-primary border-0">{group.name}</Badge>}
+              {tags.map((tag) => (
+                <Badge key={tag} variant="outline" className="text-xs">
+                  #{tag}
+                </Badge>
+              ))}
+              <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-6 text-xs text-slate-400">
+                    + Tag
                   </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
+                </PopoverTrigger>
+                <PopoverContent className="w-48 p-2 z-[99999]">
+                  <div className="flex gap-2">
+                    <Input
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      placeholder="Tag"
+                      className="h-8"
+                      onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
+                    />
+                    <Button size="sm" className="h-8" onClick={handleAddTag}>
+                      Add
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <EditorContent editor={editor} />
           </div>
-          <EditorContent editor={editor} />
-        </div>
 
-        {/* Scribble Canvas - Always visible to show saved strokes, but only interactive in scribble mode */}
-        <canvas
-          ref={canvasRef}
-          onMouseDown={scribbleMode ? startDrawing : undefined}
-          onMouseMove={scribbleMode ? draw : undefined}
-          onMouseUp={scribbleMode ? stopDrawing : undefined}
-          onMouseLeave={scribbleMode ? stopDrawing : undefined}
-          className="absolute inset-0 w-full h-full"
-          style={{
-            touchAction: "none",
-            cursor: scribbleMode ? (tool === "pen" ? "crosshair" : tool === "eraser" ? "cell" : "pointer") : "default",
-            pointerEvents: scribbleMode ? "auto" : "none",
-            display: strokes.length > 0 || scribbleMode ? "block" : "none",
-          }}
-        />
-      </div>
+          {/* Scribble Canvas */}
+          <canvas
+            ref={canvasRef}
+            onMouseDown={scribbleMode ? startDrawing : undefined}
+            onMouseMove={scribbleMode ? draw : undefined}
+            onMouseUp={scribbleMode ? stopDrawing : undefined}
+            onMouseLeave={scribbleMode ? stopDrawing : undefined}
+            className="absolute inset-0 w-full h-full"
+            style={{
+              touchAction: "none",
+              cursor: scribbleMode
+                ? tool === "pen"
+                  ? "crosshair"
+                  : tool === "eraser"
+                    ? "cell"
+                    : "pointer"
+                : "default",
+              pointerEvents: scribbleMode ? "auto" : "none",
+              display: strokes.length > 0 || scribbleMode ? "block" : "none",
+            }}
+          />
+        </div>
+      )}
 
       {/* Dialogs */}
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
@@ -1144,6 +1298,17 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
         .ProseMirror ul[data-type="taskList"] input { accent-color: #10b981; }
         .ProseMirror li[data-checked="true"] > div { text-decoration: line-through; color: #94a3b8; }
         .ProseMirror a { color: #3b82f6; text-decoration: underline; }
+        
+        /* Page flip animation */
+        @keyframes pageFlipForward {
+          0% { transform: rotateY(2deg); }
+          50% { transform: rotateY(-90deg); }
+          100% { transform: rotateY(2deg); }
+        }
+        .animate-page-flip {
+          animation: pageFlipForward 0.4s ease-in-out;
+          transform-style: preserve-3d;
+        }
       `}</style>
     </div>
   );
