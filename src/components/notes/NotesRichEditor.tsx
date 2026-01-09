@@ -12,7 +12,7 @@ import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import FontFamily from "@tiptap/extension-font-family";
 import { Extension } from "@tiptap/core";
-import ImageResize from 'tiptap-extension-resize-image';
+import ImageResize from "tiptap-extension-resize-image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -65,6 +65,10 @@ import {
   Pencil,
   Brush,
   Circle,
+  BookOpen,
+  Grid3X3,
+  Grip,
+  FileText,
 } from "lucide-react";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 
@@ -97,7 +101,6 @@ const FontSize = Extension.create({
     };
   },
 });
-
 
 interface NotesRichEditorProps {
   note: Note;
@@ -160,15 +163,43 @@ const ERASER_SIZES = [
   { value: 60, label: "Extra Large" },
 ];
 
-const BG_PRESETS = [
-  { id: "none", label: "None", value: "#ffffff" },
-  { id: "cream", label: "Cream", value: "#fffbeb" },
-  { id: "mint", label: "Mint", value: "#ecfdf5" },
-  { id: "lavender", label: "Lavender", value: "#f5f3ff" },
-  { id: "sky", label: "Sky", value: "#f0f9ff" },
-  { id: "rose", label: "Rose", value: "#fff1f2" },
-  { id: "slate", label: "Slate", value: "#f8fafc" },
-  { id: "warm", label: "Warm", value: "#fef7ef" },
+// Enhanced Page Themes with diary-style backgrounds
+const PAGE_THEMES = [
+  { id: "white", label: "Clean White", value: "#ffffff", lineColor: "#e5e7eb", textColor: "#1a1a1a", preview: "📄" },
+  { id: "cream", label: "Cream Paper", value: "#fefce8", lineColor: "#d4c89d", textColor: "#44403c", preview: "📜" },
+  {
+    id: "aged",
+    label: "Antique Parchment",
+    value: "#f5f0e1",
+    lineColor: "#c9b896",
+    textColor: "#5c4f3a",
+    preview: "📃",
+  },
+  { id: "kraft", label: "Kraft Paper", value: "#d9c7a7", lineColor: "#b8a47e", textColor: "#3d3326", preview: "📦" },
+  { id: "night", label: "Night Mode", value: "#1e1e2e", lineColor: "#313244", textColor: "#cdd6f4", preview: "🌙" },
+  { id: "rose", label: "Rose Blush", value: "#fff1f2", lineColor: "#fda4af", textColor: "#881337", preview: "🌸" },
+  { id: "sky", label: "Sky Blue", value: "#f0f9ff", lineColor: "#7dd3fc", textColor: "#0c4a6e", preview: "☁️" },
+  { id: "mint", label: "Fresh Mint", value: "#f0fdf4", lineColor: "#86efac", textColor: "#14532d", preview: "🌿" },
+  {
+    id: "lavender",
+    label: "Lavender Dream",
+    value: "#faf5ff",
+    lineColor: "#d8b4fe",
+    textColor: "#581c87",
+    preview: "💜",
+  },
+  { id: "sepia", label: "Sepia Vintage", value: "#f4e4bc", lineColor: "#c4a35a", textColor: "#5c4f3a", preview: "📰" },
+  { id: "noir", label: "Dark Noir", value: "#0f0f0f", lineColor: "#2a2a2a", textColor: "#e5e5e5", preview: "🖤" },
+  { id: "ocean", label: "Deep Ocean", value: "#0c4a6e", lineColor: "#075985", textColor: "#e0f2fe", preview: "🌊" },
+];
+
+// Line style options for diary pages
+const LINE_STYLES = [
+  { id: "none", label: "Blank", description: "No lines - clean canvas", preview: "⬜" },
+  { id: "ruled", label: "Ruled Lines", description: "Classic horizontal lines", preview: "📝" },
+  { id: "grid", label: "Grid", description: "Graph paper style", preview: "📐" },
+  { id: "dotted", label: "Dot Grid", description: "Bullet journal style dots", preview: "⚫" },
+  { id: "college", label: "College Ruled", description: "With red margin line", preview: "📕" },
 ];
 
 // Stroke data for stroke eraser
@@ -191,8 +222,13 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
   const [imageUrl, setImageUrl] = useState("");
   const [currentFont, setCurrentFont] = useState("inter");
   const [currentSize, setCurrentSize] = useState("16");
-  const [editorBg, setEditorBg] = useState("#ffffff");
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Diary Theme States
+  const [pageTheme, setPageTheme] = useState("white");
+  const [lineStyle, setLineStyle] = useState("none");
+  const [customBgImage, setCustomBgImage] = useState<string | null>(null);
+  const [pageFlipAnimation, setPageFlipAnimation] = useState(false);
 
   // Advanced Scribble State
   const [scribbleMode, setScribbleMode] = useState(false);
@@ -214,6 +250,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedContent = useRef(note.contentRich || "");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bgImageInputRef = useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
     extensions: [
@@ -242,6 +279,62 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
       }
     },
   });
+
+  // Get current theme
+  const currentTheme = PAGE_THEMES.find((t) => t.id === pageTheme) || PAGE_THEMES[0];
+  const isDarkTheme = ["night", "noir", "ocean"].includes(pageTheme);
+
+  // Get line style CSS
+  const getLineStyleCSS = (): React.CSSProperties => {
+    const lineColor = currentTheme.lineColor;
+
+    switch (lineStyle) {
+      case "ruled":
+        return {
+          backgroundImage: `repeating-linear-gradient(transparent, transparent 31px, ${lineColor} 31px, ${lineColor} 32px)`,
+          backgroundPositionY: "8px",
+        };
+      case "grid":
+        return {
+          backgroundImage: `linear-gradient(${lineColor} 1px, transparent 1px), linear-gradient(90deg, ${lineColor} 1px, transparent 1px)`,
+          backgroundSize: "24px 24px",
+        };
+      case "dotted":
+        return {
+          backgroundImage: `radial-gradient(${lineColor} 1.5px, transparent 1.5px)`,
+          backgroundSize: "20px 20px",
+        };
+      case "college":
+        return {
+          backgroundImage: `linear-gradient(#ef4444 1px, transparent 1px), repeating-linear-gradient(transparent, transparent 31px, ${lineColor} 31px, ${lineColor} 32px)`,
+          backgroundSize: "100% 100%, 100% 100%",
+          backgroundPosition: "60px 0, 0 8px",
+          paddingLeft: "80px",
+        };
+      default:
+        return {};
+    }
+  };
+
+  // Handle background image upload
+  const handleBgImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setCustomBgImage(ev.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Clear background image
+  const clearBgImage = () => {
+    setCustomBgImage(null);
+    if (bgImageInputRef.current) {
+      bgImageInputRef.current.value = "";
+    }
+  };
 
   // Redraw all strokes on canvas
   const redrawCanvas = useCallback(() => {
@@ -302,7 +395,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     setTitle(note.title);
     setTags(note.tags);
     setSaveStatus("saved");
-    // Load strokes if saved
     if (note.scribbleStrokes) {
       try {
         setStrokes(JSON.parse(note.scribbleStrokes));
@@ -371,10 +463,8 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     const pos = getCanvasPos(e);
 
     if (tool === "pen" && currentStroke) {
-      // Add point to current stroke
       setCurrentStroke((prev) => (prev ? { ...prev, points: [...prev.points, pos] } : null));
 
-      // Draw line segment
       const pt = PEN_TYPES.find((p) => p.id === penType) || PEN_TYPES[0];
       ctx.beginPath();
       ctx.moveTo(lastPos.current.x, lastPos.current.y);
@@ -392,14 +482,12 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
       ctx.globalAlpha = 1;
       ctx.shadowBlur = 0;
     } else if (tool === "eraser") {
-      // Simple eraser - erase pixels
       ctx.globalCompositeOperation = "destination-out";
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, eraserSize / 2, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalCompositeOperation = "source-over";
     } else if (tool === "stroke-eraser") {
-      // Stroke eraser - remove entire stroke
       const strokeIndex = findStrokeAtPoint(pos.x, pos.y);
       if (strokeIndex >= 0) {
         setUndoStack((prev) => [...prev, [...strokes]]);
@@ -495,8 +583,9 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "h-8 w-8 flex items-center justify-center rounded-md transition-colors text-slate-500 hover:text-slate-800 hover:bg-slate-100 disabled:opacity-30",
+        "h-8 w-8 flex items-center justify-center rounded-md transition-colors hover:bg-slate-100 disabled:opacity-30",
         active && "bg-slate-100 text-primary",
+        isDarkTheme ? "text-slate-300 hover:text-white hover:bg-slate-700" : "text-slate-500 hover:text-slate-800",
       )}
     >
       {children}
@@ -504,15 +593,27 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
   );
 
   const containerClass = isFullscreen
-    ? "fixed inset-0 z-[9999] flex flex-col bg-white"
+    ? "fixed inset-0 z-[9999] flex flex-col"
     : "flex flex-col h-full w-full overflow-hidden";
 
   return (
-    <div className={containerClass} style={{ backgroundColor: editorBg }}>
+    <div
+      className={containerClass}
+      style={{
+        backgroundColor: customBgImage ? "transparent" : currentTheme.value,
+        color: currentTheme.textColor,
+      }}
+    >
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+      <input ref={bgImageInputRef} type="file" accept="image/*" className="hidden" onChange={handleBgImageUpload} />
 
       {/* MAIN TOOLBAR */}
-      <div className="shrink-0 bg-white border-b border-slate-200 relative z-[100]">
+      <div
+        className={cn(
+          "shrink-0 border-b relative z-[100]",
+          isDarkTheme ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200",
+        )}
+      >
         <div className="flex items-center h-11 px-2 gap-0.5 overflow-x-auto">
           <ToolBtn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
             <Undo2 className="h-4 w-4" />
@@ -520,11 +621,16 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           <ToolBtn onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo">
             <Redo2 className="h-4 w-4" />
           </ToolBtn>
-          <div className="w-px h-5 bg-slate-200 mx-1" />
+          <div className={cn("w-px h-5 mx-1", isDarkTheme ? "bg-slate-600" : "bg-slate-200")} />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="h-8 px-2 flex items-center gap-1 rounded-md text-sm text-slate-600 hover:bg-slate-100">
+              <button
+                className={cn(
+                  "h-8 px-2 flex items-center gap-1 rounded-md text-sm",
+                  isDarkTheme ? "text-slate-300 hover:bg-slate-700" : "text-slate-600 hover:bg-slate-100",
+                )}
+              >
                 <Type className="h-4 w-4" />
                 <ChevronDown className="h-3 w-3" />
               </button>
@@ -544,7 +650,12 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           </DropdownMenu>
 
           <Select value={currentFont} onValueChange={handleFontChange}>
-            <SelectTrigger className="h-8 w-24 text-xs border-0 bg-slate-50 hover:bg-slate-100 rounded-md">
+            <SelectTrigger
+              className={cn(
+                "h-8 w-24 text-xs border-0 rounded-md",
+                isDarkTheme ? "bg-slate-800 hover:bg-slate-700 text-slate-300" : "bg-slate-50 hover:bg-slate-100",
+              )}
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="z-[99999] max-h-72">
@@ -557,7 +668,12 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           </Select>
 
           <Select value={currentSize} onValueChange={handleSizeChange}>
-            <SelectTrigger className="h-8 w-14 text-xs border-0 bg-slate-50 hover:bg-slate-100 rounded-md">
+            <SelectTrigger
+              className={cn(
+                "h-8 w-14 text-xs border-0 rounded-md",
+                isDarkTheme ? "bg-slate-800 hover:bg-slate-700 text-slate-300" : "bg-slate-50 hover:bg-slate-100",
+              )}
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="z-[99999]">
@@ -568,12 +684,17 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
               ))}
             </SelectContent>
           </Select>
-          <div className="w-px h-5 bg-slate-200 mx-1" />
+          <div className={cn("w-px h-5 mx-1", isDarkTheme ? "bg-slate-600" : "bg-slate-200")} />
 
           <Popover>
             <PopoverTrigger asChild>
-              <button className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-slate-100">
-                <Palette className="h-4 w-4 text-slate-500" />
+              <button
+                className={cn(
+                  "h-8 w-8 flex items-center justify-center rounded-md",
+                  isDarkTheme ? "hover:bg-slate-700" : "hover:bg-slate-100",
+                )}
+              >
+                <Palette className="h-4 w-4" style={{ color: isDarkTheme ? "#94a3b8" : "#64748b" }} />
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-2 z-[99999]" align="start">
@@ -620,8 +741,13 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
 
           <Popover>
             <PopoverTrigger asChild>
-              <button className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-slate-100">
-                <Highlighter className="h-4 w-4 text-slate-500" />
+              <button
+                className={cn(
+                  "h-8 w-8 flex items-center justify-center rounded-md",
+                  isDarkTheme ? "hover:bg-slate-700" : "hover:bg-slate-100",
+                )}
+              >
+                <Highlighter className="h-4 w-4" style={{ color: isDarkTheme ? "#94a3b8" : "#64748b" }} />
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-2 z-[99999]" align="start">
@@ -643,7 +769,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
               </div>
             </PopoverContent>
           </Popover>
-          <div className="w-px h-5 bg-slate-200 mx-1" />
+          <div className={cn("w-px h-5 mx-1", isDarkTheme ? "bg-slate-600" : "bg-slate-200")} />
 
           <ToolBtn
             onClick={() => editor.chain().focus().toggleBulletList().run()}
@@ -666,7 +792,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           >
             <CheckSquare className="h-4 w-4" />
           </ToolBtn>
-          <div className="w-px h-5 bg-slate-200 mx-1" />
+          <div className={cn("w-px h-5 mx-1", isDarkTheme ? "bg-slate-600" : "bg-slate-200")} />
 
           <ToolBtn
             onClick={() => editor.chain().focus().setTextAlign("left").run()}
@@ -689,7 +815,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           >
             <AlignRight className="h-4 w-4" />
           </ToolBtn>
-          <div className="w-px h-5 bg-slate-200 mx-1" />
+          <div className={cn("w-px h-5 mx-1", isDarkTheme ? "bg-slate-600" : "bg-slate-200")} />
 
           <ToolBtn onClick={() => setLinkDialogOpen(true)} active={editor.isActive("link")} title="Link">
             <Link2 className="h-4 w-4" />
@@ -701,38 +827,131 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
             <PenTool className="h-4 w-4" />
           </ToolBtn>
 
-          <Popover>
-            <PopoverTrigger asChild>
+          <div className={cn("w-px h-5 mx-1", isDarkTheme ? "bg-slate-600" : "bg-slate-200")} />
+
+          {/* Diary Theme Selector */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <button
-                className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-slate-100"
-                title="Background"
+                className={cn(
+                  "h-8 px-2 flex items-center gap-1.5 rounded-md text-xs font-medium",
+                  isDarkTheme ? "text-slate-300 hover:bg-slate-700" : "text-slate-600 hover:bg-slate-100",
+                )}
+                title="Page Theme"
               >
-                <ImagePlus className="h-4 w-4 text-slate-500" />
+                <div
+                  className="w-4 h-4 rounded border"
+                  style={{ backgroundColor: currentTheme.value, borderColor: isDarkTheme ? "#475569" : "#e2e8f0" }}
+                />
+                <span className="hidden sm:inline">Theme</span>
+                <ChevronDown className="h-3 w-3" />
               </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-48 p-3 z-[99999]" align="start">
-              <p className="text-xs text-slate-500 mb-2">Background</p>
-              <div className="grid grid-cols-4 gap-2">
-                {BG_PRESETS.map((bg) => (
-                  <button
-                    key={bg.id}
-                    onClick={() => setEditorBg(bg.value)}
-                    title={bg.label}
-                    className={cn(
-                      "h-8 w-8 rounded-md border-2",
-                      editorBg === bg.value ? "border-primary" : "border-slate-200",
-                    )}
-                    style={{ backgroundColor: bg.value }}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="z-[99999] w-52">
+              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Page Themes</div>
+              {PAGE_THEMES.map((theme) => (
+                <DropdownMenuItem
+                  key={theme.id}
+                  onClick={() => setPageTheme(theme.id)}
+                  className="gap-2 cursor-pointer"
+                >
+                  <span>{theme.preview}</span>
+                  <div
+                    className="w-5 h-5 rounded border"
+                    style={{ backgroundColor: theme.value, borderColor: "#e2e8f0" }}
                   />
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
+                  <span className="flex-1 text-sm">{theme.label}</span>
+                  {pageTheme === theme.id && <Check className="h-3 w-3" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Line Style Selector */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={cn(
+                  "h-8 px-2 flex items-center gap-1.5 rounded-md text-xs font-medium",
+                  isDarkTheme ? "text-slate-300 hover:bg-slate-700" : "text-slate-600 hover:bg-slate-100",
+                )}
+                title="Line Style"
+              >
+                <span>{LINE_STYLES.find((l) => l.id === lineStyle)?.preview || "⬜"}</span>
+                <span className="hidden sm:inline">Lines</span>
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="z-[99999] w-48">
+              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Line Styles</div>
+              {LINE_STYLES.map((style) => (
+                <DropdownMenuItem
+                  key={style.id}
+                  onClick={() => setLineStyle(style.id)}
+                  className="gap-2 cursor-pointer"
+                >
+                  <span>{style.preview}</span>
+                  <div className="flex-1">
+                    <div className="text-sm">{style.label}</div>
+                    <div className="text-xs text-muted-foreground">{style.description}</div>
+                  </div>
+                  {lineStyle === style.id && <Check className="h-3 w-3" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Background Image Upload */}
+          <button
+            onClick={() => bgImageInputRef.current?.click()}
+            className={cn(
+              "h-8 px-2 flex items-center gap-1.5 rounded-md text-xs font-medium",
+              isDarkTheme ? "text-slate-300 hover:bg-slate-700" : "text-slate-600 hover:bg-slate-100",
+            )}
+            title="Upload Background Image"
+          >
+            <ImagePlus className="h-4 w-4" />
+            <span className="hidden sm:inline">Background</span>
+          </button>
+
+          {customBgImage && (
+            <button
+              onClick={clearBgImage}
+              className="h-8 w-8 flex items-center justify-center rounded-md text-red-500 hover:bg-red-100"
+              title="Remove Background"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+
+          {/* Page Flip Animation Toggle */}
+          <button
+            onClick={() => setPageFlipAnimation(!pageFlipAnimation)}
+            className={cn(
+              "h-8 px-2 flex items-center gap-1.5 rounded-md text-xs font-medium",
+              pageFlipAnimation
+                ? isDarkTheme
+                  ? "bg-slate-700 text-white"
+                  : "bg-slate-200 text-slate-800"
+                : isDarkTheme
+                  ? "text-slate-300 hover:bg-slate-700"
+                  : "text-slate-600 hover:bg-slate-100",
+            )}
+            title="Toggle Page Animation"
+          >
+            <BookOpen className="h-4 w-4" />
+            <span className="hidden sm:inline">3D</span>
+          </button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-slate-100">
-                <MoreHorizontal className="h-4 w-4 text-slate-500" />
+              <button
+                className={cn(
+                  "h-8 w-8 flex items-center justify-center rounded-md",
+                  isDarkTheme ? "hover:bg-slate-700" : "hover:bg-slate-100",
+                )}
+              >
+                <MoreHorizontal className="h-4 w-4" style={{ color: isDarkTheme ? "#94a3b8" : "#64748b" }} />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="z-[99999]">
@@ -769,7 +988,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
               "text-xs px-2 py-1 rounded-full font-medium",
               saveStatus === "saving" && "bg-amber-100 text-amber-700",
               saveStatus === "saved" && "bg-emerald-100 text-emerald-700",
-              saveStatus === "unsaved" && "bg-slate-100 text-slate-500",
+              saveStatus === "unsaved" && (isDarkTheme ? "bg-slate-700 text-slate-300" : "bg-slate-100 text-slate-500"),
             )}
           >
             {saveStatus === "saving" && (
@@ -819,7 +1038,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-semibold text-amber-700">✏️ Scribble</span>
 
-            {/* Undo */}
             <button
               onClick={handleUndo}
               disabled={undoStack.length === 0}
@@ -831,7 +1049,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
 
             <div className="w-px h-5 bg-amber-300" />
 
-            {/* Colors */}
             <div className="flex gap-1">
               {SCRIBBLE_COLORS.map((c) => (
                 <button
@@ -853,7 +1070,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
 
             <div className="w-px h-5 bg-amber-300" />
 
-            {/* Pen Types */}
             <div className="flex gap-0.5">
               {PEN_TYPES.map((pt) => (
                 <button
@@ -873,7 +1089,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
               ))}
             </div>
 
-            {/* Pen Width */}
             <select
               value={penWidth}
               onChange={(e) => setPenWidth(Number(e.target.value))}
@@ -888,7 +1103,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
 
             <div className="w-px h-5 bg-amber-300" />
 
-            {/* Erasers */}
             <button
               onClick={() => setTool("eraser")}
               className={cn(
@@ -905,12 +1119,11 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
                 "p-1.5 rounded-lg flex items-center gap-1 text-xs",
                 tool === "stroke-eraser" ? "bg-amber-200" : "hover:bg-amber-100",
               )}
-              title="Stroke Eraser (removes entire line)"
+              title="Stroke Eraser"
             >
               <Circle className="h-4 w-4" />
             </button>
 
-            {/* Eraser Size (only for simple eraser) */}
             {tool === "eraser" && (
               <select
                 value={eraserSize}
@@ -943,45 +1156,115 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
         </div>
       )}
 
-      {/* Content with Scribble Overlay */}
-      <div ref={containerRef} className="flex-1 overflow-y-auto overflow-x-hidden relative">
-        <div className="px-4 py-3" style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>
-          <Input
-            value={title}
-            onChange={(e) => handleTitleChange(e.target.value)}
-            placeholder="Untitled Note"
-            className="text-2xl font-semibold border-none bg-transparent px-0 h-auto focus-visible:ring-0 mb-3"
-          />
-          <div className="flex items-center gap-2 mb-4 flex-wrap">
-            {group && <Badge className="bg-primary/10 text-primary border-0">{group.name}</Badge>}
-            {tags.map((tag) => (
-              <Badge key={tag} variant="outline" className="text-xs">
-                #{tag}
-              </Badge>
-            ))}
-            <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-6 text-xs text-slate-400">
-                  + Tag
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-48 p-2 z-[99999]">
-                <div className="flex gap-2">
-                  <Input
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="Tag"
-                    className="h-8"
-                    onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
-                  />
-                  <Button size="sm" className="h-8" onClick={handleAddTag}>
-                    Add
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
+      {/* Content with Diary Page Styling */}
+      <div
+        ref={containerRef}
+        className={cn("flex-1 overflow-y-auto overflow-x-hidden relative", pageFlipAnimation && "perspective-[1000px]")}
+      >
+        {/* Paper Container with 3D Effect */}
+        <div
+          className={cn(
+            "relative mx-auto max-w-4xl min-h-full transition-all duration-500",
+            pageFlipAnimation && "transform-style-preserve-3d hover:rotate-y-[2deg]",
+          )}
+          style={{
+            boxShadow: pageFlipAnimation
+              ? "0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06), 8px 0 15px -3px rgba(0,0,0,0.1)"
+              : "0 1px 3px rgba(0,0,0,0.1)",
+          }}
+        >
+          {/* Page Edge Effect (for realistic diary look) */}
+          {pageFlipAnimation && (
+            <div className="absolute right-0 top-0 bottom-0 w-2 bg-gradient-to-l from-black/5 to-transparent pointer-events-none z-10" />
+          )}
+
+          {/* College ruled margin line */}
+          {lineStyle === "college" && (
+            <div
+              className="absolute left-[60px] top-0 bottom-0 w-[2px] pointer-events-none z-10"
+              style={{ backgroundColor: "#ef4444" }}
+            />
+          )}
+
+          {/* Main Editor Area */}
+          <div
+            className="relative min-h-[800px] px-6 py-4 transition-all duration-300"
+            style={{
+              backgroundColor: customBgImage ? "transparent" : currentTheme.value,
+              color: currentTheme.textColor,
+              ...getLineStyleCSS(),
+              ...(customBgImage
+                ? {
+                    backgroundImage: `url(${customBgImage})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    backgroundRepeat: "no-repeat",
+                  }
+                : {}),
+            }}
+          >
+            {/* Paper Texture Overlay for aged themes */}
+            {(pageTheme === "aged" || pageTheme === "kraft" || pageTheme === "sepia") && !customBgImage && (
+              <div
+                className="absolute inset-0 pointer-events-none opacity-[0.03] z-0"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+                }}
+              />
+            )}
+
+            {/* Title & Meta */}
+            <div style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>
+              <Input
+                value={title}
+                onChange={(e) => handleTitleChange(e.target.value)}
+                placeholder="Untitled Note"
+                className={cn(
+                  "text-2xl font-semibold border-none bg-transparent px-0 h-auto focus-visible:ring-0 mb-3",
+                  isDarkTheme ? "text-white placeholder:text-slate-500" : "placeholder:text-slate-300",
+                )}
+                style={{ color: currentTheme.textColor }}
+              />
+              <div className="flex items-center gap-2 mb-4 flex-wrap">
+                {group && <Badge className="bg-primary/10 text-primary border-0">{group.name}</Badge>}
+                {tags.map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant="outline"
+                    className={cn("text-xs", isDarkTheme && "border-slate-600 text-slate-300")}
+                  >
+                    #{tag}
+                  </Badge>
+                ))}
+                <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={cn("h-6 text-xs", isDarkTheme ? "text-slate-400" : "text-slate-400")}
+                    >
+                      + Tag
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-48 p-2 z-[99999]">
+                    <div className="flex gap-2">
+                      <Input
+                        value={newTag}
+                        onChange={(e) => setNewTag(e.target.value)}
+                        placeholder="Tag"
+                        className="h-8"
+                        onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
+                      />
+                      <Button size="sm" className="h-8" onClick={handleAddTag}>
+                        Add
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <EditorContent editor={editor} className={cn(isDarkTheme && "prose-invert")} />
+            </div>
           </div>
-          <EditorContent editor={editor} />
         </div>
 
         {/* Scribble Canvas Overlay */}
@@ -992,7 +1275,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
             onMouseMove={draw}
             onMouseUp={stopDrawing}
             onMouseLeave={stopDrawing}
-            className="absolute inset-0 w-full h-full"
+            className="absolute inset-0 w-full h-full z-20"
             style={{
               touchAction: "none",
               cursor: tool === "pen" ? "crosshair" : tool === "eraser" ? "cell" : "pointer",
@@ -1066,6 +1349,13 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
         .ProseMirror ul[data-type="taskList"] input { accent-color: #10b981; }
         .ProseMirror li[data-checked="true"] > div { text-decoration: line-through; color: #94a3b8; }
         .ProseMirror a { color: #3b82f6; text-decoration: underline; }
+        .prose-invert .ProseMirror blockquote { border-left-color: #475569; color: #94a3b8; }
+        .prose-invert .ProseMirror pre { background: #1e293b; }
+        .prose-invert .ProseMirror code { background: #1e293b; }
+        .prose-invert .ProseMirror hr { border-top-color: #334155; }
+        .perspective-\\[1000px\\] { perspective: 1000px; }
+        .transform-style-preserve-3d { transform-style: preserve-3d; }
+        .rotate-y-\\[2deg\\] { transform: rotateY(2deg); }
       `}</style>
     </div>
   );
