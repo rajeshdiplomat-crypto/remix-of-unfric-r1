@@ -7,7 +7,7 @@ interface MotionContextValue {
 
 const MotionContext = createContext<MotionContextValue | null>(null);
 
-const STORAGE_KEY = 'ambalanced-motion';
+const STORAGE_KEY = 'unfric-motion';
 
 export function MotionProvider({ children }: { children: ReactNode }) {
   const [motionEnabled, setMotionState] = useState<boolean>(() => {

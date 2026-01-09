@@ -17,7 +17,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import logo from "@/assets/logo.png";
+import { UnfricLogo } from "@/components/common/UnfricLogo";
 
 const mainNavItems = [
   { title: "Diary", url: "/diary", icon: BookOpen },
@@ -63,7 +63,7 @@ export function MobileNav({ onNavigate }: MobileNavProps) {
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <img src={logo} alt="ambalanced" className="h-8 w-auto object-contain dark:invert" />
+          <UnfricLogo size="md" />
         </div>
       </div>
 

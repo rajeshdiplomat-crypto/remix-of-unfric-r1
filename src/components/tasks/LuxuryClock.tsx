@@ -6,7 +6,7 @@ import { useTimezone } from "@/hooks/useTimezone";
 
 type ClockMode = 'digital' | 'analog';
 
-const STORAGE_KEY = 'ambalanced-clock-mode';
+const STORAGE_KEY = 'unfric-clock-mode';
 
 export function LuxuryClock() {
   const [time, setTime] = useState(new Date());

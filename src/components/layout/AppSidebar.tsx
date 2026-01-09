@@ -30,7 +30,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { ProfileEditPopover } from "./ProfileEditPopover";
-import logo from "@/assets/logo.png";
+import { UnfricLogo } from "@/components/common/UnfricLogo";
 
 const mainNavItems = [
   { title: "Diary", url: "/diary", icon: BookOpen },
@@ -59,13 +59,9 @@ export function AppSidebar() {
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-3">
             {collapsed ? (
-              <img 
-                src="/favicon.png" 
-                alt="ambalanced logo" 
-                className="h-8 w-8 object-cover"
-              />
+              <span className="text-lg font-light text-foreground">u</span>
             ) : (
-              <img src={logo} alt="ambalanced" className="h-5 w-auto object-contain dark:invert" />
+              <UnfricLogo size="sm" />
             )}
           </div>
           <div className="flex items-center gap-1">
