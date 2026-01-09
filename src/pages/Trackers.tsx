@@ -62,6 +62,7 @@ import { ActivityImageUpload, loadActivityImage, saveActivityImage } from "@/com
 import { ActivityDetailPanel } from "@/components/trackers/ActivityDetailPanel";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
+import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { getPresetImage } from "@/lib/presetImages";
 
 interface ActivityItem {
@@ -719,6 +720,10 @@ export default function Trackers() {
   const currentSelectedActivity = selectedActivity
     ? activities.find((a) => a.id === selectedActivity.id) || null
     : null;
+
+  if (loading) {
+    return <PageLoadingScreen module="trackers" />;
+  }
 
   return (
     <TooltipProvider>

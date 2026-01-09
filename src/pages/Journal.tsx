@@ -9,6 +9,7 @@ import { JournalTiptapEditor, TiptapEditorRef } from "@/components/journal/Journ
 import { JournalSidebarPanel } from "@/components/journal/JournalSidebarPanel";
 import { JournalSettingsModal } from "@/components/journal/JournalSettingsModal";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
+import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { JournalEntry, JournalTemplate, JOURNAL_SKINS, DEFAULT_TEMPLATE } from "@/components/journal/types";
 
 interface JournalAnswer {
@@ -260,6 +261,10 @@ export default function Journal() {
     editorRef.current?.editor?.chain().focus().insertContent(`\n\n${prompt}\n\n`).run();
     setIsSaved(false);
   };
+
+  if (isLoading && !currentEntry) {
+    return <PageLoadingScreen module="journal" />;
+  }
 
   return (
     <div

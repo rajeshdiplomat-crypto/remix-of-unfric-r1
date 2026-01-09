@@ -15,6 +15,7 @@ import { BoardView } from "@/components/tasks/BoardView";
 import { UnifiedTaskDrawer } from "@/components/tasks/UnifiedTaskDrawer";
 import { DeepFocusPrompt } from "@/components/tasks/DeepFocusPromptModal";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
+import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 
 import {
   QuadrantTask,
@@ -469,11 +470,7 @@ export default function Tasks() {
   }, [tasks, searchQuery]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-pulse text-muted-foreground">Loading tasks...</div>
-      </div>
-    );
+    return <PageLoadingScreen module="tasks" />;
   }
 
 

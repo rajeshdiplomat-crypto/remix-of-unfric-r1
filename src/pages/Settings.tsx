@@ -5,25 +5,13 @@ import { ThemeSelector } from "@/components/settings/ThemeSelector";
 import { FontSelector } from "@/components/settings/FontSelector";
 import { MotionToggle } from "@/components/settings/MotionToggle";
 import { useUserSettings } from "@/hooks/useUserSettings";
-import { Skeleton } from "@/components/ui/skeleton";
+import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 
 export default function Settings() {
   const { settings, profile, loading, saving, updateSettings, updateProfile } = useUserSettings();
 
   if (loading) {
-    return (
-      <div className="w-full space-y-6">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-            Settings
-          </h1>
-          <p className="text-muted-foreground mt-1">Manage your account and preferences</p>
-        </div>
-        <Skeleton className="h-[400px] w-full" />
-        <Skeleton className="h-[300px] w-full" />
-        <Skeleton className="h-[200px] w-full" />
-      </div>
-    );
+    return <PageLoadingScreen module="settings" />;
   }
 
   return (

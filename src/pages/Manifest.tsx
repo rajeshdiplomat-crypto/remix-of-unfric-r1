@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Loader2, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { subDays, parseISO, isSameDay, differenceInDays } from "date-fns";
 
 import { ManifestTopBar } from "@/components/manifest/ManifestTopBar";
@@ -299,11 +300,7 @@ export default function Manifest() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <PageLoadingScreen module="manifest" />;
   }
 
   return (
