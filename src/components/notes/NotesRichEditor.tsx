@@ -327,17 +327,23 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     });
   }, [strokes]);
 
+  // Resize canvas when container changes or strokes exist
+  useEffect(() => {
+    if (canvasRef.current && containerRef.current && strokes.length > 0) {
+      canvasRef.current.width = containerRef.current.offsetWidth;
+      canvasRef.current.height = Math.max(containerRef.current.scrollHeight, containerRef.current.offsetHeight, 500);
+      redrawCanvas();
+    }
+  }, [strokes, redrawCanvas]);
+
+  // Also resize when entering scribble mode
   useEffect(() => {
     if (scribbleMode && canvasRef.current && containerRef.current) {
       canvasRef.current.width = containerRef.current.offsetWidth;
-      canvasRef.current.height = Math.max(containerRef.current.offsetHeight, 500);
+      canvasRef.current.height = Math.max(containerRef.current.scrollHeight, containerRef.current.offsetHeight, 500);
       redrawCanvas();
     }
   }, [scribbleMode, redrawCanvas]);
-
-  useEffect(() => {
-    if (scribbleMode) redrawCanvas();
-  }, [strokes, scribbleMode, redrawCanvas]);
 
   useEffect(() => {
     if (editor && note.contentRich !== editor.getHTML()) {
@@ -349,7 +355,20 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     setSaveStatus("saved");
     if (note.scribbleStrokes) {
       try {
-        setStrokes(JSON.parse(note.scribbleStrokes));
+        const loadedStrokes = JSON.parse(note.scribbleStrokes);
+        setStrokes(loadedStrokes);
+        // Delayed redraw to ensure canvas is mounted and sized
+        setTimeout(() => {
+          if (canvasRef.current && containerRef.current && loadedStrokes.length > 0) {
+            canvasRef.current.width = containerRef.current.offsetWidth;
+            canvasRef.current.height = Math.max(
+              containerRef.current.scrollHeight,
+              containerRef.current.offsetHeight,
+              500,
+            );
+            redrawCanvas();
+          }
+        }, 100);
       } catch {}
     }
   }, [note.id, editor]);
@@ -1039,21 +1058,21 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           <EditorContent editor={editor} />
         </div>
 
-        {/* Scribble Canvas */}
-        {scribbleMode && (
-          <canvas
-            ref={canvasRef}
-            onMouseDown={startDrawing}
-            onMouseMove={draw}
-            onMouseUp={stopDrawing}
-            onMouseLeave={stopDrawing}
-            className="absolute inset-0 w-full h-full"
-            style={{
-              touchAction: "none",
-              cursor: tool === "pen" ? "crosshair" : tool === "eraser" ? "cell" : "pointer",
-            }}
-          />
-        )}
+        {/* Scribble Canvas - Always visible to show saved strokes, but only interactive in scribble mode */}
+        <canvas
+          ref={canvasRef}
+          onMouseDown={scribbleMode ? startDrawing : undefined}
+          onMouseMove={scribbleMode ? draw : undefined}
+          onMouseUp={scribbleMode ? stopDrawing : undefined}
+          onMouseLeave={scribbleMode ? stopDrawing : undefined}
+          className="absolute inset-0 w-full h-full"
+          style={{
+            touchAction: "none",
+            cursor: scribbleMode ? (tool === "pen" ? "crosshair" : tool === "eraser" ? "cell" : "pointer") : "default",
+            pointerEvents: scribbleMode ? "auto" : "none",
+            display: strokes.length > 0 || scribbleMode ? "block" : "none",
+          }}
+        />
       </div>
 
       {/* Dialogs */}
