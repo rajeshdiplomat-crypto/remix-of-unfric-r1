@@ -96,11 +96,12 @@ const AnimatedUnfricLogo = () => {
       {letters.map((letter, index) => (
         <span
           key={index}
-          className="inline-block text-4xl md:text-5xl font-light tracking-[0.15em] lowercase text-foreground"
+          className="inline-block text-4xl md:text-5xl font-light tracking-[0.15em] lowercase"
           style={{
             fontFamily: "'Inter', system-ui, sans-serif",
             animation: `wave 1.5s ease-in-out infinite`,
             animationDelay: `${index * 0.1}s`,
+            color: "rgba(255, 255, 255, 0.95)",
           }}
         >
           {letter}
@@ -116,8 +117,9 @@ const LoadingDots = () => (
     {[0, 1, 2].map((i) => (
       <div
         key={i}
-        className="w-1.5 h-1.5 rounded-full bg-foreground/40"
+        className="w-1.5 h-1.5 rounded-full"
         style={{
+          backgroundColor: "rgba(255, 255, 255, 0.5)",
           animation: `dotPulse 1.4s ease-in-out infinite`,
           animationDelay: `${i * 0.16}s`,
         }}
@@ -164,7 +166,6 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
   // If no isDataReady prop provided, auto-exit after min time
   useEffect(() => {
     if (hasMetMinTime && !isExiting && !hasExited) {
-      // Small delay to ensure we show full 2 seconds
       const autoExitTimer = setTimeout(() => {
         setIsExiting(true);
       }, 100);
@@ -226,9 +227,18 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
             transform: scaleX(1);
           }
         }
+        
+        @keyframes subtleGlow {
+          0%, 100% {
+            opacity: 0.3;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
       `}</style>
 
-      {/* FULL SCREEN FIXED OVERLAY - TRUE CENTER */}
+      {/* DARK FULL SCREEN OVERLAY - TRUE CENTER */}
       <div
         style={{
           position: "fixed",
@@ -242,13 +252,43 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "hsl(var(--background))",
+          // DARK BACKGROUND with subtle gradient
+          background: "linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%)",
           transition: "opacity 0.4s ease-out, transform 0.4s ease-out",
           opacity: isExiting ? 0 : isVisible ? 1 : 0,
           transform: isExiting ? "scale(0.98)" : "scale(1)",
           pointerEvents: isExiting ? "none" : "auto",
         }}
       >
+        {/* Subtle ambient glow effects */}
+        <div
+          style={{
+            position: "absolute",
+            top: "20%",
+            left: "30%",
+            width: "300px",
+            height: "300px",
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)",
+            filter: "blur(60px)",
+            animation: "subtleGlow 4s ease-in-out infinite",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            bottom: "30%",
+            right: "25%",
+            width: "250px",
+            height: "250px",
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%)",
+            filter: "blur(60px)",
+            animation: "subtleGlow 4s ease-in-out infinite",
+            animationDelay: "2s",
+          }}
+        />
+
         {/* Main centered content */}
         <div
           style={{
@@ -258,6 +298,8 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
             justifyContent: "center",
             gap: "2rem",
             padding: "2rem",
+            position: "relative",
+            zIndex: 1,
           }}
         >
           {/* Animated unfric logo */}
@@ -272,8 +314,11 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
 
           {/* Animated line separator */}
           <div
-            className="w-16 h-px bg-foreground/20 origin-center"
             style={{
+              width: "64px",
+              height: "1px",
+              backgroundColor: "rgba(255, 255, 255, 0.2)",
+              transformOrigin: "center",
               animation: isVisible ? "lineExpand 0.6s ease-out 0.3s forwards" : "none",
               transform: "scaleX(0)",
             }}
@@ -287,8 +332,15 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
             )}
           >
-            <p className="text-base md:text-lg font-light text-foreground/80 leading-relaxed">"{currentQuote.text}"</p>
-            <p className="text-xs text-muted-foreground/60 tracking-widest uppercase">— {currentQuote.author}</p>
+            <p
+              style={{ color: "rgba(255, 255, 255, 0.85)" }}
+              className="text-base md:text-lg font-light leading-relaxed"
+            >
+              "{currentQuote.text}"
+            </p>
+            <p style={{ color: "rgba(255, 255, 255, 0.4)" }} className="text-xs tracking-widest uppercase">
+              — {currentQuote.author}
+            </p>
           </div>
 
           {/* Loading dots */}
@@ -298,8 +350,9 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
 
           {/* Module indicator (subtle) */}
           <p
+            style={{ color: "rgba(255, 255, 255, 0.25)" }}
             className={cn(
-              "mt-6 text-[10px] text-muted-foreground/40 tracking-[0.3em] uppercase",
+              "mt-6 text-[10px] tracking-[0.3em] uppercase",
               "transition-all duration-500 delay-400",
               isVisible ? "opacity-100" : "opacity-0",
             )}
