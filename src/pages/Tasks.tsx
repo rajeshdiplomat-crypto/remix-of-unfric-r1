@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -469,6 +470,16 @@ export default function Tasks() {
     return tasks.filter((t) => t.title.toLowerCase().includes(q));
   }, [tasks, searchQuery]);
 
+  const [contentReady, setContentReady] = useState(false);
+
+  useEffect(() => {
+    if (!loading) {
+      // Slight delay for smooth transition from loading screen
+      const timer = setTimeout(() => setContentReady(true), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
+
   if (loading) {
     return <PageLoadingScreen module="tasks" />;
   }
@@ -479,7 +490,13 @@ export default function Tasks() {
     : "xl:grid-cols-[minmax(300px,340px)_minmax(0,1fr)]";
 
   return (
-    <div className="h-full w-full flex flex-col bg-background overflow-x-hidden">
+    <div 
+      className={cn(
+        "h-full w-full flex flex-col bg-background overflow-x-hidden",
+        "transition-all duration-500 ease-out",
+        contentReady ? "opacity-100" : "opacity-0"
+      )}
+    >
       {/* Hero */}
       <PageHero
         storageKey="tasks_hero_src"

@@ -159,14 +159,19 @@ function StatCard({
   value,
   icon,
   hint,
+  index = 0,
 }: {
   label: string;
   value: string;
   icon: React.ReactNode;
   hint?: string;
+  index?: number;
 }) {
   return (
-    <div className="rounded-xl border border-border/40 bg-card shadow-sm hover:shadow-md transition-shadow duration-200">
+    <div 
+      className="rounded-xl border border-border/40 bg-card shadow-sm hover:shadow-md transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
+      style={{ animationDelay: `${index * 75}ms`, animationFillMode: 'backwards' }}
+    >
       <div className="p-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{label}</p>
