@@ -424,16 +424,18 @@ export default function Notes() {
             <div className="flex items-center gap-2 lg:justify-end">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button className="group relative h-11 rounded-2xl px-6 overflow-hidden shadow-lg shadow-cyan-500/25 hover:shadow-xl hover:shadow-cyan-500/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] border-0">
-                    {/* Animated gradient background */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-teal-400 to-cyan-500 bg-[length:200%_100%] animate-[shimmer_3s_ease-in-out_infinite]" />
-                    {/* Shine overlay on hover */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                  <Button className="group relative h-11 rounded-full px-6 overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] border-0 p-[2px] bg-transparent">
+                    {/* Aurora gradient border - animated */}
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-400 via-purple-500 via-pink-500 to-cyan-400 bg-[length:300%_100%] animate-[shimmer_4s_linear_infinite] opacity-90" />
+                    {/* Inner background - cream for light, dark for dark mode */}
+                    <div className="absolute inset-[2px] rounded-full bg-amber-50 dark:bg-slate-900 transition-colors" />
+                    {/* Subtle glow */}
+                    <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-cyan-400/20 via-purple-500/20 to-pink-500/20 blur-xl" />
                     {/* Content */}
-                    <span className="relative flex items-center text-white font-semibold tracking-wide">
+                    <span className="relative flex items-center font-semibold tracking-wide text-slate-700 dark:text-white px-4">
                       <Plus className="h-4 w-4 mr-2" />
                       NEW NOTE
-                      <ChevronDown className="h-4 w-4 ml-2 opacity-80" />
+                      <ChevronDown className="h-4 w-4 ml-2 opacity-70" />
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
