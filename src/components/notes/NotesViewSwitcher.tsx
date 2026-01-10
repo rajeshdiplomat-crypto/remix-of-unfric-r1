@@ -37,7 +37,7 @@ export function NotesViewSwitcher({ currentView, onViewChange }: NotesViewSwitch
   ];
 
   return (
-    <div className="inline-flex items-center bg-muted/30 rounded-full p-1 border border-border/30">
+    <div className="inline-flex items-center bg-white rounded-lg p-1 border border-slate-200 shadow-sm">
       {views.map((view) => {
         const active = currentView === view.id;
 
@@ -49,10 +49,10 @@ export function NotesViewSwitcher({ currentView, onViewChange }: NotesViewSwitch
             aria-pressed={active}
             onClick={() => onViewChange(view.id)}
             className={cn(
-              "h-9 px-4 inline-flex items-center gap-2 text-sm font-medium rounded-full transition-all duration-200",
-              active 
-                ? "bg-primary text-primary-foreground shadow-sm" 
-                : "text-muted-foreground hover:text-foreground"
+              "h-8 px-4 inline-flex items-center gap-2 text-sm font-medium rounded-md transition-all duration-200",
+              active
+                ? "bg-slate-50 text-cyan-600 border border-slate-200"
+                : "text-slate-500 hover:text-slate-700 hover:bg-slate-50",
             )}
           >
             {view.icon}

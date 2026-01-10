@@ -168,9 +168,9 @@ function StatCard({
   index?: number;
 }) {
   return (
-    <div 
+    <div
       className="rounded-xl border border-border/40 bg-card shadow-sm hover:shadow-md transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
-      style={{ animationDelay: `${index * 75}ms`, animationFillMode: 'backwards' }}
+      style={{ animationDelay: `${index * 75}ms`, animationFillMode: "backwards" }}
     >
       <div className="p-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -421,11 +421,10 @@ export default function Notes() {
         <div className="w-full space-y-6 px-6 lg:px-8 pt-6">
           {/* Header */}
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-end">
-
             <div className="flex items-center gap-2 lg:justify-end">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button className="h-10 rounded-xl px-4 shadow-sm">
+                  <Button className="h-10 rounded-xl px-4 shadow-sm bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white border-0">
                     <Plus className="h-4 w-4 mr-2" />
                     New note
                     <ChevronDown className="h-4 w-4 ml-2 opacity-70" />
@@ -506,7 +505,7 @@ export default function Notes() {
                     "h-6 px-0 text-[10px] uppercase tracking-wider font-light whitespace-nowrap transition-colors border-b",
                     filterGroupId === "all"
                       ? "text-foreground border-foreground"
-                      : "text-muted-foreground hover:text-foreground border-transparent"
+                      : "text-muted-foreground hover:text-foreground border-transparent",
                   )}
                 >
                   All
@@ -522,7 +521,7 @@ export default function Notes() {
                         "h-6 px-0 text-[10px] uppercase tracking-wider font-light whitespace-nowrap transition-colors border-b flex items-center gap-1.5",
                         active
                           ? "text-foreground border-foreground"
-                          : "text-muted-foreground hover:text-foreground border-transparent"
+                          : "text-muted-foreground hover:text-foreground border-transparent",
                       )}
                     >
                       <span className="h-2 w-2 rounded-full" style={{ backgroundColor: group.color }} />
