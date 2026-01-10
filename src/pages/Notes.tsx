@@ -489,6 +489,17 @@ export default function Notes() {
 
         <div className="relative z-10 w-full">
           <div className="w-full space-y-4 px-6 lg:px-8 pt-6">
+            {/* Page Header */}
+            <div className="py-4">
+              <p className="text-[10px] font-medium tracking-[0.3em] text-muted-foreground/70 uppercase mb-2">
+                Life Atlas
+              </p>
+              <h1 className="text-4xl md:text-5xl font-light tracking-wide text-foreground">NOTES</h1>
+              <p className="mt-2 text-sm text-muted-foreground max-w-md">
+                Your ideas, organized in one calm, premium view
+              </p>
+            </div>
+
             {/* Sleek Unified Toolbar */}
             <div className="rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-sm">
               <div className="p-3 flex flex-wrap items-center gap-2">
