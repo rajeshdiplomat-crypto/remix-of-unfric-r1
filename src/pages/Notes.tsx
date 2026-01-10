@@ -24,6 +24,8 @@ import {
   Sun,
   Image,
   MoreHorizontal,
+  Upload,
+  Palette,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -91,33 +93,54 @@ const CATEGORY_GRADIENTS: Record<string, string> = {
   hobby: "linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)",
 };
 
-const BACKGROUND_PRESETS = [
+const BACKGROUND_PRESETS: { id: string; url: string; name: string; type: "image" | "gradient" | "none" }[] = [
+  // High quality images
   {
-    id: "waterfall",
-    url: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?q=80&w=2072&auto=format&fit=crop",
-    name: "Waterfall",
+    id: "forest",
+    url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=3840&q=100&auto=format&fit=crop",
+    name: "Forest",
+    type: "image",
   },
   {
     id: "mountain",
-    url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2000&auto=format&fit=crop",
-    name: "Mountain",
+    url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=3840&q=100&auto=format&fit=crop",
+    name: "Mountains",
+    type: "image",
+  },
+  {
+    id: "ocean",
+    url: "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=3840&q=100&auto=format&fit=crop",
+    name: "Ocean",
+    type: "image",
   },
   {
     id: "nebula",
-    url: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop",
+    url: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=3840&q=100&auto=format&fit=crop",
     name: "Nebula",
+    type: "image",
   },
   {
-    id: "forest",
-    url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2000&auto=format&fit=crop",
-    name: "Forest",
+    id: "aurora",
+    url: "https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=3840&q=100&auto=format&fit=crop",
+    name: "Aurora",
+    type: "image",
   },
   {
     id: "minimal",
-    url: "https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?q=80&w=2000&auto=format&fit=crop",
-    name: "Minimal",
+    url: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=3840&q=100&auto=format&fit=crop",
+    name: "Gradient",
+    type: "image",
   },
-  { id: "none", url: "", name: "None" },
+  { id: "none", url: "", name: "None", type: "none" },
+];
+
+const COLOR_THEMES = [
+  { id: "sunset", gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)", name: "Sunset" },
+  { id: "ocean", gradient: "linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)", name: "Ocean" },
+  { id: "forest", gradient: "linear-gradient(135deg, #134e5e 0%, #71b280 100%)", name: "Forest" },
+  { id: "warm", gradient: "linear-gradient(135deg, #f5af19 0%, #f12711 100%)", name: "Warm" },
+  { id: "midnight", gradient: "linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)", name: "Midnight" },
+  { id: "rose", gradient: "linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)", name: "Rose" },
 ];
 
 const SAMPLE_NOTES: Note[] = [
@@ -479,11 +502,25 @@ export default function Notes() {
         {/* Global Background */}
         {backgroundUrl && (
           <div className="fixed inset-0 z-0 pointer-events-none">
-            <div
-              className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-700"
-              style={{ backgroundImage: `url("${backgroundUrl}")` }}
-            />
-            <div className="absolute inset-0 bg-background/40 backdrop-blur-[2px]" />
+            {backgroundUrl.startsWith("linear-gradient") || backgroundUrl.startsWith("data:") ? (
+              // Gradient or data URL background
+              <div
+                className="absolute inset-0 transition-all duration-700"
+                style={{
+                  background: backgroundUrl.startsWith("linear-gradient") ? backgroundUrl : undefined,
+                  backgroundImage: backgroundUrl.startsWith("data:") ? `url("${backgroundUrl}")` : undefined,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+              />
+            ) : (
+              // Regular image URL
+              <div
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-700"
+                style={{ backgroundImage: `url("${backgroundUrl}")` }}
+              />
+            )}
+            <div className="absolute inset-0 bg-background/30 backdrop-blur-[1px]" />
           </div>
         )}
 
@@ -501,34 +538,34 @@ export default function Notes() {
             </div>
 
             {/* Sleek Unified Toolbar */}
-            <div className="rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-sm">
-              <div className="p-3 flex flex-wrap items-center gap-2">
+            <div className="rounded-3xl border border-border/40 bg-card/90 backdrop-blur-md shadow-lg">
+              <div className="p-4 flex flex-wrap items-center gap-3">
                 {/* View Mode Switcher */}
                 <div className="flex items-center gap-2">
                   <NotesViewSwitcher currentView={notesView} onViewChange={setNotesView} />
                 </div>
 
                 {/* Divider */}
-                <div className="hidden sm:block w-px h-6 bg-border/50" />
+                <div className="hidden sm:block w-px h-7 bg-border/30 rounded-full" />
 
-                {/* Search - Narrower */}
-                <div className="relative flex-1 min-w-[140px] max-w-[280px]">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                {/* Search - Rounded Pill */}
+                <div className="relative flex-1 min-w-[140px] max-w-[260px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
                   <Input
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search..."
-                    className="h-8 rounded-lg pl-8 text-sm bg-background/60"
+                    className="h-9 rounded-full pl-9 pr-4 text-sm bg-background/70 border-border/40 focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all"
                   />
                 </div>
 
-                {/* Sort Select - Compact */}
+                {/* Sort Select - Pill Shape */}
                 <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                  <SelectTrigger className="h-8 rounded-lg w-[120px] text-xs">
-                    <ArrowUpDown className="h-3 w-3 mr-1.5" />
+                  <SelectTrigger className="h-9 rounded-full w-[130px] text-xs bg-background/70 border-border/40 hover:bg-background transition-colors">
+                    <ArrowUpDown className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
                     <SelectValue placeholder="Sort" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl">
                     <SelectItem value="updatedAt">Last edited</SelectItem>
                     <SelectItem value="createdAt">Created</SelectItem>
                     <SelectItem value="title">A–Z</SelectItem>
@@ -539,102 +576,164 @@ export default function Notes() {
                 <div className="flex-1" />
 
                 {/* Action Buttons */}
-                <div className="flex items-center gap-1.5">
-                  {/* New Note Button - Sleek */}
+                <div className="flex items-center gap-2">
+                  {/* New Note Button - Premium Pill */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
                         size="sm"
-                        className="h-8 px-3 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5"
+                        className="h-9 px-4 rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-200 gap-2"
                       >
-                        <Plus className="h-3.5 w-3.5" />
-                        <span className="hidden sm:inline text-xs font-medium">New</span>
-                        <ChevronDown className="h-3 w-3 opacity-70" />
+                        <Plus className="h-4 w-4" />
+                        <span className="hidden sm:inline text-sm font-medium">New</span>
+                        <ChevronDown className="h-3.5 w-3.5 opacity-80" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-52">
-                      <DropdownMenuItem onClick={handleNewNoteWithOptions} className="py-2">
-                        <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <DropdownMenuContent align="end" className="w-56 rounded-xl p-1">
+                      <DropdownMenuItem onClick={handleNewNoteWithOptions} className="py-2.5 rounded-lg cursor-pointer">
+                        <FileText className="h-4 w-4 mr-3 text-muted-foreground" />
                         <div className="flex flex-col">
-                          <span className="text-sm">New Note</span>
+                          <span className="text-sm font-medium">New Note</span>
                           <span className="text-xs text-muted-foreground">Choose location</span>
                         </div>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleQuickNote} className="py-2">
-                        <Zap className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <DropdownMenuItem onClick={handleQuickNote} className="py-2.5 rounded-lg cursor-pointer">
+                        <Zap className="h-4 w-4 mr-3 text-muted-foreground" />
                         <div className="flex flex-col">
-                          <span className="text-sm">Quick Note</span>
+                          <span className="text-sm font-medium">Quick Note</span>
                           <span className="text-xs text-muted-foreground">Send to Inbox</span>
                         </div>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
 
-                  {/* More Options Menu */}
+                  {/* More Options Menu - Circle */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" title="More options">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-9 w-9 rounded-full border-border/40 bg-background/70 hover:bg-background hover:border-border transition-all"
+                        title="More options"
+                      >
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuContent align="end" className="w-72 rounded-xl p-2">
                       {/* Settings */}
-                      <DropdownMenuItem onClick={() => setSettingsOpen(true)} className="py-2">
-                        <Settings className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span>Group Settings</span>
+                      <DropdownMenuItem
+                        onClick={() => setSettingsOpen(true)}
+                        className="py-2.5 rounded-lg cursor-pointer"
+                      >
+                        <Settings className="h-4 w-4 mr-3 text-muted-foreground" />
+                        <span className="font-medium">Group Settings</span>
                       </DropdownMenuItem>
 
                       {/* Theme Toggle */}
                       <DropdownMenuItem
                         onClick={() => setTheme(theme.isDark ? "calm-blue" : "midnight-dark")}
-                        className="py-2"
+                        className="py-2.5 rounded-lg cursor-pointer"
                       >
                         {theme.isDark ? (
-                          <Sun className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <Sun className="h-4 w-4 mr-3 text-amber-500" />
                         ) : (
-                          <Moon className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <Moon className="h-4 w-4 mr-3 text-indigo-500" />
                         )}
-                        <span>{theme.isDark ? "Light Mode" : "Dark Mode"}</span>
+                        <span className="font-medium">{theme.isDark ? "Light Mode" : "Dark Mode"}</span>
                       </DropdownMenuItem>
 
-                      <DropdownMenuSeparator />
+                      <DropdownMenuSeparator className="my-2" />
 
-                      {/* Background Presets */}
-                      <div className="px-2 py-1.5">
-                        <div className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
-                          <Image className="h-3 w-3" />
-                          Background
+                      {/* Color Themes */}
+                      <div className="px-2 py-2">
+                        <div className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                          <Palette className="h-3.5 w-3.5" />
+                          Color Themes
                         </div>
-                        <div className="grid grid-cols-3 gap-1.5">
+                        <div className="grid grid-cols-6 gap-2">
+                          {COLOR_THEMES.map((colorTheme) => (
+                            <button
+                              key={colorTheme.id}
+                              onClick={() => handleBackgroundChange(colorTheme.gradient)}
+                              className={cn(
+                                "w-8 h-8 rounded-full transition-all hover:scale-110 shadow-sm",
+                                backgroundUrl === colorTheme.gradient
+                                  ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                                  : "",
+                              )}
+                              style={{ background: colorTheme.gradient }}
+                              title={colorTheme.name}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      <DropdownMenuSeparator className="my-2" />
+
+                      {/* Background Images */}
+                      <div className="px-2 py-2">
+                        <div className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                          <Image className="h-3.5 w-3.5" />
+                          Background Image
+                        </div>
+                        <div className="grid grid-cols-4 gap-2">
                           {BACKGROUND_PRESETS.map((bg) => (
                             <button
                               key={bg.id}
                               onClick={() => handleBackgroundChange(bg.url)}
                               className={cn(
-                                "relative aspect-video rounded overflow-hidden border transition-all hover:opacity-80",
-                                backgroundUrl === bg.url ? "border-primary ring-1 ring-primary" : "border-border/50",
+                                "relative aspect-[4/3] rounded-lg overflow-hidden border-2 transition-all hover:scale-105",
+                                backgroundUrl === bg.url
+                                  ? "border-primary shadow-lg"
+                                  : "border-transparent hover:border-border",
                               )}
                               title={bg.name}
                             >
                               {bg.url ? (
                                 <img src={bg.url} alt={bg.name} className="h-full w-full object-cover" />
                               ) : (
-                                <div className="h-full w-full bg-muted flex items-center justify-center">
-                                  <span className="text-[8px] text-muted-foreground">None</span>
+                                <div className="h-full w-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
+                                  <span className="text-[9px] font-medium text-muted-foreground">None</span>
                                 </div>
                               )}
                             </button>
                           ))}
                         </div>
                       </div>
+
+                      <DropdownMenuSeparator className="my-2" />
+
+                      {/* Upload Custom Image */}
+                      <div className="px-2 py-2">
+                        <label className="flex items-center gap-3 py-2.5 px-2 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                          <Upload className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-medium">Upload Custom Image</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                  const dataUrl = event.target?.result as string;
+                                  handleBackgroundChange(dataUrl);
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
               </div>
 
-              {/* Filter chips - Underlined style */}
-              <div className="px-3 pb-3">
-                <div className="flex gap-4 overflow-auto no-scrollbar">
+              {/* Filter chips - Pill style */}
+              <div className="px-4 pb-4">
+                <div className="flex gap-2 overflow-auto no-scrollbar">
                   <button
                     onClick={() => setFilterGroupId("all")}
                     className={cn(
