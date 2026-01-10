@@ -491,7 +491,20 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
 
   const handleInsertImage = () => {
     if (!imageUrl || !editor) return;
-    (editor.commands as any).setResizableImage({ src: imageUrl });
+    try {
+      // Try setResizableImage first, then setImage
+      if ((editor.commands as any).setResizableImage) {
+        (editor.commands as any).setResizableImage({ src: imageUrl });
+      } else if ((editor.commands as any).setImage) {
+        (editor.commands as any).setImage({ src: imageUrl });
+      } else {
+        // Fallback: insert as HTML
+        editor.chain().focus().insertContent(`<img src="${imageUrl}" />`).run();
+      }
+    } catch (err) {
+      console.error("Image insert error:", err);
+      editor.chain().focus().insertContent(`<img src="${imageUrl}" />`).run();
+    }
     setImageDialogOpen(false);
     setImageUrl("");
   };
@@ -503,12 +516,23 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     reader.onload = (ev) => {
       const result = ev.target?.result as string;
       if (result) {
-        (editor.commands as any).setResizableImage({ src: result });
+        try {
+          if ((editor.commands as any).setResizableImage) {
+            (editor.commands as any).setResizableImage({ src: result });
+          } else if ((editor.commands as any).setImage) {
+            (editor.commands as any).setImage({ src: result });
+          } else {
+            editor.chain().focus().insertContent(`<img src="${result}" />`).run();
+          }
+        } catch (err) {
+          console.error("Image upload error:", err);
+          editor.chain().focus().insertContent(`<img src="${result}" />`).run();
+        }
+        setImageDialogOpen(false);
       }
     };
     reader.readAsDataURL(file);
-    setImageDialogOpen(false);
-    if (e.target) e.target.value = ""; // Reset file input
+    if (e.target) e.target.value = "";
   };
 
   const group = groups.find((g) => g.id === note.groupId);
