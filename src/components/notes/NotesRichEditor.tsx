@@ -400,6 +400,16 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
   };
 
+  // Touch support for tablet/stylus
+  const getTouchPos = (e: React.TouchEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas || !e.touches[0]) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY };
+  };
+
   const findStrokeAtPoint = (x: number, y: number): number => {
     for (let i = strokes.length - 1; i >= 0; i--) {
       for (const point of strokes[i].points) {
@@ -417,6 +427,15 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     if (tool === "pen") setCurrentStroke({ points: [pos], color: scribbleColor, width: penWidth, penType });
   };
 
+  const startDrawingTouch = (e: React.TouchEvent) => {
+    if (!scribbleMode) return;
+    e.preventDefault();
+    const pos = getTouchPos(e);
+    lastPos.current = pos;
+    setIsDrawing(true);
+    if (tool === "pen") setCurrentStroke({ points: [pos], color: scribbleColor, width: penWidth, penType });
+  };
+
   const draw = (e: React.MouseEvent) => {
     if (!isDrawing || !scribbleMode) return;
     const canvas = canvasRef.current;
@@ -424,6 +443,51 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     const pos = getCanvasPos(e);
+
+    if (tool === "pen" && currentStroke) {
+      setCurrentStroke((prev) => (prev ? { ...prev, points: [...prev.points, pos] } : null));
+      const pt = PEN_TYPES.find((p) => p.id === penType) || PEN_TYPES[0];
+      ctx.beginPath();
+      ctx.moveTo(lastPos.current.x, lastPos.current.y);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.strokeStyle = scribbleColor;
+      ctx.lineWidth = penWidth;
+      ctx.lineCap = "round";
+      ctx.globalAlpha = pt.opacity;
+      if (pt.shadow) {
+        ctx.shadowColor = scribbleColor;
+        ctx.shadowBlur = penWidth;
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+    } else if (tool === "eraser") {
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, eraserSize / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = "source-over";
+    } else if (tool === "stroke-eraser") {
+      const idx = findStrokeAtPoint(pos.x, pos.y);
+      if (idx >= 0) {
+        setUndoStack((prev) => [...prev, [...strokes]]);
+        setStrokes((prev) => prev.filter((_, i) => i !== idx));
+        setSaveStatus("unsaved");
+        if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+        autosaveTimer.current = setTimeout(() => handleSave(), 2000);
+      }
+    }
+    lastPos.current = pos;
+  };
+
+  const drawTouch = (e: React.TouchEvent) => {
+    if (!isDrawing || !scribbleMode) return;
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const pos = getTouchPos(e);
 
     if (tool === "pen" && currentStroke) {
       setCurrentStroke((prev) => (prev ? { ...prev, points: [...prev.points, pos] } : null));
@@ -1048,6 +1112,9 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           onMouseMove={scribbleMode ? draw : undefined}
           onMouseUp={scribbleMode ? stopDrawing : undefined}
           onMouseLeave={scribbleMode ? stopDrawing : undefined}
+          onTouchStart={scribbleMode ? startDrawingTouch : undefined}
+          onTouchMove={scribbleMode ? drawTouch : undefined}
+          onTouchEnd={scribbleMode ? stopDrawing : undefined}
           className="absolute inset-0 w-full h-full"
           style={{
             touchAction: "none",
