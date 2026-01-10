@@ -11,7 +11,7 @@ import FontFamily from "@tiptap/extension-font-family";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import { Extension } from "@tiptap/core";
-import ImageResize from 'tiptap-extension-resize-image';
+import ImageResize from "tiptap-extension-resize-image";
 import { useEffect, forwardRef, useImperativeHandle, useState, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -58,6 +58,8 @@ import {
   Pencil,
   Brush,
   Circle,
+  Check,
+  Rows,
 } from "lucide-react";
 
 // Font size extension
@@ -89,7 +91,6 @@ const FontSize = Extension.create({
     };
   },
 });
-
 
 interface Props {
   content: string;
@@ -165,6 +166,16 @@ const BG_PRESETS = [
   { id: "warm", label: "Warm", value: "#fef7ef" },
 ];
 
+const LINE_STYLES = [
+  { id: "none", label: "No Lines", preview: "☐" },
+  { id: "ruled", label: "Ruled", preview: "≡" },
+  { id: "grid", label: "Grid", preview: "▦" },
+  { id: "dotted", label: "Dotted", preview: "⋯" },
+  { id: "college", label: "College", preview: "║" },
+];
+
+const LINE_HEIGHT = 28;
+
 interface Stroke {
   points: { x: number; y: number }[];
   color: string;
@@ -182,6 +193,10 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
     const [imageDialogOpen, setImageDialogOpen] = useState(false);
     const [imageUrl, setImageUrl] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Line Style State
+    const [lineStyle, setLineStyle] = useState("none");
+    const showLines = lineStyle !== "none";
 
     // Advanced Scribble State
     const [scribbleMode, setScribbleMode] = useState(false);
@@ -426,6 +441,31 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
       reader.onload = (ev) => (editor.commands as any).setResizableImage({ src: ev.target?.result as string });
       reader.readAsDataURL(file);
       setImageDialogOpen(false);
+      if (e.target) e.target.value = "";
+    };
+
+    const getLineStyleCSS = (): React.CSSProperties => {
+      if (lineStyle === "ruled")
+        return {
+          backgroundImage: `repeating-linear-gradient(transparent, transparent ${LINE_HEIGHT - 1}px, #e5e7eb ${LINE_HEIGHT - 1}px, #e5e7eb ${LINE_HEIGHT}px)`,
+          backgroundSize: `100% ${LINE_HEIGHT}px`,
+        };
+      if (lineStyle === "grid")
+        return {
+          backgroundImage: `linear-gradient(#e5e7eb 1px, transparent 1px), linear-gradient(90deg, #e5e7eb 1px, transparent 1px)`,
+          backgroundSize: `${LINE_HEIGHT}px ${LINE_HEIGHT}px`,
+        };
+      if (lineStyle === "dotted")
+        return {
+          backgroundImage: `radial-gradient(circle, #d1d5db 1px, transparent 1px)`,
+          backgroundSize: `${LINE_HEIGHT}px ${LINE_HEIGHT}px`,
+        };
+      if (lineStyle === "college")
+        return {
+          backgroundImage: `repeating-linear-gradient(transparent, transparent ${LINE_HEIGHT - 1}px, #bfdbfe ${LINE_HEIGHT - 1}px, #bfdbfe ${LINE_HEIGHT}px)`,
+          backgroundSize: `100% ${LINE_HEIGHT}px`,
+        };
+      return {};
     };
 
     const ToolBtn = ({ onClick, active, disabled, children, title }: any) => (
@@ -676,6 +716,28 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
                 </div>
               </PopoverContent>
             </Popover>
+
+            {/* Line Style Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="h-8 px-2 flex items-center gap-1 rounded-lg text-slate-500 hover:bg-slate-100"
+                  title="Line Style"
+                >
+                  <Rows className="h-4 w-4" />
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="z-[9999]">
+                {LINE_STYLES.map((l) => (
+                  <DropdownMenuItem key={l.id} onClick={() => setLineStyle(l.id)} className="gap-2">
+                    <span>{l.preview}</span>
+                    <span>{l.label}</span>
+                    {lineStyle === l.id && <Check className="h-3 w-3 ml-auto" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <div className="w-px h-5 bg-slate-200 mx-1" />
 
             <DropdownMenu>
@@ -845,12 +907,22 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
           className="relative"
           style={{
             ...bgStyle,
+            ...getLineStyleCSS(),
             color: skinStyles?.text || "#1e293b",
             wordBreak: "break-word",
             overflowWrap: "anywhere",
+            lineHeight: showLines ? `${LINE_HEIGHT}px` : undefined,
           }}
         >
-          <EditorContent editor={editor} />
+          {lineStyle === "college" && (
+            <div
+              className="absolute left-16 top-0 bottom-0 w-[1px] pointer-events-none z-10"
+              style={{ backgroundColor: "#ef4444" }}
+            />
+          )}
+          <div style={{ paddingLeft: lineStyle === "college" ? "80px" : undefined }}>
+            <EditorContent editor={editor} />
+          </div>
 
           {scribbleMode && (
             <canvas
