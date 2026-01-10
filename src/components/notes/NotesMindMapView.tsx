@@ -351,7 +351,7 @@ export function NotesMindMapView({
   };
 
   return (
-    <div className="w-full min-h-[600px] relative">
+    <div className="w-full relative">
       {/* Dotted Background */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -361,35 +361,33 @@ export function NotesMindMapView({
         }}
       />
 
-      {/* Mind Map Content */}
-      <ScrollArea className="h-[calc(100vh-400px)] min-h-[500px]">
-        <div className="p-8">
-          {/* Title */}
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">Mind Map View</h2>
-              <p className="text-sm text-muted-foreground">Click nodes to expand or view notes</p>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-primary/50" /> Groups
-              </span>
-              <span className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-cyan-500/50" /> Folders
-              </span>
-              <span className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-muted-foreground/50" /> Notes
-              </span>
-            </div>
+      {/* Mind Map Content - Full page */}
+      <div className="p-6 pb-24">
+        {/* Title */}
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Mind Map View</h2>
+            <p className="text-sm text-muted-foreground">Click nodes to expand or view notes</p>
           </div>
-
-          {/* Tree Visualization */}
-          <div className="inline-block min-w-max">{renderNode(treeData)}</div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-primary/50" /> Groups
+            </span>
+            <span className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-cyan-500/50" /> Folders
+            </span>
+            <span className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-muted-foreground/50" /> Notes
+            </span>
+          </div>
         </div>
-      </ScrollArea>
+
+        {/* Tree Visualization */}
+        <div className="inline-block min-w-max">{renderNode(treeData)}</div>
+      </div>
 
       {/* Quick Actions Footer */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-card/80 backdrop-blur-sm rounded-full border border-border/50 px-4 py-2 shadow-lg">
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-card/90 backdrop-blur-md rounded-md border border-border/50 px-4 py-2 shadow-lg z-50">
         <span className="text-xs text-muted-foreground">
           {notes.length} notes across {groups.length} groups
         </span>
@@ -397,7 +395,7 @@ export function NotesMindMapView({
         <Button
           size="sm"
           variant="ghost"
-          className="h-7 rounded-full text-xs"
+          className="h-7 rounded-md text-xs uppercase tracking-wide"
           onClick={() => setExpandedNodes(new Set(["root"]))}
         >
           Collapse All
@@ -405,7 +403,7 @@ export function NotesMindMapView({
         <Button
           size="sm"
           variant="ghost"
-          className="h-7 rounded-full text-xs"
+          className="h-7 rounded-md text-xs uppercase tracking-wide"
           onClick={() => {
             const allIds = new Set<string>(["root"]);
             const addNodeIds = (node: TreeNode) => {

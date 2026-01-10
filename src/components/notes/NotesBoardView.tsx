@@ -36,6 +36,7 @@ interface NotesBoardViewProps {
   onAddFolder: (groupId: string, folderName: string) => void;
   onUpdateNote?: (note: Note) => void;
   onDeleteNote?: (noteId: string) => void;
+  onAddGroup?: () => void;
 }
 
 export function NotesBoardView({
@@ -48,6 +49,7 @@ export function NotesBoardView({
   onAddFolder,
   onUpdateNote,
   onDeleteNote,
+  onAddGroup,
 }: NotesBoardViewProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [newFolderGroupId, setNewFolderGroupId] = useState<string | null>(null);
@@ -120,7 +122,7 @@ export function NotesBoardView({
               {/* Column header with thin accent line */}
               <div className="mb-2">
                 <div
-                  className="h-0.5 rounded-full mb-3"
+                  className="h-0.5 rounded-sm mb-3"
                   style={{ background: CATEGORY_GRADIENTS[group.id] || group.color }}
                 />
                 <div className="flex items-center justify-between px-1">
@@ -129,14 +131,23 @@ export function NotesBoardView({
                 </div>
               </div>
 
-              {/* Add note button */}
-              <button
-                onClick={() => onAddNote(group.id, null)}
-                className="w-full flex items-center gap-2 px-3 py-2.5 mb-2 text-sm text-muted-foreground hover:text-foreground bg-background/60 hover:bg-background/90 rounded-lg border border-dashed border-border/50 hover:border-border transition-all"
-              >
-                <Plus className="h-4 w-4" />
-                Add note
-              </button>
+              {/* Add note + Add section buttons - Half half */}
+              <div className="flex gap-2 mb-2">
+                <button
+                  onClick={() => onAddNote(group.id, null)}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs text-muted-foreground hover:text-foreground bg-background/60 hover:bg-background/90 rounded-md border border-dashed border-border/50 hover:border-border transition-all"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add note
+                </button>
+                <button
+                  onClick={() => setNewFolderGroupId(group.id)}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs text-muted-foreground hover:text-foreground bg-background/60 hover:bg-background/90 rounded-md border border-dashed border-border/50 hover:border-border transition-all"
+                >
+                  <FolderPlus className="h-3.5 w-3.5" />
+                  Add section
+                </button>
+              </div>
 
               {/* Notes list - Infinite scroll appearance */}
               <ScrollArea className="flex-1 h-full min-h-[calc(100vh-350px)]">
@@ -150,7 +161,7 @@ export function NotesBoardView({
                         draggable
                         onDragStart={(e) => handleDragStart(e, note.id)}
                         className={cn(
-                          "rounded-xl bg-card/95 backdrop-blur-sm border transition-all cursor-pointer shadow-sm group relative",
+                          "rounded-md bg-card/95 backdrop-blur-sm border transition-all cursor-pointer shadow-sm group relative",
                           selectedNoteId === note.id
                             ? "border-primary/50 ring-1 ring-primary/20"
                             : "border-border/20 hover:bg-card hover:shadow-md",
@@ -329,6 +340,22 @@ export function NotesBoardView({
             </div>
           );
         })}
+
+        {/* Add Group Column */}
+        {onAddGroup && (
+          <div className="w-[200px] shrink-0 flex flex-col h-full">
+            <div className="mb-2">
+              <div className="h-0.5 rounded-sm mb-3 bg-border/30" />
+            </div>
+            <button
+              onClick={onAddGroup}
+              className="w-full flex items-center justify-center gap-2 px-3 py-8 text-sm text-muted-foreground hover:text-foreground bg-background/40 hover:bg-background/70 rounded-md border border-dashed border-border/40 hover:border-border transition-all"
+            >
+              <Plus className="h-4 w-4" />
+              Add a new bucket
+            </button>
+          </div>
+        )}
       </div>
       <ScrollBar orientation="horizontal" />
     </ScrollArea>
