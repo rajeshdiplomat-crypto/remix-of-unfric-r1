@@ -249,7 +249,17 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
       if (initialStrokes) {
         try {
           setStrokes(JSON.parse(initialStrokes));
-        } catch (e) {}
+        } catch (e) {
+          setStrokes([]);
+        }
+      } else {
+        // Clear strokes when no scribble data
+        setStrokes([]);
+        setUndoStack([]);
+        if (canvasRef.current) {
+          const ctx = canvasRef.current.getContext("2d");
+          if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        }
       }
     }, [initialStrokes]);
 
@@ -298,9 +308,43 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
       }
     }, [scribbleMode, redrawCanvas]);
 
+    // Redraw canvas whenever strokes change - with direct drawing to avoid stale closure
     useEffect(() => {
-      if (scribbleMode) redrawCanvas();
-    }, [strokes, scribbleMode, redrawCanvas]);
+      if (strokes.length > 0 && canvasRef.current && containerRef.current) {
+        const canvas = canvasRef.current;
+        const container = containerRef.current;
+        canvas.width = container.offsetWidth;
+        canvas.height = Math.max(container.offsetHeight, 400);
+
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          strokes.forEach((stroke) => {
+            if (stroke.points.length < 2) return;
+            const pt = PEN_TYPES.find((p) => p.id === stroke.penType) || PEN_TYPES[0];
+            ctx.beginPath();
+            ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+            for (let i = 1; i < stroke.points.length; i++) {
+              ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+            }
+            ctx.strokeStyle = stroke.color;
+            ctx.lineWidth = stroke.width;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.globalAlpha = pt.opacity;
+            if (pt.shadow) {
+              ctx.shadowColor = stroke.color;
+              ctx.shadowBlur = stroke.width;
+            } else {
+              ctx.shadowBlur = 0;
+            }
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+          });
+        }
+      }
+    }, [strokes]);
 
     const getCanvasPos = (e: React.MouseEvent) => {
       const canvas = canvasRef.current;
@@ -371,7 +415,9 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
         const strokeIndex = findStrokeAtPoint(pos.x, pos.y);
         if (strokeIndex >= 0) {
           setUndoStack((prev) => [...prev, [...strokes]]);
-          setStrokes((prev) => prev.filter((_, i) => i !== strokeIndex));
+          const newStrokes = strokes.filter((_, i) => i !== strokeIndex);
+          setStrokes(newStrokes);
+          onScribbleChange?.(newStrokes.length > 0 ? JSON.stringify(newStrokes) : null);
         }
       }
 
