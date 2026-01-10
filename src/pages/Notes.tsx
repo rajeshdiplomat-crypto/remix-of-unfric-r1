@@ -620,15 +620,30 @@ export default function Notes() {
           )}
 
           {notesView === "board" && (
-            <NotesBoardView
-              groups={sortedGroups.filter((g) => filterGroupId === "all" || g.id === filterGroupId)}
-              folders={folders}
-              notes={filteredNotes}
-              selectedNoteId={selectedNote?.id}
-              onNoteClick={handleNoteClick}
-              onAddNote={handleCreateNote}
-              onAddFolder={handleCreateFolder}
-            />
+            <div className="relative -mx-6 lg:-mx-8 -mt-6 min-h-[calc(100vh-200px)]">
+              {/* Background Image - Waterfall/Forest */}
+              <div
+                className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-100 transition-all duration-700"
+                style={{
+                  backgroundImage:
+                    'url("https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?q=80&w=2072&auto=format&fit=crop")',
+                }}
+              />
+              <div className="absolute inset-0 z-0 bg-background/20 backdrop-blur-[2px]" />
+
+              <div className="relative z-10 p-6 lg:p-8">
+                <NotesBoardView
+                  groups={sortedGroups.filter((g) => filterGroupId === "all" || g.id === filterGroupId)}
+                  folders={folders}
+                  notes={filteredNotes}
+                  selectedNoteId={selectedNote?.id}
+                  onNoteClick={handleNoteClick}
+                  onDeleteNote={handleDeleteNote}
+                  onAddNote={handleCreateNote}
+                  onAddFolder={handleCreateFolder}
+                />
+              </div>
+            </div>
           )}
 
           {notesView === "mindmap" && (

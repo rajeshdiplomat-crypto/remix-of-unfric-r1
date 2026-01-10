@@ -62,7 +62,7 @@ export function NotesBoardView({
           const mostRecentUpdate = getMostRecentUpdate(groupNotes);
 
           return (
-            <div key={group.id} className="w-[280px] shrink-0 flex flex-col">
+            <div key={group.id} className="w-[280px] shrink-0 flex flex-col h-full bg-background/0">
               {/* Column header with thin accent line */}
               <div className="mb-2">
                 <div
@@ -84,20 +84,20 @@ export function NotesBoardView({
                 Add note
               </button>
 
-              {/* Notes list */}
-              <ScrollArea className="flex-1 max-h-[calc(100vh-280px)]">
-                <div className="space-y-2 pr-1">
-                  {/* Direct notes - clean simple cards */}
+              {/* Notes list - Infinite scroll appearance */}
+              <ScrollArea className="flex-1 h-full min-h-[calc(100vh-350px)]">
+                <div className="space-y-3 pb-20 pr-1">
+                  {/* Direct notes - clean white cards on transparency */}
                   {groupNotes
                     .filter((n) => !n.folderId)
                     .map((note) => (
                       <div
                         key={note.id}
                         className={
-                          "rounded-lg bg-background border transition-all cursor-pointer " +
+                          "rounded-lg bg-card/95 backdrop-blur-sm border transition-all cursor-pointer shadow-sm " +
                           (selectedNoteId === note.id
-                            ? "border-primary/50 shadow-sm"
-                            : "border-border/30 hover:border-border/60 hover:shadow-sm")
+                            ? "border-primary/50 ring-1 ring-primary/20"
+                            : "border-border/10 hover:bg-card hover:shadow-md")
                         }
                         onClick={() => onNoteClick(note)}
                       >
