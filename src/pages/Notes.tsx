@@ -65,6 +65,15 @@ const DEFAULT_GROUPS: NoteGroup[] = [
   { id: "hobby", name: "Hobby", color: "hsl(25, 95%, 53%)", sortOrder: 4 },
 ];
 
+// Creative gradient presets for indicators
+const CATEGORY_GRADIENTS: Record<string, string> = {
+  inbox: "linear-gradient(135deg, #94a3b8 0%, #64748b 50%, #475569 100%)",
+  work: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #1d4ed8 100%)",
+  personal: "linear-gradient(135deg, #4ade80 0%, #22c55e 50%, #16a34a 100%)",
+  wellness: "linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #7c3aed 100%)",
+  hobby: "linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)",
+};
+
 const SAMPLE_NOTES: Note[] = [
   {
     id: "1",
@@ -527,13 +536,17 @@ export default function Notes() {
                       key={group.id}
                       onClick={() => setFilterGroupId(group.id)}
                       className={cn(
-                        "h-6 px-0 text-[10px] uppercase tracking-wider font-light whitespace-nowrap transition-colors border-b flex items-center gap-1.5",
+                        "h-6 px-0 text-[10px] uppercase tracking-wider font-light whitespace-nowrap transition-colors border-b flex items-center gap-2",
                         active
-                          ? "text-foreground border-foreground"
+                          ? "text-foreground border-foreground font-medium"
                           : "text-muted-foreground hover:text-foreground border-transparent",
                       )}
                     >
-                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: group.color }} />
+                      {/* Curved gradient pill indicator */}
+                      <span
+                        className="w-4 h-1.5 rounded-full"
+                        style={{ background: CATEGORY_GRADIENTS[group.id] || group.color }}
+                      />
                       {group.name}
                     </button>
                   );
