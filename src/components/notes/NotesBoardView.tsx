@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { NotesActivityDot, getMostRecentUpdate } from "./NotesActivityDot";
+import { NotesCategoryIcon, NotesCategoryDot } from "./NotesCategoryIcon";
 import { ChevronRight, Plus, FolderPlus } from "lucide-react";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 
@@ -63,7 +64,7 @@ export function NotesBoardView({
               {/* Header */}
               <div className="px-4 py-4 bg-background/40 border-b border-border/40">
                 <div className="flex items-center gap-3">
-                  <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: group.color }} />
+                  <NotesCategoryIcon categoryId={group.id} color={group.color} size="sm" showGlow />
                   <h3 className="font-semibold text-foreground flex-1 text-base">{group.name}</h3>
 
                   {mostRecentUpdate && <NotesActivityDot updatedAt={mostRecentUpdate} size="md" />}

@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Filter, X } from "lucide-react";
 import type { NoteGroup, NoteFolder } from "@/pages/Notes";
+import { NotesCategoryDot } from "./NotesCategoryIcon";
 
 export interface NotesFilters {
   groupId: string;
@@ -22,20 +23,11 @@ interface NotesFilterPanelProps {
   onFiltersChange: (filters: NotesFilters) => void;
 }
 
-export function NotesFilterPanel({ 
-  groups, 
-  folders, 
-  tags, 
-  filters, 
-  onFiltersChange 
-}: NotesFilterPanelProps) {
+export function NotesFilterPanel({ groups, folders, tags, filters, onFiltersChange }: NotesFilterPanelProps) {
   const [open, setOpen] = useState(false);
 
-  const hasActiveFilters = 
-    filters.groupId !== "all" || 
-    filters.folderId !== "all" || 
-    filters.sortBy !== "updatedAt" ||
-    filters.tag !== "all";
+  const hasActiveFilters =
+    filters.groupId !== "all" || filters.folderId !== "all" || filters.sortBy !== "updatedAt" || filters.tag !== "all";
 
   const handleReset = () => {
     onFiltersChange({
@@ -47,18 +39,14 @@ export function NotesFilterPanel({
     });
   };
 
-  const availableFolders = filters.groupId === "all" 
-    ? folders 
-    : folders.filter(f => f.groupId === filters.groupId);
+  const availableFolders = filters.groupId === "all" ? folders : folders.filter((f) => f.groupId === filters.groupId);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="icon" className="relative">
           <Filter className="h-4 w-4" />
-          {hasActiveFilters && (
-            <span className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full" />
-          )}
+          {hasActiveFilters && <span className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full" />}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-72" align="end">
@@ -76,8 +64,8 @@ export function NotesFilterPanel({
           <div className="space-y-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Group</Label>
-              <Select 
-                value={filters.groupId} 
+              <Select
+                value={filters.groupId}
                 onValueChange={(value) => onFiltersChange({ ...filters, groupId: value, folderId: "all" })}
               >
                 <SelectTrigger className="h-8">
@@ -88,10 +76,7 @@ export function NotesFilterPanel({
                   {groups.map((group) => (
                     <SelectItem key={group.id} value={group.id}>
                       <div className="flex items-center gap-2">
-                        <div 
-                          className="h-2 w-2 rounded-full" 
-                          style={{ backgroundColor: group.color }} 
-                        />
+                        <NotesCategoryDot categoryId={group.id} color={group.color} size="sm" />
                         {group.name}
                       </div>
                     </SelectItem>
@@ -102,8 +87,8 @@ export function NotesFilterPanel({
 
             <div className="space-y-1.5">
               <Label className="text-xs">Folder</Label>
-              <Select 
-                value={filters.folderId} 
+              <Select
+                value={filters.folderId}
                 onValueChange={(value) => onFiltersChange({ ...filters, folderId: value })}
               >
                 <SelectTrigger className="h-8">
@@ -122,9 +107,9 @@ export function NotesFilterPanel({
 
             <div className="space-y-1.5">
               <Label className="text-xs">Sort By</Label>
-              <Select 
-                value={filters.sortBy} 
-                onValueChange={(value: "updatedAt" | "createdAt" | "title") => 
+              <Select
+                value={filters.sortBy}
+                onValueChange={(value: "updatedAt" | "createdAt" | "title") =>
                   onFiltersChange({ ...filters, sortBy: value })
                 }
               >
@@ -142,10 +127,7 @@ export function NotesFilterPanel({
             {tags.length > 0 && (
               <div className="space-y-1.5">
                 <Label className="text-xs">Tag</Label>
-                <Select 
-                  value={filters.tag} 
-                  onValueChange={(value) => onFiltersChange({ ...filters, tag: value })}
-                >
+                <Select value={filters.tag} onValueChange={(value) => onFiltersChange({ ...filters, tag: value })}>
                   <SelectTrigger className="h-8">
                     <SelectValue placeholder="All Tags" />
                   </SelectTrigger>

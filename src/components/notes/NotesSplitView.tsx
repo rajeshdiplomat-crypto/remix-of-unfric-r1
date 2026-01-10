@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, MoreHorizontal, X, Trash2, ChevronRight, FileText, Folder, FolderOpen, ChevronDown } from "lucide-react";
 import { NotesRichEditor } from "./NotesRichEditor";
 import { NotesActivityDot, getMostRecentUpdate } from "./NotesActivityDot";
+import { NotesCategoryIcon, NotesCategoryDot } from "./NotesCategoryIcon";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -156,7 +157,7 @@ export function NotesSplitView({
                       onClick={() => toggleGroup(group.id)}
                       className="w-full px-2 py-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-1.5 hover:bg-slate-100/60 rounded-lg transition-colors"
                     >
-                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: group.color }} />
+                      <NotesCategoryIcon categoryId={group.id} color={group.color} size="xs" />
                       {isGroupExpanded ? (
                         <ChevronDown className="h-3 w-3 text-slate-400 shrink-0" />
                       ) : (
