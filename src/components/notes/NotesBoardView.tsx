@@ -62,151 +62,113 @@ export function NotesBoardView({
           const mostRecentUpdate = getMostRecentUpdate(groupNotes);
 
           return (
-            <div
-              key={group.id}
-              className="w-[360px] shrink-0 overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm"
-            >
-              {/* Curved gradient accent line */}
-              <div
-                className="h-1.5 rounded-t-2xl"
-                style={{
-                  background: CATEGORY_GRADIENTS[group.id] || group.color,
-                  boxShadow: `0 2px 8px ${group.color}40`,
-                }}
-              />
-
-              {/* Header */}
-              <div className="px-4 py-4 bg-background/40 border-b border-border/40">
-                <div className="flex items-center gap-3">
-                  <h3 className="font-semibold text-foreground flex-1 text-base">{group.name}</h3>
-
-                  {mostRecentUpdate && <NotesActivityDot updatedAt={mostRecentUpdate} size="md" />}
-
-                  <span className="text-xs font-medium text-muted-foreground bg-muted/40 px-2 py-1 rounded-full ring-1 ring-border/40">
-                    {groupNotes.length}
-                  </span>
+            <div key={group.id} className="w-[280px] shrink-0 flex flex-col">
+              {/* Column header with thin accent line */}
+              <div className="mb-2">
+                <div
+                  className="h-0.5 rounded-full mb-3"
+                  style={{ background: CATEGORY_GRADIENTS[group.id] || group.color }}
+                />
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="font-medium text-foreground/80 text-sm">{group.name}</h3>
+                  <span className="text-xs text-muted-foreground">{groupNotes.length}</span>
                 </div>
               </div>
 
-              {/* Content */}
-              <ScrollArea className="max-h-[calc(100vh-280px)]">
-                <div className="p-4 space-y-3">
-                  {/* Direct notes */}
+              {/* Add note button */}
+              <button
+                onClick={() => onAddNote(group.id, null)}
+                className="w-full flex items-center gap-2 px-3 py-2.5 mb-2 text-sm text-muted-foreground hover:text-foreground bg-background/60 hover:bg-background/90 rounded-lg border border-dashed border-border/50 hover:border-border transition-all"
+              >
+                <Plus className="h-4 w-4" />
+                Add note
+              </button>
+
+              {/* Notes list */}
+              <ScrollArea className="flex-1 max-h-[calc(100vh-280px)]">
+                <div className="space-y-2 pr-1">
+                  {/* Direct notes - clean simple cards */}
                   {groupNotes
                     .filter((n) => !n.folderId)
                     .map((note) => (
                       <div
                         key={note.id}
                         className={
-                          "rounded-xl border transition-all cursor-pointer " +
+                          "rounded-lg bg-background border transition-all cursor-pointer " +
                           (selectedNoteId === note.id
-                            ? "border-primary/40 bg-primary/5 shadow-sm"
-                            : "border-border/40 bg-background/60 hover:bg-background/80 hover:shadow-sm")
+                            ? "border-primary/50 shadow-sm"
+                            : "border-border/30 hover:border-border/60 hover:shadow-sm")
                         }
                         onClick={() => onNoteClick(note)}
                       >
                         <div className="p-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <h4 className="font-medium text-foreground text-sm line-clamp-1 flex-1">
-                              {note.title || "Untitled"}
-                            </h4>
-                            <NotesActivityDot updatedAt={note.updatedAt} size="sm" />
-                          </div>
-                          {note.plainText && (
-                            <p className="text-xs text-muted-foreground line-clamp-2 mt-1.5">{note.plainText}</p>
-                          )}
-                          {note.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {note.tags.slice(0, 3).map((tag) => (
-                                <span
-                                  key={tag}
-                                  className="text-[10px] px-2 py-0.5 rounded-full bg-muted/40 text-muted-foreground ring-1 ring-border/30"
-                                >
-                                  {tag}
-                                </span>
-                              ))}
+                          <div className="flex items-start gap-2">
+                            <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30 shrink-0 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm text-foreground line-clamp-2">{note.title || "Untitled"}</h4>
+                              {note.plainText && (
+                                <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{note.plainText}</p>
+                              )}
                             </div>
-                          )}
+                          </div>
                         </div>
                       </div>
                     ))}
 
-                  {/* Sections */}
+                  {/* Sections/Folders */}
                   {groupFolders.map((folder) => {
                     const folderNotes = notes.filter((n) => n.folderId === folder.id);
-                    const folderMostRecent = getMostRecentUpdate(folderNotes);
                     const isFolderExpanded = expandedFolders.has(folder.id);
 
                     return (
-                      <div key={folder.id} className="pt-1">
+                      <div key={folder.id} className="pt-2">
                         <button
                           onClick={() => toggleFolder(folder.id)}
-                          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/20 hover:bg-muted/30 transition-colors border border-border/30"
+                          className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
                         >
                           <ChevronRight
-                            className={
-                              "h-4 w-4 text-muted-foreground transition-transform " +
-                              (isFolderExpanded ? "rotate-90" : "")
-                            }
+                            className={"h-3 w-3 transition-transform " + (isFolderExpanded ? "rotate-90" : "")}
                           />
-                          <span className="flex-1 text-left text-xs font-semibold tracking-wider text-foreground/80 uppercase">
-                            {folder.name}
-                          </span>
-                          {folderMostRecent && <NotesActivityDot updatedAt={folderMostRecent} size="sm" />}
-                          <span className="text-[10px] text-muted-foreground bg-background/60 px-2 py-0.5 rounded-full ring-1 ring-border/30">
-                            {folderNotes.length}
-                          </span>
+                          <span className="flex-1 text-left font-medium">{folder.name}</span>
+                          <span className="text-[10px]">{folderNotes.length}</span>
                         </button>
 
                         {isFolderExpanded && (
-                          <div className="mt-2 ml-2 pl-3 border-l border-border/40 space-y-2">
+                          <div className="mt-1 ml-3 space-y-2">
                             {folderNotes.map((note) => (
                               <div
                                 key={note.id}
                                 className={
-                                  "rounded-xl border transition-all cursor-pointer " +
+                                  "rounded-lg bg-background border transition-all cursor-pointer " +
                                   (selectedNoteId === note.id
-                                    ? "border-primary/40 bg-primary/5"
-                                    : "border-border/30 bg-background/40 hover:bg-background/70")
+                                    ? "border-primary/50 shadow-sm"
+                                    : "border-border/30 hover:border-border/60")
                                 }
                                 onClick={() => onNoteClick(note)}
                               >
                                 <div className="p-3">
-                                  <div className="flex items-start justify-between gap-2">
-                                    <h4 className="font-medium text-foreground text-sm line-clamp-1 flex-1">
-                                      {note.title || "Untitled"}
-                                    </h4>
-                                    <NotesActivityDot updatedAt={note.updatedAt} size="sm" />
+                                  <div className="flex items-start gap-2">
+                                    <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30 shrink-0 mt-0.5" />
+                                    <h4 className="text-sm text-foreground line-clamp-2">{note.title || "Untitled"}</h4>
                                   </div>
-                                  {note.plainText && (
-                                    <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{note.plainText}</p>
-                                  )}
                                 </div>
                               </div>
                             ))}
-
-                            <button
-                              onClick={() => onAddNote(group.id, folder.id)}
-                              className="w-full flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground py-2 transition-colors"
-                            >
-                              <Plus className="h-4 w-4" />
-                              Add note
-                            </button>
                           </div>
                         )}
                       </div>
                     );
                   })}
 
-                  {/* Add section */}
+                  {/* Add section (minimal) */}
                   {newFolderGroupId === group.id ? (
-                    <div className="flex gap-2 p-2 rounded-xl bg-muted/15 border border-border/30">
+                    <div className="flex gap-2 mt-2">
                       <input
                         type="text"
                         value={newFolderName}
                         onChange={(e) => setNewFolderName(e.target.value)}
                         placeholder="Section name…"
-                        className="flex-1 text-sm px-3 py-2 rounded-lg bg-background border border-border/50 focus:outline-none focus:border-primary/40"
+                        className="flex-1 text-sm px-3 py-1.5 rounded-lg bg-background border border-border/50 focus:outline-none focus:border-primary/40"
                         autoFocus
                         onKeyDown={(e) => {
                           if (e.key === "Enter") handleAddFolder(group.id);
@@ -216,31 +178,16 @@ export function NotesBoardView({
                           }
                         }}
                       />
-                      <button
-                        onClick={() => handleAddFolder(group.id)}
-                        className="text-sm px-3 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/15 font-medium"
-                      >
-                        Add
-                      </button>
                     </div>
                   ) : (
                     <button
                       onClick={() => setNewFolderGroupId(group.id)}
-                      className="w-full flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground py-2 px-2 transition-colors rounded-xl hover:bg-muted/20"
+                      className="w-full flex items-center gap-2 text-xs text-muted-foreground/60 hover:text-muted-foreground py-2 transition-colors"
                     >
-                      <FolderPlus className="h-4 w-4" />
+                      <FolderPlus className="h-3 w-3" />
                       Add section
                     </button>
                   )}
-
-                  {/* Add note */}
-                  <button
-                    onClick={() => onAddNote(group.id, null)}
-                    className="w-full flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground py-2 px-2 transition-colors rounded-xl hover:bg-muted/20"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add note
-                  </button>
                 </div>
               </ScrollArea>
             </div>
