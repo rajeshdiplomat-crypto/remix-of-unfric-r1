@@ -1,8 +1,20 @@
 import { useState } from "react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { NotesActivityDot, getMostRecentUpdate } from "./NotesActivityDot";
-import { ChevronRight, Plus, FolderPlus } from "lucide-react";
+import { ChevronRight, Plus, FolderPlus, MoreHorizontal, ArrowRight, Trash2, Copy } from "lucide-react";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 // Creative gradient presets for dots
 const CATEGORY_GRADIENTS: Record<string, string> = {
@@ -21,6 +33,8 @@ interface NotesBoardViewProps {
   onNoteClick: (note: Note) => void;
   onAddNote: (groupId: string, folderId: string | null) => void;
   onAddFolder: (groupId: string, folderName: string) => void;
+  onUpdateNote?: (note: Note) => void;
+  onDeleteNote?: (noteId: string) => void;
 }
 
 export function NotesBoardView({
@@ -31,10 +45,44 @@ export function NotesBoardView({
   onNoteClick,
   onAddNote,
   onAddFolder,
+  onUpdateNote,
+  onDeleteNote,
 }: NotesBoardViewProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [newFolderGroupId, setNewFolderGroupId] = useState<string | null>(null);
   const [newFolderName, setNewFolderName] = useState("");
+  const [draggedNoteId, setDraggedNoteId] = useState<string | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, noteId: string) => {
+    e.dataTransfer.setData("text/plain", noteId);
+    setDraggedNoteId(noteId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent, targetGroupId: string, targetFolderId: string | null) => {
+    e.preventDefault();
+    const noteId = e.dataTransfer.getData("text/plain");
+    setDraggedNoteId(null);
+
+    if (noteId && onUpdateNote) {
+      const note = notes.find((n) => n.id === noteId);
+      if (note && (note.groupId !== targetGroupId || note.folderId !== targetFolderId)) {
+        onUpdateNote({ ...note, groupId: targetGroupId, folderId: targetFolderId });
+      }
+    }
+  };
+
+  const toggleComplete = (e: React.MouseEvent, note: Note) => {
+    e.stopPropagation();
+    if (onUpdateNote) {
+      onUpdateNote({ ...note, isCompleted: !note.isCompleted });
+    }
+  };
 
   const sortedGroups = [...groups].sort((a, b) => a.sortOrder - b.sortOrder);
 
@@ -62,7 +110,12 @@ export function NotesBoardView({
           const mostRecentUpdate = getMostRecentUpdate(groupNotes);
 
           return (
-            <div key={group.id} className="w-[280px] shrink-0 flex flex-col h-full bg-background/0">
+            <div
+              key={group.id}
+              className="w-[280px] shrink-0 flex flex-col h-full bg-background/0"
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, group.id, null)}
+            >
               {/* Column header with thin accent line */}
               <div className="mb-2">
                 <div
@@ -93,19 +146,93 @@ export function NotesBoardView({
                     .map((note) => (
                       <div
                         key={note.id}
-                        className={
-                          "rounded-lg bg-card/95 backdrop-blur-sm border transition-all cursor-pointer shadow-sm " +
-                          (selectedNoteId === note.id
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, note.id)}
+                        className={cn(
+                          "rounded-lg bg-card/95 backdrop-blur-sm border transition-all cursor-pointer shadow-sm group relative",
+                          selectedNoteId === note.id
                             ? "border-primary/50 ring-1 ring-primary/20"
-                            : "border-border/10 hover:bg-card hover:shadow-md")
-                        }
+                            : "border-border/10 hover:bg-card hover:shadow-md",
+                          draggedNoteId === note.id && "opacity-50",
+                          note.isCompleted && "opacity-60",
+                        )}
                         onClick={() => onNoteClick(note)}
                       >
                         <div className="p-3">
                           <div className="flex items-start gap-2">
-                            <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30 shrink-0 mt-0.5" />
+                            {/* Completion Ring */}
+                            <button
+                              onClick={(e) => toggleComplete(e, note)}
+                              className={cn(
+                                "w-4 h-4 rounded-full border-2 shrink-0 mt-0.5 transition-colors flex items-center justify-center",
+                                note.isCompleted
+                                  ? "bg-primary border-primary text-primary-foreground"
+                                  : "border-muted-foreground/30 hover:border-primary/60",
+                              )}
+                            >
+                              {note.isCompleted && <div className="w-1.5 h-1.5 bg-current rounded-full" />}
+                            </button>
+
                             <div className="flex-1 min-w-0">
-                              <h4 className="text-sm text-foreground line-clamp-2">{note.title || "Untitled"}</h4>
+                              <div className="flex items-start justify-between">
+                                <h4
+                                  className={cn(
+                                    "text-sm text-foreground line-clamp-2 transition-all",
+                                    note.isCompleted && "line-through text-muted-foreground",
+                                  )}
+                                >
+                                  {note.title || "Untitled"}
+                                </h4>
+
+                                {/* Options Menu */}
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-muted/50 rounded-md transition-opacity">
+                                      <MoreHorizontal className="h-3 w-3 text-muted-foreground" />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-48">
+                                    <DropdownMenuLabel>Note Options</DropdownMenuLabel>
+                                    <DropdownMenuSub>
+                                      <DropdownMenuSubTrigger>
+                                        <ArrowRight className="h-3 w-3 mr-2" />
+                                        Move to...
+                                      </DropdownMenuSubTrigger>
+                                      <DropdownMenuSubContent>
+                                        {sortedGroups
+                                          .filter((g) => g.id !== group.id)
+                                          .map((g) => (
+                                            <DropdownMenuItem
+                                              key={g.id}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (onUpdateNote) onUpdateNote({ ...note, groupId: g.id });
+                                              }}
+                                            >
+                                              <span
+                                                className="w-2 h-2 rounded-full mr-2"
+                                                style={{ background: g.color }}
+                                              />
+                                              {g.name}
+                                            </DropdownMenuItem>
+                                          ))}
+                                      </DropdownMenuSubContent>
+                                    </DropdownMenuSub>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      className="text-destructive focus:text-destructive"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (onDeleteNote) onDeleteNote(note.id);
+                                      }}
+                                    >
+                                      <Trash2 className="h-3 w-3 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+
                               {note.plainText && (
                                 <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{note.plainText}</p>
                               )}

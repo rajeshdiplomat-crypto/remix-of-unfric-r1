@@ -50,6 +50,7 @@ export interface Note {
   updatedAt: string;
   isPinned: boolean;
   isArchived: boolean;
+  isCompleted?: boolean;
   scribbleStrokes?: string;
 }
 
@@ -63,6 +64,7 @@ const DEFAULT_GROUPS: NoteGroup[] = [
   { id: "personal", name: "Personal", color: "hsl(142, 71%, 45%)", sortOrder: 2 },
   { id: "wellness", name: "Wellness", color: "hsl(262, 83%, 58%)", sortOrder: 3 },
   { id: "hobby", name: "Hobby", color: "hsl(25, 95%, 53%)", sortOrder: 4 },
+
 ];
 
 // Creative gradient presets for indicators
@@ -71,8 +73,17 @@ const CATEGORY_GRADIENTS: Record<string, string> = {
   work: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #1d4ed8 100%)",
   personal: "linear-gradient(135deg, #4ade80 0%, #22c55e 50%, #16a34a 100%)",
   wellness: "linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #7c3aed 100%)",
-  hobby: "linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)",
+  hobby: "linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)"
 };
+
+const BACKGROUND_PRESETS = [
+  { id: "waterfall", url: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?q=80&w=2072&auto=format&fit=crop", name: "Waterfall" },
+  { id: "mountain", url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2000&auto=format&fit=crop", name: "Mountain" },
+  { id: "nebula", url: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop", name: "Nebula" },
+  { id: "forest", url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2000&auto=format&fit=crop", name: "Forest" },
+  { id: "minimal", url: "https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?q=80&w=2000&auto=format&fit=crop", name: "Minimal" },
+  { id: "none", url: "", name: "None" }
+];
 
 const SAMPLE_NOTES: Note[] = [
   {
@@ -179,7 +190,7 @@ function StatCard({
   return (
     <div
       className="rounded-xl border border-border/40 bg-card shadow-sm hover:shadow-md transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
-      style={{ animationDelay: `${index * 75}ms`, animationFillMode: "backwards" }}
+      style={{ animationDelay: `${index * 75}ms`, animationFillMode: 'backwards' }}
     >
       <div className="p-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -258,8 +269,8 @@ export default function Notes() {
         const q = searchQuery.trim().toLowerCase();
         const matchesSearch = q
           ? note.title.toLowerCase().includes(q) ||
-            note.plainText.toLowerCase().includes(q) ||
-            note.tags.some((tag) => tag.toLowerCase().includes(q))
+          note.plainText.toLowerCase().includes(q) ||
+          note.tags.some((tag) => tag.toLowerCase().includes(q))
           : true;
 
         const matchesFilter = filterGroupId === "all" || note.groupId === filterGroupId;
@@ -412,70 +423,123 @@ export default function Notes() {
 
   const handleGroupsChange = (newGroups: NoteGroup[]) => setGroups(newGroups);
 
+  // Background state
+  const [backgroundUrl, setBackgroundUrl] = useState<string>(() => {
+    return localStorage.getItem("notes_background") || BACKGROUND_PRESETS[0].url;
+  });
+
+  const handleBackgroundChange = (url: string) => {
+    setBackgroundUrl(url);
+    if (url) localStorage.setItem("notes_background", url);
+    else localStorage.removeItem("notes_background");
+  };
+
   // =========================
   // OVERVIEW
   // =========================
   if (viewMode === "overview") {
     return (
-      <div className="w-full flex-1 pb-24">
-        {/* Hero */}
-        <PageHero
-          storageKey="notes_hero_src"
-          typeKey="notes_hero_type"
-          badge={PAGE_HERO_TEXT.notes.badge}
-          title={PAGE_HERO_TEXT.notes.title}
-          subtitle={PAGE_HERO_TEXT.notes.subtitle}
-        />
+    return (
+      <div className="w-full flex-1 pb-24 relative min-h-screen">
+        {/* Global Background */}
+        {backgroundUrl && (
+          <div className="fixed inset-0 z-0 pointer-events-none">
+            <div
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-700"
+              style={{ backgroundImage: `url("${backgroundUrl}")` }}
+            />
+            <div className="absolute inset-0 bg-background/40 backdrop-blur-[2px]" />
+          </div>
+        )}
 
-        <div className="w-full space-y-6 px-6 lg:px-8 pt-6">
-          {/* Header */}
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-end">
-            <div className="flex items-center gap-2 lg:justify-end">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button className="group relative h-11 rounded-full px-6 overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] border-0 p-[2px] bg-transparent">
-                    {/* Aurora gradient border - animated */}
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-400 via-purple-500 via-pink-500 to-cyan-400 bg-[length:300%_100%] animate-[shimmer_4s_linear_infinite] opacity-90" />
-                    {/* Inner background - cream for light, dark for dark mode */}
-                    <div className="absolute inset-[2px] rounded-full bg-amber-50 dark:bg-slate-900 transition-colors" />
-                    {/* Subtle glow */}
-                    <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-cyan-400/20 via-purple-500/20 to-pink-500/20 blur-xl" />
-                    {/* Content */}
-                    <span className="relative flex items-center font-semibold tracking-wide text-slate-700 dark:text-white px-4">
-                      <Plus className="h-4 w-4 mr-2" />
-                      NEW NOTE
-                      <ChevronDown className="h-4 w-4 ml-2 opacity-70" />
-                    </span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-60">
-                  <DropdownMenuItem onClick={handleNewNoteWithOptions} className="py-2.5">
-                    <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <div className="flex flex-col">
-                      <span className="text-sm">New Note</span>
-                      <span className="text-xs text-muted-foreground">Choose where to save</span>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleQuickNote} className="py-2.5">
-                    <Zap className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <div className="flex flex-col">
-                      <span className="text-sm">Quick Note</span>
-                      <span className="text-xs text-muted-foreground">Send to Inbox</span>
-                    </div>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+        <div className="relative z-10 w-full">
+          {/* Hero */}
+          <PageHero
+            storageKey="notes_hero_src"
+            typeKey="notes_hero_type"
+            badge={PAGE_HERO_TEXT.notes.badge}
+            title={PAGE_HERO_TEXT.notes.title}
+            subtitle={PAGE_HERO_TEXT.notes.subtitle}
+          />
 
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-10 w-10 rounded-xl"
-                onClick={() => setSettingsOpen(true)}
-                aria-label="Notes settings"
-                title="Settings"
-              >
+          <div className="w-full space-y-6 px-6 lg:px-8 pt-6">
+            {/* Header */}
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-end">
+
+              <div className="flex items-center gap-2 lg:justify-end">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className="group relative h-11 rounded-full px-6 overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] border-0 p-[2px] bg-transparent">
+                      {/* Aurora gradient border - animated */}
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-400 via-purple-500 via-pink-500 to-cyan-400 bg-[length:300%_100%] animate-[shimmer_4s_linear_infinite] opacity-90" />
+                      {/* Inner background - cream for light, dark for dark mode */}
+                      <div className="absolute inset-[2px] rounded-full bg-amber-50 dark:bg-slate-900 transition-colors" />
+                      {/* Subtle glow */}
+                      <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-cyan-400/20 via-purple-500/20 to-pink-500/20 blur-xl" />
+                      {/* Content */}
+                      <span className="relative flex items-center font-semibold tracking-wide text-slate-700 dark:text-white px-4">
+                        <Plus className="h-4 w-4 mr-2" />
+                        NEW NOTE
+                        <ChevronDown className="h-4 w-4 ml-2 opacity-70" />
+                      </span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-60">
+                    <DropdownMenuItem onClick={handleNewNoteWithOptions} className="py-2.5">
+                      <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <div className="flex flex-col">
+                        <span className="text-sm">New Note</span>
+                        <span className="text-xs text-muted-foreground">Choose where to save</span>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleQuickNote} className="py-2.5">
+                      <Zap className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <div className="flex flex-col">
+                        <span className="text-sm">Quick Note</span>
+                        <span className="text-xs text-muted-foreground">Send to Inbox</span>
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 <Settings className="h-4 w-4" />
               </Button>
+
+              {/* Background Settings */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl" title="Change Background">
+                    <div className="h-4 w-4 rounded-full border border-current bg-cover bg-center"
+                      style={{ backgroundImage: backgroundUrl ? `url(${backgroundUrl})` : 'none' }} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-[320px] p-4">
+                  <div className="mb-3 font-medium text-sm">Background Image</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {BACKGROUND_PRESETS.map((bg) => (
+                      <button
+                        key={bg.id}
+                        onClick={() => handleBackgroundChange(bg.url)}
+                        className={cn(
+                          "relative aspect-video rounded-lg overflow-hidden border-2 transition-all hover:opacity-90",
+                          backgroundUrl === bg.url ? "border-primary" : "border-transparent"
+                        )}
+                      >
+                        {bg.url ? (
+                          <img src={bg.url} alt={bg.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="h-full w-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
+                            None
+                          </div>
+                        )}
+                        <span className="absolute bottom-1 left-2 text-[10px] font-medium text-white drop-shadow-md">
+                          {bg.name}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
@@ -523,7 +587,7 @@ export default function Notes() {
                     "h-6 px-0 text-[10px] uppercase tracking-wider font-light whitespace-nowrap transition-colors border-b",
                     filterGroupId === "all"
                       ? "text-foreground border-foreground"
-                      : "text-muted-foreground hover:text-foreground border-transparent",
+                      : "text-muted-foreground hover:text-foreground border-transparent"
                   )}
                 >
                   All
@@ -539,7 +603,7 @@ export default function Notes() {
                         "h-6 px-0 text-[10px] uppercase tracking-wider font-light whitespace-nowrap transition-colors border-b flex items-center gap-2",
                         active
                           ? "text-foreground border-foreground font-medium"
-                          : "text-muted-foreground hover:text-foreground border-transparent",
+                          : "text-muted-foreground hover:text-foreground border-transparent"
                       )}
                     >
                       {/* Curved gradient pill indicator */}
@@ -620,29 +684,18 @@ export default function Notes() {
           )}
 
           {notesView === "board" && (
-            <div className="relative -mx-6 lg:-mx-8 -mt-6 min-h-[calc(100vh-200px)]">
-              {/* Background Image - Waterfall/Forest */}
-              <div
-                className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-100 transition-all duration-700"
-                style={{
-                  backgroundImage:
-                    'url("https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?q=80&w=2072&auto=format&fit=crop")',
-                }}
+            <div className="relative z-10">
+              <NotesBoardView
+                groups={sortedGroups.filter((g) => filterGroupId === "all" || g.id === filterGroupId)}
+                folders={folders}
+                notes={filteredNotes}
+                selectedNoteId={selectedNote?.id}
+                onNoteClick={handleNoteClick}
+                onDeleteNote={handleDeleteNote}
+                onAddNote={handleCreateNote}
+                onAddFolder={handleCreateFolder}
+                onUpdateNote={handleSaveNote}
               />
-              <div className="absolute inset-0 z-0 bg-background/20 backdrop-blur-[2px]" />
-
-              <div className="relative z-10 p-6 lg:p-8">
-                <NotesBoardView
-                  groups={sortedGroups.filter((g) => filterGroupId === "all" || g.id === filterGroupId)}
-                  folders={folders}
-                  notes={filteredNotes}
-                  selectedNoteId={selectedNote?.id}
-                  onNoteClick={handleNoteClick}
-                  onDeleteNote={handleDeleteNote}
-                  onAddNote={handleCreateNote}
-                  onAddFolder={handleCreateFolder}
-                />
-              </div>
             </div>
           )}
 
