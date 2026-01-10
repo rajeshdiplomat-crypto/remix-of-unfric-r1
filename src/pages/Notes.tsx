@@ -424,10 +424,17 @@ export default function Notes() {
             <div className="flex items-center gap-2 lg:justify-end">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button className="h-10 rounded-xl px-4 shadow-sm bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white border-0">
-                    <Plus className="h-4 w-4 mr-2" />
-                    New note
-                    <ChevronDown className="h-4 w-4 ml-2 opacity-70" />
+                  <Button className="group relative h-11 rounded-2xl px-6 overflow-hidden shadow-lg shadow-cyan-500/25 hover:shadow-xl hover:shadow-cyan-500/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] border-0">
+                    {/* Animated gradient background */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-teal-400 to-cyan-500 bg-[length:200%_100%] animate-[shimmer_3s_ease-in-out_infinite]" />
+                    {/* Shine overlay on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                    {/* Content */}
+                    <span className="relative flex items-center text-white font-semibold tracking-wide">
+                      <Plus className="h-4 w-4 mr-2" />
+                      NEW NOTE
+                      <ChevronDown className="h-4 w-4 ml-2 opacity-80" />
+                    </span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-60">
