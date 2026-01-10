@@ -502,263 +502,271 @@ export default function Notes() {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                <Settings className="h-4 w-4" />
-              </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 rounded-xl"
+                  onClick={() => setSettingsOpen(true)}
+                  aria-label="Notes settings"
+                  title="Settings"
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
 
-              {/* Background Settings */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl" title="Change Background">
-                    <div className="h-4 w-4 rounded-full border border-current bg-cover bg-center"
-                      style={{ backgroundImage: backgroundUrl ? `url(${backgroundUrl})` : 'none' }} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-[320px] p-4">
-                  <div className="mb-3 font-medium text-sm">Background Image</div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {BACKGROUND_PRESETS.map((bg) => (
+                {/* Background Settings */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl" title="Change Background">
+                      <div className="h-4 w-4 rounded-full border border-current bg-cover bg-center"
+                        style={{ backgroundImage: backgroundUrl ? `url(${backgroundUrl})` : 'none' }} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-[320px] p-4">
+                    <div className="mb-3 font-medium text-sm">Background Image</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {BACKGROUND_PRESETS.map((bg) => (
+                        <button
+                          key={bg.id}
+                          onClick={() => handleBackgroundChange(bg.url)}
+                          className={cn(
+                            "relative aspect-video rounded-lg overflow-hidden border-2 transition-all hover:opacity-90",
+                            backgroundUrl === bg.url ? "border-primary" : "border-transparent"
+                          )}
+                        >
+                          {bg.url ? (
+                            <img src={bg.url} alt={bg.name} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="h-full w-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
+                              None
+                            </div>
+                          )}
+                          <span className="absolute bottom-1 left-2 text-[10px] font-medium text-white drop-shadow-md">
+                            {bg.name}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div className="rounded-2xl border border-border/50 bg-card shadow-sm">
+              <div className="p-4 flex flex-col gap-3 xl:flex-row xl:items-center">
+                <div className="flex items-center gap-3">
+                  <div className="text-xs font-semibold tracking-wider text-muted-foreground hidden md:block">
+                    VIEW MODE
+                  </div>
+                  <NotesViewSwitcher currentView={notesView} onViewChange={setNotesView} />
+                </div>
+
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search notes, tags, text..."
+                    className="h-10 rounded-xl pl-10 bg-background"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+                    <SelectTrigger className="h-10 rounded-xl w-[180px]">
+                      <ArrowUpDown className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Sort" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="updatedAt">Last edited</SelectItem>
+                      <SelectItem value="createdAt">Created date</SelectItem>
+                      <SelectItem value="title">A–Z</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Filter chips - Underlined style */}
+              <div className="px-4 pb-4">
+                <div className="flex gap-4 overflow-auto no-scrollbar">
+                  <button
+                    onClick={() => setFilterGroupId("all")}
+                    className={cn(
+                      "h-6 px-0 text-[10px] uppercase tracking-wider font-light whitespace-nowrap transition-colors border-b",
+                      filterGroupId === "all"
+                        ? "text-foreground border-foreground"
+                        : "text-muted-foreground hover:text-foreground border-transparent"
+                    )}
+                  >
+                    All
+                  </button>
+
+                  {sortedGroups.map((group) => {
+                    const active = filterGroupId === group.id;
+                    return (
                       <button
-                        key={bg.id}
-                        onClick={() => handleBackgroundChange(bg.url)}
+                        key={group.id}
+                        onClick={() => setFilterGroupId(group.id)}
                         className={cn(
-                          "relative aspect-video rounded-lg overflow-hidden border-2 transition-all hover:opacity-90",
-                          backgroundUrl === bg.url ? "border-primary" : "border-transparent"
+                          "h-6 px-0 text-[10px] uppercase tracking-wider font-light whitespace-nowrap transition-colors border-b flex items-center gap-2",
+                          active
+                            ? "text-foreground border-foreground font-medium"
+                            : "text-muted-foreground hover:text-foreground border-transparent"
                         )}
                       >
-                        {bg.url ? (
-                          <img src={bg.url} alt={bg.name} className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="h-full w-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
-                            None
-                          </div>
-                        )}
-                        <span className="absolute bottom-1 left-2 text-[10px] font-medium text-white drop-shadow-md">
-                          {bg.name}
-                        </span>
+                        {/* Curved gradient pill indicator */}
+                        <span
+                          className="w-4 h-1.5 rounded-full"
+                          style={{ background: CATEGORY_GRADIENTS[group.id] || group.color }}
+                        />
+                        {group.name}
                       </button>
-                    ))}
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-
-          {/* Controls */}
-          <div className="rounded-2xl border border-border/50 bg-card shadow-sm">
-            <div className="p-4 flex flex-col gap-3 xl:flex-row xl:items-center">
-              <div className="flex items-center gap-3">
-                <div className="text-xs font-semibold tracking-wider text-muted-foreground hidden md:block">
-                  VIEW MODE
+                    );
+                  })}
                 </div>
-                <NotesViewSwitcher currentView={notesView} onViewChange={setNotesView} />
               </div>
+            </div>
 
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search notes, tags, text..."
-                  className="h-10 rounded-xl pl-10 bg-background"
+            {/* Insights */}
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <StatCard label="Total notes" value={`${insights.total}`} icon={<FileText className="h-5 w-5" />} />
+              <StatCard label="Edited today" value={`${insights.editedToday}`} icon={<Clock className="h-5 w-5" />} />
+              <StatCard label="Pinned" value={`${insights.pinned}`} icon={<Pin className="h-5 w-5" />} />
+              <StatCard label="Active groups" value={`${insights.activeGroups}`} icon={<Layers className="h-5 w-5" />} />
+            </div>
+
+            {/* Pinned */}
+            {pinnedNotes.length > 0 && (
+              <div className="rounded-2xl border border-border/50 bg-card shadow-sm">
+                <div className="p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Pinned</p>
+                    <p className="text-sm text-muted-foreground mt-1">Fast access to what matters.</p>
+                  </div>
+                </div>
+
+                <div className="px-4 pb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {pinnedNotes.map((n) => (
+                    <button
+                      key={n.id}
+                      onClick={() => handleNoteClick(n)}
+                      className="text-left rounded-2xl border border-border/40 bg-background/60 hover:bg-background/80 hover:shadow-sm transition-all p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-foreground truncate">{n.title || "Untitled"}</p>
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{n.plainText || "No content"}</p>
+                        </div>
+                        <Pin className="h-4 w-4 text-muted-foreground" />
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{getGroupName(n.groupId)}</span>
+                        <span>{formatDistanceToNow(new Date(n.updatedAt), { addSuffix: true })}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Content */}
+            {notesView === "atlas" && (
+              <div className="space-y-4">
+                {sortedGroups
+                  .filter((g) => filterGroupId === "all" || g.id === filterGroupId)
+                  .map((group) => (
+                    <NotesGroupSection
+                      key={group.id}
+                      group={group}
+                      folders={folders}
+                      notes={filteredNotes}
+                      selectedNoteId={selectedNote?.id}
+                      onNoteClick={handleNoteClick}
+                      onDeleteNote={handleDeleteNote}
+                      onAddNote={handleCreateNote}
+                      onAddFolder={handleCreateFolder}
+                    />
+                  ))}
+              </div>
+            )}
+
+            {notesView === "board" && (
+              <div className="relative z-10">
+                <NotesBoardView
+                  groups={sortedGroups.filter((g) => filterGroupId === "all" || g.id === filterGroupId)}
+                  folders={folders}
+                  notes={filteredNotes}
+                  selectedNoteId={selectedNote?.id}
+                  onNoteClick={handleNoteClick}
+                  onDeleteNote={handleDeleteNote}
+                  onAddNote={handleCreateNote}
+                  onAddFolder={handleCreateFolder}
+                  onUpdateNote={handleSaveNote}
                 />
               </div>
+            )}
 
-              <div className="flex items-center gap-2">
-                <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                  <SelectTrigger className="h-10 rounded-xl w-[180px]">
-                    <ArrowUpDown className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Sort" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="updatedAt">Last edited</SelectItem>
-                    <SelectItem value="createdAt">Created date</SelectItem>
-                    <SelectItem value="title">A–Z</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Filter chips - Underlined style */}
-            <div className="px-4 pb-4">
-              <div className="flex gap-4 overflow-auto no-scrollbar">
-                <button
-                  onClick={() => setFilterGroupId("all")}
-                  className={cn(
-                    "h-6 px-0 text-[10px] uppercase tracking-wider font-light whitespace-nowrap transition-colors border-b",
-                    filterGroupId === "all"
-                      ? "text-foreground border-foreground"
-                      : "text-muted-foreground hover:text-foreground border-transparent"
-                  )}
-                >
-                  All
-                </button>
-
-                {sortedGroups.map((group) => {
-                  const active = filterGroupId === group.id;
-                  return (
-                    <button
-                      key={group.id}
-                      onClick={() => setFilterGroupId(group.id)}
-                      className={cn(
-                        "h-6 px-0 text-[10px] uppercase tracking-wider font-light whitespace-nowrap transition-colors border-b flex items-center gap-2",
-                        active
-                          ? "text-foreground border-foreground font-medium"
-                          : "text-muted-foreground hover:text-foreground border-transparent"
-                      )}
-                    >
-                      {/* Curved gradient pill indicator */}
-                      <span
-                        className="w-4 h-1.5 rounded-full"
-                        style={{ background: CATEGORY_GRADIENTS[group.id] || group.color }}
-                      />
-                      {group.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Insights */}
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <StatCard label="Total notes" value={`${insights.total}`} icon={<FileText className="h-5 w-5" />} />
-            <StatCard label="Edited today" value={`${insights.editedToday}`} icon={<Clock className="h-5 w-5" />} />
-            <StatCard label="Pinned" value={`${insights.pinned}`} icon={<Pin className="h-5 w-5" />} />
-            <StatCard label="Active groups" value={`${insights.activeGroups}`} icon={<Layers className="h-5 w-5" />} />
-          </div>
-
-          {/* Pinned */}
-          {pinnedNotes.length > 0 && (
-            <div className="rounded-2xl border border-border/50 bg-card shadow-sm">
-              <div className="p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Pinned</p>
-                  <p className="text-sm text-muted-foreground mt-1">Fast access to what matters.</p>
-                </div>
-              </div>
-
-              <div className="px-4 pb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {pinnedNotes.map((n) => (
-                  <button
-                    key={n.id}
-                    onClick={() => handleNoteClick(n)}
-                    className="text-left rounded-2xl border border-border/40 bg-background/60 hover:bg-background/80 hover:shadow-sm transition-all p-4"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-foreground truncate">{n.title || "Untitled"}</p>
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{n.plainText || "No content"}</p>
-                      </div>
-                      <Pin className="h-4 w-4 text-muted-foreground" />
-                    </div>
-
-                    <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{getGroupName(n.groupId)}</span>
-                      <span>{formatDistanceToNow(new Date(n.updatedAt), { addSuffix: true })}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Content */}
-          {notesView === "atlas" && (
-            <div className="space-y-4">
-              {sortedGroups
-                .filter((g) => filterGroupId === "all" || g.id === filterGroupId)
-                .map((group) => (
-                  <NotesGroupSection
-                    key={group.id}
-                    group={group}
-                    folders={folders}
-                    notes={filteredNotes}
-                    selectedNoteId={selectedNote?.id}
-                    onNoteClick={handleNoteClick}
-                    onDeleteNote={handleDeleteNote}
-                    onAddNote={handleCreateNote}
-                    onAddFolder={handleCreateFolder}
-                  />
-                ))}
-            </div>
-          )}
-
-          {notesView === "board" && (
-            <div className="relative z-10">
-              <NotesBoardView
+            {notesView === "mindmap" && (
+              <NotesMindMapView
                 groups={sortedGroups.filter((g) => filterGroupId === "all" || g.id === filterGroupId)}
                 folders={folders}
                 notes={filteredNotes}
                 selectedNoteId={selectedNote?.id}
                 onNoteClick={handleNoteClick}
-                onDeleteNote={handleDeleteNote}
                 onAddNote={handleCreateNote}
                 onAddFolder={handleCreateFolder}
-                onUpdateNote={handleSaveNote}
               />
-            </div>
-          )}
+            )}
 
-          {notesView === "mindmap" && (
-            <NotesMindMapView
-              groups={sortedGroups.filter((g) => filterGroupId === "all" || g.id === filterGroupId)}
+            {/* Empty */}
+            {sortedGroups.length === 0 && (
+              <div className="rounded-2xl border border-border/50 bg-card shadow-sm p-10 text-center">
+                <p className="text-muted-foreground mb-4">No groups yet. Create your first group to get started.</p>
+                <Button className="h-10 rounded-xl" onClick={() => setSettingsOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Group
+                </Button>
+              </div>
+            )}
+
+            {/* Settings Dialog */}
+            <NotesGroupSettings
+              open={settingsOpen}
+              onOpenChange={setSettingsOpen}
+              groups={groups}
+              onGroupsChange={handleGroupsChange}
               folders={folders}
-              notes={filteredNotes}
-              selectedNoteId={selectedNote?.id}
-              onNoteClick={handleNoteClick}
-              onAddNote={handleCreateNote}
-              onAddFolder={handleCreateFolder}
+              onFoldersChange={setFolders}
             />
-          )}
 
-          {/* Empty */}
-          {sortedGroups.length === 0 && (
-            <div className="rounded-2xl border border-border/50 bg-card shadow-sm p-10 text-center">
-              <p className="text-muted-foreground mb-4">No groups yet. Create your first group to get started.</p>
-              <Button className="h-10 rounded-xl" onClick={() => setSettingsOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Group
-              </Button>
-            </div>
-          )}
-
-          {/* Settings Dialog */}
-          <NotesGroupSettings
-            open={settingsOpen}
-            onOpenChange={setSettingsOpen}
-            groups={groups}
-            onGroupsChange={handleGroupsChange}
-            folders={folders}
-            onFoldersChange={setFolders}
-          />
-
-          {/* Location Picker */}
-          <NotesLocationPicker
-            open={locationPickerOpen}
-            onOpenChange={setLocationPickerOpen}
-            groups={groups}
-            folders={folders}
-            onConfirm={handleCreateNote}
-          />
+            {/* Location Picker */}
+            <NotesLocationPicker
+              open={locationPickerOpen}
+              onOpenChange={setLocationPickerOpen}
+              groups={groups}
+              folders={folders}
+              onConfirm={handleCreateNote}
+            />
+          </div>
         </div>
-      </div>
-    );
+        );
   }
 
-  // =========================
-  // EDITOR (Split View)
-  // =========================
-  return (
-    <NotesSplitView
-      notes={filteredNotes}
-      groups={groups}
-      folders={folders}
-      selectedNote={selectedNote}
-      onSelectNote={setSelectedNote}
-      onSaveNote={handleSaveNote}
-      onDeleteNote={handleDeleteNote}
-      onBack={handleBackToOverview}
-      onCreateNote={handleQuickNote}
-    />
-  );
+        // =========================
+        // EDITOR (Split View)
+        // =========================
+        return (
+        <NotesSplitView
+          notes={filteredNotes}
+          groups={groups}
+          folders={folders}
+          selectedNote={selectedNote}
+          onSelectNote={setSelectedNote}
+          onSaveNote={handleSaveNote}
+          onDeleteNote={handleDeleteNote}
+          onBack={handleBackToOverview}
+          onCreateNote={handleQuickNote}
+        />
+        );
 }
