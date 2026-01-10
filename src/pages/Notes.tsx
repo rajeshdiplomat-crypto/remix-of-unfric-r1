@@ -64,7 +64,6 @@ const DEFAULT_GROUPS: NoteGroup[] = [
   { id: "personal", name: "Personal", color: "hsl(142, 71%, 45%)", sortOrder: 2 },
   { id: "wellness", name: "Wellness", color: "hsl(262, 83%, 58%)", sortOrder: 3 },
   { id: "hobby", name: "Hobby", color: "hsl(25, 95%, 53%)", sortOrder: 4 },
-
 ];
 
 // Creative gradient presets for indicators
@@ -73,16 +72,36 @@ const CATEGORY_GRADIENTS: Record<string, string> = {
   work: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #1d4ed8 100%)",
   personal: "linear-gradient(135deg, #4ade80 0%, #22c55e 50%, #16a34a 100%)",
   wellness: "linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #7c3aed 100%)",
-  hobby: "linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)"
+  hobby: "linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)",
 };
 
 const BACKGROUND_PRESETS = [
-  { id: "waterfall", url: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?q=80&w=2072&auto=format&fit=crop", name: "Waterfall" },
-  { id: "mountain", url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2000&auto=format&fit=crop", name: "Mountain" },
-  { id: "nebula", url: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop", name: "Nebula" },
-  { id: "forest", url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2000&auto=format&fit=crop", name: "Forest" },
-  { id: "minimal", url: "https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?q=80&w=2000&auto=format&fit=crop", name: "Minimal" },
-  { id: "none", url: "", name: "None" }
+  {
+    id: "waterfall",
+    url: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?q=80&w=2072&auto=format&fit=crop",
+    name: "Waterfall",
+  },
+  {
+    id: "mountain",
+    url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2000&auto=format&fit=crop",
+    name: "Mountain",
+  },
+  {
+    id: "nebula",
+    url: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop",
+    name: "Nebula",
+  },
+  {
+    id: "forest",
+    url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2000&auto=format&fit=crop",
+    name: "Forest",
+  },
+  {
+    id: "minimal",
+    url: "https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?q=80&w=2000&auto=format&fit=crop",
+    name: "Minimal",
+  },
+  { id: "none", url: "", name: "None" },
 ];
 
 const SAMPLE_NOTES: Note[] = [
@@ -190,7 +209,7 @@ function StatCard({
   return (
     <div
       className="rounded-xl border border-border/40 bg-card shadow-sm hover:shadow-md transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
-      style={{ animationDelay: `${index * 75}ms`, animationFillMode: 'backwards' }}
+      style={{ animationDelay: `${index * 75}ms`, animationFillMode: "backwards" }}
     >
       <div className="p-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -269,8 +288,8 @@ export default function Notes() {
         const q = searchQuery.trim().toLowerCase();
         const matchesSearch = q
           ? note.title.toLowerCase().includes(q) ||
-          note.plainText.toLowerCase().includes(q) ||
-          note.tags.some((tag) => tag.toLowerCase().includes(q))
+            note.plainText.toLowerCase().includes(q) ||
+            note.tags.some((tag) => tag.toLowerCase().includes(q))
           : true;
 
         const matchesFilter = filterGroupId === "all" || note.groupId === filterGroupId;
@@ -439,7 +458,6 @@ export default function Notes() {
   // =========================
   if (viewMode === "overview") {
     return (
-
       <div className="w-full flex-1 pb-24 relative min-h-screen">
         {/* Global Background */}
         {backgroundUrl && (
@@ -465,7 +483,6 @@ export default function Notes() {
           <div className="w-full space-y-6 px-6 lg:px-8 pt-6">
             {/* Header */}
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-end">
-
               <div className="flex items-center gap-2 lg:justify-end">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -517,8 +534,10 @@ export default function Notes() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl" title="Change Background">
-                      <div className="h-4 w-4 rounded-full border border-current bg-cover bg-center"
-                        style={{ backgroundImage: backgroundUrl ? `url(${backgroundUrl})` : 'none' }} />
+                      <div
+                        className="h-4 w-4 rounded-full border border-current bg-cover bg-center"
+                        style={{ backgroundImage: backgroundUrl ? `url(${backgroundUrl})` : "none" }}
+                      />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-[320px] p-4">
@@ -530,7 +549,7 @@ export default function Notes() {
                           onClick={() => handleBackgroundChange(bg.url)}
                           className={cn(
                             "relative aspect-video rounded-lg overflow-hidden border-2 transition-all hover:opacity-90",
-                            backgroundUrl === bg.url ? "border-primary" : "border-transparent"
+                            backgroundUrl === bg.url ? "border-primary" : "border-transparent",
                           )}
                         >
                           {bg.url ? (
@@ -595,7 +614,7 @@ export default function Notes() {
                       "h-6 px-0 text-[10px] uppercase tracking-wider font-light whitespace-nowrap transition-colors border-b",
                       filterGroupId === "all"
                         ? "text-foreground border-foreground"
-                        : "text-muted-foreground hover:text-foreground border-transparent"
+                        : "text-muted-foreground hover:text-foreground border-transparent",
                     )}
                   >
                     All
@@ -611,7 +630,7 @@ export default function Notes() {
                           "h-6 px-0 text-[10px] uppercase tracking-wider font-light whitespace-nowrap transition-colors border-b flex items-center gap-2",
                           active
                             ? "text-foreground border-foreground font-medium"
-                            : "text-muted-foreground hover:text-foreground border-transparent"
+                            : "text-muted-foreground hover:text-foreground border-transparent",
                         )}
                       >
                         {/* Curved gradient pill indicator */}
@@ -632,7 +651,11 @@ export default function Notes() {
               <StatCard label="Total notes" value={`${insights.total}`} icon={<FileText className="h-5 w-5" />} />
               <StatCard label="Edited today" value={`${insights.editedToday}`} icon={<Clock className="h-5 w-5" />} />
               <StatCard label="Pinned" value={`${insights.pinned}`} icon={<Pin className="h-5 w-5" />} />
-              <StatCard label="Active groups" value={`${insights.activeGroups}`} icon={<Layers className="h-5 w-5" />} />
+              <StatCard
+                label="Active groups"
+                value={`${insights.activeGroups}`}
+                icon={<Layers className="h-5 w-5" />}
+              />
             </div>
 
             {/* Pinned */}
@@ -655,7 +678,9 @@ export default function Notes() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="font-semibold text-foreground truncate">{n.title || "Untitled"}</p>
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{n.plainText || "No content"}</p>
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                            {n.plainText || "No content"}
+                          </p>
                         </div>
                         <Pin className="h-4 w-4 text-muted-foreground" />
                       </div>
@@ -751,8 +776,7 @@ export default function Notes() {
           </div>
         </div>
       </div>
-      </div >
-      );
+    );
   }
 
   // =========================
