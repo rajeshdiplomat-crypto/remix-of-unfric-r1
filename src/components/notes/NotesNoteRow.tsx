@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { FileText, Clock, Trash2, MoreHorizontal, ArrowRight } from "lucide-react";
+import { FileText, Clock, Trash2, MoreHorizontal, ArrowRight, Pin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -62,18 +62,29 @@ export function NotesNoteRow({
     }
   };
 
+  const handleTogglePin = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onUpdateNote) {
+      onUpdateNote({ ...note, isPinned: !note.isPinned });
+    }
+  };
+
   const otherGroups = allGroups.filter((g) => g.id !== note.groupId);
 
   return (
     <div
       onClick={onClick}
       className={`
-        group flex items-start gap-2.5 py-2 px-2 rounded-lg cursor-pointer transition-all duration-150
+        group flex items-start gap-2.5 py-2 px-2 rounded cursor-pointer transition-all duration-150
         hover:bg-muted/30 
         ${isIndented ? "ml-2" : ""}
         ${isSelected ? "bg-primary/5" : ""}
+        ${note.isPinned ? "border-l-2 border-primary/50 pl-2" : ""}
       `}
     >
+      {/* Pin indicator */}
+      {note.isPinned && <Pin className="h-3 w-3 text-primary/70 shrink-0 mt-1" />}
+
       <FileText className="h-3.5 w-3.5 mt-0.5 text-muted-foreground/40 shrink-0" />
 
       <div className="flex-1 min-w-0">
@@ -121,8 +132,16 @@ export function NotesNoteRow({
             <MoreHorizontal className="h-3 w-3" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48 rounded-xl">
+        <DropdownMenuContent align="end" className="w-48 rounded">
           <DropdownMenuLabel>Note Options</DropdownMenuLabel>
+
+          {/* Pin/Unpin option */}
+          {onUpdateNote && (
+            <DropdownMenuItem onClick={handleTogglePin} className="rounded cursor-pointer">
+              <Pin className={`h-3 w-3 mr-2 ${note.isPinned ? "text-primary" : ""}`} />
+              {note.isPinned ? "Unpin Note" : "Pin Note"}
+            </DropdownMenuItem>
+          )}
 
           {/* Change Group submenu */}
           {onUpdateNote && otherGroups.length > 0 && (
@@ -131,7 +150,7 @@ export function NotesNoteRow({
                 <ArrowRight className="h-3 w-3 mr-2" />
                 Change Group
               </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent className="rounded-xl">
+              <DropdownMenuSubContent className="rounded">
                 {otherGroups.map((g) => (
                   <DropdownMenuItem
                     key={g.id}
@@ -139,7 +158,7 @@ export function NotesNoteRow({
                       e.stopPropagation();
                       onUpdateNote({ ...note, groupId: g.id, folderId: null });
                     }}
-                    className="rounded-lg"
+                    className="rounded"
                   >
                     <span className="w-2 h-2 rounded-full mr-2" style={{ background: g.color }} />
                     {g.name}
@@ -153,7 +172,7 @@ export function NotesNoteRow({
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                className="text-destructive focus:text-destructive rounded-lg"
+                className="text-destructive focus:text-destructive rounded"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (confirm("Delete this note?")) {

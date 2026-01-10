@@ -539,7 +539,7 @@ export default function Notes() {
             </div>
 
             {/* Sleek Unified Toolbar */}
-            <div className="rounded-lg border border-border/40 bg-card/90 backdrop-blur-md shadow-sm">
+            <div className="rounded border border-border/40 bg-card/90 backdrop-blur-md shadow-sm">
               <div className="p-3 flex flex-wrap items-center gap-3">
                 {/* View Mode Switcher */}
                 <div className="flex items-center gap-2">
@@ -556,17 +556,17 @@ export default function Notes() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search..."
-                    className="h-9 rounded-md pl-9 pr-4 text-sm bg-background/70 border-border/40 focus:bg-background focus:ring-1 focus:ring-primary/20 transition-all"
+                    className="h-9 rounded pl-9 pr-4 text-sm bg-background/70 border-border/40 focus:bg-background focus:ring-1 focus:ring-primary/20 transition-all"
                   />
                 </div>
 
                 {/* Sort Select - Pill Shape */}
                 <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                  <SelectTrigger className="h-9 rounded-md w-[130px] text-xs bg-background/70 border-border/40 hover:bg-background transition-colors">
+                  <SelectTrigger className="h-9 rounded w-[130px] text-xs bg-background/70 border-border/40 hover:bg-background transition-colors">
                     <ArrowUpDown className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
                     <SelectValue placeholder="Sort" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-md">
+                  <SelectContent className="rounded">
                     <SelectItem value="updatedAt">Last edited</SelectItem>
                     <SelectItem value="createdAt">Created</SelectItem>
                     <SelectItem value="title">A–Z</SelectItem>
@@ -582,7 +582,7 @@ export default function Notes() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-9 px-3 rounded-md border-border/50 bg-background/70 hover:bg-background hover:border-primary/40 transition-all gap-2"
+                    className="h-9 px-3 rounded border-border/50 bg-background/70 hover:bg-background hover:border-primary/40 transition-all gap-2"
                     onClick={() => setSettingsOpen(true)}
                   >
                     <FolderPlus className="h-4 w-4" />
@@ -594,22 +594,22 @@ export default function Notes() {
                     <DropdownMenuTrigger asChild>
                       <Button
                         size="sm"
-                        className="h-9 px-4 rounded-md bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 text-white shadow-sm hover:shadow-md transition-all gap-2"
+                        className="h-9 px-4 rounded bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 text-white shadow-sm hover:shadow-md transition-all gap-2"
                       >
                         <Plus className="h-4 w-4" />
                         <span className="hidden sm:inline text-xs uppercase tracking-wide">New Note</span>
                         <ChevronDown className="h-3.5 w-3.5 opacity-70" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56 rounded-md p-1">
-                      <DropdownMenuItem onClick={handleNewNoteWithOptions} className="py-2 rounded-md cursor-pointer">
+                    <DropdownMenuContent align="end" className="w-56 rounded p-1">
+                      <DropdownMenuItem onClick={handleNewNoteWithOptions} className="py-2 rounded cursor-pointer">
                         <FileText className="h-4 w-4 mr-3 text-muted-foreground" />
                         <div className="flex flex-col">
                           <span className="text-sm font-medium">New Note</span>
                           <span className="text-xs text-muted-foreground">Choose location</span>
                         </div>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleQuickNote} className="py-2 rounded-md cursor-pointer">
+                      <DropdownMenuItem onClick={handleQuickNote} className="py-2 rounded cursor-pointer">
                         <Zap className="h-4 w-4 mr-3 text-muted-foreground" />
                         <div className="flex flex-col">
                           <span className="text-sm font-medium">Quick Note</span>

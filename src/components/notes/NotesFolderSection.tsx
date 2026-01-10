@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronRight, ChevronDown, Folder, FolderOpen } from "lucide-react";
+import { ChevronRight, ChevronDown, Folder, FolderOpen, Plus } from "lucide-react";
 import { NotesNoteRow } from "./NotesNoteRow";
 import { NotesActivityDot, getMostRecentUpdate } from "./NotesActivityDot";
 import type { Note, NoteFolder, NoteGroup } from "@/pages/Notes";
@@ -37,19 +37,19 @@ export function NotesFolderSection({
       {/* Folder Header - lighter than group */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center gap-2 py-1.5 px-1 rounded-lg hover:bg-muted/10 transition-colors group"
+        className="w-full flex items-center gap-2 py-2 px-2 rounded hover:bg-primary/5 transition-colors group"
       >
         {isExpanded ? (
-          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/50" />
+          <ChevronDown className="h-4 w-4 text-primary/70" />
         ) : (
-          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
+          <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
         )}
         {isExpanded ? (
-          <FolderOpen className="h-3.5 w-3.5 text-muted-foreground/60" />
+          <FolderOpen className="h-4 w-4 text-primary" />
         ) : (
-          <Folder className="h-3.5 w-3.5 text-muted-foreground/60" />
+          <Folder className="h-4 w-4 text-amber-500/80" />
         )}
-        <span className="text-sm text-foreground/70">{folder.name}</span>
+        <span className="text-sm font-medium text-foreground/90">{folder.name}</span>
 
         {/* Activity Dot */}
         {mostRecentUpdate && <NotesActivityDot updatedAt={mostRecentUpdate} size="sm" />}
