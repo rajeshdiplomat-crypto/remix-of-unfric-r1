@@ -7,8 +7,24 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Search, Settings, FileText, ChevronDown, Zap, ArrowUpDown, Pin, Clock, Layers } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Settings,
+  FileText,
+  ChevronDown,
+  Zap,
+  ArrowUpDown,
+  Pin,
+  Clock,
+  Layers,
+  Moon,
+  Sun,
+  Image,
+  MoreHorizontal,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +36,7 @@ import { NotesBoardView } from "@/components/notes/NotesBoardView";
 import { NotesMindMapView } from "@/components/notes/NotesMindMapView";
 import { NotesViewSwitcher, type NotesViewType } from "@/components/notes/NotesViewSwitcher";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
+import { useTheme } from "@/contexts/ThemeContext";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { cn } from "@/lib/utils";
 
@@ -228,6 +244,7 @@ function StatCard({
 export default function Notes() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   const [notes, setNotes] = useState<Note[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_NOTES);
@@ -471,142 +488,141 @@ export default function Notes() {
         )}
 
         <div className="relative z-10 w-full">
-          {/* Hero */}
-          <PageHero
-            storageKey="notes_hero_src"
-            typeKey="notes_hero_type"
-            badge={PAGE_HERO_TEXT.notes.badge}
-            title={PAGE_HERO_TEXT.notes.title}
-            subtitle={PAGE_HERO_TEXT.notes.subtitle}
-          />
-
-          <div className="w-full space-y-6 px-6 lg:px-8 pt-6">
-            {/* Header */}
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-end">
-              <div className="flex items-center gap-2 lg:justify-end">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button className="group relative h-11 rounded-full px-6 overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] border-0 p-[2px] bg-transparent">
-                      {/* Aurora gradient border - animated */}
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-400 via-purple-500 via-pink-500 to-cyan-400 bg-[length:300%_100%] animate-[shimmer_4s_linear_infinite] opacity-90" />
-                      {/* Inner background - cream for light, dark for dark mode */}
-                      <div className="absolute inset-[2px] rounded-full bg-amber-50 dark:bg-slate-900 transition-colors" />
-                      {/* Subtle glow */}
-                      <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-cyan-400/20 via-purple-500/20 to-pink-500/20 blur-xl" />
-                      {/* Content */}
-                      <span className="relative flex items-center font-semibold tracking-wide text-slate-700 dark:text-white px-4">
-                        <Plus className="h-4 w-4 mr-2" />
-                        NEW NOTE
-                        <ChevronDown className="h-4 w-4 ml-2 opacity-70" />
-                      </span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-60">
-                    <DropdownMenuItem onClick={handleNewNoteWithOptions} className="py-2.5">
-                      <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <div className="flex flex-col">
-                        <span className="text-sm">New Note</span>
-                        <span className="text-xs text-muted-foreground">Choose where to save</span>
-                      </div>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleQuickNote} className="py-2.5">
-                      <Zap className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <div className="flex flex-col">
-                        <span className="text-sm">Quick Note</span>
-                        <span className="text-xs text-muted-foreground">Send to Inbox</span>
-                      </div>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-10 w-10 rounded-xl"
-                  onClick={() => setSettingsOpen(true)}
-                  aria-label="Notes settings"
-                  title="Settings"
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
-
-                {/* Background Settings */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl" title="Change Background">
-                      <div
-                        className="h-4 w-4 rounded-full border border-current bg-cover bg-center"
-                        style={{ backgroundImage: backgroundUrl ? `url(${backgroundUrl})` : "none" }}
-                      />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-[320px] p-4">
-                    <div className="mb-3 font-medium text-sm">Background Image</div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {BACKGROUND_PRESETS.map((bg) => (
-                        <button
-                          key={bg.id}
-                          onClick={() => handleBackgroundChange(bg.url)}
-                          className={cn(
-                            "relative aspect-video rounded-lg overflow-hidden border-2 transition-all hover:opacity-90",
-                            backgroundUrl === bg.url ? "border-primary" : "border-transparent",
-                          )}
-                        >
-                          {bg.url ? (
-                            <img src={bg.url} alt={bg.name} className="h-full w-full object-cover" />
-                          ) : (
-                            <div className="h-full w-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
-                              None
-                            </div>
-                          )}
-                          <span className="absolute bottom-1 left-2 text-[10px] font-medium text-white drop-shadow-md">
-                            {bg.name}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-
-            {/* Controls */}
-            <div className="rounded-2xl border border-border/50 bg-card shadow-sm">
-              <div className="p-4 flex flex-col gap-3 xl:flex-row xl:items-center">
-                <div className="flex items-center gap-3">
-                  <div className="text-xs font-semibold tracking-wider text-muted-foreground hidden md:block">
-                    VIEW MODE
-                  </div>
+          <div className="w-full space-y-4 px-6 lg:px-8 pt-6">
+            {/* Sleek Unified Toolbar */}
+            <div className="rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-sm">
+              <div className="p-3 flex flex-wrap items-center gap-2">
+                {/* View Mode Switcher */}
+                <div className="flex items-center gap-2">
                   <NotesViewSwitcher currentView={notesView} onViewChange={setNotesView} />
                 </div>
 
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                {/* Divider */}
+                <div className="hidden sm:block w-px h-6 bg-border/50" />
+
+                {/* Search - Narrower */}
+                <div className="relative flex-1 min-w-[140px] max-w-[280px]">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search notes, tags, text..."
-                    className="h-10 rounded-xl pl-10 bg-background"
+                    placeholder="Search..."
+                    className="h-8 rounded-lg pl-8 text-sm bg-background/60"
                   />
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                    <SelectTrigger className="h-10 rounded-xl w-[180px]">
-                      <ArrowUpDown className="h-4 w-4 mr-2" />
-                      <SelectValue placeholder="Sort" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="updatedAt">Last edited</SelectItem>
-                      <SelectItem value="createdAt">Created date</SelectItem>
-                      <SelectItem value="title">A–Z</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {/* Sort Select - Compact */}
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+                  <SelectTrigger className="h-8 rounded-lg w-[120px] text-xs">
+                    <ArrowUpDown className="h-3 w-3 mr-1.5" />
+                    <SelectValue placeholder="Sort" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="updatedAt">Last edited</SelectItem>
+                    <SelectItem value="createdAt">Created</SelectItem>
+                    <SelectItem value="title">A–Z</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Spacer */}
+                <div className="flex-1" />
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-1.5">
+                  {/* New Note Button - Sleek */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="sm"
+                        className="h-8 px-3 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline text-xs font-medium">New</span>
+                        <ChevronDown className="h-3 w-3 opacity-70" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-52">
+                      <DropdownMenuItem onClick={handleNewNoteWithOptions} className="py-2">
+                        <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <div className="flex flex-col">
+                          <span className="text-sm">New Note</span>
+                          <span className="text-xs text-muted-foreground">Choose location</span>
+                        </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleQuickNote} className="py-2">
+                        <Zap className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <div className="flex flex-col">
+                          <span className="text-sm">Quick Note</span>
+                          <span className="text-xs text-muted-foreground">Send to Inbox</span>
+                        </div>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {/* More Options Menu */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" title="More options">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      {/* Settings */}
+                      <DropdownMenuItem onClick={() => setSettingsOpen(true)} className="py-2">
+                        <Settings className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <span>Group Settings</span>
+                      </DropdownMenuItem>
+
+                      {/* Theme Toggle */}
+                      <DropdownMenuItem
+                        onClick={() => setTheme(theme.isDark ? "calm-blue" : "midnight-dark")}
+                        className="py-2"
+                      >
+                        {theme.isDark ? (
+                          <Sun className="h-4 w-4 mr-2 text-muted-foreground" />
+                        ) : (
+                          <Moon className="h-4 w-4 mr-2 text-muted-foreground" />
+                        )}
+                        <span>{theme.isDark ? "Light Mode" : "Dark Mode"}</span>
+                      </DropdownMenuItem>
+
+                      <DropdownMenuSeparator />
+
+                      {/* Background Presets */}
+                      <div className="px-2 py-1.5">
+                        <div className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                          <Image className="h-3 w-3" />
+                          Background
+                        </div>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {BACKGROUND_PRESETS.map((bg) => (
+                            <button
+                              key={bg.id}
+                              onClick={() => handleBackgroundChange(bg.url)}
+                              className={cn(
+                                "relative aspect-video rounded overflow-hidden border transition-all hover:opacity-80",
+                                backgroundUrl === bg.url ? "border-primary ring-1 ring-primary" : "border-border/50",
+                              )}
+                              title={bg.name}
+                            >
+                              {bg.url ? (
+                                <img src={bg.url} alt={bg.name} className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="h-full w-full bg-muted flex items-center justify-center">
+                                  <span className="text-[8px] text-muted-foreground">None</span>
+                                </div>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
 
               {/* Filter chips - Underlined style */}
-              <div className="px-4 pb-4">
+              <div className="px-3 pb-3">
                 <div className="flex gap-4 overflow-auto no-scrollbar">
                   <button
                     onClick={() => setFilterGroupId("all")}
