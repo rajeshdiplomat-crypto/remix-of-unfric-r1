@@ -248,7 +248,7 @@ function StatCard({
 }) {
   return (
     <div
-      className="rounded-xl border border-border/40 bg-card shadow-sm hover:shadow-md transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
+      className="rounded border border-border/40 bg-card shadow-sm hover:shadow-md transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
       style={{ animationDelay: `${index * 75}ms`, animationFillMode: "backwards" }}
     >
       <div className="p-4 flex items-start justify-between gap-3">
@@ -257,7 +257,7 @@ function StatCard({
           <p className="mt-1.5 text-xl font-semibold text-foreground">{value}</p>
           {hint && <p className="mt-1 text-xs text-muted-foreground/60">{hint}</p>}
         </div>
-        <div className="h-10 w-10 rounded-xl bg-muted/30 flex items-center justify-center text-muted-foreground shrink-0">
+        <div className="h-10 w-10 rounded bg-muted/30 flex items-center justify-center text-muted-foreground shrink-0">
           {icon}
         </div>
       </div>
