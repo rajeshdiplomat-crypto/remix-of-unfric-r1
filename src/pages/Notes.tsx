@@ -750,23 +750,25 @@ export default function Notes() {
             />
           </div>
         </div>
-        );
+      </div>
+      </div >
+      );
   }
 
-        // =========================
-        // EDITOR (Split View)
-        // =========================
-        return (
-        <NotesSplitView
-          notes={filteredNotes}
-          groups={groups}
-          folders={folders}
-          selectedNote={selectedNote}
-          onSelectNote={setSelectedNote}
-          onSaveNote={handleSaveNote}
-          onDeleteNote={handleDeleteNote}
-          onBack={handleBackToOverview}
-          onCreateNote={handleQuickNote}
-        />
-        );
+  // =========================
+  // EDITOR (Split View)
+  // =========================
+  return (
+    <NotesSplitView
+      notes={filteredNotes}
+      groups={groups}
+      folders={folders}
+      selectedNote={selectedNote}
+      onSelectNote={setSelectedNote}
+      onSaveNote={handleSaveNote}
+      onDeleteNote={handleDeleteNote}
+      onBack={handleBackToOverview}
+      onCreateNote={handleQuickNote}
+    />
+  );
 }
