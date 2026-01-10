@@ -970,20 +970,27 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
             <EditorContent editor={editor} />
           </div>
 
-          {scribbleMode && (
-            <canvas
-              ref={canvasRef}
-              onMouseDown={startDrawing}
-              onMouseMove={draw}
-              onMouseUp={stopDrawing}
-              onMouseLeave={stopDrawing}
-              className="absolute inset-0 w-full h-full"
-              style={{
-                touchAction: "none",
-                cursor: tool === "pen" ? "crosshair" : tool === "eraser" ? "cell" : "pointer",
-              }}
-            />
-          )}
+          {/* Scribble Canvas - always visible when strokes exist */}
+          <canvas
+            ref={canvasRef}
+            onMouseDown={scribbleMode ? startDrawing : undefined}
+            onMouseMove={scribbleMode ? draw : undefined}
+            onMouseUp={scribbleMode ? stopDrawing : undefined}
+            onMouseLeave={scribbleMode ? stopDrawing : undefined}
+            className="absolute inset-0 w-full h-full"
+            style={{
+              touchAction: "none",
+              cursor: scribbleMode
+                ? tool === "pen"
+                  ? "crosshair"
+                  : tool === "eraser"
+                    ? "cell"
+                    : "pointer"
+                : "default",
+              pointerEvents: scribbleMode ? "auto" : "none",
+              display: strokes.length > 0 || scribbleMode ? "block" : "none",
+            }}
+          />
         </div>
 
         <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
