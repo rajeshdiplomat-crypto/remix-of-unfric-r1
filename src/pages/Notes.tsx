@@ -439,7 +439,7 @@ export default function Notes() {
   // =========================
   if (viewMode === "overview") {
     return (
-    return (
+
       <div className="w-full flex-1 pb-24 relative min-h-screen">
         {/* Global Background */}
         {backgroundUrl && (
