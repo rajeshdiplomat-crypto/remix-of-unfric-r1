@@ -13,9 +13,11 @@ interface NotesGroupSectionProps {
   group: NoteGroup;
   folders: NoteFolder[];
   notes: Note[];
+  allGroups?: NoteGroup[];
   selectedNoteId?: string;
   onNoteClick: (note: Note) => void;
   onDeleteNote?: (noteId: string) => void;
+  onUpdateNote?: (note: Note) => void;
   onAddNote: (groupId: string, folderId: string | null) => void;
   onAddFolder: (groupId: string, folderName: string) => void;
   isInFocusMode?: boolean;
@@ -26,9 +28,11 @@ export function NotesGroupSection({
   group,
   folders,
   notes,
+  allGroups = [],
   selectedNoteId,
   onNoteClick,
   onDeleteNote,
+  onUpdateNote,
   onAddNote,
   onAddFolder,
   isInFocusMode = false,
@@ -176,9 +180,11 @@ export function NotesGroupSection({
                           folder={folder}
                           notes={notes}
                           group={group}
+                          allGroups={allGroups}
                           selectedNoteId={selectedNoteId}
                           onNoteClick={onNoteClick}
                           onDeleteNote={onDeleteNote}
+                          onUpdateNote={onUpdateNote}
                           onAddNote={(folderId) => onAddNote(group.id, folderId)}
                         />
                       ))}
@@ -197,9 +203,11 @@ export function NotesGroupSection({
                                 key={note.id}
                                 note={note}
                                 group={group}
+                                allGroups={allGroups}
                                 isSelected={selectedNoteId === note.id}
                                 onClick={() => onNoteClick(note)}
                                 onDelete={onDeleteNote}
+                                onUpdateNote={onUpdateNote}
                                 showActivityDot
                               />
                             ))}

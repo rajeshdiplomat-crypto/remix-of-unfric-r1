@@ -8,9 +8,11 @@ interface NotesFolderSectionProps {
   folder: NoteFolder;
   notes: Note[];
   group: NoteGroup;
+  allGroups?: NoteGroup[];
   selectedNoteId?: string;
   onNoteClick: (note: Note) => void;
   onDeleteNote?: (noteId: string) => void;
+  onUpdateNote?: (note: Note) => void;
   onAddNote: (folderId: string) => void;
 }
 
@@ -18,9 +20,11 @@ export function NotesFolderSection({
   folder,
   notes,
   group,
+  allGroups = [],
   selectedNoteId,
   onNoteClick,
   onDeleteNote,
+  onUpdateNote,
   onAddNote,
 }: NotesFolderSectionProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -33,7 +37,7 @@ export function NotesFolderSection({
       {/* Folder Header - lighter than group */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center gap-2 py-1.5 px-1 rounded hover:bg-muted/10 transition-colors group"
+        className="w-full flex items-center gap-2 py-1.5 px-1 rounded-lg hover:bg-muted/10 transition-colors group"
       >
         {isExpanded ? (
           <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/50" />
@@ -46,15 +50,11 @@ export function NotesFolderSection({
           <Folder className="h-3.5 w-3.5 text-muted-foreground/60" />
         )}
         <span className="text-sm text-foreground/70">{folder.name}</span>
-        
+
         {/* Activity Dot */}
-        {mostRecentUpdate && (
-          <NotesActivityDot updatedAt={mostRecentUpdate} size="sm" />
-        )}
-        
-        <span className="text-[10px] text-muted-foreground/50 ml-auto">
-          {folderNotes.length}
-        </span>
+        {mostRecentUpdate && <NotesActivityDot updatedAt={mostRecentUpdate} size="sm" />}
+
+        <span className="text-[10px] text-muted-foreground/50 ml-auto">{folderNotes.length}</span>
       </button>
 
       {/* Folder Content (Notes) */}
@@ -77,10 +77,12 @@ export function NotesFolderSection({
                   key={note.id}
                   note={note}
                   group={group}
+                  allGroups={allGroups}
                   isIndented
                   isSelected={selectedNoteId === note.id}
                   onClick={() => onNoteClick(note)}
                   onDelete={onDeleteNote}
+                  onUpdateNote={onUpdateNote}
                   showActivityDot
                 />
               ))}

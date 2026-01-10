@@ -26,6 +26,7 @@ import {
   MoreHorizontal,
   Upload,
   Palette,
+  FolderPlus,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -577,16 +578,52 @@ export default function Notes() {
 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2">
-                  {/* New Note Button - Premium Pill */}
+                  {/* Theme Toggle - Outside */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 rounded-full hover:bg-muted/80 transition-all"
+                    onClick={() => setTheme(theme.isDark ? "calm-blue" : "midnight-dark")}
+                    title={theme.isDark ? "Light Mode" : "Dark Mode"}
+                  >
+                    {theme.isDark ? (
+                      <Sun className="h-4 w-4 text-amber-500" />
+                    ) : (
+                      <Moon className="h-4 w-4 text-indigo-500" />
+                    )}
+                  </Button>
+
+                  {/* Add Section Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 px-4 rounded-full border-border/50 bg-background/70 hover:bg-background hover:border-primary/40 transition-all gap-2"
+                    onClick={() => setSettingsOpen(true)}
+                    title="Add Section"
+                  >
+                    <FolderPlus className="h-4 w-4" />
+                    <span className="hidden sm:inline text-sm">Add Section</span>
+                  </Button>
+
+                  {/* New Note Button - Creative Aurora Style */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
                         size="sm"
-                        className="h-9 px-4 rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-200 gap-2"
+                        className="group relative h-9 rounded-full px-5 overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] border-0 p-[2px] bg-transparent"
                       >
-                        <Plus className="h-4 w-4" />
-                        <span className="hidden sm:inline text-sm font-medium">New</span>
-                        <ChevronDown className="h-3.5 w-3.5 opacity-80" />
+                        {/* Aurora gradient border */}
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-400 via-purple-500 via-pink-500 to-cyan-400 bg-[length:300%_100%] animate-[shimmer_4s_linear_infinite] opacity-90" />
+                        {/* Inner background */}
+                        <div className="absolute inset-[2px] rounded-full bg-amber-50 dark:bg-slate-900 transition-colors" />
+                        {/* Glow effect on hover */}
+                        <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-cyan-400/20 via-purple-500/20 to-pink-500/20 blur-xl" />
+                        {/* Content */}
+                        <span className="relative flex items-center font-semibold tracking-wide text-slate-700 dark:text-white px-2 gap-2">
+                          <Plus className="h-4 w-4" />
+                          <span className="hidden sm:inline text-sm">New Note</span>
+                          <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                        </span>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56 rounded-xl p-1">
@@ -627,19 +664,6 @@ export default function Notes() {
                       >
                         <Settings className="h-4 w-4 mr-3 text-muted-foreground" />
                         <span className="font-medium">Group Settings</span>
-                      </DropdownMenuItem>
-
-                      {/* Theme Toggle */}
-                      <DropdownMenuItem
-                        onClick={() => setTheme(theme.isDark ? "calm-blue" : "midnight-dark")}
-                        className="py-2.5 rounded-lg cursor-pointer"
-                      >
-                        {theme.isDark ? (
-                          <Sun className="h-4 w-4 mr-3 text-amber-500" />
-                        ) : (
-                          <Moon className="h-4 w-4 mr-3 text-indigo-500" />
-                        )}
-                        <span className="font-medium">{theme.isDark ? "Light Mode" : "Dark Mode"}</span>
                       </DropdownMenuItem>
 
                       <DropdownMenuSeparator className="my-2" />
@@ -832,9 +856,11 @@ export default function Notes() {
                       group={group}
                       folders={folders}
                       notes={filteredNotes}
+                      allGroups={sortedGroups}
                       selectedNoteId={selectedNote?.id}
                       onNoteClick={handleNoteClick}
                       onDeleteNote={handleDeleteNote}
+                      onUpdateNote={handleSaveNote}
                       onAddNote={handleCreateNote}
                       onAddFolder={handleCreateFolder}
                     />
@@ -867,6 +893,8 @@ export default function Notes() {
                 onNoteClick={handleNoteClick}
                 onAddNote={handleCreateNote}
                 onAddFolder={handleCreateFolder}
+                onUpdateNote={handleSaveNote}
+                onDeleteNote={handleDeleteNote}
               />
             )}
 

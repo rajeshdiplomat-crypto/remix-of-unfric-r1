@@ -1,9 +1,30 @@
-import { useState, useMemo } from "react";
-import { FileText, Search, Plus, FolderOpen, ChevronRight, X } from "lucide-react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import {
+  FileText,
+  Search,
+  Plus,
+  FolderOpen,
+  ChevronRight,
+  ChevronLeft,
+  X,
+  MoreHorizontal,
+  ArrowRight,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { NotesActivityDot, getMostRecentUpdate } from "./NotesActivityDot";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -16,6 +37,48 @@ interface NotesMindMapViewProps {
   onNoteClick: (note: Note) => void;
   onAddNote: (groupId: string, folderId: string | null) => void;
   onAddFolder: (groupId: string, folderName: string) => void;
+  onUpdateNote?: (note: Note) => void;
+  onDeleteNote?: (noteId: string) => void;
+}
+
+// Color presets for groups
+const GROUP_COLORS: Record<string, { bg: string; border: string; text: string }> = {
+  inbox: {
+    bg: "bg-slate-100 dark:bg-slate-800",
+    border: "border-slate-300 dark:border-slate-600",
+    text: "text-slate-700 dark:text-slate-300",
+  },
+  work: {
+    bg: "bg-blue-50 dark:bg-blue-950",
+    border: "border-blue-300 dark:border-blue-700",
+    text: "text-blue-700 dark:text-blue-300",
+  },
+  personal: {
+    bg: "bg-emerald-50 dark:bg-emerald-950",
+    border: "border-emerald-300 dark:border-emerald-700",
+    text: "text-emerald-700 dark:text-emerald-300",
+  },
+  wellness: {
+    bg: "bg-purple-50 dark:bg-purple-950",
+    border: "border-purple-300 dark:border-purple-700",
+    text: "text-purple-700 dark:text-purple-300",
+  },
+  hobby: {
+    bg: "bg-orange-50 dark:bg-orange-950",
+    border: "border-orange-300 dark:border-orange-700",
+    text: "text-orange-700 dark:text-orange-300",
+  },
+};
+
+const DEFAULT_COLORS = { bg: "bg-muted", border: "border-border", text: "text-foreground" };
+
+interface TreeNode {
+  id: string;
+  label: string;
+  type: "root" | "group" | "folder" | "note";
+  color?: string;
+  children?: TreeNode[];
+  data?: Note | NoteGroup | NoteFolder;
 }
 
 export function NotesMindMapView({
@@ -26,305 +89,336 @@ export function NotesMindMapView({
   onNoteClick,
   onAddNote,
   onAddFolder,
+  onUpdateNote,
+  onDeleteNote,
 }: NotesMindMapViewProps) {
-  const [selectedGroup, setSelectedGroup] = useState<NoteGroup | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set(["root"]));
+  const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 
-  const sortedGroups = [...groups].sort((a, b) => a.sortOrder - b.sortOrder);
-  const totalNotes = notes.length;
+  const sortedGroups = useMemo(() => [...groups].sort((a, b) => a.sortOrder - b.sortOrder), [groups]);
 
-  // Calculate positions for groups in a circular ring
-  const groupPositions = useMemo(() => {
-    const count = sortedGroups.length;
-    const radius = 180;
-    const centerX = 300;
-    const centerY = 250;
+  // Build tree structure
+  const treeData = useMemo((): TreeNode => {
+    const root: TreeNode = {
+      id: "root",
+      label: "Notes",
+      type: "root",
+      children: sortedGroups.map((group) => {
+        const groupNotes = notes.filter((n) => n.groupId === group.id);
+        const groupFolders = folders.filter((f) => f.groupId === group.id);
 
-    return sortedGroups.map((group, index) => {
-      const angle = (index * 2 * Math.PI / count) - Math.PI / 2;
-      return {
-        group,
-        x: centerX + radius * Math.cos(angle),
-        y: centerY + radius * Math.sin(angle),
-        angle,
-      };
+        return {
+          id: `group-${group.id}`,
+          label: group.name,
+          type: "group" as const,
+          color: group.color,
+          data: group,
+          children: [
+            // Folders with their notes
+            ...groupFolders.map((folder) => ({
+              id: `folder-${folder.id}`,
+              label: folder.name,
+              type: "folder" as const,
+              data: folder,
+              children: notes
+                .filter((n) => n.folderId === folder.id)
+                .map((note) => ({
+                  id: `note-${note.id}`,
+                  label: note.title || "Untitled",
+                  type: "note" as const,
+                  data: note,
+                })),
+            })),
+            // Direct notes (no folder)
+            ...groupNotes
+              .filter((n) => !n.folderId)
+              .map((note) => ({
+                id: `note-${note.id}`,
+                label: note.title || "Untitled",
+                type: "note" as const,
+                data: note,
+              })),
+          ],
+        };
+      }),
+    };
+    return root;
+  }, [sortedGroups, folders, notes]);
+
+  const toggleNode = useCallback((nodeId: string) => {
+    setExpandedNodes((prev) => {
+      const next = new Set(prev);
+      if (next.has(nodeId)) {
+        next.delete(nodeId);
+      } else {
+        next.add(nodeId);
+      }
+      return next;
     });
-  }, [sortedGroups]);
+  }, []);
 
-  // Get folders and notes for selected group
-  const selectedGroupFolders = useMemo(() => {
-    if (!selectedGroup) return [];
-    return folders.filter(f => f.groupId === selectedGroup.id);
-  }, [selectedGroup, folders]);
+  const handleNodeClick = useCallback(
+    (node: TreeNode) => {
+      setSelectedNode(node.id);
+      if (node.type === "note" && node.data) {
+        onNoteClick(node.data as Note);
+      } else if (node.type === "group" || node.type === "folder" || node.type === "root") {
+        toggleNode(node.id);
+      }
+    },
+    [onNoteClick, toggleNode],
+  );
 
-  const selectedGroupNotes = useMemo(() => {
-    if (!selectedGroup) return [];
-    const groupNotes = notes.filter(n => n.groupId === selectedGroup.id);
-    if (searchQuery) {
-      return groupNotes.filter(n => 
-        n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        n.plainText?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+  const getNodeColors = (node: TreeNode) => {
+    if (node.type === "root") {
+      return { bg: "bg-primary/10", border: "border-primary/30", text: "text-primary" };
     }
-    return groupNotes;
-  }, [selectedGroup, notes, searchQuery]);
-
-  const getNotesForFolder = (folderId: string) => {
-    return notes.filter(n => n.folderId === folderId);
+    if (node.type === "group" && node.data) {
+      const groupId = (node.data as NoteGroup).id;
+      return GROUP_COLORS[groupId] || DEFAULT_COLORS;
+    }
+    if (node.type === "folder") {
+      return {
+        bg: "bg-cyan-50 dark:bg-cyan-950",
+        border: "border-cyan-300 dark:border-cyan-700",
+        text: "text-cyan-700 dark:text-cyan-300",
+      };
+    }
+    return { bg: "bg-card", border: "border-border/50", text: "text-foreground" };
   };
 
-  const getDirectNotes = () => {
-    if (!selectedGroup) return [];
-    return notes.filter(n => n.groupId === selectedGroup.id && !n.folderId);
-  };
+  const hasChildren = (node: TreeNode) => node.children && node.children.length > 0;
+  const isExpanded = (nodeId: string) => expandedNodes.has(nodeId);
 
-  const handleAddNewNote = () => {
-    if (selectedGroup) {
-      onAddNote(selectedGroup.id, null);
-    }
-  };
+  // Render a single node with its children
+  const renderNode = (node: TreeNode, level: number = 0, isLast: boolean = true, parentExpanded: boolean = true) => {
+    const colors = getNodeColors(node);
+    const expanded = isExpanded(node.id);
+    const hasKids = hasChildren(node);
+    const isSelected = selectedNode === node.id;
+    const isHovered = hoveredNode === node.id;
 
-  const handleAddNewSection = () => {
-    if (selectedGroup) {
-      onAddFolder(selectedGroup.id, "New Section");
-    }
+    return (
+      <div key={node.id} className={cn("relative", level > 0 && "ml-8")}>
+        {/* Connection line from parent */}
+        {level > 0 && (
+          <div className="absolute left-[-32px] top-0 bottom-0 pointer-events-none">
+            {/* Horizontal connector */}
+            <div className="absolute left-0 top-5 w-8 h-px bg-border/60" />
+            {/* Vertical line */}
+            {!isLast && <div className="absolute left-0 top-5 bottom-0 w-px bg-border/60" />}
+          </div>
+        )}
+
+        {/* Node itself */}
+        <div
+          className={cn(
+            "relative inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all duration-300 group my-1.5",
+            colors.bg,
+            colors.border,
+            isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background",
+            isHovered && !isSelected && "shadow-md scale-[1.02]",
+          )}
+          onClick={() => handleNodeClick(node)}
+          onMouseEnter={() => setHoveredNode(node.id)}
+          onMouseLeave={() => setHoveredNode(null)}
+        >
+          {/* Expand/Collapse button */}
+          {hasKids && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleNode(node.id);
+              }}
+              className={cn(
+                "w-5 h-5 rounded-md flex items-center justify-center transition-all duration-200",
+                "bg-background/80 hover:bg-background border border-border/50",
+                expanded ? "rotate-0" : "-rotate-90",
+              )}
+            >
+              {expanded ? <ChevronLeft className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            </button>
+          )}
+
+          {/* Icon based on type */}
+          {node.type === "folder" && <FolderOpen className="h-4 w-4 text-muted-foreground" />}
+          {node.type === "note" && <FileText className="h-4 w-4 text-muted-foreground" />}
+
+          {/* Label */}
+          <span className={cn("text-sm font-medium whitespace-nowrap max-w-[200px] truncate", colors.text)}>
+            {node.label}
+          </span>
+
+          {/* Count badge for groups/folders */}
+          {(node.type === "group" || node.type === "folder" || node.type === "root") && hasKids && (
+            <span className="text-xs text-muted-foreground bg-muted/80 px-1.5 py-0.5 rounded-md ml-1">
+              {node.children?.length}
+            </span>
+          )}
+
+          {/* Note timestamp */}
+          {node.type === "note" && node.data && (
+            <span className="text-[10px] text-muted-foreground/70 ml-2">
+              {formatDistanceToNow(new Date((node.data as Note).updatedAt), { addSuffix: true })}
+            </span>
+          )}
+
+          {/* Three-dot menu for notes */}
+          {node.type === "note" && node.data && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-muted/50 rounded-md transition-opacity ml-1">
+                  <MoreHorizontal className="h-3 w-3 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 rounded-xl">
+                <DropdownMenuLabel>Note Options</DropdownMenuLabel>
+                {onUpdateNote && (
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      <ArrowRight className="h-3 w-3 mr-2" />
+                      Change Group
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent className="rounded-xl">
+                      {sortedGroups
+                        .filter((g) => g.id !== (node.data as Note).groupId)
+                        .map((g) => (
+                          <DropdownMenuItem
+                            key={g.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onUpdateNote({ ...(node.data as Note), groupId: g.id, folderId: null });
+                            }}
+                            className="rounded-lg"
+                          >
+                            <span className="w-2 h-2 rounded-full mr-2" style={{ background: g.color }} />
+                            {g.name}
+                          </DropdownMenuItem>
+                        ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                )}
+                <DropdownMenuSeparator />
+                {onDeleteNote && (
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive rounded-lg"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteNote((node.data as Note).id);
+                    }}
+                  >
+                    <Trash2 className="h-3 w-3 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {/* Add button for groups */}
+          {node.type === "group" && node.data && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddNote((node.data as NoteGroup).id, null);
+              }}
+              className="opacity-0 group-hover:opacity-100 w-5 h-5 rounded-md flex items-center justify-center bg-primary/10 hover:bg-primary/20 transition-opacity ml-1"
+              title="Add note"
+            >
+              <Plus className="h-3 w-3 text-primary" />
+            </button>
+          )}
+        </div>
+
+        {/* Children with animation */}
+        {hasKids && (
+          <div
+            className={cn(
+              "overflow-hidden transition-all duration-300 ease-out",
+              expanded ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0",
+            )}
+          >
+            <div className="pl-4 border-l border-border/40 ml-2">
+              {node.children?.map((child, idx) =>
+                renderNode(child, level + 1, idx === (node.children?.length ?? 0) - 1, expanded),
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
-    <div className="relative w-full h-[650px] flex">
-      {/* Mind Map Canvas */}
-      <div 
-        className={cn(
-          "relative flex-1 overflow-hidden transition-all duration-300",
-          selectedGroup ? "mr-[380px]" : ""
-        )}
-      >
-        {/* Dotted Background */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `radial-gradient(circle, hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px)`,
-            backgroundSize: '20px 20px',
-          }}
-        />
+    <div className="w-full min-h-[600px] relative">
+      {/* Dotted Background */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `radial-gradient(circle, hsl(var(--muted-foreground) / 0.1) 1px, transparent 1px)`,
+          backgroundSize: "24px 24px",
+        }}
+      />
 
-        {/* SVG for connection lines */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none">
-          {groupPositions.map(({ group, x, y }) => (
-            <line
-              key={`line-${group.id}`}
-              x1={300}
-              y1={250}
-              x2={x}
-              y2={y}
-              stroke={selectedGroup?.id === group.id ? group.color : "hsl(var(--muted-foreground))"}
-              strokeWidth={selectedGroup?.id === group.id ? 2 : 1}
-              strokeOpacity={selectedGroup?.id === group.id ? 0.8 : 0.3}
-              className="transition-all duration-300"
-            />
-          ))}
-        </svg>
+      {/* Mind Map Content */}
+      <ScrollArea className="h-[calc(100vh-400px)] min-h-[500px]">
+        <div className="p-8">
+          {/* Title */}
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">Mind Map View</h2>
+              <p className="text-sm text-muted-foreground">Click nodes to expand or view notes</p>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-primary/50" /> Groups
+              </span>
+              <span className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-cyan-500/50" /> Folders
+              </span>
+              <span className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-muted-foreground/50" /> Notes
+              </span>
+            </div>
+          </div>
 
-        {/* Center Node */}
-        <div 
-          className="absolute"
-          style={{
-            left: 300,
-            top: 250,
-            transform: 'translate(-50%, -50%)',
+          {/* Tree Visualization */}
+          <div className="inline-block min-w-max">{renderNode(treeData)}</div>
+        </div>
+      </ScrollArea>
+
+      {/* Quick Actions Footer */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-card/80 backdrop-blur-sm rounded-full border border-border/50 px-4 py-2 shadow-lg">
+        <span className="text-xs text-muted-foreground">
+          {notes.length} notes across {groups.length} groups
+        </span>
+        <div className="w-px h-4 bg-border/50" />
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 rounded-full text-xs"
+          onClick={() => setExpandedNodes(new Set(["root"]))}
+        >
+          Collapse All
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 rounded-full text-xs"
+          onClick={() => {
+            const allIds = new Set<string>(["root"]);
+            const addNodeIds = (node: TreeNode) => {
+              allIds.add(node.id);
+              node.children?.forEach(addNodeIds);
+            };
+            addNodeIds(treeData);
+            setExpandedNodes(allIds);
           }}
         >
-          <div className="w-28 h-28 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 border-2 border-primary/30 flex items-center justify-center shadow-lg">
-            <div className="text-center">
-              <span className="text-base font-bold text-foreground">Notes</span>
-              <span className="block text-xs text-muted-foreground">{totalNotes} total</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Group Nodes */}
-        {groupPositions.map(({ group, x, y }) => {
-          const groupNotes = notes.filter(n => n.groupId === group.id);
-          const isSelected = selectedGroup?.id === group.id;
-
-          return (
-            <div
-              key={group.id}
-              className="absolute cursor-pointer transition-all duration-300"
-              style={{
-                left: x,
-                top: y,
-                transform: 'translate(-50%, -50%)',
-                zIndex: isSelected ? 20 : 10,
-              }}
-              onClick={() => setSelectedGroup(isSelected ? null : group)}
-            >
-              <div 
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-lg border-l-3 bg-card/95 backdrop-blur-sm transition-all duration-300",
-                  isSelected 
-                    ? "shadow-lg scale-105" 
-                    : "hover:shadow-md"
-                )}
-                style={{
-                  borderLeftColor: group.color,
-                  borderLeftWidth: '3px',
-                  boxShadow: isSelected ? `0 0 20px ${group.color}40` : undefined,
-                }}
-              >
-                {/* Label */}
-                <span className="text-sm font-medium text-foreground whitespace-nowrap">
-                  {group.name}
-                </span>
-                {/* Count Badge */}
-                <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                  {groupNotes.length}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-
-        {/* Help text */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-muted-foreground">
-          Click a section or note to view details
-        </div>
+          Expand All
+        </Button>
       </div>
-
-      {/* Right Side Panel */}
-      {selectedGroup && (
-        <div className="absolute right-0 top-0 h-full w-[380px] bg-card border-l border-border shadow-lg animate-in slide-in-from-right-5 duration-300">
-          <div className="flex flex-col h-full">
-            {/* Panel Header */}
-            <div className="p-4 border-b border-border">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>Notes</span>
-                  <ChevronRight className="h-3 w-3" />
-                  <span>Mind Map</span>
-                  <ChevronRight className="h-3 w-3" />
-                  <span className="text-foreground font-medium">{selectedGroup.name}</span>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-7 w-7"
-                  onClick={() => setSelectedGroup(null)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search in this group..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 h-9 text-sm"
-                />
-              </div>
-            </div>
-
-            {/* Content */}
-            <ScrollArea className="flex-1">
-              <div className="p-4 space-y-4">
-                {/* Folders/Sections */}
-                {selectedGroupFolders.map((folder) => {
-                  const folderNotes = getNotesForFolder(folder.id);
-                  const recentUpdate = folderNotes.length > 0 
-                    ? getMostRecentUpdate(folderNotes) 
-                    : null;
-
-                  return (
-                    <div
-                      key={folder.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer group"
-                      onClick={() => {
-                        if (folderNotes.length > 0) {
-                          onNoteClick(folderNotes[0]);
-                        }
-                      }}
-                    >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <FolderOpen className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">
-                            {folder.name}
-                          </p>
-                          {recentUpdate && (
-                            <p className="text-xs text-muted-foreground">
-                              Updated {formatDistanceToNow(new Date(recentUpdate), { addSuffix: false })} ago
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        {folderNotes.length}
-                      </span>
-                    </div>
-                  );
-                })}
-
-                {/* Direct Notes (not in folders) */}
-                {getDirectNotes().map((note) => (
-                  <div
-                    key={note.id}
-                    className={cn(
-                      "flex items-center justify-between p-3 rounded-lg transition-colors cursor-pointer",
-                      selectedNoteId === note.id 
-                        ? "bg-primary/10 border border-primary/20" 
-                        : "bg-muted/30 hover:bg-muted/50"
-                    )}
-                    onClick={() => onNoteClick(note)}
-                  >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">
-                          {note.title}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Updated {formatDistanceToNow(new Date(note.updatedAt), { addSuffix: false })} ago
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                {selectedGroupFolders.length === 0 && getDirectNotes().length === 0 && (
-                  <div className="text-center py-8">
-                    <FileText className="h-10 w-10 text-muted-foreground/50 mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">No notes in this group</p>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-
-            {/* Panel Footer - Actions */}
-            <div className="p-4 border-t border-border space-y-2">
-              <Button 
-                className="w-full gap-2" 
-                size="sm"
-                onClick={handleAddNewNote}
-              >
-                <Plus className="h-4 w-4" />
-                New Note
-              </Button>
-              <Button 
-                variant="outline" 
-                className="w-full gap-2" 
-                size="sm"
-                onClick={handleAddNewSection}
-              >
-                <FolderOpen className="h-4 w-4" />
-                New Section
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

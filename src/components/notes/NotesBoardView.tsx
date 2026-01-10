@@ -15,6 +15,7 @@ import {
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { formatDistanceToNow, format } from "date-fns";
 
 // Creative gradient presets for dots
 const CATEGORY_GRADIENTS: Record<string, string> = {
@@ -149,10 +150,10 @@ export function NotesBoardView({
                         draggable
                         onDragStart={(e) => handleDragStart(e, note.id)}
                         className={cn(
-                          "rounded-lg bg-card/95 backdrop-blur-sm border transition-all cursor-pointer shadow-sm group relative",
+                          "rounded-xl bg-card/95 backdrop-blur-sm border transition-all cursor-pointer shadow-sm group relative",
                           selectedNoteId === note.id
                             ? "border-primary/50 ring-1 ring-primary/20"
-                            : "border-border/10 hover:bg-card hover:shadow-md",
+                            : "border-border/20 hover:bg-card hover:shadow-md",
                           draggedNoteId === note.id && "opacity-50",
                           note.isCompleted && "opacity-60",
                         )}
@@ -191,14 +192,14 @@ export function NotesBoardView({
                                       <MoreHorizontal className="h-3 w-3 text-muted-foreground" />
                                     </button>
                                   </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end" className="w-48">
+                                  <DropdownMenuContent align="end" className="w-48 rounded-xl">
                                     <DropdownMenuLabel>Note Options</DropdownMenuLabel>
                                     <DropdownMenuSub>
                                       <DropdownMenuSubTrigger>
                                         <ArrowRight className="h-3 w-3 mr-2" />
-                                        Move to...
+                                        Change Group
                                       </DropdownMenuSubTrigger>
-                                      <DropdownMenuSubContent>
+                                      <DropdownMenuSubContent className="rounded-xl">
                                         {sortedGroups
                                           .filter((g) => g.id !== group.id)
                                           .map((g) => (
@@ -208,6 +209,7 @@ export function NotesBoardView({
                                                 e.stopPropagation();
                                                 if (onUpdateNote) onUpdateNote({ ...note, groupId: g.id });
                                               }}
+                                              className="rounded-lg"
                                             >
                                               <span
                                                 className="w-2 h-2 rounded-full mr-2"
@@ -220,7 +222,7 @@ export function NotesBoardView({
                                     </DropdownMenuSub>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
-                                      className="text-destructive focus:text-destructive"
+                                      className="text-destructive focus:text-destructive rounded-lg"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         if (onDeleteNote) onDeleteNote(note.id);
@@ -236,6 +238,13 @@ export function NotesBoardView({
                               {note.plainText && (
                                 <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{note.plainText}</p>
                               )}
+
+                              {/* Time and Date */}
+                              <div className="flex items-center gap-2 mt-2 text-[10px] text-muted-foreground/70">
+                                <span>{formatDistanceToNow(new Date(note.updatedAt), { addSuffix: true })}</span>
+                                <span>·</span>
+                                <span>{format(new Date(note.updatedAt), "MMM d")}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
