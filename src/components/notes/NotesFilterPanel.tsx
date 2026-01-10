@@ -84,12 +84,10 @@ export function NotesFilterPanel({ groups, folders, tags, filters, onFiltersChan
                   {groups.map((group) => (
                     <SelectItem key={group.id} value={group.id}>
                       <div className="flex items-center gap-2">
+                        {/* Curved gradient bar indicator */}
                         <div
-                          className="h-2.5 w-2.5 rounded-full ring-1 ring-white/50"
-                          style={{
-                            background: CATEGORY_GRADIENTS[group.id] || group.color,
-                            boxShadow: `0 1px 3px ${group.color}40`,
-                          }}
+                          className="w-4 h-1.5 rounded-full"
+                          style={{ background: CATEGORY_GRADIENTS[group.id] || group.color }}
                         />
                         {group.name}
                       </div>

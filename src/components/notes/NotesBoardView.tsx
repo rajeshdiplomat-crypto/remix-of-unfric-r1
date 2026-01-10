@@ -66,27 +66,18 @@ export function NotesBoardView({
               key={group.id}
               className="w-[360px] shrink-0 overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm"
             >
-              {/* Accent */}
-              <div className="h-1" style={{ backgroundColor: group.color }} />
+              {/* Curved gradient accent line */}
+              <div
+                className="h-1.5 rounded-t-2xl"
+                style={{
+                  background: CATEGORY_GRADIENTS[group.id] || group.color,
+                  boxShadow: `0 2px 8px ${group.color}40`,
+                }}
+              />
 
               {/* Header */}
               <div className="px-4 py-4 bg-background/40 border-b border-border/40">
                 <div className="flex items-center gap-3">
-                  {/* Creative gradient dot with glow and ring */}
-                  <div className="relative shrink-0">
-                    <div
-                      className="h-3 w-3 rounded-full"
-                      style={{
-                        background: CATEGORY_GRADIENTS[group.id] || group.color,
-                        boxShadow: `0 2px 10px ${group.color}60, inset 0 1px 2px rgba(255,255,255,0.4)`,
-                      }}
-                    />
-                    {/* Outer ring */}
-                    <div
-                      className="absolute inset-[-2px] rounded-full opacity-40"
-                      style={{ border: `1.5px solid ${group.color}` }}
-                    />
-                  </div>
                   <h3 className="font-semibold text-foreground flex-1 text-base">{group.name}</h3>
 
                   {mostRecentUpdate && <NotesActivityDot updatedAt={mostRecentUpdate} size="md" />}

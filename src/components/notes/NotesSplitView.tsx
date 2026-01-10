@@ -165,21 +165,6 @@ export function NotesSplitView({
                       onClick={() => toggleGroup(group.id)}
                       className="w-full px-2 py-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-1.5 hover:bg-slate-100/60 rounded-lg transition-colors"
                     >
-                      {/* Creative gradient dot with glow */}
-                      <div className="relative shrink-0">
-                        <div
-                          className="h-2.5 w-2.5 rounded-full"
-                          style={{
-                            background: CATEGORY_GRADIENTS[group.id] || group.color,
-                            boxShadow: `0 2px 8px ${group.color}60, inset 0 1px 2px rgba(255,255,255,0.3)`,
-                          }}
-                        />
-                        {/* Subtle outer ring */}
-                        <div
-                          className="absolute inset-[-2px] rounded-full opacity-30"
-                          style={{ border: `1px solid ${group.color}` }}
-                        />
-                      </div>
                       {isGroupExpanded ? (
                         <ChevronDown className="h-3 w-3 text-slate-400 shrink-0" />
                       ) : (
