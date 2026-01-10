@@ -87,7 +87,7 @@ export function NotesSplitView({
     work: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #1d4ed8 100%)",
     personal: "linear-gradient(135deg, #4ade80 0%, #22c55e 50%, #16a34a 100%)",
     wellness: "linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #7c3aed 100%)",
-    hobby: "linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)"
+    hobby: "linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)",
   };
 
   const handleSave = (note: Note) => {
@@ -171,7 +171,7 @@ export function NotesSplitView({
                           className="h-2.5 w-2.5 rounded-full"
                           style={{
                             background: CATEGORY_GRADIENTS[group.id] || group.color,
-                            boxShadow: `0 2px 8px ${group.color}60, inset 0 1px 2px rgba(255,255,255,0.3)`
+                            boxShadow: `0 2px 8px ${group.color}60, inset 0 1px 2px rgba(255,255,255,0.3)`,
                           }}
                         />
                         {/* Subtle outer ring */}
@@ -179,7 +179,7 @@ export function NotesSplitView({
                           className="absolute inset-[-2px] rounded-full opacity-30"
                           style={{ border: `1px solid ${group.color}` }}
                         />
-                      </div>}
+                      </div>
                       {isGroupExpanded ? (
                         <ChevronDown className="h-3 w-3 text-slate-400 shrink-0" />
                       ) : (
@@ -226,10 +226,11 @@ export function NotesSplitView({
                                   {folderNotes.map((note) => (
                                     <div
                                       key={note.id}
-                                      className={`p-1.5 rounded-lg cursor-pointer transition-all flex items-start gap-1.5 ${selectedNote?.id === note.id
-                                        ? "bg-primary/10 ring-1 ring-primary/20"
-                                        : "hover:bg-slate-50"
-                                        }`}
+                                      className={`p-1.5 rounded-lg cursor-pointer transition-all flex items-start gap-1.5 ${
+                                        selectedNote?.id === note.id
+                                          ? "bg-primary/10 ring-1 ring-primary/20"
+                                          : "hover:bg-slate-50"
+                                      }`}
                                       onClick={() => onSelectNote(note)}
                                     >
                                       <FileText className="h-3 w-3 mt-0.5 text-slate-400 shrink-0" />
@@ -249,10 +250,11 @@ export function NotesSplitView({
                           .map((note) => (
                             <div
                               key={note.id}
-                              className={`p-1.5 rounded-lg cursor-pointer transition-all flex items-start gap-1.5 ${selectedNote?.id === note.id
-                                ? "bg-primary/10 ring-1 ring-primary/20"
-                                : "hover:bg-slate-50"
-                                }`}
+                              className={`p-1.5 rounded-lg cursor-pointer transition-all flex items-start gap-1.5 ${
+                                selectedNote?.id === note.id
+                                  ? "bg-primary/10 ring-1 ring-primary/20"
+                                  : "hover:bg-slate-50"
+                              }`}
                               onClick={() => onSelectNote(note)}
                             >
                               <FileText className="h-3 w-3 mt-0.5 text-slate-400 shrink-0" />
