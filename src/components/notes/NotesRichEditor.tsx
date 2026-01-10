@@ -54,7 +54,6 @@ import {
   Minus,
   Strikethrough,
   Palette,
-  ImagePlus,
   Maximize2,
   Minimize2,
   X,
@@ -65,8 +64,7 @@ import {
   Pencil,
   Brush,
   Circle,
-  ChevronLeft,
-  ChevronRight,
+  Book,
 } from "lucide-react";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 
@@ -114,29 +112,15 @@ const FONTS = [
   { value: "georgia", label: "Georgia", css: "Georgia, Cambria, serif" },
   { value: "times", label: "Times", css: '"Times New Roman", Times, serif' },
   { value: "verdana", label: "Verdana", css: "Verdana, Geneva, sans-serif" },
-  { value: "helvetica", label: "Helvetica", css: "Helvetica Neue, Helvetica, sans-serif" },
-  { value: "garamond", label: "Garamond", css: "Garamond, Baskerville, serif" },
   { value: "courier", label: "Courier", css: '"Courier New", Courier, monospace' },
-  { value: "trebuchet", label: "Trebuchet", css: '"Trebuchet MS", sans-serif' },
-  { value: "palatino", label: "Palatino", css: '"Palatino Linotype", Palatino, serif' },
-  { value: "tahoma", label: "Tahoma", css: "Tahoma, Geneva, sans-serif" },
+  { value: "garamond", label: "Garamond", css: "Garamond, Baskerville, serif" },
   { value: "mono", label: "Mono", css: '"SF Mono", "Fira Code", monospace' },
 ];
 
-const SIZES = ["10", "12", "14", "16", "18", "20", "24", "28", "32", "40", "48"];
-const TEXT_COLORS = ["#1a1a1a", "#dc2626", "#ea580c", "#16a34a", "#2563eb", "#7c3aed", "#db2777", "#0891b2"];
-const HIGHLIGHT_COLORS = ["#fef08a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#fed7aa", "#e9d5ff", "#fecaca"];
-const SCRIBBLE_COLORS = [
-  "#1a1a1a",
-  "#dc2626",
-  "#2563eb",
-  "#16a34a",
-  "#7c3aed",
-  "#ea580c",
-  "#db2777",
-  "#0891b2",
-  "#f59e0b",
-];
+const SIZES = ["12", "14", "16", "18", "20", "24", "28", "32", "40"];
+const TEXT_COLORS = ["#1a1a1a", "#dc2626", "#ea580c", "#16a34a", "#2563eb", "#7c3aed", "#db2777"];
+const HIGHLIGHT_COLORS = ["#fef08a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#fed7aa", "#e9d5ff"];
+const SCRIBBLE_COLORS = ["#1a1a1a", "#dc2626", "#2563eb", "#16a34a", "#7c3aed", "#ea580c", "#db2777"];
 
 const PEN_TYPES = [
   { id: "pen", label: "Pen", icon: Pen, opacity: 1, shadow: false },
@@ -146,38 +130,25 @@ const PEN_TYPES = [
 ];
 
 const PEN_WIDTHS = [
-  { value: 1, label: "Extra Fine" },
-  { value: 2, label: "Fine" },
-  { value: 4, label: "Medium" },
-  { value: 6, label: "Thick" },
-  { value: 10, label: "Extra Thick" },
+  { value: 1, label: "Fine" },
+  { value: 2, label: "Medium" },
+  { value: 4, label: "Thick" },
+  { value: 6, label: "Extra Thick" },
 ];
 
 const ERASER_SIZES = [
   { value: 10, label: "Small" },
   { value: 20, label: "Medium" },
   { value: 40, label: "Large" },
-  { value: 60, label: "Extra Large" },
 ];
 
-const BG_PRESETS = [
-  { id: "none", label: "None", value: "#ffffff" },
-  { id: "cream", label: "Cream", value: "#fffbeb" },
-  { id: "mint", label: "Mint", value: "#ecfdf5" },
-  { id: "lavender", label: "Lavender", value: "#f5f3ff" },
-  { id: "sky", label: "Sky", value: "#f0f9ff" },
-  { id: "rose", label: "Rose", value: "#fff1f2" },
-  { id: "slate", label: "Slate", value: "#f8fafc" },
-  { id: "warm", label: "Warm", value: "#fef7ef" },
-];
-
-// Diary Themes
+// Diary Themes - work in BOTH modes
 const PAGE_THEMES = [
   { id: "white", label: "White", value: "#ffffff", lineColor: "#e5e7eb", textColor: "#1a1a1a" },
   { id: "cream", label: "Cream", value: "#fefce8", lineColor: "#d4c89d", textColor: "#44403c" },
   { id: "aged", label: "Antique", value: "#f5f0e1", lineColor: "#c9b896", textColor: "#5c4f3a" },
   { id: "kraft", label: "Kraft", value: "#d9c7a7", lineColor: "#b8a47e", textColor: "#3d3326" },
-  { id: "night", label: "Night", value: "#1e1e2e", lineColor: "#313244", textColor: "#cdd6f4" },
+  { id: "night", label: "Night", value: "#1e1e2e", lineColor: "#45475a", textColor: "#cdd6f4" },
   { id: "rose", label: "Rose", value: "#fff1f2", lineColor: "#fda4af", textColor: "#881337" },
   { id: "sky", label: "Sky", value: "#f0f9ff", lineColor: "#7dd3fc", textColor: "#0c4a6e" },
   { id: "mint", label: "Mint", value: "#f0fdf4", lineColor: "#86efac", textColor: "#14532d" },
@@ -192,7 +163,7 @@ const LINE_STYLES = [
   { id: "college", label: "College", preview: "📕" },
 ];
 
-const LINE_HEIGHT = 26;
+const LINE_HEIGHT = 28;
 
 interface Stroke {
   points: { x: number; y: number }[];
@@ -213,15 +184,12 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
   const [imageUrl, setImageUrl] = useState("");
   const [currentFont, setCurrentFont] = useState("inter");
   const [currentSize, setCurrentSize] = useState("16");
-  const [editorBg, setEditorBg] = useState("#ffffff");
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Diary States
-  const [pageTheme, setPageTheme] = useState("cream");
-  const [lineStyle, setLineStyle] = useState("ruled");
+  // Theme & Line Style states - work in BOTH modes
+  const [pageTheme, setPageTheme] = useState("white");
+  const [lineStyle, setLineStyle] = useState("none");
   const [diaryMode, setDiaryMode] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [isFlipping, setIsFlipping] = useState(false);
 
   // Scribble States
   const [scribbleMode, setScribbleMode] = useState(false);
@@ -242,7 +210,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
   const lastSavedContent = useRef(note.contentRich || "");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const currentTheme = PAGE_THEMES.find((t) => t.id === pageTheme) || PAGE_THEMES[1];
+  const currentTheme = PAGE_THEMES.find((t) => t.id === pageTheme) || PAGE_THEMES[0];
 
   const editor = useEditor({
     extensions: [
@@ -272,13 +240,15 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     },
   });
 
-  // Get line style CSS
+  // Get line style CSS - works for any mode
   const getLineStyleCSS = (): React.CSSProperties => {
+    if (lineStyle === "none") return {};
     const lc = currentTheme.lineColor;
     switch (lineStyle) {
       case "ruled":
         return {
           backgroundImage: `repeating-linear-gradient(transparent 0px, transparent ${LINE_HEIGHT - 1}px, ${lc} ${LINE_HEIGHT - 1}px, ${lc} ${LINE_HEIGHT}px)`,
+          backgroundSize: `100% ${LINE_HEIGHT}px`,
         };
       case "grid":
         return {
@@ -287,12 +257,13 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
         };
       case "dotted":
         return {
-          backgroundImage: `radial-gradient(circle, ${lc} 1px, transparent 1px)`,
+          backgroundImage: `radial-gradient(circle, ${lc} 1.5px, transparent 1.5px)`,
           backgroundSize: `${LINE_HEIGHT}px ${LINE_HEIGHT}px`,
         };
       case "college":
         return {
           backgroundImage: `repeating-linear-gradient(transparent 0px, transparent ${LINE_HEIGHT - 1}px, ${lc} ${LINE_HEIGHT - 1}px, ${lc} ${LINE_HEIGHT}px)`,
+          backgroundSize: `100% ${LINE_HEIGHT}px`,
         };
       default:
         return {};
@@ -329,11 +300,11 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     });
   }, [strokes]);
 
-  // Resize canvas when container changes or strokes exist
+  // Resize and redraw canvas when strokes change
   useEffect(() => {
     if (canvasRef.current && containerRef.current && strokes.length > 0) {
       canvasRef.current.width = containerRef.current.offsetWidth;
-      canvasRef.current.height = Math.max(containerRef.current.scrollHeight, containerRef.current.offsetHeight, 500);
+      canvasRef.current.height = Math.max(containerRef.current.scrollHeight, containerRef.current.offsetHeight, 600);
       redrawCanvas();
     }
   }, [strokes, redrawCanvas]);
@@ -342,7 +313,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
   useEffect(() => {
     if (scribbleMode && canvasRef.current && containerRef.current) {
       canvasRef.current.width = containerRef.current.offsetWidth;
-      canvasRef.current.height = Math.max(containerRef.current.scrollHeight, containerRef.current.offsetHeight, 500);
+      canvasRef.current.height = Math.max(containerRef.current.scrollHeight, containerRef.current.offsetHeight, 600);
       redrawCanvas();
     }
   }, [scribbleMode, redrawCanvas]);
@@ -359,18 +330,17 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
       try {
         const loadedStrokes = JSON.parse(note.scribbleStrokes);
         setStrokes(loadedStrokes);
-        // Delayed redraw to ensure canvas is mounted and sized
         setTimeout(() => {
           if (canvasRef.current && containerRef.current && loadedStrokes.length > 0) {
             canvasRef.current.width = containerRef.current.offsetWidth;
             canvasRef.current.height = Math.max(
               containerRef.current.scrollHeight,
               containerRef.current.offsetHeight,
-              500,
+              600,
             );
             redrawCanvas();
           }
-        }, 100);
+        }, 200);
       } catch {}
     }
   }, [note.id, editor]);
@@ -518,38 +488,27 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     setLinkDialogOpen(false);
     setLinkUrl("");
   };
+
   const handleInsertImage = () => {
     if (!imageUrl || !editor) return;
     (editor.commands as any).setResizableImage({ src: imageUrl });
     setImageDialogOpen(false);
     setImageUrl("");
   };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editor) return;
     const reader = new FileReader();
-    reader.onload = (ev) => (editor.commands as any).setResizableImage({ src: ev.target?.result as string });
+    reader.onload = (ev) => {
+      const result = ev.target?.result as string;
+      if (result) {
+        (editor.commands as any).setResizableImage({ src: result });
+      }
+    };
     reader.readAsDataURL(file);
     setImageDialogOpen(false);
-  };
-
-  // Page flip handlers
-  const flipToNextPage = () => {
-    if (isFlipping) return;
-    setIsFlipping(true);
-    setTimeout(() => {
-      setCurrentPage((p) => p + 1);
-      setIsFlipping(false);
-    }, 400);
-  };
-
-  const flipToPrevPage = () => {
-    if (isFlipping || currentPage === 0) return;
-    setIsFlipping(true);
-    setTimeout(() => {
-      setCurrentPage((p) => Math.max(0, p - 1));
-      setIsFlipping(false);
-    }, 400);
+    if (e.target) e.target.value = ""; // Reset file input
   };
 
   const group = groups.find((g) => g.id === note.groupId);
@@ -574,12 +533,24 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     ? "fixed inset-0 z-[9999] flex flex-col"
     : "flex flex-col h-full w-full overflow-hidden";
 
-  // Get background for editor
-  const editorBackground = diaryMode ? currentTheme.value : editorBg;
-  const editorTextColor = diaryMode ? currentTheme.textColor : "#1a1a1a";
+  // Enable diary button to turn on cream theme + ruled lines
+  const handleDiaryToggle = () => {
+    if (!diaryMode) {
+      setDiaryMode(true);
+      setPageTheme("cream");
+      setLineStyle("ruled");
+    } else {
+      setDiaryMode(false);
+      setPageTheme("white");
+      setLineStyle("none");
+    }
+  };
+
+  // Should show lines based on lineStyle selection
+  const showLines = lineStyle !== "none";
 
   return (
-    <div className={containerClass} style={{ backgroundColor: editorBackground }}>
+    <div className={containerClass} style={{ backgroundColor: currentTheme.value }}>
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
       {/* MAIN TOOLBAR */}
@@ -615,10 +586,10 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           </DropdownMenu>
 
           <Select value={currentFont} onValueChange={handleFontChange}>
-            <SelectTrigger className="h-8 w-24 text-xs border-0 bg-slate-50 hover:bg-slate-100">
+            <SelectTrigger className="h-8 w-20 text-xs border-0 bg-slate-50 hover:bg-slate-100">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="z-[99999] max-h-72">
+            <SelectContent className="z-[99999]">
               {FONTS.map((f) => (
                 <SelectItem key={f.value} value={f.value}>
                   {f.label}
@@ -641,32 +612,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           </Select>
           <div className="w-px h-5 bg-slate-200 mx-1" />
 
-          <Popover>
-            <PopoverTrigger asChild>
-              <button className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-slate-100">
-                <Palette className="h-4 w-4 text-slate-500" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-2 z-[99999]" align="start">
-              <div className="flex gap-1 flex-wrap max-w-32">
-                <button
-                  onClick={() => editor.chain().focus().unsetColor().run()}
-                  className="h-6 w-6 rounded-full border border-slate-200 bg-white text-xs"
-                >
-                  ×
-                </button>
-                {TEXT_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => editor.chain().focus().setColor(c).run()}
-                    className="h-6 w-6 rounded-full border border-slate-200"
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-
           <ToolBtn
             onClick={() => editor.chain().focus().toggleBold().run()}
             active={editor.isActive("bold")}
@@ -688,32 +633,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           >
             <UnderlineIcon className="h-4 w-4" />
           </ToolBtn>
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <button className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-slate-100">
-                <Highlighter className="h-4 w-4 text-slate-500" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-2 z-[99999]" align="start">
-              <div className="flex gap-1 flex-wrap max-w-32">
-                <button
-                  onClick={() => editor.chain().focus().unsetHighlight().run()}
-                  className="h-6 w-6 rounded border border-slate-200 bg-white text-xs"
-                >
-                  ×
-                </button>
-                {HIGHLIGHT_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => editor.chain().focus().setHighlight({ color: c }).run()}
-                    className="h-6 w-6 rounded border border-slate-200"
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
           <div className="w-px h-5 bg-slate-200 mx-1" />
 
           <ToolBtn
@@ -771,11 +690,12 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           <ToolBtn onClick={() => setScribbleMode(!scribbleMode)} active={scribbleMode} title="Scribble">
             <PenTool className="h-4 w-4" />
           </ToolBtn>
+          <div className="w-px h-5 bg-slate-200 mx-1" />
 
-          {/* Theme Selector */}
+          {/* Theme Selector - works in both modes */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="h-8 px-2 flex items-center gap-1 rounded-md hover:bg-slate-100" title="Theme">
+              <button className="h-8 px-2 flex items-center gap-1 rounded-md hover:bg-slate-100" title="Page Theme">
                 <div className="w-4 h-4 rounded border" style={{ backgroundColor: currentTheme.value }} />
                 <ChevronDown className="h-3 w-3" />
               </button>
@@ -791,10 +711,10 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Line Style */}
+          {/* Line Style - works in both modes */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="h-8 px-2 flex items-center gap-1 rounded-md hover:bg-slate-100" title="Lines">
+              <button className="h-8 px-2 flex items-center gap-1 rounded-md hover:bg-slate-100" title="Line Style">
                 <span>{LINE_STYLES.find((l) => l.id === lineStyle)?.preview}</span>
                 <ChevronDown className="h-3 w-3" />
               </button>
@@ -810,16 +730,16 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Diary Mode Toggle */}
+          {/* Diary Mode Toggle - quick preset */}
           <button
-            onClick={() => setDiaryMode(!diaryMode)}
+            onClick={handleDiaryToggle}
             className={cn(
-              "h-8 px-3 rounded-md text-xs font-medium flex items-center gap-1",
-              diaryMode ? "bg-amber-100 text-amber-700" : "hover:bg-slate-100",
+              "h-8 px-3 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors",
+              diaryMode ? "bg-amber-100 text-amber-700 border border-amber-300" : "hover:bg-slate-100 text-slate-600",
             )}
             title="Diary Mode"
           >
-            📖 Diary
+            <Book className="h-3.5 w-3.5" /> Diary
           </button>
 
           <DropdownMenu>
@@ -1013,223 +933,93 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
         </div>
       )}
 
-      {/* CONTENT AREA */}
-      {diaryMode ? (
-        /* BOOK-STYLE DIARY VIEW with page flip animation */
-        <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100 p-4 overflow-hidden">
-          <div className="relative flex items-center gap-4">
-            {/* Previous Page Button */}
-            <button
-              onClick={flipToPrevPage}
-              disabled={currentPage === 0 || isFlipping}
-              className="w-12 h-12 rounded-full bg-white/90 shadow-lg flex items-center justify-center hover:bg-white disabled:opacity-30 disabled:hover:bg-white/90 transition-all hover:scale-105"
-            >
-              <ChevronLeft className="h-6 w-6 text-amber-700" />
-            </button>
+      {/* CONTENT AREA - Themed & lined in both modes */}
+      <div
+        ref={containerRef}
+        className="flex-1 overflow-y-auto overflow-x-hidden relative"
+        style={{
+          backgroundColor: currentTheme.value,
+          color: currentTheme.textColor,
+          ...getLineStyleCSS(),
+        }}
+      >
+        {/* College ruled margin line */}
+        {lineStyle === "college" && (
+          <div
+            className="absolute left-16 top-0 bottom-0 w-[1px] pointer-events-none z-10"
+            style={{ backgroundColor: "#ef4444" }}
+          />
+        )}
 
-            {/* Book Container */}
-            <div className="relative" style={{ perspective: "2000px", perspectiveOrigin: "50% 50%" }}>
-              <div className="flex shadow-2xl rounded-lg overflow-hidden" style={{ transformStyle: "preserve-3d" }}>
-                {/* Left Page */}
-                <div
-                  className="w-[340px] h-[480px] relative overflow-hidden border-r border-amber-300/50"
-                  style={{
-                    backgroundColor: currentTheme.value,
-                    ...getLineStyleCSS(),
-                    transform: "rotateY(-2deg)",
-                    transformOrigin: "right center",
-                    boxShadow: "inset -5px 0 15px rgba(0,0,0,0.05)",
-                  }}
-                >
-                  {lineStyle === "college" && <div className="absolute left-10 top-0 bottom-0 w-[1px] bg-red-400/60" />}
-                  <div
-                    className="h-full p-6 overflow-hidden"
-                    style={{
-                      color: currentTheme.textColor,
-                      paddingLeft: lineStyle === "college" ? "50px" : "24px",
-                      lineHeight: `${LINE_HEIGHT}px`,
-                    }}
-                  >
-                    {currentPage === 0 ? (
-                      <div className="flex items-center justify-center h-full">
-                        <div className="text-center">
-                          <div className="text-6xl mb-4">📖</div>
-                          <div className="text-2xl font-serif" style={{ color: currentTheme.textColor }}>
-                            My Diary
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-sm opacity-50 text-center mt-8">Page {currentPage * 2}</div>
-                    )}
-                  </div>
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs opacity-40">
-                    {currentPage > 0 && currentPage * 2}
-                  </div>
-                </div>
-
-                {/* Right Page - The actual editable page */}
-                <div
-                  className={`w-[340px] h-[480px] relative overflow-hidden ${isFlipping ? "animate-page-flip" : ""}`}
-                  style={{
-                    backgroundColor: currentTheme.value,
-                    ...getLineStyleCSS(),
-                    transform: "rotateY(2deg)",
-                    transformOrigin: "left center",
-                    boxShadow: "inset 5px 0 15px rgba(0,0,0,0.05)",
-                  }}
-                >
-                  {lineStyle === "college" && (
-                    <div className="absolute left-10 top-0 bottom-0 w-[1px] bg-red-400/60 z-10" />
-                  )}
-                  <div
-                    ref={containerRef}
-                    className="h-full p-6 overflow-y-auto"
-                    style={{
-                      color: currentTheme.textColor,
-                      paddingLeft: lineStyle === "college" ? "50px" : "24px",
-                      lineHeight: `${LINE_HEIGHT}px`,
-                    }}
-                  >
-                    <Input
-                      value={title}
-                      onChange={(e) => handleTitleChange(e.target.value)}
-                      placeholder="Untitled"
-                      className="text-lg font-semibold border-none bg-transparent px-0 h-auto focus-visible:ring-0 mb-2"
-                      style={{ color: currentTheme.textColor, lineHeight: `${LINE_HEIGHT}px` }}
-                    />
-                    <div className="flex gap-1 mb-3 flex-wrap">
-                      {group && <Badge className="bg-primary/10 text-primary border-0 text-xs">{group.name}</Badge>}
-                      {tags.slice(0, 2).map((tag) => (
-                        <Badge key={tag} variant="outline" className="text-xs">
-                          #{tag}
-                        </Badge>
-                      ))}
-                    </div>
-                    <EditorContent editor={editor} />
-                  </div>
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs opacity-40">
-                    {currentPage * 2 + 1}
-                  </div>
-
-                  {/* Scribble canvas for book mode */}
-                  {scribbleMode && (
-                    <canvas
-                      ref={canvasRef}
-                      onMouseDown={startDrawing}
-                      onMouseMove={draw}
-                      onMouseUp={stopDrawing}
-                      onMouseLeave={stopDrawing}
-                      className="absolute inset-0 w-full h-full z-20"
-                      style={{ touchAction: "none", cursor: "crosshair" }}
-                    />
-                  )}
-                </div>
-              </div>
-
-              {/* Book spine effect */}
-              <div
-                className="absolute left-1/2 top-0 bottom-0 w-4 -translate-x-1/2 pointer-events-none"
-                style={{
-                  background: "linear-gradient(90deg, rgba(0,0,0,0.1) 0%, transparent 50%, rgba(0,0,0,0.1) 100%)",
-                }}
-              />
-            </div>
-
-            {/* Next Page Button */}
-            <button
-              onClick={flipToNextPage}
-              disabled={isFlipping}
-              className="w-12 h-12 rounded-full bg-white/90 shadow-lg flex items-center justify-center hover:bg-white disabled:opacity-30 transition-all hover:scale-105"
-            >
-              <ChevronRight className="h-6 w-6 text-amber-700" />
-            </button>
-          </div>
-
-          {/* Page indicator */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-amber-700 bg-white/80 px-4 py-1.5 rounded-full shadow">
-            Page {currentPage * 2 + 1}
-          </div>
-        </div>
-      ) : (
-        /* NORMAL EDITOR MODE */
         <div
-          ref={containerRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden relative"
+          className="min-h-full px-6 py-4"
           style={{
-            backgroundColor: editorBackground,
-            color: editorTextColor,
+            paddingLeft: lineStyle === "college" ? "80px" : "24px",
+            lineHeight: showLines ? `${LINE_HEIGHT}px` : undefined,
+            wordBreak: "break-word",
+            overflowWrap: "anywhere",
           }}
         >
-          <div
-            className="min-h-full px-6 py-4"
-            style={{
-              wordBreak: "break-word",
-              overflowWrap: "anywhere",
-            }}
-          >
-            <Input
-              value={title}
-              onChange={(e) => handleTitleChange(e.target.value)}
-              placeholder="Untitled Note"
-              className="text-2xl font-semibold border-none bg-transparent px-0 h-auto focus-visible:ring-0 mb-3"
-              style={{ color: editorTextColor }}
-            />
-            <div className="flex items-center gap-2 mb-4 flex-wrap">
-              {group && <Badge className="bg-primary/10 text-primary border-0">{group.name}</Badge>}
-              {tags.map((tag) => (
-                <Badge key={tag} variant="outline" className="text-xs">
-                  #{tag}
-                </Badge>
-              ))}
-              <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-6 text-xs text-slate-400">
-                    + Tag
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-48 p-2 z-[99999]">
-                  <div className="flex gap-2">
-                    <Input
-                      value={newTag}
-                      onChange={(e) => setNewTag(e.target.value)}
-                      placeholder="Tag"
-                      className="h-8"
-                      onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
-                    />
-                    <Button size="sm" className="h-8" onClick={handleAddTag}>
-                      Add
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-            <EditorContent editor={editor} />
-          </div>
-
-          {/* Scribble Canvas */}
-          <canvas
-            ref={canvasRef}
-            onMouseDown={scribbleMode ? startDrawing : undefined}
-            onMouseMove={scribbleMode ? draw : undefined}
-            onMouseUp={scribbleMode ? stopDrawing : undefined}
-            onMouseLeave={scribbleMode ? stopDrawing : undefined}
-            className="absolute inset-0 w-full h-full"
-            style={{
-              touchAction: "none",
-              cursor: scribbleMode
-                ? tool === "pen"
-                  ? "crosshair"
-                  : tool === "eraser"
-                    ? "cell"
-                    : "pointer"
-                : "default",
-              pointerEvents: scribbleMode ? "auto" : "none",
-              display: strokes.length > 0 || scribbleMode ? "block" : "none",
-            }}
+          <Input
+            value={title}
+            onChange={(e) => handleTitleChange(e.target.value)}
+            placeholder="Untitled Note"
+            className="text-2xl font-semibold border-none bg-transparent px-0 h-auto focus-visible:ring-0 mb-3"
+            style={{ color: currentTheme.textColor, lineHeight: showLines ? `${LINE_HEIGHT}px` : undefined }}
           />
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            {group && <Badge className="bg-primary/10 text-primary border-0">{group.name}</Badge>}
+            {tags.map((tag) => (
+              <Badge key={tag} variant="outline" className="text-xs" style={{ borderColor: currentTheme.lineColor }}>
+                #{tag}
+              </Badge>
+            ))}
+            <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs"
+                  style={{ color: currentTheme.textColor, opacity: 0.5 }}
+                >
+                  + Tag
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-48 p-2 z-[99999]">
+                <div className="flex gap-2">
+                  <Input
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    placeholder="Tag"
+                    className="h-8"
+                    onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
+                  />
+                  <Button size="sm" className="h-8" onClick={handleAddTag}>
+                    Add
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+          <EditorContent editor={editor} />
         </div>
-      )}
+
+        {/* Scribble Canvas - Always visible when strokes exist */}
+        <canvas
+          ref={canvasRef}
+          onMouseDown={scribbleMode ? startDrawing : undefined}
+          onMouseMove={scribbleMode ? draw : undefined}
+          onMouseUp={scribbleMode ? stopDrawing : undefined}
+          onMouseLeave={scribbleMode ? stopDrawing : undefined}
+          className="absolute inset-0 w-full h-full"
+          style={{
+            touchAction: "none",
+            cursor: scribbleMode ? (tool === "pen" ? "crosshair" : tool === "eraser" ? "cell" : "pointer") : "default",
+            pointerEvents: scribbleMode ? "auto" : "none",
+            display: strokes.length > 0 || scribbleMode ? "block" : "none",
+          }}
+        />
+      </div>
 
       {/* Dialogs */}
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
@@ -1262,7 +1052,11 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
             <DialogTitle>Insert Image</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2">
-            <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Image URL..." />
+            <Input
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="https://example.com/image.jpg"
+            />
             <div className="text-center text-sm text-slate-400">— or —</div>
             <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
               <ImageIcon className="h-4 w-4 mr-2" /> Upload from Computer
@@ -1272,7 +1066,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
                 Cancel
               </Button>
               <Button className="flex-1" onClick={handleInsertImage} disabled={!imageUrl}>
-                Insert
+                Insert URL
               </Button>
             </div>
           </div>
@@ -1280,35 +1074,25 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
       </Dialog>
 
       <style>{`
-        .ProseMirror { word-break: break-word; overflow-wrap: anywhere; ${diaryMode ? `line-height: ${LINE_HEIGHT}px !important;` : ""} }
-        .ProseMirror h1 { font-size: 1.875rem; font-weight: 700; ${diaryMode ? `margin: 0; line-height: ${LINE_HEIGHT}px;` : "margin: 1rem 0 0.5rem;"} }
-        .ProseMirror h2 { font-size: 1.5rem; font-weight: 600; ${diaryMode ? `margin: 0; line-height: ${LINE_HEIGHT}px;` : "margin: 0.75rem 0 0.5rem;"} }
-        .ProseMirror h3 { font-size: 1.25rem; font-weight: 600; ${diaryMode ? `margin: 0; line-height: ${LINE_HEIGHT}px;` : "margin: 0.5rem 0 0.5rem;"} }
-        .ProseMirror p { ${diaryMode ? `margin: 0 !important; line-height: ${LINE_HEIGHT}px !important; min-height: ${LINE_HEIGHT}px;` : "margin: 0.375rem 0; line-height: 1.6;"} }
+        .ProseMirror { word-break: break-word; overflow-wrap: anywhere; ${showLines ? `line-height: ${LINE_HEIGHT}px !important;` : "line-height: 1.6;"} }
+        .ProseMirror h1 { font-size: 1.875rem; font-weight: 700; ${showLines ? `margin: 0; padding-top: 4px; line-height: ${LINE_HEIGHT}px;` : "margin: 1rem 0 0.5rem;"} }
+        .ProseMirror h2 { font-size: 1.5rem; font-weight: 600; ${showLines ? `margin: 0; line-height: ${LINE_HEIGHT}px;` : "margin: 0.75rem 0 0.5rem;"} }
+        .ProseMirror h3 { font-size: 1.25rem; font-weight: 600; ${showLines ? `margin: 0; line-height: ${LINE_HEIGHT}px;` : "margin: 0.5rem 0 0.5rem;"} }
+        .ProseMirror p { ${showLines ? `margin: 0 !important; line-height: ${LINE_HEIGHT}px !important; min-height: ${LINE_HEIGHT}px;` : "margin: 0.375rem 0; line-height: 1.6;"} }
         .ProseMirror strong { font-weight: 700; }
-        .ProseMirror ul { list-style: disc; padding-left: 1.5rem; ${diaryMode ? `line-height: ${LINE_HEIGHT}px;` : ""} }
-        .ProseMirror ol { list-style: decimal; padding-left: 1.5rem; ${diaryMode ? `line-height: ${LINE_HEIGHT}px;` : ""} }
-        .ProseMirror li { ${diaryMode ? `line-height: ${LINE_HEIGHT}px; min-height: ${LINE_HEIGHT}px;` : ""} }
-        .ProseMirror blockquote { border-left: 3px solid #e2e8f0; padding-left: 1rem; color: #64748b; font-style: italic; ${diaryMode ? `line-height: ${LINE_HEIGHT}px;` : ""} }
-        .ProseMirror pre { background: #f1f5f9; padding: 0.75rem; border-radius: 0.375rem; overflow-x: auto; }
-        .ProseMirror code { background: #f1f5f9; padding: 0.125rem 0.25rem; border-radius: 0.25rem; font-family: monospace; }
-        .ProseMirror hr { border: none; border-top: 1px solid #e2e8f0; margin: 1rem 0; }
+        .ProseMirror ul { list-style: disc; padding-left: 1.5rem; ${showLines ? `line-height: ${LINE_HEIGHT}px; margin: 0;` : ""} }
+        .ProseMirror ol { list-style: decimal; padding-left: 1.5rem; ${showLines ? `line-height: ${LINE_HEIGHT}px; margin: 0;` : ""} }
+        .ProseMirror li { ${showLines ? `line-height: ${LINE_HEIGHT}px; min-height: ${LINE_HEIGHT}px;` : ""} }
+        .ProseMirror blockquote { border-left: 3px solid ${currentTheme.lineColor}; padding-left: 1rem; opacity: 0.8; font-style: italic; ${showLines ? `line-height: ${LINE_HEIGHT}px; margin: 0;` : ""} }
+        .ProseMirror pre { background: rgba(0,0,0,0.05); padding: 0.75rem; border-radius: 0.375rem; overflow-x: auto; }
+        .ProseMirror code { background: rgba(0,0,0,0.05); padding: 0.125rem 0.25rem; border-radius: 0.25rem; font-family: monospace; }
+        .ProseMirror hr { border: none; border-top: 1px solid ${currentTheme.lineColor}; margin: 1rem 0; }
         .ProseMirror ul[data-type="taskList"] { list-style: none; padding-left: 0; }
-        .ProseMirror ul[data-type="taskList"] li { display: flex; align-items: flex-start; gap: 0.5rem; ${diaryMode ? `line-height: ${LINE_HEIGHT}px;` : ""} }
+        .ProseMirror ul[data-type="taskList"] li { display: flex; align-items: flex-start; gap: 0.5rem; ${showLines ? `line-height: ${LINE_HEIGHT}px;` : ""} }
         .ProseMirror ul[data-type="taskList"] input { accent-color: #10b981; }
-        .ProseMirror li[data-checked="true"] > div { text-decoration: line-through; color: #94a3b8; }
+        .ProseMirror li[data-checked="true"] > div { text-decoration: line-through; opacity: 0.5; }
         .ProseMirror a { color: #3b82f6; text-decoration: underline; }
-        
-        /* Page flip animation */
-        @keyframes pageFlipForward {
-          0% { transform: rotateY(2deg); }
-          50% { transform: rotateY(-90deg); }
-          100% { transform: rotateY(2deg); }
-        }
-        .animate-page-flip {
-          animation: pageFlipForward 0.4s ease-in-out;
-          transform-style: preserve-3d;
-        }
+        .ProseMirror img { max-width: 100%; height: auto; border-radius: 0.5rem; }
       `}</style>
     </div>
   );
