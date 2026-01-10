@@ -933,93 +933,188 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
         </div>
       )}
 
-      {/* CONTENT AREA - Themed & lined in both modes */}
-      <div
-        ref={containerRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden relative"
-        style={{
-          backgroundColor: currentTheme.value,
-          color: currentTheme.textColor,
-          ...getLineStyleCSS(),
-        }}
-      >
-        {/* College ruled margin line */}
-        {lineStyle === "college" && (
-          <div
-            className="absolute left-16 top-0 bottom-0 w-[1px] pointer-events-none z-10"
-            style={{ backgroundColor: "#ef4444" }}
-          />
-        )}
+      {/* CONTENT AREA */}
+      {diaryMode ? (
+        /* DIARY BOOK VIEW */
+        <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 p-4 overflow-hidden">
+          {/* Book Container */}
+          <div className="relative flex shadow-2xl" style={{ perspective: "1500px" }}>
+            {/* Left Page - Decorative */}
+            <div
+              className="w-[320px] h-[500px] relative overflow-hidden rounded-l-lg"
+              style={{
+                backgroundColor: currentTheme.value,
+                ...getLineStyleCSS(),
+                boxShadow: "inset -10px 0 30px rgba(0,0,0,0.08), -2px 0 8px rgba(0,0,0,0.1)",
+              }}
+            >
+              {lineStyle === "college" && <div className="absolute left-10 top-0 bottom-0 w-[1px] bg-red-400/60" />}
+              <div
+                className="h-full flex flex-col items-center justify-center p-8"
+                style={{ color: currentTheme.textColor }}
+              >
+                <div className="text-7xl mb-6">📖</div>
+                <div className="text-2xl font-serif font-medium text-center mb-2">{title || "My Diary"}</div>
+                <div className="text-sm opacity-50">
+                  {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                </div>
+                <div className="mt-8 text-xs opacity-30 italic">Write your thoughts...</div>
+              </div>
+              {/* Page edge effect */}
+              <div className="absolute right-0 top-0 bottom-0 w-3 bg-gradient-to-l from-black/5 to-transparent" />
+            </div>
 
+            {/* Center spine */}
+            <div className="w-4 bg-gradient-to-r from-amber-200 via-amber-100 to-amber-200 shadow-inner" />
+
+            {/* Right Page - Editable Content */}
+            <div
+              ref={containerRef}
+              className="w-[320px] h-[500px] relative overflow-y-auto overflow-x-hidden rounded-r-lg"
+              style={{
+                backgroundColor: currentTheme.value,
+                color: currentTheme.textColor,
+                ...getLineStyleCSS(),
+                boxShadow: "inset 10px 0 30px rgba(0,0,0,0.05), 2px 0 8px rgba(0,0,0,0.1)",
+              }}
+            >
+              {lineStyle === "college" && (
+                <div className="absolute left-10 top-0 bottom-0 w-[1px] bg-red-400/60 z-10" />
+              )}
+              {/* Page edge effect */}
+              <div className="absolute left-0 top-0 bottom-0 w-3 bg-gradient-to-r from-black/5 to-transparent pointer-events-none z-20" />
+
+              <div
+                className="p-6"
+                style={{ paddingLeft: lineStyle === "college" ? "50px" : "24px", lineHeight: `${LINE_HEIGHT}px` }}
+              >
+                <Input
+                  value={title}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  placeholder="Untitled"
+                  className="text-lg font-semibold border-none bg-transparent px-0 h-auto focus-visible:ring-0 mb-2"
+                  style={{ color: currentTheme.textColor, lineHeight: `${LINE_HEIGHT}px` }}
+                />
+                <div className="flex gap-1 mb-3 flex-wrap">
+                  {group && <Badge className="bg-primary/10 text-primary border-0 text-xs">{group.name}</Badge>}
+                  {tags.slice(0, 2).map((tag) => (
+                    <Badge key={tag} variant="outline" className="text-xs">
+                      #{tag}
+                    </Badge>
+                  ))}
+                </div>
+                <EditorContent editor={editor} />
+              </div>
+
+              {/* Scribble canvas for diary mode */}
+              {scribbleMode && (
+                <canvas
+                  ref={canvasRef}
+                  onMouseDown={startDrawing}
+                  onMouseMove={draw}
+                  onMouseUp={stopDrawing}
+                  onMouseLeave={stopDrawing}
+                  className="absolute inset-0 w-full h-full z-30"
+                  style={{ touchAction: "none", cursor: "crosshair" }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* NORMAL EDITOR MODE - Themes & lines still work */
         <div
-          className="min-h-full px-6 py-4"
+          ref={containerRef}
+          className="flex-1 overflow-y-auto overflow-x-hidden relative"
           style={{
-            paddingLeft: lineStyle === "college" ? "80px" : "24px",
-            lineHeight: showLines ? `${LINE_HEIGHT}px` : undefined,
-            wordBreak: "break-word",
-            overflowWrap: "anywhere",
+            backgroundColor: currentTheme.value,
+            color: currentTheme.textColor,
+            ...getLineStyleCSS(),
           }}
         >
-          <Input
-            value={title}
-            onChange={(e) => handleTitleChange(e.target.value)}
-            placeholder="Untitled Note"
-            className="text-2xl font-semibold border-none bg-transparent px-0 h-auto focus-visible:ring-0 mb-3"
-            style={{ color: currentTheme.textColor, lineHeight: showLines ? `${LINE_HEIGHT}px` : undefined }}
-          />
-          <div className="flex items-center gap-2 mb-4 flex-wrap">
-            {group && <Badge className="bg-primary/10 text-primary border-0">{group.name}</Badge>}
-            {tags.map((tag) => (
-              <Badge key={tag} variant="outline" className="text-xs" style={{ borderColor: currentTheme.lineColor }}>
-                #{tag}
-              </Badge>
-            ))}
-            <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 text-xs"
-                  style={{ color: currentTheme.textColor, opacity: 0.5 }}
-                >
-                  + Tag
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-48 p-2 z-[99999]">
-                <div className="flex gap-2">
-                  <Input
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="Tag"
-                    className="h-8"
-                    onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
-                  />
-                  <Button size="sm" className="h-8" onClick={handleAddTag}>
-                    Add
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-          <EditorContent editor={editor} />
-        </div>
+          {lineStyle === "college" && (
+            <div
+              className="absolute left-16 top-0 bottom-0 w-[1px] pointer-events-none z-10"
+              style={{ backgroundColor: "#ef4444" }}
+            />
+          )}
 
-        {/* Scribble Canvas - Always visible when strokes exist */}
-        <canvas
-          ref={canvasRef}
-          onMouseDown={scribbleMode ? startDrawing : undefined}
-          onMouseMove={scribbleMode ? draw : undefined}
-          onMouseUp={scribbleMode ? stopDrawing : undefined}
-          onMouseLeave={scribbleMode ? stopDrawing : undefined}
-          className="absolute inset-0 w-full h-full"
-          style={{
-            touchAction: "none",
-            cursor: scribbleMode ? (tool === "pen" ? "crosshair" : tool === "eraser" ? "cell" : "pointer") : "default",
-            pointerEvents: scribbleMode ? "auto" : "none",
-            display: strokes.length > 0 || scribbleMode ? "block" : "none",
-          }}
-        />
-      </div>
+          <div
+            className="min-h-full px-6 py-4"
+            style={{
+              paddingLeft: lineStyle === "college" ? "80px" : "24px",
+              lineHeight: showLines ? `${LINE_HEIGHT}px` : undefined,
+              wordBreak: "break-word",
+              overflowWrap: "anywhere",
+            }}
+          >
+            <Input
+              value={title}
+              onChange={(e) => handleTitleChange(e.target.value)}
+              placeholder="Untitled Note"
+              className="text-2xl font-semibold border-none bg-transparent px-0 h-auto focus-visible:ring-0 mb-3"
+              style={{ color: currentTheme.textColor, lineHeight: showLines ? `${LINE_HEIGHT}px` : undefined }}
+            />
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              {group && <Badge className="bg-primary/10 text-primary border-0">{group.name}</Badge>}
+              {tags.map((tag) => (
+                <Badge key={tag} variant="outline" className="text-xs" style={{ borderColor: currentTheme.lineColor }}>
+                  #{tag}
+                </Badge>
+              ))}
+              <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs"
+                    style={{ color: currentTheme.textColor, opacity: 0.5 }}
+                  >
+                    + Tag
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-48 p-2 z-[99999]">
+                  <div className="flex gap-2">
+                    <Input
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      placeholder="Tag"
+                      className="h-8"
+                      onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
+                    />
+                    <Button size="sm" className="h-8" onClick={handleAddTag}>
+                      Add
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <EditorContent editor={editor} />
+          </div>
+
+          {/* Scribble Canvas */}
+          <canvas
+            ref={canvasRef}
+            onMouseDown={scribbleMode ? startDrawing : undefined}
+            onMouseMove={scribbleMode ? draw : undefined}
+            onMouseUp={scribbleMode ? stopDrawing : undefined}
+            onMouseLeave={scribbleMode ? stopDrawing : undefined}
+            className="absolute inset-0 w-full h-full"
+            style={{
+              touchAction: "none",
+              cursor: scribbleMode
+                ? tool === "pen"
+                  ? "crosshair"
+                  : tool === "eraser"
+                    ? "cell"
+                    : "pointer"
+                : "default",
+              pointerEvents: scribbleMode ? "auto" : "none",
+              display: strokes.length > 0 || scribbleMode ? "block" : "none",
+            }}
+          />
+        </div>
+      )}
 
       {/* Dialogs */}
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
