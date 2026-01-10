@@ -340,6 +340,14 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
           }
         }, 200);
       } catch {}
+    } else {
+      // Clear strokes when switching to a note without scribble data
+      setStrokes([]);
+      setUndoStack([]);
+      if (canvasRef.current) {
+        const ctx = canvasRef.current.getContext("2d");
+        if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      }
     }
   }, [note.id, editor]);
 
@@ -355,7 +363,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
       tags,
       updatedAt: new Date().toISOString(),
     };
-    if (strokes.length > 0) noteData.scribbleStrokes = JSON.stringify(strokes);
+    noteData.scribbleStrokes = strokes.length > 0 ? JSON.stringify(strokes) : null;
     onSave(noteData);
     lastSavedContent.current = html;
     setTimeout(() => setSaveStatus("saved"), 500);
