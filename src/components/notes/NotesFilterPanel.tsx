@@ -3,9 +3,16 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Filter, X } from "lucide-react";
+import { Filter, X, Inbox, Briefcase, User, Heart, Palette } from "lucide-react";
 import type { NoteGroup, NoteFolder } from "@/pages/Notes";
-import { NotesCategoryDot } from "./NotesCategoryIcon";
+
+const CATEGORY_GRADIENTS: Record<string, string> = {
+  inbox: "linear-gradient(135deg, #94a3b8, #64748b)",
+  work: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+  personal: "linear-gradient(135deg, #22c55e, #16a34a)",
+  wellness: "linear-gradient(135deg, #a855f7, #7c3aed)",
+  hobby: "linear-gradient(135deg, #f97316, #ea580c)",
+};
 
 export interface NotesFilters {
   groupId: string;
@@ -76,7 +83,13 @@ export function NotesFilterPanel({ groups, folders, tags, filters, onFiltersChan
                   {groups.map((group) => (
                     <SelectItem key={group.id} value={group.id}>
                       <div className="flex items-center gap-2">
-                        <NotesCategoryDot categoryId={group.id} color={group.color} size="sm" />
+                        <div
+                          className="h-2.5 w-2.5 rounded-full ring-1 ring-white/50"
+                          style={{
+                            background: CATEGORY_GRADIENTS[group.id] || group.color,
+                            boxShadow: `0 1px 3px ${group.color}40`,
+                          }}
+                        />
                         {group.name}
                       </div>
                     </SelectItem>

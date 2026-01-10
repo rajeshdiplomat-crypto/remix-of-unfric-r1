@@ -3,10 +3,24 @@ import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, MoreHorizontal, X, Trash2, ChevronRight, FileText, Folder, FolderOpen, ChevronDown } from "lucide-react";
+import {
+  Plus,
+  MoreHorizontal,
+  X,
+  Trash2,
+  ChevronRight,
+  FileText,
+  Folder,
+  FolderOpen,
+  ChevronDown,
+  Inbox,
+  Briefcase,
+  User,
+  Heart,
+  Palette,
+} from "lucide-react";
 import { NotesRichEditor } from "./NotesRichEditor";
 import { NotesActivityDot, getMostRecentUpdate } from "./NotesActivityDot";
-import { NotesCategoryIcon, NotesCategoryDot } from "./NotesCategoryIcon";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -81,6 +95,22 @@ export function NotesSplitView({
   }, [isNewNote, selectedNote]);
 
   const getGroupColor = (groupId: string) => groups.find((g) => g.id === groupId)?.color || "hsl(215, 20%, 65%)";
+
+  // Category icons map for creative display
+  const CATEGORY_ICONS: Record<string, React.ElementType> = {
+    inbox: Inbox,
+    work: Briefcase,
+    personal: User,
+    wellness: Heart,
+    hobby: Palette,
+  };
+  const CATEGORY_GRADIENTS: Record<string, string> = {
+    inbox: "linear-gradient(135deg, #94a3b8, #64748b)",
+    work: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+    personal: "linear-gradient(135deg, #22c55e, #16a34a)",
+    wellness: "linear-gradient(135deg, #a855f7, #7c3aed)",
+    hobby: "linear-gradient(135deg, #f97316, #ea580c)",
+  };
 
   const handleSave = (note: Note) => {
     onSaveNote(note);
@@ -157,7 +187,20 @@ export function NotesSplitView({
                       onClick={() => toggleGroup(group.id)}
                       className="w-full px-2 py-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-1.5 hover:bg-slate-100/60 rounded-lg transition-colors"
                     >
-                      <NotesCategoryIcon categoryId={group.id} color={group.color} size="xs" />
+                      {(() => {
+                        const Icon = CATEGORY_ICONS[group.id] || Inbox;
+                        return (
+                          <div
+                            className="h-4 w-4 rounded flex items-center justify-center shrink-0"
+                            style={{
+                              background: CATEGORY_GRADIENTS[group.id] || group.color,
+                              boxShadow: `0 2px 6px ${group.color}40`,
+                            }}
+                          >
+                            <Icon className="h-2.5 w-2.5 text-white" strokeWidth={2.5} />
+                          </div>
+                        );
+                      })()}
                       {isGroupExpanded ? (
                         <ChevronDown className="h-3 w-3 text-slate-400 shrink-0" />
                       ) : (
