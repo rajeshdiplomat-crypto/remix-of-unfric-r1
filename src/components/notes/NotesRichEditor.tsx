@@ -298,14 +298,42 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     });
   }, [strokes]);
 
-  // Resize and redraw canvas when strokes change
+  // Resize and redraw canvas when strokes change - with direct drawing to avoid stale closure
   useEffect(() => {
-    if (canvasRef.current && containerRef.current && strokes.length > 0) {
-      canvasRef.current.width = containerRef.current.offsetWidth;
-      canvasRef.current.height = Math.max(containerRef.current.scrollHeight, containerRef.current.offsetHeight, 600);
-      redrawCanvas();
+    if (strokes.length > 0 && canvasRef.current && containerRef.current) {
+      const canvas = canvasRef.current;
+      const container = containerRef.current;
+      canvas.width = container.offsetWidth;
+      canvas.height = Math.max(container.scrollHeight, container.offsetHeight, 600);
+
+      // Draw directly here instead of calling redrawCanvas to avoid stale closure
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        strokes.forEach((stroke) => {
+          if (stroke.points.length < 2) return;
+          const pt = PEN_TYPES.find((p) => p.id === stroke.penType) || PEN_TYPES[0];
+          ctx.beginPath();
+          ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+          for (let i = 1; i < stroke.points.length; i++) ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+          ctx.strokeStyle = stroke.color;
+          ctx.lineWidth = stroke.width;
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.globalAlpha = pt.opacity;
+          if (pt.shadow) {
+            ctx.shadowColor = stroke.color;
+            ctx.shadowBlur = stroke.width;
+          } else {
+            ctx.shadowBlur = 0;
+          }
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+          ctx.shadowBlur = 0;
+        });
+      }
     }
-  }, [strokes, redrawCanvas]);
+  }, [strokes]);
 
   // Also resize when entering scribble mode
   useEffect(() => {
@@ -328,18 +356,10 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
       try {
         const loadedStrokes = JSON.parse(note.scribbleStrokes);
         setStrokes(loadedStrokes);
-        setTimeout(() => {
-          if (canvasRef.current && containerRef.current && loadedStrokes.length > 0) {
-            canvasRef.current.width = containerRef.current.offsetWidth;
-            canvasRef.current.height = Math.max(
-              containerRef.current.scrollHeight,
-              containerRef.current.offsetHeight,
-              600,
-            );
-            redrawCanvas();
-          }
-        }, 200);
-      } catch {}
+        // Note: the useEffect with [strokes] dependency will handle drawing
+      } catch {
+        setStrokes([]);
+      }
     } else {
       // Clear strokes when switching to a note without scribble data
       setStrokes([]);
@@ -349,6 +369,8 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
         if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
       }
     }
+    // Reset scribble mode when switching notes
+    setScribbleMode(false);
   }, [note.id, editor]);
 
   const handleSave = useCallback(() => {
@@ -431,6 +453,9 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
       if (idx >= 0) {
         setUndoStack((prev) => [...prev, [...strokes]]);
         setStrokes((prev) => prev.filter((_, i) => i !== idx));
+        setSaveStatus("unsaved");
+        if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+        autosaveTimer.current = setTimeout(() => handleSave(), 2000);
       }
     }
     lastPos.current = pos;
@@ -441,9 +466,13 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     setIsDrawing(false);
     if (tool === "pen" && currentStroke && currentStroke.points.length > 1) {
       setUndoStack((prev) => [...prev, [...strokes]]);
-      setStrokes((prev) => [...prev, currentStroke]);
+      const newStrokes = [...strokes, currentStroke];
+      setStrokes(newStrokes);
       setCurrentStroke(null);
+      // Trigger autosave for scribble changes
       setSaveStatus("unsaved");
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+      autosaveTimer.current = setTimeout(() => handleSave(), 2000);
     }
   };
 
@@ -452,6 +481,8 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
     setStrokes(undoStack[undoStack.length - 1]);
     setUndoStack((prev) => prev.slice(0, -1));
     setSaveStatus("unsaved");
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = setTimeout(() => handleSave(), 2000);
   };
 
   const clearScribble = () => {
@@ -463,6 +494,8 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
       if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
     setSaveStatus("unsaved");
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = setTimeout(() => handleSave(), 2000);
   };
 
   const handleFontChange = (v: string) => {
