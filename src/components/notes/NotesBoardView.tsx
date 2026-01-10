@@ -1,22 +1,16 @@
 import { useState } from "react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { NotesActivityDot, getMostRecentUpdate } from "./NotesActivityDot";
-import { ChevronRight, Plus, FolderPlus, Inbox, Briefcase, User, Heart, Palette } from "lucide-react";
+import { ChevronRight, Plus, FolderPlus } from "lucide-react";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 
-const CATEGORY_ICONS: Record<string, React.ElementType> = {
-  inbox: Inbox,
-  work: Briefcase,
-  personal: User,
-  wellness: Heart,
-  hobby: Palette,
-};
+// Creative gradient presets for dots
 const CATEGORY_GRADIENTS: Record<string, string> = {
-  inbox: "linear-gradient(135deg, #94a3b8, #64748b)",
-  work: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-  personal: "linear-gradient(135deg, #22c55e, #16a34a)",
-  wellness: "linear-gradient(135deg, #a855f7, #7c3aed)",
-  hobby: "linear-gradient(135deg, #f97316, #ea580c)",
+  inbox: "linear-gradient(135deg, #94a3b8 0%, #64748b 50%, #475569 100%)",
+  work: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #1d4ed8 100%)",
+  personal: "linear-gradient(135deg, #4ade80 0%, #22c55e 50%, #16a34a 100%)",
+  wellness: "linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #7c3aed 100%)",
+  hobby: "linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)",
 };
 
 interface NotesBoardViewProps {
@@ -78,20 +72,21 @@ export function NotesBoardView({
               {/* Header */}
               <div className="px-4 py-4 bg-background/40 border-b border-border/40">
                 <div className="flex items-center gap-3">
-                  {(() => {
-                    const Icon = CATEGORY_ICONS[group.id] || Inbox;
-                    return (
-                      <div
-                        className="h-5 w-5 rounded-lg flex items-center justify-center shrink-0"
-                        style={{
-                          background: CATEGORY_GRADIENTS[group.id] || group.color,
-                          boxShadow: `0 2px 8px ${group.color}50`,
-                        }}
-                      >
-                        <Icon className="h-3 w-3 text-white" strokeWidth={2.5} />
-                      </div>
-                    );
-                  })()}
+                  {/* Creative gradient dot with glow and ring */}
+                  <div className="relative shrink-0">
+                    <div
+                      className="h-3 w-3 rounded-full"
+                      style={{
+                        background: CATEGORY_GRADIENTS[group.id] || group.color,
+                        boxShadow: `0 2px 10px ${group.color}60, inset 0 1px 2px rgba(255,255,255,0.4)`,
+                      }}
+                    />
+                    {/* Outer ring */}
+                    <div
+                      className="absolute inset-[-2px] rounded-full opacity-40"
+                      style={{ border: `1.5px solid ${group.color}` }}
+                    />
+                  </div>
                   <h3 className="font-semibold text-foreground flex-1 text-base">{group.name}</h3>
 
                   {mostRecentUpdate && <NotesActivityDot updatedAt={mostRecentUpdate} size="md" />}
