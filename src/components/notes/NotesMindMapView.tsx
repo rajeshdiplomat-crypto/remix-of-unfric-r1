@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
-import { FileText, ChevronRight, FolderOpen } from "lucide-react";
+import { useState, useMemo, useRef } from "react";
+import { FileText, FolderOpen, ChevronUp, ChevronDown } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ export function NotesMindMapView({
 }: NotesMindMapViewProps) {
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
+  const entriesScrollRef = useRef<HTMLDivElement>(null);
 
   const sortedGroups = useMemo(() => [...groups].sort((a, b) => a.sortOrder - b.sortOrder), [groups]);
 
@@ -47,6 +49,24 @@ export function NotesMindMapView({
   }, [selectedGroup, notes, folders]);
 
   const activeGroup = sortedGroups.find((g) => g.id === selectedGroup);
+  const activeColor = activeGroup ? GROUP_COLORS[activeGroup.id] || "#64748b" : "#64748b";
+
+  // Combined entries (folders + notes)
+  const allEntries = useMemo(() => {
+    const items: { type: "folder" | "note"; data: NoteFolder | Note }[] = [];
+
+    selectedGroupData.folders.forEach((folder) => {
+      items.push({ type: "folder", data: folder });
+    });
+
+    selectedGroupData.notes
+      .filter((n) => !n.folderId)
+      .forEach((note) => {
+        items.push({ type: "note", data: note });
+      });
+
+    return items;
+  }, [selectedGroupData]);
 
   return (
     <div className="relative w-full h-[calc(100vh-280px)] min-h-[500px] flex items-center justify-center overflow-hidden">
@@ -59,7 +79,7 @@ export function NotesMindMapView({
             <span className="text-lg font-bold text-foreground uppercase tracking-wider">Notes</span>
           </div>
 
-          {/* Arc SVG */}
+          {/* Arc SVG - First curve */}
           <svg
             width="180"
             height="400"
@@ -80,9 +100,9 @@ export function NotesMindMapView({
             {/* Gradient overlay on arc */}
             <defs>
               <linearGradient id="arcGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#e2e8f0" stopOpacity="0.3" />
-                <stop offset="50%" stopColor="#3b82f6" stopOpacity="0.5" />
-                <stop offset="100%" stopColor="#e2e8f0" stopOpacity="0.3" />
+                <stop offset="0%" stopColor="#e2e8f0" stopOpacity="0.2" />
+                <stop offset="50%" stopColor={activeColor} stopOpacity="0.5" />
+                <stop offset="100%" stopColor="#e2e8f0" stopOpacity="0.2" />
               </linearGradient>
             </defs>
             <path
@@ -157,74 +177,132 @@ export function NotesMindMapView({
           })}
         </div>
 
-        {/* Right side - Entries for selected group */}
+        {/* Second arc SVG - Entries curve */}
+        {selectedGroup && (
+          <svg width="120" height="400" viewBox="0 0 120 400" className="relative -ml-4" style={{ marginTop: -20 }}>
+            <defs>
+              <linearGradient id="entriesArcGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor={activeColor} stopOpacity="0" />
+                <stop offset="30%" stopColor={activeColor} stopOpacity="0.3" />
+                <stop offset="50%" stopColor={activeColor} stopOpacity="0.5" />
+                <stop offset="70%" stopColor={activeColor} stopOpacity="0.3" />
+                <stop offset="100%" stopColor={activeColor} stopOpacity="0" />
+              </linearGradient>
+            </defs>
+
+            {/* Entries arc line */}
+            <path
+              d="M 10 20 Q 100 200 10 380"
+              fill="none"
+              stroke="url(#entriesArcGradient)"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+          </svg>
+        )}
+
+        {/* Right side - Entries along curved path with fade */}
         <div
           className={cn(
-            "relative flex flex-col gap-2 ml-12 min-w-[200px] transition-all duration-300",
-            selectedGroup ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none",
+            "relative -ml-12 z-20 transition-all duration-500",
+            selectedGroup ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8 pointer-events-none",
           )}
         >
-          {/* Group title */}
-          {activeGroup && (
-            <div className="mb-2">
-              <h3
-                className="text-sm font-semibold uppercase tracking-wider"
-                style={{ color: GROUP_COLORS[activeGroup.id] || "#64748b" }}
-              >
-                {activeGroup.name} Entries
-              </h3>
-            </div>
-          )}
-
-          {/* Folders */}
-          {selectedGroupData.folders.map((folder) => (
+          {/* Scrollable entries container */}
+          <div ref={entriesScrollRef} className="relative h-[360px] overflow-hidden">
+            {/* Top fade gradient */}
             <div
-              key={folder.id}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
-            >
-              <FolderOpen className="h-4 w-4 text-cyan-500" />
-              <span className="text-sm font-medium text-foreground">{folder.name}</span>
-              <span className="text-xs text-muted-foreground ml-auto">
-                {notes.filter((n) => n.folderId === folder.id).length}
-              </span>
-            </div>
-          ))}
+              className="absolute top-0 left-0 right-0 h-16 z-10 pointer-events-none"
+              style={{
+                background: `linear-gradient(to bottom, hsl(var(--background)), transparent)`,
+              }}
+            />
 
-          {/* Notes */}
-          {selectedGroupData.notes
-            .filter((n) => !n.folderId)
-            .slice(0, 10)
-            .map((note) => (
-              <button
-                key={note.id}
-                onClick={() => onNoteClick(note)}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-left",
-                  "hover:bg-muted/50 hover:translate-x-1",
-                  selectedNoteId === note.id && "bg-primary/10 border-l-2 border-primary",
+            {/* Bottom fade gradient */}
+            <div
+              className="absolute bottom-0 left-0 right-0 h-16 z-10 pointer-events-none"
+              style={{
+                background: `linear-gradient(to top, hsl(var(--background)), transparent)`,
+              }}
+            />
+
+            {/* Scrollable content */}
+            <ScrollArea className="h-full px-2">
+              <div className="py-12 space-y-1">
+                {allEntries.map((entry, index) => {
+                  const totalEntries = allEntries.length;
+                  const middleIndex = (totalEntries - 1) / 2;
+                  const distanceFromMiddle = Math.abs(index - middleIndex);
+                  const xOffset = -distanceFromMiddle * 6;
+                  const opacity = 1 - (distanceFromMiddle / totalEntries) * 0.5;
+
+                  if (entry.type === "folder") {
+                    const folder = entry.data as NoteFolder;
+                    const folderNotes = notes.filter((n) => n.folderId === folder.id);
+
+                    return (
+                      <div
+                        key={folder.id}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-all duration-200 cursor-pointer hover:translate-x-1"
+                        style={{
+                          marginLeft: 40 + xOffset,
+                          opacity,
+                        }}
+                      >
+                        <FolderOpen className="h-4 w-4 text-cyan-500 shrink-0" />
+                        <span className="text-sm font-medium text-foreground">{folder.name}</span>
+                        <span className="text-xs text-muted-foreground ml-auto">{folderNotes.length}</span>
+                      </div>
+                    );
+                  }
+
+                  const note = entry.data as Note;
+                  return (
+                    <button
+                      key={note.id}
+                      onClick={() => onNoteClick(note)}
+                      className={cn(
+                        "flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 text-left w-full",
+                        "hover:bg-muted/40 hover:translate-x-1",
+                        selectedNoteId === note.id && "bg-primary/10",
+                      )}
+                      style={{
+                        marginLeft: 40 + xOffset,
+                        opacity,
+                      }}
+                    >
+                      <span className="text-sm text-foreground whitespace-nowrap">{note.title || "Untitled"}</span>
+                    </button>
+                  );
+                })}
+
+                {/* Empty state */}
+                {allEntries.length === 0 && (
+                  <div className="text-sm text-muted-foreground italic py-8 text-center" style={{ marginLeft: 40 }}>
+                    No entries yet
+                  </div>
                 )}
-              >
-                <span className="text-sm text-foreground">{note.title || "Untitled"}</span>
-              </button>
-            ))}
+              </div>
+            </ScrollArea>
+          </div>
 
-          {/* Empty state */}
-          {selectedGroupData.notes.length === 0 && selectedGroupData.folders.length === 0 && (
-            <div className="text-sm text-muted-foreground italic py-4">No entries yet</div>
-          )}
-
-          {/* More notes indicator */}
-          {selectedGroupData.notes.filter((n) => !n.folderId).length > 10 && (
-            <div className="text-xs text-muted-foreground">
-              +{selectedGroupData.notes.filter((n) => !n.folderId).length - 10} more
-            </div>
+          {/* Scroll indicators */}
+          {allEntries.length > 6 && (
+            <>
+              <div className="absolute -top-2 left-1/2 -translate-x-1/2">
+                <ChevronUp className="h-4 w-4 text-muted-foreground/50 animate-bounce" />
+              </div>
+              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
+                <ChevronDown className="h-4 w-4 text-muted-foreground/50 animate-bounce" />
+              </div>
+            </>
           )}
         </div>
       </div>
 
       {/* Hint text */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-muted-foreground">
-        Click a category to view its entries
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-border/50">
+        Click a category to view its entries • Scroll to see more
       </div>
     </div>
   );
