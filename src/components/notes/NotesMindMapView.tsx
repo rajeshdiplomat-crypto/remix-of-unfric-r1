@@ -324,8 +324,8 @@ export function NotesMindMapView({
         )}
       </svg>
 
-      {/* SVG for clickable arc zones - high z-index (above items) */}
-      <svg className="absolute inset-0 w-full h-full z-30">
+      {/* SVG for clickable arc zones - high z-index but pointer-events only on paths */}
+      <svg className="absolute inset-0 w-full h-full z-30 pointer-events-none">
         {/* Arc 1 - clickable zone */}
         <path
           d={arc1Path}
@@ -333,7 +333,10 @@ export function NotesMindMapView({
           stroke={focusedArc === 1 ? "rgba(59, 130, 246, 0.25)" : "transparent"}
           strokeWidth="40"
           className="cursor-pointer hover:stroke-primary/15 transition-all duration-200"
-          style={{ filter: focusedArc === 1 ? "drop-shadow(0 0 8px rgba(59, 130, 246, 0.5))" : "none" }}
+          style={{
+            pointerEvents: "auto",
+            filter: focusedArc === 1 ? "drop-shadow(0 0 8px rgba(59, 130, 246, 0.5))" : "none",
+          }}
           onClick={() => setFocusedArc(focusedArc === 1 ? null : 1)}
         />
 
@@ -345,7 +348,10 @@ export function NotesMindMapView({
             stroke={focusedArc === 2 ? "rgba(59, 130, 246, 0.25)" : "transparent"}
             strokeWidth="40"
             className="cursor-pointer hover:stroke-primary/15 transition-all duration-200"
-            style={{ filter: focusedArc === 2 ? "drop-shadow(0 0 8px rgba(59, 130, 246, 0.5))" : "none" }}
+            style={{
+              pointerEvents: "auto",
+              filter: focusedArc === 2 ? "drop-shadow(0 0 8px rgba(59, 130, 246, 0.5))" : "none",
+            }}
             onClick={() => setFocusedArc(focusedArc === 2 ? null : 2)}
           />
         )}
@@ -358,7 +364,10 @@ export function NotesMindMapView({
             stroke={focusedArc === 3 ? "rgba(6, 182, 212, 0.25)" : "transparent"}
             strokeWidth="40"
             className="cursor-pointer hover:stroke-cyan-500/15 transition-all duration-200"
-            style={{ filter: focusedArc === 3 ? "drop-shadow(0 0 8px rgba(6, 182, 212, 0.5))" : "none" }}
+            style={{
+              pointerEvents: "auto",
+              filter: focusedArc === 3 ? "drop-shadow(0 0 8px rgba(6, 182, 212, 0.5))" : "none",
+            }}
             onClick={() => setFocusedArc(focusedArc === 3 ? null : 3)}
           />
         )}
