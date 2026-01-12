@@ -798,7 +798,7 @@ export default function Notes() {
 
             {/* Pinned */}
             {pinnedNotes.length > 0 && (
-              <div className="rounded-2xl border border-border/50 bg-card shadow-sm">
+              <div className="rounded border border-border/50 bg-card shadow-sm">
                 <div className="p-4 flex items-center justify-between">
                   <div>
                     <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Pinned</p>
@@ -811,7 +811,7 @@ export default function Notes() {
                     <button
                       key={n.id}
                       onClick={() => handleNoteClick(n)}
-                      className="text-left rounded-2xl border border-border/40 bg-background/60 hover:bg-background/80 hover:shadow-sm transition-all p-4"
+                      className="text-left rounded border border-border/40 bg-background/60 hover:bg-background/80 hover:shadow-sm transition-all p-4"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
