@@ -1,7 +1,14 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { FolderOpen, Sparkles, ChevronUp, ChevronDown } from "lucide-react";
+import { FolderOpen, Sparkles, ChevronUp, ChevronDown, MoreHorizontal, Plus, Pencil, Trash2 } from "lucide-react";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface NotesMindMapViewProps {
   groups: NoteGroup[];
@@ -13,6 +20,8 @@ interface NotesMindMapViewProps {
   onAddFolder: (groupId: string, folderName: string) => void;
   onUpdateNote?: (note: Note) => void;
   onDeleteNote?: (noteId: string) => void;
+  onDeleteFolder?: (folderId: string) => void;
+  onRenameFolder?: (folderId: string, newName: string) => void;
 }
 
 const GROUP_COLORS: Record<string, string> = {
@@ -23,7 +32,18 @@ const GROUP_COLORS: Record<string, string> = {
   hobby: "#f97316",
 };
 
-export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNoteClick }: NotesMindMapViewProps) {
+export function NotesMindMapView({
+  groups,
+  folders,
+  notes,
+  selectedNoteId,
+  onNoteClick,
+  onAddNote,
+  onAddFolder,
+  onDeleteNote,
+  onDeleteFolder,
+  onRenameFolder,
+}: NotesMindMapViewProps) {
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
@@ -67,10 +87,10 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
   const arcCenterX = 100;
   const arcCenterY = dimensions.height / 2;
 
-  // Arc radii for semi-circles
-  const arc1Radius = 150;
-  const arc2Radius = 320;
-  const arc3Radius = 480;
+  // Arc radii for semi-circles - wider to use more screen space
+  const arc1Radius = 180;
+  const arc2Radius = 380;
+  const arc3Radius = 560;
 
   // Max visible items per arc
   const maxVisibleItems = 6;
@@ -381,34 +401,58 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
             className="absolute z-10 transition-all duration-300 ease-out"
             style={{ left: pos.x, top: pos.y, transform: "translate(-50%, -50%)" }}
           >
-            <button
-              onClick={() => {
-                setSelectedGroup(isSelected ? null : group.id);
-                setSelectedFolder(null);
-              }}
-              onMouseEnter={() => setHoveredItem(`group-${group.id}`)}
-              onMouseLeave={() => setHoveredItem(null)}
-              className={cn(
-                "relative px-4 py-2 rounded-full transition-all duration-300 whitespace-nowrap",
-                isSelected
-                  ? "bg-card border-2 shadow-lg scale-110"
-                  : "hover:bg-muted/80 hover:shadow-md hover:scale-105",
-              )}
-              style={{ borderColor: isSelected ? color : "transparent" }}
-            >
-              {isSelected && (
-                <div className="absolute inset-0 rounded-full blur-md opacity-40" style={{ background: color }} />
-              )}
-              <span
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => {
+                  setSelectedGroup(isSelected ? null : group.id);
+                  setSelectedFolder(null);
+                }}
+                onMouseEnter={() => setHoveredItem(`group-${group.id}`)}
+                onMouseLeave={() => setHoveredItem(null)}
                 className={cn(
-                  "relative text-sm font-semibold",
-                  isSelected || isHovered ? "text-foreground" : "text-muted-foreground",
+                  "relative px-4 py-2 rounded-full transition-all duration-300 whitespace-nowrap",
+                  isSelected
+                    ? "bg-card border-2 shadow-lg scale-110"
+                    : "hover:bg-muted/80 hover:shadow-md hover:scale-105",
                 )}
-                style={{ color: isSelected ? color : undefined }}
+                style={{ borderColor: isSelected ? color : "transparent" }}
               >
-                {group.name}
-              </span>
-            </button>
+                {isSelected && (
+                  <div className="absolute inset-0 rounded-full blur-md opacity-40" style={{ background: color }} />
+                )}
+                <span
+                  className={cn(
+                    "relative text-sm font-semibold",
+                    isSelected || isHovered ? "text-foreground" : "text-muted-foreground",
+                  )}
+                  style={{ color: isSelected ? color : undefined }}
+                >
+                  {group.name}
+                </span>
+              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="p-1 rounded hover:bg-muted transition-colors">
+                    <MoreHorizontal className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-36">
+                  <DropdownMenuItem onClick={() => onAddNote(group.id, null)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Note
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      const folderName = window.prompt("New folder name:");
+                      if (folderName) onAddFolder(group.id, folderName);
+                    }}
+                  >
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    Add Folder
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         );
       })}
@@ -440,19 +484,51 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
                 className="absolute z-10 transition-all duration-300 ease-out animate-in fade-in"
                 style={{ left: pos.x, top: pos.y, transform: "translate(-50%, -50%)" }}
               >
-                <button
-                  onClick={() => setSelectedFolder(isSelected ? null : folder.id)}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300 whitespace-nowrap",
-                    isSelected
-                      ? "bg-cyan-500/20 border-2 border-cyan-400 shadow-lg"
-                      : "bg-card/90 hover:bg-card hover:shadow-md border border-border/50",
-                  )}
-                >
-                  <FolderOpen className={cn("h-4 w-4", isSelected ? "text-cyan-500" : "text-cyan-400")} />
-                  <span className="text-sm font-medium text-foreground">{folder.name}</span>
-                  <span className="text-xs text-muted-foreground">{folderNotes.length}</span>
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setSelectedFolder(isSelected ? null : folder.id)}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300 whitespace-nowrap",
+                      isSelected
+                        ? "bg-cyan-500/20 border-2 border-cyan-400 shadow-lg"
+                        : "bg-card/90 hover:bg-card hover:shadow-md border border-border/50",
+                    )}
+                  >
+                    <FolderOpen className={cn("h-4 w-4", isSelected ? "text-cyan-500" : "text-cyan-400")} />
+                    <span className="text-sm font-medium text-foreground">{folder.name}</span>
+                    <span className="text-xs text-muted-foreground">{folderNotes.length}</span>
+                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="p-1 rounded hover:bg-muted transition-colors">
+                        <MoreHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-40">
+                      <DropdownMenuItem onClick={() => onAddNote(selectedGroup!, folder.id)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Note
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => {
+                          const newName = window.prompt("Rename folder:", folder.name);
+                          if (newName && onRenameFolder) onRenameFolder(folder.id, newName);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Rename
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => onDeleteFolder?.(folder.id)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             );
           }
@@ -464,15 +540,37 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
               className="absolute z-10 transition-all duration-300 ease-out animate-in fade-in"
               style={{ left: pos.x, top: pos.y, transform: "translate(-50%, -50%)" }}
             >
-              <button
-                onClick={() => onNoteClick(note)}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg transition-all duration-300 whitespace-nowrap bg-card/90 hover:bg-card hover:shadow-md border border-border/50",
-                  selectedNoteId === note.id && "bg-primary/15 border-primary",
-                )}
-              >
-                <span className="text-sm text-foreground">{note.title || "Untitled"}</span>
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => onNoteClick(note)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg transition-all duration-300 whitespace-nowrap bg-card/90 hover:bg-card hover:shadow-md border border-border/50",
+                    selectedNoteId === note.id && "bg-primary/15 border-primary",
+                  )}
+                >
+                  <span className="text-sm text-foreground">{note.title || "Untitled"}</span>
+                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="p-1 rounded hover:bg-muted transition-colors">
+                      <MoreHorizontal className="h-3 w-3 text-muted-foreground" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-32">
+                    <DropdownMenuItem onClick={() => onNoteClick(note)}>
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => onDeleteNote?.(note.id)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           );
         })}
@@ -498,15 +596,37 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
               className="absolute z-10 transition-all duration-300 ease-out animate-in fade-in"
               style={{ left: pos.x, top: pos.y, transform: "translate(-50%, -50%)" }}
             >
-              <button
-                onClick={() => onNoteClick(note)}
-                className={cn(
-                  "px-3 py-1.5 rounded-md transition-all duration-300 whitespace-nowrap bg-card/90 hover:bg-card hover:shadow-md border border-cyan-300/50",
-                  selectedNoteId === note.id && "bg-cyan-500/20 border-cyan-400",
-                )}
-              >
-                <span className="text-xs text-foreground">{note.title || "Untitled"}</span>
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => onNoteClick(note)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-md transition-all duration-300 whitespace-nowrap bg-card/90 hover:bg-card hover:shadow-md border border-cyan-300/50",
+                    selectedNoteId === note.id && "bg-cyan-500/20 border-cyan-400",
+                  )}
+                >
+                  <span className="text-xs text-foreground">{note.title || "Untitled"}</span>
+                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="p-1 rounded hover:bg-muted transition-colors">
+                      <MoreHorizontal className="h-3 w-3 text-muted-foreground" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-32">
+                    <DropdownMenuItem onClick={() => onNoteClick(note)}>
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => onDeleteNote?.(note.id)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           );
         })}
