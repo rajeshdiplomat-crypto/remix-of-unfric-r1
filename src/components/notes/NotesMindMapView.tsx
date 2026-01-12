@@ -87,10 +87,10 @@ export function NotesMindMapView({
   const arcCenterX = 100;
   const arcCenterY = dimensions.height / 2;
 
-  // Arc radii for semi-circles - widened to fill more screen space
-  const arc1Radius = 220;
-  const arc2Radius = 520;
-  const arc3Radius = 800;
+  // Arc radii for semi-circles - use full width
+  const arc1Radius = Math.min(250, dimensions.height * 0.4);
+  const arc2Radius = Math.min(550, dimensions.height * 0.75);
+  const arc3Radius = Math.min(850, dimensions.height * 1.1);
 
   // Max visible items per arc - outer arcs can show more
   const arc1MaxItems = 8;
@@ -189,9 +189,9 @@ export function NotesMindMapView({
   // Calculate position on semi-circle
   const getSemiCirclePosition = (index: number, total: number, radius: number) => {
     // Reduce angle spread for small item counts to keep them visible
-    const maxSpread = 50; // degrees
-    const minSpread = 15; // degrees for single/few items
-    const spreadDegrees = total <= 2 ? minSpread : Math.min(maxSpread, minSpread + (total - 1) * 7);
+    const maxSpread = 80; // degrees - nearly full arc
+    const minSpread = 25; // degrees for single/few items
+    const spreadDegrees = total <= 2 ? minSpread : Math.min(maxSpread, minSpread + (total - 1) * 8);
 
     const startAngle = -spreadDegrees * (Math.PI / 180);
     const endAngle = spreadDegrees * (Math.PI / 180);
@@ -219,9 +219,9 @@ export function NotesMindMapView({
     return `M ${start.x} ${start.y} A ${radius} ${radius} 0 0 1 ${end.x} ${end.y}`;
   };
 
-  const arc1Path = createArcPath(arc1Radius, (-55 * Math.PI) / 180, (55 * Math.PI) / 180);
-  const arc2Path = createArcPath(arc2Radius, (-50 * Math.PI) / 180, (50 * Math.PI) / 180);
-  const arc3Path = createArcPath(arc3Radius, (-45 * Math.PI) / 180, (45 * Math.PI) / 180);
+  const arc1Path = createArcPath(arc1Radius, (-85 * Math.PI) / 180, (85 * Math.PI) / 180);
+  const arc2Path = createArcPath(arc2Radius, (-85 * Math.PI) / 180, (85 * Math.PI) / 180);
+  const arc3Path = createArcPath(arc3Radius, (-85 * Math.PI) / 180, (85 * Math.PI) / 180);
 
   // Handler to prevent page scroll when any arc is focused
   const handleContainerWheel = (e: React.WheelEvent) => {
