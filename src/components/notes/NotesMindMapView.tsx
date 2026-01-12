@@ -497,7 +497,7 @@ export function NotesMindMapView({
               <div
                 key={entry.id}
                 className="absolute z-10 transition-all duration-300 ease-out animate-in fade-in"
-                style={{ left: pos.x, top: pos.y, transform: "translate(-50%, -50%)" }}
+                style={{ left: pos.x, top: pos.y, transform: "translate(0, -50%)" }}
               >
                 <button
                   onClick={(e) => {
@@ -527,7 +527,7 @@ export function NotesMindMapView({
             <div
               key={entry.id}
               className="absolute z-10 transition-all duration-300 ease-out animate-in fade-in"
-              style={{ left: pos.x, top: pos.y, transform: "translate(-50%, -50%)" }}
+              style={{ left: pos.x, top: pos.y, transform: "translate(0, -50%)" }}
             >
               <button
                 onClick={(e) => {
@@ -568,7 +568,7 @@ export function NotesMindMapView({
             <div
               key={note.id}
               className="absolute z-10 transition-all duration-300 ease-out animate-in fade-in"
-              style={{ left: pos.x, top: pos.y, transform: "translate(-50%, -50%)" }}
+              style={{ left: pos.x, top: pos.y, transform: "translate(0, -50%)" }}
             >
               <button
                 onClick={(e) => {
