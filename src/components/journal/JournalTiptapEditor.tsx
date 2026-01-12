@@ -12,7 +12,7 @@ import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import { Extension } from "@tiptap/core";
 import ImageResize from "tiptap-extension-resize-image";
-import { useEffect, forwardRef, useImperativeHandle, useState, useRef, useCallback } from "react";
+import React, { useEffect, forwardRef, useImperativeHandle, useState, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -233,7 +233,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
       ],
       content: content ? JSON.parse(content) : undefined,
       onUpdate: ({ editor }) => onChange(JSON.stringify(editor.getJSON())),
-      editorProps: { attributes: { class: "focus:outline-none min-h-[300px] px-6 py-4" } },
+      editorProps: { attributes: { class: "focus:outline-none min-h-[800px] pl-8 pr-6 py-4" } },
     });
 
     useImperativeHandle(ref, () => ({ editor }));
@@ -604,14 +604,25 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
 
     return (
       <div
-        className="rounded-xl border overflow-hidden bg-white shadow-sm"
-        style={{ borderColor: "hsl(var(--border))" }}
+        className="rounded-2xl overflow-hidden min-h-[800px] flex flex-col"
+        style={{
+          background: "linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)",
+          border: "1.5px solid rgba(99, 149, 241, 0.4)",
+          boxShadow:
+            "0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 0 20px rgba(99, 149, 241, 0.06)",
+        }}
       >
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
         {/* MAIN TOOLBAR */}
-        <div className="bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm relative z-50">
-          <div className="flex items-center h-11 px-2 gap-0.5 overflow-x-auto">
+        <div
+          className="backdrop-blur-xl border-b relative z-50"
+          style={{
+            background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.95) 100%)",
+            borderColor: "rgba(148, 163, 184, 0.15)",
+          }}
+        >
+          <div className="flex items-center h-11 px-4 gap-0.5 overflow-x-auto">
             <ToolBtn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
               <Undo2 className="h-4 w-4" />
             </ToolBtn>
@@ -1016,7 +1027,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
         {/* Editor Content with Scribble Overlay */}
         <div
           ref={containerRef}
-          className="relative"
+          className="relative flex-1 min-h-full"
           style={{
             ...bgStyle,
             ...getLineStyleCSS(),
@@ -1032,7 +1043,10 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
               style={{ backgroundColor: "#ef4444" }}
             />
           )}
-          <div style={{ paddingLeft: lineStyle === "college" ? "80px" : undefined }}>
+          <div
+            className="h-full [&_.ProseMirror]:h-full [&_.ProseMirror]:flex [&_.ProseMirror]:flex-col [&_.ProseMirror]:justify-evenly [&_h2]:my-12 [&_h2]:pb-4"
+            style={{ paddingLeft: lineStyle === "college" ? "80px" : undefined }}
+          >
             <EditorContent editor={editor} />
           </div>
 
@@ -1135,3 +1149,16 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
 );
 
 JournalTiptapEditor.displayName = "JournalTiptapEditor";
+
+// Memoized version to prevent unnecessary re-renders
+export const MemoizedJournalTiptapEditor = React.memo(JournalTiptapEditor, (prevProps, nextProps) => {
+  // Re-render when content, skinStyles, or handlers change
+  return (
+    prevProps.content === nextProps.content &&
+    prevProps.skinStyles?.editorPaperBg === nextProps.skinStyles?.editorPaperBg &&
+    prevProps.skinStyles?.text === nextProps.skinStyles?.text &&
+    prevProps.skinStyles?.mutedText === nextProps.skinStyles?.mutedText &&
+    prevProps.onChange === nextProps.onChange &&
+    prevProps.onScribbleChange === nextProps.onScribbleChange
+  );
+});
