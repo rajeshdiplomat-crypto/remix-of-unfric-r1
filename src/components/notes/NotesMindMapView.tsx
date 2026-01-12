@@ -35,6 +35,9 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
   const [arc2Scroll, setArc2Scroll] = useState(0);
   const [arc3Scroll, setArc3Scroll] = useState(0);
 
+  // Track which arc is focused for scrolling (requires click first)
+  const [focusedArc, setFocusedArc] = useState<1 | 2 | 3 | null>(null);
+
   const sortedGroups = useMemo(() => [...groups].sort((a, b) => a.sortOrder - b.sortOrder), [groups]);
 
   useEffect(() => {
@@ -144,8 +147,9 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
   const arc2Path = createArcPath(arc2Radius, (-65 * Math.PI) / 180, (65 * Math.PI) / 180);
   const arc3Path = createArcPath(arc3Radius, (-60 * Math.PI) / 180, (60 * Math.PI) / 180);
 
-  // Mouse wheel scroll handlers
+  // Mouse wheel scroll handlers - only work when arc is focused
   const handleArc1Wheel = (e: React.WheelEvent) => {
+    if (focusedArc !== 1) return;
     e.preventDefault();
     if (e.deltaY > 0) {
       setArc1Scroll((prev) => Math.min(sortedGroups.length - maxVisibleItems, prev + 1));
@@ -155,6 +159,7 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
   };
 
   const handleArc2Wheel = (e: React.WheelEvent) => {
+    if (focusedArc !== 2) return;
     e.preventDefault();
     if (e.deltaY > 0) {
       setArc2Scroll((prev) => Math.min(arc2Items.length - maxVisibleItems, prev + 1));
@@ -164,6 +169,7 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
   };
 
   const handleArc3Wheel = (e: React.WheelEvent) => {
+    if (focusedArc !== 3) return;
     e.preventDefault();
     if (e.deltaY > 0) {
       setArc3Scroll((prev) => Math.min(selectedFolderNotes.length - maxVisibleItems, prev + 1));
@@ -284,15 +290,19 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
       </div>
 
       {/* Arc 1 - Groups (Scrollable) */}
-      {/* Invisible scroll zone for Arc 1 */}
+      {/* Invisible scroll zone for Arc 1 - click to enable scroll */}
       <div
-        className="absolute z-5 rounded-full"
+        className={cn(
+          "absolute z-5 rounded-full cursor-pointer transition-all duration-300",
+          focusedArc === 1 && "ring-2 ring-primary/30 bg-primary/5",
+        )}
         style={{
           left: arcCenterX + arc1Radius * 0.3,
           top: arcCenterY - arc1Radius,
           width: arc1Radius * 1.4,
           height: arc1Radius * 2,
         }}
+        onClick={() => setFocusedArc(focusedArc === 1 ? null : 1)}
         onWheel={handleArc1Wheel}
       />
       <ScrollControls
@@ -351,15 +361,19 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
       {/* Arc 2 - Entries (Scrollable) */}
       {selectedGroup && (
         <>
-          {/* Invisible scroll zone for Arc 2 */}
+          {/* Invisible scroll zone for Arc 2 - click to enable scroll */}
           <div
-            className="absolute z-5 rounded-full"
+            className={cn(
+              "absolute z-5 rounded-full cursor-pointer transition-all duration-300",
+              focusedArc === 2 && "ring-2 ring-primary/30 bg-primary/5",
+            )}
             style={{
               left: arcCenterX + arc2Radius * 0.3,
               top: arcCenterY - arc2Radius * 0.9,
               width: arc2Radius * 1.4,
               height: arc2Radius * 1.8,
             }}
+            onClick={() => setFocusedArc(focusedArc === 2 ? null : 2)}
             onWheel={handleArc2Wheel}
           />
           <ScrollControls
@@ -428,15 +442,19 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
       {/* Arc 3 - Folder Notes (Scrollable) */}
       {selectedFolder && (
         <>
-          {/* Invisible scroll zone for Arc 3 */}
+          {/* Invisible scroll zone for Arc 3 - click to enable scroll */}
           <div
-            className="absolute z-5 rounded-full"
+            className={cn(
+              "absolute z-5 rounded-full cursor-pointer transition-all duration-300",
+              focusedArc === 3 && "ring-2 ring-cyan-400/30 bg-cyan-500/5",
+            )}
             style={{
               left: arcCenterX + arc3Radius * 0.3,
               top: arcCenterY - arc3Radius * 0.8,
               width: arc3Radius * 1.4,
               height: arc3Radius * 1.6,
             }}
+            onClick={() => setFocusedArc(focusedArc === 3 ? null : 3)}
             onWheel={handleArc3Wheel}
           />
           <ScrollControls
