@@ -154,20 +154,11 @@ export function NotesGroupSection({
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 rounded-lg text-xs"
+                          className="h-8 rounded text-xs"
                           onClick={() => onAddNote(group.id, null)}
                         >
                           <Plus className="h-3 w-3 mr-1.5" />
                           Add note
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 rounded-lg text-xs"
-                          onClick={() => setIsAddingFolder(true)}
-                        >
-                          <FolderPlus className="h-3 w-3 mr-1.5" />
-                          Add section
                         </Button>
                       </div>
                     </div>
@@ -222,20 +213,11 @@ export function NotesGroupSection({
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-8 rounded-lg text-xs"
+                              className="h-8 rounded text-xs"
                               onClick={() => onAddNote(group.id, null)}
                             >
                               <Plus className="h-3 w-3 mr-1.5" />
                               Add note
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 rounded-lg text-xs"
-                              onClick={() => setIsAddingFolder(true)}
-                            >
-                              <FolderPlus className="h-3 w-3 mr-1.5" />
-                              Add section
                             </Button>
                           </div>
                         ) : (
