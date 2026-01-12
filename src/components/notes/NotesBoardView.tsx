@@ -160,7 +160,7 @@ export function NotesBoardView({
 
               {/* Notes list - Infinite scroll appearance */}
               <ScrollArea className="flex-1 h-full min-h-[calc(100vh-350px)]">
-                <div className="space-y-3 pb-20 pr-1">
+                <div className="space-y-3 pb-20 pr-2">
                   {/* Direct notes - clean white cards on transparency */}
                   {groupNotes
                     .filter((n) => !n.folderId)
@@ -299,10 +299,7 @@ export function NotesBoardView({
                                 onClick={() => onNoteClick(note)}
                               >
                                 <div className="p-3">
-                                  <div className="flex items-start gap-2">
-                                    <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30 shrink-0 mt-0.5" />
-                                    <h4 className="text-sm text-foreground line-clamp-2">{note.title || "Untitled"}</h4>
-                                  </div>
+                                  <h4 className="text-sm text-foreground line-clamp-2">{note.title || "Untitled"}</h4>
                                 </div>
                               </div>
                             ))}
