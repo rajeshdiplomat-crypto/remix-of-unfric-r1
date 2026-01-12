@@ -63,6 +63,26 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
     setArc3Scroll(0);
   }, [selectedFolder]);
 
+  // Prevent page scroll when an arc is focused - uses native listener for passive:false
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const preventScroll = (e: WheelEvent) => {
+      if (focusedArc !== null) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    // Add with passive: false to allow preventDefault
+    container.addEventListener("wheel", preventScroll, { passive: false });
+
+    return () => {
+      container.removeEventListener("wheel", preventScroll);
+    };
+  }, [focusedArc]);
+
   // Arc center (left side of screen)
   const arcCenterX = 100;
   const arcCenterY = dimensions.height / 2;
