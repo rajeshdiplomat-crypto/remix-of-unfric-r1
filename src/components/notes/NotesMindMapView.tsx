@@ -1,5 +1,5 @@
-import { useState, useMemo, useRef, useEffect } from "react";
-import { FileText, FolderOpen } from "lucide-react";
+import { useState, useMemo } from "react";
+import { FileText, ChevronRight, FolderOpen } from "lucide-react";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,15 @@ interface NotesMindMapViewProps {
   onDeleteNote?: (noteId: string) => void;
 }
 
+// Group accent colors
+const GROUP_COLORS: Record<string, string> = {
+  inbox: "#64748b",
+  work: "#3b82f6",
+  personal: "#10b981",
+  wellness: "#a855f7",
+  hobby: "#f97316",
+};
+
 export function NotesMindMapView({
   groups,
   folders,
@@ -22,272 +31,200 @@ export function NotesMindMapView({
   selectedNoteId,
   onNoteClick,
   onAddNote,
-  onAddFolder,
 }: NotesMindMapViewProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
 
   const sortedGroups = useMemo(() => [...groups].sort((a, b) => a.sortOrder - b.sortOrder), [groups]);
 
-  // Canvas dimensions
-  const canvasSize = 1200;
-  const centerX = canvasSize / 2;
-  const centerY = canvasSize / 2;
+  // Get notes and folders for selected group
+  const selectedGroupData = useMemo(() => {
+    if (!selectedGroup) return { notes: [], folders: [] };
+    return {
+      notes: notes.filter((n) => n.groupId === selectedGroup),
+      folders: folders.filter((f) => f.groupId === selectedGroup),
+    };
+  }, [selectedGroup, notes, folders]);
 
-  // Ring radii
-  const rings = {
-    center: 60,
-    groups: 150, // Groups ring
-    sections: 280, // Sections/folders ring
-    entries1: 400, // First entries ring
-    entries2: 500, // Second entries ring
-  };
-
-  // Calculate group positions on the groups ring
-  const groupPositions = useMemo(() => {
-    return sortedGroups.map((group, index) => {
-      const angle = (index / sortedGroups.length) * 2 * Math.PI - Math.PI / 2;
-      return {
-        group,
-        x: centerX + rings.groups * Math.cos(angle),
-        y: centerY + rings.groups * Math.sin(angle),
-        angle,
-      };
-    });
-  }, [sortedGroups, centerX, centerY]);
-
-  // Calculate section positions on the sections ring
-  const sectionPositions = useMemo(() => {
-    const allSections: { folder: NoteFolder; x: number; y: number }[] = [];
-    let sectionIndex = 0;
-
-    folders.forEach((folder) => {
-      const angle = (sectionIndex / Math.max(folders.length, 6)) * 2 * Math.PI - Math.PI / 3;
-      allSections.push({
-        folder,
-        x: centerX + rings.sections * Math.cos(angle),
-        y: centerY + rings.sections * Math.sin(angle),
-      });
-      sectionIndex++;
-    });
-
-    return allSections;
-  }, [folders, centerX, centerY]);
-
-  // Calculate entry positions on outer rings
-  const entryPositions = useMemo(() => {
-    const entries: { note: Note; x: number; y: number; ring: number }[] = [];
-
-    notes.forEach((note, index) => {
-      // Alternate between two outer rings
-      const ring = index % 2 === 0 ? rings.entries1 : rings.entries2;
-      const angleOffset = index % 2 === 0 ? 0 : Math.PI / notes.length;
-      const angle = (index / notes.length) * 2 * Math.PI + angleOffset - Math.PI / 4;
-
-      entries.push({
-        note,
-        x: centerX + ring * Math.cos(angle),
-        y: centerY + ring * Math.sin(angle),
-        ring: index % 2,
-      });
-    });
-
-    return entries;
-  }, [notes, centerX, centerY]);
-
-  // Pan and zoom handlers
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    setScale((prev) => Math.min(Math.max(prev * delta, 0.3), 2));
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button === 0) {
-      setIsDragging(true);
-      setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging) {
-      setPosition({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y,
-      });
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
+  const activeGroup = sortedGroups.find((g) => g.id === selectedGroup);
 
   return (
-    <div
-      ref={containerRef}
-      className="relative w-full h-[calc(100vh-280px)] min-h-[500px] overflow-hidden bg-background/50 cursor-grab active:cursor-grabbing"
-      onWheel={handleWheel}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-    >
-      {/* Scrollable/Zoomable canvas */}
-      <div
-        className="absolute"
-        style={{
-          width: canvasSize,
-          height: canvasSize,
-          left: `calc(50% - ${canvasSize / 2}px + ${position.x}px)`,
-          top: `calc(50% - ${canvasSize / 2}px + ${position.y}px)`,
-          transform: `scale(${scale})`,
-          transformOrigin: "center center",
-        }}
-      >
-        {/* Concentric rings SVG */}
-        <svg width={canvasSize} height={canvasSize} className="absolute inset-0">
-          {/* Ring 1 - Groups ring */}
-          <circle
-            cx={centerX}
-            cy={centerY}
-            r={rings.groups}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            className="text-border"
-          />
+    <div className="relative w-full h-[calc(100vh-280px)] min-h-[500px] flex items-center justify-center overflow-hidden">
+      {/* Main container with arc layout */}
+      <div className="relative flex items-center gap-8">
+        {/* Left side - NOTES pill with arc */}
+        <div className="relative flex items-center">
+          {/* NOTES pill */}
+          <div className="relative z-10 px-6 py-4 rounded-full bg-card border-2 border-primary/30 shadow-lg">
+            <span className="text-lg font-bold text-foreground uppercase tracking-wider">Notes</span>
+          </div>
 
-          {/* Ring 2 - Sections ring */}
-          <circle
-            cx={centerX}
-            cy={centerY}
-            r={rings.sections}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            className="text-border"
-          />
+          {/* Arc SVG */}
+          <svg
+            width="180"
+            height="400"
+            viewBox="0 0 180 400"
+            className="absolute left-full -ml-4"
+            style={{ marginTop: -20 }}
+          >
+            {/* Main arc line */}
+            <path
+              d="M 10 40 Q 160 200 10 360"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              className="text-border"
+              strokeLinecap="round"
+            />
 
-          {/* Ring 3 - Entries ring 1 */}
-          <circle
-            cx={centerX}
-            cy={centerY}
-            r={rings.entries1}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1"
-            className="text-border/70"
-          />
-
-          {/* Ring 4 - Entries ring 2 */}
-          <circle
-            cx={centerX}
-            cy={centerY}
-            r={rings.entries2}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1"
-            className="text-border/50"
-          />
-        </svg>
-
-        {/* Center - "Notes" label */}
-        <div
-          className="absolute flex items-center justify-center"
-          style={{
-            left: centerX - rings.center,
-            top: centerY - rings.center,
-            width: rings.center * 2,
-            height: rings.center * 2,
-          }}
-        >
-          <span className="text-2xl font-semibold text-foreground">Notes</span>
+            {/* Gradient overlay on arc */}
+            <defs>
+              <linearGradient id="arcGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#e2e8f0" stopOpacity="0.3" />
+                <stop offset="50%" stopColor="#3b82f6" stopOpacity="0.5" />
+                <stop offset="100%" stopColor="#e2e8f0" stopOpacity="0.3" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M 10 40 Q 160 200 10 360"
+              fill="none"
+              stroke="url(#arcGradient)"
+              strokeWidth="8"
+              strokeLinecap="round"
+              opacity="0.4"
+            />
+          </svg>
         </div>
 
-        {/* Groups - Plain text labels on groups ring */}
-        {groupPositions.map(({ group, x, y }) => (
-          <div
-            key={group.id}
-            className="absolute cursor-pointer hover:text-primary transition-colors duration-200"
-            style={{
-              left: x,
-              top: y,
-              transform: "translate(-50%, -50%)",
-            }}
-            onClick={() => onAddNote(group.id, null)}
-          >
-            <span className="text-lg font-medium text-foreground whitespace-nowrap">{group.name}</span>
-          </div>
-        ))}
+        {/* Center - Group names along the arc */}
+        <div className="relative flex flex-col gap-3 -ml-8 z-20">
+          {sortedGroups.map((group, index) => {
+            const isSelected = selectedGroup === group.id;
+            const isHovered = hoveredGroup === group.id;
+            const color = GROUP_COLORS[group.id] || "#64748b";
 
-        {/* Sections/Folders - In rounded boxes on sections ring */}
-        {sectionPositions.map(({ folder, x, y }) => (
-          <div
-            key={folder.id}
-            className="absolute cursor-pointer"
-            style={{
-              left: x,
-              top: y,
-              transform: "translate(-50%, -50%)",
-            }}
-          >
-            <div className="px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-muted transition-colors duration-200 shadow-sm">
-              <span className="text-sm font-medium text-foreground whitespace-nowrap">{folder.name}</span>
+            // Calculate offset for arc effect
+            const totalGroups = sortedGroups.length;
+            const middleIndex = (totalGroups - 1) / 2;
+            const distanceFromMiddle = Math.abs(index - middleIndex);
+            const xOffset = -distanceFromMiddle * 8;
+
+            return (
+              <div key={group.id} className="relative" style={{ marginLeft: 40 + xOffset }}>
+                <button
+                  onClick={() => setSelectedGroup(isSelected ? null : group.id)}
+                  onMouseEnter={() => setHoveredGroup(group.id)}
+                  onMouseLeave={() => setHoveredGroup(null)}
+                  className={cn(
+                    "relative px-5 py-2.5 rounded-full transition-all duration-300 text-left",
+                    isSelected ? "bg-card border-2 shadow-lg" : "hover:bg-muted/50",
+                    isSelected && "scale-105",
+                  )}
+                  style={{
+                    borderColor: isSelected ? color : "transparent",
+                  }}
+                >
+                  {/* Glow effect for selected */}
+                  {isSelected && (
+                    <div className="absolute inset-0 rounded-full blur-md opacity-30" style={{ background: color }} />
+                  )}
+
+                  <span
+                    className={cn(
+                      "relative text-base font-medium transition-colors duration-200",
+                      isSelected ? "text-foreground" : "text-muted-foreground",
+                      isHovered && !isSelected && "text-foreground",
+                    )}
+                    style={{
+                      color: isSelected ? color : undefined,
+                    }}
+                  >
+                    {group.name}
+                  </span>
+                </button>
+
+                {/* Connection line to entries */}
+                {isSelected && (
+                  <div className="absolute left-full top-1/2 -translate-y-1/2 flex items-center">
+                    <div
+                      className="w-16 h-0.5 rounded-full"
+                      style={{ background: `linear-gradient(to right, ${color}, transparent)` }}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Right side - Entries for selected group */}
+        <div
+          className={cn(
+            "relative flex flex-col gap-2 ml-12 min-w-[200px] transition-all duration-300",
+            selectedGroup ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none",
+          )}
+        >
+          {/* Group title */}
+          {activeGroup && (
+            <div className="mb-2">
+              <h3
+                className="text-sm font-semibold uppercase tracking-wider"
+                style={{ color: GROUP_COLORS[activeGroup.id] || "#64748b" }}
+              >
+                {activeGroup.name} Entries
+              </h3>
             </div>
-          </div>
-        ))}
+          )}
 
-        {/* Entries - Plain text on outer rings */}
-        {entryPositions.map(({ note, x, y }) => (
-          <div
-            key={note.id}
-            className={cn(
-              "absolute cursor-pointer transition-all duration-200",
-              selectedNoteId === note.id ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground",
-            )}
-            style={{
-              left: x,
-              top: y,
-              transform: "translate(-50%, -50%)",
-            }}
-            onClick={() => onNoteClick(note)}
-          >
-            <span className="text-sm whitespace-nowrap">{note.title || "Untitled"}</span>
-          </div>
-        ))}
+          {/* Folders */}
+          {selectedGroupData.folders.map((folder) => (
+            <div
+              key={folder.id}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
+            >
+              <FolderOpen className="h-4 w-4 text-cyan-500" />
+              <span className="text-sm font-medium text-foreground">{folder.name}</span>
+              <span className="text-xs text-muted-foreground ml-auto">
+                {notes.filter((n) => n.folderId === folder.id).length}
+              </span>
+            </div>
+          ))}
+
+          {/* Notes */}
+          {selectedGroupData.notes
+            .filter((n) => !n.folderId)
+            .slice(0, 10)
+            .map((note) => (
+              <button
+                key={note.id}
+                onClick={() => onNoteClick(note)}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-left",
+                  "hover:bg-muted/50 hover:translate-x-1",
+                  selectedNoteId === note.id && "bg-primary/10 border-l-2 border-primary",
+                )}
+              >
+                <span className="text-sm text-foreground">{note.title || "Untitled"}</span>
+              </button>
+            ))}
+
+          {/* Empty state */}
+          {selectedGroupData.notes.length === 0 && selectedGroupData.folders.length === 0 && (
+            <div className="text-sm text-muted-foreground italic py-4">No entries yet</div>
+          )}
+
+          {/* More notes indicator */}
+          {selectedGroupData.notes.filter((n) => !n.folderId).length > 10 && (
+            <div className="text-xs text-muted-foreground">
+              +{selectedGroupData.notes.filter((n) => !n.folderId).length - 10} more
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Controls hint */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-card/90 backdrop-blur-sm rounded-lg border border-border/50 px-4 py-2 shadow-sm">
-        <span className="text-xs text-muted-foreground">Scroll to zoom • Drag to pan</span>
-      </div>
-
-      {/* Zoom controls */}
-      <div className="absolute top-4 right-4 flex flex-col gap-2">
-        <button
-          onClick={() => setScale((prev) => Math.min(prev * 1.2, 2))}
-          className="w-8 h-8 rounded-lg border border-border bg-card hover:bg-muted flex items-center justify-center text-foreground"
-        >
-          +
-        </button>
-        <button
-          onClick={() => setScale((prev) => Math.max(prev * 0.8, 0.3))}
-          className="w-8 h-8 rounded-lg border border-border bg-card hover:bg-muted flex items-center justify-center text-foreground"
-        >
-          −
-        </button>
-        <button
-          onClick={() => {
-            setScale(1);
-            setPosition({ x: 0, y: 0 });
-          }}
-          className="w-8 h-8 rounded-lg border border-border bg-card hover:bg-muted flex items-center justify-center text-xs text-muted-foreground"
-        >
-          ⟲
-        </button>
+      {/* Hint text */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-muted-foreground">
+        Click a category to view its entries
       </div>
     </div>
   );
