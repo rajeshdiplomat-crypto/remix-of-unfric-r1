@@ -241,8 +241,11 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
                   const totalEntries = secondArcItems.length;
                   const middleIndex = (totalEntries - 1) / 2;
                   const distanceFromMiddle = Math.abs(index - middleIndex);
-                  const xOffset = -distanceFromMiddle * 8;
-                  const opacity = 1 - (distanceFromMiddle / Math.max(totalEntries, 1)) * 0.4;
+                  // Curved offset - items in middle are pushed right, edges pushed left
+                  const maxOffset = 60;
+                  const curveAmount = Math.pow(distanceFromMiddle / Math.max(middleIndex, 1), 1.5);
+                  const xOffset = maxOffset - curveAmount * maxOffset;
+                  const opacity = 1 - (distanceFromMiddle / Math.max(totalEntries, 1)) * 0.5;
 
                   if (entry.type === "folder") {
                     const folder = entry.data as NoteFolder;
@@ -377,8 +380,11 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
                   const totalNotes = selectedFolderNotes.length;
                   const middleIndex = (totalNotes - 1) / 2;
                   const distanceFromMiddle = Math.abs(index - middleIndex);
-                  const xOffset = -distanceFromMiddle * 6;
-                  const opacity = 1 - (distanceFromMiddle / Math.max(totalNotes, 1)) * 0.3;
+                  // Curved offset - items in middle are pushed right, edges pushed left
+                  const maxOffset = 50;
+                  const curveAmount = Math.pow(distanceFromMiddle / Math.max(middleIndex, 1), 1.5);
+                  const xOffset = maxOffset - curveAmount * maxOffset;
+                  const opacity = 1 - (distanceFromMiddle / Math.max(totalNotes, 1)) * 0.4;
 
                   return (
                     <button
