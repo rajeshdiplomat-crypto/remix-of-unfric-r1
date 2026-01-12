@@ -164,17 +164,26 @@ export function NotesGroupSection({
 
             {/* Expanded Body */}
             {isExpanded && (
-              <div className="px-4 pb-4 pt-1 border-t border-border/30">
-                <div className="rounded-lg bg-background/50 p-3">
+              <div className="px-4 pb-4 pt-2">
+                {/* Accent gradient bar */}
+                <div
+                  className="h-0.5 rounded-full mb-3 opacity-60"
+                  style={{ background: `linear-gradient(90deg, ${group.color || "#64748b"} 0%, transparent 100%)` }}
+                />
+
+                <div className="rounded-xl bg-gradient-to-b from-muted/30 to-background/50 p-4 border border-border/20">
                   {/* Empty */}
                   {allGroupNotes.length === 0 && groupFolders.length === 0 ? (
-                    <div className="py-4 text-center">
+                    <div className="py-6 text-center">
+                      <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-muted/50 flex items-center justify-center">
+                        <Plus className="h-5 w-5 text-muted-foreground/50" />
+                      </div>
                       <p className="text-xs text-muted-foreground">No notes yet</p>
                       <div className="mt-3 flex justify-center gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 rounded text-xs"
+                          className="h-8 rounded-lg text-xs"
                           onClick={() => onAddNote(group.id, null)}
                         >
                           <Plus className="h-3 w-3 mr-1.5" />
@@ -183,7 +192,18 @@ export function NotesGroupSection({
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-4">
+                      {/* Sections Header */}
+                      {groupFolders.length > 0 && (
+                        <div className="flex items-center gap-2 pb-2">
+                          <div className="h-4 w-1 rounded-full bg-cyan-500" />
+                          <span className="text-[11px] font-semibold text-cyan-600 uppercase tracking-wide">
+                            Sections
+                          </span>
+                          <div className="flex-1 h-px bg-gradient-to-r from-cyan-500/20 to-transparent" />
+                        </div>
+                      )}
+
                       {/* Folders */}
                       {groupFolders.map((folder) => (
                         <NotesFolderSection
@@ -202,13 +222,18 @@ export function NotesGroupSection({
 
                       {/* Direct Notes */}
                       {directNotes.length > 0 && (
-                        <div className="space-y-0.5">
-                          {groupFolders.length > 0 && (
-                            <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider pt-2 pb-1">
-                              Ungrouped
-                            </p>
-                          )}
-                          <div className="rounded-lg border border-border/30 bg-background/60 p-1.5">
+                        <div className="space-y-2">
+                          {/* Notes Header */}
+                          <div className="flex items-center gap-2 pb-1">
+                            <div className="h-4 w-1 rounded-full" style={{ background: group.color || "#64748b" }} />
+                            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+                              {groupFolders.length > 0 ? "Ungrouped Notes" : "Notes"}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground/50">({directNotes.length})</span>
+                            <div className="flex-1 h-px bg-gradient-to-r from-border/50 to-transparent" />
+                          </div>
+
+                          <div className="rounded-lg border border-border/40 bg-card/60 overflow-hidden divide-y divide-border/20">
                             {directNotes.map((note) => (
                               <NotesNoteRow
                                 key={note.id}
