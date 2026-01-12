@@ -148,11 +148,13 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
   const arc3Path = createArcPath(arc3Radius, (-60 * Math.PI) / 180, (60 * Math.PI) / 180);
 
   // Mouse wheel scroll handlers - only work when arc is focused
+  // Prevents page scroll when arc is focused
   const handleArc1Wheel = (e: React.WheelEvent) => {
     if (focusedArc !== 1) return;
     e.preventDefault();
+    e.stopPropagation();
     if (e.deltaY > 0) {
-      setArc1Scroll((prev) => Math.min(sortedGroups.length - maxVisibleItems, prev + 1));
+      setArc1Scroll((prev) => Math.min(Math.max(0, sortedGroups.length - maxVisibleItems), prev + 1));
     } else {
       setArc1Scroll((prev) => Math.max(0, prev - 1));
     }
@@ -161,8 +163,9 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
   const handleArc2Wheel = (e: React.WheelEvent) => {
     if (focusedArc !== 2) return;
     e.preventDefault();
+    e.stopPropagation();
     if (e.deltaY > 0) {
-      setArc2Scroll((prev) => Math.min(arc2Items.length - maxVisibleItems, prev + 1));
+      setArc2Scroll((prev) => Math.min(Math.max(0, arc2Items.length - maxVisibleItems), prev + 1));
     } else {
       setArc2Scroll((prev) => Math.max(0, prev - 1));
     }
@@ -171,10 +174,18 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
   const handleArc3Wheel = (e: React.WheelEvent) => {
     if (focusedArc !== 3) return;
     e.preventDefault();
+    e.stopPropagation();
     if (e.deltaY > 0) {
-      setArc3Scroll((prev) => Math.min(selectedFolderNotes.length - maxVisibleItems, prev + 1));
+      setArc3Scroll((prev) => Math.min(Math.max(0, selectedFolderNotes.length - maxVisibleItems), prev + 1));
     } else {
       setArc3Scroll((prev) => Math.max(0, prev - 1));
+    }
+  };
+
+  // Handler to prevent page scroll when any arc is focused
+  const handleContainerWheel = (e: React.WheelEvent) => {
+    if (focusedArc !== null) {
+      e.preventDefault();
     }
   };
 
@@ -230,7 +241,11 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
   };
 
   return (
-    <div ref={containerRef} className="relative w-full h-[calc(100vh-180px)] min-h-[500px] overflow-hidden">
+    <div
+      ref={containerRef}
+      className="relative w-full h-[calc(100vh-180px)] min-h-[500px] overflow-hidden"
+      onWheel={handleContainerWheel}
+    >
       {/* SVG for semi-circle arcs */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none">
         <defs>
