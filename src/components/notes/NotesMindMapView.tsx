@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { FolderOpen, Sparkles } from "lucide-react";
+import { FolderOpen, Sparkles, ChevronUp, ChevronDown } from "lucide-react";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +30,11 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 1000, height: 600 });
 
+  // Scroll offsets for each arc
+  const [arc1Scroll, setArc1Scroll] = useState(0);
+  const [arc2Scroll, setArc2Scroll] = useState(0);
+  const [arc3Scroll, setArc3Scroll] = useState(0);
+
   const sortedGroups = useMemo(() => [...groups].sort((a, b) => a.sortOrder - b.sortOrder), [groups]);
 
   useEffect(() => {
@@ -46,28 +51,26 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
     return () => window.removeEventListener("resize", updateDimensions);
   }, []);
 
+  // Reset scroll when selection changes
+  useEffect(() => {
+    setArc2Scroll(0);
+  }, [selectedGroup]);
+
+  useEffect(() => {
+    setArc3Scroll(0);
+  }, [selectedFolder]);
+
   // Arc center (left side of screen)
   const arcCenterX = 100;
   const arcCenterY = dimensions.height / 2;
 
   // Arc radii for semi-circles
-  const arc1Radius = 160; // Groups arc
-  const arc2Radius = 340; // Entries arc
-  const arc3Radius = 500; // Folder notes arc
+  const arc1Radius = 160;
+  const arc2Radius = 340;
+  const arc3Radius = 500;
 
-  // Calculate position on semi-circle (right side only: -90° to +90°)
-  const getSemiCirclePosition = (index: number, total: number, radius: number) => {
-    // Spread items from -80° to +80° (top to bottom on right side)
-    const startAngle = -80 * (Math.PI / 180);
-    const endAngle = 80 * (Math.PI / 180);
-    const angleRange = endAngle - startAngle;
-    const angle = startAngle + (index / Math.max(total - 1, 1)) * angleRange;
-
-    return {
-      x: arcCenterX + radius * Math.cos(angle),
-      y: arcCenterY + radius * Math.sin(angle),
-    };
-  };
+  // Max visible items per arc
+  const maxVisibleItems = 6;
 
   // Get data for selected group
   const selectedGroupData = useMemo(() => {
@@ -99,6 +102,31 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
     return items;
   }, [selectedGroupData]);
 
+  // Get visible items with scroll
+  const getVisibleItems = <T,>(items: T[], scrollOffset: number, maxVisible: number): T[] => {
+    const start = scrollOffset;
+    const end = Math.min(start + maxVisible, items.length);
+    return items.slice(start, end);
+  };
+
+  // Visible items for each arc
+  const visibleGroups = getVisibleItems(sortedGroups, arc1Scroll, maxVisibleItems);
+  const visibleArc2Items = getVisibleItems(arc2Items, arc2Scroll, maxVisibleItems);
+  const visibleFolderNotes = getVisibleItems(selectedFolderNotes, arc3Scroll, maxVisibleItems);
+
+  // Calculate position on semi-circle
+  const getSemiCirclePosition = (index: number, total: number, radius: number) => {
+    const startAngle = -70 * (Math.PI / 180);
+    const endAngle = 70 * (Math.PI / 180);
+    const angleRange = endAngle - startAngle;
+    const angle = startAngle + (index / Math.max(total - 1, 1)) * angleRange;
+
+    return {
+      x: arcCenterX + radius * Math.cos(angle),
+      y: arcCenterY + radius * Math.sin(angle),
+    };
+  };
+
   // SVG arc path for semi-circle
   const createArcPath = (radius: number, startAngle: number, endAngle: number) => {
     const start = {
@@ -109,17 +137,66 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
       x: arcCenterX + radius * Math.cos(endAngle),
       y: arcCenterY + radius * Math.sin(endAngle),
     };
-    const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
-
-    return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y}`;
+    return `M ${start.x} ${start.y} A ${radius} ${radius} 0 0 1 ${end.x} ${end.y}`;
   };
 
-  const arc1Path = createArcPath(arc1Radius, (-80 * Math.PI) / 180, (80 * Math.PI) / 180);
-  const arc2Path = createArcPath(arc2Radius, (-70 * Math.PI) / 180, (70 * Math.PI) / 180);
+  const arc1Path = createArcPath(arc1Radius, (-70 * Math.PI) / 180, (70 * Math.PI) / 180);
+  const arc2Path = createArcPath(arc2Radius, (-65 * Math.PI) / 180, (65 * Math.PI) / 180);
   const arc3Path = createArcPath(arc3Radius, (-60 * Math.PI) / 180, (60 * Math.PI) / 180);
 
+  // Scroll controls component
+  const ScrollControls = ({
+    onScrollUp,
+    onScrollDown,
+    canScrollUp,
+    canScrollDown,
+    posX,
+    radius,
+  }: {
+    onScrollUp: () => void;
+    onScrollDown: () => void;
+    canScrollUp: boolean;
+    canScrollDown: boolean;
+    posX: number;
+    radius: number;
+  }) => {
+    const topPos = getSemiCirclePosition(0, 1, radius);
+    const bottomPos = getSemiCirclePosition(1, 2, radius);
+
+    return (
+      <>
+        {canScrollUp && (
+          <button
+            onClick={onScrollUp}
+            className="absolute z-30 p-1.5 rounded-full bg-card/90 border border-border shadow-md hover:bg-muted hover:scale-110 transition-all"
+            style={{
+              left: posX,
+              top: arcCenterY - radius - 30,
+              transform: "translate(-50%, 0)",
+            }}
+          >
+            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+          </button>
+        )}
+        {canScrollDown && (
+          <button
+            onClick={onScrollDown}
+            className="absolute z-30 p-1.5 rounded-full bg-card/90 border border-border shadow-md hover:bg-muted hover:scale-110 transition-all"
+            style={{
+              left: posX,
+              top: arcCenterY + radius + 10,
+              transform: "translate(-50%, 0)",
+            }}
+          >
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          </button>
+        )}
+      </>
+    );
+  };
+
   return (
-    <div ref={containerRef} className="relative w-full h-[calc(100vh-180px)] min-h-[500px] overflow-auto">
+    <div ref={containerRef} className="relative w-full h-[calc(100vh-180px)] min-h-[500px] overflow-hidden">
       {/* SVG for semi-circle arcs */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none">
         <defs>
@@ -140,24 +217,22 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
           </linearGradient>
         </defs>
 
-        {/* Arc 1 - Groups */}
+        {/* Arc 1 */}
         <path d={arc1Path} fill="none" stroke="currentColor" strokeWidth="3" className="text-border" />
         <path d={arc1Path} fill="none" stroke="url(#arcGrad1)" strokeWidth="8" opacity="0.5" />
 
-        {/* Arc 2 - Entries (when group selected) */}
+        {/* Arc 2 */}
         {selectedGroup && (
-          <>
-            <path
-              d={arc2Path}
-              fill="none"
-              stroke="url(#arcGrad2)"
-              strokeWidth="4"
-              className="animate-in fade-in duration-500"
-            />
-          </>
+          <path
+            d={arc2Path}
+            fill="none"
+            stroke="url(#arcGrad2)"
+            strokeWidth="4"
+            className="animate-in fade-in duration-500"
+          />
         )}
 
-        {/* Arc 3 - Folder notes (when folder selected) */}
+        {/* Arc 3 */}
         {selectedFolder && (
           <path
             d={arc3Path}
@@ -167,36 +242,12 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
             className="animate-in fade-in duration-500"
           />
         )}
-
-        {/* Connection line from NOTES to selected group */}
-        {selectedGroup &&
-          (() => {
-            const selectedIndex = sortedGroups.findIndex((g) => g.id === selectedGroup);
-            if (selectedIndex === -1) return null;
-            const pos = getSemiCirclePosition(selectedIndex, sortedGroups.length, arc1Radius);
-            return (
-              <line
-                x1={arcCenterX + 60}
-                y1={arcCenterY}
-                x2={pos.x - 40}
-                y2={pos.y}
-                stroke={activeColor}
-                strokeWidth="2"
-                opacity="0.5"
-                className="animate-in fade-in duration-300"
-              />
-            );
-          })()}
       </svg>
 
-      {/* NOTES Hub - Left side */}
+      {/* NOTES Hub */}
       <div
         className="absolute group cursor-pointer z-20"
-        style={{
-          left: arcCenterX,
-          top: arcCenterY,
-          transform: "translate(-50%, -50%)",
-        }}
+        style={{ left: arcCenterX, top: arcCenterY, transform: "translate(-50%, -50%)" }}
       >
         <div className="absolute inset-0 bg-primary/30 rounded-full blur-xl opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
         <div className="relative px-6 py-4 rounded-full bg-card border-2 border-primary/40 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300">
@@ -204,9 +255,18 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
         </div>
       </div>
 
-      {/* Arc 1 - Groups along semi-circle */}
-      {sortedGroups.map((group, index) => {
-        const pos = getSemiCirclePosition(index, sortedGroups.length, arc1Radius);
+      {/* Arc 1 - Groups (Scrollable) */}
+      <ScrollControls
+        onScrollUp={() => setArc1Scroll(Math.max(0, arc1Scroll - 1))}
+        onScrollDown={() => setArc1Scroll(Math.min(sortedGroups.length - maxVisibleItems, arc1Scroll + 1))}
+        canScrollUp={arc1Scroll > 0}
+        canScrollDown={arc1Scroll < sortedGroups.length - maxVisibleItems}
+        posX={arcCenterX + arc1Radius * 0.7}
+        radius={arc1Radius * 0.85}
+      />
+
+      {visibleGroups.map((group, index) => {
+        const pos = getSemiCirclePosition(index, Math.min(visibleGroups.length, maxVisibleItems), arc1Radius);
         const isSelected = selectedGroup === group.id;
         const isHovered = hoveredItem === `group-${group.id}`;
         const color = GROUP_COLORS[group.id] || "#64748b";
@@ -214,12 +274,8 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
         return (
           <div
             key={group.id}
-            className="absolute z-10 transition-all duration-400 ease-out"
-            style={{
-              left: pos.x,
-              top: pos.y,
-              transform: "translate(-50%, -50%)",
-            }}
+            className="absolute z-10 transition-all duration-300 ease-out"
+            style={{ left: pos.x, top: pos.y, transform: "translate(-50%, -50%)" }}
           >
             <button
               onClick={() => {
@@ -241,7 +297,7 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
               )}
               <span
                 className={cn(
-                  "relative text-sm font-semibold transition-colors",
+                  "relative text-sm font-semibold",
                   isSelected || isHovered ? "text-foreground" : "text-muted-foreground",
                 )}
                 style={{ color: isSelected ? color : undefined }}
@@ -253,38 +309,40 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
         );
       })}
 
-      {/* Arc 2 - Entries (Folders + Direct Notes) */}
+      {/* Arc 2 - Entries (Scrollable) */}
+      {selectedGroup && (
+        <ScrollControls
+          onScrollUp={() => setArc2Scroll(Math.max(0, arc2Scroll - 1))}
+          onScrollDown={() => setArc2Scroll(Math.min(arc2Items.length - maxVisibleItems, arc2Scroll + 1))}
+          canScrollUp={arc2Scroll > 0}
+          canScrollDown={arc2Scroll < arc2Items.length - maxVisibleItems}
+          posX={arcCenterX + arc2Radius * 0.7}
+          radius={arc2Radius * 0.85}
+        />
+      )}
+
       {selectedGroup &&
-        arc2Items.map((entry, index) => {
-          const pos = getSemiCirclePosition(index, Math.max(arc2Items.length, 2), arc2Radius);
+        visibleArc2Items.map((entry, index) => {
+          const pos = getSemiCirclePosition(index, Math.min(visibleArc2Items.length, maxVisibleItems), arc2Radius);
           const isFolder = entry.type === "folder";
           const isSelected = isFolder && selectedFolder === entry.id;
-          const isHovered = hoveredItem === `entry-${entry.id}`;
 
           if (isFolder) {
             const folder = entry.data as NoteFolder;
             const folderNotes = notes.filter((n) => n.folderId === folder.id);
-
             return (
               <div
                 key={entry.id}
-                className="absolute z-10 transition-all duration-400 ease-out animate-in fade-in slide-in-from-left-4"
-                style={{
-                  left: pos.x,
-                  top: pos.y,
-                  transform: "translate(-50%, -50%)",
-                  animationDelay: `${index * 60}ms`,
-                }}
+                className="absolute z-10 transition-all duration-300 ease-out animate-in fade-in"
+                style={{ left: pos.x, top: pos.y, transform: "translate(-50%, -50%)" }}
               >
                 <button
                   onClick={() => setSelectedFolder(isSelected ? null : folder.id)}
-                  onMouseEnter={() => setHoveredItem(`entry-${entry.id}`)}
-                  onMouseLeave={() => setHoveredItem(null)}
                   className={cn(
                     "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300 whitespace-nowrap",
                     isSelected
-                      ? "bg-cyan-500/20 border-2 border-cyan-400 shadow-lg scale-105"
-                      : "bg-card/90 hover:bg-card hover:shadow-md hover:scale-105 border border-border/50",
+                      ? "bg-cyan-500/20 border-2 border-cyan-400 shadow-lg"
+                      : "bg-card/90 hover:bg-card hover:shadow-md border border-border/50",
                   )}
                 >
                   <FolderOpen className={cn("h-4 w-4", isSelected ? "text-cyan-500" : "text-cyan-400")} />
@@ -299,21 +357,13 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
           return (
             <div
               key={entry.id}
-              className="absolute z-10 transition-all duration-400 ease-out animate-in fade-in slide-in-from-left-4"
-              style={{
-                left: pos.x,
-                top: pos.y,
-                transform: "translate(-50%, -50%)",
-                animationDelay: `${index * 60}ms`,
-              }}
+              className="absolute z-10 transition-all duration-300 ease-out animate-in fade-in"
+              style={{ left: pos.x, top: pos.y, transform: "translate(-50%, -50%)" }}
             >
               <button
                 onClick={() => onNoteClick(note)}
-                onMouseEnter={() => setHoveredItem(`entry-${entry.id}`)}
-                onMouseLeave={() => setHoveredItem(null)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg transition-all duration-300 whitespace-nowrap",
-                  "bg-card/90 hover:bg-card hover:shadow-md hover:scale-105 border border-border/50",
+                  "px-3 py-1.5 rounded-lg transition-all duration-300 whitespace-nowrap bg-card/90 hover:bg-card hover:shadow-md border border-border/50",
                   selectedNoteId === note.id && "bg-primary/15 border-primary",
                 )}
               >
@@ -323,29 +373,31 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
           );
         })}
 
-      {/* Arc 3 - Folder Notes */}
-      {selectedFolder &&
-        selectedFolderNotes.map((note, index) => {
-          const pos = getSemiCirclePosition(index, Math.max(selectedFolderNotes.length, 2), arc3Radius);
+      {/* Arc 3 - Folder Notes (Scrollable) */}
+      {selectedFolder && (
+        <ScrollControls
+          onScrollUp={() => setArc3Scroll(Math.max(0, arc3Scroll - 1))}
+          onScrollDown={() => setArc3Scroll(Math.min(selectedFolderNotes.length - maxVisibleItems, arc3Scroll + 1))}
+          canScrollUp={arc3Scroll > 0}
+          canScrollDown={arc3Scroll < selectedFolderNotes.length - maxVisibleItems}
+          posX={arcCenterX + arc3Radius * 0.7}
+          radius={arc3Radius * 0.8}
+        />
+      )}
 
+      {selectedFolder &&
+        visibleFolderNotes.map((note, index) => {
+          const pos = getSemiCirclePosition(index, Math.min(visibleFolderNotes.length, maxVisibleItems), arc3Radius);
           return (
             <div
               key={note.id}
-              className="absolute z-10 transition-all duration-400 ease-out animate-in fade-in slide-in-from-left-4"
-              style={{
-                left: pos.x,
-                top: pos.y,
-                transform: "translate(-50%, -50%)",
-                animationDelay: `${index * 50}ms`,
-              }}
+              className="absolute z-10 transition-all duration-300 ease-out animate-in fade-in"
+              style={{ left: pos.x, top: pos.y, transform: "translate(-50%, -50%)" }}
             >
               <button
                 onClick={() => onNoteClick(note)}
-                onMouseEnter={() => setHoveredItem(`note-${note.id}`)}
-                onMouseLeave={() => setHoveredItem(null)}
                 className={cn(
-                  "px-3 py-1.5 rounded-md transition-all duration-300 whitespace-nowrap",
-                  "bg-card/90 hover:bg-card hover:shadow-md hover:scale-105 border border-cyan-300/50",
+                  "px-3 py-1.5 rounded-md transition-all duration-300 whitespace-nowrap bg-card/90 hover:bg-card hover:shadow-md border border-cyan-300/50",
                   selectedNoteId === note.id && "bg-cyan-500/20 border-cyan-400",
                 )}
               >
@@ -369,7 +421,7 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
       {/* Bottom hint */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 text-xs text-muted-foreground bg-card/90 backdrop-blur-sm px-4 py-2 rounded-full border border-border/50 shadow-sm z-20">
         <Sparkles className="h-3 w-3 text-primary animate-pulse" />
-        <span>Click groups to see entries • Click folders for notes</span>
+        <span>Click groups • Click folders • Use arrows to scroll</span>
       </div>
     </div>
   );
