@@ -248,7 +248,7 @@ function StatCard({
 }) {
   return (
     <div
-      className="rounded-sm border border-border/40 bg-card shadow-sm hover:shadow-md transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
+      className="rounded-md border border-border/40 bg-card shadow-sm hover:shadow-md transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
       style={{ animationDelay: `${index * 75}ms`, animationFillMode: "backwards" }}
     >
       <div className="p-4 flex items-start justify-between gap-3">
@@ -257,7 +257,7 @@ function StatCard({
           <p className="mt-1.5 text-xl font-semibold text-foreground">{value}</p>
           {hint && <p className="mt-1 text-xs text-muted-foreground/60">{hint}</p>}
         </div>
-        <div className="h-10 w-10 rounded-sm bg-muted/30 flex items-center justify-center text-muted-foreground shrink-0">
+        <div className="h-10 w-10 rounded-md bg-muted/30 flex items-center justify-center text-muted-foreground shrink-0">
           {icon}
         </div>
       </div>
@@ -539,7 +539,7 @@ export default function Notes() {
             </div>
 
             {/* Sleek Unified Toolbar */}
-            <div className="rounded-sm border border-border/40 bg-card/90 backdrop-blur-md shadow-sm">
+            <div className="rounded-md border border-border/40 bg-card/90 backdrop-blur-md shadow-sm">
               <div className="p-3 flex flex-wrap items-center gap-3">
                 {/* View Mode Switcher */}
                 <div className="flex items-center gap-2">
@@ -556,17 +556,17 @@ export default function Notes() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search..."
-                    className="h-9 rounded-sm pl-9 pr-4 text-sm bg-background/70 border-border/40 focus:bg-background focus:ring-1 focus:ring-primary/20 transition-all"
+                    className="h-9 rounded-md pl-9 pr-4 text-sm bg-background/70 border-border/40 focus:bg-background focus:ring-1 focus:ring-primary/20 transition-all"
                   />
                 </div>
 
                 {/* Sort Select - Pill Shape */}
                 <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                  <SelectTrigger className="h-9 rounded-sm w-[130px] text-xs bg-background/70 border-border/40 hover:bg-background transition-colors">
+                  <SelectTrigger className="h-9 rounded-md w-[130px] text-xs bg-background/70 border-border/40 hover:bg-background transition-colors">
                     <ArrowUpDown className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
                     <SelectValue placeholder="Sort" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-sm">
+                  <SelectContent className="rounded-md">
                     <SelectItem value="updatedAt">Last edited</SelectItem>
                     <SelectItem value="createdAt">Created</SelectItem>
                     <SelectItem value="title">A–Z</SelectItem>
@@ -578,42 +578,37 @@ export default function Notes() {
 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2">
-                  {/* Add Section Button */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9 px-3 rounded-sm border-border/50 bg-background/70 hover:bg-background hover:border-primary/40 transition-all gap-2"
-                    onClick={() => setSettingsOpen(true)}
-                  >
-                    <FolderPlus className="h-4 w-4" />
-                    <span className="hidden sm:inline text-xs uppercase tracking-wide">Add Section</span>
-                  </Button>
-
-                  {/* New Note Button - Animated with theme */}
+                  {/* New Note Button - Creative AI Aurora Animation */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
                         size="sm"
-                        className="group relative h-9 px-4 rounded-sm overflow-hidden bg-primary text-primary-foreground shadow-sm hover:shadow-lg transition-all duration-300 gap-2"
+                        className="group relative h-9 px-4 rounded-md overflow-hidden bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg hover:shadow-xl transition-all duration-500 gap-2 border-0"
                       >
-                        {/* Animated shimmer overlay */}
-                        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out" />
+                        {/* Animated aurora background */}
+                        <span className="absolute inset-0 bg-gradient-to-r from-violet-500 via-pink-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse" />
+                        {/* Shimmer sweep */}
+                        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
+                        {/* Sparkle particles */}
+                        <span className="absolute top-1 right-2 w-1 h-1 bg-white rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping" />
+                        <span className="absolute bottom-2 left-3 w-0.5 h-0.5 bg-white rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping animation-delay-200" />
+
                         <Plus className="h-4 w-4 relative z-10" />
-                        <span className="hidden sm:inline text-xs uppercase tracking-wide font-medium relative z-10">
+                        <span className="hidden sm:inline text-xs uppercase tracking-wider font-semibold relative z-10">
                           New Note
                         </span>
-                        <ChevronDown className="h-3.5 w-3.5 opacity-70 relative z-10" />
+                        <ChevronDown className="h-3.5 w-3.5 opacity-80 relative z-10" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56 rounded-sm p-1">
-                      <DropdownMenuItem onClick={handleNewNoteWithOptions} className="py-2 rounded-sm cursor-pointer">
+                    <DropdownMenuContent align="end" className="w-56 rounded-md p-1">
+                      <DropdownMenuItem onClick={handleNewNoteWithOptions} className="py-2 rounded-md cursor-pointer">
                         <FileText className="h-4 w-4 mr-3 text-muted-foreground" />
                         <div className="flex flex-col">
                           <span className="text-sm font-medium">New Note</span>
                           <span className="text-xs text-muted-foreground">Choose location</span>
                         </div>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleQuickNote} className="py-2 rounded-sm cursor-pointer">
+                      <DropdownMenuItem onClick={handleQuickNote} className="py-2 rounded-md cursor-pointer">
                         <Zap className="h-4 w-4 mr-3 text-muted-foreground" />
                         <div className="flex flex-col">
                           <span className="text-sm font-medium">Quick Note</span>

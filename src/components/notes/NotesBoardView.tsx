@@ -140,14 +140,23 @@ export function NotesBoardView({
                 </div>
               </div>
 
-              {/* Add note button only */}
-              <button
-                onClick={() => onAddNote(group.id, null)}
-                className="w-full flex items-center justify-center gap-1.5 px-2 py-2 mb-2 text-xs text-muted-foreground hover:text-foreground bg-background/60 hover:bg-background/90 rounded-sm border border-dashed border-border/50 hover:border-border transition-all"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Add note
-              </button>
+              {/* Add note + Add section buttons - Half half */}
+              <div className="flex gap-2 mb-2">
+                <button
+                  onClick={() => onAddNote(group.id, null)}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs text-muted-foreground hover:text-foreground bg-background/60 hover:bg-background/90 rounded-md border border-dashed border-border/50 hover:border-border transition-all"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add note
+                </button>
+                <button
+                  onClick={() => setNewFolderGroupId(group.id)}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs text-muted-foreground hover:text-foreground bg-background/60 hover:bg-background/90 rounded-md border border-dashed border-border/50 hover:border-border transition-all"
+                >
+                  <FolderPlus className="h-3.5 w-3.5" />
+                  Add section
+                </button>
+              </div>
 
               {/* Notes list - Infinite scroll appearance */}
               <ScrollArea className="flex-1 h-full min-h-[calc(100vh-350px)]">
@@ -162,12 +171,11 @@ export function NotesBoardView({
                         onDragStart={(e) => handleDragStart(e, note.id)}
                         onDragEnd={handleDragEnd}
                         className={cn(
-                          "rounded-sm bg-card/95 backdrop-blur-sm border transition-all cursor-pointer shadow-sm group relative",
+                          "rounded-md bg-card/95 backdrop-blur-sm border transition-all cursor-pointer shadow-sm group relative",
                           selectedNoteId === note.id
                             ? "border-primary/50 ring-1 ring-primary/20"
                             : "border-border/20 hover:bg-card hover:shadow-md",
                           draggedNoteId === note.id && "opacity-50",
-                          note.isCompleted && "opacity-60",
                           note.isPinned && "border-l-2 border-l-primary/50",
                         )}
                         onClick={() => onNoteClick(note)}
@@ -177,44 +185,26 @@ export function NotesBoardView({
                             {/* Pin indicator */}
                             {note.isPinned && <Pin className="h-3 w-3 text-primary/70 shrink-0 mt-0.5" />}
 
-                            {/* Completion Ring */}
-                            <button
-                              onClick={(e) => toggleComplete(e, note)}
-                              className={cn(
-                                "w-4 h-4 rounded-full border-2 shrink-0 mt-0.5 transition-colors flex items-center justify-center",
-                                note.isCompleted
-                                  ? "bg-primary border-primary text-primary-foreground"
-                                  : "border-muted-foreground/30 hover:border-primary/60",
-                              )}
-                            >
-                              {note.isCompleted && <div className="w-1.5 h-1.5 bg-current rounded-full" />}
-                            </button>
-
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between">
-                                <h4
-                                  className={cn(
-                                    "text-sm text-foreground line-clamp-2 transition-all",
-                                    note.isCompleted && "line-through text-muted-foreground",
-                                  )}
-                                >
+                                <h4 className="text-sm text-foreground line-clamp-2 transition-all">
                                   {note.title || "Untitled"}
                                 </h4>
 
                                 {/* Options Menu */}
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
-                                    <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-muted/50 rounded-sm transition-opacity">
+                                    <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-muted/50 rounded-md transition-opacity">
                                       <MoreHorizontal className="h-3 w-3 text-muted-foreground" />
                                     </button>
                                   </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end" className="w-48 rounded-sm">
+                                  <DropdownMenuContent align="end" className="w-48 rounded-md">
                                     <DropdownMenuLabel>Note Options</DropdownMenuLabel>
 
                                     {/* Pin/Unpin option */}
                                     <DropdownMenuItem
                                       onClick={(e) => togglePin(e, note)}
-                                      className="rounded-sm cursor-pointer"
+                                      className="rounded-md cursor-pointer"
                                     >
                                       <Pin className={cn("h-3 w-3 mr-2", note.isPinned && "text-primary")} />
                                       {note.isPinned ? "Unpin Note" : "Pin Note"}
@@ -225,7 +215,7 @@ export function NotesBoardView({
                                         <ArrowRight className="h-3 w-3 mr-2" />
                                         Change Group
                                       </DropdownMenuSubTrigger>
-                                      <DropdownMenuSubContent className="rounded-sm">
+                                      <DropdownMenuSubContent className="rounded-md">
                                         {sortedGroups
                                           .filter((g) => g.id !== group.id)
                                           .map((g) => (
@@ -235,7 +225,7 @@ export function NotesBoardView({
                                                 e.stopPropagation();
                                                 if (onUpdateNote) onUpdateNote({ ...note, groupId: g.id });
                                               }}
-                                              className="rounded-sm"
+                                              className="rounded-md"
                                             >
                                               <span
                                                 className="w-2 h-2 rounded-full mr-2"
@@ -248,7 +238,7 @@ export function NotesBoardView({
                                     </DropdownMenuSub>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
-                                      className="text-destructive focus:text-destructive rounded-sm"
+                                      className="text-destructive focus:text-destructive rounded-md"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         if (onDeleteNote) onDeleteNote(note.id);
