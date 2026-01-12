@@ -115,7 +115,7 @@ export function NotesBoardView({
 
   return (
     <ScrollArea className="w-full">
-      <div className="flex gap-5 pb-6 min-w-max">
+      <div className="flex gap-5 pb-6 pl-1 pr-4 min-w-max">
         {sortedGroups.map((group) => {
           const groupNotes = notes.filter((n) => n.groupId === group.id);
           const groupFolders = folders.filter((f) => f.groupId === group.id);
