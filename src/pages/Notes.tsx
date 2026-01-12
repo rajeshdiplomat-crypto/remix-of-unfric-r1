@@ -234,32 +234,49 @@ function isSameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
+// Modern stat card with glassmorphism and gradient accent
 function StatCard({
   label,
   value,
   icon,
   hint,
   index = 0,
+  accentColor = "primary",
 }: {
   label: string;
   value: string;
   icon: React.ReactNode;
   hint?: string;
   index?: number;
+  accentColor?: string;
 }) {
+  const gradients: Record<string, string> = {
+    primary: "from-violet-500/20 to-indigo-500/10",
+    blue: "from-blue-500/20 to-cyan-500/10",
+    green: "from-emerald-500/20 to-teal-500/10",
+    orange: "from-orange-500/20 to-amber-500/10",
+  };
+
   return (
     <div
-      className="rounded-lg border border-border/40 bg-card shadow-sm hover:shadow-md transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
+      className="group relative overflow-hidden rounded-2xl bg-card/60 backdrop-blur-xl border border-white/10 hover:border-white/20 shadow-sm hover:shadow-lg transition-all duration-500 animate-in fade-in slide-in-from-bottom-2"
       style={{ animationDelay: `${index * 75}ms`, animationFillMode: "backwards" }}
     >
-      <div className="p-4 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{label}</p>
-          <p className="mt-1.5 text-xl font-semibold text-foreground">{value}</p>
-          {hint && <p className="mt-1 text-xs text-muted-foreground/60">{hint}</p>}
-        </div>
-        <div className="h-10 w-10 rounded-lg bg-muted/30 flex items-center justify-center text-muted-foreground shrink-0">
+      {/* Gradient glow effect */}
+      <div
+        className={`absolute inset-0 bg-gradient-to-br ${gradients[accentColor] || gradients.primary} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+      />
+
+      <div className="relative p-5 flex items-center gap-4">
+        {/* Icon with gradient background */}
+        <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center text-primary/70 group-hover:scale-110 transition-transform duration-300 shrink-0">
           {icon}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">{label}</p>
+          <p className="mt-1 text-2xl font-light text-foreground tracking-tight">{value}</p>
+          {hint && <p className="mt-0.5 text-[10px] text-muted-foreground/40">{hint}</p>}
         </div>
       </div>
     </div>
@@ -543,266 +560,300 @@ export default function Notes() {
               </p>
             </div>
 
-            {/* Sleek Unified Toolbar */}
-            <div className="rounded-lg border border-border/40 bg-card/90 backdrop-blur-md shadow-sm">
-              <div className="p-3 flex flex-wrap items-center gap-3">
-                {/* View Mode Switcher */}
-                <div className="flex items-center gap-2">
-                  <NotesViewSwitcher currentView={notesView} onViewChange={setNotesView} />
-                </div>
+            {/* Modern Floating Toolbar */}
+            <div className="relative">
+              {/* Glassmorphism toolbar container */}
+              <div className="rounded-2xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg shadow-black/5">
+                <div className="p-2 flex flex-wrap items-center gap-2">
+                  {/* View Mode Switcher - Pill segment */}
+                  <div className="flex items-center bg-muted/40 rounded-xl p-1">
+                    <NotesViewSwitcher currentView={notesView} onViewChange={setNotesView} />
+                  </div>
 
-                {/* Divider */}
-                <div className="hidden sm:block w-px h-6 bg-border/30" />
+                  {/* Search - Modern floating input */}
+                  <div className="relative flex-1 min-w-[140px] max-w-[280px]">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
+                    <Input
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search..."
+                      className="h-10 rounded-xl pl-10 pr-4 text-sm bg-muted/30 border-0 focus:bg-muted/50 focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/40"
+                    />
+                  </div>
 
-                {/* Search - Rounded Pill */}
-                <div className="relative flex-1 min-w-[140px] max-w-[260px]">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
-                  <Input
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search..."
-                    className="h-9 rounded-lg pl-9 pr-4 text-sm bg-background/70 border-border/40 focus:bg-background focus:ring-1 focus:ring-primary/20 transition-all"
-                  />
-                </div>
+                  {/* Sort Select - Minimal style */}
+                  <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+                    <SelectTrigger className="h-10 rounded-xl w-[140px] text-xs bg-muted/30 border-0 hover:bg-muted/50 transition-colors gap-2">
+                      <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/50" />
+                      <SelectValue placeholder="Sort" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-0 shadow-xl">
+                      <SelectItem value="updatedAt">Last edited</SelectItem>
+                      <SelectItem value="createdAt">Created</SelectItem>
+                      <SelectItem value="title">A–Z</SelectItem>
+                    </SelectContent>
+                  </Select>
 
-                {/* Sort Select - Pill Shape */}
-                <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                  <SelectTrigger className="h-9 rounded-lg w-[130px] text-xs bg-background/70 border-border/40 hover:bg-background transition-colors">
-                    <ArrowUpDown className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-                    <SelectValue placeholder="Sort" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-lg">
-                    <SelectItem value="updatedAt">Last edited</SelectItem>
-                    <SelectItem value="createdAt">Created</SelectItem>
-                    <SelectItem value="title">A–Z</SelectItem>
-                  </SelectContent>
-                </Select>
+                  {/* Spacer */}
+                  <div className="flex-1" />
 
-                {/* Spacer */}
-                <div className="flex-1" />
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2">
+                    {/* New Note Button - Creative AI Aurora Animation */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="sm"
+                          className="group relative h-9 px-4 rounded-lg overflow-hidden bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg hover:shadow-xl transition-all duration-500 gap-2 border-0"
+                        >
+                          {/* Animated aurora background */}
+                          <span className="absolute inset-0 bg-gradient-to-r from-violet-500 via-pink-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse" />
+                          {/* Shimmer sweep */}
+                          <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
+                          {/* Sparkle particles */}
+                          <span className="absolute top-1 right-2 w-1 h-1 bg-white rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping" />
+                          <span className="absolute bottom-2 left-3 w-0.5 h-0.5 bg-white rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping animation-delay-200" />
 
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2">
-                  {/* New Note Button - Creative AI Aurora Animation */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        size="sm"
-                        className="group relative h-9 px-4 rounded-lg overflow-hidden bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg hover:shadow-xl transition-all duration-500 gap-2 border-0"
-                      >
-                        {/* Animated aurora background */}
-                        <span className="absolute inset-0 bg-gradient-to-r from-violet-500 via-pink-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse" />
-                        {/* Shimmer sweep */}
-                        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
-                        {/* Sparkle particles */}
-                        <span className="absolute top-1 right-2 w-1 h-1 bg-white rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping" />
-                        <span className="absolute bottom-2 left-3 w-0.5 h-0.5 bg-white rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping animation-delay-200" />
+                          <Plus className="h-4 w-4 relative z-10" />
+                          <span className="hidden sm:inline text-xs uppercase tracking-wider font-semibold relative z-10">
+                            New Note
+                          </span>
+                          <ChevronDown className="h-3.5 w-3.5 opacity-80 relative z-10" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56 rounded-lg p-1">
+                        <DropdownMenuItem onClick={handleNewNoteWithOptions} className="py-2 rounded-lg cursor-pointer">
+                          <FileText className="h-4 w-4 mr-3 text-muted-foreground" />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">New Note</span>
+                            <span className="text-xs text-muted-foreground">Choose location</span>
+                          </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleQuickNote} className="py-2 rounded-lg cursor-pointer">
+                          <Zap className="h-4 w-4 mr-3 text-muted-foreground" />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">Quick Note</span>
+                            <span className="text-xs text-muted-foreground">Send to Inbox</span>
+                          </div>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
 
-                        <Plus className="h-4 w-4 relative z-10" />
-                        <span className="hidden sm:inline text-xs uppercase tracking-wider font-semibold relative z-10">
-                          New Note
-                        </span>
-                        <ChevronDown className="h-3.5 w-3.5 opacity-80 relative z-10" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56 rounded-lg p-1">
-                      <DropdownMenuItem onClick={handleNewNoteWithOptions} className="py-2 rounded-lg cursor-pointer">
-                        <FileText className="h-4 w-4 mr-3 text-muted-foreground" />
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium">New Note</span>
-                          <span className="text-xs text-muted-foreground">Choose location</span>
+                    {/* More Options Menu */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 rounded-lg hover:bg-muted/50 transition-all"
+                          title="More options"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-64 rounded-lg p-2">
+                        {/* Settings */}
+                        <DropdownMenuItem
+                          onClick={() => setSettingsOpen(true)}
+                          className="py-2 rounded-lg cursor-pointer"
+                        >
+                          <Settings className="h-4 w-4 mr-3 text-muted-foreground" />
+                          <span>Group Settings</span>
+                        </DropdownMenuItem>
+
+                        {/* Theme Toggle */}
+                        <DropdownMenuItem
+                          onClick={() => setTheme(theme.isDark ? "calm-blue" : "midnight-dark")}
+                          className="py-2 rounded-lg cursor-pointer"
+                        >
+                          {theme.isDark ? (
+                            <Sun className="h-4 w-4 mr-3 text-amber-500" />
+                          ) : (
+                            <Moon className="h-4 w-4 mr-3 text-indigo-500" />
+                          )}
+                          <span>{theme.isDark ? "Light Mode" : "Dark Mode"}</span>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator className="my-2" />
+
+                        {/* Color Themes */}
+                        <div className="px-2 py-2">
+                          <div className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                            <Palette className="h-3.5 w-3.5" />
+                            Color Themes
+                          </div>
+                          <div className="grid grid-cols-6 gap-2">
+                            {COLOR_THEMES.map((colorTheme) => (
+                              <button
+                                key={colorTheme.id}
+                                onClick={() => handleBackgroundChange(colorTheme.gradient)}
+                                className={cn(
+                                  "w-8 h-8 rounded-full transition-all hover:scale-110 shadow-sm",
+                                  backgroundUrl === colorTheme.gradient
+                                    ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                                    : "",
+                                )}
+                                style={{ background: colorTheme.gradient }}
+                                title={colorTheme.name}
+                              />
+                            ))}
+                          </div>
                         </div>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleQuickNote} className="py-2 rounded-lg cursor-pointer">
-                        <Zap className="h-4 w-4 mr-3 text-muted-foreground" />
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium">Quick Note</span>
-                          <span className="text-xs text-muted-foreground">Send to Inbox</span>
+
+                        <DropdownMenuSeparator className="my-2" />
+
+                        {/* Background Images */}
+                        <div className="px-2 py-2">
+                          <div className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                            <Image className="h-3.5 w-3.5" />
+                            Background Image
+                          </div>
+                          <div className="grid grid-cols-4 gap-2">
+                            {BACKGROUND_PRESETS.map((bg) => (
+                              <button
+                                key={bg.id}
+                                onClick={() => handleBackgroundChange(bg.url)}
+                                className={cn(
+                                  "relative aspect-[4/3] rounded-lg overflow-hidden border-2 transition-all hover:scale-105",
+                                  backgroundUrl === bg.url
+                                    ? "border-primary shadow-lg"
+                                    : "border-transparent hover:border-border",
+                                )}
+                                title={bg.name}
+                              >
+                                {bg.url ? (
+                                  <img src={bg.url} alt={bg.name} className="h-full w-full object-cover" />
+                                ) : (
+                                  <div className="h-full w-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
+                                    <span className="text-[9px] font-medium text-muted-foreground">None</span>
+                                  </div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
 
-                  {/* More Options Menu */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9 rounded-lg hover:bg-muted/50 transition-all"
-                        title="More options"
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-64 rounded-lg p-2">
-                      {/* Settings */}
-                      <DropdownMenuItem
-                        onClick={() => setSettingsOpen(true)}
-                        className="py-2 rounded-lg cursor-pointer"
-                      >
-                        <Settings className="h-4 w-4 mr-3 text-muted-foreground" />
-                        <span>Group Settings</span>
-                      </DropdownMenuItem>
+                        <DropdownMenuSeparator className="my-2" />
 
-                      {/* Theme Toggle */}
-                      <DropdownMenuItem
-                        onClick={() => setTheme(theme.isDark ? "calm-blue" : "midnight-dark")}
-                        className="py-2 rounded-lg cursor-pointer"
-                      >
-                        {theme.isDark ? (
-                          <Sun className="h-4 w-4 mr-3 text-amber-500" />
-                        ) : (
-                          <Moon className="h-4 w-4 mr-3 text-indigo-500" />
-                        )}
-                        <span>{theme.isDark ? "Light Mode" : "Dark Mode"}</span>
-                      </DropdownMenuItem>
-
-                      <DropdownMenuSeparator className="my-2" />
-
-                      {/* Color Themes */}
-                      <div className="px-2 py-2">
-                        <div className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-                          <Palette className="h-3.5 w-3.5" />
-                          Color Themes
-                        </div>
-                        <div className="grid grid-cols-6 gap-2">
-                          {COLOR_THEMES.map((colorTheme) => (
-                            <button
-                              key={colorTheme.id}
-                              onClick={() => handleBackgroundChange(colorTheme.gradient)}
-                              className={cn(
-                                "w-8 h-8 rounded-full transition-all hover:scale-110 shadow-sm",
-                                backgroundUrl === colorTheme.gradient
-                                  ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
-                                  : "",
-                              )}
-                              style={{ background: colorTheme.gradient }}
-                              title={colorTheme.name}
+                        {/* Upload Custom Image */}
+                        <div className="px-2 py-2">
+                          <label className="flex items-center gap-3 py-2.5 px-2 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                            <Upload className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">Upload Custom Image</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (event) => {
+                                    const dataUrl = event.target?.result as string;
+                                    handleBackgroundChange(dataUrl);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
                             />
-                          ))}
+                          </label>
                         </div>
-                      </div>
-
-                      <DropdownMenuSeparator className="my-2" />
-
-                      {/* Background Images */}
-                      <div className="px-2 py-2">
-                        <div className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-                          <Image className="h-3.5 w-3.5" />
-                          Background Image
-                        </div>
-                        <div className="grid grid-cols-4 gap-2">
-                          {BACKGROUND_PRESETS.map((bg) => (
-                            <button
-                              key={bg.id}
-                              onClick={() => handleBackgroundChange(bg.url)}
-                              className={cn(
-                                "relative aspect-[4/3] rounded-lg overflow-hidden border-2 transition-all hover:scale-105",
-                                backgroundUrl === bg.url
-                                  ? "border-primary shadow-lg"
-                                  : "border-transparent hover:border-border",
-                              )}
-                              title={bg.name}
-                            >
-                              {bg.url ? (
-                                <img src={bg.url} alt={bg.name} className="h-full w-full object-cover" />
-                              ) : (
-                                <div className="h-full w-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
-                                  <span className="text-[9px] font-medium text-muted-foreground">None</span>
-                                </div>
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <DropdownMenuSeparator className="my-2" />
-
-                      {/* Upload Custom Image */}
-                      <div className="px-2 py-2">
-                        <label className="flex items-center gap-3 py-2.5 px-2 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                          <Upload className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">Upload Custom Image</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onload = (event) => {
-                                  const dataUrl = event.target?.result as string;
-                                  handleBackgroundChange(dataUrl);
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }}
-                          />
-                        </label>
-                      </div>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
-              </div>
 
-              {/* Filter chips - Pill style */}
-              <div className="px-4 pb-4">
-                <div className="flex gap-2 overflow-auto no-scrollbar">
-                  <button
-                    onClick={() => setFilterGroupId("all")}
-                    className={cn(
-                      "h-6 px-0 text-[10px] uppercase tracking-wider font-light whitespace-nowrap transition-colors border-b",
-                      filterGroupId === "all"
-                        ? "text-foreground border-foreground"
-                        : "text-muted-foreground hover:text-foreground border-transparent",
-                    )}
-                  >
-                    All
-                  </button>
+                {/* Filter chips - Modern pill tabs */}
+                <div className="px-3 pb-3">
+                  <div className="flex gap-1.5 overflow-auto no-scrollbar">
+                    <button
+                      onClick={() => setFilterGroupId("all")}
+                      className={cn(
+                        "h-8 px-4 text-[11px] uppercase tracking-wide font-medium whitespace-nowrap transition-all rounded-full",
+                        filterGroupId === "all"
+                          ? "bg-foreground text-background shadow-sm"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                      )}
+                    >
+                      All
+                    </button>
 
-                  {sortedGroups.map((group) => {
-                    const active = filterGroupId === group.id;
-                    return (
-                      <button
-                        key={group.id}
-                        onClick={() => setFilterGroupId(group.id)}
-                        className={cn(
-                          "h-6 px-0 text-[10px] uppercase tracking-wider font-light whitespace-nowrap transition-colors border-b flex items-center gap-2",
-                          active
-                            ? "text-foreground border-foreground font-medium"
-                            : "text-muted-foreground hover:text-foreground border-transparent",
-                        )}
-                      >
-                        {/* Curved gradient pill indicator */}
-                        <span
-                          className="w-4 h-1.5 rounded-full"
-                          style={{ background: CATEGORY_GRADIENTS[group.id] || group.color }}
-                        />
-                        {group.name}
-                      </button>
-                    );
-                  })}
+                    {sortedGroups.map((group) => {
+                      const active = filterGroupId === group.id;
+                      return (
+                        <button
+                          key={group.id}
+                          onClick={() => setFilterGroupId(group.id)}
+                          className={cn(
+                            "h-8 px-4 text-[11px] uppercase tracking-wide font-medium whitespace-nowrap transition-all rounded-full flex items-center gap-2",
+                            active
+                              ? "bg-foreground text-background shadow-sm"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                          )}
+                        >
+                          <span
+                            className="w-2 h-2 rounded-full"
+                            style={{ background: CATEGORY_GRADIENTS[group.id] || group.color }}
+                          />
+                          {group.name}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Insights */}
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <StatCard label="Total notes" value={`${insights.total}`} icon={<FileText className="h-5 w-5" />} />
-              <StatCard label="Edited today" value={`${insights.editedToday}`} icon={<Clock className="h-5 w-5" />} />
-              <StatCard label="Pinned" value={`${insights.pinned}`} icon={<Pin className="h-5 w-5" />} />
-              <StatCard
-                label="Active groups"
-                value={`${insights.activeGroups}`}
-                icon={<Layers className="h-5 w-5" />}
-              />
+            {/* Insights Section */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
+                  Quick Stats
+                </span>
+                <div className="flex-1 h-px bg-gradient-to-r from-border/30 to-transparent" />
+              </div>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <StatCard
+                  label="Total notes"
+                  value={`${insights.total}`}
+                  icon={<FileText className="h-5 w-5" />}
+                  index={0}
+                  accentColor="primary"
+                />
+                <StatCard
+                  label="Edited today"
+                  value={`${insights.editedToday}`}
+                  icon={<Clock className="h-5 w-5" />}
+                  index={1}
+                  accentColor="blue"
+                />
+                <StatCard
+                  label="Pinned"
+                  value={`${insights.pinned}`}
+                  icon={<Pin className="h-5 w-5" />}
+                  index={2}
+                  accentColor="orange"
+                />
+                <StatCard
+                  label="Active groups"
+                  value={`${insights.activeGroups}`}
+                  icon={<Layers className="h-5 w-5" />}
+                  index={3}
+                  accentColor="green"
+                />
+              </div>
             </div>
 
             {/* Content */}
             {notesView === "atlas" && (
               <div className="space-y-4">
+                {/* Section header */}
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
+                    Your Groups
+                  </span>
+                  <div className="flex-1 h-px bg-gradient-to-r from-border/30 to-transparent" />
+                </div>
                 {sortedGroups
                   .filter((g) => filterGroupId === "all" || g.id === filterGroupId)
                   .map((group) => (
