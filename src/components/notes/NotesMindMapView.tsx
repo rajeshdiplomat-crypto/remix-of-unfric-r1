@@ -67,10 +67,10 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
   const arcCenterX = 100;
   const arcCenterY = dimensions.height / 2;
 
-  // Arc radii for semi-circles - increased to use more screen space
-  const arc1Radius = 180;
-  const arc2Radius = 400;
-  const arc3Radius = 620;
+  // Arc radii for semi-circles - increased to fill screen
+  const arc1Radius = 200;
+  const arc2Radius = 480;
+  const arc3Radius = 760;
 
   // Max visible items per arc
   const maxVisibleItems = 6;
@@ -351,17 +351,18 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
       </div>
 
       {/* Arc 1 - Groups (Scrollable) */}
-      {/* Invisible scroll zone for Arc 1 - click to enable scroll */}
+      {/* Thin scroll zone along Arc 1 line - click to enable scroll */}
       <div
         className={cn(
-          "absolute z-20 rounded-full cursor-pointer transition-all duration-300",
+          "absolute z-20 cursor-pointer transition-all duration-300",
           focusedArc === 1 && "ring-2 ring-primary/30 bg-primary/5",
         )}
         style={{
-          left: arcCenterX + arc1Radius * 0.3,
-          top: arcCenterY - arc1Radius,
-          width: arc1Radius * 1.4,
-          height: arc1Radius * 2,
+          left: arcCenterX + arc1Radius * 0.85,
+          top: arcCenterY - arc1Radius * 0.75,
+          width: 40,
+          height: arc1Radius * 1.5,
+          borderRadius: "20px",
         }}
         onClick={() => setFocusedArc(focusedArc === 1 ? null : 1)}
         onWheel={handleArc1Wheel}
@@ -422,17 +423,18 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
       {/* Arc 2 - Entries (Scrollable) */}
       {selectedGroup && (
         <>
-          {/* Invisible scroll zone for Arc 2 - click to enable scroll */}
+          {/* Thin scroll zone along Arc 2 line - click to enable scroll */}
           <div
             className={cn(
-              "absolute z-20 rounded-full cursor-pointer transition-all duration-300",
+              "absolute z-20 cursor-pointer transition-all duration-300",
               focusedArc === 2 && "ring-2 ring-primary/30 bg-primary/5",
             )}
             style={{
-              left: arcCenterX + arc2Radius * 0.3,
-              top: arcCenterY - arc2Radius * 0.9,
-              width: arc2Radius * 1.4,
-              height: arc2Radius * 1.8,
+              left: arcCenterX + arc2Radius * 0.85,
+              top: arcCenterY - arc2Radius * 0.65,
+              width: 40,
+              height: arc2Radius * 1.3,
+              borderRadius: "20px",
             }}
             onClick={() => setFocusedArc(focusedArc === 2 ? null : 2)}
             onWheel={handleArc2Wheel}
@@ -503,17 +505,18 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
       {/* Arc 3 - Folder Notes (Scrollable) */}
       {selectedFolder && (
         <>
-          {/* Invisible scroll zone for Arc 3 - click to enable scroll */}
+          {/* Thin scroll zone along Arc 3 line - click to enable scroll */}
           <div
             className={cn(
-              "absolute z-20 rounded-full cursor-pointer transition-all duration-300",
+              "absolute z-20 cursor-pointer transition-all duration-300",
               focusedArc === 3 && "ring-2 ring-cyan-400/30 bg-cyan-500/5",
             )}
             style={{
-              left: arcCenterX + arc3Radius * 0.4,
-              top: arcCenterY - arc3Radius * 0.6,
-              width: arc3Radius * 0.8,
-              height: arc3Radius * 1.2,
+              left: arcCenterX + arc3Radius * 0.85,
+              top: arcCenterY - arc3Radius * 0.55,
+              width: 40,
+              height: arc3Radius * 1.1,
+              borderRadius: "20px",
             }}
             onClick={() => setFocusedArc(focusedArc === 3 ? null : 3)}
             onWheel={handleArc3Wheel}
