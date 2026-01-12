@@ -46,8 +46,8 @@
     --input: 0 0% 90%;
     --ring: 0 0% 8%;
 
-    /* No rounded corners - sharp edges */
-    --radius: 0px;
+    /* Minimal rounded corners */
+    --radius: 4px;
 
     /* Sidebar - minimal */
     --sidebar-background: 0 0% 100%;
@@ -190,6 +190,7 @@
     opacity: 0;
     transform: translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -201,6 +202,7 @@
     opacity: 1;
     transform: translateY(0);
   }
+
   to {
     opacity: 0;
     transform: translateY(-8px);
@@ -228,6 +230,7 @@
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }
@@ -240,6 +243,7 @@
       0 0 15px rgba(6, 182, 212, 0.3),
       0 4px 12px rgba(6, 182, 212, 0.2);
   }
+
   50% {
     box-shadow:
       0 0 25px rgba(6, 182, 212, 0.5),
