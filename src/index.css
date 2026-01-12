@@ -46,8 +46,8 @@
     --input: 0 0% 90%;
     --ring: 0 0% 8%;
 
-    /* Minimal rounded corners */
-    --radius: 6px;
+    /* More curved rounded corners */
+    --radius: 12px;
 
     /* Sidebar - minimal */
     --sidebar-background: 0 0% 100%;
