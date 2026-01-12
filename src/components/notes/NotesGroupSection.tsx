@@ -90,34 +90,54 @@ export function NotesGroupSection({
             {/* Compact Card Header */}
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="w-full px-4 py-3 text-left hover:bg-muted/5 transition-colors"
+              className="w-full px-4 py-3 text-left hover:bg-muted/5 transition-colors group"
             >
-              <div className="flex items-center gap-3">
-                {/* Main content */}
-                <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-4">
+                {/* Group info - left side */}
+                <div className="min-w-0 w-36 shrink-0">
                   <div className="flex items-center gap-2">
                     <h2 className="text-sm font-medium text-foreground truncate">{group.name}</h2>
                     <span className="text-xs text-muted-foreground/60">({allGroupNotes.length})</span>
-                    {pinnedCount > 0 && (
-                      <span className="flex items-center gap-0.5 text-xs text-muted-foreground/50">
-                        <Pin className="h-2.5 w-2.5" />
-                        {pinnedCount}
-                      </span>
-                    )}
-                    {mostRecentUpdate && <NotesActivityDot updatedAt={mostRecentUpdate} size="sm" />}
                   </div>
-
-                  {/* Last edited + preview */}
+                  {/* Last edited */}
                   {mostRecentNote && (
                     <p className="mt-0.5 text-xs text-muted-foreground/50 truncate">
                       {formatDistanceToNow(new Date(mostRecentNote.updatedAt), { addSuffix: true })}
-                      {mostRecentNote.title && ` · ${mostRecentNote.title}`}
                     </p>
                   )}
                 </div>
 
-                {/* Quick actions */}
-                <div className="flex items-center gap-1 shrink-0">
+                {/* Recent notes preview - fills the center space */}
+                <div className="flex-1 flex items-center gap-2 overflow-hidden">
+                  {allGroupNotes.slice(0, 3).map((note, idx) => (
+                    <div
+                      key={note.id}
+                      className="flex items-center gap-2 px-2.5 py-1.5 bg-muted/30 hover:bg-muted/50 rounded-md text-xs max-w-[180px] transition-colors"
+                      style={{ opacity: 1 - idx * 0.2 }}
+                    >
+                      {note.isPinned && <Pin className="h-2.5 w-2.5 text-primary/70 shrink-0" />}
+                      <span className="truncate text-muted-foreground">{note.title || "Untitled"}</span>
+                    </div>
+                  ))}
+                  {allGroupNotes.length > 3 && (
+                    <span className="text-xs text-muted-foreground/40 shrink-0">+{allGroupNotes.length - 3} more</span>
+                  )}
+                  {allGroupNotes.length === 0 && (
+                    <span className="text-xs text-muted-foreground/40 italic">No notes yet</span>
+                  )}
+                </div>
+
+                {/* Right side - activity dot and chevron */}
+                <div className="flex items-center gap-2 shrink-0">
+                  {pinnedCount > 0 && (
+                    <span className="flex items-center gap-0.5 text-xs text-muted-foreground/50">
+                      <Pin className="h-2.5 w-2.5" />
+                      {pinnedCount}
+                    </span>
+                  )}
+                  {mostRecentUpdate && <NotesActivityDot updatedAt={mostRecentUpdate} size="sm" />}
+
+                  {/* Quick add button */}
                   <Button
                     variant="ghost"
                     size="icon"
