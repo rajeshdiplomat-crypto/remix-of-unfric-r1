@@ -565,10 +565,8 @@ export default function Notes() {
               {/* Glassmorphism toolbar container */}
               <div className="rounded-2xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg shadow-black/5">
                 <div className="p-2 flex flex-wrap items-center gap-2">
-                  {/* View Mode Switcher - Pill segment */}
-                  <div className="flex items-center bg-muted/40 rounded-xl p-1">
-                    <NotesViewSwitcher currentView={notesView} onViewChange={setNotesView} />
-                  </div>
+                  {/* View Mode Switcher */}
+                  <NotesViewSwitcher currentView={notesView} onViewChange={setNotesView} />
 
                   {/* Search - Modern floating input */}
                   <div className="relative flex-1 min-w-[140px] max-w-[280px]">
