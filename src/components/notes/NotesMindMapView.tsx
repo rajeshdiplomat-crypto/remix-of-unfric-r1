@@ -383,7 +383,7 @@ export function NotesMindMapView({
         )}
       </svg>
 
-      {/* NOTES Hub */}
+      {/* NOTES Hub with Quick Add */}
       <div
         className="absolute group cursor-pointer z-20"
         style={{ left: arcCenterX, top: arcCenterY, transform: "translate(-50%, -50%)" }}
@@ -391,6 +391,31 @@ export function NotesMindMapView({
         <div className="absolute inset-0 bg-primary/30 rounded-full blur-xl opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
         <div className="relative px-6 py-4 rounded-full bg-card border-2 border-primary/40 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300">
           <span className="text-lg font-bold text-foreground uppercase tracking-wider">Notes</span>
+        </div>
+      </div>
+
+      {/* Quick Add Note Panel - always visible */}
+      <div
+        className="absolute z-50 flex flex-col gap-2 p-3 bg-card/95 backdrop-blur-sm rounded-xl border border-border shadow-lg"
+        style={{ left: 20, top: 20 }}
+      >
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Quick Add</span>
+        <div className="flex flex-wrap gap-1.5">
+          {sortedGroups.slice(0, 6).map((group) => {
+            const color = GROUP_COLORS[group.id] || "#64748b";
+            return (
+              <button
+                key={group.id}
+                onClick={() => onAddNote(group.id, null)}
+                className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium bg-muted/50 hover:bg-muted transition-colors border border-transparent hover:border-border"
+                style={{ color }}
+                title={`Add note to ${group.name}`}
+              >
+                <Plus className="h-3 w-3" />
+                {group.name}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -527,6 +552,9 @@ export function NotesMindMapView({
           const noteDate = note.updatedAt ? new Date(note.updatedAt) : new Date();
           const dateStr = noteDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
           const timeStr = noteDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+          // Get group info
+          const noteGroup = groups.find((g) => g.id === note.groupId);
+          const groupColor = noteGroup ? GROUP_COLORS[noteGroup.id] || "#64748b" : "#64748b";
           return (
             <div
               key={entry.id}
@@ -547,9 +575,16 @@ export function NotesMindMapView({
                   {isNew && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="New" />}
                   <span className="text-sm text-foreground">{note.title || "Untitled"}</span>
                 </div>
-                <span className="text-[10px] text-muted-foreground">
-                  {dateStr} • {timeStr}
-                </span>
+                <div className="flex items-center gap-2">
+                  {noteGroup && (
+                    <span className="text-[10px] font-medium" style={{ color: groupColor }}>
+                      {noteGroup.name}
+                    </span>
+                  )}
+                  <span className="text-[10px] text-muted-foreground">
+                    {dateStr} • {timeStr}
+                  </span>
+                </div>
               </button>
             </div>
           );
@@ -577,6 +612,8 @@ export function NotesMindMapView({
           const noteDate = note.updatedAt ? new Date(note.updatedAt) : new Date();
           const dateStr = noteDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
           const timeStr = noteDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+          // Get folder info
+          const noteFolder = folders.find((f) => f.id === note.folderId);
           return (
             <div
               key={note.id}
@@ -597,9 +634,12 @@ export function NotesMindMapView({
                   {isNew && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="New" />}
                   <span className="text-xs text-foreground">{note.title || "Untitled"}</span>
                 </div>
-                <span className="text-[10px] text-muted-foreground">
-                  {dateStr} • {timeStr}
-                </span>
+                <div className="flex items-center gap-2">
+                  {noteFolder && <span className="text-[10px] font-medium text-cyan-500">{noteFolder.name}</span>}
+                  <span className="text-[10px] text-muted-foreground">
+                    {dateStr} • {timeStr}
+                  </span>
+                </div>
               </button>
             </div>
           );
