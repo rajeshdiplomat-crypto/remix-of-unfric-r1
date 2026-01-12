@@ -158,10 +158,17 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
 
   // Calculate position on semi-circle
   const getSemiCirclePosition = (index: number, total: number, radius: number) => {
-    const startAngle = -70 * (Math.PI / 180);
-    const endAngle = 70 * (Math.PI / 180);
+    // Reduce angle spread for small item counts to keep them visible
+    const maxSpread = 70; // degrees
+    const minSpread = 20; // degrees for single/few items
+    const spreadDegrees = total <= 2 ? minSpread : Math.min(maxSpread, minSpread + (total - 1) * 10);
+
+    const startAngle = -spreadDegrees * (Math.PI / 180);
+    const endAngle = spreadDegrees * (Math.PI / 180);
     const angleRange = endAngle - startAngle;
-    const angle = startAngle + (index / Math.max(total - 1, 1)) * angleRange;
+
+    // For single item, center it
+    const angle = total === 1 ? 0 : startAngle + (index / Math.max(total - 1, 1)) * angleRange;
 
     return {
       x: arcCenterX + radius * Math.cos(angle),
