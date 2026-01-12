@@ -92,8 +92,10 @@ export function NotesMindMapView({
   const arc2Radius = 450;
   const arc3Radius = 680;
 
-  // Max visible items per arc
-  const maxVisibleItems = 6;
+  // Max visible items per arc - outer arcs can show more
+  const arc1MaxItems = 8;
+  const arc2MaxItems = 10;
+  const arc3MaxItems = 12;
 
   // Get data for selected group
   const selectedGroupData = useMemo(() => {
@@ -140,17 +142,17 @@ export function NotesMindMapView({
 
       if (focusedArc === 1) {
         setArc1Scroll((prev) => {
-          const max = Math.max(0, sortedGroups.length - maxVisibleItems);
+          const max = Math.max(0, sortedGroups.length - arc1MaxItems);
           return Math.max(0, Math.min(max, prev + delta));
         });
       } else if (focusedArc === 2) {
         setArc2Scroll((prev) => {
-          const max = Math.max(0, arc2Items.length - maxVisibleItems);
+          const max = Math.max(0, arc2Items.length - arc2MaxItems);
           return Math.max(0, Math.min(max, prev + delta));
         });
       } else if (focusedArc === 3) {
         setArc3Scroll((prev) => {
-          const max = Math.max(0, selectedFolderNotes.length - maxVisibleItems);
+          const max = Math.max(0, selectedFolderNotes.length - arc3MaxItems);
           return Math.max(0, Math.min(max, prev + delta));
         });
       }
@@ -162,7 +164,15 @@ export function NotesMindMapView({
     return () => {
       container.removeEventListener("wheel", handleWheel);
     };
-  }, [focusedArc, sortedGroups.length, arc2Items.length, selectedFolderNotes.length, maxVisibleItems]);
+  }, [
+    focusedArc,
+    sortedGroups.length,
+    arc2Items.length,
+    selectedFolderNotes.length,
+    arc1MaxItems,
+    arc2MaxItems,
+    arc3MaxItems,
+  ]);
 
   // Get visible items with scroll
   const getVisibleItems = <T,>(items: T[], scrollOffset: number, maxVisible: number): T[] => {
@@ -172,9 +182,9 @@ export function NotesMindMapView({
   };
 
   // Visible items for each arc
-  const visibleGroups = getVisibleItems(sortedGroups, arc1Scroll, maxVisibleItems);
-  const visibleArc2Items = getVisibleItems(arc2Items, arc2Scroll, maxVisibleItems);
-  const visibleFolderNotes = getVisibleItems(selectedFolderNotes, arc3Scroll, maxVisibleItems);
+  const visibleGroups = getVisibleItems(sortedGroups, arc1Scroll, arc1MaxItems);
+  const visibleArc2Items = getVisibleItems(arc2Items, arc2Scroll, arc2MaxItems);
+  const visibleFolderNotes = getVisibleItems(selectedFolderNotes, arc3Scroll, arc3MaxItems);
 
   // Calculate position on semi-circle
   const getSemiCirclePosition = (index: number, total: number, radius: number) => {
@@ -387,15 +397,15 @@ export function NotesMindMapView({
       {/* Arc 1 - Groups (Scrollable) */}
       <ScrollControls
         onScrollUp={() => setArc1Scroll(Math.max(0, arc1Scroll - 1))}
-        onScrollDown={() => setArc1Scroll(Math.min(sortedGroups.length - maxVisibleItems, arc1Scroll + 1))}
+        onScrollDown={() => setArc1Scroll(Math.min(sortedGroups.length - arc1MaxItems, arc1Scroll + 1))}
         canScrollUp={arc1Scroll > 0}
-        canScrollDown={arc1Scroll < sortedGroups.length - maxVisibleItems}
+        canScrollDown={arc1Scroll < sortedGroups.length - arc1MaxItems}
         posX={arcCenterX + arc1Radius * 0.7}
         radius={arc1Radius * 0.85}
       />
 
       {visibleGroups.map((group, index) => {
-        const pos = getSemiCirclePosition(index, Math.min(visibleGroups.length, maxVisibleItems), arc1Radius);
+        const pos = getSemiCirclePosition(index, Math.min(visibleGroups.length, arc1MaxItems), arc1Radius);
         const isSelected = selectedGroup === group.id;
         const isHovered = hoveredItem === `group-${group.id}`;
         const color = GROUP_COLORS[group.id] || "#64748b";
@@ -466,9 +476,9 @@ export function NotesMindMapView({
       {selectedGroup && (
         <ScrollControls
           onScrollUp={() => setArc2Scroll(Math.max(0, arc2Scroll - 1))}
-          onScrollDown={() => setArc2Scroll(Math.min(arc2Items.length - maxVisibleItems, arc2Scroll + 1))}
+          onScrollDown={() => setArc2Scroll(Math.min(arc2Items.length - arc2MaxItems, arc2Scroll + 1))}
           canScrollUp={arc2Scroll > 0}
-          canScrollDown={arc2Scroll < arc2Items.length - maxVisibleItems}
+          canScrollDown={arc2Scroll < arc2Items.length - arc2MaxItems}
           posX={arcCenterX + arc2Radius * 0.7}
           radius={arc2Radius * 0.85}
         />
@@ -476,7 +486,7 @@ export function NotesMindMapView({
 
       {selectedGroup &&
         visibleArc2Items.map((entry, index) => {
-          const pos = getSemiCirclePosition(index, Math.min(visibleArc2Items.length, maxVisibleItems), arc2Radius);
+          const pos = getSemiCirclePosition(index, Math.min(visibleArc2Items.length, arc2MaxItems), arc2Radius);
           const isFolder = entry.type === "folder";
           const isSelected = isFolder && selectedFolder === entry.id;
 
@@ -489,93 +499,49 @@ export function NotesMindMapView({
                 className="absolute z-10 transition-all duration-300 ease-out animate-in fade-in"
                 style={{ left: pos.x, top: pos.y, transform: "translate(-50%, -50%)" }}
               >
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setSelectedFolder(isSelected ? null : folder.id)}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300 whitespace-nowrap",
-                      isSelected
-                        ? "bg-cyan-500/20 border-2 border-cyan-400 shadow-lg"
-                        : "bg-card/90 hover:bg-card hover:shadow-md border border-border/50",
-                    )}
-                  >
-                    <FolderOpen className={cn("h-4 w-4", isSelected ? "text-cyan-500" : "text-cyan-400")} />
-                    <span className="text-sm font-medium text-foreground">{folder.name}</span>
-                    <span className="text-xs text-muted-foreground">{folderNotes.length}</span>
-                  </button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="p-1 rounded hover:bg-muted transition-colors">
-                        <MoreHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-40">
-                      <DropdownMenuItem onClick={() => onAddNote(selectedGroup!, folder.id)}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Note
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => {
-                          const newName = window.prompt("Rename folder:", folder.name);
-                          if (newName && onRenameFolder) onRenameFolder(folder.id, newName);
-                        }}
-                      >
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Rename
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => onDeleteFolder?.(folder.id)}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedFolder(isSelected ? null : folder.id);
+                  }}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300",
+                    isSelected
+                      ? "bg-cyan-500/20 border-2 border-cyan-400 shadow-lg"
+                      : "bg-card/90 hover:bg-card hover:shadow-md border border-border/50",
+                  )}
+                >
+                  <FolderOpen className={cn("h-4 w-4", isSelected ? "text-cyan-500" : "text-cyan-400")} />
+                  <span className="text-sm font-medium text-foreground text-left">{folder.name}</span>
+                  <span className="text-xs text-muted-foreground">{folderNotes.length}</span>
+                </button>
               </div>
             );
           }
 
           const note = entry.data as Note;
+          // Check if note was created today (new note indicator)
+          const today = new Date().toDateString();
+          const isNew = note.createdAt && new Date(note.createdAt).toDateString() === today;
           return (
             <div
               key={entry.id}
               className="absolute z-10 transition-all duration-300 ease-out animate-in fade-in"
               style={{ left: pos.x, top: pos.y, transform: "translate(-50%, -50%)" }}
             >
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => onNoteClick(note)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg transition-all duration-300 whitespace-nowrap bg-card/90 hover:bg-card hover:shadow-md border border-border/50",
-                    selectedNoteId === note.id && "bg-primary/15 border-primary",
-                  )}
-                >
-                  <span className="text-sm text-foreground">{note.title || "Untitled"}</span>
-                </button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="p-1 rounded hover:bg-muted transition-colors">
-                      <MoreHorizontal className="h-3 w-3 text-muted-foreground" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-32">
-                    <DropdownMenuItem onClick={() => onNoteClick(note)}>
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => onDeleteNote?.(note.id)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNoteClick(note);
+                }}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-300 bg-card/90 hover:bg-card hover:shadow-md border border-border/50 text-left",
+                  selectedNoteId === note.id && "bg-primary/15 border-primary",
+                )}
+              >
+                {isNew && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="New" />}
+                <span className="text-sm text-foreground text-left">{note.title || "Untitled"}</span>
+              </button>
             </div>
           );
         })}
@@ -584,9 +550,9 @@ export function NotesMindMapView({
       {selectedFolder && (
         <ScrollControls
           onScrollUp={() => setArc3Scroll(Math.max(0, arc3Scroll - 1))}
-          onScrollDown={() => setArc3Scroll(Math.min(selectedFolderNotes.length - maxVisibleItems, arc3Scroll + 1))}
+          onScrollDown={() => setArc3Scroll(Math.min(selectedFolderNotes.length - arc3MaxItems, arc3Scroll + 1))}
           canScrollUp={arc3Scroll > 0}
-          canScrollDown={arc3Scroll < selectedFolderNotes.length - maxVisibleItems}
+          canScrollDown={arc3Scroll < selectedFolderNotes.length - arc3MaxItems}
           posX={arcCenterX + arc3Radius * 0.7}
           radius={arc3Radius * 0.8}
         />
@@ -594,44 +560,29 @@ export function NotesMindMapView({
 
       {selectedFolder &&
         visibleFolderNotes.map((note, index) => {
-          const pos = getSemiCirclePosition(index, Math.min(visibleFolderNotes.length, maxVisibleItems), arc3Radius);
+          const pos = getSemiCirclePosition(index, Math.min(visibleFolderNotes.length, arc3MaxItems), arc3Radius);
+          // Check if note was created today (new note indicator)
+          const today = new Date().toDateString();
+          const isNew = note.createdAt && new Date(note.createdAt).toDateString() === today;
           return (
             <div
               key={note.id}
               className="absolute z-10 transition-all duration-300 ease-out animate-in fade-in"
               style={{ left: pos.x, top: pos.y, transform: "translate(-50%, -50%)" }}
             >
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => onNoteClick(note)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-md transition-all duration-300 whitespace-nowrap bg-card/90 hover:bg-card hover:shadow-md border border-cyan-300/50",
-                    selectedNoteId === note.id && "bg-cyan-500/20 border-cyan-400",
-                  )}
-                >
-                  <span className="text-xs text-foreground">{note.title || "Untitled"}</span>
-                </button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="p-1 rounded hover:bg-muted transition-colors">
-                      <MoreHorizontal className="h-3 w-3 text-muted-foreground" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-32">
-                    <DropdownMenuItem onClick={() => onNoteClick(note)}>
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => onDeleteNote?.(note.id)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNoteClick(note);
+                }}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-md transition-all duration-300 bg-card/90 hover:bg-card hover:shadow-md border border-cyan-300/50 text-left",
+                  selectedNoteId === note.id && "bg-cyan-500/20 border-cyan-400",
+                )}
+              >
+                {isNew && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="New" />}
+                <span className="text-xs text-foreground text-left">{note.title || "Untitled"}</span>
+              </button>
             </div>
           );
         })}
