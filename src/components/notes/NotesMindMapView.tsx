@@ -46,22 +46,26 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
     return () => window.removeEventListener("resize", updateDimensions);
   }, []);
 
-  // Center of the circular layout
-  const centerX = dimensions.width / 2;
-  const centerY = dimensions.height / 2;
+  // Arc center (left side of screen)
+  const arcCenterX = 100;
+  const arcCenterY = dimensions.height / 2;
 
-  // Ring radii - concentric circles
-  const ring1Radius = 120; // Groups ring
-  const ring2Radius = 220; // Sections/Folders ring
-  const ring3Radius = 320; // Entries ring
+  // Arc radii for semi-circles
+  const arc1Radius = 160; // Groups arc
+  const arc2Radius = 340; // Entries arc
+  const arc3Radius = 500; // Folder notes arc
 
-  // Calculate position on a circle
-  const getCirclePosition = (index: number, total: number, radius: number, startAngle: number = -Math.PI / 2) => {
-    const angle = startAngle + (index / total) * 2 * Math.PI;
+  // Calculate position on semi-circle (right side only: -90° to +90°)
+  const getSemiCirclePosition = (index: number, total: number, radius: number) => {
+    // Spread items from -80° to +80° (top to bottom on right side)
+    const startAngle = -80 * (Math.PI / 180);
+    const endAngle = 80 * (Math.PI / 180);
+    const angleRange = endAngle - startAngle;
+    const angle = startAngle + (index / Math.max(total - 1, 1)) * angleRange;
+
     return {
-      x: centerX + radius * Math.cos(angle),
-      y: centerY + radius * Math.sin(angle),
-      angle: angle * (180 / Math.PI),
+      x: arcCenterX + radius * Math.cos(angle),
+      y: arcCenterY + radius * Math.sin(angle),
     };
   };
 
@@ -83,8 +87,8 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
   const activeGroup = sortedGroups.find((g) => g.id === selectedGroup);
   const activeColor = activeGroup ? GROUP_COLORS[activeGroup.id] || "#64748b" : "#3b82f6";
 
-  // Combine folders and direct notes for ring 2
-  const ring2Items = useMemo(() => {
+  // Combine folders and direct notes for arc 2
+  const arc2Items = useMemo(() => {
     const items: { type: "folder" | "note"; data: NoteFolder | Note; id: string }[] = [];
     selectedGroupData.folders.forEach((folder) => {
       items.push({ type: "folder", data: folder, id: folder.id });
@@ -95,101 +99,114 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
     return items;
   }, [selectedGroupData]);
 
+  // SVG arc path for semi-circle
+  const createArcPath = (radius: number, startAngle: number, endAngle: number) => {
+    const start = {
+      x: arcCenterX + radius * Math.cos(startAngle),
+      y: arcCenterY + radius * Math.sin(startAngle),
+    };
+    const end = {
+      x: arcCenterX + radius * Math.cos(endAngle),
+      y: arcCenterY + radius * Math.sin(endAngle),
+    };
+    const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
+
+    return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y}`;
+  };
+
+  const arc1Path = createArcPath(arc1Radius, (-80 * Math.PI) / 180, (80 * Math.PI) / 180);
+  const arc2Path = createArcPath(arc2Radius, (-70 * Math.PI) / 180, (70 * Math.PI) / 180);
+  const arc3Path = createArcPath(arc3Radius, (-60 * Math.PI) / 180, (60 * Math.PI) / 180);
+
   return (
     <div ref={containerRef} className="relative w-full h-[calc(100vh-180px)] min-h-[500px] overflow-auto">
-      {/* SVG for concentric rings */}
+      {/* SVG for semi-circle arcs */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none">
         <defs>
-          <linearGradient id="ringGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={activeColor} stopOpacity="0.3" />
+          <linearGradient id="arcGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={activeColor} stopOpacity="0.1" />
+            <stop offset="50%" stopColor={activeColor} stopOpacity="0.4" />
             <stop offset="100%" stopColor={activeColor} stopOpacity="0.1" />
           </linearGradient>
-          <linearGradient id="ringGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.2" />
-            <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.1" />
+          <linearGradient id="arcGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={activeColor} stopOpacity="0" />
+            <stop offset="50%" stopColor={activeColor} stopOpacity="0.3" />
+            <stop offset="100%" stopColor={activeColor} stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="arcGrad3" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#06b6d4" stopOpacity="0" />
+            <stop offset="50%" stopColor="#06b6d4" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#06b6d4" stopOpacity="0" />
           </linearGradient>
         </defs>
 
-        {/* Ring 1 - Groups */}
-        <circle
-          cx={centerX}
-          cy={centerY}
-          r={ring1Radius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          className="text-border"
-          strokeDasharray="4 4"
-        />
+        {/* Arc 1 - Groups */}
+        <path d={arc1Path} fill="none" stroke="currentColor" strokeWidth="3" className="text-border" />
+        <path d={arc1Path} fill="none" stroke="url(#arcGrad1)" strokeWidth="8" opacity="0.5" />
 
-        {/* Ring 2 - Sections/Folders (only when group selected) */}
+        {/* Arc 2 - Entries (when group selected) */}
         {selectedGroup && (
-          <circle
-            cx={centerX}
-            cy={centerY}
-            r={ring2Radius}
-            fill="none"
-            stroke="url(#ringGrad1)"
-            strokeWidth="2"
-            className="animate-in fade-in duration-500"
-          />
+          <>
+            <path
+              d={arc2Path}
+              fill="none"
+              stroke="url(#arcGrad2)"
+              strokeWidth="4"
+              className="animate-in fade-in duration-500"
+            />
+          </>
         )}
 
-        {/* Ring 3 - Entries (only when folder selected) */}
+        {/* Arc 3 - Folder notes (when folder selected) */}
         {selectedFolder && (
-          <circle
-            cx={centerX}
-            cy={centerY}
-            r={ring3Radius}
+          <path
+            d={arc3Path}
             fill="none"
-            stroke="url(#ringGrad2)"
-            strokeWidth="2"
+            stroke="url(#arcGrad3)"
+            strokeWidth="3"
             className="animate-in fade-in duration-500"
           />
         )}
 
-        {/* Connection lines from center to selected group */}
+        {/* Connection line from NOTES to selected group */}
         {selectedGroup &&
-          sortedGroups.map((group, index) => {
-            const pos = getCirclePosition(index, sortedGroups.length, ring1Radius);
-            const isSelected = selectedGroup === group.id;
-            if (!isSelected) return null;
-
+          (() => {
+            const selectedIndex = sortedGroups.findIndex((g) => g.id === selectedGroup);
+            if (selectedIndex === -1) return null;
+            const pos = getSemiCirclePosition(selectedIndex, sortedGroups.length, arc1Radius);
             return (
               <line
-                key={group.id}
-                x1={centerX}
-                y1={centerY}
-                x2={pos.x}
+                x1={arcCenterX + 60}
+                y1={arcCenterY}
+                x2={pos.x - 40}
                 y2={pos.y}
-                stroke={GROUP_COLORS[group.id] || "#64748b"}
+                stroke={activeColor}
                 strokeWidth="2"
-                strokeDasharray="4 2"
                 opacity="0.5"
                 className="animate-in fade-in duration-300"
               />
             );
-          })}
+          })()}
       </svg>
 
-      {/* Center Hub - NOTES */}
+      {/* NOTES Hub - Left side */}
       <div
         className="absolute group cursor-pointer z-20"
         style={{
-          left: centerX,
-          top: centerY,
+          left: arcCenterX,
+          top: arcCenterY,
           transform: "translate(-50%, -50%)",
         }}
       >
         <div className="absolute inset-0 bg-primary/30 rounded-full blur-xl opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="relative w-24 h-24 rounded-full bg-card border-2 border-primary/40 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center">
+        <div className="relative px-6 py-4 rounded-full bg-card border-2 border-primary/40 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300">
           <span className="text-lg font-bold text-foreground uppercase tracking-wider">Notes</span>
         </div>
       </div>
 
-      {/* Ring 1 - Groups */}
+      {/* Arc 1 - Groups along semi-circle */}
       {sortedGroups.map((group, index) => {
-        const pos = getCirclePosition(index, sortedGroups.length, ring1Radius);
+        const pos = getSemiCirclePosition(index, sortedGroups.length, arc1Radius);
         const isSelected = selectedGroup === group.id;
         const isHovered = hoveredItem === `group-${group.id}`;
         const color = GROUP_COLORS[group.id] || "#64748b";
@@ -215,9 +232,9 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
                 "relative px-4 py-2 rounded-full transition-all duration-300 whitespace-nowrap",
                 isSelected
                   ? "bg-card border-2 shadow-lg scale-110"
-                  : "bg-card/80 hover:bg-card hover:shadow-md hover:scale-105 border border-border/50",
+                  : "hover:bg-muted/80 hover:shadow-md hover:scale-105",
               )}
-              style={{ borderColor: isSelected ? color : undefined }}
+              style={{ borderColor: isSelected ? color : "transparent" }}
             >
               {isSelected && (
                 <div className="absolute inset-0 rounded-full blur-md opacity-40" style={{ background: color }} />
@@ -236,10 +253,10 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
         );
       })}
 
-      {/* Ring 2 - Sections/Folders + Direct Notes */}
+      {/* Arc 2 - Entries (Folders + Direct Notes) */}
       {selectedGroup &&
-        ring2Items.map((entry, index) => {
-          const pos = getCirclePosition(index, ring2Items.length, ring2Radius);
+        arc2Items.map((entry, index) => {
+          const pos = getSemiCirclePosition(index, Math.max(arc2Items.length, 2), arc2Radius);
           const isFolder = entry.type === "folder";
           const isSelected = isFolder && selectedFolder === entry.id;
           const isHovered = hoveredItem === `entry-${entry.id}`;
@@ -251,12 +268,12 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
             return (
               <div
                 key={entry.id}
-                className="absolute z-10 transition-all duration-400 ease-out animate-in fade-in zoom-in-95"
+                className="absolute z-10 transition-all duration-400 ease-out animate-in fade-in slide-in-from-left-4"
                 style={{
                   left: pos.x,
                   top: pos.y,
                   transform: "translate(-50%, -50%)",
-                  animationDelay: `${index * 50}ms`,
+                  animationDelay: `${index * 60}ms`,
                 }}
               >
                 <button
@@ -282,12 +299,12 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
           return (
             <div
               key={entry.id}
-              className="absolute z-10 transition-all duration-400 ease-out animate-in fade-in zoom-in-95"
+              className="absolute z-10 transition-all duration-400 ease-out animate-in fade-in slide-in-from-left-4"
               style={{
                 left: pos.x,
                 top: pos.y,
                 transform: "translate(-50%, -50%)",
-                animationDelay: `${index * 50}ms`,
+                animationDelay: `${index * 60}ms`,
               }}
             >
               <button
@@ -295,8 +312,8 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
                 onMouseEnter={() => setHoveredItem(`entry-${entry.id}`)}
                 onMouseLeave={() => setHoveredItem(null)}
                 className={cn(
-                  "px-3 py-1.5 rounded-md transition-all duration-300 whitespace-nowrap",
-                  "bg-card/80 hover:bg-card hover:shadow-md hover:scale-105 border border-border/50",
+                  "px-3 py-1.5 rounded-lg transition-all duration-300 whitespace-nowrap",
+                  "bg-card/90 hover:bg-card hover:shadow-md hover:scale-105 border border-border/50",
                   selectedNoteId === note.id && "bg-primary/15 border-primary",
                 )}
               >
@@ -306,20 +323,20 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
           );
         })}
 
-      {/* Ring 3 - Folder Notes */}
+      {/* Arc 3 - Folder Notes */}
       {selectedFolder &&
         selectedFolderNotes.map((note, index) => {
-          const pos = getCirclePosition(index, selectedFolderNotes.length, ring3Radius);
+          const pos = getSemiCirclePosition(index, Math.max(selectedFolderNotes.length, 2), arc3Radius);
 
           return (
             <div
               key={note.id}
-              className="absolute z-10 transition-all duration-400 ease-out animate-in fade-in zoom-in-95"
+              className="absolute z-10 transition-all duration-400 ease-out animate-in fade-in slide-in-from-left-4"
               style={{
                 left: pos.x,
                 top: pos.y,
                 transform: "translate(-50%, -50%)",
-                animationDelay: `${index * 40}ms`,
+                animationDelay: `${index * 50}ms`,
               }}
             >
               <button
@@ -328,7 +345,7 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
                 onMouseLeave={() => setHoveredItem(null)}
                 className={cn(
                   "px-3 py-1.5 rounded-md transition-all duration-300 whitespace-nowrap",
-                  "bg-card/80 hover:bg-card hover:shadow-md hover:scale-105 border border-cyan-300/50",
+                  "bg-card/90 hover:bg-card hover:shadow-md hover:scale-105 border border-cyan-300/50",
                   selectedNoteId === note.id && "bg-cyan-500/20 border-cyan-400",
                 )}
               >
@@ -339,30 +356,13 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
         })}
 
       {/* Empty states */}
-      {selectedGroup && ring2Items.length === 0 && (
+      {selectedGroup && arc2Items.length === 0 && (
         <div
           className="absolute flex flex-col items-center gap-2 text-muted-foreground animate-in fade-in z-10"
-          style={{
-            left: centerX,
-            top: centerY - ring2Radius,
-            transform: "translate(-50%, -50%)",
-          }}
+          style={{ left: arcCenterX + arc2Radius, top: arcCenterY, transform: "translate(-50%, -50%)" }}
         >
           <Sparkles className="h-4 w-4 opacity-50" />
           <span className="text-xs italic">No entries</span>
-        </div>
-      )}
-
-      {selectedFolder && selectedFolderNotes.length === 0 && (
-        <div
-          className="absolute text-xs text-muted-foreground italic animate-in fade-in z-10"
-          style={{
-            left: centerX,
-            top: centerY - ring3Radius,
-            transform: "translate(-50%, -50%)",
-          }}
-        >
-          Empty folder
         </div>
       )}
 
