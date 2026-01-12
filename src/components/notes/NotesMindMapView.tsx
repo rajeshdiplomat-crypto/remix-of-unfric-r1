@@ -97,6 +97,16 @@ export function NotesMindMapView({
   const arc2MaxItems = 10;
   const arc3MaxItems = 12;
 
+  // Calculate safe angle spread based on container height - add padding from edges
+  const edgePadding = 60; // pixels from top/bottom
+  const safeHeight = dimensions.height - edgePadding * 2;
+  // Calculate max angle that keeps items within bounds for each arc
+  const getSafeMaxAngle = (radius: number) => {
+    const maxY = safeHeight / 2;
+    const safeAngle = Math.asin(Math.min(maxY / radius, 1)) * (180 / Math.PI);
+    return Math.min(75, safeAngle); // cap at 75 degrees
+  };
+
   // Get data for selected group
   const selectedGroupData = useMemo(() => {
     if (!selectedGroup) return { notes: [], folders: [] };
@@ -188,10 +198,13 @@ export function NotesMindMapView({
 
   // Calculate position on semi-circle
   const getSemiCirclePosition = (index: number, total: number, radius: number) => {
+    // Calculate safe max angle for this radius
+    const safeMaxAngle = getSafeMaxAngle(radius);
+
     // Reduce angle spread for small item counts to keep them visible
-    const maxSpread = 80; // degrees - nearly full arc
-    const minSpread = 25; // degrees for single/few items
-    const spreadDegrees = total <= 2 ? minSpread : Math.min(maxSpread, minSpread + (total - 1) * 8);
+    const maxSpread = safeMaxAngle; // use safe angle based on container
+    const minSpread = 20; // degrees for single/few items
+    const spreadDegrees = total <= 2 ? minSpread : Math.min(maxSpread, minSpread + (total - 1) * 7);
 
     const startAngle = -spreadDegrees * (Math.PI / 180);
     const endAngle = spreadDegrees * (Math.PI / 180);
@@ -219,9 +232,14 @@ export function NotesMindMapView({
     return `M ${start.x} ${start.y} A ${radius} ${radius} 0 0 1 ${end.x} ${end.y}`;
   };
 
-  const arc1Path = createArcPath(arc1Radius, (-85 * Math.PI) / 180, (85 * Math.PI) / 180);
-  const arc2Path = createArcPath(arc2Radius, (-85 * Math.PI) / 180, (85 * Math.PI) / 180);
-  const arc3Path = createArcPath(arc3Radius, (-85 * Math.PI) / 180, (85 * Math.PI) / 180);
+  // Use safe angles for arc paths
+  const safeArc1Angle = (getSafeMaxAngle(arc1Radius) * Math.PI) / 180;
+  const safeArc2Angle = (getSafeMaxAngle(arc2Radius) * Math.PI) / 180;
+  const safeArc3Angle = (getSafeMaxAngle(arc3Radius) * Math.PI) / 180;
+
+  const arc1Path = createArcPath(arc1Radius, -safeArc1Angle, safeArc1Angle);
+  const arc2Path = createArcPath(arc2Radius, -safeArc2Angle, safeArc2Angle);
+  const arc3Path = createArcPath(arc3Radius, -safeArc3Angle, safeArc3Angle);
 
   // Handler to prevent page scroll when any arc is focused
   const handleContainerWheel = (e: React.WheelEvent) => {
