@@ -514,28 +514,6 @@ export function NotesMindMapView({
                   {group.name}
                 </span>
               </button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="p-1 rounded hover:bg-muted transition-colors">
-                    <MoreHorizontal className="h-3 w-3 text-muted-foreground" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-36">
-                  <DropdownMenuItem onClick={() => onAddNote(group.id, null)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Note
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      const folderName = window.prompt("New folder name:");
-                      if (folderName) onAddFolder(group.id, folderName);
-                    }}
-                  >
-                    <FolderOpen className="h-4 w-4 mr-2" />
-                    Add Folder
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
           </div>
         );
@@ -598,47 +576,6 @@ export function NotesMindMapView({
                   >
                     <Plus className="h-3 w-3 text-cyan-500" />
                   </button>
-                  {/* Section menu */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="p-1 rounded hover:bg-muted transition-colors">
-                        <MoreHorizontal className="h-3 w-3 text-muted-foreground" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-40">
-                      <DropdownMenuItem onClick={() => onAddNote(folder.groupId, folder.id)}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Note
-                      </DropdownMenuItem>
-                      {onRenameFolder && (
-                        <DropdownMenuItem
-                          onClick={() => {
-                            const newName = window.prompt("Rename section:", folder.name);
-                            if (newName && newName !== folder.name) onRenameFolder(folder.id, newName);
-                          }}
-                        >
-                          <Pencil className="h-4 w-4 mr-2" />
-                          Rename
-                        </DropdownMenuItem>
-                      )}
-                      {onDeleteFolder && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => {
-                              if (window.confirm(`Delete section "${folder.name}"? Notes inside will be moved out.`)) {
-                                onDeleteFolder(folder.id);
-                              }
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 </div>
               </div>
             );

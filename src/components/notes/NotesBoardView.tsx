@@ -161,6 +161,96 @@ export function NotesBoardView({
               {/* Notes list - Infinite scroll appearance */}
               <ScrollArea className="flex-1 h-full min-h-[calc(100vh-350px)]">
                 <div className="space-y-3 pb-20 pr-2">
+                  {/* Add section input (only shows when triggered from header) - at top */}
+                  {newFolderGroupId === group.id && (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newFolderName}
+                        onChange={(e) => setNewFolderName(e.target.value)}
+                        placeholder="Section name…"
+                        className="flex-1 text-sm px-3 py-1.5 rounded bg-background border border-border/50 focus:outline-none focus:border-primary/40"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleAddFolder(group.id);
+                          if (e.key === "Escape") {
+                            setNewFolderGroupId(null);
+                            setNewFolderName("");
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Sections/Folders - Now at TOP with drag-drop support */}
+                  {groupFolders.map((folder) => {
+                    const folderNotes = notes.filter((n) => n.folderId === folder.id);
+                    const isFolderExpanded = expandedFolders.has(folder.id);
+
+                    return (
+                      <div
+                        key={folder.id}
+                        className="pt-1"
+                        onDragOver={handleDragOver}
+                        onDrop={(e) => handleDrop(e, group.id, folder.id)}
+                      >
+                        <button
+                          onClick={() => toggleFolder(folder.id)}
+                          className={cn(
+                            "w-full flex items-center gap-2 px-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-all rounded-md",
+                            draggedNoteId && "bg-cyan-500/10 border border-dashed border-cyan-400/50",
+                          )}
+                        >
+                          <ChevronRight
+                            className={"h-3 w-3 transition-transform " + (isFolderExpanded ? "rotate-90" : "")}
+                          />
+                          <span className="flex-1 text-left font-medium">{folder.name}</span>
+                          <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">{folderNotes.length}</span>
+                          {draggedNoteId && <span className="text-[10px] text-cyan-500 font-medium">Drop here</span>}
+                        </button>
+
+                        {isFolderExpanded && (
+                          <div className="mt-1 ml-3 space-y-2">
+                            {folderNotes.map((note) => (
+                              <div
+                                key={note.id}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, note.id)}
+                                onDragEnd={handleDragEnd}
+                                className={cn(
+                                  "rounded-lg bg-background border transition-all cursor-pointer group",
+                                  selectedNoteId === note.id
+                                    ? "border-primary/50 shadow-sm"
+                                    : "border-border/30 hover:border-border/60",
+                                  draggedNoteId === note.id && "opacity-50",
+                                )}
+                                onClick={() => onNoteClick(note)}
+                              >
+                                <div className="p-3">
+                                  <h4 className="text-sm text-foreground line-clamp-2">{note.title || "Untitled"}</h4>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-[10px] font-medium text-cyan-500">{folder.name}</span>
+                                    <span className="text-[10px] text-muted-foreground">
+                                      {formatDistanceToNow(new Date(note.updatedAt), { addSuffix: true })}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            {/* Add note to section button */}
+                            <button
+                              onClick={() => onAddNote(group.id, folder.id)}
+                              className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] text-muted-foreground hover:text-foreground bg-background/40 hover:bg-background/70 rounded border border-dashed border-border/30 hover:border-border/50 transition-all"
+                            >
+                              <Plus className="h-3 w-3" />
+                              Add to {folder.name}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
                   {/* Direct notes - clean white cards on transparency */}
                   {groupNotes
                     .filter((n) => !n.folderId)
@@ -302,96 +392,6 @@ export function NotesBoardView({
                         </div>
                       </div>
                     ))}
-
-                  {/* Sections/Folders - Now with drag-drop support */}
-                  {groupFolders.map((folder) => {
-                    const folderNotes = notes.filter((n) => n.folderId === folder.id);
-                    const isFolderExpanded = expandedFolders.has(folder.id);
-
-                    return (
-                      <div
-                        key={folder.id}
-                        className="pt-2"
-                        onDragOver={handleDragOver}
-                        onDrop={(e) => handleDrop(e, group.id, folder.id)}
-                      >
-                        <button
-                          onClick={() => toggleFolder(folder.id)}
-                          className={cn(
-                            "w-full flex items-center gap-2 px-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-all rounded-md",
-                            draggedNoteId && "bg-cyan-500/10 border border-dashed border-cyan-400/50",
-                          )}
-                        >
-                          <ChevronRight
-                            className={"h-3 w-3 transition-transform " + (isFolderExpanded ? "rotate-90" : "")}
-                          />
-                          <span className="flex-1 text-left font-medium">{folder.name}</span>
-                          <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">{folderNotes.length}</span>
-                          {draggedNoteId && <span className="text-[10px] text-cyan-500 font-medium">Drop here</span>}
-                        </button>
-
-                        {isFolderExpanded && (
-                          <div className="mt-1 ml-3 space-y-2">
-                            {folderNotes.map((note) => (
-                              <div
-                                key={note.id}
-                                draggable
-                                onDragStart={(e) => handleDragStart(e, note.id)}
-                                onDragEnd={handleDragEnd}
-                                className={cn(
-                                  "rounded-lg bg-background border transition-all cursor-pointer group",
-                                  selectedNoteId === note.id
-                                    ? "border-primary/50 shadow-sm"
-                                    : "border-border/30 hover:border-border/60",
-                                  draggedNoteId === note.id && "opacity-50",
-                                )}
-                                onClick={() => onNoteClick(note)}
-                              >
-                                <div className="p-3">
-                                  <h4 className="text-sm text-foreground line-clamp-2">{note.title || "Untitled"}</h4>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-[10px] font-medium text-cyan-500">{folder.name}</span>
-                                    <span className="text-[10px] text-muted-foreground">
-                                      {formatDistanceToNow(new Date(note.updatedAt), { addSuffix: true })}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                            {/* Add note to section button */}
-                            <button
-                              onClick={() => onAddNote(group.id, folder.id)}
-                              className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] text-muted-foreground hover:text-foreground bg-background/40 hover:bg-background/70 rounded border border-dashed border-border/30 hover:border-border/50 transition-all"
-                            >
-                              <Plus className="h-3 w-3" />
-                              Add to {folder.name}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                  {/* Add section input (only shows when triggered from header) */}
-                  {newFolderGroupId === group.id && (
-                    <div className="flex gap-2 mt-2">
-                      <input
-                        type="text"
-                        value={newFolderName}
-                        onChange={(e) => setNewFolderName(e.target.value)}
-                        placeholder="Section name…"
-                        className="flex-1 text-sm px-3 py-1.5 rounded bg-background border border-border/50 focus:outline-none focus:border-primary/40"
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleAddFolder(group.id);
-                          if (e.key === "Escape") {
-                            setNewFolderGroupId(null);
-                            setNewFolderName("");
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
                 </div>
               </ScrollArea>
             </div>
