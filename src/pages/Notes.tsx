@@ -795,43 +795,6 @@ export default function Notes() {
               />
             </div>
 
-            {/* Pinned */}
-            {pinnedNotes.length > 0 && (
-              <div className="rounded border border-border/50 bg-card shadow-sm">
-                <div className="p-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Pinned</p>
-                    <p className="text-sm text-muted-foreground mt-1">Fast access to what matters.</p>
-                  </div>
-                </div>
-
-                <div className="px-4 pb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {pinnedNotes.map((n) => (
-                    <button
-                      key={n.id}
-                      onClick={() => handleNoteClick(n)}
-                      className="text-left rounded border border-border/40 bg-background/60 hover:bg-background/80 hover:shadow-sm transition-all p-4"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="font-semibold text-foreground truncate">{n.title || "Untitled"}</p>
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                            {n.plainText || "No content"}
-                          </p>
-                        </div>
-                        <Pin className="h-4 w-4 text-muted-foreground" />
-                      </div>
-
-                      <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                        <span>{getGroupName(n.groupId)}</span>
-                        <span>{formatDistanceToNow(new Date(n.updatedAt), { addSuffix: true })}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Content */}
             {notesView === "atlas" && (
               <div className="space-y-4">
