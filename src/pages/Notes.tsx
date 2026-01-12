@@ -72,6 +72,7 @@ export interface Note {
   isArchived: boolean;
   isCompleted?: boolean;
   scribbleStrokes?: string;
+  sortOrder?: number;
 }
 
 const STORAGE_KEY_GROUPS = "notes-groups";
@@ -463,6 +464,16 @@ export default function Notes() {
       title: "Section created",
       description: `"${folderName}" added to ${getGroupName(groupId)}`,
     });
+  };
+
+  const handleReorderFolders = (groupId: string, reorderedFolders: NoteFolder[]) => {
+    // Update folders with new sort order
+    setFolders(
+      folders.map((f) => {
+        const updated = reorderedFolders.find((rf) => rf.id === f.id);
+        return updated || f;
+      }),
+    );
   };
 
   const handleUpdateGroup = (updatedGroup: NoteGroup) => {
@@ -886,6 +897,7 @@ export default function Notes() {
                   onAddFolder={handleCreateFolder}
                   onUpdateNote={handleSaveNote}
                   onAddGroup={() => setSettingsOpen(true)}
+                  onReorderFolders={handleReorderFolders}
                 />
               </div>
             )}

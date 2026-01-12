@@ -37,6 +37,8 @@ interface NotesBoardViewProps {
   onUpdateNote?: (note: Note) => void;
   onDeleteNote?: (noteId: string) => void;
   onAddGroup?: () => void;
+  onUpdateFolder?: (folder: NoteFolder) => void;
+  onReorderFolders?: (groupId: string, folders: NoteFolder[]) => void;
 }
 
 export function NotesBoardView({
@@ -50,19 +52,29 @@ export function NotesBoardView({
   onUpdateNote,
   onDeleteNote,
   onAddGroup,
+  onUpdateFolder,
+  onReorderFolders,
 }: NotesBoardViewProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [newFolderGroupId, setNewFolderGroupId] = useState<string | null>(null);
   const [newFolderName, setNewFolderName] = useState("");
   const [draggedNoteId, setDraggedNoteId] = useState<string | null>(null);
+  const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null);
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+  const [dragOverNoteId, setDragOverNoteId] = useState<string | null>(null);
 
+  // Note drag handlers
   const handleDragStart = (e: React.DragEvent, noteId: string) => {
-    e.dataTransfer.setData("text/plain", noteId);
+    e.dataTransfer.setData("noteId", noteId);
+    e.dataTransfer.effectAllowed = "move";
     setDraggedNoteId(noteId);
   };
 
   const handleDragEnd = () => {
     setDraggedNoteId(null);
+    setDraggedFolderId(null);
+    setDragOverFolderId(null);
+    setDragOverNoteId(null);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -72,14 +84,81 @@ export function NotesBoardView({
 
   const handleDrop = (e: React.DragEvent, targetGroupId: string, targetFolderId: string | null) => {
     e.preventDefault();
-    const noteId = e.dataTransfer.getData("text/plain");
+    const noteId = e.dataTransfer.getData("noteId");
     if (noteId && onUpdateNote) {
       const note = notes.find((n) => n.id === noteId);
       if (note && (note.groupId !== targetGroupId || note.folderId !== targetFolderId)) {
         onUpdateNote({ ...note, groupId: targetGroupId, folderId: targetFolderId });
       }
     }
-    setDraggedNoteId(null);
+    handleDragEnd();
+  };
+
+  // Folder/Section drag handlers
+  const handleFolderDragStart = (e: React.DragEvent, folderId: string) => {
+    e.dataTransfer.setData("folderId", folderId);
+    e.dataTransfer.effectAllowed = "move";
+    setDraggedFolderId(folderId);
+  };
+
+  const handleFolderDragOver = (e: React.DragEvent, folderId: string) => {
+    e.preventDefault();
+    if (draggedFolderId && draggedFolderId !== folderId) {
+      setDragOverFolderId(folderId);
+    }
+  };
+
+  const handleFolderDrop = (
+    e: React.DragEvent,
+    targetFolderId: string,
+    groupFolders: NoteFolder[],
+    groupId: string,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const sourceFolderId = e.dataTransfer.getData("folderId");
+    if (sourceFolderId && sourceFolderId !== targetFolderId && onReorderFolders) {
+      const sourceIndex = groupFolders.findIndex((f) => f.id === sourceFolderId);
+      const targetIndex = groupFolders.findIndex((f) => f.id === targetFolderId);
+      if (sourceIndex !== -1 && targetIndex !== -1) {
+        const reordered = [...groupFolders];
+        const [moved] = reordered.splice(sourceIndex, 1);
+        reordered.splice(targetIndex, 0, moved);
+        // Update sortOrder
+        const updated = reordered.map((f, i) => ({ ...f, sortOrder: i }));
+        onReorderFolders(groupId, updated);
+      }
+    }
+    handleDragEnd();
+  };
+
+  // Note reordering within the same context
+  const handleNoteDragOver = (e: React.DragEvent, noteId: string) => {
+    e.preventDefault();
+    if (draggedNoteId && draggedNoteId !== noteId) {
+      setDragOverNoteId(noteId);
+    }
+  };
+
+  const handleNoteReorder = (e: React.DragEvent, targetNoteId: string, groupId: string, folderId: string | null) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const sourceNoteId = e.dataTransfer.getData("noteId");
+    if (sourceNoteId && sourceNoteId !== targetNoteId && onUpdateNote) {
+      const sourceNote = notes.find((n) => n.id === sourceNoteId);
+      const targetNote = notes.find((n) => n.id === targetNoteId);
+      if (sourceNote && targetNote) {
+        // Move source note to target's group/folder and swap sortOrder
+        const updatedNote = {
+          ...sourceNote,
+          groupId,
+          folderId,
+          sortOrder: targetNote.sortOrder,
+        };
+        onUpdateNote(updatedNote);
+      }
+    }
+    handleDragEnd();
   };
 
   const toggleComplete = (e: React.MouseEvent, note: Note) => {
@@ -182,90 +261,124 @@ export function NotesBoardView({
                     </div>
                   )}
 
-                  {/* Sections/Folders - Now at TOP with drag-drop support */}
-                  {groupFolders.map((folder) => {
-                    const folderNotes = notes.filter((n) => n.folderId === folder.id);
-                    const isFolderExpanded = expandedFolders.has(folder.id);
+                  {/* Sections/Folders - Draggable to reorder */}
+                  {[...groupFolders]
+                    .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+                    .map((folder) => {
+                      const folderNotes = notes.filter((n) => n.folderId === folder.id);
+                      const isFolderExpanded = expandedFolders.has(folder.id);
+                      const isDraggedFolder = draggedFolderId === folder.id;
+                      const isDragOverFolder = dragOverFolderId === folder.id;
 
-                    return (
-                      <div
-                        key={folder.id}
-                        className="pt-1"
-                        onDragOver={handleDragOver}
-                        onDrop={(e) => handleDrop(e, group.id, folder.id)}
-                      >
-                        <button
-                          onClick={() => toggleFolder(folder.id)}
+                      return (
+                        <div
+                          key={folder.id}
                           className={cn(
-                            "w-full flex items-center gap-2 px-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-all rounded-md",
-                            draggedNoteId && "bg-cyan-500/10 border border-dashed border-cyan-400/50",
+                            "pt-1 transition-all",
+                            isDraggedFolder && "opacity-50",
+                            isDragOverFolder && "border-t-2 border-primary",
                           )}
+                          draggable
+                          onDragStart={(e) => handleFolderDragStart(e, folder.id)}
+                          onDragEnd={handleDragEnd}
+                          onDragOver={(e) => {
+                            handleDragOver(e);
+                            handleFolderDragOver(e, folder.id);
+                          }}
+                          onDrop={(e) => {
+                            if (draggedFolderId) {
+                              handleFolderDrop(e, folder.id, groupFolders, group.id);
+                            } else {
+                              handleDrop(e, group.id, folder.id);
+                            }
+                          }}
+                          onDragLeave={() => setDragOverFolderId(null)}
                         >
-                          <ChevronRight
-                            className={"h-3 w-3 transition-transform " + (isFolderExpanded ? "rotate-90" : "")}
-                          />
-                          <span className="flex-1 text-left font-medium">{folder.name}</span>
-                          <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">{folderNotes.length}</span>
-                          {draggedNoteId && <span className="text-[10px] text-cyan-500 font-medium">Drop here</span>}
-                        </button>
+                          <button
+                            onClick={() => toggleFolder(folder.id)}
+                            className={cn(
+                              "w-full flex items-center gap-2 px-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-all rounded-md cursor-grab active:cursor-grabbing",
+                              draggedNoteId && "bg-cyan-500/10 border border-dashed border-cyan-400/50",
+                            )}
+                          >
+                            <ChevronRight
+                              className={"h-3 w-3 transition-transform " + (isFolderExpanded ? "rotate-90" : "")}
+                            />
+                            <span className="flex-1 text-left font-medium">{folder.name}</span>
+                            <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">{folderNotes.length}</span>
+                            {draggedNoteId && <span className="text-[10px] text-cyan-500 font-medium">Drop here</span>}
+                          </button>
 
-                        {isFolderExpanded && (
-                          <div className="mt-1 ml-3 space-y-2">
-                            {folderNotes.map((note) => (
-                              <div
-                                key={note.id}
-                                draggable
-                                onDragStart={(e) => handleDragStart(e, note.id)}
-                                onDragEnd={handleDragEnd}
-                                className={cn(
-                                  "rounded-lg bg-background border transition-all cursor-pointer group",
-                                  selectedNoteId === note.id
-                                    ? "border-primary/50 shadow-sm"
-                                    : "border-border/30 hover:border-border/60",
-                                  draggedNoteId === note.id && "opacity-50",
-                                )}
-                                onClick={() => onNoteClick(note)}
-                              >
-                                <div className="p-3">
-                                  <h4 className="text-sm text-foreground line-clamp-2">{note.title || "Untitled"}</h4>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-[10px] font-medium text-cyan-500">{folder.name}</span>
-                                    <span className="text-[10px] text-muted-foreground">
-                                      {formatDistanceToNow(new Date(note.updatedAt), { addSuffix: true })}
-                                    </span>
+                          {isFolderExpanded && (
+                            <div className="mt-1 ml-3 space-y-2">
+                              {[...folderNotes]
+                                .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+                                .map((note) => (
+                                  <div
+                                    key={note.id}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, note.id)}
+                                    onDragEnd={handleDragEnd}
+                                    onDragOver={(e) => handleNoteDragOver(e, note.id)}
+                                    onDrop={(e) => handleNoteReorder(e, note.id, group.id, folder.id)}
+                                    onDragLeave={() => setDragOverNoteId(null)}
+                                    className={cn(
+                                      "rounded-lg bg-background border transition-all cursor-grab active:cursor-grabbing group",
+                                      selectedNoteId === note.id
+                                        ? "border-primary/50 shadow-sm"
+                                        : "border-border/30 hover:border-border/60",
+                                      draggedNoteId === note.id && "opacity-50 scale-95",
+                                      dragOverNoteId === note.id && "border-t-2 border-t-primary",
+                                    )}
+                                    onClick={() => onNoteClick(note)}
+                                  >
+                                    <div className="p-3">
+                                      <h4 className="text-sm text-foreground line-clamp-2">
+                                        {note.title || "Untitled"}
+                                      </h4>
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-[10px] font-medium text-cyan-500">{folder.name}</span>
+                                        <span className="text-[10px] text-muted-foreground">
+                                          {formatDistanceToNow(new Date(note.updatedAt), { addSuffix: true })}
+                                        </span>
+                                      </div>
+                                    </div>
                                   </div>
-                                </div>
-                              </div>
-                            ))}
-                            {/* Add note to section button */}
-                            <button
-                              onClick={() => onAddNote(group.id, folder.id)}
-                              className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] text-muted-foreground hover:text-foreground bg-background/40 hover:bg-background/70 rounded border border-dashed border-border/30 hover:border-border/50 transition-all"
-                            >
-                              <Plus className="h-3 w-3" />
-                              Add to {folder.name}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                                ))}
+                              {/* Add note to section button */}
+                              <button
+                                onClick={() => onAddNote(group.id, folder.id)}
+                                className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] text-muted-foreground hover:text-foreground bg-background/40 hover:bg-background/70 rounded border border-dashed border-border/30 hover:border-border/50 transition-all"
+                              >
+                                <Plus className="h-3 w-3" />
+                                Add to {folder.name}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
 
                   {/* Direct notes - clean white cards on transparency */}
                   {groupNotes
                     .filter((n) => !n.folderId)
+                    .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
                     .map((note) => (
                       <div
                         key={note.id}
                         draggable
                         onDragStart={(e) => handleDragStart(e, note.id)}
                         onDragEnd={handleDragEnd}
+                        onDragOver={(e) => handleNoteDragOver(e, note.id)}
+                        onDrop={(e) => handleNoteReorder(e, note.id, group.id, null)}
+                        onDragLeave={() => setDragOverNoteId(null)}
                         className={cn(
-                          "rounded-lg bg-card/95 backdrop-blur-sm border transition-all cursor-pointer shadow-sm group relative",
+                          "rounded-lg bg-card/95 backdrop-blur-sm border transition-all cursor-grab active:cursor-grabbing shadow-sm group relative",
                           selectedNoteId === note.id
                             ? "border-primary/50 ring-1 ring-primary/20"
                             : "border-border/20 hover:bg-card hover:shadow-md",
-                          draggedNoteId === note.id && "opacity-50",
+                          draggedNoteId === note.id && "opacity-50 scale-95",
+                          dragOverNoteId === note.id && "border-t-2 border-t-primary",
                           note.isPinned && "border-l-2 border-l-primary/50",
                         )}
                         onClick={() => onNoteClick(note)}
