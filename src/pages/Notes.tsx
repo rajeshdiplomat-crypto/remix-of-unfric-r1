@@ -48,6 +48,7 @@ export interface NoteGroup {
   name: string;
   color: string;
   sortOrder: number;
+  coverImage?: string; // Custom cover image URL
 }
 
 export interface NoteFolder {
@@ -447,6 +448,10 @@ export default function Notes() {
     });
   };
 
+  const handleUpdateGroup = (updatedGroup: NoteGroup) => {
+    setGroups(groups.map((g) => (g.id === updatedGroup.id ? updatedGroup : g)));
+  };
+
   const handleSaveNote = async (updatedNote: Note) => {
     const noteWithTimestamp = { ...updatedNote, updatedAt: new Date().toISOString() };
     setNotes(notes.map((n) => (n.id === updatedNote.id ? noteWithTimestamp : n)));
@@ -813,6 +818,7 @@ export default function Notes() {
                       onUpdateNote={handleSaveNote}
                       onAddNote={handleCreateNote}
                       onAddFolder={handleCreateFolder}
+                      onUpdateGroup={handleUpdateGroup}
                     />
                   ))}
               </div>

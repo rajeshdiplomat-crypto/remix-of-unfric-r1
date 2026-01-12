@@ -1,12 +1,20 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronRight, ChevronDown, Plus, FolderPlus, MoreHorizontal, Pin } from "lucide-react";
+import { ChevronRight, ChevronDown, Plus, FolderPlus, Pin, Camera, ImageIcon, Upload, RotateCcw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 import { NotesFolderSection } from "./NotesFolderSection";
 import { NotesNoteRow } from "./NotesNoteRow";
 import { NotesActivityDot, getMostRecentUpdate } from "./NotesActivityDot";
-import { getPresetImage } from "@/lib/presetImages";
+import { getPresetImage, getAllPresetImages } from "@/lib/presetImages";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 
 interface NotesGroupSectionProps {
@@ -20,6 +28,7 @@ interface NotesGroupSectionProps {
   onUpdateNote?: (note: Note) => void;
   onAddNote: (groupId: string, folderId: string | null) => void;
   onAddFolder: (groupId: string, folderName: string) => void;
+  onUpdateGroup?: (group: NoteGroup) => void;
   isInFocusMode?: boolean;
   isFocusedGroup?: boolean;
 }
@@ -35,6 +44,7 @@ export function NotesGroupSection({
   onUpdateNote,
   onAddNote,
   onAddFolder,
+  onUpdateGroup,
   isInFocusMode = false,
   isFocusedGroup = false,
 }: NotesGroupSectionProps) {
@@ -42,6 +52,7 @@ export function NotesGroupSection({
   const [isAddingFolder, setIsAddingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const folderInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isFocusedGroup) setIsExpanded(true);
@@ -70,21 +81,101 @@ export function NotesGroupSection({
     setIsAddingFolder(false);
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onUpdateGroup) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        onUpdateGroup({ ...group, coverImage: dataUrl });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePresetSelect = (url: string) => {
+    if (onUpdateGroup) {
+      onUpdateGroup({ ...group, coverImage: url });
+    }
+  };
+
+  const handleResetImage = () => {
+    if (onUpdateGroup) {
+      onUpdateGroup({ ...group, coverImage: undefined });
+    }
+  };
+
   const focusModeClasses = isInFocusMode && !isFocusedGroup ? "opacity-50 pointer-events-none" : "";
+  const presetImages = getAllPresetImages("notes");
+  const currentImage = group.coverImage || getPresetImage("notes", group.id);
 
   return (
     <div className={focusModeClasses}>
       <div className="rounded-xl border border-border/40 bg-card shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
         <div className="flex">
-          {/* Left: Wide Cover Image */}
-          <div className="w-32 shrink-0 overflow-hidden rounded-l-xl self-start relative">
-            <img
-              src={getPresetImage("notes", group.id)}
-              alt=""
-              className="w-full h-auto object-cover min-h-[100px] max-h-[120px]"
-            />
+          {/* Left: Wide Cover Image with change option */}
+          <div className="w-32 shrink-0 overflow-hidden rounded-l-xl self-start relative group/image">
+            <img src={currentImage} alt="" className="w-full h-auto object-cover min-h-[100px] max-h-[120px]" />
             {/* Bottom fade to white/card */}
             <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent" />
+
+            {/* Image change overlay */}
+            {onUpdateGroup && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover/image:bg-black/40 transition-all cursor-pointer">
+                    <div className="opacity-0 group-hover/image:opacity-100 transition-opacity flex flex-col items-center gap-1">
+                      <Camera className="h-5 w-5 text-white drop-shadow-lg" />
+                      <span className="text-[10px] text-white font-medium drop-shadow-lg">Change</span>
+                    </div>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-64 rounded-xl p-2">
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">Change Cover Image</DropdownMenuLabel>
+
+                  {/* Upload option */}
+                  <DropdownMenuItem
+                    className="rounded-lg cursor-pointer"
+                    onClick={() => imageInputRef.current?.click()}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Image
+                  </DropdownMenuItem>
+
+                  {/* Reset to default */}
+                  {group.coverImage && (
+                    <DropdownMenuItem className="rounded-lg cursor-pointer" onClick={handleResetImage}>
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Reset to Default
+                    </DropdownMenuItem>
+                  )}
+
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">Preset Images</DropdownMenuLabel>
+
+                  {/* Preset images grid */}
+                  <div className="grid grid-cols-4 gap-1.5 p-1">
+                    {presetImages.map((preset) => (
+                      <button
+                        key={preset.category}
+                        onClick={() => handlePresetSelect(preset.url)}
+                        className={`aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
+                          currentImage === preset.url
+                            ? "border-primary shadow-md"
+                            : "border-transparent hover:border-border"
+                        }`}
+                        title={preset.category}
+                      >
+                        <img src={preset.url} alt={preset.category} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            {/* Hidden file input */}
+            <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
           </div>
 
           {/* Right: Header & Content */}
