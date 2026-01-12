@@ -523,6 +523,10 @@ export function NotesMindMapView({
           // Check if note was created today (new note indicator)
           const today = new Date().toDateString();
           const isNew = note.createdAt && new Date(note.createdAt).toDateString() === today;
+          // Format date/time
+          const noteDate = note.updatedAt ? new Date(note.updatedAt) : new Date();
+          const dateStr = noteDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+          const timeStr = noteDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
           return (
             <div
               key={entry.id}
@@ -535,12 +539,17 @@ export function NotesMindMapView({
                   onNoteClick(note);
                 }}
                 className={cn(
-                  "flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-300 bg-card/90 hover:bg-card hover:shadow-md border border-border/50 text-left",
+                  "flex flex-col items-start gap-0.5 px-3 py-1.5 rounded-lg transition-all duration-300 bg-card/90 hover:bg-card hover:shadow-md border border-border/50 text-left",
                   selectedNoteId === note.id && "bg-primary/15 border-primary",
                 )}
               >
-                {isNew && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="New" />}
-                <span className="text-sm text-foreground text-left">{note.title || "Untitled"}</span>
+                <div className="flex items-center gap-2">
+                  {isNew && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="New" />}
+                  <span className="text-sm text-foreground">{note.title || "Untitled"}</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground">
+                  {dateStr} • {timeStr}
+                </span>
               </button>
             </div>
           );
@@ -564,6 +573,10 @@ export function NotesMindMapView({
           // Check if note was created today (new note indicator)
           const today = new Date().toDateString();
           const isNew = note.createdAt && new Date(note.createdAt).toDateString() === today;
+          // Format date/time
+          const noteDate = note.updatedAt ? new Date(note.updatedAt) : new Date();
+          const dateStr = noteDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+          const timeStr = noteDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
           return (
             <div
               key={note.id}
@@ -576,12 +589,17 @@ export function NotesMindMapView({
                   onNoteClick(note);
                 }}
                 className={cn(
-                  "flex items-center gap-2 px-3 py-1.5 rounded-md transition-all duration-300 bg-card/90 hover:bg-card hover:shadow-md border border-cyan-300/50 text-left",
+                  "flex flex-col items-start gap-0.5 px-3 py-1.5 rounded-md transition-all duration-300 bg-card/90 hover:bg-card hover:shadow-md border border-cyan-300/50 text-left",
                   selectedNoteId === note.id && "bg-cyan-500/20 border-cyan-400",
                 )}
               >
-                {isNew && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="New" />}
-                <span className="text-xs text-foreground text-left">{note.title || "Untitled"}</span>
+                <div className="flex items-center gap-2">
+                  {isNew && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="New" />}
+                  <span className="text-xs text-foreground">{note.title || "Untitled"}</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground">
+                  {dateStr} • {timeStr}
+                </span>
               </button>
             </div>
           );
