@@ -87,10 +87,10 @@ export function NotesMindMapView({
   const arcCenterX = 100;
   const arcCenterY = dimensions.height / 2;
 
-  // Arc radii for semi-circles - wider to use more screen space
-  const arc1Radius = 180;
-  const arc2Radius = 380;
-  const arc3Radius = 560;
+  // Arc radii for semi-circles - widened to fill more screen space
+  const arc1Radius = 200;
+  const arc2Radius = 450;
+  const arc3Radius = 680;
 
   // Max visible items per arc
   const maxVisibleItems = 6;
@@ -277,8 +277,8 @@ export function NotesMindMapView({
       className="relative w-full h-[calc(100vh-180px)] min-h-[500px] overflow-hidden"
       onWheel={handleContainerWheel}
     >
-      {/* SVG for semi-circle arcs - with clickable zones */}
-      <svg className="absolute inset-0 w-full h-full">
+      {/* SVG for visual arcs - low z-index (behind items) */}
+      <svg className="absolute inset-0 w-full h-full z-0 pointer-events-none">
         <defs>
           <linearGradient id="arcGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor={activeColor} stopOpacity="0.1" />
@@ -298,73 +298,69 @@ export function NotesMindMapView({
         </defs>
 
         {/* Arc 1 - visible stroke */}
-        <path
-          d={arc1Path}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="3"
-          className="text-border pointer-events-none"
-        />
-        <path
-          d={arc1Path}
-          fill="none"
-          stroke="url(#arcGrad1)"
-          strokeWidth="8"
-          opacity="0.5"
-          className="pointer-events-none"
-        />
-        {/* Arc 1 - clickable zone (thick transparent stroke) */}
-        <path
-          d={arc1Path}
-          fill="none"
-          stroke={focusedArc === 1 ? "rgba(59, 130, 246, 0.15)" : "transparent"}
-          strokeWidth="30"
-          className="cursor-pointer hover:stroke-primary/10 transition-all"
-          onClick={() => setFocusedArc(focusedArc === 1 ? null : 1)}
-        />
+        <path d={arc1Path} fill="none" stroke="currentColor" strokeWidth="3" className="text-border" />
+        <path d={arc1Path} fill="none" stroke="url(#arcGrad1)" strokeWidth="8" opacity="0.5" />
 
         {/* Arc 2 - visible stroke */}
         {selectedGroup && (
-          <>
-            <path
-              d={arc2Path}
-              fill="none"
-              stroke="url(#arcGrad2)"
-              strokeWidth="4"
-              className="animate-in fade-in duration-500 pointer-events-none"
-            />
-            {/* Arc 2 - clickable zone */}
-            <path
-              d={arc2Path}
-              fill="none"
-              stroke={focusedArc === 2 ? "rgba(59, 130, 246, 0.15)" : "transparent"}
-              strokeWidth="30"
-              className="cursor-pointer hover:stroke-primary/10 transition-all"
-              onClick={() => setFocusedArc(focusedArc === 2 ? null : 2)}
-            />
-          </>
+          <path
+            d={arc2Path}
+            fill="none"
+            stroke="url(#arcGrad2)"
+            strokeWidth="4"
+            className="animate-in fade-in duration-500"
+          />
         )}
 
         {/* Arc 3 - visible stroke */}
         {selectedFolder && (
-          <>
-            <path
-              d={arc3Path}
-              fill="none"
-              stroke="url(#arcGrad3)"
-              strokeWidth="3"
-              className="animate-in fade-in duration-500 pointer-events-none"
-            />
-            {/* Arc 3 - clickable zone */}
-            <path
-              d={arc3Path}
-              fill="none"
-              stroke={focusedArc === 3 ? "rgba(6, 182, 212, 0.15)" : "transparent"}
-              strokeWidth="30"
-              className="cursor-pointer hover:stroke-cyan-500/10 transition-all"
-              onClick={() => setFocusedArc(focusedArc === 3 ? null : 3)}
-            />
-          </>
+          <path
+            d={arc3Path}
+            fill="none"
+            stroke="url(#arcGrad3)"
+            strokeWidth="3"
+            className="animate-in fade-in duration-500"
+          />
+        )}
+      </svg>
+
+      {/* SVG for clickable arc zones - high z-index (above items) */}
+      <svg className="absolute inset-0 w-full h-full z-30">
+        {/* Arc 1 - clickable zone */}
+        <path
+          d={arc1Path}
+          fill="none"
+          stroke={focusedArc === 1 ? "rgba(59, 130, 246, 0.25)" : "transparent"}
+          strokeWidth="40"
+          className="cursor-pointer hover:stroke-primary/15 transition-all duration-200"
+          style={{ filter: focusedArc === 1 ? "drop-shadow(0 0 8px rgba(59, 130, 246, 0.5))" : "none" }}
+          onClick={() => setFocusedArc(focusedArc === 1 ? null : 1)}
+        />
+
+        {/* Arc 2 - clickable zone */}
+        {selectedGroup && (
+          <path
+            d={arc2Path}
+            fill="none"
+            stroke={focusedArc === 2 ? "rgba(59, 130, 246, 0.25)" : "transparent"}
+            strokeWidth="40"
+            className="cursor-pointer hover:stroke-primary/15 transition-all duration-200"
+            style={{ filter: focusedArc === 2 ? "drop-shadow(0 0 8px rgba(59, 130, 246, 0.5))" : "none" }}
+            onClick={() => setFocusedArc(focusedArc === 2 ? null : 2)}
+          />
+        )}
+
+        {/* Arc 3 - clickable zone */}
+        {selectedFolder && (
+          <path
+            d={arc3Path}
+            fill="none"
+            stroke={focusedArc === 3 ? "rgba(6, 182, 212, 0.25)" : "transparent"}
+            strokeWidth="40"
+            className="cursor-pointer hover:stroke-cyan-500/15 transition-all duration-200"
+            style={{ filter: focusedArc === 3 ? "drop-shadow(0 0 8px rgba(6, 182, 212, 0.5))" : "none" }}
+            onClick={() => setFocusedArc(focusedArc === 3 ? null : 3)}
+          />
         )}
       </svg>
 
@@ -642,10 +638,16 @@ export function NotesMindMapView({
         </div>
       )}
 
-      {/* Bottom hint */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 text-xs text-muted-foreground bg-card/90 backdrop-blur-sm px-4 py-2 rounded-full border border-border/50 shadow-sm z-20">
+      {/* Bottom hint with scroll status */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 text-xs text-muted-foreground bg-card/90 backdrop-blur-sm px-4 py-2 rounded-full border border-border/50 shadow-sm z-40">
         <Sparkles className="h-3 w-3 text-primary animate-pulse" />
-        <span>Click groups • Click folders • Use arrows to scroll</span>
+        {focusedArc ? (
+          <span className="text-primary font-medium">
+            Arc {focusedArc} focused • Scroll with mouse wheel • Click arc again to unfocus
+          </span>
+        ) : (
+          <span>Click groups • Click folders • Click arc lines to enable scrolling</span>
+        )}
       </div>
     </div>
   );
