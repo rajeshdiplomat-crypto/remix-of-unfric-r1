@@ -1,5 +1,14 @@
 import { useState, useMemo } from "react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, addMonths, subMonths } from "date-fns";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameDay,
+  isToday,
+  addMonths,
+  subMonths,
+} from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, RefreshCw, Sparkles, Calendar as CalendarIcon } from "lucide-react";
@@ -22,9 +31,7 @@ export function JournalSidebarPanel({
   skin,
 }: JournalSidebarPanelProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [dailyPrompt, setDailyPrompt] = useState(() => 
-    DAILY_PROMPTS[Math.floor(Math.random() * DAILY_PROMPTS.length)]
-  );
+  const [dailyPrompt, setDailyPrompt] = useState(() => DAILY_PROMPTS[Math.floor(Math.random() * DAILY_PROMPTS.length)]);
 
   const daysInMonth = useMemo(() => {
     const start = startOfMonth(currentMonth);
@@ -33,7 +40,7 @@ export function JournalSidebarPanel({
   }, [currentMonth]);
 
   const entriesDates = useMemo(() => {
-    return new Set(entries.map(e => e.entryDate));
+    return new Set(entries.map((e) => e.entryDate));
   }, [entries]);
 
   const hasEntry = (date: Date) => {
@@ -41,9 +48,7 @@ export function JournalSidebarPanel({
   };
 
   const recentEntries = useMemo(() => {
-    return [...entries]
-      .sort((a, b) => new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime())
-      .slice(0, 8);
+    return [...entries].sort((a, b) => new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime()).slice(0, 8);
   }, [entries]);
 
   const refreshPrompt = () => {
@@ -51,16 +56,18 @@ export function JournalSidebarPanel({
     setDailyPrompt(newPrompt);
   };
 
-  const cardStyle = skin ? {
-    backgroundColor: skin.cardBg,
-    borderColor: skin.border,
-    color: skin.text,
-  } : {};
+  const cardStyle = skin
+    ? {
+        backgroundColor: skin.cardBg,
+        borderColor: skin.border,
+        color: skin.text,
+      }
+    : {};
 
   const mutedStyle = skin ? { color: skin.mutedText } : {};
 
   return (
-    <div 
+    <div
       className="w-full flex-shrink-0 h-full overflow-auto space-y-4 pr-2"
       style={skin ? { backgroundColor: skin.panelBg } : undefined}
     >
@@ -81,9 +88,7 @@ export function JournalSidebarPanel({
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-xs font-medium min-w-[80px] text-center">
-                {format(currentMonth, "MMM yyyy")}
-              </span>
+              <span className="text-xs font-medium min-w-[80px] text-center">{format(currentMonth, "MMM yyyy")}</span>
               <Button
                 variant="ghost"
                 size="sm"
@@ -122,8 +127,8 @@ export function JournalSidebarPanel({
                     isSelected
                       ? "bg-primary text-primary-foreground"
                       : isTodayDate
-                      ? "bg-primary/20 text-primary"
-                      : "hover:bg-muted/50"
+                        ? "bg-primary/20 text-primary"
+                        : "hover:bg-muted/50",
                   )}
                 >
                   {format(day, "d")}
@@ -134,12 +139,7 @@ export function JournalSidebarPanel({
               );
             })}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full mt-3 text-xs"
-            onClick={() => onDateSelect(new Date())}
-          >
+          <Button variant="ghost" size="sm" className="w-full mt-3 text-xs" onClick={() => onDateSelect(new Date())}>
             Jump to Today
           </Button>
         </CardContent>
@@ -153,12 +153,7 @@ export function JournalSidebarPanel({
               <Sparkles className="h-4 w-4" />
               Daily Prompt
             </CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={refreshPrompt}
-            >
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={refreshPrompt}>
               <RefreshCw className="h-3 w-3" />
             </Button>
           </div>
@@ -167,12 +162,7 @@ export function JournalSidebarPanel({
           <p className="text-sm mb-3 italic" style={mutedStyle}>
             "{dailyPrompt}"
           </p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full text-xs"
-            onClick={() => onInsertPrompt(dailyPrompt)}
-          >
+          <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => onInsertPrompt(dailyPrompt)}>
             Use this prompt
           </Button>
         </CardContent>
@@ -196,12 +186,10 @@ export function JournalSidebarPanel({
                   onClick={() => onDateSelect(new Date(entry.entryDate))}
                   className={cn(
                     "w-full text-left p-2 rounded-md hover:bg-muted/30 transition-colors",
-                    isSameDay(new Date(entry.entryDate), selectedDate) && "bg-muted/50"
+                    isSameDay(new Date(entry.entryDate), selectedDate) && "bg-muted/50",
                   )}
                 >
-                  <div className="text-sm font-medium truncate">
-                    {entry.title || "Untitled"}
-                  </div>
+                  <div className="text-sm font-medium truncate">{entry.title || "Untitled"}</div>
                   <div className="text-xs" style={mutedStyle}>
                     {format(new Date(entry.entryDate), "MMM d, yyyy")}
                   </div>

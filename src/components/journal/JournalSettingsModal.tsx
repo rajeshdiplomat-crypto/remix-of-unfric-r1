@@ -1,10 +1,5 @@
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -13,13 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Plus, Trash2, GripVertical, RotateCcw, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  JournalTemplate,
-  JournalQuestion,
-  JournalSkin,
-  JOURNAL_SKINS,
-  DEFAULT_QUESTIONS,
-} from "./types";
+import { JournalTemplate, JournalQuestion, JournalSkin, JOURNAL_SKINS, DEFAULT_QUESTIONS } from "./types";
 
 interface JournalSettingsModalProps {
   open: boolean;
@@ -38,16 +27,12 @@ export function JournalSettingsModal({
   currentSkinId,
   onSkinChange,
 }: JournalSettingsModalProps) {
-  const [localQuestions, setLocalQuestions] = useState<JournalQuestion[]>(
-    template.questions
-  );
+  const [localQuestions, setLocalQuestions] = useState<JournalQuestion[]>(template.questions);
   const [applyOnNewEntry, setApplyOnNewEntry] = useState(template.applyOnNewEntry);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   const handleQuestionTextChange = (id: string, text: string) => {
-    setLocalQuestions((prev) =>
-      prev.map((q) => (q.id === id ? { ...q, text } : q))
-    );
+    setLocalQuestions((prev) => prev.map((q) => (q.id === id ? { ...q, text } : q)));
   };
 
   const handleAddQuestion = () => {
@@ -112,21 +97,12 @@ export function JournalSettingsModal({
           <TabsContent value="questions" className="flex-1 overflow-auto space-y-4 mt-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Switch
-                  id="apply-preset"
-                  checked={applyOnNewEntry}
-                  onCheckedChange={setApplyOnNewEntry}
-                />
+                <Switch id="apply-preset" checked={applyOnNewEntry} onCheckedChange={setApplyOnNewEntry} />
                 <Label htmlFor="apply-preset" className="text-sm">
                   Apply preset questions on new entry
                 </Label>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleResetToDefault}
-                className="text-xs"
-              >
+              <Button variant="outline" size="sm" onClick={handleResetToDefault} className="text-xs">
                 <RotateCcw className="h-3 w-3 mr-1" />
                 Reset to default
               </Button>
@@ -142,15 +118,13 @@ export function JournalSettingsModal({
                   onDragEnd={handleDragEnd}
                   className={cn(
                     "flex items-center gap-2 p-2 rounded-md border border-border/50 bg-card transition-all",
-                    draggedIndex === index && "opacity-50"
+                    draggedIndex === index && "opacity-50",
                   )}
                 >
                   <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab flex-shrink-0" />
                   <Input
                     value={question.text}
-                    onChange={(e) =>
-                      handleQuestionTextChange(question.id, e.target.value)
-                    }
+                    onChange={(e) => handleQuestionTextChange(question.id, e.target.value)}
                     className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                   <Button
@@ -165,12 +139,7 @@ export function JournalSettingsModal({
               ))}
             </div>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleAddQuestion}
-              className="w-full"
-            >
+            <Button variant="outline" size="sm" onClick={handleAddQuestion} className="w-full">
               <Plus className="h-4 w-4 mr-1" />
               Add Question
             </Button>
@@ -183,7 +152,7 @@ export function JournalSettingsModal({
                   key={skin.id}
                   className={cn(
                     "p-3 cursor-pointer transition-all hover:shadow-md relative overflow-hidden",
-                    currentSkinId === skin.id && "ring-2 ring-primary"
+                    currentSkinId === skin.id && "ring-2 ring-primary",
                   )}
                   style={{
                     backgroundColor: skin.cardBg,
@@ -197,19 +166,10 @@ export function JournalSettingsModal({
                     </div>
                   )}
                   <div className="space-y-2">
-                    <div
-                      className="h-12 rounded-md"
-                      style={{ backgroundColor: skin.pageBg }}
-                    >
-                      <div
-                        className="h-full m-1 rounded"
-                        style={{ backgroundColor: skin.editorPaperBg }}
-                      />
+                    <div className="h-12 rounded-md" style={{ backgroundColor: skin.pageBg }}>
+                      <div className="h-full m-1 rounded" style={{ backgroundColor: skin.editorPaperBg }} />
                     </div>
-                    <p
-                      className="text-sm font-medium"
-                      style={{ color: skin.text }}
-                    >
+                    <p className="text-sm font-medium" style={{ color: skin.text }}>
                       {skin.name}
                     </p>
                   </div>
