@@ -164,79 +164,70 @@ export function NotesGroupSection({
 
             {/* Expanded Body */}
             {isExpanded && (
-              <div className="px-4 pb-4 pt-2">
-                {/* Accent gradient bar */}
-                <div
-                  className="h-0.5 rounded-full mb-3 opacity-60"
-                  style={{ background: `linear-gradient(90deg, ${group.color || "#64748b"} 0%, transparent 100%)` }}
-                />
-
-                <div className="rounded-xl bg-gradient-to-b from-muted/30 to-background/50 p-4 border border-border/20">
-                  {/* Empty */}
-                  {allGroupNotes.length === 0 && groupFolders.length === 0 ? (
-                    <div className="py-6 text-center">
-                      <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-muted/50 flex items-center justify-center">
-                        <Plus className="h-5 w-5 text-muted-foreground/50" />
-                      </div>
-                      <p className="text-xs text-muted-foreground">No notes yet</p>
-                      <div className="mt-3 flex justify-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 rounded-lg text-xs"
-                          onClick={() => onAddNote(group.id, null)}
-                        >
-                          <Plus className="h-3 w-3 mr-1.5" />
-                          Add note
-                        </Button>
-                      </div>
+              <div className="px-4 pb-5 pt-3">
+                {/* Empty */}
+                {allGroupNotes.length === 0 && groupFolders.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-muted/60 to-muted/20 flex items-center justify-center">
+                      <Plus className="h-6 w-6 text-muted-foreground/40" />
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {/* Sections Header */}
-                      {groupFolders.length > 0 && (
-                        <div className="flex items-center gap-2 pb-2">
-                          <div className="h-4 w-1 rounded-full bg-cyan-500" />
-                          <span className="text-[11px] font-semibold text-cyan-600 uppercase tracking-wide">
+                    <p className="text-sm text-muted-foreground/60 mb-3">Start adding notes</p>
+                    <Button
+                      size="sm"
+                      className="h-9 rounded-full px-5 text-xs bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm"
+                      onClick={() => onAddNote(group.id, null)}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-2" />
+                      New Note
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    {/* Sections */}
+                    {groupFolders.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-cyan-500">
                             Sections
                           </span>
-                          <div className="flex-1 h-px bg-gradient-to-r from-cyan-500/20 to-transparent" />
+                          <div className="flex-1 h-px bg-gradient-to-r from-cyan-500/30 via-cyan-500/10 to-transparent" />
                         </div>
-                      )}
+                        <div className="grid gap-2">
+                          {groupFolders.map((folder) => (
+                            <NotesFolderSection
+                              key={folder.id}
+                              folder={folder}
+                              notes={notes}
+                              group={group}
+                              allGroups={allGroups}
+                              selectedNoteId={selectedNoteId}
+                              onNoteClick={onNoteClick}
+                              onDeleteNote={onDeleteNote}
+                              onUpdateNote={onUpdateNote}
+                              onAddNote={(folderId) => onAddNote(group.id, folderId)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-                      {/* Folders */}
-                      {groupFolders.map((folder) => (
-                        <NotesFolderSection
-                          key={folder.id}
-                          folder={folder}
-                          notes={notes}
-                          group={group}
-                          allGroups={allGroups}
-                          selectedNoteId={selectedNoteId}
-                          onNoteClick={onNoteClick}
-                          onDeleteNote={onDeleteNote}
-                          onUpdateNote={onUpdateNote}
-                          onAddNote={(folderId) => onAddNote(group.id, folderId)}
-                        />
-                      ))}
+                    {/* Direct Notes */}
+                    {directNotes.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+                            {groupFolders.length > 0 ? "Quick Notes" : "All Notes"}
+                          </span>
+                          <span className="text-[10px] font-medium text-muted-foreground/40 bg-muted/40 px-2 py-0.5 rounded-full">
+                            {directNotes.length}
+                          </span>
+                          <div className="flex-1 h-px bg-gradient-to-r from-border/40 to-transparent" />
+                        </div>
 
-                      {/* Direct Notes */}
-                      {directNotes.length > 0 && (
-                        <div className="space-y-2">
-                          {/* Notes Header */}
-                          <div className="flex items-center gap-2 pb-1">
-                            <div className="h-4 w-1 rounded-full" style={{ background: group.color || "#64748b" }} />
-                            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
-                              {groupFolders.length > 0 ? "Ungrouped Notes" : "Notes"}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground/50">({directNotes.length})</span>
-                            <div className="flex-1 h-px bg-gradient-to-r from-border/50 to-transparent" />
-                          </div>
-
-                          <div className="rounded-lg border border-border/40 bg-card/60 overflow-hidden divide-y divide-border/20">
-                            {directNotes.map((note) => (
+                        <div className="rounded-2xl bg-card/80 backdrop-blur-sm border border-border/30 shadow-sm overflow-hidden">
+                          {directNotes.map((note, idx) => (
+                            <div key={note.id} className={idx > 0 ? "border-t border-border/20" : ""}>
                               <NotesNoteRow
-                                key={note.id}
                                 note={note}
                                 group={group}
                                 allGroups={allGroups}
@@ -246,61 +237,59 @@ export function NotesGroupSection({
                                 onUpdateNote={onUpdateNote}
                                 showActivityDot
                               />
-                            ))}
-                          </div>
+                            </div>
+                          ))}
                         </div>
-                      )}
+                      </div>
+                    )}
 
-                      {/* Actions */}
-                      <div className="pt-2">
-                        {!isAddingFolder ? (
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 rounded text-xs"
-                              onClick={() => onAddNote(group.id, null)}
-                            >
-                              <Plus className="h-3 w-3 mr-1.5" />
-                              Add note
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Input
-                              ref={folderInputRef}
-                              value={newFolderName}
-                              onChange={(e) => setNewFolderName(e.target.value)}
-                              placeholder="Section name…"
-                              className="h-8 w-40 rounded-lg bg-background text-xs"
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleCreateFolder();
-                                if (e.key === "Escape") {
-                                  setIsAddingFolder(false);
-                                  setNewFolderName("");
-                                }
-                              }}
-                            />
-                            <Button size="sm" className="h-8 rounded-lg text-xs" onClick={handleCreateFolder}>
-                              Add
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 rounded-lg text-xs"
-                              onClick={() => {
+                    {/* Actions */}
+                    <div className="pt-3">
+                      {!isAddingFolder ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-9 rounded-full px-4 text-xs border-dashed hover:border-solid"
+                          onClick={() => onAddNote(group.id, null)}
+                        >
+                          <Plus className="h-3.5 w-3.5 mr-2" />
+                          Add note
+                        </Button>
+                      ) : (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Input
+                            ref={folderInputRef}
+                            value={newFolderName}
+                            onChange={(e) => setNewFolderName(e.target.value)}
+                            placeholder="Section name…"
+                            className="h-9 w-44 rounded-xl bg-background text-xs"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleCreateFolder();
+                              if (e.key === "Escape") {
                                 setIsAddingFolder(false);
                                 setNewFolderName("");
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        )}
-                      </div>
+                              }
+                            }}
+                          />
+                          <Button size="sm" className="h-9 rounded-xl text-xs" onClick={handleCreateFolder}>
+                            Add
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-9 rounded-xl text-xs"
+                            onClick={() => {
+                              setIsAddingFolder(false);
+                              setNewFolderName("");
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
