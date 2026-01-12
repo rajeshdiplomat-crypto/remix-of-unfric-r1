@@ -144,14 +144,14 @@ export function NotesBoardView({
               <div className="flex gap-2 mb-2">
                 <button
                   onClick={() => onAddNote(group.id, null)}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs text-muted-foreground hover:text-foreground bg-background/60 hover:bg-background/90 rounded-md border border-dashed border-border/50 hover:border-border transition-all"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs text-muted-foreground hover:text-foreground bg-background/60 hover:bg-background/90 rounded-lg border border-dashed border-border/50 hover:border-border transition-all"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   Add note
                 </button>
                 <button
                   onClick={() => setNewFolderGroupId(group.id)}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs text-muted-foreground hover:text-foreground bg-background/60 hover:bg-background/90 rounded-md border border-dashed border-border/50 hover:border-border transition-all"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs text-muted-foreground hover:text-foreground bg-background/60 hover:bg-background/90 rounded-lg border border-dashed border-border/50 hover:border-border transition-all"
                 >
                   <FolderPlus className="h-3.5 w-3.5" />
                   Add section
@@ -171,7 +171,7 @@ export function NotesBoardView({
                         onDragStart={(e) => handleDragStart(e, note.id)}
                         onDragEnd={handleDragEnd}
                         className={cn(
-                          "rounded-md bg-card/95 backdrop-blur-sm border transition-all cursor-pointer shadow-sm group relative",
+                          "rounded-lg bg-card/95 backdrop-blur-sm border transition-all cursor-pointer shadow-sm group relative",
                           selectedNoteId === note.id
                             ? "border-primary/50 ring-1 ring-primary/20"
                             : "border-border/20 hover:bg-card hover:shadow-md",
@@ -194,17 +194,17 @@ export function NotesBoardView({
                                 {/* Options Menu */}
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
-                                    <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-muted/50 rounded-md transition-opacity">
+                                    <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-muted/50 rounded-lg transition-opacity">
                                       <MoreHorizontal className="h-3 w-3 text-muted-foreground" />
                                     </button>
                                   </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end" className="w-48 rounded-md">
+                                  <DropdownMenuContent align="end" className="w-48 rounded-lg">
                                     <DropdownMenuLabel>Note Options</DropdownMenuLabel>
 
                                     {/* Pin/Unpin option */}
                                     <DropdownMenuItem
                                       onClick={(e) => togglePin(e, note)}
-                                      className="rounded-md cursor-pointer"
+                                      className="rounded-lg cursor-pointer"
                                     >
                                       <Pin className={cn("h-3 w-3 mr-2", note.isPinned && "text-primary")} />
                                       {note.isPinned ? "Unpin Note" : "Pin Note"}
@@ -215,7 +215,7 @@ export function NotesBoardView({
                                         <ArrowRight className="h-3 w-3 mr-2" />
                                         Change Group
                                       </DropdownMenuSubTrigger>
-                                      <DropdownMenuSubContent className="rounded-md">
+                                      <DropdownMenuSubContent className="rounded-lg">
                                         {sortedGroups
                                           .filter((g) => g.id !== group.id)
                                           .map((g) => (
@@ -225,7 +225,7 @@ export function NotesBoardView({
                                                 e.stopPropagation();
                                                 if (onUpdateNote) onUpdateNote({ ...note, groupId: g.id });
                                               }}
-                                              className="rounded-md"
+                                              className="rounded-lg"
                                             >
                                               <span
                                                 className="w-2 h-2 rounded-full mr-2"
@@ -238,7 +238,7 @@ export function NotesBoardView({
                                     </DropdownMenuSub>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
-                                      className="text-destructive focus:text-destructive rounded-md"
+                                      className="text-destructive focus:text-destructive rounded-lg"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         if (onDeleteNote) onDeleteNote(note.id);
@@ -346,7 +346,7 @@ export function NotesBoardView({
             </div>
             <button
               onClick={onAddGroup}
-              className="w-full flex items-center justify-center gap-2 px-3 py-8 text-sm text-muted-foreground hover:text-foreground bg-background/40 hover:bg-background/70 rounded-md border border-dashed border-border/40 hover:border-border transition-all"
+              className="w-full flex items-center justify-center gap-2 px-3 py-8 text-sm text-muted-foreground hover:text-foreground bg-background/40 hover:bg-background/70 rounded-lg border border-dashed border-border/40 hover:border-border transition-all"
             >
               <Plus className="h-4 w-4" />
               Add a new bucket

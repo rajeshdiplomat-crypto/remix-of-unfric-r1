@@ -248,7 +248,7 @@ function StatCard({
 }) {
   return (
     <div
-      className="rounded-md border border-border/40 bg-card shadow-sm hover:shadow-md transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
+      className="rounded-lg border border-border/40 bg-card shadow-sm hover:shadow-md transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
       style={{ animationDelay: `${index * 75}ms`, animationFillMode: "backwards" }}
     >
       <div className="p-4 flex items-start justify-between gap-3">
@@ -257,7 +257,7 @@ function StatCard({
           <p className="mt-1.5 text-xl font-semibold text-foreground">{value}</p>
           {hint && <p className="mt-1 text-xs text-muted-foreground/60">{hint}</p>}
         </div>
-        <div className="h-10 w-10 rounded-md bg-muted/30 flex items-center justify-center text-muted-foreground shrink-0">
+        <div className="h-10 w-10 rounded-lg bg-muted/30 flex items-center justify-center text-muted-foreground shrink-0">
           {icon}
         </div>
       </div>
@@ -539,7 +539,7 @@ export default function Notes() {
             </div>
 
             {/* Sleek Unified Toolbar */}
-            <div className="rounded-md border border-border/40 bg-card/90 backdrop-blur-md shadow-sm">
+            <div className="rounded-lg border border-border/40 bg-card/90 backdrop-blur-md shadow-sm">
               <div className="p-3 flex flex-wrap items-center gap-3">
                 {/* View Mode Switcher */}
                 <div className="flex items-center gap-2">
@@ -556,17 +556,17 @@ export default function Notes() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search..."
-                    className="h-9 rounded-md pl-9 pr-4 text-sm bg-background/70 border-border/40 focus:bg-background focus:ring-1 focus:ring-primary/20 transition-all"
+                    className="h-9 rounded-lg pl-9 pr-4 text-sm bg-background/70 border-border/40 focus:bg-background focus:ring-1 focus:ring-primary/20 transition-all"
                   />
                 </div>
 
                 {/* Sort Select - Pill Shape */}
                 <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                  <SelectTrigger className="h-9 rounded-md w-[130px] text-xs bg-background/70 border-border/40 hover:bg-background transition-colors">
+                  <SelectTrigger className="h-9 rounded-lg w-[130px] text-xs bg-background/70 border-border/40 hover:bg-background transition-colors">
                     <ArrowUpDown className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
                     <SelectValue placeholder="Sort" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-md">
+                  <SelectContent className="rounded-lg">
                     <SelectItem value="updatedAt">Last edited</SelectItem>
                     <SelectItem value="createdAt">Created</SelectItem>
                     <SelectItem value="title">A–Z</SelectItem>
@@ -583,7 +583,7 @@ export default function Notes() {
                     <DropdownMenuTrigger asChild>
                       <Button
                         size="sm"
-                        className="group relative h-9 px-4 rounded-md overflow-hidden bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg hover:shadow-xl transition-all duration-500 gap-2 border-0"
+                        className="group relative h-9 px-4 rounded-lg overflow-hidden bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg hover:shadow-xl transition-all duration-500 gap-2 border-0"
                       >
                         {/* Animated aurora background */}
                         <span className="absolute inset-0 bg-gradient-to-r from-violet-500 via-pink-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse" />
@@ -600,15 +600,15 @@ export default function Notes() {
                         <ChevronDown className="h-3.5 w-3.5 opacity-80 relative z-10" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56 rounded-md p-1">
-                      <DropdownMenuItem onClick={handleNewNoteWithOptions} className="py-2 rounded-md cursor-pointer">
+                    <DropdownMenuContent align="end" className="w-56 rounded-lg p-1">
+                      <DropdownMenuItem onClick={handleNewNoteWithOptions} className="py-2 rounded-lg cursor-pointer">
                         <FileText className="h-4 w-4 mr-3 text-muted-foreground" />
                         <div className="flex flex-col">
                           <span className="text-sm font-medium">New Note</span>
                           <span className="text-xs text-muted-foreground">Choose location</span>
                         </div>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleQuickNote} className="py-2 rounded-md cursor-pointer">
+                      <DropdownMenuItem onClick={handleQuickNote} className="py-2 rounded-lg cursor-pointer">
                         <Zap className="h-4 w-4 mr-3 text-muted-foreground" />
                         <div className="flex flex-col">
                           <span className="text-sm font-medium">Quick Note</span>
@@ -624,17 +624,17 @@ export default function Notes() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-9 w-9 rounded-md hover:bg-muted/50 transition-all"
+                        className="h-9 w-9 rounded-lg hover:bg-muted/50 transition-all"
                         title="More options"
                       >
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-64 rounded-md p-2">
+                    <DropdownMenuContent align="end" className="w-64 rounded-lg p-2">
                       {/* Settings */}
                       <DropdownMenuItem
                         onClick={() => setSettingsOpen(true)}
-                        className="py-2 rounded-md cursor-pointer"
+                        className="py-2 rounded-lg cursor-pointer"
                       >
                         <Settings className="h-4 w-4 mr-3 text-muted-foreground" />
                         <span>Group Settings</span>
@@ -643,7 +643,7 @@ export default function Notes() {
                       {/* Theme Toggle */}
                       <DropdownMenuItem
                         onClick={() => setTheme(theme.isDark ? "calm-blue" : "midnight-dark")}
-                        className="py-2 rounded-md cursor-pointer"
+                        className="py-2 rounded-lg cursor-pointer"
                       >
                         {theme.isDark ? (
                           <Sun className="h-4 w-4 mr-3 text-amber-500" />
