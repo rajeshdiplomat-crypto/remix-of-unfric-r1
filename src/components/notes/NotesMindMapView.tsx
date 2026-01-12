@@ -28,39 +28,25 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [containerHeight, setContainerHeight] = useState(600);
+  const [dimensions, setDimensions] = useState({ width: 1000, height: 600 });
 
   const sortedGroups = useMemo(() => [...groups].sort((a, b) => a.sortOrder - b.sortOrder), [groups]);
 
   useEffect(() => {
-    const updateHeight = () => {
+    const updateDimensions = () => {
       if (containerRef.current) {
-        setContainerHeight(containerRef.current.clientHeight);
+        setDimensions({
+          width: containerRef.current.clientWidth,
+          height: containerRef.current.clientHeight,
+        });
       }
     };
-    updateHeight();
-    window.addEventListener("resize", updateHeight);
-    return () => window.removeEventListener("resize", updateHeight);
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
+    return () => window.removeEventListener("resize", updateDimensions);
   }, []);
 
-  // Arc configuration
-  const centerY = containerHeight / 2;
-  const arcRadius1 = 180; // Groups arc
-  const arcRadius2 = 340; // Entries arc
-  const arcRadius3 = 500; // Folder notes arc
-  const arcSpread = Math.PI * 0.6; // How much of the arc to use (0.6 = 108 degrees)
-
-  // Calculate positions along an arc
-  const getArcPosition = (index: number, total: number, radius: number, startX: number) => {
-    const angleRange = arcSpread;
-    const startAngle = -angleRange / 2;
-    const angle = startAngle + (index / Math.max(total - 1, 1)) * angleRange;
-
-    return {
-      x: startX + radius * (1 - Math.cos(angle)),
-      y: centerY + radius * Math.sin(angle),
-    };
-  };
+  const centerY = dimensions.height / 2;
 
   // Get data for selected group
   const selectedGroupData = useMemo(() => {
@@ -93,20 +79,36 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
     return items;
   }, [selectedGroupData]);
 
+  // Layout columns
+  const col1 = 80; // NOTES
+  const col2 = 220; // Groups
+  const col3 = 420; // Entries
+  const col4 = 620; // Folder notes
+
+  // Calculate vertical positions - evenly distributed
+  const getVerticalPositions = (count: number, totalHeight: number, padding: number = 80) => {
+    const availableHeight = totalHeight - padding * 2;
+    const spacing = availableHeight / Math.max(count - 1, 1);
+    return Array.from({ length: count }, (_, i) => padding + i * spacing);
+  };
+
+  const groupYPositions = getVerticalPositions(sortedGroups.length, dimensions.height, 60);
+  const entryYPositions = getVerticalPositions(secondArcItems.length, dimensions.height, 80);
+  const folderNoteYPositions = getVerticalPositions(selectedFolderNotes.length, dimensions.height, 100);
+
   return (
     <div ref={containerRef} className="relative w-full h-[calc(100vh-180px)] min-h-[500px] overflow-hidden">
-      {/* Background decoration */}
+      {/* Background particles */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Animated floating particles */}
-        {[...Array(8)].map((_, i) => (
+        {[...Array(6)].map((_, i) => (
           <div
             key={i}
-            className="absolute w-1.5 h-1.5 rounded-full bg-primary/30"
+            className="absolute w-1.5 h-1.5 rounded-full bg-primary/20"
             style={{
-              left: `${15 + i * 10}%`,
-              top: `${20 + (i % 4) * 20}%`,
+              left: `${20 + i * 15}%`,
+              top: `${15 + (i % 3) * 30}%`,
               animation: `pulse ${2 + i * 0.3}s ease-in-out infinite`,
-              animationDelay: `${i * 0.2}s`,
+              animationDelay: `${i * 0.3}s`,
             }}
           />
         ))}
@@ -122,98 +124,84 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
           </linearGradient>
           <linearGradient id="arc2Grad" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor={activeColor} stopOpacity="0" />
-            <stop offset="30%" stopColor={activeColor} stopOpacity="0.3" />
-            <stop offset="50%" stopColor={activeColor} stopOpacity="0.5" />
-            <stop offset="70%" stopColor={activeColor} stopOpacity="0.3" />
+            <stop offset="50%" stopColor={activeColor} stopOpacity="0.4" />
             <stop offset="100%" stopColor={activeColor} stopOpacity="0" />
           </linearGradient>
           <linearGradient id="arc3Grad" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#06b6d4" stopOpacity="0" />
-            <stop offset="30%" stopColor="#06b6d4" stopOpacity="0.3" />
-            <stop offset="50%" stopColor="#06b6d4" stopOpacity="0.5" />
-            <stop offset="70%" stopColor="#06b6d4" stopOpacity="0.3" />
+            <stop offset="50%" stopColor="#06b6d4" stopOpacity="0.4" />
             <stop offset="100%" stopColor="#06b6d4" stopOpacity="0" />
           </linearGradient>
         </defs>
 
-        {/* Arc 1 - Groups */}
+        {/* Arc 1 - From NOTES to Groups */}
         <path
-          d={`M 100,${centerY - arcRadius1 * Math.sin(arcSpread / 2)} 
-              Q ${100 + arcRadius1},${centerY} 
-              100,${centerY + arcRadius1 * Math.sin(arcSpread / 2)}`}
+          d={`M ${col1 + 60},${centerY} 
+              Q ${col1 + 90},${centerY - 100} ${col2 - 20},${groupYPositions[0] || centerY - 100}
+              M ${col1 + 60},${centerY} 
+              Q ${col1 + 90},${centerY + 100} ${col2 - 20},${groupYPositions[groupYPositions.length - 1] || centerY + 100}`}
           fill="none"
           stroke="url(#arc1Grad)"
-          strokeWidth="6"
+          strokeWidth="3"
           strokeLinecap="round"
-          className="transition-all duration-500"
         />
 
-        {/* Arc 2 - Entries */}
+        {/* Arc 2 - From Groups to Entries */}
         {selectedGroup && (
           <path
-            d={`M 260,${centerY - arcRadius2 * 0.5} 
-                Q ${260 + arcRadius2 * 0.6},${centerY} 
-                260,${centerY + arcRadius2 * 0.5}`}
+            d={`M ${col2 + 80},${centerY} 
+                Q ${col2 + 120},${centerY - 80} ${col3 - 30},${entryYPositions[0] || centerY - 80}
+                M ${col2 + 80},${centerY} 
+                Q ${col2 + 120},${centerY + 80} ${col3 - 30},${entryYPositions[entryYPositions.length - 1] || centerY + 80}`}
             fill="none"
             stroke="url(#arc2Grad)"
-            strokeWidth="4"
-            strokeLinecap="round"
-            className="animate-in fade-in duration-700"
-          />
-        )}
-
-        {/* Arc 3 - Folder notes */}
-        {selectedFolder && (
-          <path
-            d={`M 480,${centerY - arcRadius3 * 0.4} 
-                Q ${480 + arcRadius3 * 0.5},${centerY} 
-                480,${centerY + arcRadius3 * 0.4}`}
-            fill="none"
-            stroke="url(#arc3Grad)"
             strokeWidth="3"
             strokeLinecap="round"
             className="animate-in fade-in duration-500"
           />
         )}
 
-        {/* Connection line from selected group */}
-        {selectedGroup && activeGroup && (
-          <line
-            x1="250"
-            y1={centerY}
-            x2="280"
-            y2={centerY}
-            stroke={activeColor}
+        {/* Arc 3 - From Folder to Notes */}
+        {selectedFolder && (
+          <path
+            d={`M ${col3 + 100},${centerY} 
+                Q ${col3 + 130},${centerY - 60} ${col4 - 20},${folderNoteYPositions[0] || centerY - 60}
+                M ${col3 + 100},${centerY} 
+                Q ${col3 + 130},${centerY + 60} ${col4 - 20},${folderNoteYPositions[folderNoteYPositions.length - 1] || centerY + 60}`}
+            fill="none"
+            stroke="url(#arc3Grad)"
             strokeWidth="2"
             strokeLinecap="round"
-            opacity="0.6"
-            className="animate-in fade-in duration-300"
+            className="animate-in fade-in duration-500"
           />
         )}
       </svg>
 
-      {/* NOTES Hub */}
-      <div className="absolute left-8 group cursor-pointer" style={{ top: centerY, transform: "translateY(-50%)" }}>
+      {/* ===== Column 1: NOTES Hub ===== */}
+      <div
+        className="absolute group cursor-pointer"
+        style={{ left: col1, top: centerY, transform: "translate(-50%, -50%)" }}
+      >
         <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="relative px-7 py-4 rounded-full bg-card border-2 border-primary/40 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300">
-          <span className="text-lg font-bold text-foreground uppercase tracking-widest">Notes</span>
+        <div className="relative px-6 py-3 rounded-full bg-card border-2 border-primary/40 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300">
+          <span className="text-base font-bold text-foreground uppercase tracking-widest">Notes</span>
         </div>
       </div>
 
-      {/* Groups - Arc 1 */}
+      {/* ===== Column 2: Groups ===== */}
       {sortedGroups.map((group, index) => {
-        const pos = getArcPosition(index, sortedGroups.length, arcRadius1, 120);
         const isSelected = selectedGroup === group.id;
         const isHovered = hoveredItem === `group-${group.id}`;
         const color = GROUP_COLORS[group.id] || "#64748b";
+        const yPos = groupYPositions[index];
 
         return (
           <div
             key={group.id}
-            className="absolute transition-all duration-500 ease-out"
+            className="absolute transition-all duration-400 ease-out"
             style={{
-              left: pos.x,
-              top: pos.y,
+              left: col2,
+              top: yPos,
               transform: "translate(-50%, -50%)",
               zIndex: isSelected ? 20 : 10,
             }}
@@ -226,20 +214,17 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
               onMouseEnter={() => setHoveredItem(`group-${group.id}`)}
               onMouseLeave={() => setHoveredItem(null)}
               className={cn(
-                "relative px-5 py-2.5 rounded-full transition-all duration-300 whitespace-nowrap",
+                "relative px-4 py-2 rounded-full transition-all duration-300 whitespace-nowrap",
                 isSelected ? "bg-card border-2 shadow-lg scale-110" : "hover:bg-muted/60 hover:scale-105",
               )}
               style={{ borderColor: isSelected ? color : "transparent" }}
             >
               {isSelected && (
-                <div
-                  className="absolute inset-0 rounded-full blur-lg opacity-40 animate-pulse"
-                  style={{ background: color }}
-                />
+                <div className="absolute inset-0 rounded-full blur-lg opacity-30" style={{ background: color }} />
               )}
               <span
                 className={cn(
-                  "relative text-base font-semibold transition-colors",
+                  "relative text-sm font-semibold transition-colors",
                   isSelected || isHovered ? "text-foreground" : "text-muted-foreground",
                 )}
                 style={{ color: isSelected ? color : undefined }}
@@ -251,15 +236,13 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
         );
       })}
 
-      {/* Entries - Arc 2 (Folders + Direct Notes) */}
+      {/* ===== Column 3: Entries (Folders + Direct Notes) ===== */}
       {selectedGroup &&
         secondArcItems.map((entry, index) => {
-          const total = secondArcItems.length;
-          const pos = getArcPosition(index, Math.max(total, 3), arcRadius2 * 0.5, 280);
+          const yPos = entryYPositions[index];
           const isFolder = entry.type === "folder";
           const isSelected = isFolder && selectedFolder === entry.id;
           const isHovered = hoveredItem === `entry-${entry.id}`;
-          const opacity = 1 - (Math.abs(index - (total - 1) / 2) / Math.max(total, 1)) * 0.4;
 
           if (isFolder) {
             const folder = entry.data as NoteFolder;
@@ -268,13 +251,12 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
             return (
               <div
                 key={entry.id}
-                className="absolute transition-all duration-500 ease-out animate-in fade-in slide-in-from-left-4"
+                className="absolute transition-all duration-400 ease-out animate-in fade-in slide-in-from-left-4"
                 style={{
-                  left: pos.x,
-                  top: pos.y,
+                  left: col3,
+                  top: yPos,
                   transform: "translate(-50%, -50%)",
-                  opacity,
-                  animationDelay: `${index * 80}ms`,
+                  animationDelay: `${index * 60}ms`,
                   zIndex: isSelected ? 20 : 10,
                 }}
               >
@@ -283,10 +265,10 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
                   onMouseEnter={() => setHoveredItem(`entry-${entry.id}`)}
                   onMouseLeave={() => setHoveredItem(null)}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-300 whitespace-nowrap",
+                    "flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 whitespace-nowrap",
                     isSelected
-                      ? "bg-cyan-500/20 border-2 border-cyan-500/50 shadow-lg scale-105"
-                      : "bg-muted/50 hover:bg-muted/80 hover:shadow-md hover:scale-102 border border-transparent",
+                      ? "bg-cyan-500/20 border-2 border-cyan-400 shadow-lg scale-105"
+                      : "bg-muted/60 hover:bg-muted/80 hover:shadow-md hover:scale-102 border border-transparent",
                   )}
                 >
                   <FolderOpen
@@ -294,9 +276,7 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
                   />
                   <span className="text-sm font-medium text-foreground">{folder.name}</span>
                   <span className="text-xs text-muted-foreground">{folderNotes.length}</span>
-                  <ChevronRight
-                    className={cn("h-3 w-3 text-muted-foreground transition-transform", isSelected && "rotate-90")}
-                  />
+                  {isSelected && <ChevronRight className="h-3 w-3 text-cyan-500" />}
                 </button>
               </div>
             );
@@ -306,13 +286,12 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
           return (
             <div
               key={entry.id}
-              className="absolute transition-all duration-500 ease-out animate-in fade-in slide-in-from-left-4"
+              className="absolute transition-all duration-400 ease-out animate-in fade-in slide-in-from-left-4"
               style={{
-                left: pos.x,
-                top: pos.y,
+                left: col3,
+                top: yPos,
                 transform: "translate(-50%, -50%)",
-                opacity,
-                animationDelay: `${index * 80}ms`,
+                animationDelay: `${index * 60}ms`,
               }}
             >
               <button
@@ -322,7 +301,7 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
                 className={cn(
                   "px-4 py-2 rounded-lg transition-all duration-300 whitespace-nowrap",
                   "hover:bg-muted/60 hover:shadow-md hover:scale-105",
-                  selectedNoteId === note.id && "bg-primary/10 border-l-2 border-primary",
+                  selectedNoteId === note.id && "bg-primary/15 border-l-2 border-primary",
                 )}
               >
                 <span className="text-sm text-foreground">{note.title || "Untitled"}</span>
@@ -331,23 +310,20 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
           );
         })}
 
-      {/* Folder Notes - Arc 3 */}
+      {/* ===== Column 4: Folder Notes ===== */}
       {selectedFolder &&
         selectedFolderNotes.map((note, index) => {
-          const total = selectedFolderNotes.length;
-          const pos = getArcPosition(index, Math.max(total, 3), arcRadius3 * 0.35, 500);
-          const opacity = 1 - (Math.abs(index - (total - 1) / 2) / Math.max(total, 1)) * 0.5;
+          const yPos = folderNoteYPositions[index];
 
           return (
             <div
               key={note.id}
-              className="absolute transition-all duration-500 ease-out animate-in fade-in slide-in-from-left-4"
+              className="absolute transition-all duration-400 ease-out animate-in fade-in slide-in-from-left-4"
               style={{
-                left: pos.x,
-                top: pos.y,
+                left: col4,
+                top: yPos,
                 transform: "translate(-50%, -50%)",
-                opacity,
-                animationDelay: `${index * 60}ms`,
+                animationDelay: `${index * 50}ms`,
               }}
             >
               <button
@@ -356,7 +332,7 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
                 onMouseLeave={() => setHoveredItem(null)}
                 className={cn(
                   "px-3 py-1.5 rounded-md transition-all duration-300 whitespace-nowrap",
-                  "hover:bg-cyan-500/20 hover:shadow-md hover:scale-105",
+                  "hover:bg-cyan-500/15 hover:shadow-md hover:scale-105",
                   selectedNoteId === note.id && "bg-cyan-500/20 border-l-2 border-cyan-500",
                 )}
               >
@@ -366,24 +342,23 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
           );
         })}
 
-      {/* Empty state for selected folder */}
-      {selectedFolder && selectedFolderNotes.length === 0 && (
-        <div
-          className="absolute text-sm text-muted-foreground italic animate-in fade-in"
-          style={{ left: 520, top: centerY, transform: "translateY(-50%)" }}
-        >
-          Empty folder
-        </div>
-      )}
-
-      {/* Empty state for selected group */}
+      {/* Empty states */}
       {selectedGroup && secondArcItems.length === 0 && (
         <div
           className="absolute flex flex-col items-center gap-2 text-muted-foreground animate-in fade-in"
-          style={{ left: 350, top: centerY, transform: "translateY(-50%)" }}
+          style={{ left: col3, top: centerY, transform: "translate(-50%, -50%)" }}
         >
           <Sparkles className="h-5 w-5 opacity-50" />
-          <span className="text-sm italic">No entries yet</span>
+          <span className="text-sm italic">No entries</span>
+        </div>
+      )}
+
+      {selectedFolder && selectedFolderNotes.length === 0 && (
+        <div
+          className="absolute text-sm text-muted-foreground italic animate-in fade-in"
+          style={{ left: col4, top: centerY, transform: "translate(-50%, -50%)" }}
+        >
+          Empty folder
         </div>
       )}
 
