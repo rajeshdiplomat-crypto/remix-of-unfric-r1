@@ -223,7 +223,8 @@ export function NotesBoardView({
                                               key={g.id}
                                               onClick={(e) => {
                                                 e.stopPropagation();
-                                                if (onUpdateNote) onUpdateNote({ ...note, groupId: g.id });
+                                                if (onUpdateNote)
+                                                  onUpdateNote({ ...note, groupId: g.id, folderId: null });
                                               }}
                                               className="rounded-lg"
                                             >
@@ -236,6 +237,41 @@ export function NotesBoardView({
                                           ))}
                                       </DropdownMenuSubContent>
                                     </DropdownMenuSub>
+
+                                    {/* Move to Section submenu */}
+                                    {groupFolders.length > 0 && (
+                                      <DropdownMenuSub>
+                                        <DropdownMenuSubTrigger>
+                                          <FolderPlus className="h-3 w-3 mr-2" />
+                                          Move to Section
+                                        </DropdownMenuSubTrigger>
+                                        <DropdownMenuSubContent className="rounded-lg">
+                                          <DropdownMenuItem
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              if (onUpdateNote) onUpdateNote({ ...note, folderId: null });
+                                            }}
+                                            className="rounded-lg"
+                                          >
+                                            <span className="text-muted-foreground">No section</span>
+                                          </DropdownMenuItem>
+                                          <DropdownMenuSeparator />
+                                          {groupFolders.map((f) => (
+                                            <DropdownMenuItem
+                                              key={f.id}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (onUpdateNote) onUpdateNote({ ...note, folderId: f.id });
+                                              }}
+                                              className={cn("rounded-lg", note.folderId === f.id && "bg-primary/10")}
+                                            >
+                                              <span className="w-2 h-2 rounded-full mr-2 bg-cyan-500" />
+                                              {f.name}
+                                            </DropdownMenuItem>
+                                          ))}
+                                        </DropdownMenuSubContent>
+                                      </DropdownMenuSub>
+                                    )}
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
                                       className="text-destructive focus:text-destructive rounded-lg"
@@ -267,22 +303,31 @@ export function NotesBoardView({
                       </div>
                     ))}
 
-                  {/* Sections/Folders */}
+                  {/* Sections/Folders - Now with drag-drop support */}
                   {groupFolders.map((folder) => {
                     const folderNotes = notes.filter((n) => n.folderId === folder.id);
                     const isFolderExpanded = expandedFolders.has(folder.id);
 
                     return (
-                      <div key={folder.id} className="pt-2">
+                      <div
+                        key={folder.id}
+                        className="pt-2"
+                        onDragOver={handleDragOver}
+                        onDrop={(e) => handleDrop(e, group.id, folder.id)}
+                      >
                         <button
                           onClick={() => toggleFolder(folder.id)}
-                          className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                          className={cn(
+                            "w-full flex items-center gap-2 px-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-all rounded-md",
+                            draggedNoteId && "bg-cyan-500/10 border border-dashed border-cyan-400/50",
+                          )}
                         >
                           <ChevronRight
                             className={"h-3 w-3 transition-transform " + (isFolderExpanded ? "rotate-90" : "")}
                           />
                           <span className="flex-1 text-left font-medium">{folder.name}</span>
-                          <span className="text-[10px]">{folderNotes.length}</span>
+                          <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">{folderNotes.length}</span>
+                          {draggedNoteId && <span className="text-[10px] text-cyan-500 font-medium">Drop here</span>}
                         </button>
 
                         {isFolderExpanded && (
@@ -290,19 +335,37 @@ export function NotesBoardView({
                             {folderNotes.map((note) => (
                               <div
                                 key={note.id}
-                                className={
-                                  "rounded-lg bg-background border transition-all cursor-pointer " +
-                                  (selectedNoteId === note.id
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, note.id)}
+                                onDragEnd={handleDragEnd}
+                                className={cn(
+                                  "rounded-lg bg-background border transition-all cursor-pointer group",
+                                  selectedNoteId === note.id
                                     ? "border-primary/50 shadow-sm"
-                                    : "border-border/30 hover:border-border/60")
-                                }
+                                    : "border-border/30 hover:border-border/60",
+                                  draggedNoteId === note.id && "opacity-50",
+                                )}
                                 onClick={() => onNoteClick(note)}
                               >
                                 <div className="p-3">
                                   <h4 className="text-sm text-foreground line-clamp-2">{note.title || "Untitled"}</h4>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-[10px] font-medium text-cyan-500">{folder.name}</span>
+                                    <span className="text-[10px] text-muted-foreground">
+                                      {formatDistanceToNow(new Date(note.updatedAt), { addSuffix: true })}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
                             ))}
+                            {/* Add note to section button */}
+                            <button
+                              onClick={() => onAddNote(group.id, folder.id)}
+                              className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] text-muted-foreground hover:text-foreground bg-background/40 hover:bg-background/70 rounded border border-dashed border-border/30 hover:border-border/50 transition-all"
+                            >
+                              <Plus className="h-3 w-3" />
+                              Add to {folder.name}
+                            </button>
                           </div>
                         )}
                       </div>
