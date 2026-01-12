@@ -480,6 +480,16 @@ export default function Notes() {
     setGroups(groups.map((g) => (g.id === updatedGroup.id ? updatedGroup : g)));
   };
 
+  const handleReorderGroups = (reorderedGroups: NoteGroup[]) => {
+    // Update groups with new sort order
+    setGroups(
+      groups.map((g) => {
+        const updated = reorderedGroups.find((rg) => rg.id === g.id);
+        return updated || g;
+      }),
+    );
+  };
+
   const handleSaveNote = async (updatedNote: Note) => {
     const noteWithTimestamp = { ...updatedNote, updatedAt: new Date().toISOString() };
     setNotes(notes.map((n) => (n.id === updatedNote.id ? noteWithTimestamp : n)));
@@ -898,6 +908,7 @@ export default function Notes() {
                   onUpdateNote={handleSaveNote}
                   onAddGroup={() => setSettingsOpen(true)}
                   onReorderFolders={handleReorderFolders}
+                  onReorderGroups={handleReorderGroups}
                 />
               </div>
             )}

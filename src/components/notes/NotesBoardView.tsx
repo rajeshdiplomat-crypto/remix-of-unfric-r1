@@ -39,6 +39,7 @@ interface NotesBoardViewProps {
   onAddGroup?: () => void;
   onUpdateFolder?: (folder: NoteFolder) => void;
   onReorderFolders?: (groupId: string, folders: NoteFolder[]) => void;
+  onReorderGroups?: (groups: NoteGroup[]) => void;
 }
 
 export function NotesBoardView({
@@ -54,6 +55,7 @@ export function NotesBoardView({
   onAddGroup,
   onUpdateFolder,
   onReorderFolders,
+  onReorderGroups,
 }: NotesBoardViewProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [newFolderGroupId, setNewFolderGroupId] = useState<string | null>(null);
@@ -62,6 +64,8 @@ export function NotesBoardView({
   const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null);
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   const [dragOverNoteId, setDragOverNoteId] = useState<string | null>(null);
+  const [draggedGroupId, setDraggedGroupId] = useState<string | null>(null);
+  const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
 
   // Note drag handlers
   const handleDragStart = (e: React.DragEvent, noteId: string) => {
@@ -75,6 +79,8 @@ export function NotesBoardView({
     setDraggedFolderId(null);
     setDragOverFolderId(null);
     setDragOverNoteId(null);
+    setDraggedGroupId(null);
+    setDragOverGroupId(null);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -127,6 +133,39 @@ export function NotesBoardView({
         // Update sortOrder
         const updated = reordered.map((f, i) => ({ ...f, sortOrder: i }));
         onReorderFolders(groupId, updated);
+      }
+    }
+    handleDragEnd();
+  };
+
+  // Group/Column drag handlers
+  const handleGroupDragStart = (e: React.DragEvent, groupId: string) => {
+    e.dataTransfer.setData("groupId", groupId);
+    e.dataTransfer.effectAllowed = "move";
+    setDraggedGroupId(groupId);
+  };
+
+  const handleGroupDragOver = (e: React.DragEvent, groupId: string) => {
+    e.preventDefault();
+    if (draggedGroupId && draggedGroupId !== groupId) {
+      setDragOverGroupId(groupId);
+    }
+  };
+
+  const handleGroupDrop = (e: React.DragEvent, targetGroupId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const sourceGroupId = e.dataTransfer.getData("groupId");
+    if (sourceGroupId && sourceGroupId !== targetGroupId && onReorderGroups) {
+      const sourceIndex = sortedGroups.findIndex((g) => g.id === sourceGroupId);
+      const targetIndex = sortedGroups.findIndex((g) => g.id === targetGroupId);
+      if (sourceIndex !== -1 && targetIndex !== -1) {
+        const reordered = [...sortedGroups];
+        const [moved] = reordered.splice(sourceIndex, 1);
+        reordered.splice(targetIndex, 0, moved);
+        // Update sortOrder
+        const updated = reordered.map((g, i) => ({ ...g, sortOrder: i }));
+        onReorderGroups(updated);
       }
     }
     handleDragEnd();
@@ -199,16 +238,35 @@ export function NotesBoardView({
           const groupNotes = notes.filter((n) => n.groupId === group.id);
           const groupFolders = folders.filter((f) => f.groupId === group.id);
           const mostRecentUpdate = getMostRecentUpdate(groupNotes);
+          const isDraggedGroup = draggedGroupId === group.id;
+          const isDragOverGroup = dragOverGroupId === group.id;
 
           return (
             <div
               key={group.id}
-              className="w-[280px] shrink-0 flex flex-col h-full bg-background/0"
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, group.id, null)}
+              className={cn(
+                "w-[280px] shrink-0 flex flex-col h-full bg-background/0 transition-all",
+                isDraggedGroup && "opacity-50 scale-95",
+                isDragOverGroup && "border-l-4 border-l-primary pl-2",
+              )}
+              draggable
+              onDragStart={(e) => handleGroupDragStart(e, group.id)}
+              onDragEnd={handleDragEnd}
+              onDragOver={(e) => {
+                handleDragOver(e);
+                handleGroupDragOver(e, group.id);
+              }}
+              onDrop={(e) => {
+                if (draggedGroupId) {
+                  handleGroupDrop(e, group.id);
+                } else {
+                  handleDrop(e, group.id, null);
+                }
+              }}
+              onDragLeave={() => setDragOverGroupId(null)}
             >
-              {/* Column header with thin accent line */}
-              <div className="mb-2">
+              {/* Column header with thin accent line - drag handle */}
+              <div className="mb-2 cursor-grab active:cursor-grabbing">
                 <div
                   className="h-0.5 rounded-sm mb-3"
                   style={{ background: CATEGORY_GRADIENTS[group.id] || group.color }}
