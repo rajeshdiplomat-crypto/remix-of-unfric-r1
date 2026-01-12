@@ -67,10 +67,10 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
   const arcCenterX = 100;
   const arcCenterY = dimensions.height / 2;
 
-  // Arc radii for semi-circles - increased to fill screen
-  const arc1Radius = 200;
-  const arc2Radius = 480;
-  const arc3Radius = 760;
+  // Arc radii for semi-circles
+  const arc1Radius = 150;
+  const arc2Radius = 320;
+  const arc3Radius = 480;
 
   // Max visible items per arc
   const maxVisibleItems = 6;
@@ -193,41 +193,6 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
   const arc2Path = createArcPath(arc2Radius, (-65 * Math.PI) / 180, (65 * Math.PI) / 180);
   const arc3Path = createArcPath(arc3Radius, (-60 * Math.PI) / 180, (60 * Math.PI) / 180);
 
-  // Mouse wheel scroll handlers - only work when arc is focused
-  // Prevents page scroll when arc is focused
-  const handleArc1Wheel = (e: React.WheelEvent) => {
-    if (focusedArc !== 1) return;
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.deltaY > 0) {
-      setArc1Scroll((prev) => Math.min(Math.max(0, sortedGroups.length - maxVisibleItems), prev + 1));
-    } else {
-      setArc1Scroll((prev) => Math.max(0, prev - 1));
-    }
-  };
-
-  const handleArc2Wheel = (e: React.WheelEvent) => {
-    if (focusedArc !== 2) return;
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.deltaY > 0) {
-      setArc2Scroll((prev) => Math.min(Math.max(0, arc2Items.length - maxVisibleItems), prev + 1));
-    } else {
-      setArc2Scroll((prev) => Math.max(0, prev - 1));
-    }
-  };
-
-  const handleArc3Wheel = (e: React.WheelEvent) => {
-    if (focusedArc !== 3) return;
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.deltaY > 0) {
-      setArc3Scroll((prev) => Math.min(Math.max(0, selectedFolderNotes.length - maxVisibleItems), prev + 1));
-    } else {
-      setArc3Scroll((prev) => Math.max(0, prev - 1));
-    }
-  };
-
   // Handler to prevent page scroll when any arc is focused
   const handleContainerWheel = (e: React.WheelEvent) => {
     if (focusedArc !== null) {
@@ -292,8 +257,8 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
       className="relative w-full h-[calc(100vh-180px)] min-h-[500px] overflow-hidden"
       onWheel={handleContainerWheel}
     >
-      {/* SVG for semi-circle arcs */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none">
+      {/* SVG for semi-circle arcs - with clickable zones */}
+      <svg className="absolute inset-0 w-full h-full">
         <defs>
           <linearGradient id="arcGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor={activeColor} stopOpacity="0.1" />
@@ -312,30 +277,74 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
           </linearGradient>
         </defs>
 
-        {/* Arc 1 */}
-        <path d={arc1Path} fill="none" stroke="currentColor" strokeWidth="3" className="text-border" />
-        <path d={arc1Path} fill="none" stroke="url(#arcGrad1)" strokeWidth="8" opacity="0.5" />
+        {/* Arc 1 - visible stroke */}
+        <path
+          d={arc1Path}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          className="text-border pointer-events-none"
+        />
+        <path
+          d={arc1Path}
+          fill="none"
+          stroke="url(#arcGrad1)"
+          strokeWidth="8"
+          opacity="0.5"
+          className="pointer-events-none"
+        />
+        {/* Arc 1 - clickable zone (thick transparent stroke) */}
+        <path
+          d={arc1Path}
+          fill="none"
+          stroke={focusedArc === 1 ? "rgba(59, 130, 246, 0.15)" : "transparent"}
+          strokeWidth="30"
+          className="cursor-pointer hover:stroke-primary/10 transition-all"
+          onClick={() => setFocusedArc(focusedArc === 1 ? null : 1)}
+        />
 
-        {/* Arc 2 */}
+        {/* Arc 2 - visible stroke */}
         {selectedGroup && (
-          <path
-            d={arc2Path}
-            fill="none"
-            stroke="url(#arcGrad2)"
-            strokeWidth="4"
-            className="animate-in fade-in duration-500"
-          />
+          <>
+            <path
+              d={arc2Path}
+              fill="none"
+              stroke="url(#arcGrad2)"
+              strokeWidth="4"
+              className="animate-in fade-in duration-500 pointer-events-none"
+            />
+            {/* Arc 2 - clickable zone */}
+            <path
+              d={arc2Path}
+              fill="none"
+              stroke={focusedArc === 2 ? "rgba(59, 130, 246, 0.15)" : "transparent"}
+              strokeWidth="30"
+              className="cursor-pointer hover:stroke-primary/10 transition-all"
+              onClick={() => setFocusedArc(focusedArc === 2 ? null : 2)}
+            />
+          </>
         )}
 
-        {/* Arc 3 */}
+        {/* Arc 3 - visible stroke */}
         {selectedFolder && (
-          <path
-            d={arc3Path}
-            fill="none"
-            stroke="url(#arcGrad3)"
-            strokeWidth="3"
-            className="animate-in fade-in duration-500"
-          />
+          <>
+            <path
+              d={arc3Path}
+              fill="none"
+              stroke="url(#arcGrad3)"
+              strokeWidth="3"
+              className="animate-in fade-in duration-500 pointer-events-none"
+            />
+            {/* Arc 3 - clickable zone */}
+            <path
+              d={arc3Path}
+              fill="none"
+              stroke={focusedArc === 3 ? "rgba(6, 182, 212, 0.15)" : "transparent"}
+              strokeWidth="30"
+              className="cursor-pointer hover:stroke-cyan-500/10 transition-all"
+              onClick={() => setFocusedArc(focusedArc === 3 ? null : 3)}
+            />
+          </>
         )}
       </svg>
 
@@ -351,22 +360,6 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
       </div>
 
       {/* Arc 1 - Groups (Scrollable) */}
-      {/* Thin scroll zone along Arc 1 line - click to enable scroll */}
-      <div
-        className={cn(
-          "absolute z-20 cursor-pointer transition-all duration-300",
-          focusedArc === 1 && "ring-2 ring-primary/30 bg-primary/5",
-        )}
-        style={{
-          left: arcCenterX + arc1Radius * 0.85,
-          top: arcCenterY - arc1Radius * 0.75,
-          width: 40,
-          height: arc1Radius * 1.5,
-          borderRadius: "20px",
-        }}
-        onClick={() => setFocusedArc(focusedArc === 1 ? null : 1)}
-        onWheel={handleArc1Wheel}
-      />
       <ScrollControls
         onScrollUp={() => setArc1Scroll(Math.max(0, arc1Scroll - 1))}
         onScrollDown={() => setArc1Scroll(Math.min(sortedGroups.length - maxVisibleItems, arc1Scroll + 1))}
@@ -422,32 +415,14 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
 
       {/* Arc 2 - Entries (Scrollable) */}
       {selectedGroup && (
-        <>
-          {/* Thin scroll zone along Arc 2 line - click to enable scroll */}
-          <div
-            className={cn(
-              "absolute z-20 cursor-pointer transition-all duration-300",
-              focusedArc === 2 && "ring-2 ring-primary/30 bg-primary/5",
-            )}
-            style={{
-              left: arcCenterX + arc2Radius * 0.85,
-              top: arcCenterY - arc2Radius * 0.65,
-              width: 40,
-              height: arc2Radius * 1.3,
-              borderRadius: "20px",
-            }}
-            onClick={() => setFocusedArc(focusedArc === 2 ? null : 2)}
-            onWheel={handleArc2Wheel}
-          />
-          <ScrollControls
-            onScrollUp={() => setArc2Scroll(Math.max(0, arc2Scroll - 1))}
-            onScrollDown={() => setArc2Scroll(Math.min(arc2Items.length - maxVisibleItems, arc2Scroll + 1))}
-            canScrollUp={arc2Scroll > 0}
-            canScrollDown={arc2Scroll < arc2Items.length - maxVisibleItems}
-            posX={arcCenterX + arc2Radius * 0.7}
-            radius={arc2Radius * 0.85}
-          />
-        </>
+        <ScrollControls
+          onScrollUp={() => setArc2Scroll(Math.max(0, arc2Scroll - 1))}
+          onScrollDown={() => setArc2Scroll(Math.min(arc2Items.length - maxVisibleItems, arc2Scroll + 1))}
+          canScrollUp={arc2Scroll > 0}
+          canScrollDown={arc2Scroll < arc2Items.length - maxVisibleItems}
+          posX={arcCenterX + arc2Radius * 0.7}
+          radius={arc2Radius * 0.85}
+        />
       )}
 
       {selectedGroup &&
@@ -504,32 +479,14 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
 
       {/* Arc 3 - Folder Notes (Scrollable) */}
       {selectedFolder && (
-        <>
-          {/* Thin scroll zone along Arc 3 line - click to enable scroll */}
-          <div
-            className={cn(
-              "absolute z-20 cursor-pointer transition-all duration-300",
-              focusedArc === 3 && "ring-2 ring-cyan-400/30 bg-cyan-500/5",
-            )}
-            style={{
-              left: arcCenterX + arc3Radius * 0.85,
-              top: arcCenterY - arc3Radius * 0.55,
-              width: 40,
-              height: arc3Radius * 1.1,
-              borderRadius: "20px",
-            }}
-            onClick={() => setFocusedArc(focusedArc === 3 ? null : 3)}
-            onWheel={handleArc3Wheel}
-          />
-          <ScrollControls
-            onScrollUp={() => setArc3Scroll(Math.max(0, arc3Scroll - 1))}
-            onScrollDown={() => setArc3Scroll(Math.min(selectedFolderNotes.length - maxVisibleItems, arc3Scroll + 1))}
-            canScrollUp={arc3Scroll > 0}
-            canScrollDown={arc3Scroll < selectedFolderNotes.length - maxVisibleItems}
-            posX={arcCenterX + arc3Radius * 0.7}
-            radius={arc3Radius * 0.8}
-          />
-        </>
+        <ScrollControls
+          onScrollUp={() => setArc3Scroll(Math.max(0, arc3Scroll - 1))}
+          onScrollDown={() => setArc3Scroll(Math.min(selectedFolderNotes.length - maxVisibleItems, arc3Scroll + 1))}
+          canScrollUp={arc3Scroll > 0}
+          canScrollDown={arc3Scroll < selectedFolderNotes.length - maxVisibleItems}
+          posX={arcCenterX + arc3Radius * 0.7}
+          radius={arc3Radius * 0.8}
+        />
       )}
 
       {selectedFolder &&
