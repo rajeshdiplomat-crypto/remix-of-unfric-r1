@@ -413,7 +413,7 @@ export function NotesMindMapView({
         return (
           <div
             key={group.id}
-            className="absolute z-10 transition-all duration-300 ease-out"
+            className="absolute z-40 transition-all duration-300 ease-out"
             style={{ left: pos.x, top: pos.y, transform: "translate(-50%, -50%)" }}
           >
             <div className="flex items-center gap-1">
@@ -496,7 +496,7 @@ export function NotesMindMapView({
             return (
               <div
                 key={entry.id}
-                className="absolute z-10 transition-all duration-300 ease-out animate-in fade-in"
+                className="absolute z-40 transition-all duration-300 ease-out animate-in fade-in"
                 style={{ left: pos.x, top: pos.y, transform: "translate(0, -50%)" }}
               >
                 <button
@@ -526,7 +526,7 @@ export function NotesMindMapView({
           return (
             <div
               key={entry.id}
-              className="absolute z-10 transition-all duration-300 ease-out animate-in fade-in"
+              className="absolute z-40 transition-all duration-300 ease-out animate-in fade-in"
               style={{ left: pos.x, top: pos.y, transform: "translate(0, -50%)" }}
             >
               <button
@@ -567,7 +567,7 @@ export function NotesMindMapView({
           return (
             <div
               key={note.id}
-              className="absolute z-10 transition-all duration-300 ease-out animate-in fade-in"
+              className="absolute z-40 transition-all duration-300 ease-out animate-in fade-in"
               style={{ left: pos.x, top: pos.y, transform: "translate(0, -50%)" }}
             >
               <button
@@ -590,7 +590,7 @@ export function NotesMindMapView({
       {/* Empty states */}
       {selectedGroup && arc2Items.length === 0 && (
         <div
-          className="absolute flex flex-col items-center gap-2 text-muted-foreground animate-in fade-in z-10"
+          className="absolute flex flex-col items-center gap-2 text-muted-foreground animate-in fade-in z-40"
           style={{ left: arcCenterX + arc2Radius, top: arcCenterY, transform: "translate(-50%, -50%)" }}
         >
           <Sparkles className="h-4 w-4 opacity-50" />
