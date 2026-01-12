@@ -88,9 +88,9 @@ export function NotesMindMapView({
   const arcCenterY = dimensions.height / 2;
 
   // Arc radii for semi-circles - widened to fill more screen space
-  const arc1Radius = 200;
-  const arc2Radius = 450;
-  const arc3Radius = 680;
+  const arc1Radius = 220;
+  const arc2Radius = 520;
+  const arc3Radius = 800;
 
   // Max visible items per arc - outer arcs can show more
   const arc1MaxItems = 8;
