@@ -144,6 +144,34 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
   const arc2Path = createArcPath(arc2Radius, (-65 * Math.PI) / 180, (65 * Math.PI) / 180);
   const arc3Path = createArcPath(arc3Radius, (-60 * Math.PI) / 180, (60 * Math.PI) / 180);
 
+  // Mouse wheel scroll handlers
+  const handleArc1Wheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    if (e.deltaY > 0) {
+      setArc1Scroll((prev) => Math.min(sortedGroups.length - maxVisibleItems, prev + 1));
+    } else {
+      setArc1Scroll((prev) => Math.max(0, prev - 1));
+    }
+  };
+
+  const handleArc2Wheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    if (e.deltaY > 0) {
+      setArc2Scroll((prev) => Math.min(arc2Items.length - maxVisibleItems, prev + 1));
+    } else {
+      setArc2Scroll((prev) => Math.max(0, prev - 1));
+    }
+  };
+
+  const handleArc3Wheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    if (e.deltaY > 0) {
+      setArc3Scroll((prev) => Math.min(selectedFolderNotes.length - maxVisibleItems, prev + 1));
+    } else {
+      setArc3Scroll((prev) => Math.max(0, prev - 1));
+    }
+  };
+
   // Scroll controls component
   const ScrollControls = ({
     onScrollUp,
@@ -256,6 +284,17 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
       </div>
 
       {/* Arc 1 - Groups (Scrollable) */}
+      {/* Invisible scroll zone for Arc 1 */}
+      <div
+        className="absolute z-5 rounded-full"
+        style={{
+          left: arcCenterX + arc1Radius * 0.3,
+          top: arcCenterY - arc1Radius,
+          width: arc1Radius * 1.4,
+          height: arc1Radius * 2,
+        }}
+        onWheel={handleArc1Wheel}
+      />
       <ScrollControls
         onScrollUp={() => setArc1Scroll(Math.max(0, arc1Scroll - 1))}
         onScrollDown={() => setArc1Scroll(Math.min(sortedGroups.length - maxVisibleItems, arc1Scroll + 1))}
@@ -311,14 +350,27 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
 
       {/* Arc 2 - Entries (Scrollable) */}
       {selectedGroup && (
-        <ScrollControls
-          onScrollUp={() => setArc2Scroll(Math.max(0, arc2Scroll - 1))}
-          onScrollDown={() => setArc2Scroll(Math.min(arc2Items.length - maxVisibleItems, arc2Scroll + 1))}
-          canScrollUp={arc2Scroll > 0}
-          canScrollDown={arc2Scroll < arc2Items.length - maxVisibleItems}
-          posX={arcCenterX + arc2Radius * 0.7}
-          radius={arc2Radius * 0.85}
-        />
+        <>
+          {/* Invisible scroll zone for Arc 2 */}
+          <div
+            className="absolute z-5 rounded-full"
+            style={{
+              left: arcCenterX + arc2Radius * 0.3,
+              top: arcCenterY - arc2Radius * 0.9,
+              width: arc2Radius * 1.4,
+              height: arc2Radius * 1.8,
+            }}
+            onWheel={handleArc2Wheel}
+          />
+          <ScrollControls
+            onScrollUp={() => setArc2Scroll(Math.max(0, arc2Scroll - 1))}
+            onScrollDown={() => setArc2Scroll(Math.min(arc2Items.length - maxVisibleItems, arc2Scroll + 1))}
+            canScrollUp={arc2Scroll > 0}
+            canScrollDown={arc2Scroll < arc2Items.length - maxVisibleItems}
+            posX={arcCenterX + arc2Radius * 0.7}
+            radius={arc2Radius * 0.85}
+          />
+        </>
       )}
 
       {selectedGroup &&
@@ -375,14 +427,27 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
 
       {/* Arc 3 - Folder Notes (Scrollable) */}
       {selectedFolder && (
-        <ScrollControls
-          onScrollUp={() => setArc3Scroll(Math.max(0, arc3Scroll - 1))}
-          onScrollDown={() => setArc3Scroll(Math.min(selectedFolderNotes.length - maxVisibleItems, arc3Scroll + 1))}
-          canScrollUp={arc3Scroll > 0}
-          canScrollDown={arc3Scroll < selectedFolderNotes.length - maxVisibleItems}
-          posX={arcCenterX + arc3Radius * 0.7}
-          radius={arc3Radius * 0.8}
-        />
+        <>
+          {/* Invisible scroll zone for Arc 3 */}
+          <div
+            className="absolute z-5 rounded-full"
+            style={{
+              left: arcCenterX + arc3Radius * 0.3,
+              top: arcCenterY - arc3Radius * 0.8,
+              width: arc3Radius * 1.4,
+              height: arc3Radius * 1.6,
+            }}
+            onWheel={handleArc3Wheel}
+          />
+          <ScrollControls
+            onScrollUp={() => setArc3Scroll(Math.max(0, arc3Scroll - 1))}
+            onScrollDown={() => setArc3Scroll(Math.min(selectedFolderNotes.length - maxVisibleItems, arc3Scroll + 1))}
+            canScrollUp={arc3Scroll > 0}
+            canScrollDown={arc3Scroll < selectedFolderNotes.length - maxVisibleItems}
+            posX={arcCenterX + arc3Radius * 0.7}
+            radius={arc3Radius * 0.8}
+          />
+        </>
       )}
 
       {selectedFolder &&
