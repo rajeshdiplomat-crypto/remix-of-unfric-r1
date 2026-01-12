@@ -354,7 +354,7 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
       {/* Invisible scroll zone for Arc 1 - click to enable scroll */}
       <div
         className={cn(
-          "absolute z-5 rounded-full cursor-pointer transition-all duration-300",
+          "absolute z-15 rounded-full cursor-pointer transition-all duration-300",
           focusedArc === 1 && "ring-2 ring-primary/30 bg-primary/5",
         )}
         style={{
@@ -425,7 +425,7 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
           {/* Invisible scroll zone for Arc 2 - click to enable scroll */}
           <div
             className={cn(
-              "absolute z-5 rounded-full cursor-pointer transition-all duration-300",
+              "absolute z-15 rounded-full cursor-pointer transition-all duration-300",
               focusedArc === 2 && "ring-2 ring-primary/30 bg-primary/5",
             )}
             style={{
@@ -506,7 +506,7 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
           {/* Invisible scroll zone for Arc 3 - click to enable scroll */}
           <div
             className={cn(
-              "absolute z-5 rounded-full cursor-pointer transition-all duration-300",
+              "absolute z-15 rounded-full cursor-pointer transition-all duration-300",
               focusedArc === 3 && "ring-2 ring-cyan-400/30 bg-cyan-500/5",
             )}
             style={{
