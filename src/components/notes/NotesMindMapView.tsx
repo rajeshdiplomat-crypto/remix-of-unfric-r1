@@ -67,10 +67,10 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
   const arcCenterX = 100;
   const arcCenterY = dimensions.height / 2;
 
-  // Arc radii for semi-circles
-  const arc1Radius = 160;
-  const arc2Radius = 340;
-  const arc3Radius = 500;
+  // Arc radii for semi-circles - increased to use more screen space
+  const arc1Radius = 180;
+  const arc2Radius = 400;
+  const arc3Radius = 620;
 
   // Max visible items per arc
   const maxVisibleItems = 6;
@@ -354,7 +354,7 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
       {/* Invisible scroll zone for Arc 1 - click to enable scroll */}
       <div
         className={cn(
-          "absolute z-15 rounded-full cursor-pointer transition-all duration-300",
+          "absolute z-20 rounded-full cursor-pointer transition-all duration-300",
           focusedArc === 1 && "ring-2 ring-primary/30 bg-primary/5",
         )}
         style={{
@@ -425,7 +425,7 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
           {/* Invisible scroll zone for Arc 2 - click to enable scroll */}
           <div
             className={cn(
-              "absolute z-15 rounded-full cursor-pointer transition-all duration-300",
+              "absolute z-20 rounded-full cursor-pointer transition-all duration-300",
               focusedArc === 2 && "ring-2 ring-primary/30 bg-primary/5",
             )}
             style={{
@@ -506,14 +506,14 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
           {/* Invisible scroll zone for Arc 3 - click to enable scroll */}
           <div
             className={cn(
-              "absolute z-15 rounded-full cursor-pointer transition-all duration-300",
+              "absolute z-20 rounded-full cursor-pointer transition-all duration-300",
               focusedArc === 3 && "ring-2 ring-cyan-400/30 bg-cyan-500/5",
             )}
             style={{
-              left: arcCenterX + arc3Radius * 0.3,
-              top: arcCenterY - arc3Radius * 0.8,
-              width: arc3Radius * 1.4,
-              height: arc3Radius * 1.6,
+              left: arcCenterX + arc3Radius * 0.4,
+              top: arcCenterY - arc3Radius * 0.6,
+              width: arc3Radius * 0.8,
+              height: arc3Radius * 1.2,
             }}
             onClick={() => setFocusedArc(focusedArc === 3 ? null : 3)}
             onWheel={handleArc3Wheel}
