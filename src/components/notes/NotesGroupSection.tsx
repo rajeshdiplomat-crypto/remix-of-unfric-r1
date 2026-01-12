@@ -77,12 +77,14 @@ export function NotesGroupSection({
       <div className="rounded-xl border border-border/40 bg-card shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
         <div className="flex">
           {/* Left: Wide Cover Image */}
-          <div className="w-32 shrink-0 overflow-hidden rounded-l-xl self-start">
+          <div className="w-32 shrink-0 overflow-hidden rounded-l-xl self-start relative">
             <img
               src={getPresetImage("notes", group.id)}
               alt=""
               className="w-full h-auto object-cover min-h-[100px] max-h-[120px]"
             />
+            {/* Bottom fade to white/card */}
+            <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent" />
           </div>
 
           {/* Right: Header & Content */}
