@@ -63,26 +63,6 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
     setArc3Scroll(0);
   }, [selectedFolder]);
 
-  // Prevent page scroll when an arc is focused - uses native listener for passive:false
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const preventScroll = (e: WheelEvent) => {
-      if (focusedArc !== null) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    };
-
-    // Add with passive: false to allow preventDefault
-    container.addEventListener("wheel", preventScroll, { passive: false });
-
-    return () => {
-      container.removeEventListener("wheel", preventScroll);
-    };
-  }, [focusedArc]);
-
   // Arc center (left side of screen)
   const arcCenterX = 100;
   const arcCenterY = dimensions.height / 2;
@@ -124,6 +104,45 @@ export function NotesMindMapView({ groups, folders, notes, selectedNoteId, onNot
     });
     return items;
   }, [selectedGroupData]);
+
+  // Prevent page scroll and handle arc scrolling when focused - uses native listener for passive:false
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (focusedArc === null) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const delta = e.deltaY > 0 ? 1 : -1;
+
+      if (focusedArc === 1) {
+        setArc1Scroll((prev) => {
+          const max = Math.max(0, sortedGroups.length - maxVisibleItems);
+          return Math.max(0, Math.min(max, prev + delta));
+        });
+      } else if (focusedArc === 2) {
+        setArc2Scroll((prev) => {
+          const max = Math.max(0, arc2Items.length - maxVisibleItems);
+          return Math.max(0, Math.min(max, prev + delta));
+        });
+      } else if (focusedArc === 3) {
+        setArc3Scroll((prev) => {
+          const max = Math.max(0, selectedFolderNotes.length - maxVisibleItems);
+          return Math.max(0, Math.min(max, prev + delta));
+        });
+      }
+    };
+
+    // Add with passive: false to allow preventDefault
+    container.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener("wheel", handleWheel);
+    };
+  }, [focusedArc, sortedGroups.length, arc2Items.length, selectedFolderNotes.length, maxVisibleItems]);
 
   // Get visible items with scroll
   const getVisibleItems = <T,>(items: T[], scrollOffset: number, maxVisible: number): T[] => {
