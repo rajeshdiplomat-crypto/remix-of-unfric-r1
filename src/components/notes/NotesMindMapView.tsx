@@ -397,7 +397,7 @@ export function NotesMindMapView({
       {/* Quick Add Note Panel - shows groups and sections when group selected */}
       <div
         className="absolute z-50 flex flex-col gap-2 p-3 bg-card/95 backdrop-blur-sm rounded-xl border border-border shadow-lg max-w-[280px]"
-        style={{ left: 20, top: 20 }}
+        style={{ right: 20, top: 20 }}
       >
         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Quick Add to Group</span>
         <div className="flex flex-wrap gap-1.5">
