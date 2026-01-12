@@ -189,9 +189,9 @@ export function NotesMindMapView({
   // Calculate position on semi-circle
   const getSemiCirclePosition = (index: number, total: number, radius: number) => {
     // Reduce angle spread for small item counts to keep them visible
-    const maxSpread = 70; // degrees
-    const minSpread = 20; // degrees for single/few items
-    const spreadDegrees = total <= 2 ? minSpread : Math.min(maxSpread, minSpread + (total - 1) * 10);
+    const maxSpread = 50; // degrees
+    const minSpread = 15; // degrees for single/few items
+    const spreadDegrees = total <= 2 ? minSpread : Math.min(maxSpread, minSpread + (total - 1) * 7);
 
     const startAngle = -spreadDegrees * (Math.PI / 180);
     const endAngle = spreadDegrees * (Math.PI / 180);
@@ -219,9 +219,9 @@ export function NotesMindMapView({
     return `M ${start.x} ${start.y} A ${radius} ${radius} 0 0 1 ${end.x} ${end.y}`;
   };
 
-  const arc1Path = createArcPath(arc1Radius, (-70 * Math.PI) / 180, (70 * Math.PI) / 180);
-  const arc2Path = createArcPath(arc2Radius, (-65 * Math.PI) / 180, (65 * Math.PI) / 180);
-  const arc3Path = createArcPath(arc3Radius, (-60 * Math.PI) / 180, (60 * Math.PI) / 180);
+  const arc1Path = createArcPath(arc1Radius, (-55 * Math.PI) / 180, (55 * Math.PI) / 180);
+  const arc2Path = createArcPath(arc2Radius, (-50 * Math.PI) / 180, (50 * Math.PI) / 180);
+  const arc3Path = createArcPath(arc3Radius, (-45 * Math.PI) / 180, (45 * Math.PI) / 180);
 
   // Handler to prevent page scroll when any arc is focused
   const handleContainerWheel = (e: React.WheelEvent) => {
@@ -284,7 +284,7 @@ export function NotesMindMapView({
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-[calc(100vh-180px)] min-h-[500px] overflow-hidden"
+      className="relative w-full h-[calc(100vh-180px)] min-h-[700px] overflow-hidden"
       onWheel={handleContainerWheel}
     >
       {/* SVG for visual arcs - low z-index (behind items) */}
