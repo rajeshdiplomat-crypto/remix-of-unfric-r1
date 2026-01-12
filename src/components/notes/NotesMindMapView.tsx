@@ -394,20 +394,26 @@ export function NotesMindMapView({
         </div>
       </div>
 
-      {/* Quick Add Note Panel - always visible */}
+      {/* Quick Add Note Panel - shows groups and sections when group selected */}
       <div
-        className="absolute z-50 flex flex-col gap-2 p-3 bg-card/95 backdrop-blur-sm rounded-xl border border-border shadow-lg"
+        className="absolute z-50 flex flex-col gap-2 p-3 bg-card/95 backdrop-blur-sm rounded-xl border border-border shadow-lg max-w-[280px]"
         style={{ left: 20, top: 20 }}
       >
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Quick Add</span>
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Quick Add to Group</span>
         <div className="flex flex-wrap gap-1.5">
           {sortedGroups.slice(0, 6).map((group) => {
             const color = GROUP_COLORS[group.id] || "#64748b";
+            const isActive = selectedGroup === group.id;
             return (
               <button
                 key={group.id}
                 onClick={() => onAddNote(group.id, null)}
-                className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium bg-muted/50 hover:bg-muted transition-colors border border-transparent hover:border-border"
+                className={cn(
+                  "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors border",
+                  isActive
+                    ? "bg-primary/10 border-primary/30"
+                    : "bg-muted/50 hover:bg-muted border-transparent hover:border-border",
+                )}
                 style={{ color }}
                 title={`Add note to ${group.name}`}
               >
@@ -417,6 +423,30 @@ export function NotesMindMapView({
             );
           })}
         </div>
+
+        {/* Show sections when a group is selected */}
+        {selectedGroup && selectedGroupData.folders.length > 0 && (
+          <>
+            <div className="border-t border-border/50 pt-2 mt-1">
+              <span className="text-xs font-medium text-cyan-500 uppercase tracking-wide">
+                Sections in {activeGroup?.name}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {selectedGroupData.folders.map((folder) => (
+                <button
+                  key={folder.id}
+                  onClick={() => onAddNote(selectedGroup, folder.id)}
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium bg-cyan-500/10 hover:bg-cyan-500/20 transition-colors border border-cyan-400/30 hover:border-cyan-400/60 text-cyan-600"
+                  title={`Add note to ${folder.name}`}
+                >
+                  <Plus className="h-3 w-3" />
+                  {folder.name}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Arc 1 - Groups (Scrollable) */}
@@ -524,22 +554,78 @@ export function NotesMindMapView({
                 className="absolute z-40 transition-all duration-300 ease-out animate-in fade-in"
                 style={{ left: pos.x, top: pos.y, transform: "translate(0, -50%)" }}
               >
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedFolder(isSelected ? null : folder.id);
-                  }}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300",
-                    isSelected
-                      ? "bg-cyan-500/20 border-2 border-cyan-400 shadow-lg"
-                      : "bg-card/90 hover:bg-card hover:shadow-md border border-border/50",
-                  )}
-                >
-                  <FolderOpen className={cn("h-4 w-4", isSelected ? "text-cyan-500" : "text-cyan-400")} />
-                  <span className="text-sm font-medium text-foreground text-left">{folder.name}</span>
-                  <span className="text-xs text-muted-foreground">{folderNotes.length}</span>
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedFolder(isSelected ? null : folder.id);
+                    }}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300",
+                      isSelected
+                        ? "bg-cyan-500/20 border-2 border-cyan-400 shadow-lg"
+                        : "bg-card/90 hover:bg-card hover:shadow-md border border-border/50",
+                    )}
+                  >
+                    <FolderOpen className={cn("h-4 w-4", isSelected ? "text-cyan-500" : "text-cyan-400")} />
+                    <span className="text-sm font-medium text-foreground text-left">{folder.name}</span>
+                    <span className="text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+                      {folderNotes.length}
+                    </span>
+                  </button>
+                  {/* Quick add to section */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAddNote(folder.groupId, folder.id);
+                    }}
+                    className="p-1.5 rounded-md bg-card/80 hover:bg-cyan-500/20 border border-border/50 hover:border-cyan-400 transition-all"
+                    title={`Add note to ${folder.name}`}
+                  >
+                    <Plus className="h-3 w-3 text-cyan-500" />
+                  </button>
+                  {/* Section menu */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="p-1 rounded hover:bg-muted transition-colors">
+                        <MoreHorizontal className="h-3 w-3 text-muted-foreground" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-40">
+                      <DropdownMenuItem onClick={() => onAddNote(folder.groupId, folder.id)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Note
+                      </DropdownMenuItem>
+                      {onRenameFolder && (
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const newName = window.prompt("Rename section:", folder.name);
+                            if (newName && newName !== folder.name) onRenameFolder(folder.id, newName);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Rename
+                        </DropdownMenuItem>
+                      )}
+                      {onDeleteFolder && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => {
+                              if (window.confirm(`Delete section "${folder.name}"? Notes inside will be moved out.`)) {
+                                onDeleteFolder(folder.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             );
           }
