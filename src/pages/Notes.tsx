@@ -779,16 +779,16 @@ export default function Notes() {
                   </div>
                 </div>
 
-                {/* Filter chips - Modern pill tabs */}
+                {/* Filter chips - Modern glassmorphism pills */}
                 <div className="px-3 pb-3">
-                  <div className="flex gap-1.5 overflow-auto no-scrollbar">
+                  <div className="flex gap-2 overflow-auto no-scrollbar">
                     <button
                       onClick={() => setFilterGroupId("all")}
                       className={cn(
-                        "h-8 px-4 text-[11px] uppercase tracking-wide font-medium whitespace-nowrap transition-all rounded-full",
+                        "h-8 px-4 text-[11px] uppercase tracking-wider font-semibold whitespace-nowrap transition-all duration-300 rounded-xl",
                         filterGroupId === "all"
-                          ? "bg-foreground text-background shadow-sm"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                          ? "bg-gradient-to-r from-slate-600 to-slate-800 text-white shadow-lg shadow-slate-500/20"
+                          : "text-muted-foreground hover:text-foreground bg-muted/30 hover:bg-muted/60 backdrop-blur-sm",
                       )}
                     >
                       All
@@ -796,22 +796,31 @@ export default function Notes() {
 
                     {sortedGroups.map((group) => {
                       const active = filterGroupId === group.id;
+                      const baseColor = group.color;
                       return (
                         <button
                           key={group.id}
                           onClick={() => setFilterGroupId(group.id)}
                           className={cn(
-                            "h-8 px-3.5 text-[11px] uppercase tracking-wide font-medium whitespace-nowrap transition-all rounded-full flex items-center gap-2",
+                            "h-8 px-4 text-[11px] uppercase tracking-wider font-semibold whitespace-nowrap transition-all duration-300 rounded-xl relative overflow-hidden",
                             active
-                              ? "bg-foreground text-background shadow-sm"
-                              : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                              ? "text-white shadow-lg"
+                              : "text-muted-foreground hover:text-foreground bg-muted/30 hover:bg-muted/60 backdrop-blur-sm",
                           )}
+                          style={
+                            active
+                              ? {
+                                  background: `linear-gradient(135deg, ${baseColor}, ${baseColor}dd)`,
+                                  boxShadow: `0 4px 14px ${baseColor}40`,
+                                }
+                              : undefined
+                          }
                         >
-                          <span
-                            className={cn("w-2 h-2 rounded-full shrink-0", active && "ring-2 ring-background/30")}
-                            style={{ background: CATEGORY_GRADIENTS[group.id] || group.color }}
-                          />
-                          {group.name}
+                          {/* Subtle shine effect on active */}
+                          {active && (
+                            <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0" />
+                          )}
+                          <span className="relative">{group.name}</span>
                         </button>
                       );
                     })}
