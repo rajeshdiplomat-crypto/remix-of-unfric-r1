@@ -655,6 +655,17 @@ export default function Notes() {
                             <span className="text-xs text-muted-foreground">Send to Inbox</span>
                           </div>
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => setSettingsOpen(true)}
+                          className="py-2 rounded-lg cursor-pointer"
+                        >
+                          <FolderPlus className="h-4 w-4 mr-3 text-muted-foreground" />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">New Group</span>
+                            <span className="text-xs text-muted-foreground">Organize notes</span>
+                          </div>
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
 
