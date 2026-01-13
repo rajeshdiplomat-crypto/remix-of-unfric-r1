@@ -79,6 +79,8 @@ interface ActivityItem {
   notes?: Record<string, string>;
   skipped?: Record<string, boolean>;
   reminders?: { time: string; days: number[] };
+  time?: string; // e.g. "09:00"
+  duration?: number; // minutes, e.g. 30
 }
 
 const CATEGORIES = [
@@ -192,6 +194,8 @@ export default function Trackers() {
   const [formDays, setFormDays] = useState(30);
   const [formStartDate, setFormStartDate] = useState<Date>(new Date());
   const [formImageUrl, setFormImageUrl] = useState<string | null>(null);
+  const [formTime, setFormTime] = useState("09:00");
+  const [formDuration, setFormDuration] = useState(30);
 
   useEffect(() => {
     if (!user) {
@@ -524,6 +528,8 @@ export default function Trackers() {
     setFormDays(30);
     setFormStartDate(new Date());
     setFormImageUrl(null);
+    setFormTime("09:00");
+    setFormDuration(30);
     setDialogOpen(true);
   };
 
@@ -537,6 +543,8 @@ export default function Trackers() {
     setFormDays(activity.habitDays);
     setFormStartDate(parseISO(activity.startDate));
     setFormImageUrl(loadActivityImage(activity.id));
+    setFormTime(activity.time || "09:00");
+    setFormDuration(activity.duration || 30);
     setDialogOpen(true);
   };
 
@@ -577,6 +585,8 @@ export default function Trackers() {
       createdAt: editingActivity?.createdAt || new Date().toISOString(),
       skipped: editingActivity?.skipped || {},
       notes: editingActivity?.notes || {},
+      time: formTime,
+      duration: formDuration,
     };
 
     const scheduledSessions = getScheduledSessions(tempActivity);
@@ -748,7 +758,7 @@ export default function Trackers() {
                   variant="outline"
                   size="sm"
                   onClick={handleExport}
-                  className="h-10 rounded-full gap-2 shadow-sm"
+                  className="h-10 rounded-full gap-2 shadow-sm bg-background/80 backdrop-blur-sm border-border/50 hover:bg-muted/60 hover:border-border transition-all"
                 >
                   <Download className="h-4 w-4" />
                   <span className="hidden sm:inline">Export</span>
@@ -757,7 +767,7 @@ export default function Trackers() {
                 <Button
                   size="sm"
                   onClick={openCreateDialog}
-                  className="h-10 rounded-full gap-2 flex-1 sm:flex-none shadow-sm"
+                  className="h-10 rounded-full gap-2 flex-1 sm:flex-none bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-lg hover:shadow-primary/20 transition-all duration-300"
                 >
                   <Plus className="h-4 w-4" />
                   New Activity
@@ -1337,6 +1347,52 @@ export default function Trackers() {
                     </div>
                   </div>
 
+                  {/* Time Scheduling */}
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Scheduled Time</label>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <p className="text-[11px] text-muted-foreground mb-1.5">Start time</p>
+                        <div className="relative">
+                          <input
+                            type="time"
+                            value={formTime}
+                            onChange={(e) => setFormTime(e.target.value)}
+                            className="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-muted-foreground mb-1.5">Duration</p>
+                        <Select value={String(formDuration)} onValueChange={(v) => setFormDuration(Number(v))}>
+                          <SelectTrigger className="rounded-xl h-10">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="15">15 min</SelectItem>
+                            <SelectItem value="30">30 min</SelectItem>
+                            <SelectItem value="45">45 min</SelectItem>
+                            <SelectItem value="60">1 hour</SelectItem>
+                            <SelectItem value="90">1.5 hours</SelectItem>
+                            <SelectItem value="120">2 hours</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-muted-foreground mb-1.5">End time</p>
+                        <div className="h-10 px-3 rounded-xl border border-input bg-muted/30 flex items-center text-sm text-muted-foreground">
+                          {(() => {
+                            const [h, m] = formTime.split(":").map(Number);
+                            const endMinutes = h * 60 + m + formDuration;
+                            const endH = Math.floor(endMinutes / 60) % 24;
+                            const endM = endMinutes % 60;
+                            return `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="text-sm font-medium mb-2 block">Description</label>
                     <Textarea
@@ -1386,10 +1442,18 @@ export default function Trackers() {
                   </div>
 
                   <div className="flex gap-2 pt-2">
-                    <Button variant="outline" className="flex-1 h-10 rounded-xl" onClick={() => setDialogOpen(false)}>
+                    <Button
+                      variant="outline"
+                      className="flex-1 h-11 rounded-xl border-border/50 hover:bg-muted/60 transition-all"
+                      onClick={() => setDialogOpen(false)}
+                    >
                       Cancel
                     </Button>
-                    <Button className="flex-1 h-10 rounded-xl" onClick={handleSave} disabled={!formName.trim()}>
+                    <Button
+                      className="flex-1 h-11 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-lg hover:shadow-primary/20 transition-all duration-300"
+                      onClick={handleSave}
+                      disabled={!formName.trim()}
+                    >
                       {editingActivity ? "Save Changes" : "Create Activity"}
                     </Button>
                   </div>
