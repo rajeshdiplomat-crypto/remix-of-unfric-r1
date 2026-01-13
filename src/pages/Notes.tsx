@@ -821,8 +821,9 @@ export default function Notes() {
                               : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
                           )}
                         >
+                          {/* Accent bar like board view */}
                           <span
-                            className="w-2 h-2 rounded-full"
+                            className="w-1 h-4 rounded-full"
                             style={{ background: CATEGORY_GRADIENTS[group.id] || group.color }}
                           />
                           {group.name}

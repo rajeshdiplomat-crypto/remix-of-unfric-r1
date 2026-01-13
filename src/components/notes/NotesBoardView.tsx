@@ -69,7 +69,9 @@ export function NotesBoardView({
 
   // Note drag handlers
   const handleDragStart = (e: React.DragEvent, noteId: string) => {
+    e.stopPropagation(); // Prevent group drag from interfering
     e.dataTransfer.setData("noteId", noteId);
+    e.dataTransfer.setData("dragType", "note");
     e.dataTransfer.effectAllowed = "move";
     setDraggedNoteId(noteId);
   };
@@ -90,19 +92,25 @@ export function NotesBoardView({
 
   const handleDrop = (e: React.DragEvent, targetGroupId: string, targetFolderId: string | null) => {
     e.preventDefault();
+    e.stopPropagation();
+    const dragType = e.dataTransfer.getData("dragType");
     const noteId = e.dataTransfer.getData("noteId");
-    if (noteId && onUpdateNote) {
+
+    // Only handle note drops here
+    if (dragType === "note" && noteId && onUpdateNote) {
       const note = notes.find((n) => n.id === noteId);
       if (note && (note.groupId !== targetGroupId || note.folderId !== targetFolderId)) {
         onUpdateNote({ ...note, groupId: targetGroupId, folderId: targetFolderId });
       }
+      handleDragEnd();
     }
-    handleDragEnd();
   };
 
   // Folder/Section drag handlers
   const handleFolderDragStart = (e: React.DragEvent, folderId: string) => {
+    e.stopPropagation(); // Prevent group drag from interfering
     e.dataTransfer.setData("folderId", folderId);
+    e.dataTransfer.setData("dragType", "folder");
     e.dataTransfer.effectAllowed = "move";
     setDraggedFolderId(folderId);
   };
@@ -141,6 +149,7 @@ export function NotesBoardView({
   // Group/Column drag handlers
   const handleGroupDragStart = (e: React.DragEvent, groupId: string) => {
     e.dataTransfer.setData("groupId", groupId);
+    e.dataTransfer.setData("dragType", "group");
     e.dataTransfer.effectAllowed = "move";
     setDraggedGroupId(groupId);
   };
@@ -249,24 +258,29 @@ export function NotesBoardView({
                 isDraggedGroup && "opacity-50 scale-95",
                 isDragOverGroup && "border-l-4 border-l-primary pl-2",
               )}
-              draggable
-              onDragStart={(e) => handleGroupDragStart(e, group.id)}
-              onDragEnd={handleDragEnd}
               onDragOver={(e) => {
                 handleDragOver(e);
-                handleGroupDragOver(e, group.id);
+                if (draggedGroupId) {
+                  handleGroupDragOver(e, group.id);
+                }
               }}
               onDrop={(e) => {
-                if (draggedGroupId) {
+                const dragType = e.dataTransfer.getData("dragType");
+                if (dragType === "group") {
                   handleGroupDrop(e, group.id);
-                } else {
+                } else if (dragType === "note") {
                   handleDrop(e, group.id, null);
                 }
               }}
               onDragLeave={() => setDragOverGroupId(null)}
             >
-              {/* Column header with thin accent line - drag handle */}
-              <div className="mb-2 cursor-grab active:cursor-grabbing">
+              {/* Column header with thin accent line - drag handle for group */}
+              <div
+                className="mb-2 cursor-grab active:cursor-grabbing"
+                draggable
+                onDragStart={(e) => handleGroupDragStart(e, group.id)}
+                onDragEnd={handleDragEnd}
+              >
                 <div
                   className="h-0.5 rounded-sm mb-3"
                   style={{ background: CATEGORY_GRADIENTS[group.id] || group.color }}
