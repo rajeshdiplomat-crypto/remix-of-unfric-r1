@@ -360,88 +360,95 @@ export default function Journal() {
           borderColor: currentSkin.border,
         }}
       >
-        {/* Top Controls Row with Week Strip */}
-        <div className="px-6 py-2 flex items-center gap-3">
-          {/* Date Navigation */}
-          <div className="flex items-center gap-2 shrink-0">
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={goToPreviousDay}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <div className="text-center min-w-[100px]">
-              <p
-                className="text-xs uppercase tracking-wider"
+        {/* Use same grid as content to align week strip with editor */}
+        <div
+          className={`px-6 py-2 grid gap-6 ${isFullscreen ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-[1fr_320px]"}`}
+        >
+          {/* Left section - Date nav + Week strip (aligns with editor) */}
+          <div className="flex items-center gap-3">
+            {/* Date Navigation */}
+            <div className="flex items-center gap-2 shrink-0">
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={goToPreviousDay}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="text-center min-w-[100px]">
+                <p
+                  className="text-xs uppercase tracking-wider"
+                  style={{
+                    color: currentSkin.mutedText,
+                  }}
+                >
+                  {format(selectedDate, "EEE")}
+                </p>
+                <p className="text-sm font-semibold">{format(selectedDate, "MMM d, yyyy")}</p>
+              </div>
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={goToNextDay}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Week Strip - fills space to editor edge */}
+            <div
+              className="flex-1 flex items-center justify-between"
+              style={{ background: "rgba(241, 245, 249, 0.5)", borderRadius: "8px", padding: "2px 8px" }}
+            >
+              {[-3, -2, -1, 0, 1, 2, 3].map((offset) => {
+                const day = new Date(selectedDate);
+                day.setDate(day.getDate() + offset);
+                const isSelected = offset === 0;
+                const isToday = format(day, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+                return (
+                  <button
+                    key={offset}
+                    onClick={() => setSelectedDate(day)}
+                    className={`flex flex-col items-center py-0.5 px-2 rounded-md transition-all ${
+                      isSelected ? "bg-primary/15 ring-1 ring-primary/40" : "hover:bg-slate-100"
+                    }`}
+                  >
+                    <span className={`text-[9px] font-medium ${isSelected ? "text-primary" : "text-slate-400"}`}>
+                      {format(day, "EEE")}
+                    </span>
+                    <span
+                      className={`text-xs font-semibold ${
+                        isSelected ? "text-primary" : isToday ? "text-rose-500" : "text-slate-600"
+                      }`}
+                    >
+                      {format(day, "d")}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right section - Controls (aligns with sidebar) */}
+          {!isFullscreen && (
+            <div className="hidden lg:flex items-center justify-end gap-2">
+              <span
+                className="text-xs flex items-center gap-1"
                 style={{
                   color: currentSkin.mutedText,
                 }}
               >
-                {format(selectedDate, "EEE")}
-              </p>
-              <p className="text-sm font-semibold">{format(selectedDate, "MMM d, yyyy")}</p>
+                {isSaved ? (
+                  <>
+                    <Check className="h-3 w-3" /> Saved
+                  </>
+                ) : (
+                  "Unsaved"
+                )}
+              </span>
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setIsFullscreen(!isFullscreen)}>
+                {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              </Button>
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setSettingsOpen(true)}>
+                <Settings className="h-4 w-4" />
+              </Button>
+              <Button size="sm" onClick={handleSave} disabled={isSaved}>
+                <Save className="h-4 w-4 mr-1" /> Save
+              </Button>
             </div>
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={goToNextDay}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Week Strip - fills remaining space */}
-          <div
-            className="flex-1 flex items-center justify-between"
-            style={{ background: "rgba(241, 245, 249, 0.5)", borderRadius: "8px", padding: "2px 8px" }}
-          >
-            {[-3, -2, -1, 0, 1, 2, 3].map((offset) => {
-              const day = new Date(selectedDate);
-              day.setDate(day.getDate() + offset);
-              const isSelected = offset === 0;
-              const isToday = format(day, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
-              return (
-                <button
-                  key={offset}
-                  onClick={() => setSelectedDate(day)}
-                  className={`flex flex-col items-center py-0.5 px-2 rounded-md transition-all ${
-                    isSelected ? "bg-primary/15 ring-1 ring-primary/40" : "hover:bg-slate-100"
-                  }`}
-                >
-                  <span className={`text-[9px] font-medium ${isSelected ? "text-primary" : "text-slate-400"}`}>
-                    {format(day, "EEE")}
-                  </span>
-                  <span
-                    className={`text-xs font-semibold ${
-                      isSelected ? "text-primary" : isToday ? "text-rose-500" : "text-slate-600"
-                    }`}
-                  >
-                    {format(day, "d")}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Right controls */}
-          <div className="flex items-center gap-2">
-            <span
-              className="text-xs flex items-center gap-1"
-              style={{
-                color: currentSkin.mutedText,
-              }}
-            >
-              {isSaved ? (
-                <>
-                  <Check className="h-3 w-3" /> Saved
-                </>
-              ) : (
-                "Unsaved"
-              )}
-            </span>
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setIsFullscreen(!isFullscreen)}>
-              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            </Button>
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setSettingsOpen(true)}>
-              <Settings className="h-4 w-4" />
-            </Button>
-            <Button size="sm" onClick={handleSave} disabled={isSaved}>
-              <Save className="h-4 w-4 mr-1" /> Save
-            </Button>
-          </div>
+          )}
         </div>
       </div>
 
