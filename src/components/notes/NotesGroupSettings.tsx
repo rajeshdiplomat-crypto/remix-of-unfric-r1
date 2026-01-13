@@ -18,14 +18,24 @@ interface NotesGroupSettingsProps {
 }
 
 const PRESET_COLORS = [
-  "hsl(221, 83%, 53%)",
-  "hsl(142, 71%, 45%)",
-  "hsl(262, 83%, 58%)",
-  "hsl(25, 95%, 53%)",
-  "hsl(0, 84%, 60%)",
-  "hsl(47, 95%, 53%)",
-  "hsl(199, 95%, 73%)",
-  "hsl(339, 81%, 51%)",
+  // Primary colors
+  "hsl(221, 83%, 53%)", // Blue
+  "hsl(142, 71%, 45%)", // Green
+  "hsl(262, 83%, 58%)", // Purple
+  "hsl(25, 95%, 53%)", // Orange
+  "hsl(0, 84%, 60%)", // Red
+  "hsl(47, 95%, 53%)", // Yellow
+  "hsl(199, 95%, 73%)", // Cyan
+  "hsl(339, 81%, 51%)", // Pink
+  // Extended palette
+  "hsl(180, 70%, 45%)", // Teal
+  "hsl(280, 70%, 50%)", // Violet
+  "hsl(15, 90%, 55%)", // Coral
+  "hsl(160, 60%, 45%)", // Mint
+  "hsl(210, 60%, 40%)", // Navy
+  "hsl(45, 80%, 50%)", // Gold
+  "hsl(320, 70%, 55%)", // Magenta
+  "hsl(195, 80%, 40%)", // Ocean
 ];
 
 export function NotesGroupSettings({
@@ -140,7 +150,7 @@ export function NotesGroupSettings({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md rounded-2xl">
+      <DialogContent className="max-w-lg rounded-2xl">
         <DialogHeader>
           <DialogTitle>Manage Groups</DialogTitle>
         </DialogHeader>
@@ -179,29 +189,33 @@ export function NotesGroupSettings({
                     )}
 
                     {editingGroup === group.id ? (
-                      <div className="flex-1 flex items-center gap-2">
-                        <Input
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          className="h-8 text-sm rounded-xl"
-                          autoFocus
-                        />
-                        <div className="flex gap-1">
-                          {PRESET_COLORS.slice(0, 4).map((color) => (
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            className="h-8 text-sm rounded-xl flex-1"
+                            autoFocus
+                          />
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSaveEdit}>
+                            <Check className="h-4 w-4 text-green-500" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancelEdit}>
+                            <X className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-8 gap-1">
+                          {PRESET_COLORS.map((color) => (
                             <button
                               key={color}
-                              className={`h-4 w-4 rounded-full border ${editColor === color ? "border-foreground" : "border-transparent"}`}
+                              className={`h-4 w-4 rounded-full border transition-all hover:scale-110 ${
+                                editColor === color ? "border-foreground ring-1 ring-primary/30" : "border-transparent"
+                              }`}
                               style={{ backgroundColor: color }}
                               onClick={() => setEditColor(color)}
                             />
                           ))}
                         </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSaveEdit}>
-                          <Check className="h-4 w-4 text-green-500" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancelEdit}>
-                          <X className="h-4 w-4 text-destructive" />
-                        </Button>
                       </div>
                     ) : (
                       <>
@@ -248,31 +262,44 @@ export function NotesGroupSettings({
             })}
 
             <div className="border-t pt-4 mt-4">
-              <h4 className="text-sm font-medium mb-2">Add New Group</h4>
-              <div className="flex items-center gap-2">
+              <h4 className="text-sm font-medium mb-3">Add New Group</h4>
+              <div className="space-y-3">
                 <Input
                   value={newGroupName}
                   onChange={(e) => setNewGroupName(e.target.value)}
                   placeholder="Group name..."
-                  className="flex-1 rounded-xl"
+                  className="rounded-xl"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleAddGroup();
                   }}
                 />
-                <div className="flex gap-1">
-                  {PRESET_COLORS.slice(0, 4).map((color) => (
-                    <button
-                      key={color}
-                      className={`h-5 w-5 rounded-full border-2 ${
-                        newGroupColor === color ? "border-foreground" : "border-transparent"
-                      }`}
-                      style={{ backgroundColor: color }}
-                      onClick={() => setNewGroupColor(color)}
-                    />
-                  ))}
+                {/* Color picker grid */}
+                <div className="space-y-2">
+                  <span className="text-xs text-muted-foreground">Choose color</span>
+                  <div className="grid grid-cols-8 gap-2">
+                    {PRESET_COLORS.map((color) => (
+                      <button
+                        key={color}
+                        className={`h-6 w-6 rounded-full border-2 transition-all hover:scale-110 ${
+                          newGroupColor === color
+                            ? "border-foreground ring-2 ring-primary/30"
+                            : "border-transparent hover:border-border"
+                        }`}
+                        style={{ backgroundColor: color }}
+                        onClick={() => setNewGroupColor(color)}
+                        title={color}
+                      />
+                    ))}
+                  </div>
                 </div>
-                <Button size="sm" className="h-9 rounded-xl" onClick={handleAddGroup} disabled={!newGroupName.trim()}>
-                  <Plus className="h-4 w-4" />
+                <Button
+                  size="sm"
+                  className="w-full h-10 rounded-xl"
+                  onClick={handleAddGroup}
+                  disabled={!newGroupName.trim()}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Group
                 </Button>
               </div>
             </div>
