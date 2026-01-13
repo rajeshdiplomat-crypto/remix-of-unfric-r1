@@ -801,15 +801,14 @@ export default function Notes() {
                           key={group.id}
                           onClick={() => setFilterGroupId(group.id)}
                           className={cn(
-                            "h-8 px-4 text-[11px] uppercase tracking-wide font-medium whitespace-nowrap transition-all rounded-full flex items-center gap-2",
+                            "h-8 px-3.5 text-[11px] uppercase tracking-wide font-medium whitespace-nowrap transition-all rounded-full flex items-center gap-2",
                             active
                               ? "bg-foreground text-background shadow-sm"
                               : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
                           )}
                         >
-                          {/* Accent bar like board view */}
                           <span
-                            className="w-1 h-4 rounded-full"
+                            className={cn("w-2 h-2 rounded-full shrink-0", active && "ring-2 ring-background/30")}
                             style={{ background: CATEGORY_GRADIENTS[group.id] || group.color }}
                           />
                           {group.name}
