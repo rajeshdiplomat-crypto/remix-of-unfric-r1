@@ -779,48 +779,40 @@ export default function Notes() {
                   </div>
                 </div>
 
-                {/* Filter chips - Modern glassmorphism pills */}
-                <div className="px-3 pb-3">
-                  <div className="flex gap-2 overflow-auto no-scrollbar">
+                {/* Filter chips - Minimal underline tabs */}
+                <div className="px-3 pb-2 border-b border-border/30">
+                  <div className="flex gap-1 overflow-auto no-scrollbar">
                     <button
                       onClick={() => setFilterGroupId("all")}
                       className={cn(
-                        "h-8 px-4 text-[11px] uppercase tracking-wider font-semibold whitespace-nowrap transition-all duration-300 rounded-xl",
-                        filterGroupId === "all"
-                          ? "bg-gradient-to-r from-slate-600 to-slate-800 text-white shadow-lg shadow-slate-500/20"
-                          : "text-muted-foreground hover:text-foreground bg-muted/30 hover:bg-muted/60 backdrop-blur-sm",
+                        "h-9 px-4 text-xs font-medium whitespace-nowrap transition-all relative",
+                        filterGroupId === "all" ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                       )}
                     >
                       All
+                      {filterGroupId === "all" && (
+                        <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-foreground rounded-full" />
+                      )}
                     </button>
 
                     {sortedGroups.map((group) => {
                       const active = filterGroupId === group.id;
-                      const baseColor = group.color;
                       return (
                         <button
                           key={group.id}
                           onClick={() => setFilterGroupId(group.id)}
                           className={cn(
-                            "h-8 px-4 text-[11px] uppercase tracking-wider font-semibold whitespace-nowrap transition-all duration-300 rounded-xl relative overflow-hidden",
-                            active
-                              ? "text-white shadow-lg"
-                              : "text-muted-foreground hover:text-foreground bg-muted/30 hover:bg-muted/60 backdrop-blur-sm",
+                            "h-9 px-4 text-xs font-medium whitespace-nowrap transition-all relative",
+                            active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                           )}
-                          style={
-                            active
-                              ? {
-                                  background: `linear-gradient(135deg, ${baseColor}, ${baseColor}dd)`,
-                                  boxShadow: `0 4px 14px ${baseColor}40`,
-                                }
-                              : undefined
-                          }
                         >
-                          {/* Subtle shine effect on active */}
+                          {group.name}
                           {active && (
-                            <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0" />
+                            <span
+                              className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full"
+                              style={{ backgroundColor: group.color }}
+                            />
                           )}
-                          <span className="relative">{group.name}</span>
                         </button>
                       );
                     })}
