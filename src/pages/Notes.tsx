@@ -690,20 +690,6 @@ export default function Notes() {
                           <Settings className="h-4 w-4 mr-3 text-muted-foreground" />
                           <span>Group Settings</span>
                         </DropdownMenuItem>
-
-                        {/* Theme Toggle */}
-                        <DropdownMenuItem
-                          onClick={() => setTheme(theme.isDark ? "calm-blue" : "midnight-dark")}
-                          className="py-2 rounded-lg cursor-pointer"
-                        >
-                          {theme.isDark ? (
-                            <Sun className="h-4 w-4 mr-3 text-amber-500" />
-                          ) : (
-                            <Moon className="h-4 w-4 mr-3 text-indigo-500" />
-                          )}
-                          <span>{theme.isDark ? "Light Mode" : "Dark Mode"}</span>
-                        </DropdownMenuItem>
-
                         <DropdownMenuSeparator className="my-2" />
 
                         {/* Color Themes */}

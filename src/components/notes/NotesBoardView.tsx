@@ -585,16 +585,16 @@ export function NotesBoardView({
 
         {/* Add Group Column */}
         {onAddGroup && (
-          <div className="w-[200px] shrink-0 flex flex-col h-full">
+          <div className="w-[140px] shrink-0 flex flex-col h-full">
             <div className="mb-2">
               <div className="h-0.5 rounded-sm mb-3 bg-border/30" />
             </div>
             <button
               onClick={onAddGroup}
-              className="w-full flex items-center justify-center gap-2 px-3 py-8 text-sm text-muted-foreground hover:text-foreground bg-background/40 hover:bg-background/70 rounded-lg border border-dashed border-border/40 hover:border-border transition-all"
+              className="w-full flex items-center justify-center gap-1.5 px-2 py-4 text-xs text-muted-foreground hover:text-foreground bg-background/40 hover:bg-background/70 rounded-lg border border-dashed border-border/40 hover:border-border transition-all"
             >
-              <Plus className="h-4 w-4" />
-              Add a new bucket
+              <Plus className="h-3.5 w-3.5" />
+              Add group
             </button>
           </div>
         )}
