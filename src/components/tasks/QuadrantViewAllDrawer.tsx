@@ -30,9 +30,7 @@ export function QuadrantViewAllDrawer({
 }: QuadrantViewAllDrawerProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredTasks = tasks.filter(t =>
-    t.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredTasks = tasks.filter((t) => t.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
   if (!quadrant) return null;
 
@@ -53,7 +51,7 @@ export function QuadrantViewAllDrawer({
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            
+
             {/* Search */}
             <div className="relative mt-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -79,29 +77,33 @@ export function QuadrantViewAllDrawer({
                     className={cn(
                       "group p-3 bg-background rounded-xl border border-border/50",
                       "hover:shadow-md hover:border-border transition-all cursor-pointer",
-                      isCompleted && "opacity-60"
+                      isCompleted && "opacity-60",
                     )}
                   >
                     <div className="flex items-start gap-2">
-                      <div className="flex-1 min-w-0" onClick={() => { onTaskClick(task); onClose(); }}>
-                        <p className={cn(
-                          "text-sm font-medium text-foreground",
-                          isCompleted && "line-through"
-                        )}>
+                      <div
+                        className="flex-1 min-w-0"
+                        onClick={() => {
+                          onTaskClick(task);
+                          onClose();
+                        }}
+                      >
+                        <p className={cn("text-sm font-medium text-foreground", isCompleted && "line-through")}>
                           {task.title}
                         </p>
                         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                          {task.due_date && (
-                            <span>{format(new Date(task.due_date), 'MMM d')}</span>
-                          )}
+                          {task.due_date && <span>{format(new Date(task.due_date), "MMM d")}</span>}
                           {task.due_time && <span>@ {task.due_time}</span>}
                         </div>
                         <div className="flex flex-wrap gap-1 mt-2">
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">
                             {task.time_of_day}
                           </Badge>
-                          {status === 'overdue' && (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-destructive/10 text-destructive border-destructive/30">
+                          {status === "overdue" && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1.5 py-0 bg-destructive/10 text-destructive border-destructive/30"
+                            >
                               Overdue
                             </Badge>
                           )}

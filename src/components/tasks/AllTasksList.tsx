@@ -79,16 +79,14 @@ export function AllTasksList({
     const isCompleted = task.is_completed || !!task.completed_at;
     const status = computeTaskStatus(task);
 
-    const isOngoing = status === 'ongoing';
-    
+    const isOngoing = status === "ongoing";
+
     return (
       <div
         className={cn(
           "group p-3 rounded-xl border transition-all",
           "hover:shadow-md hover:border-border cursor-pointer",
-          isOngoing 
-            ? "bg-primary/5 border-l-2 border-l-primary border-border/50" 
-            : "bg-background border-border/50",
+          isOngoing ? "bg-primary/5 border-l-2 border-l-primary border-border/50" : "bg-background border-border/50",
           isCompleted && "opacity-60",
         )}
       >
@@ -135,20 +133,21 @@ export function AllTasksList({
                 <Play className="h-3.5 w-3.5" />
               </Button>
             )}
-            {!isCompleted && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 opacity-70 hover:opacity-100 hover:bg-chart-1/10 hover:text-chart-1"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onCompleteTask(task);
-                }}
-                title="Mark Complete"
-              >
-                <Check className="h-3.5 w-3.5" />
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-7 w-7 opacity-70 hover:opacity-100",
+                isCompleted ? "hover:bg-amber-500/10 hover:text-amber-500" : "hover:bg-chart-1/10 hover:text-chart-1",
+              )}
+              onClick={(e) => {
+                e.stopPropagation();
+                onCompleteTask(task);
+              }}
+              title={isCompleted ? "Mark Incomplete" : "Mark Complete"}
+            >
+              <Check className={cn("h-3.5 w-3.5", isCompleted && "text-chart-1")} />
+            </Button>
           </div>
         </div>
       </div>
