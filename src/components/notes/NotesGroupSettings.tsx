@@ -204,16 +204,28 @@ export function NotesGroupSettings({
                             <X className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
-                        <div className="grid grid-cols-8 gap-1">
+                        <div className="grid grid-cols-8 gap-1.5">
                           {PRESET_COLORS.map((color) => (
                             <button
                               key={color}
-                              className={`h-4 w-4 rounded-full border transition-all hover:scale-110 ${
-                                editColor === color ? "border-foreground ring-1 ring-primary/30" : "border-transparent"
+                              className={`h-6 rounded-md transition-all hover:scale-105 relative overflow-hidden ${
+                                editColor === color
+                                  ? "ring-2 ring-primary ring-offset-1 ring-offset-background"
+                                  : "hover:ring-1 hover:ring-border"
                               }`}
-                              style={{ backgroundColor: color }}
                               onClick={() => setEditColor(color)}
-                            />
+                            >
+                              {/* Top accent line like board view */}
+                              <div
+                                className="absolute top-0 left-0 right-0 h-0.5 rounded-t-md"
+                                style={{ backgroundColor: color }}
+                              />
+                              {/* Body with gradient */}
+                              <div
+                                className="absolute inset-0 opacity-20"
+                                style={{ background: `linear-gradient(180deg, ${color} 0%, transparent 100%)` }}
+                              />
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -273,22 +285,32 @@ export function NotesGroupSettings({
                     if (e.key === "Enter") handleAddGroup();
                   }}
                 />
-                {/* Color picker grid */}
+                {/* Color picker - accent bars like board view */}
                 <div className="space-y-2">
                   <span className="text-xs text-muted-foreground">Choose color</span>
                   <div className="grid grid-cols-8 gap-2">
                     {PRESET_COLORS.map((color) => (
                       <button
                         key={color}
-                        className={`h-6 w-6 rounded-full border-2 transition-all hover:scale-110 ${
+                        className={`h-8 rounded-lg transition-all hover:scale-105 relative overflow-hidden ${
                           newGroupColor === color
-                            ? "border-foreground ring-2 ring-primary/30"
-                            : "border-transparent hover:border-border"
+                            ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                            : "hover:ring-1 hover:ring-border"
                         }`}
-                        style={{ backgroundColor: color }}
                         onClick={() => setNewGroupColor(color)}
                         title={color}
-                      />
+                      >
+                        {/* Top accent line like board view */}
+                        <div
+                          className="absolute top-0 left-0 right-0 h-1 rounded-t-lg"
+                          style={{ backgroundColor: color }}
+                        />
+                        {/* Body with gradient */}
+                        <div
+                          className="absolute inset-0 opacity-20"
+                          style={{ background: `linear-gradient(180deg, ${color} 0%, transparent 100%)` }}
+                        />
+                      </button>
                     ))}
                   </div>
                 </div>
