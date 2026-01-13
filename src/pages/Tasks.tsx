@@ -40,6 +40,7 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     description: "Complete all pre-launch requirements",
     due_date: new Date().toISOString(),
     due_time: "14:00",
+    end_time: "16:00",
     priority: "high",
     is_completed: false,
     completed_at: null,
@@ -66,6 +67,7 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     description: "Analyze quarterly performance metrics",
     due_date: new Date(Date.now() - 86400000).toISOString(),
     due_time: "09:00",
+    end_time: "10:00",
     priority: "high",
     is_completed: false,
     completed_at: null,
@@ -89,6 +91,7 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     description: "Review and approve marketing materials",
     due_date: new Date().toISOString(),
     due_time: "10:00",
+    end_time: "11:00",
     priority: "medium",
     is_completed: false,
     completed_at: null,
@@ -112,6 +115,7 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     description: "Plan next quarter goals",
     due_date: new Date(Date.now() + 86400000 * 3).toISOString(),
     due_time: "21:00",
+    end_time: "22:00",
     priority: "medium",
     is_completed: false,
     completed_at: null,
@@ -135,6 +139,7 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     description: "Prepare agenda for team meeting",
     due_date: new Date(Date.now() + 86400000).toISOString(),
     due_time: "09:00",
+    end_time: "10:00",
     priority: "medium",
     is_completed: false,
     completed_at: null,
@@ -158,6 +163,7 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     description: "Research automation options",
     due_date: new Date(Date.now() + 86400000 * 5).toISOString(),
     due_time: null,
+    end_time: null,
     priority: "low",
     is_completed: false,
     completed_at: null,
@@ -234,13 +240,15 @@ export default function Tasks() {
     if (!error && data) {
       const quadrantTasks: QuadrantTask[] = data.map((t: any) => {
         const dueTime = t.due_time || null;
+        const endTime = t.end_time || null;
         const task: QuadrantTask = {
           id: t.id,
           title: t.title,
           description: t.description,
           due_date: t.due_date,
           due_time: dueTime,
-          priority: t.priority || 'medium',
+          end_time: endTime,
+          priority: t.priority || "medium",
           is_completed: t.is_completed || false,
           completed_at: t.completed_at,
           created_at: t.created_at,
@@ -248,9 +256,9 @@ export default function Tasks() {
           reminder_at: t.reminder_at || null,
           alarm_enabled: t.alarm_enabled || false,
           total_focus_minutes: t.total_focus_minutes || 0,
-          urgency: (t.urgency || 'low') as Urgency,
-          importance: (t.importance || 'low') as Importance,
-          status: 'upcoming' as Status,
+          urgency: (t.urgency || "low") as Urgency,
+          importance: (t.importance || "low") as Importance,
+          status: "upcoming" as Status,
           time_of_day: (t.time_of_day || suggestTimeOfDay(dueTime)) as TimeOfDay,
           date_bucket: computeDateBucket(t.due_date) as DateBucket,
           tags: t.tags || [],
@@ -319,7 +327,10 @@ export default function Tasks() {
       }
     }
 
-    toast({ title: isNewTask ? "Created!" : "Updated!", description: isNewTask ? "Your task has been created" : "Task has been updated" });
+    toast({
+      title: isNewTask ? "Created!" : "Updated!",
+      description: isNewTask ? "Your task has been created" : "Task has been updated",
+    });
     setDrawerOpen(false);
   };
 
@@ -346,11 +357,15 @@ export default function Tasks() {
 
     // Sync started status to Supabase
     if (user) {
-      await supabase.from("tasks").update({
-        is_completed: false,
-        completed_at: null,
-        started_at: updated.started_at,
-      } as any).eq("id", task.id).eq("user_id", user.id);
+      await supabase
+        .from("tasks")
+        .update({
+          is_completed: false,
+          completed_at: null,
+          started_at: updated.started_at,
+        } as any)
+        .eq("id", task.id)
+        .eq("user_id", user.id);
     }
 
     toast({ title: "Started!", description: "Task moved to Ongoing" });
@@ -360,12 +375,14 @@ export default function Tasks() {
   };
 
   const handleCompleteTask = async (task: QuadrantTask) => {
-    const completedAt = new Date().toISOString();
+    // Toggle completion - if already completed, mark as incomplete
+    const isNowComplete = !task.is_completed;
+    const completedAt = isNowComplete ? new Date().toISOString() : null;
     const updated: QuadrantTask = {
       ...task,
-      is_completed: true,
+      is_completed: isNowComplete,
       completed_at: completedAt,
-      status: "completed",
+      status: isNowComplete ? "completed" : computeTaskStatus({ ...task, is_completed: false, completed_at: null }),
     };
 
     setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
@@ -373,13 +390,20 @@ export default function Tasks() {
 
     // Sync completion to Supabase
     if (user) {
-      await supabase.from("tasks").update({
-        is_completed: true,
-        completed_at: completedAt,
-      }).eq("id", task.id).eq("user_id", user.id);
+      await supabase
+        .from("tasks")
+        .update({
+          is_completed: isNowComplete,
+          completed_at: completedAt,
+        })
+        .eq("id", task.id)
+        .eq("user_id", user.id);
     }
 
-    toast({ title: "Completed!", description: "Task marked as done" });
+    toast({
+      title: isNowComplete ? "Completed!" : "Reopened!",
+      description: isNowComplete ? "Task marked as done" : "Task marked as incomplete",
+    });
   };
 
   const handleStartFocus = (task: QuadrantTask) => {
@@ -454,11 +478,15 @@ export default function Tasks() {
 
     // Sync to Supabase
     if (user) {
-      await supabase.from("tasks").update({
-        is_completed: updated.is_completed,
-        completed_at: updated.completed_at,
-        started_at: updated.started_at,
-      } as any).eq("id", task.id).eq("user_id", user.id);
+      await supabase
+        .from("tasks")
+        .update({
+          is_completed: updated.is_completed,
+          completed_at: updated.completed_at,
+          started_at: updated.started_at,
+        } as any)
+        .eq("id", task.id)
+        .eq("user_id", user.id);
     }
 
     toast({ title: "Task updated" });
@@ -484,17 +512,16 @@ export default function Tasks() {
     return <PageLoadingScreen module="tasks" />;
   }
 
-
   const gridCols = allTasksCollapsed
     ? "xl:grid-cols-[72px_minmax(0,1fr)]"
     : "xl:grid-cols-[minmax(300px,340px)_minmax(0,1fr)]";
 
   return (
-    <div 
+    <div
       className={cn(
         "h-full w-full flex flex-col bg-background overflow-x-hidden",
         "transition-all duration-500 ease-out",
-        contentReady ? "opacity-100" : "opacity-0"
+        contentReady ? "opacity-100" : "opacity-0",
       )}
     >
       {/* Hero */}
@@ -566,6 +593,7 @@ export default function Tasks() {
             task={selectedTask}
             isNew={isNewTask}
             open={drawerOpen}
+            allTasks={tasks}
             onClose={() => setDrawerOpen(false)}
             onSave={handleSaveTask}
             onDelete={handleDeleteTask}
