@@ -155,125 +155,10 @@ export function NotesGroupSettings({
           <DialogTitle>Manage Groups</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[420px]">
-          <div className="space-y-2 py-4">
-            {sortedGroups.map((group, index) => {
-              const groupFolders = folders.filter((f) => f.groupId === group.id);
-              const isExpanded = expandedGroups.has(group.id);
-
-              return (
-                <div key={group.id} className="space-y-1">
-                  <div
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, group.id, index)}
-                    onDragOver={(e) => handleDragOver(e, index)}
-                    onDragEnd={handleDragEnd}
-                    className={`flex items-center gap-2 p-2 rounded-xl bg-muted/25 border border-border/30 transition-colors ${
-                      draggedItem?.id === group.id ? "opacity-50" : ""
-                    }`}
-                  >
-                    <div
-                      className="w-1 h-6 rounded-full shrink-0"
-                      style={{ backgroundColor: editingGroup === group.id ? editColor : group.color }}
-                    />
-                    <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab active:cursor-grabbing" />
-
-                    {groupFolders.length > 0 && (
-                      <button onClick={() => toggleExpanded(group.id)} className="p-0.5">
-                        {isExpanded ? (
-                          <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="h-3 w-3 text-muted-foreground" />
-                        )}
-                      </button>
-                    )}
-
-                    {editingGroup === group.id ? (
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Input
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            className="h-8 text-sm rounded-xl flex-1"
-                            autoFocus
-                          />
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSaveEdit}>
-                            <Check className="h-4 w-4 text-green-500" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancelEdit}>
-                            <X className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-8 gap-1.5">
-                          {PRESET_COLORS.map((color) => (
-                            <button
-                              key={color}
-                              className={`h-6 rounded-md transition-all hover:scale-105 relative overflow-hidden ${
-                                editColor === color
-                                  ? "ring-2 ring-primary ring-offset-1 ring-offset-background"
-                                  : "hover:ring-1 hover:ring-border"
-                              }`}
-                              onClick={() => setEditColor(color)}
-                            >
-                              {/* Top accent line like board view */}
-                              <div
-                                className="absolute top-0 left-0 right-0 h-0.5 rounded-t-md"
-                                style={{ backgroundColor: color }}
-                              />
-                              {/* Body with gradient */}
-                              <div
-                                className="absolute inset-0 opacity-20"
-                                style={{ background: `linear-gradient(180deg, ${color} 0%, transparent 100%)` }}
-                              />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <span className="flex-1 font-medium text-sm">{group.name}</span>
-                        <span className="text-xs text-muted-foreground">{groupFolders.length} folders</span>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditGroup(group)}>
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteGroup(group.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-
-                  {isExpanded && groupFolders.length > 0 && (
-                    <div className="ml-8 space-y-1">
-                      {groupFolders.map((folder) => (
-                        <div
-                          key={folder.id}
-                          className="flex items-center gap-2 px-2 py-2 rounded-xl bg-muted/15 border border-border/20"
-                        >
-                          <Folder className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground flex-1">{folder.name}</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => handleDeleteFolder(folder.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            <div className="border-t pt-4 mt-4">
+        <ScrollArea className="max-h-[480px]">
+          <div className="space-y-4 py-4">
+            {/* Add New Group - At top */}
+            <div className="pb-4 border-b">
               <h4 className="text-sm font-medium mb-3">Add New Group</h4>
               <div className="space-y-3">
                 <Input
@@ -300,12 +185,10 @@ export function NotesGroupSettings({
                         onClick={() => setNewGroupColor(color)}
                         title={color}
                       >
-                        {/* Top accent line like board view */}
                         <div
                           className="absolute top-0 left-0 right-0 h-1 rounded-t-lg"
                           style={{ backgroundColor: color }}
                         />
-                        {/* Body with gradient */}
                         <div
                           className="absolute inset-0 opacity-20"
                           style={{ background: `linear-gradient(180deg, ${color} 0%, transparent 100%)` }}
@@ -324,6 +207,131 @@ export function NotesGroupSettings({
                   Create Group
                 </Button>
               </div>
+            </div>
+
+            {/* Existing Groups */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your Groups</h4>
+              {sortedGroups.map((group, index) => {
+                const groupFolders = folders.filter((f) => f.groupId === group.id);
+                const isExpanded = expandedGroups.has(group.id);
+
+                return (
+                  <div key={group.id} className="space-y-1">
+                    <div
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, group.id, index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragEnd={handleDragEnd}
+                      className={`flex items-center gap-2 p-2 rounded-xl bg-muted/25 border border-border/30 transition-colors ${
+                        draggedItem?.id === group.id ? "opacity-50" : ""
+                      }`}
+                    >
+                      <div
+                        className="w-1 h-6 rounded-full shrink-0"
+                        style={{ backgroundColor: editingGroup === group.id ? editColor : group.color }}
+                      />
+                      <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab active:cursor-grabbing" />
+
+                      {groupFolders.length > 0 && (
+                        <button onClick={() => toggleExpanded(group.id)} className="p-0.5">
+                          {isExpanded ? (
+                            <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                          )}
+                        </button>
+                      )}
+
+                      {editingGroup === group.id ? (
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
+                              className="h-8 text-sm rounded-xl flex-1"
+                              autoFocus
+                            />
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSaveEdit}>
+                              <Check className="h-4 w-4 text-green-500" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCancelEdit}>
+                              <X className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-8 gap-1.5">
+                            {PRESET_COLORS.map((color) => (
+                              <button
+                                key={color}
+                                className={`h-6 rounded-md transition-all hover:scale-105 relative overflow-hidden ${
+                                  editColor === color
+                                    ? "ring-2 ring-primary ring-offset-1 ring-offset-background"
+                                    : "hover:ring-1 hover:ring-border"
+                                }`}
+                                onClick={() => setEditColor(color)}
+                              >
+                                {/* Top accent line like board view */}
+                                <div
+                                  className="absolute top-0 left-0 right-0 h-0.5 rounded-t-md"
+                                  style={{ backgroundColor: color }}
+                                />
+                                {/* Body with gradient */}
+                                <div
+                                  className="absolute inset-0 opacity-20"
+                                  style={{ background: `linear-gradient(180deg, ${color} 0%, transparent 100%)` }}
+                                />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="flex-1 font-medium text-sm">{group.name}</span>
+                          <span className="text-xs text-muted-foreground">{groupFolders.length} folders</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleEditGroup(group)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteGroup(group.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+
+                    {isExpanded && groupFolders.length > 0 && (
+                      <div className="ml-8 space-y-1">
+                        {groupFolders.map((folder) => (
+                          <div
+                            key={folder.id}
+                            className="flex items-center gap-2 px-2 py-2 rounded-xl bg-muted/15 border border-border/20"
+                          >
+                            <Folder className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground flex-1">{folder.name}</span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => handleDeleteFolder(folder.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </ScrollArea>
