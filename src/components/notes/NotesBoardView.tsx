@@ -291,21 +291,21 @@ export function NotesBoardView({
                 </div>
               </div>
 
-              {/* Add note + Add section buttons - Half half */}
-              <div className="flex gap-2 mb-2">
+              {/* Add note + Add section buttons - Modern glassmorphism style */}
+              <div className="flex gap-2 mb-3">
                 <button
                   onClick={() => onAddNote(group.id, null)}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs text-muted-foreground hover:text-foreground bg-background/60 hover:bg-background/90 rounded-lg border border-dashed border-border/50 hover:border-border transition-all"
+                  className="group flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-medium text-muted-foreground hover:text-primary rounded-xl bg-gradient-to-br from-primary/5 via-background/80 to-background/60 hover:from-primary/15 hover:via-primary/5 hover:to-background/80 backdrop-blur-sm border border-primary/10 hover:border-primary/30 shadow-sm hover:shadow-md hover:shadow-primary/5 transition-all duration-300"
                 >
-                  <Plus className="h-3.5 w-3.5" />
-                  Add note
+                  <Plus className="h-3.5 w-3.5 transition-transform group-hover:rotate-90 group-hover:scale-110" />
+                  <span className="group-hover:tracking-wide transition-all">Add note</span>
                 </button>
                 <button
                   onClick={() => setNewFolderGroupId(group.id)}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs text-muted-foreground hover:text-foreground bg-background/60 hover:bg-background/90 rounded-lg border border-dashed border-border/50 hover:border-border transition-all"
+                  className="group flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-medium text-muted-foreground hover:text-violet-600 dark:hover:text-violet-400 rounded-xl bg-gradient-to-br from-violet-500/5 via-background/80 to-background/60 hover:from-violet-500/15 hover:via-violet-500/5 hover:to-background/80 backdrop-blur-sm border border-violet-500/10 hover:border-violet-500/30 shadow-sm hover:shadow-md hover:shadow-violet-500/5 transition-all duration-300"
                 >
-                  <FolderPlus className="h-3.5 w-3.5" />
-                  Add section
+                  <FolderPlus className="h-3.5 w-3.5 transition-transform group-hover:scale-110" />
+                  <span className="group-hover:tracking-wide transition-all">Add section</span>
                 </button>
               </div>
 
@@ -585,16 +585,16 @@ export function NotesBoardView({
 
         {/* Add Group Column */}
         {onAddGroup && (
-          <div className="w-[140px] shrink-0 flex flex-col h-full">
+          <div className="w-[120px] shrink-0 flex flex-col h-full">
             <div className="mb-2">
-              <div className="h-0.5 rounded-sm mb-3 bg-border/30" />
+              <div className="h-0.5 rounded-sm mb-3 bg-gradient-to-r from-emerald-500/30 to-transparent" />
             </div>
             <button
               onClick={onAddGroup}
-              className="w-full flex items-center justify-center gap-1.5 px-2 py-4 text-xs text-muted-foreground hover:text-foreground bg-background/40 hover:bg-background/70 rounded-lg border border-dashed border-border/40 hover:border-border transition-all"
+              className="group w-full flex items-center justify-center gap-1.5 px-2 py-3 text-xs font-medium text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 rounded-xl bg-gradient-to-br from-emerald-500/5 via-background/80 to-background/60 hover:from-emerald-500/15 hover:via-emerald-500/5 hover:to-background/80 backdrop-blur-sm border border-emerald-500/10 hover:border-emerald-500/30 shadow-sm hover:shadow-md hover:shadow-emerald-500/5 transition-all duration-300"
             >
-              <Plus className="h-3.5 w-3.5" />
-              Add group
+              <Plus className="h-3.5 w-3.5 transition-transform group-hover:rotate-90 group-hover:scale-110" />
+              <span className="group-hover:tracking-wide transition-all">Add group</span>
             </button>
           </div>
         )}
