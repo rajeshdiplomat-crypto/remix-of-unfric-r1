@@ -196,6 +196,7 @@ export default function Trackers() {
   const [formImageUrl, setFormImageUrl] = useState<string | null>(null);
   const [formTime, setFormTime] = useState("09:00");
   const [formDuration, setFormDuration] = useState(30);
+  const [formAddToTasks, setFormAddToTasks] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -530,6 +531,7 @@ export default function Trackers() {
     setFormImageUrl(null);
     setFormTime("09:00");
     setFormDuration(30);
+    setFormAddToTasks(true); // Default on for new activities
     setDialogOpen(true);
   };
 
@@ -545,6 +547,7 @@ export default function Trackers() {
     setFormImageUrl(loadActivityImage(activity.id));
     setFormTime(activity.time || "09:00");
     setFormDuration(activity.duration || 30);
+    setFormAddToTasks(false); // Off for edits (already created)
     setDialogOpen(true);
   };
 
@@ -616,11 +619,54 @@ export default function Trackers() {
         toast({ title: "Sync failed", description: error.message, variant: "destructive" });
         return;
       }
+
+      // Create tasks for each scheduled day if enabled
+      if (formAddToTasks && !editingActivity) {
+        const scheduledDates: Date[] = [];
+        let checkDate = formStartDate;
+        let count = 0;
+        const endDate = computeEndDateForHabitDays(formStartDate, formFrequency, formDays);
+
+        while (!isAfter(checkDate, endDate) && count < formDays) {
+          const dayOfWeek = (checkDate.getDay() + 6) % 7;
+          if (formFrequency[dayOfWeek]) {
+            scheduledDates.push(new Date(checkDate));
+            count++;
+          }
+          checkDate = addDays(checkDate, 1);
+        }
+
+        // Create tasks in batches
+        const tasks = scheduledDates.map((date) => ({
+          id: crypto.randomUUID(),
+          user_id: user.id,
+          title: `${tempActivity.name}`,
+          description: tempActivity.description || null,
+          due_date: format(date, "yyyy-MM-dd"),
+          due_time: formTime,
+          priority: formPriority.toLowerCase(),
+          urgency: "low",
+          importance: formPriority === "High" ? "high" : "low",
+          time_of_day:
+            parseInt(formTime.split(":")[0]) < 12
+              ? "morning"
+              : parseInt(formTime.split(":")[0]) < 17
+                ? "afternoon"
+                : "evening",
+          is_completed: false,
+          tags: ["Habit", formCategory],
+        }));
+
+        if (tasks.length > 0) {
+          await supabase.from("tasks").insert(tasks as any);
+        }
+      }
     }
 
+    const tasksMessage = formAddToTasks && !editingActivity ? ` + ${scheduledSessions} tasks added` : "";
     toast({
       title: editingActivity ? "Activity updated" : "Activity created",
-      description: `${scheduledSessions} habit sessions scheduled`,
+      description: `${scheduledSessions} habit sessions scheduled${tasksMessage}`,
     });
     setDialogOpen(false);
   };
@@ -1440,6 +1486,26 @@ export default function Trackers() {
                       {formFrequency.filter(Boolean).length} days/week → {formDays} habit sessions
                     </p>
                   </div>
+
+                  {/* Add to Tasks toggle */}
+                  {!editingActivity && (
+                    <div
+                      className="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/10 cursor-pointer hover:bg-primary/10 transition-colors"
+                      onClick={() => setFormAddToTasks(!formAddToTasks)}
+                    >
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Add to Tasks page</p>
+                        <p className="text-xs text-muted-foreground">
+                          Create time-blocked tasks for each scheduled day
+                        </p>
+                      </div>
+                      <Checkbox
+                        checked={formAddToTasks}
+                        onCheckedChange={(checked) => setFormAddToTasks(!!checked)}
+                        className="h-5 w-5"
+                      />
+                    </div>
+                  )}
 
                   <div className="flex gap-2 pt-2">
                     <Button
