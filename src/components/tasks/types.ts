@@ -1,17 +1,18 @@
-export type Urgency = 'low' | 'high';
-export type Importance = 'low' | 'high';
-export type Status = 'overdue' | 'ongoing' | 'upcoming' | 'completed';
-export type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'night';
-export type DateBucket = 'yesterday' | 'today' | 'tomorrow' | 'week';
+export type Urgency = "low" | "high";
+export type Importance = "low" | "high";
+export type Status = "overdue" | "ongoing" | "upcoming" | "completed";
+export type TimeOfDay = "morning" | "afternoon" | "evening" | "night";
+export type DateBucket = "yesterday" | "today" | "tomorrow" | "week";
 
-export type QuadrantMode = 'urgent-important' | 'status' | 'date' | 'time';
+export type QuadrantMode = "urgent-important" | "status" | "date" | "time";
 
 export interface QuadrantTask {
   id: string;
   title: string;
   description: string | null;
   due_date: string | null;
-  due_time: string | null;
+  due_time: string | null; // Start time
+  end_time: string | null; // End time (new field)
   priority: string;
   is_completed: boolean;
   completed_at: string | null;
@@ -33,6 +34,14 @@ export interface QuadrantTask {
   quadrant_assigned: boolean;
 }
 
+// Calculate default end time (start time + 2 hours)
+export function getDefaultEndTime(startTime: string | null): string | null {
+  if (!startTime) return null;
+  const [hours, minutes] = startTime.split(":").map(Number);
+  const endHours = (hours + 2) % 24;
+  return `${endHours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+}
+
 export interface Subtask {
   id: string;
   title: string;
@@ -49,95 +58,101 @@ export interface QuadrantConfig {
 
 // Compute task status based on fields
 export function computeTaskStatus(task: QuadrantTask): Status {
-  if (task.completed_at || task.is_completed) return 'completed';
+  if (task.completed_at || task.is_completed) return "completed";
   if (task.due_date) {
     const dueDate = new Date(task.due_date);
     dueDate.setHours(23, 59, 59, 999);
-    if (new Date() > dueDate) return 'overdue';
+    if (new Date() > dueDate) return "overdue";
   }
-  if (task.started_at) return 'ongoing';
-  return 'upcoming';
+  if (task.started_at) return "ongoing";
+  return "upcoming";
 }
 
 export function suggestTimeOfDay(dueTime: string | null): TimeOfDay {
-  if (!dueTime) return 'morning';
-  const [hours] = dueTime.split(':').map(Number);
-  if (hours >= 5 && hours < 12) return 'morning';
-  if (hours >= 12 && hours < 17) return 'afternoon';
-  if (hours >= 17 && hours < 21) return 'evening';
-  return 'night';
+  if (!dueTime) return "morning";
+  const [hours] = dueTime.split(":").map(Number);
+  if (hours >= 5 && hours < 12) return "morning";
+  if (hours >= 12 && hours < 17) return "afternoon";
+  if (hours >= 17 && hours < 21) return "evening";
+  return "night";
 }
 
 export function computeDateBucket(dueDate: string | null): DateBucket {
-  if (!dueDate) return 'today';
-  
+  if (!dueDate) return "today";
+
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const due = new Date(dueDate);
   const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
-  
+
   const diffDays = Math.floor((dueDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  
-  if (diffDays < 0) return 'yesterday';
-  if (diffDays === 0) return 'today';
-  if (diffDays === 1) return 'tomorrow';
-  return 'week';
+
+  if (diffDays < 0) return "yesterday";
+  if (diffDays === 0) return "today";
+  if (diffDays === 1) return "tomorrow";
+  return "week";
 }
 
 export const QUADRANT_MODES: Record<QuadrantMode, { label: string; quadrants: QuadrantConfig[] }> = {
-  'urgent-important': {
-    label: 'Urgent × Important',
+  "urgent-important": {
+    label: "Urgent × Important",
     quadrants: [
-      { id: 'urgent-important', title: 'URGENT & IMPORTANT', icon: 'flame', color: 'hsl(var(--destructive))' },
-      { id: 'urgent-not-important', title: 'URGENT & NOT IMPORTANT', icon: 'clock', color: 'hsl(var(--chart-1))' },
-      { id: 'not-urgent-important', title: 'NOT URGENT & IMPORTANT', icon: 'sparkles', color: 'hsl(var(--primary))' },
-      { id: 'not-urgent-not-important', title: 'NOT URGENT & NOT IMPORTANT', icon: 'archive', color: 'hsl(var(--muted))' },
+      { id: "urgent-important", title: "URGENT & IMPORTANT", icon: "flame", color: "hsl(var(--destructive))" },
+      { id: "urgent-not-important", title: "URGENT & NOT IMPORTANT", icon: "clock", color: "hsl(var(--chart-1))" },
+      { id: "not-urgent-important", title: "NOT URGENT & IMPORTANT", icon: "sparkles", color: "hsl(var(--primary))" },
+      {
+        id: "not-urgent-not-important",
+        title: "NOT URGENT & NOT IMPORTANT",
+        icon: "archive",
+        color: "hsl(var(--muted))",
+      },
     ],
   },
-  'status': {
-    label: 'Status',
+  status: {
+    label: "Status",
     quadrants: [
-      { id: 'overdue', title: 'OVERDUE', icon: 'alert-triangle', color: 'hsl(var(--destructive))' },
-      { id: 'ongoing', title: 'ONGOING', icon: 'play', color: 'hsl(var(--chart-1))' },
-      { id: 'upcoming', title: 'UPCOMING', icon: 'calendar', color: 'hsl(var(--primary))' },
-      { id: 'completed', title: 'COMPLETED', icon: 'check-circle', color: 'hsl(var(--muted))' },
+      { id: "overdue", title: "OVERDUE", icon: "alert-triangle", color: "hsl(var(--destructive))" },
+      { id: "ongoing", title: "ONGOING", icon: "play", color: "hsl(var(--chart-1))" },
+      { id: "upcoming", title: "UPCOMING", icon: "calendar", color: "hsl(var(--primary))" },
+      { id: "completed", title: "COMPLETED", icon: "check-circle", color: "hsl(var(--muted))" },
     ],
   },
-  'date': {
-    label: 'Date',
+  date: {
+    label: "Date",
     quadrants: [
-      { id: 'yesterday', title: 'YESTERDAY', icon: 'clock', color: 'hsl(var(--destructive))' },
-      { id: 'today', title: 'TODAY', icon: 'sun', color: 'hsl(var(--chart-1))' },
-      { id: 'tomorrow', title: 'TOMORROW', icon: 'sunrise', color: 'hsl(var(--primary))' },
-      { id: 'week', title: 'THIS WEEK', icon: 'calendar', color: 'hsl(var(--muted))' },
+      { id: "yesterday", title: "YESTERDAY", icon: "clock", color: "hsl(var(--destructive))" },
+      { id: "today", title: "TODAY", icon: "sun", color: "hsl(var(--chart-1))" },
+      { id: "tomorrow", title: "TOMORROW", icon: "sunrise", color: "hsl(var(--primary))" },
+      { id: "week", title: "THIS WEEK", icon: "calendar", color: "hsl(var(--muted))" },
     ],
   },
-  'time': {
-    label: 'Time of Day',
+  time: {
+    label: "Time of Day",
     quadrants: [
-      { id: 'morning', title: 'MORNING', icon: 'sunrise', color: 'hsl(var(--chart-1))' },
-      { id: 'afternoon', title: 'AFTERNOON', icon: 'sun', color: 'hsl(var(--primary))' },
-      { id: 'evening', title: 'EVENING', icon: 'sunset', color: 'hsl(var(--chart-2))' },
-      { id: 'night', title: 'NIGHT', icon: 'moon', color: 'hsl(var(--muted))' },
+      { id: "morning", title: "MORNING", icon: "sunrise", color: "hsl(var(--chart-1))" },
+      { id: "afternoon", title: "AFTERNOON", icon: "sun", color: "hsl(var(--primary))" },
+      { id: "evening", title: "EVENING", icon: "sunset", color: "hsl(var(--chart-2))" },
+      { id: "night", title: "NIGHT", icon: "moon", color: "hsl(var(--muted))" },
     ],
   },
 };
 
 export const BOARD_COLUMNS: QuadrantConfig[] = [
-  { id: 'overdue', title: 'OVERDUE', icon: 'alert-triangle', color: 'hsl(var(--destructive))' },
-  { id: 'upcoming', title: 'UPCOMING', icon: 'calendar', color: 'hsl(var(--primary))' },
-  { id: 'ongoing', title: 'ONGOING', icon: 'play', color: 'hsl(var(--chart-1))' },
-  { id: 'completed', title: 'COMPLETED', icon: 'check-circle', color: 'hsl(var(--muted))' },
+  { id: "overdue", title: "OVERDUE", icon: "alert-triangle", color: "hsl(var(--destructive))" },
+  { id: "upcoming", title: "UPCOMING", icon: "calendar", color: "hsl(var(--primary))" },
+  { id: "ongoing", title: "ONGOING", icon: "play", color: "hsl(var(--chart-1))" },
+  { id: "completed", title: "COMPLETED", icon: "check-circle", color: "hsl(var(--muted))" },
 ];
 
 // Default task template
 export const createDefaultTask = (overrides?: Partial<QuadrantTask>): QuadrantTask => ({
   id: crypto.randomUUID(),
-  title: '',
+  title: "",
   description: null,
   due_date: null,
   due_time: null,
-  priority: 'medium',
+  end_time: null,
+  priority: "medium",
   is_completed: false,
   completed_at: null,
   created_at: new Date().toISOString(),
@@ -145,11 +160,11 @@ export const createDefaultTask = (overrides?: Partial<QuadrantTask>): QuadrantTa
   reminder_at: null,
   alarm_enabled: false,
   total_focus_minutes: 0,
-  urgency: 'low',
-  importance: 'low',
-  status: 'upcoming',
-  time_of_day: 'morning',
-  date_bucket: 'today',
+  urgency: "low",
+  importance: "low",
+  status: "upcoming",
+  time_of_day: "morning",
+  date_bucket: "today",
   tags: [],
   subtasks: [],
   quadrant_assigned: false,
