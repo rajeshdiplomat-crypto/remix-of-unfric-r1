@@ -204,9 +204,11 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
       latestEnd = Math.max(latestEnd, end);
     });
 
-    // Round to nearest hour and add buffer
-    const startHour = Math.max(6, Math.floor(earliestStart / 60) - 1); // 1 hour before, min 6 AM
-    const endHour = Math.min(22, Math.ceil(latestEnd / 60) + 2); // 2 hours after, max 10 PM
+    // Round to nearest hour and add minimal buffer
+    // Start: 1 hour before first task (min 6 AM)
+    // End: 1 hour after last task (max 10 PM)
+    const startHour = Math.max(6, Math.floor(earliestStart / 60) - 1);
+    const endHour = Math.min(22, Math.ceil(latestEnd / 60) + 1);
 
     return {
       timelineStart: startHour * 60,
