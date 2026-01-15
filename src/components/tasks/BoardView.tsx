@@ -318,9 +318,9 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
         </div>
       </div>
 
-      {/* Timeline content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="relative flex" style={{ minHeight: `${totalHours * HOUR_HEIGHT}px` }}>
+      {/* Timeline content - max 12 hours visible, scrollable */}
+      <div className="flex-1 overflow-y-auto" style={{ maxHeight: `${12 * HOUR_HEIGHT}px` }}>
+        <div className="relative flex" style={{ height: `${totalHours * HOUR_HEIGHT}px` }}>
           {/* Hour labels column */}
           <div className="w-20 shrink-0 border-r border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
             {hourMarkers.map(({ minutes, label }) => (
