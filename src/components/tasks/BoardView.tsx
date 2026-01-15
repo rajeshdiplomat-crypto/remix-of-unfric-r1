@@ -326,13 +326,12 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
             {hourMarkers.map(({ minutes, label }) => (
               <div
                 key={minutes}
-                className="absolute left-0 w-20 flex items-center justify-end pr-3"
+                className="absolute left-0 w-20 flex items-start justify-end pr-3"
                 style={{
                   top: `${getPixelPosition(minutes)}px`,
-                  height: `${HOUR_HEIGHT}px`,
                 }}
               >
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</span>
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 -translate-y-1/2">{label}</span>
               </div>
             ))}
           </div>
