@@ -388,11 +388,10 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
               const duration = event.endMinutes - event.startMinutes;
               const position = getPixelPosition(event.startMinutes);
 
-              // Calculate task card height based on duration
-              // Min height 70px (for 30min), scales with duration
-              const durationHeight = (duration / 60) * HOUR_HEIGHT;
-              const minHeight = 70;
-              const taskHeight = Math.max(minHeight, durationHeight - 8);
+              // Task card height = exact duration height (no minimum)
+              // 60px per hour, so 15min = 15px, 30min = 30px, 1hr = 60px
+              const taskHeight = (duration / 60) * HOUR_HEIGHT;
+              const isCompact = taskHeight < 50; // Compact layout for short tasks
 
               return (
                 <div
@@ -400,116 +399,199 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
                   className="absolute left-10 right-4"
                   style={{
                     top: `${position}px`,
-                    height: `${taskHeight}px`,
+                    height: `${Math.max(taskHeight, 24)}px`, // Min 24px for very short tasks
                   }}
                 >
                   {/* Timeline dot */}
                   <div
                     className={cn(
-                      "absolute -left-[14px] w-4 h-4 rounded-full border-[3px] border-white dark:border-slate-900 shadow-sm z-10",
+                      "absolute -left-[14px] w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 shadow-sm z-10",
                       task.is_completed
                         ? "bg-emerald-500"
                         : isOngoing
                           ? "bg-rose-500 animate-pulse"
                           : bg.replace("bg-gradient-to-br", "bg").split(" ")[1],
                     )}
-                    style={{ top: "12px" }}
+                    style={{ top: `${Math.min(8, taskHeight / 2 - 6)}px` }}
                   />
 
-                  {/* Task card with height based on duration */}
+                  {/* Task card with exact height based on duration */}
                   <div
                     onClick={() => onTaskClick(task)}
                     className={cn(
-                      "group relative ml-4 h-full rounded-xl border-2 cursor-pointer transition-all duration-200 overflow-hidden",
-                      "hover:shadow-xl hover:scale-[1.02]",
+                      "group relative ml-4 h-full rounded-lg border-2 cursor-pointer transition-all duration-200 overflow-hidden",
+                      "hover:shadow-lg hover:scale-[1.01]",
                       task.is_completed
                         ? "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 opacity-70"
                         : cn("bg-white dark:bg-slate-800", border, "hover:border-blue-400 dark:hover:border-blue-500"),
-                      isOngoing && "ring-2 ring-rose-400 ring-offset-2 dark:ring-offset-slate-900 border-rose-300",
+                      isOngoing && "ring-2 ring-rose-400 ring-offset-1 dark:ring-offset-slate-900 border-rose-300",
                       status === "overdue" && !task.is_completed && "border-red-300 bg-red-50 dark:bg-red-900/20",
                     )}
                   >
-                    <div className="flex items-start gap-3 p-3 h-full">
-                      {/* Icon with gradient background */}
-                      <div
-                        className={cn(
-                          "w-10 h-10 rounded-lg flex items-center justify-center shrink-0 shadow-md",
-                          bg,
-                          task.is_completed && "opacity-50",
-                        )}
-                      >
-                        <Icon className="h-5 w-5 text-white" />
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0 overflow-hidden">
-                        {/* Time and duration on same line */}
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                            {formatTime(event.startMinutes)} - {formatTime(event.endMinutes)}
-                          </span>
-                          <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
-                            {formatDuration(duration)}
-                          </span>
-                          {remaining !== null && (
-                            <span className="text-xs px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 font-medium animate-pulse">
-                              {remaining}m left
-                            </span>
+                    {isCompact ? (
+                      /* Compact layout for short tasks (< 50px height) */
+                      <div className="flex items-center gap-2 px-2 h-full">
+                        {/* Small icon */}
+                        <div
+                          className={cn(
+                            "w-6 h-6 rounded flex items-center justify-center shrink-0",
+                            bg,
+                            task.is_completed && "opacity-50",
                           )}
+                        >
+                          <Icon className="h-3 w-3 text-white" />
                         </div>
 
                         {/* Title */}
-                        <h3
+                        <span
                           className={cn(
-                            "font-semibold text-slate-800 dark:text-slate-100 truncate",
+                            "text-xs font-medium text-slate-800 dark:text-slate-100 truncate flex-1",
                             task.is_completed && "line-through opacity-60",
                           )}
                         >
                           {task.title}
-                        </h3>
+                        </span>
 
-                        {/* Tags - only show if card is tall enough */}
-                        {task.tags && task.tags.length > 0 && taskHeight >= 90 && (
-                          <div className="flex flex-wrap gap-1 mt-1.5">
-                            {task.tags.slice(0, 3).map((tag, tagIdx) => (
-                              <span
-                                key={tag}
-                                className={cn(
-                                  "px-2 py-0.5 text-[10px] font-medium rounded-full",
-                                  tagIdx === 0
-                                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                                    : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
-                                )}
-                              >
-                                {tag}
-                              </span>
-                            ))}
+                        {/* Time */}
+                        <span className="text-[10px] text-slate-400 shrink-0">{formatTime(event.startMinutes)}</span>
+
+                        {/* Urgency/Importance badges - compact */}
+                        {(task.urgency === "high" || task.importance === "high") && (
+                          <div className="flex gap-0.5 shrink-0">
+                            {task.urgency === "high" && (
+                              <span className="w-2 h-2 rounded-full bg-red-500" title="Urgent" />
+                            )}
+                            {task.importance === "high" && (
+                              <span className="w-2 h-2 rounded-full bg-amber-500" title="Important" />
+                            )}
                           </div>
                         )}
-                      </div>
 
-                      {/* Complete button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onCompleteTask?.(task);
-                        }}
-                        className="shrink-0 transition-transform hover:scale-110 focus:outline-none"
-                      >
-                        {task.is_completed ? (
-                          <CheckCircle2 className="h-6 w-6 text-emerald-500" />
-                        ) : (
-                          <Circle
-                            className={cn(
-                              "h-6 w-6 transition-colors",
-                              status === "overdue"
-                                ? "text-red-400 hover:text-red-500"
-                                : "text-slate-300 dark:text-slate-600 hover:text-blue-500",
+                        {/* Complete button - small */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onCompleteTask?.(task);
+                          }}
+                          className="shrink-0"
+                        >
+                          {task.is_completed ? (
+                            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                          ) : (
+                            <Circle className="h-4 w-4 text-slate-300 hover:text-blue-500" />
+                          )}
+                        </button>
+                      </div>
+                    ) : (
+                      /* Full layout for longer tasks */
+                      <div className="flex items-start gap-2 p-2 h-full">
+                        {/* Icon with gradient background */}
+                        <div
+                          className={cn(
+                            "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm",
+                            bg,
+                            task.is_completed && "opacity-50",
+                          )}
+                        >
+                          <Icon className="h-4 w-4 text-white" />
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                          {/* Time and duration row */}
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                              {formatTime(event.startMinutes)} - {formatTime(event.endMinutes)}
+                            </span>
+                            <span className="text-[10px] px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500">
+                              {formatDuration(duration)}
+                            </span>
+                            {remaining !== null && (
+                              <span className="text-[10px] px-1 py-0.5 rounded bg-rose-100 text-rose-600 font-medium animate-pulse">
+                                {remaining}m left
+                              </span>
                             )}
-                          />
-                        )}
-                      </button>
-                    </div>
+                          </div>
+
+                          {/* Title */}
+                          <h3
+                            className={cn(
+                              "text-sm font-semibold text-slate-800 dark:text-slate-100 truncate",
+                              task.is_completed && "line-through opacity-60",
+                            )}
+                          >
+                            {task.title}
+                          </h3>
+
+                          {/* Urgency/Importance badges - full */}
+                          <div className="flex items-center gap-1 mt-1">
+                            {task.urgency === "high" && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 font-medium flex items-center gap-0.5">
+                                <Zap className="h-2.5 w-2.5" />
+                                Urgent
+                              </span>
+                            )}
+                            {task.urgency === "low" && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400">
+                                Not Urgent
+                              </span>
+                            )}
+                            {task.importance === "high" && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 font-medium flex items-center gap-0.5">
+                                <Star className="h-2.5 w-2.5" />
+                                Important
+                              </span>
+                            )}
+                            {task.importance === "low" && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400">
+                                Not Important
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Tags - only show if card is tall enough */}
+                          {task.tags && task.tags.length > 0 && taskHeight >= 80 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {task.tags.slice(0, 2).map((tag, tagIdx) => (
+                                <span
+                                  key={tag}
+                                  className={cn(
+                                    "px-1.5 py-0.5 text-[9px] font-medium rounded-full",
+                                    tagIdx === 0
+                                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                                      : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
+                                  )}
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Complete button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onCompleteTask?.(task);
+                          }}
+                          className="shrink-0 transition-transform hover:scale-110 focus:outline-none"
+                        >
+                          {task.is_completed ? (
+                            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                          ) : (
+                            <Circle
+                              className={cn(
+                                "h-5 w-5 transition-colors",
+                                status === "overdue"
+                                  ? "text-red-400 hover:text-red-500"
+                                  : "text-slate-300 dark:text-slate-600 hover:text-blue-500",
+                              )}
+                            />
+                          )}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
