@@ -395,6 +395,37 @@ export default function Tasks() {
         })
         .eq("id", task.id)
         .eq("user_id", user.id);
+
+      // SYNC: If this is a habit-linked task, also mark the habit as complete
+      if (task.tags?.includes("Habit") && task.due_date) {
+        // Find the habit by matching the task title
+        const { data: habits } = await supabase
+          .from("habits")
+          .select("id, name")
+          .eq("user_id", user.id)
+          .eq("name", task.title);
+
+        if (habits && habits.length > 0) {
+          const habitId = habits[0].id;
+          const completedDate = task.due_date.split("T")[0]; // Format: yyyy-MM-dd
+
+          // Check if already marked complete
+          const { data: existing } = await supabase
+            .from("habit_completions")
+            .select("id")
+            .eq("habit_id", habitId)
+            .eq("completed_date", completedDate);
+
+          // Only insert if not already complete
+          if (!existing || existing.length === 0) {
+            await supabase.from("habit_completions").insert({
+              habit_id: habitId,
+              user_id: user.id,
+              completed_date: completedDate,
+            });
+          }
+        }
+      }
     }
 
     toast({ title: "Completed!", description: "Task marked as done" });

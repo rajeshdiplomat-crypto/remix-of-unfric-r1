@@ -490,6 +490,7 @@ export default function Trackers() {
     if (!activity) return;
 
     const wasCompleted = activity.completions[dateStr];
+    const nowCompleted = !wasCompleted;
 
     setActivities((prev) =>
       prev.map((a) => {
@@ -502,6 +503,7 @@ export default function Trackers() {
     );
 
     if (user) {
+      // Update habit_completions
       if (wasCompleted) {
         await supabase
           .from("habit_completions")
@@ -515,6 +517,29 @@ export default function Trackers() {
           user_id: user.id,
           completed_date: dateStr,
         });
+      }
+
+      // SYNC: Also update linked task in tasks table
+      // Find task with matching habit name, date, and "Habit" tag
+      const { data: linkedTasks } = await supabase
+        .from("tasks")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("title", activity.name)
+        .eq("due_date", dateStr)
+        .contains("tags", ["Habit"]);
+
+      if (linkedTasks && linkedTasks.length > 0) {
+        await supabase
+          .from("tasks")
+          .update({
+            is_completed: nowCompleted,
+            completed_at: nowCompleted ? new Date().toISOString() : null,
+          })
+          .in(
+            "id",
+            linkedTasks.map((t) => t.id),
+          );
       }
     }
   };
@@ -655,6 +680,8 @@ export default function Trackers() {
                 : "evening",
           is_completed: false,
           tags: ["Habit", formCategory],
+          // Link to the source habit for bidirectional sync
+          habit_id: tempActivity.id,
         }));
 
         if (tasks.length > 0) {
