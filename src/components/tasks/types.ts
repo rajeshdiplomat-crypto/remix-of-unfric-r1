@@ -34,12 +34,14 @@ export interface QuadrantTask {
   quadrant_assigned: boolean;
 }
 
-// Calculate default end time (start time + 2 hours)
+// Calculate default end time (start time + 30 minutes)
 export function getDefaultEndTime(startTime: string | null): string | null {
   if (!startTime) return null;
   const [hours, minutes] = startTime.split(":").map(Number);
-  const endHours = (hours + 2) % 24;
-  return `${endHours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+  const totalMinutes = hours * 60 + minutes + 30;
+  const endHours = Math.floor(totalMinutes / 60) % 24;
+  const endMinutes = totalMinutes % 60;
+  return `${endHours.toString().padStart(2, "0")}:${endMinutes.toString().padStart(2, "0")}`;
 }
 
 export interface Subtask {
