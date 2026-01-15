@@ -680,8 +680,6 @@ export default function Trackers() {
                 : "evening",
           is_completed: false,
           tags: ["Habit", formCategory],
-          // Link to the source habit for bidirectional sync
-          habit_id: tempActivity.id,
         }));
 
         if (tasks.length > 0) {
