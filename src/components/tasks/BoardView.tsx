@@ -180,42 +180,10 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
       .sort((a, b) => parseTimeToMinutes(a.due_time) - parseTimeToMinutes(b.due_time));
   }, [tasks, selectedDate]);
 
-  // Dynamic timeline based on tasks - show relevant hours only
-  const { timelineStart, timelineEnd, totalHours } = useMemo(() => {
-    if (dayTasks.length === 0) {
-      // Default: 8 AM to 6 PM when no tasks
-      return {
-        timelineStart: 8 * 60,
-        timelineEnd: 18 * 60,
-        totalHours: 10,
-      };
-    }
-
-    // Find earliest and latest task times
-    let earliestStart = 24 * 60;
-    let latestEnd = 0;
-
-    dayTasks.forEach((task) => {
-      const start = parseTimeToMinutes(task.due_time);
-      const duration = getTaskDuration(task.due_time, task.end_time);
-      const end = start + duration;
-
-      earliestStart = Math.min(earliestStart, start);
-      latestEnd = Math.max(latestEnd, end);
-    });
-
-    // Round to nearest hour and add minimal buffer
-    // Start: 1 hour before first task (min 6 AM)
-    // End: 1 hour after last task (max 10 PM)
-    const startHour = Math.max(6, Math.floor(earliestStart / 60) - 1);
-    const endHour = Math.min(22, Math.ceil(latestEnd / 60) + 1);
-
-    return {
-      timelineStart: startHour * 60,
-      timelineEnd: endHour * 60,
-      totalHours: endHour - startHour,
-    };
-  }, [dayTasks]);
+  // Full 24-hour timeline (12:00 AM to 11:00 PM)
+  const timelineStart = 0; // 12:00 AM (midnight)
+  const timelineEnd = 23 * 60; // 11:00 PM
+  const totalHours = 24;
 
   // Generate hour markers dynamically
   const hourMarkers = useMemo(() => {
