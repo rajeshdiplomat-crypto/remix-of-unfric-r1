@@ -20,6 +20,10 @@ import {
   Calendar,
   Timer,
   Sunrise,
+  Target,
+  Zap,
+  Sparkles,
+  Flag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -37,37 +41,69 @@ interface BoardViewProps {
   onCompleteTask?: (task: QuadrantTask) => void;
 }
 
+// Color palette for different task types
+const TASK_COLORS = [
+  { bg: "bg-gradient-to-br from-rose-500 to-pink-600", border: "border-rose-200", light: "bg-rose-50" },
+  { bg: "bg-gradient-to-br from-blue-500 to-indigo-600", border: "border-blue-200", light: "bg-blue-50" },
+  { bg: "bg-gradient-to-br from-emerald-500 to-teal-600", border: "border-emerald-200", light: "bg-emerald-50" },
+  { bg: "bg-gradient-to-br from-amber-500 to-orange-600", border: "border-amber-200", light: "bg-amber-50" },
+  { bg: "bg-gradient-to-br from-purple-500 to-violet-600", border: "border-purple-200", light: "bg-purple-50" },
+  { bg: "bg-gradient-to-br from-cyan-500 to-sky-600", border: "border-cyan-200", light: "bg-cyan-50" },
+];
+
 // Map tags/keywords to icons and colors
-const getTaskIcon = (task: QuadrantTask) => {
+const getTaskStyle = (task: QuadrantTask, index: number) => {
   const title = task.title.toLowerCase();
   const tags = task.tags?.map((t) => t.toLowerCase()) || [];
+  const colorSet = TASK_COLORS[index % TASK_COLORS.length];
 
-  if (title.includes("workout") || title.includes("exercise") || title.includes("gym") || tags.includes("fitness"))
-    return { icon: Dumbbell, color: "from-blue-500 to-blue-600", bg: "bg-blue-500" };
-  if (title.includes("yoga") || title.includes("meditat"))
-    return { icon: Heart, color: "from-teal-500 to-teal-600", bg: "bg-teal-500" };
-  if (title.includes("bike") || title.includes("cycle") || title.includes("commute"))
-    return { icon: Bike, color: "from-emerald-500 to-emerald-600", bg: "bg-emerald-500" };
-  if (title.includes("meeting") || title.includes("call") || title.includes("team") || tags.includes("meeting"))
-    return { icon: Users, color: "from-amber-500 to-amber-600", bg: "bg-amber-600" };
-  if (title.includes("email") || title.includes("mail") || tags.includes("email"))
-    return { icon: Mail, color: "from-slate-500 to-slate-600", bg: "bg-slate-500" };
-  if (title.includes("lunch") || title.includes("dinner") || title.includes("breakfast") || title.includes("eat"))
-    return { icon: UtensilsCrossed, color: "from-green-500 to-green-600", bg: "bg-green-500" };
-  if (title.includes("work") || title.includes("project") || tags.includes("work"))
-    return { icon: Briefcase, color: "from-indigo-500 to-indigo-600", bg: "bg-indigo-500" };
-  if (title.includes("read") || title.includes("study") || title.includes("learn"))
-    return { icon: BookOpen, color: "from-purple-500 to-purple-600", bg: "bg-purple-500" };
-  if (title.includes("music") || title.includes("practice"))
-    return { icon: Music, color: "from-pink-500 to-pink-600", bg: "bg-pink-500" };
-  if (title.includes("shop") || title.includes("buy") || title.includes("groceries"))
-    return { icon: ShoppingCart, color: "from-orange-500 to-orange-600", bg: "bg-orange-500" };
-  if (title.includes("morning") || title.includes("wake") || title.includes("rise"))
-    return { icon: Coffee, color: "from-amber-400 to-amber-500", bg: "bg-amber-500" };
-  if (title.includes("sunrise") || title.includes("shine"))
-    return { icon: Sunrise, color: "from-rose-400 to-rose-500", bg: "bg-rose-400" };
+  let icon = Star;
 
-  return { icon: Star, color: "from-primary to-primary/80", bg: "bg-primary" };
+  if (title.includes("workout") || title.includes("exercise") || title.includes("gym") || tags.includes("fitness")) {
+    icon = Dumbbell;
+  } else if (title.includes("yoga") || title.includes("meditat") || tags.includes("health")) {
+    icon = Heart;
+  } else if (title.includes("bike") || title.includes("cycle") || title.includes("commute")) {
+    icon = Bike;
+  } else if (
+    title.includes("meeting") ||
+    title.includes("call") ||
+    title.includes("team") ||
+    tags.includes("meeting")
+  ) {
+    icon = Users;
+  } else if (title.includes("email") || title.includes("mail") || tags.includes("email")) {
+    icon = Mail;
+  } else if (
+    title.includes("lunch") ||
+    title.includes("dinner") ||
+    title.includes("breakfast") ||
+    title.includes("eat")
+  ) {
+    icon = UtensilsCrossed;
+  } else if (title.includes("work") || title.includes("project") || tags.includes("work")) {
+    icon = Briefcase;
+  } else if (title.includes("read") || title.includes("study") || title.includes("learn")) {
+    icon = BookOpen;
+  } else if (title.includes("music") || title.includes("practice")) {
+    icon = Music;
+  } else if (title.includes("shop") || title.includes("buy") || title.includes("groceries")) {
+    icon = ShoppingCart;
+  } else if (title.includes("morning") || title.includes("wake") || title.includes("rise")) {
+    icon = Coffee;
+  } else if (title.includes("sunrise") || title.includes("shine")) {
+    icon = Sunrise;
+  } else if (tags.includes("habit")) {
+    icon = Target;
+  } else if (task.priority === "high") {
+    icon = Zap;
+  } else if (task.importance === "high") {
+    icon = Sparkles;
+  } else if (task.urgency === "high") {
+    icon = Flag;
+  }
+
+  return { icon, ...colorSet };
 };
 
 // Parse time string to minutes from midnight
@@ -114,13 +150,8 @@ const getTaskDuration = (startTime: string | null, endTime: string | null): numb
   return endMinutes - startMinutes;
 };
 
-interface TimeSlot {
-  type: "task" | "gap";
-  startMinutes: number;
-  endMinutes: number;
-  task?: QuadrantTask;
-  duration: number;
-}
+// Height per hour in pixels
+const HOUR_HEIGHT = 80;
 
 export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps) {
   const today = new Date();
@@ -139,21 +170,24 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
     return () => clearInterval(interval);
   }, []);
 
-  // Timeline configuration (6 AM to 11 PM)
+  // Timeline configuration (6 AM to 11 PM = 17 hours)
   const timelineStart = 6 * 60; // 6 AM
   const timelineEnd = 23 * 60; // 11 PM
-  const timelineDuration = timelineEnd - timelineStart;
+  const totalHours = (timelineEnd - timelineStart) / 60;
 
   // Generate hour markers
   const hourMarkers = useMemo(() => {
-    const markers: number[] = [];
+    const markers: { minutes: number; label: string }[] = [];
     for (let hour = 6; hour <= 23; hour++) {
-      markers.push(hour * 60);
+      markers.push({
+        minutes: hour * 60,
+        label: formatTime(hour * 60),
+      });
     }
     return markers;
   }, []);
 
-  // Get tasks for selected date
+  // Get tasks for selected date, sorted by time
   const dayTasks = useMemo(() => {
     return tasks
       .filter((task) => {
@@ -163,61 +197,16 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
       .sort((a, b) => parseTimeToMinutes(a.due_time) - parseTimeToMinutes(b.due_time));
   }, [tasks, selectedDate]);
 
-  // Build timeline slots with tasks and gaps
-  const timelineSlots = useMemo(() => {
-    const slots: TimeSlot[] = [];
-    let lastEndMinutes = timelineStart;
-
-    dayTasks.forEach((task) => {
-      const startMinutes = parseTimeToMinutes(task.due_time);
-      const duration = getTaskDuration(task.due_time, task.end_time);
-      const endMinutes = startMinutes + duration;
-
-      // Add gap if there's space before this task
-      if (startMinutes > lastEndMinutes + 15) {
-        const gapDuration = startMinutes - lastEndMinutes;
-        slots.push({
-          type: "gap",
-          startMinutes: lastEndMinutes,
-          endMinutes: startMinutes,
-          duration: gapDuration,
-        });
-      }
-
-      // Add task
-      slots.push({
-        type: "task",
-        startMinutes,
-        endMinutes,
-        task,
-        duration,
-      });
-
-      lastEndMinutes = Math.max(lastEndMinutes, endMinutes);
-    });
-
-    // Add final gap if there's space at end of day
-    if (lastEndMinutes < timelineEnd - 60 && dayTasks.length > 0) {
-      slots.push({
-        type: "gap",
-        startMinutes: lastEndMinutes,
-        endMinutes: timelineEnd,
-        duration: timelineEnd - lastEndMinutes,
-      });
-    }
-
-    return slots;
-  }, [dayTasks, timelineStart, timelineEnd]);
-
-  // Calculate position percentage for a given time
-  const getTimePosition = (minutes: number): number => {
-    return ((minutes - timelineStart) / timelineDuration) * 100;
+  // Calculate pixel position for a given time
+  const getPixelPosition = (minutes: number): number => {
+    const minutesFromStart = minutes - timelineStart;
+    return (minutesFromStart / 60) * HOUR_HEIGHT;
   };
 
   // Check if current time is visible in timeline
-  const isCurrentTimeVisible = currentTimeMinutes >= timelineStart && currentTimeMinutes <= timelineEnd;
-  const currentTimePosition = getTimePosition(currentTimeMinutes);
   const isToday = isSameDay(selectedDate, today);
+  const isCurrentTimeVisible = currentTimeMinutes >= timelineStart && currentTimeMinutes <= timelineEnd;
+  const currentTimePosition = getPixelPosition(currentTimeMinutes);
 
   // Get remaining time for ongoing tasks
   const getRemainingTime = (task: QuadrantTask): number | null => {
@@ -232,20 +221,69 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
     return null;
   };
 
+  // Build list of events (tasks + gaps) in order
+  const timelineEvents = useMemo(() => {
+    const events: Array<{
+      type: "task" | "gap";
+      startMinutes: number;
+      endMinutes: number;
+      task?: QuadrantTask;
+      taskIndex?: number;
+    }> = [];
+
+    let lastEnd = timelineStart;
+
+    dayTasks.forEach((task, idx) => {
+      const startMinutes = parseTimeToMinutes(task.due_time);
+      const duration = getTaskDuration(task.due_time, task.end_time);
+      const endMinutes = startMinutes + duration;
+
+      // Add gap before this task if there's space
+      if (startMinutes > lastEnd + 30) {
+        events.push({
+          type: "gap",
+          startMinutes: lastEnd,
+          endMinutes: startMinutes,
+        });
+      }
+
+      events.push({
+        type: "task",
+        startMinutes,
+        endMinutes,
+        task,
+        taskIndex: idx,
+      });
+
+      lastEnd = Math.max(lastEnd, endMinutes);
+    });
+
+    // Add final gap if needed
+    if (dayTasks.length > 0 && lastEnd < timelineEnd - 60) {
+      events.push({
+        type: "gap",
+        startMinutes: lastEnd,
+        endMinutes: timelineEnd,
+      });
+    }
+
+    return events;
+  }, [dayTasks, timelineStart, timelineEnd]);
+
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-background via-background to-muted/20 rounded-2xl border border-border/50 overflow-hidden">
+    <div className="h-full flex flex-col bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
       {/* Header with date navigation */}
-      <div className="shrink-0 border-b border-border/50 bg-background/80 backdrop-blur-xl">
+      <div className="shrink-0 border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold text-lg">Day Planner</h2>
+            <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <h2 className="font-semibold text-lg text-slate-800 dark:text-slate-100">Day Planner</h2>
           </div>
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full"
+              className="h-8 w-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"
               onClick={() => setSelectedDate(addDays(selectedDate, -1))}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -254,7 +292,9 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
               onClick={() => setSelectedDate(today)}
               className={cn(
                 "px-4 py-1.5 rounded-full text-sm font-medium transition-all",
-                isToday ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80 text-foreground",
+                isToday
+                  ? "bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-blue-900/50"
+                  : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200",
               )}
             >
               {isToday ? "Today" : format(selectedDate, "EEE, MMM d")}
@@ -262,7 +302,7 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full"
+              className="h-8 w-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"
               onClick={() => setSelectedDate(addDays(selectedDate, 1))}
             >
               <ChevronRight className="h-4 w-4" />
@@ -271,21 +311,23 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
         </div>
 
         {/* Stats bar */}
-        <div className="flex items-center gap-6 px-4 pb-3 text-sm text-muted-foreground">
+        <div className="flex items-center gap-6 px-4 pb-3 text-sm">
           <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-primary" />
-            <span>
+            <div className="w-2 h-2 rounded-full bg-blue-500" />
+            <span className="text-slate-600 dark:text-slate-400">
               {dayTasks.length} task{dayTasks.length !== 1 ? "s" : ""}
             </span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-green-500" />
-            <span>{dayTasks.filter((t) => t.is_completed).length} completed</span>
+            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="text-slate-600 dark:text-slate-400">
+              {dayTasks.filter((t) => t.is_completed).length} completed
+            </span>
           </div>
           {isToday && (
             <div className="flex items-center gap-1.5">
-              <Timer className="h-3.5 w-3.5 text-destructive" />
-              <span>{formatTime(currentTimeMinutes)}</span>
+              <Timer className="h-3.5 w-3.5 text-rose-500" />
+              <span className="text-rose-600 dark:text-rose-400 font-medium">{formatTime(currentTimeMinutes)}</span>
             </div>
           )}
         </div>
@@ -293,199 +335,233 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
 
       {/* Timeline content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="relative min-h-full px-4 py-6">
-          {/* Hour markers on the left */}
-          <div className="absolute left-4 top-6 bottom-6 w-14">
-            {hourMarkers.map((minutes) => (
+        <div className="relative flex" style={{ minHeight: `${totalHours * HOUR_HEIGHT}px` }}>
+          {/* Hour labels column */}
+          <div className="w-20 shrink-0 border-r border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
+            {hourMarkers.map(({ minutes, label }) => (
               <div
                 key={minutes}
-                className="absolute right-0 text-xs text-muted-foreground font-medium"
-                style={{ top: `${getTimePosition(minutes)}%`, transform: "translateY(-50%)" }}
+                className="absolute left-0 w-20 flex items-center justify-end pr-3"
+                style={{
+                  top: `${getPixelPosition(minutes)}px`,
+                  height: `${HOUR_HEIGHT}px`,
+                }}
               >
-                {formatTime(minutes)}
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</span>
               </div>
             ))}
           </div>
 
-          {/* Timeline spine */}
-          <div className="absolute left-[72px] top-6 bottom-6 w-0.5 bg-gradient-to-b from-border via-border/50 to-border rounded-full" />
+          {/* Timeline content area */}
+          <div className="flex-1 relative">
+            {/* Hour grid lines */}
+            {hourMarkers.map(({ minutes }) => (
+              <div
+                key={minutes}
+                className="absolute left-0 right-0 border-t border-slate-100 dark:border-slate-800"
+                style={{ top: `${getPixelPosition(minutes)}px` }}
+              />
+            ))}
 
-          {/* Current time indicator */}
-          {isToday && isCurrentTimeVisible && (
-            <div
-              className="absolute left-[60px] right-4 flex items-center z-30 pointer-events-none"
-              style={{ top: `calc(${currentTimePosition}% + 24px)` }}
-            >
-              <div className="w-3 h-3 rounded-full bg-destructive shadow-lg shadow-destructive/50 animate-pulse" />
-              <div className="flex-1 h-0.5 bg-destructive/80" />
-            </div>
-          )}
+            {/* Timeline spine - vertical line */}
+            <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-300 via-blue-400 to-blue-300 dark:from-blue-600 dark:via-blue-500 dark:to-blue-600" />
 
-          {/* Tasks and gaps container */}
-          <div className="ml-20 relative" style={{ minHeight: "800px" }}>
-            {dayTasks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-64 text-center">
-                <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-                  <Calendar className="h-8 w-8 text-muted-foreground/50" />
+            {/* Current time indicator */}
+            {isToday && isCurrentTimeVisible && (
+              <div
+                className="absolute left-0 right-4 flex items-center z-30 pointer-events-none"
+                style={{ top: `${currentTimePosition}px` }}
+              >
+                <div className="w-3 h-3 rounded-full bg-rose-500 shadow-lg shadow-rose-300 dark:shadow-rose-900 animate-pulse ml-[18px]" />
+                <div className="flex-1 h-[2px] bg-rose-500" />
+              </div>
+            )}
+
+            {/* Empty state */}
+            {dayTasks.length === 0 && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+                <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+                  <Calendar className="h-10 w-10 text-slate-300 dark:text-slate-600" />
                 </div>
-                <p className="text-muted-foreground font-medium">No tasks scheduled</p>
-                <p className="text-sm text-muted-foreground/70 mt-1">
-                  {isToday ? "Add tasks with a time to see them here" : format(selectedDate, "EEEE, MMMM d")}
+                <p className="text-slate-500 dark:text-slate-400 font-medium text-lg">No tasks scheduled</p>
+                <p className="text-sm text-slate-400 dark:text-slate-500 mt-1 max-w-xs">
+                  {isToday
+                    ? "Add tasks with a start time to see them in the planner"
+                    : format(selectedDate, "EEEE, MMMM d")}
                 </p>
               </div>
-            ) : (
-              timelineSlots.map((slot, index) => {
-                if (slot.type === "gap" && slot.duration >= 30) {
-                  // Gap slot
-                  return (
-                    <div
-                      key={`gap-${index}`}
-                      className="absolute left-0 right-0 flex items-center"
-                      style={{
-                        top: `${getTimePosition(slot.startMinutes)}%`,
-                        height: `${(slot.duration / timelineDuration) * 100}%`,
-                        minHeight: "40px",
-                      }}
-                    >
-                      <div className="flex items-center gap-2 text-muted-foreground/60 text-sm pl-4">
-                        <Clock className="h-4 w-4" />
-                        <span className="italic">{formatDuration(slot.duration)} of free time?</span>
-                      </div>
+            )}
+
+            {/* Timeline events */}
+            {timelineEvents.map((event, eventIdx) => {
+              if (event.type === "gap") {
+                const gapDuration = event.endMinutes - event.startMinutes;
+                const position = getPixelPosition(event.startMinutes);
+
+                return (
+                  <div
+                    key={`gap-${eventIdx}`}
+                    className="absolute left-12 right-4 flex items-center"
+                    style={{
+                      top: `${position + 10}px`,
+                    }}
+                  >
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100/80 dark:bg-slate-800/80 border border-dashed border-slate-300 dark:border-slate-600">
+                      <Clock className="h-3.5 w-3.5 text-slate-400" />
+                      <span className="text-xs text-slate-500 dark:text-slate-400 italic">
+                        {formatDuration(gapDuration)} of free time?
+                      </span>
                     </div>
-                  );
-                }
+                  </div>
+                );
+              }
 
-                if (slot.type === "task" && slot.task) {
-                  const task = slot.task;
-                  const { icon: Icon, color, bg } = getTaskIcon(task);
-                  const status = computeTaskStatus(task);
-                  const remaining = getRemainingTime(task);
-                  const isOngoing = remaining !== null;
+              // Task event
+              const task = event.task!;
+              const taskIndex = event.taskIndex!;
+              const { icon: Icon, bg, border, light } = getTaskStyle(task, taskIndex);
+              const status = computeTaskStatus(task);
+              const remaining = getRemainingTime(task);
+              const isOngoing = remaining !== null;
+              const duration = event.endMinutes - event.startMinutes;
+              const position = getPixelPosition(event.startMinutes);
 
-                  return (
-                    <div
-                      key={task.id}
-                      className="absolute left-0 right-0"
-                      style={{
-                        top: `${getTimePosition(slot.startMinutes)}%`,
-                      }}
-                    >
-                      {/* Timeline dot */}
+              return (
+                <div
+                  key={task.id}
+                  className="absolute left-10 right-4"
+                  style={{
+                    top: `${position + 4}px`,
+                  }}
+                >
+                  {/* Timeline dot */}
+                  <div
+                    className={cn(
+                      "absolute -left-[14px] w-4 h-4 rounded-full border-[3px] border-white dark:border-slate-900 shadow-sm z-10",
+                      task.is_completed
+                        ? "bg-emerald-500"
+                        : isOngoing
+                          ? "bg-rose-500 animate-pulse"
+                          : bg.replace("bg-gradient-to-br", "bg").split(" ")[1],
+                    )}
+                    style={{ top: "14px" }}
+                  />
+
+                  {/* Task card */}
+                  <div
+                    onClick={() => onTaskClick(task)}
+                    className={cn(
+                      "group relative ml-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200",
+                      "hover:shadow-xl hover:-translate-y-1",
+                      task.is_completed
+                        ? "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 opacity-70"
+                        : cn("bg-white dark:bg-slate-800", border, "hover:border-blue-400 dark:hover:border-blue-500"),
+                      isOngoing && "ring-2 ring-rose-400 ring-offset-2 dark:ring-offset-slate-900 border-rose-300",
+                      status === "overdue" && !task.is_completed && "border-red-300 bg-red-50 dark:bg-red-900/20",
+                    )}
+                  >
+                    <div className="flex items-start gap-4">
+                      {/* Icon with gradient background */}
                       <div
                         className={cn(
-                          "absolute -left-[26px] w-3 h-3 rounded-full border-2 border-background shadow-sm",
-                          task.is_completed ? "bg-green-500" : isOngoing ? "bg-destructive animate-pulse" : bg,
-                        )}
-                        style={{ top: "12px" }}
-                      />
-
-                      {/* Task card */}
-                      <div
-                        onClick={() => onTaskClick(task)}
-                        className={cn(
-                          "group relative ml-2 p-3 rounded-xl border cursor-pointer transition-all duration-300",
-                          "hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5",
-                          task.is_completed
-                            ? "bg-muted/30 border-border/30"
-                            : "bg-background/80 backdrop-blur-sm border-border/50 hover:border-primary/30",
-                          isOngoing && "ring-2 ring-destructive/30 border-destructive/50",
-                          status === "overdue" && !task.is_completed && "border-destructive/50 bg-destructive/5",
+                          "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-lg",
+                          bg,
+                          task.is_completed && "opacity-50",
                         )}
                       >
-                        <div className="flex items-start gap-3">
-                          {/* Icon */}
-                          <div
-                            className={cn(
-                              "w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-lg",
-                              `bg-gradient-to-br ${color}`,
-                              task.is_completed && "opacity-60",
-                            )}
-                          >
-                            <Icon className="h-5 w-5 text-white" />
-                          </div>
-
-                          {/* Content */}
-                          <div className="flex-1 min-w-0">
-                            {/* Time label */}
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs text-muted-foreground">
-                                {formatTime(slot.startMinutes)} - {formatTime(slot.endMinutes)} (
-                                {formatDuration(slot.duration)})
-                              </span>
-                              {remaining !== null && (
-                                <span className="text-xs text-destructive font-medium animate-pulse">
-                                  {remaining} min remaining
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Title */}
-                            <h3
-                              className={cn(
-                                "font-semibold text-foreground",
-                                task.is_completed && "line-through opacity-60",
-                              )}
-                            >
-                              {task.title}
-                            </h3>
-
-                            {/* Tags */}
-                            {task.tags && task.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-1.5">
-                                {task.tags.slice(0, 3).map((tag) => (
-                                  <span
-                                    key={tag}
-                                    className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-primary/10 text-primary"
-                                  >
-                                    {tag}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-
-                            {/* Subtasks progress */}
-                            {task.subtasks && task.subtasks.length > 0 && (
-                              <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                  <CheckCircle2 className="h-3 w-3" />
-                                  <span>
-                                    {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Complete button */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onCompleteTask?.(task);
-                            }}
-                            className="shrink-0 transition-transform hover:scale-110"
-                          >
-                            {task.is_completed ? (
-                              <CheckCircle2 className="h-6 w-6 text-green-500" />
-                            ) : (
-                              <Circle
-                                className={cn(
-                                  "h-6 w-6 transition-colors",
-                                  status === "overdue"
-                                    ? "text-destructive hover:text-destructive/80"
-                                    : "text-muted-foreground/40 hover:text-primary",
-                                )}
-                              />
-                            )}
-                          </button>
-                        </div>
+                        <Icon className="h-6 w-6 text-white" />
                       </div>
-                    </div>
-                  );
-                }
 
-                return null;
-              })
-            )}
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        {/* Time label */}
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                            {formatTime(event.startMinutes)} - {formatTime(event.endMinutes)}
+                          </span>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+                            {formatDuration(duration)}
+                          </span>
+                          {remaining !== null && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 font-medium animate-pulse">
+                              {remaining} min left
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Title */}
+                        <h3
+                          className={cn(
+                            "font-semibold text-lg text-slate-800 dark:text-slate-100",
+                            task.is_completed && "line-through opacity-60",
+                          )}
+                        >
+                          {task.title}
+                        </h3>
+
+                        {/* Tags */}
+                        {task.tags && task.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {task.tags.slice(0, 4).map((tag, tagIdx) => (
+                              <span
+                                key={tag}
+                                className={cn(
+                                  "px-2.5 py-1 text-xs font-medium rounded-full",
+                                  tagIdx === 0
+                                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                                    : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
+                                )}
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Subtasks progress */}
+                        {task.subtasks && task.subtasks.length > 0 && (
+                          <div className="flex items-center gap-2 mt-3">
+                            <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-emerald-500 rounded-full transition-all"
+                                style={{
+                                  width: `${(task.subtasks.filter((s) => s.completed).length / task.subtasks.length) * 100}%`,
+                                }}
+                              />
+                            </div>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                              {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Complete button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCompleteTask?.(task);
+                        }}
+                        className="shrink-0 transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded-full"
+                      >
+                        {task.is_completed ? (
+                          <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+                        ) : (
+                          <Circle
+                            className={cn(
+                              "h-8 w-8 transition-colors",
+                              status === "overdue"
+                                ? "text-red-400 hover:text-red-500"
+                                : "text-slate-300 dark:text-slate-600 hover:text-blue-500",
+                            )}
+                          />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
