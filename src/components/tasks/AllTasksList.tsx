@@ -230,8 +230,8 @@ export function AllTasksList({
           </TabsList>
         </div>
 
-        {/* Task list with max height for 12 entries (~100px each) */}
-        <ScrollArea className="flex-1 px-3 pb-3" style={{ maxHeight: "1200px" }}>
+        {/* Task list with max height for exactly 12 entries */}
+        <ScrollArea className="flex-1 px-3 pb-3" style={{ maxHeight: "1400px" }}>
           <div className="space-y-2 mt-3">
             {filteredTasks.length > 0 ? (
               filteredTasks.map((task) => <TaskCard key={task.id} task={task} />)
