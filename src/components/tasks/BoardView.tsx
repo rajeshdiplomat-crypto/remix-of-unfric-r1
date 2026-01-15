@@ -253,36 +253,18 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
     return null;
   };
 
-  // Build list of events (tasks + gaps) in order
-  // Only show gaps at START (before first task) and END (after last task) - not between tasks
+  // Build list of task events only (no gaps to avoid overlapping)
   const timelineEvents = useMemo(() => {
     const events: Array<{
-      type: "task" | "gap";
+      type: "task";
       startMinutes: number;
       endMinutes: number;
-      task?: QuadrantTask;
-      taskIndex?: number;
+      task: QuadrantTask;
+      taskIndex: number;
     }> = [];
 
     if (dayTasks.length === 0) {
       return events;
-    }
-
-    // Get first and last task times
-    const firstTaskStart = parseTimeToMinutes(dayTasks[0].due_time);
-    const lastTaskEnd = dayTasks.reduce((maxEnd, task) => {
-      const start = parseTimeToMinutes(task.due_time);
-      const duration = getTaskDuration(task.due_time, task.end_time);
-      return Math.max(maxEnd, start + duration);
-    }, 0);
-
-    // Add gap at START of day if first task doesn't start at timeline start
-    if (firstTaskStart > timelineStart + 60) {
-      events.push({
-        type: "gap",
-        startMinutes: timelineStart,
-        endMinutes: firstTaskStart,
-      });
     }
 
     // Add all tasks
@@ -300,17 +282,8 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
       });
     });
 
-    // Add gap at END of day if there's free time after last task
-    if (lastTaskEnd < timelineEnd - 60) {
-      events.push({
-        type: "gap",
-        startMinutes: lastTaskEnd,
-        endMinutes: timelineEnd,
-      });
-    }
-
     return events;
-  }, [dayTasks, timelineStart, timelineEnd]);
+  }, [dayTasks]);
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
@@ -434,49 +407,30 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
               </div>
             )}
 
-            {/* Timeline events */}
-            {timelineEvents.map((event, eventIdx) => {
-              if (event.type === "gap") {
-                const gapDuration = event.endMinutes - event.startMinutes;
-                // Position gap text in the CENTER of the gap period
-                const gapCenterMinutes = event.startMinutes + gapDuration / 2;
-                const centerPosition = getPixelPosition(gapCenterMinutes);
-
-                return (
-                  <div
-                    key={`gap-${eventIdx}`}
-                    className="absolute left-12 right-4 flex items-center pointer-events-none"
-                    style={{
-                      top: `${centerPosition}px`,
-                      transform: "translateY(-50%)",
-                    }}
-                  >
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100/80 dark:bg-slate-800/80 border border-dashed border-slate-300 dark:border-slate-600">
-                      <Clock className="h-3.5 w-3.5 text-slate-400" />
-                      <span className="text-xs text-slate-500 dark:text-slate-400 italic">
-                        {formatDuration(gapDuration)} of free time?
-                      </span>
-                    </div>
-                  </div>
-                );
-              }
-
-              // Task event
-              const task = event.task!;
-              const taskIndex = event.taskIndex!;
-              const { icon: Icon, bg, border, light } = getTaskStyle(task, taskIndex);
+            {/* Timeline events - Tasks only */}
+            {timelineEvents.map((event) => {
+              const task = event.task;
+              const taskIndex = event.taskIndex;
+              const { icon: Icon, bg, border } = getTaskStyle(task, taskIndex);
               const status = computeTaskStatus(task);
               const remaining = getRemainingTime(task);
               const isOngoing = remaining !== null;
               const duration = event.endMinutes - event.startMinutes;
               const position = getPixelPosition(event.startMinutes);
 
+              // Calculate task card height based on duration
+              // Min height 70px (for 30min), scales with duration
+              const durationHeight = (duration / 60) * HOUR_HEIGHT;
+              const minHeight = 70;
+              const taskHeight = Math.max(minHeight, durationHeight - 8);
+
               return (
                 <div
                   key={task.id}
                   className="absolute left-10 right-4"
                   style={{
-                    top: `${position + 4}px`,
+                    top: `${position}px`,
+                    height: `${taskHeight}px`,
                   }}
                 >
                   {/* Timeline dot */}
@@ -489,15 +443,15 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
                           ? "bg-rose-500 animate-pulse"
                           : bg.replace("bg-gradient-to-br", "bg").split(" ")[1],
                     )}
-                    style={{ top: "14px" }}
+                    style={{ top: "12px" }}
                   />
 
-                  {/* Task card */}
+                  {/* Task card with height based on duration */}
                   <div
                     onClick={() => onTaskClick(task)}
                     className={cn(
-                      "group relative ml-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200",
-                      "hover:shadow-xl hover:-translate-y-1",
+                      "group relative ml-4 h-full rounded-xl border-2 cursor-pointer transition-all duration-200 overflow-hidden",
+                      "hover:shadow-xl hover:scale-[1.02]",
                       task.is_completed
                         ? "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 opacity-70"
                         : cn("bg-white dark:bg-slate-800", border, "hover:border-blue-400 dark:hover:border-blue-500"),
@@ -505,31 +459,31 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
                       status === "overdue" && !task.is_completed && "border-red-300 bg-red-50 dark:bg-red-900/20",
                     )}
                   >
-                    <div className="flex items-start gap-4">
+                    <div className="flex items-start gap-3 p-3 h-full">
                       {/* Icon with gradient background */}
                       <div
                         className={cn(
-                          "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-lg",
+                          "w-10 h-10 rounded-lg flex items-center justify-center shrink-0 shadow-md",
                           bg,
                           task.is_completed && "opacity-50",
                         )}
                       >
-                        <Icon className="h-6 w-6 text-white" />
+                        <Icon className="h-5 w-5 text-white" />
                       </div>
 
                       {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        {/* Time label */}
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        {/* Time and duration on same line */}
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                             {formatTime(event.startMinutes)} - {formatTime(event.endMinutes)}
                           </span>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
                             {formatDuration(duration)}
                           </span>
                           {remaining !== null && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 font-medium animate-pulse">
-                              {remaining} min left
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 font-medium animate-pulse">
+                              {remaining}m left
                             </span>
                           )}
                         </div>
@@ -537,21 +491,21 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
                         {/* Title */}
                         <h3
                           className={cn(
-                            "font-semibold text-lg text-slate-800 dark:text-slate-100",
+                            "font-semibold text-slate-800 dark:text-slate-100 truncate",
                             task.is_completed && "line-through opacity-60",
                           )}
                         >
                           {task.title}
                         </h3>
 
-                        {/* Tags */}
-                        {task.tags && task.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-2">
-                            {task.tags.slice(0, 4).map((tag, tagIdx) => (
+                        {/* Tags - only show if card is tall enough */}
+                        {task.tags && task.tags.length > 0 && taskHeight >= 90 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {task.tags.slice(0, 3).map((tag, tagIdx) => (
                               <span
                                 key={tag}
                                 className={cn(
-                                  "px-2.5 py-1 text-xs font-medium rounded-full",
+                                  "px-2 py-0.5 text-[10px] font-medium rounded-full",
                                   tagIdx === 0
                                     ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
                                     : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
@@ -562,23 +516,6 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
                             ))}
                           </div>
                         )}
-
-                        {/* Subtasks progress */}
-                        {task.subtasks && task.subtasks.length > 0 && (
-                          <div className="flex items-center gap-2 mt-3">
-                            <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-emerald-500 rounded-full transition-all"
-                                style={{
-                                  width: `${(task.subtasks.filter((s) => s.completed).length / task.subtasks.length) * 100}%`,
-                                }}
-                              />
-                            </div>
-                            <span className="text-xs text-slate-500 dark:text-slate-400">
-                              {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length}
-                            </span>
-                          </div>
-                        )}
                       </div>
 
                       {/* Complete button */}
@@ -587,14 +524,14 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
                           e.stopPropagation();
                           onCompleteTask?.(task);
                         }}
-                        className="shrink-0 transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded-full"
+                        className="shrink-0 transition-transform hover:scale-110 focus:outline-none"
                       >
                         {task.is_completed ? (
-                          <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+                          <CheckCircle2 className="h-6 w-6 text-emerald-500" />
                         ) : (
                           <Circle
                             className={cn(
-                              "h-8 w-8 transition-colors",
+                              "h-6 w-6 transition-colors",
                               status === "overdue"
                                 ? "text-red-400 hover:text-red-500"
                                 : "text-slate-300 dark:text-slate-600 hover:text-blue-500",
