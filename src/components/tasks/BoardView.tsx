@@ -150,8 +150,8 @@ const getTaskDuration = (startTime: string | null, endTime: string | null): numb
   return endMinutes - startMinutes;
 };
 
-// Height per hour in pixels
-const HOUR_HEIGHT = 80;
+// Height per hour in pixels - reduced for better fit
+const HOUR_HEIGHT = 60;
 
 export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps) {
   const today = new Date();
@@ -170,24 +170,7 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
     return () => clearInterval(interval);
   }, []);
 
-  // Timeline configuration (6 AM to 11 PM = 17 hours)
-  const timelineStart = 6 * 60; // 6 AM
-  const timelineEnd = 23 * 60; // 11 PM
-  const totalHours = (timelineEnd - timelineStart) / 60;
-
-  // Generate hour markers
-  const hourMarkers = useMemo(() => {
-    const markers: { minutes: number; label: string }[] = [];
-    for (let hour = 6; hour <= 23; hour++) {
-      markers.push({
-        minutes: hour * 60,
-        label: formatTime(hour * 60),
-      });
-    }
-    return markers;
-  }, []);
-
-  // Get tasks for selected date, sorted by time
+  // Get tasks for selected date first (needed to calculate dynamic timeline)
   const dayTasks = useMemo(() => {
     return tasks
       .filter((task) => {
@@ -196,6 +179,55 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
       })
       .sort((a, b) => parseTimeToMinutes(a.due_time) - parseTimeToMinutes(b.due_time));
   }, [tasks, selectedDate]);
+
+  // Dynamic timeline based on tasks - show relevant hours only
+  const { timelineStart, timelineEnd, totalHours } = useMemo(() => {
+    if (dayTasks.length === 0) {
+      // Default: 8 AM to 6 PM when no tasks
+      return {
+        timelineStart: 8 * 60,
+        timelineEnd: 18 * 60,
+        totalHours: 10,
+      };
+    }
+
+    // Find earliest and latest task times
+    let earliestStart = 24 * 60;
+    let latestEnd = 0;
+
+    dayTasks.forEach((task) => {
+      const start = parseTimeToMinutes(task.due_time);
+      const duration = getTaskDuration(task.due_time, task.end_time);
+      const end = start + duration;
+
+      earliestStart = Math.min(earliestStart, start);
+      latestEnd = Math.max(latestEnd, end);
+    });
+
+    // Round to nearest hour and add buffer
+    const startHour = Math.max(6, Math.floor(earliestStart / 60) - 1); // 1 hour before, min 6 AM
+    const endHour = Math.min(22, Math.ceil(latestEnd / 60) + 2); // 2 hours after, max 10 PM
+
+    return {
+      timelineStart: startHour * 60,
+      timelineEnd: endHour * 60,
+      totalHours: endHour - startHour,
+    };
+  }, [dayTasks]);
+
+  // Generate hour markers dynamically
+  const hourMarkers = useMemo(() => {
+    const markers: { minutes: number; label: string }[] = [];
+    const startHour = timelineStart / 60;
+    const endHour = timelineEnd / 60;
+    for (let hour = startHour; hour <= endHour; hour++) {
+      markers.push({
+        minutes: hour * 60,
+        label: formatTime(hour * 60),
+      });
+    }
+    return markers;
+  }, [timelineStart, timelineEnd]);
 
   // Calculate pixel position for a given time
   const getPixelPosition = (minutes: number): number => {
