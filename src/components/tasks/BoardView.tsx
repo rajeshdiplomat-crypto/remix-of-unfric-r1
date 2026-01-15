@@ -222,6 +222,7 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
   };
 
   // Build list of events (tasks + gaps) in order
+  // Only show gaps at START (before first task) and END (after last task) - not between tasks
   const timelineEvents = useMemo(() => {
     const events: Array<{
       type: "task" | "gap";
@@ -231,21 +232,32 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
       taskIndex?: number;
     }> = [];
 
-    let lastEnd = timelineStart;
+    if (dayTasks.length === 0) {
+      return events;
+    }
 
+    // Get first and last task times
+    const firstTaskStart = parseTimeToMinutes(dayTasks[0].due_time);
+    const lastTaskEnd = dayTasks.reduce((maxEnd, task) => {
+      const start = parseTimeToMinutes(task.due_time);
+      const duration = getTaskDuration(task.due_time, task.end_time);
+      return Math.max(maxEnd, start + duration);
+    }, 0);
+
+    // Add gap at START of day if first task doesn't start at timeline start
+    if (firstTaskStart > timelineStart + 60) {
+      events.push({
+        type: "gap",
+        startMinutes: timelineStart,
+        endMinutes: firstTaskStart,
+      });
+    }
+
+    // Add all tasks
     dayTasks.forEach((task, idx) => {
       const startMinutes = parseTimeToMinutes(task.due_time);
       const duration = getTaskDuration(task.due_time, task.end_time);
       const endMinutes = startMinutes + duration;
-
-      // Add gap before this task if there's space
-      if (startMinutes > lastEnd + 30) {
-        events.push({
-          type: "gap",
-          startMinutes: lastEnd,
-          endMinutes: startMinutes,
-        });
-      }
 
       events.push({
         type: "task",
@@ -254,15 +266,13 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
         task,
         taskIndex: idx,
       });
-
-      lastEnd = Math.max(lastEnd, endMinutes);
     });
 
-    // Add final gap if needed
-    if (dayTasks.length > 0 && lastEnd < timelineEnd - 60) {
+    // Add gap at END of day if there's free time after last task
+    if (lastTaskEnd < timelineEnd - 60) {
       events.push({
         type: "gap",
-        startMinutes: lastEnd,
+        startMinutes: lastTaskEnd,
         endMinutes: timelineEnd,
       });
     }
