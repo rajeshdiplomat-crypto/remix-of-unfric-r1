@@ -322,13 +322,13 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
       <div className="flex-1 overflow-y-auto">
         <div className="relative flex" style={{ minHeight: `${totalHours * HOUR_HEIGHT}px` }}>
           {/* Hour labels column */}
-          <div className="w-20 shrink-0 border-r border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
-            {hourMarkers.map(({ minutes, label }) => (
+          <div className="w-20 shrink-0 border-r border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 pt-2">
+            {hourMarkers.map(({ minutes, label }, index) => (
               <div
                 key={minutes}
                 className="absolute left-0 w-20 flex items-start justify-end pr-3"
                 style={{
-                  top: `${getPixelPosition(minutes)}px`,
+                  top: `${getPixelPosition(minutes) + 8}px`, // Add 8px offset for padding
                 }}
               >
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400 -translate-y-1/2">{label}</span>
@@ -337,13 +337,13 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
           </div>
 
           {/* Timeline content area */}
-          <div className="flex-1 relative">
+          <div className="flex-1 relative pt-2">
             {/* Hour grid lines */}
             {hourMarkers.map(({ minutes }) => (
               <div
                 key={minutes}
                 className="absolute left-0 right-0 border-t border-slate-100 dark:border-slate-800"
-                style={{ top: `${getPixelPosition(minutes)}px` }}
+                style={{ top: `${getPixelPosition(minutes) + 8}px` }}
               />
             ))}
 
@@ -354,7 +354,7 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
             {isToday && isCurrentTimeVisible && (
               <div
                 className="absolute left-0 right-4 flex items-center z-30 pointer-events-none"
-                style={{ top: `${currentTimePosition}px` }}
+                style={{ top: `${currentTimePosition + 8}px` }}
               >
                 <div className="w-3 h-3 rounded-full bg-rose-500 shadow-lg shadow-rose-300 dark:shadow-rose-900 animate-pulse ml-[18px]" />
                 <div className="flex-1 h-[2px] bg-rose-500" />
@@ -397,7 +397,7 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
                   key={task.id}
                   className="absolute left-10 right-4"
                   style={{
-                    top: `${position}px`,
+                    top: `${position + 8}px`, // Add 8px offset to match hour labels
                     height: `${Math.max(taskHeight, 24)}px`, // Min 24px for very short tasks
                   }}
                 >
