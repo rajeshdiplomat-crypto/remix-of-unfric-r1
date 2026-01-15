@@ -40,6 +40,7 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     description: "Complete all pre-launch requirements",
     due_date: new Date().toISOString(),
     due_time: "14:00",
+    end_time: "15:00",
     priority: "high",
     is_completed: false,
     completed_at: null,
@@ -66,6 +67,7 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     description: "Analyze quarterly performance metrics",
     due_date: new Date(Date.now() - 86400000).toISOString(),
     due_time: "09:00",
+    end_time: null,
     priority: "high",
     is_completed: false,
     completed_at: null,
@@ -89,6 +91,7 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     description: "Review and approve marketing materials",
     due_date: new Date().toISOString(),
     due_time: "10:00",
+    end_time: "10:30",
     priority: "medium",
     is_completed: false,
     completed_at: null,
@@ -112,6 +115,7 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     description: "Plan next quarter goals",
     due_date: new Date(Date.now() + 86400000 * 3).toISOString(),
     due_time: "21:00",
+    end_time: null,
     priority: "medium",
     is_completed: false,
     completed_at: null,
@@ -135,6 +139,7 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     description: "Prepare agenda for team meeting",
     due_date: new Date(Date.now() + 86400000).toISOString(),
     due_time: "09:00",
+    end_time: "09:30",
     priority: "medium",
     is_completed: false,
     completed_at: null,
@@ -158,6 +163,7 @@ const SAMPLE_TASKS: QuadrantTask[] = [
     description: "Research automation options",
     due_date: new Date(Date.now() + 86400000 * 5).toISOString(),
     due_time: null,
+    end_time: null,
     priority: "low",
     is_completed: false,
     completed_at: null,
@@ -182,7 +188,7 @@ export default function Tasks() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const [view, setView] = useState<"board" | "quadrant">("quadrant");
+  const [view, setView] = useState<"board" | "quadrant">("board");
   const [quadrantMode, setQuadrantMode] = useState<QuadrantMode>("urgent-important");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -240,6 +246,7 @@ export default function Tasks() {
           description: t.description,
           due_date: t.due_date,
           due_time: dueTime,
+          end_time: t.end_time || null,
           priority: t.priority || "medium",
           is_completed: t.is_completed || false,
           completed_at: t.completed_at,

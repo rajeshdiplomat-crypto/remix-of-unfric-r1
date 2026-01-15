@@ -78,7 +78,7 @@ export function TasksHeader({
                 view === "board" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
               ].join(" ")}
             >
-              Board
+              📅 Planner
             </button>
             <button
               type="button"
