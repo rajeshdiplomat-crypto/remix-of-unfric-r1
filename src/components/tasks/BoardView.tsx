@@ -396,14 +396,17 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
             {timelineEvents.map((event, eventIdx) => {
               if (event.type === "gap") {
                 const gapDuration = event.endMinutes - event.startMinutes;
-                const position = getPixelPosition(event.startMinutes);
+                // Position gap text in the CENTER of the gap period
+                const gapCenterMinutes = event.startMinutes + gapDuration / 2;
+                const centerPosition = getPixelPosition(gapCenterMinutes);
 
                 return (
                   <div
                     key={`gap-${eventIdx}`}
-                    className="absolute left-12 right-4 flex items-center"
+                    className="absolute left-12 right-4 flex items-center pointer-events-none"
                     style={{
-                      top: `${position + 10}px`,
+                      top: `${centerPosition}px`,
+                      transform: "translateY(-50%)",
                     }}
                   >
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100/80 dark:bg-slate-800/80 border border-dashed border-slate-300 dark:border-slate-600">
