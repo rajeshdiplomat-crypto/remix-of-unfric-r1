@@ -115,6 +115,37 @@ const ReadOnlyHeading = Extension.create({
       return false;
     };
 
+    // Check if backspace would delete into a heading
+    const blockBackspaceIntoHeading = (editor: any) => {
+      const { state } = editor;
+      const { from, empty } = state.selection;
+
+      // Only block if selection is empty (just cursor)
+      if (!empty) return false;
+
+      const $from = state.doc.resolve(from);
+      const node = $from.parent;
+
+      // If inside a level 2 heading, block
+      if (node.type.name === "heading" && node.attrs.level === 2) {
+        return true;
+      }
+
+      // If at start of a paragraph, check if previous node is a heading
+      if ($from.parentOffset === 0) {
+        const beforePos = from - 1;
+        if (beforePos > 0) {
+          const $before = state.doc.resolve(beforePos);
+          const nodeBefore = $before.parent;
+          if (nodeBefore.type.name === "heading" && nodeBefore.attrs.level === 2) {
+            return true; // Block backspace - would merge into heading
+          }
+        }
+      }
+
+      return false;
+    };
+
     // Block common editing keys when in heading
     const blockKeys: Record<string, () => boolean> = {};
     const charsToBlock = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ".split("");
@@ -123,8 +154,10 @@ const ReadOnlyHeading = Extension.create({
       blockKeys[char] = () => moveToNextParagraph(this.editor);
     });
 
-    // Also block backspace and delete in headings
-    blockKeys["Backspace"] = () => moveToNextParagraph(this.editor);
+    // Block backspace when it would affect a heading
+    blockKeys["Backspace"] = () => blockBackspaceIntoHeading(this.editor);
+
+    // Block delete in headings
     blockKeys["Delete"] = () => moveToNextParagraph(this.editor);
 
     return blockKeys;
