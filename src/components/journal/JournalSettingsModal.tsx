@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
-import { Plus, Trash2, GripVertical, RotateCcw, Check } from "lucide-react";
+import { Plus, Trash2, GripVertical, RotateCcw, Check, Sparkles, Palette, Edit3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { JournalTemplate, JournalQuestion, JournalSkin, JOURNAL_SKINS, DEFAULT_QUESTIONS } from "./types";
 
@@ -30,6 +29,7 @@ export function JournalSettingsModal({
   const [localQuestions, setLocalQuestions] = useState<JournalQuestion[]>(template.questions);
   const [applyOnNewEntry, setApplyOnNewEntry] = useState(template.applyOnNewEntry);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const handleQuestionTextChange = (id: string, text: string) => {
     setLocalQuestions((prev) => prev.map((q) => (q.id === id ? { ...q, text } : q)));
@@ -42,6 +42,7 @@ export function JournalSettingsModal({
       type: "heading+answer",
     };
     setLocalQuestions((prev) => [...prev, newQuestion]);
+    setEditingId(newQuestion.id);
   };
 
   const handleDeleteQuestion = (id: string) => {
@@ -83,31 +84,55 @@ export function JournalSettingsModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Journal Settings</DialogTitle>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col bg-gradient-to-b from-slate-50 to-white border-0 shadow-2xl">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="text-xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-violet-500" />
+            Journal Settings
+          </DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="questions" className="flex-1 overflow-hidden flex flex-col">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="questions">Preset Questions</TabsTrigger>
-            <TabsTrigger value="skins">Page Skins</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 bg-slate-100 p-1 rounded-xl">
+            <TabsTrigger
+              value="questions"
+              className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-violet-700 flex items-center gap-2"
+            >
+              <Edit3 className="h-4 w-4" />
+              Questions
+            </TabsTrigger>
+            <TabsTrigger
+              value="skins"
+              className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-violet-700 flex items-center gap-2"
+            >
+              <Palette className="h-4 w-4" />
+              Themes
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="questions" className="flex-1 overflow-auto space-y-4 mt-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Switch id="apply-preset" checked={applyOnNewEntry} onCheckedChange={setApplyOnNewEntry} />
-                <Label htmlFor="apply-preset" className="text-sm">
-                  Apply preset questions on new entry
-                </Label>
+            {/* Toggle Card */}
+            <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-violet-100 rounded-xl">
+                  <Sparkles className="h-4 w-4 text-violet-600" />
+                </div>
+                <div>
+                  <Label htmlFor="apply-preset" className="text-sm font-semibold text-slate-700">
+                    Auto-apply on new entries
+                  </Label>
+                  <p className="text-xs text-slate-400">Add these prompts when you start a new day</p>
+                </div>
               </div>
-              <Button variant="outline" size="sm" onClick={handleResetToDefault} className="text-xs">
-                <RotateCcw className="h-3 w-3 mr-1" />
-                Reset to default
-              </Button>
+              <Switch
+                id="apply-preset"
+                checked={applyOnNewEntry}
+                onCheckedChange={setApplyOnNewEntry}
+                className="data-[state=checked]:bg-violet-500"
+              />
             </div>
 
+            {/* Questions List */}
             <div className="space-y-2">
               {localQuestions.map((question, index) => (
                 <div
@@ -117,73 +142,135 @@ export function JournalSettingsModal({
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDragEnd={handleDragEnd}
                   className={cn(
-                    "flex items-center gap-2 p-2 rounded-md border border-border/50 bg-card transition-all",
-                    draggedIndex === index && "opacity-50",
+                    "group flex items-center gap-3 p-3 rounded-xl bg-white border border-slate-100 shadow-sm transition-all hover:border-violet-200 hover:shadow-md",
+                    draggedIndex === index && "opacity-50 scale-[0.98]",
                   )}
                 >
-                  <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab flex-shrink-0" />
-                  <Input
-                    value={question.text}
-                    onChange={(e) => handleQuestionTextChange(question.id, e.target.value)}
-                    className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteQuestion(question.id)}
-                    className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="cursor-grab active:cursor-grabbing p-1 rounded-lg hover:bg-slate-100 transition-colors">
+                    <GripVertical className="h-4 w-4 text-slate-300 group-hover:text-slate-400" />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    {editingId === question.id ? (
+                      <Input
+                        value={question.text}
+                        onChange={(e) => handleQuestionTextChange(question.id, e.target.value)}
+                        onBlur={() => setEditingId(null)}
+                        onKeyDown={(e) => e.key === "Enter" && setEditingId(null)}
+                        autoFocus
+                        className="border-violet-200 focus-visible:ring-violet-300"
+                      />
+                    ) : (
+                      <button
+                        onClick={() => setEditingId(question.id)}
+                        className="w-full text-left text-sm font-medium text-slate-700 hover:text-violet-600 transition-colors truncate"
+                      >
+                        {question.text}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditingId(question.id)}
+                      className="h-8 w-8 p-0 text-slate-400 hover:text-violet-500 hover:bg-violet-50"
+                    >
+                      <Edit3 className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteQuestion(question.id)}
+                      className="h-8 w-8 p-0 text-slate-400 hover:text-rose-500 hover:bg-rose-50"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
 
-            <Button variant="outline" size="sm" onClick={handleAddQuestion} className="w-full">
-              <Plus className="h-4 w-4 mr-1" />
-              Add Question
-            </Button>
+            {/* Add & Reset Buttons */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleAddQuestion}
+                className="flex-1 rounded-xl border-dashed border-violet-200 text-violet-600 hover:bg-violet-50 hover:border-violet-300"
+              >
+                <Plus className="h-4 w-4 mr-1.5" />
+                Add Question
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleResetToDefault}
+                className="rounded-xl text-slate-500 hover:text-slate-700"
+              >
+                <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                Reset
+              </Button>
+            </div>
           </TabsContent>
 
           <TabsContent value="skins" className="flex-1 overflow-auto mt-4">
             <div className="grid grid-cols-2 gap-3">
               {JOURNAL_SKINS.map((skin) => (
-                <Card
+                <button
                   key={skin.id}
                   className={cn(
-                    "p-3 cursor-pointer transition-all hover:shadow-md relative overflow-hidden",
-                    currentSkinId === skin.id && "ring-2 ring-primary",
+                    "relative p-4 rounded-2xl border-2 transition-all hover:shadow-lg group",
+                    currentSkinId === skin.id
+                      ? "border-violet-500 ring-2 ring-violet-200 shadow-lg"
+                      : "border-slate-100 hover:border-slate-200",
                   )}
-                  style={{
-                    backgroundColor: skin.cardBg,
-                    borderColor: skin.border,
-                  }}
+                  style={{ backgroundColor: skin.cardBg }}
                   onClick={() => onSkinChange(skin.id)}
                 >
+                  {/* Selected Badge */}
                   {currentSkinId === skin.id && (
-                    <div className="absolute top-2 right-2 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                      <Check className="h-3 w-3 text-primary-foreground" />
+                    <div className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg">
+                      <Check className="h-3.5 w-3.5 text-white" />
                     </div>
                   )}
-                  <div className="space-y-2">
-                    <div className="h-12 rounded-md" style={{ backgroundColor: skin.pageBg }}>
-                      <div className="h-full m-1 rounded" style={{ backgroundColor: skin.editorPaperBg }} />
+
+                  {/* Preview */}
+                  <div
+                    className="h-16 rounded-xl mb-3 overflow-hidden shadow-inner"
+                    style={{ backgroundColor: skin.pageBg }}
+                  >
+                    <div className="h-full m-2 rounded-lg shadow-sm" style={{ backgroundColor: skin.editorPaperBg }}>
+                      <div className="p-2 space-y-1.5">
+                        <div className="h-1.5 w-12 rounded-full opacity-60" style={{ backgroundColor: skin.text }} />
+                        <div className="h-1 w-20 rounded-full opacity-30" style={{ backgroundColor: skin.mutedText }} />
+                        <div className="h-1 w-16 rounded-full opacity-30" style={{ backgroundColor: skin.mutedText }} />
+                      </div>
                     </div>
-                    <p className="text-sm font-medium" style={{ color: skin.text }}>
-                      {skin.name}
-                    </p>
                   </div>
-                </Card>
+
+                  {/* Name */}
+                  <p className="text-sm font-semibold text-center" style={{ color: skin.text }}>
+                    {skin.name}
+                  </p>
+                </button>
               ))}
             </div>
           </TabsContent>
         </Tabs>
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        {/* Footer */}
+        <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">
             Cancel
           </Button>
-          <Button onClick={handleSave}>Save Changes</Button>
+          <Button
+            onClick={handleSave}
+            className="rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 shadow-lg shadow-purple-200/50"
+          >
+            Save Changes
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
