@@ -542,7 +542,19 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
     };
     const handleInsertImage = () => {
       if (!imageUrl || !editor) return;
-      (editor.commands as any).setResizableImage({ src: imageUrl });
+      try {
+        // Try setResizableImage first, then setImage, then fallback to raw HTML
+        if ((editor.commands as any).setResizableImage) {
+          (editor.commands as any).setResizableImage({ src: imageUrl });
+        } else if ((editor.commands as any).setImage) {
+          (editor.commands as any).setImage({ src: imageUrl });
+        } else {
+          editor.chain().focus().insertContent(`<img src="${imageUrl}" />`).run();
+        }
+      } catch (err) {
+        console.error("Image insert error:", err);
+        editor.chain().focus().insertContent(`<img src="${imageUrl}" />`).run();
+      }
       setImageDialogOpen(false);
       setImageUrl("");
     };
@@ -550,9 +562,25 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
       const file = e.target.files?.[0];
       if (!file || !editor) return;
       const reader = new FileReader();
-      reader.onload = (ev) => (editor.commands as any).setResizableImage({ src: ev.target?.result as string });
+      reader.onload = (ev) => {
+        const result = ev.target?.result as string;
+        if (result) {
+          try {
+            if ((editor.commands as any).setResizableImage) {
+              (editor.commands as any).setResizableImage({ src: result });
+            } else if ((editor.commands as any).setImage) {
+              (editor.commands as any).setImage({ src: result });
+            } else {
+              editor.chain().focus().insertContent(`<img src="${result}" />`).run();
+            }
+          } catch (err) {
+            console.error("Image upload error:", err);
+            editor.chain().focus().insertContent(`<img src="${result}" />`).run();
+          }
+          setImageDialogOpen(false);
+        }
+      };
       reader.readAsDataURL(file);
-      setImageDialogOpen(false);
       if (e.target) e.target.value = "";
     };
 
