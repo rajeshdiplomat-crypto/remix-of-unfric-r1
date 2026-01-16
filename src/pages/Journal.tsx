@@ -98,50 +98,6 @@ const extractAnswersFromContent = (
     return [];
   }
 };
-
-// Extract image URLs from TipTap content
-const extractImagesFromContent = (contentJSON: string): string[] => {
-  try {
-    const parsed = typeof contentJSON === "string" ? JSON.parse(contentJSON) : contentJSON;
-    if (!parsed?.content) return [];
-    const images: string[] = [];
-
-    const findImages = (node: any) => {
-      if (node.type === "image" || node.type === "resizableImage") {
-        if (node.attrs?.src) images.push(node.attrs.src);
-      }
-      if (node.content && Array.isArray(node.content)) {
-        node.content.forEach(findImages);
-      }
-    };
-
-    parsed.content.forEach(findImages);
-    return images;
-  } catch {
-    return [];
-  }
-};
-
-// Get plain text preview from TipTap content
-const getContentPreview = (contentJSON: string, maxLength = 200): string => {
-  try {
-    const parsed = typeof contentJSON === "string" ? JSON.parse(contentJSON) : contentJSON;
-    if (!parsed?.content) return "";
-
-    const extractText = (node: any): string => {
-      if (node.type === "text") return node.text || "";
-      if (node.content && Array.isArray(node.content)) {
-        return node.content.map(extractText).join("");
-      }
-      return "";
-    };
-
-    const text = parsed.content.map(extractText).join(" ").trim();
-    return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
-  } catch {
-    return "";
-  }
-};
 export default function Journal() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -288,18 +244,11 @@ export default function Journal() {
     const dateStr = format(selectedDate, "yyyy-MM-dd");
     try {
       const extractedAnswers = extractAnswersFromContent(content, template.questions);
-      const extractedImages = extractImagesFromContent(content);
-      const contentPreview = getContentPreview(content);
-
-      let entryId = currentEntry?.id;
-
       if (currentEntry) {
-        // Update existing entry with images_data
         await supabase
           .from("journal_entries")
           .update({
             text_formatting: content,
-            images_data: extractedImages.length > 0 ? extractedImages : null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", currentEntry.id);
@@ -326,7 +275,6 @@ export default function Journal() {
             user_id: user.id,
             entry_date: dateStr,
             text_formatting: content,
-            images_data: extractedImages.length > 0 ? extractedImages : null,
           })
           .select()
           .single();
@@ -358,42 +306,6 @@ export default function Journal() {
             },
             ...prev,
           ]);
-          entryId = newEntry.id;
-        }
-      }
-
-      // Create or update feed_event for diary display (non-blocking)
-      if (entryId && contentPreview) {
-        try {
-          const { data: existingEvent } = await supabase
-            .from("feed_events")
-            .select("id")
-            .eq("source_module", "journal")
-            .eq("source_id", entryId)
-            .maybeSingle();
-
-          const feedEventData = {
-            user_id: user.id,
-            type: "journal_entry",
-            source_module: "journal",
-            source_id: entryId,
-            title: `Journal - ${format(selectedDate, "MMM d, yyyy")}`,
-            summary: contentPreview,
-            content_preview: contentPreview,
-            media: extractedImages.length > 0 ? extractedImages : null,
-            metadata: {
-              entry_date: dateStr,
-              entry_id: entryId,
-            },
-          };
-
-          if (existingEvent) {
-            await supabase.from("feed_events").update(feedEventData).eq("id", existingEvent.id);
-          } else {
-            await supabase.from("feed_events").insert(feedEventData);
-          }
-        } catch (feedErr) {
-          console.error("Feed event error (non-blocking):", feedErr);
         }
       }
       if (currentEntry) {
@@ -509,34 +421,34 @@ export default function Journal() {
             </div>
           </div>
 
-          {/* Right section - Controls (aligns with sidebar) */}
-          {!isFullscreen && (
-            <div className="hidden lg:flex items-center justify-end gap-2">
-              <span
-                className="text-xs flex items-center gap-1"
-                style={{
-                  color: currentSkin.mutedText,
-                }}
-              >
-                {isSaved ? (
-                  <>
-                    <Check className="h-3 w-3" /> Saved
-                  </>
-                ) : (
-                  "Unsaved"
-                )}
-              </span>
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setIsFullscreen(!isFullscreen)}>
-                {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-              </Button>
+          {/* Right section - Controls (show in non-fullscreen and fullscreen) */}
+          <div className="hidden lg:flex items-center justify-end gap-2">
+            <span
+              className="text-xs flex items-center gap-1"
+              style={{
+                color: currentSkin.mutedText,
+              }}
+            >
+              {isSaved ? (
+                <>
+                  <Check className="h-3 w-3" /> Saved
+                </>
+              ) : (
+                "Unsaved"
+              )}
+            </span>
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setIsFullscreen(!isFullscreen)}>
+              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
+            {!isFullscreen && (
               <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setSettingsOpen(true)}>
                 <Settings className="h-4 w-4" />
               </Button>
-              <Button size="sm" onClick={handleSave} disabled={isSaved}>
-                <Save className="h-4 w-4 mr-1" /> Save
-              </Button>
-            </div>
-          )}
+            )}
+            <Button size="sm" onClick={handleSave} disabled={isSaved}>
+              <Save className="h-4 w-4 mr-1" /> Save
+            </Button>
+          </div>
         </div>
       </div>
 
