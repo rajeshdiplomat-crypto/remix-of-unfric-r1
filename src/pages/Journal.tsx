@@ -98,6 +98,50 @@ const extractAnswersFromContent = (
     return [];
   }
 };
+
+// Extract image URLs from TipTap content
+const extractImagesFromContent = (contentJSON: string): string[] => {
+  try {
+    const parsed = typeof contentJSON === "string" ? JSON.parse(contentJSON) : contentJSON;
+    if (!parsed?.content) return [];
+    const images: string[] = [];
+
+    const findImages = (node: any) => {
+      if (node.type === "image" || node.type === "resizableImage") {
+        if (node.attrs?.src) images.push(node.attrs.src);
+      }
+      if (node.content && Array.isArray(node.content)) {
+        node.content.forEach(findImages);
+      }
+    };
+
+    parsed.content.forEach(findImages);
+    return images;
+  } catch {
+    return [];
+  }
+};
+
+// Get plain text preview from TipTap content
+const getContentPreview = (contentJSON: string, maxLength = 200): string => {
+  try {
+    const parsed = typeof contentJSON === "string" ? JSON.parse(contentJSON) : contentJSON;
+    if (!parsed?.content) return "";
+
+    const extractText = (node: any): string => {
+      if (node.type === "text") return node.text || "";
+      if (node.content && Array.isArray(node.content)) {
+        return node.content.map(extractText).join("");
+      }
+      return "";
+    };
+
+    const text = parsed.content.map(extractText).join(" ").trim();
+    return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+  } catch {
+    return "";
+  }
+};
 export default function Journal() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -244,11 +288,18 @@ export default function Journal() {
     const dateStr = format(selectedDate, "yyyy-MM-dd");
     try {
       const extractedAnswers = extractAnswersFromContent(content, template.questions);
+      const extractedImages = extractImagesFromContent(content);
+      const contentPreview = getContentPreview(content);
+
+      let entryId = currentEntry?.id;
+
       if (currentEntry) {
+        // Update existing entry with images_data
         await supabase
           .from("journal_entries")
           .update({
             text_formatting: content,
+            images_data: extractedImages.length > 0 ? extractedImages : null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", currentEntry.id);
@@ -275,6 +326,7 @@ export default function Journal() {
             user_id: user.id,
             entry_date: dateStr,
             text_formatting: content,
+            images_data: extractedImages.length > 0 ? extractedImages : null,
           })
           .select()
           .single();
@@ -306,6 +358,38 @@ export default function Journal() {
             },
             ...prev,
           ]);
+          entryId = newEntry.id;
+        }
+      }
+
+      // Create or update feed_event for diary display
+      if (entryId && contentPreview) {
+        const { data: existingEvent } = await supabase
+          .from("feed_events")
+          .select("id")
+          .eq("source_module", "journal")
+          .eq("source_id", entryId)
+          .maybeSingle();
+
+        const feedEventData = {
+          user_id: user.id,
+          type: "journal_entry",
+          source_module: "journal",
+          source_id: entryId,
+          title: `Journal - ${format(selectedDate, "MMM d, yyyy")}`,
+          summary: contentPreview,
+          content_preview: contentPreview,
+          media: extractedImages.length > 0 ? extractedImages : null,
+          metadata: {
+            entry_date: dateStr,
+            entry_id: entryId,
+          },
+        };
+
+        if (existingEvent) {
+          await supabase.from("feed_events").update(feedEventData).eq("id", existingEvent.id);
+        } else {
+          await supabase.from("feed_events").insert(feedEventData);
         }
       }
       if (currentEntry) {
