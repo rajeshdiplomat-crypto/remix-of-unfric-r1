@@ -10,21 +10,18 @@ import {
   Loader2,
   Cloud,
   CloudOff,
-  Sparkles,
   Calendar,
   BookOpen,
   PenLine,
-  Timer,
-  Target,
   Heart,
   Smile,
   Meh,
   Frown,
   TrendingUp,
-  Quote,
   Sun,
   Moon,
   CloudSun,
+  CalendarDays,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -50,17 +47,6 @@ interface JournalAnswer {
   created_at: string;
   updated_at: string;
 }
-
-// Motivational quotes for the journal
-const DAILY_QUOTES = [
-  { quote: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
-  { quote: "Be yourself; everyone else is already taken.", author: "Oscar Wilde" },
-  { quote: "In the middle of difficulty lies opportunity.", author: "Albert Einstein" },
-  { quote: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb" },
-  { quote: "Your limitation—it's only your imagination.", author: "Unknown" },
-  { quote: "Push yourself, because no one else is going to do it for you.", author: "Unknown" },
-  { quote: "Great things never come from comfort zones.", author: "Unknown" },
-];
 
 // Mood options with emojis
 const MOOD_OPTIONS = [
@@ -156,7 +142,6 @@ export default function Journal() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
-  const [showQuote, setShowQuote] = useState(true);
 
   const [template, setTemplate] = useState<JournalTemplate>(() => {
     const saved = localStorage.getItem("journal_template");
@@ -169,14 +154,6 @@ export default function Journal() {
     () => JOURNAL_SKINS.find((s) => s.id === currentSkinId) || JOURNAL_SKINS[0],
     [currentSkinId],
   );
-
-  // Get daily quote based on date
-  const dailyQuote = useMemo(() => {
-    const dayOfYear = Math.floor(
-      (selectedDate.getTime() - new Date(selectedDate.getFullYear(), 0, 0).getTime()) / 86400000,
-    );
-    return DAILY_QUOTES[dayOfYear % DAILY_QUOTES.length];
-  }, [selectedDate]);
 
   // Word count
   const wordCount = useMemo(() => getWordCount(content), [content]);
@@ -563,54 +540,86 @@ export default function Journal() {
             </div>
           </div>
 
-          {/* Week Calendar */}
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg shrink-0" onClick={goToPreviousDay}>
+          {/* Week Calendar - Improved Design */}
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 rounded-xl border-slate-200 hover:bg-violet-50 hover:border-violet-300 transition-all"
+              onClick={() => setSelectedDate(subDays(selectedDate, 7))}
+            >
               <ChevronLeft className="h-4 w-4" />
             </Button>
 
-            <div className="flex-1 flex items-center justify-center gap-1 bg-white/60 backdrop-blur rounded-2xl p-1.5 shadow-sm border border-white/50">
-              {weekDays.map((day) => {
-                const isSelected = isSameDay(day, selectedDate);
-                const isTodayDate = isToday(day);
-                const hasEntry = entries.some((e) => e.entryDate === format(day, "yyyy-MM-dd"));
+            <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-100 p-2">
+              {/* Month/Year Header */}
+              <div className="flex items-center justify-between mb-2 px-2">
+                <span className="text-sm font-semibold text-slate-700">{format(selectedDate, "MMMM yyyy")}</span>
+                <button
+                  onClick={() => setSelectedDate(new Date())}
+                  className="text-xs font-medium text-violet-600 hover:text-violet-700 px-2 py-1 rounded-lg hover:bg-violet-50 transition-all"
+                >
+                  Today
+                </button>
+              </div>
 
-                return (
-                  <button
-                    key={day.toISOString()}
-                    onClick={() => setSelectedDate(day)}
-                    className={cn(
-                      "flex-1 flex flex-col items-center py-2 px-1 rounded-xl transition-all relative",
-                      isSelected
-                        ? "bg-gradient-to-b from-violet-500 to-purple-600 text-white shadow-lg shadow-purple-200/50"
-                        : "hover:bg-white/80",
-                    )}
-                  >
-                    <span
+              {/* Day Buttons */}
+              <div className="grid grid-cols-7 gap-1">
+                {weekDays.map((day) => {
+                  const isSelected = isSameDay(day, selectedDate);
+                  const isTodayDate = isToday(day);
+                  const hasEntry = entries.some((e) => e.entryDate === format(day, "yyyy-MM-dd"));
+
+                  return (
+                    <button
+                      key={day.toISOString()}
+                      onClick={() => setSelectedDate(day)}
                       className={cn(
-                        "text-[10px] font-medium uppercase",
-                        isSelected ? "text-white/80" : "text-slate-400",
+                        "flex flex-col items-center py-2 px-1 rounded-xl transition-all relative",
+                        isSelected
+                          ? "bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-200"
+                          : isTodayDate
+                            ? "bg-violet-50 ring-2 ring-violet-200"
+                            : "hover:bg-slate-50",
                       )}
                     >
-                      {format(day, "EEE")}
-                    </span>
-                    <span
-                      className={cn(
-                        "text-sm font-bold",
-                        isSelected ? "text-white" : isTodayDate ? "text-violet-600" : "text-slate-700",
+                      <span
+                        className={cn(
+                          "text-[10px] font-semibold uppercase tracking-wide",
+                          isSelected ? "text-white/80" : isTodayDate ? "text-violet-500" : "text-slate-400",
+                        )}
+                      >
+                        {format(day, "EEE")}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-lg font-bold mt-0.5",
+                          isSelected ? "text-white" : isTodayDate ? "text-violet-600" : "text-slate-700",
+                        )}
+                      >
+                        {format(day, "d")}
+                      </span>
+                      {/* Entry indicator */}
+                      {hasEntry && (
+                        <div
+                          className={cn(
+                            "absolute bottom-1.5 w-1.5 h-1.5 rounded-full",
+                            isSelected ? "bg-white" : "bg-violet-400",
+                          )}
+                        />
                       )}
-                    >
-                      {format(day, "d")}
-                    </span>
-                    {hasEntry && !isSelected && (
-                      <div className="absolute bottom-1 w-1 h-1 rounded-full bg-violet-400" />
-                    )}
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg shrink-0" onClick={goToNextDay}>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 rounded-xl border-slate-200 hover:bg-violet-50 hover:border-violet-300 transition-all"
+              onClick={() => setSelectedDate(addDays(selectedDate, 7))}
+            >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -663,27 +672,6 @@ export default function Journal() {
           </div>
         </div>
       </div>
-
-      {/* Quote Card */}
-      {showQuote && !isFullscreen && (
-        <div className="px-4 sm:px-6 py-3">
-          <div className="relative bg-gradient-to-r from-violet-50 via-purple-50 to-fuchsia-50 rounded-2xl p-4 border border-violet-100/50 overflow-hidden">
-            <Quote className="absolute right-4 top-4 h-8 w-8 text-violet-200" />
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-white/80 rounded-xl shadow-sm">
-                <Sparkles className="h-5 w-5 text-violet-500" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-slate-700 italic leading-relaxed">"{dailyQuote.quote}"</p>
-                <p className="text-xs text-violet-600 font-medium mt-1">— {dailyQuote.author}</p>
-              </div>
-              <button onClick={() => setShowQuote(false)} className="text-xs text-slate-400 hover:text-slate-600">
-                Hide
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Content Area */}
       <div
