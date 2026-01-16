@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   ChevronDown,
   ChevronUp,
@@ -67,12 +68,9 @@ function useFocusStats() {
     const totalFocusMinutes = filteredSessions.reduce((sum, s) => sum + s.duration, 0);
     const tasksCompleted = filteredSessions.filter((s) => s.taskCompleted).length;
     const sessionsCount = filteredSessions.length;
+    const breakMinutes = 0;
 
-    // Calculate break time (estimate based on gaps)
-    let breakMinutes = 0;
-
-    // Focus score calculation
-    const dailyTarget = 120; // 2 hours target
+    const dailyTarget = 120;
     const daysInPeriod = period === "today" ? 1 : period === "week" ? 7 : 28;
     const expectedMinutes = dailyTarget * daysInPeriod;
     const timeScore = Math.min(100, (totalFocusMinutes / expectedMinutes) * 100);
@@ -101,10 +99,114 @@ const formatDuration = (minutes: number): string => {
   return `${hours}h ${mins}m`;
 };
 
+// Focus Stats Modal Component
+function FocusStatsModal({ onClose }: { onClose: () => void }) {
+  const { stats, period, setPeriod } = useFocusStats();
+
+  // Use portal to render at document body level
+  return createPortal(
+    <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 99999 }}>
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Modal Content */}
+      <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-md overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Focus Stats</h2>
+          <button
+            onClick={onClose}
+            className="rounded-full h-8 w-8 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            <X className="h-4 w-4 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Period Toggle */}
+        <div className="flex gap-2 p-4 pb-3">
+          {(["today", "week", "month"] as const).map((p) => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              className={cn(
+                "px-4 py-2 rounded-full text-sm font-medium border transition-all",
+                period === p
+                  ? "bg-blue-500 text-white border-blue-500 shadow-sm"
+                  : "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700",
+              )}
+            >
+              {p === "today" ? "Today" : p === "week" ? "1 Week" : "4 Weeks"}
+            </button>
+          ))}
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-3 gap-2 p-4 pt-0">
+          {/* Focus Score */}
+          <div className="rounded-xl p-3 bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg">
+            <div className="flex items-start justify-between">
+              <p className="text-[10px] font-medium opacity-90">Focus Score</p>
+              <Zap className="h-3.5 w-3.5 opacity-70" />
+            </div>
+            <p className="text-2xl font-bold mt-2">{stats.focusScore}</p>
+          </div>
+
+          {/* Focus Time */}
+          <div className="rounded-xl p-3 bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg">
+            <div className="flex items-start justify-between">
+              <p className="text-[10px] font-medium opacity-90">Focus Time</p>
+              <Clock className="h-3.5 w-3.5 opacity-70" />
+            </div>
+            <p className="text-xl font-bold mt-2">{formatDuration(stats.focusTimeMinutes)}</p>
+          </div>
+
+          {/* Tasks Done */}
+          <div className="rounded-xl p-3 bg-gradient-to-br from-emerald-400 to-green-500 text-white shadow-lg">
+            <div className="flex items-start justify-between">
+              <p className="text-[10px] font-medium opacity-90">Tasks Done</p>
+              <CheckCircle2 className="h-3.5 w-3.5 opacity-70" />
+            </div>
+            <p className="text-2xl font-bold mt-2">{stats.tasksCompleted}</p>
+          </div>
+
+          {/* Sessions */}
+          <div className="rounded-xl p-3 bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-lg">
+            <div className="flex items-start justify-between">
+              <p className="text-[10px] font-medium opacity-90">Sessions</p>
+              <Timer className="h-3.5 w-3.5 opacity-70" />
+            </div>
+            <p className="text-2xl font-bold mt-2">{stats.sessionsCount}</p>
+          </div>
+
+          {/* Break Time */}
+          <div className="rounded-xl p-3 bg-gradient-to-br from-pink-400 to-rose-500 text-white shadow-lg">
+            <div className="flex items-start justify-between">
+              <p className="text-[10px] font-medium opacity-90">Break Time</p>
+              <Coffee className="h-3.5 w-3.5 opacity-70" />
+            </div>
+            <p className="text-xl font-bold mt-2">{formatDuration(stats.breakTimeMinutes)}</p>
+          </div>
+
+          {/* Streak */}
+          <div className="rounded-xl p-3 bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-lg">
+            <div className="flex items-start justify-between">
+              <p className="text-[10px] font-medium opacity-90">Streak</p>
+              <Flame className="h-3.5 w-3.5 opacity-70" />
+            </div>
+            <p className="text-xl font-bold mt-2">
+              {stats.streak} <span className="text-sm">days</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 export function TopFocusBar({ tasks, onStartFocus }: TopFocusBarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [showStats, setShowStats] = useState(false);
-  const { stats, period, setPeriod } = useFocusStats();
 
   const topTask = useMemo(() => {
     const active = tasks
@@ -209,106 +311,8 @@ export function TopFocusBar({ tasks, onStartFocus }: TopFocusBarProps) {
         </CardContent>
       </Card>
 
-      {/* Focus Stats Modal - Rendered outside Card to prevent clipping */}
-      {showStats && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowStats(false)} />
-
-          {/* Modal Content */}
-          <div className="relative z-10 w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-border overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-border">
-              <h2 className="text-lg font-bold text-foreground">Focus Stats</h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowStats(false)}
-                className="rounded-full h-8 w-8 hover:bg-muted"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Period Toggle */}
-            <div className="flex gap-2 p-4 pb-3">
-              {(["today", "week", "month"] as const).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPeriod(p)}
-                  className={cn(
-                    "px-4 py-2 rounded-full text-sm font-medium border transition-all",
-                    period === p
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "bg-muted/50 text-muted-foreground border-border hover:bg-muted",
-                  )}
-                >
-                  {p === "today" ? "Today" : p === "week" ? "1 Week" : "4 Weeks"}
-                </button>
-              ))}
-            </div>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-3 gap-2 p-4 pt-0">
-              {/* Focus Score */}
-              <div className="rounded-xl p-3 bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg">
-                <div className="flex items-start justify-between">
-                  <p className="text-[10px] font-medium opacity-90">Focus Score</p>
-                  <Zap className="h-3.5 w-3.5 opacity-70" />
-                </div>
-                <p className="text-2xl font-bold mt-2">{stats.focusScore}</p>
-              </div>
-
-              {/* Focus Time */}
-              <div className="rounded-xl p-3 bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg">
-                <div className="flex items-start justify-between">
-                  <p className="text-[10px] font-medium opacity-90">Focus Time</p>
-                  <Clock className="h-3.5 w-3.5 opacity-70" />
-                </div>
-                <p className="text-xl font-bold mt-2">{formatDuration(stats.focusTimeMinutes)}</p>
-              </div>
-
-              {/* Tasks Done */}
-              <div className="rounded-xl p-3 bg-gradient-to-br from-emerald-400 to-green-500 text-white shadow-lg">
-                <div className="flex items-start justify-between">
-                  <p className="text-[10px] font-medium opacity-90">Tasks Done</p>
-                  <CheckCircle2 className="h-3.5 w-3.5 opacity-70" />
-                </div>
-                <p className="text-2xl font-bold mt-2">{stats.tasksCompleted}</p>
-              </div>
-
-              {/* Sessions */}
-              <div className="rounded-xl p-3 bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-lg">
-                <div className="flex items-start justify-between">
-                  <p className="text-[10px] font-medium opacity-90">Sessions</p>
-                  <Timer className="h-3.5 w-3.5 opacity-70" />
-                </div>
-                <p className="text-2xl font-bold mt-2">{stats.sessionsCount}</p>
-              </div>
-
-              {/* Break Time */}
-              <div className="rounded-xl p-3 bg-gradient-to-br from-pink-400 to-rose-500 text-white shadow-lg">
-                <div className="flex items-start justify-between">
-                  <p className="text-[10px] font-medium opacity-90">Break Time</p>
-                  <Coffee className="h-3.5 w-3.5 opacity-70" />
-                </div>
-                <p className="text-xl font-bold mt-2">{formatDuration(stats.breakTimeMinutes)}</p>
-              </div>
-
-              {/* Streak */}
-              <div className="rounded-xl p-3 bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-lg">
-                <div className="flex items-start justify-between">
-                  <p className="text-[10px] font-medium opacity-90">Streak</p>
-                  <Flame className="h-3.5 w-3.5 opacity-70" />
-                </div>
-                <p className="text-xl font-bold mt-2">
-                  {stats.streak} <span className="text-sm">days</span>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Render modal via portal */}
+      {showStats && <FocusStatsModal onClose={() => setShowStats(false)} />}
     </>
   );
 }
