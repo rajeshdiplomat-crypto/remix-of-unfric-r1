@@ -138,7 +138,7 @@ export default function Auth() {
       navigate("/diary");
     }
   }, [user, loading, navigate]);
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!email) {
       toast.error("Please enter your email");
@@ -236,19 +236,188 @@ export default function Auth() {
   };
   return (
     <div className="bg-background">
-      {/* Hero Section with Auth Form */}
-      <section className="min-h-screen flex flex-col lg:flex-row">
+      {/* Header Navigation */}
+      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="flex items-center">
+              <UnfricLogo size="lg" />
+            </div>
+
+            {/* Navigation Links */}
+            <nav className="hidden md:flex items-center gap-8">
+              <a
+                href="#features"
+                className="text-xs uppercase tracking-[0.15em] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Features
+              </a>
+              <a
+                href="#modules"
+                className="text-xs uppercase tracking-[0.15em] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Modules
+              </a>
+              <a
+                href="#about"
+                className="text-xs uppercase tracking-[0.15em] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                About
+              </a>
+            </nav>
+
+            {/* Auth Buttons */}
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setMode("signin");
+                  document.getElementById("auth-section")?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="text-xs uppercase tracking-[0.15em] hidden sm:inline-flex"
+              >
+                Sign In
+              </Button>
+              <Button
+                onClick={() => {
+                  setMode("signup");
+                  document.getElementById("auth-section")?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="text-xs uppercase tracking-[0.15em] px-6"
+              >
+                Get Started
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="relative min-h-[90vh] flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 py-20 overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute inset-0 bg-gradient-to-br from-muted/30 via-transparent to-transparent" />
+
+        <div className="max-w-5xl mx-auto text-center relative z-10">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-light tracking-[0.1em] mb-6 text-foreground">
+            Your Personal Wellness Companion
+          </h1>
+          <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
+            Track your emotions, journal your thoughts, manifest your dreams, and build better habits—all in one
+            beautifully designed platform.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+            <Button
+              onClick={() => {
+                setMode("signup");
+                document.getElementById("auth-section")?.scrollIntoView({ behavior: "smooth" });
+              }}
+              size="lg"
+              className="w-full sm:w-auto px-8 h-12 uppercase tracking-[0.15em] text-xs font-normal"
+            >
+              Start Free Today
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setMode("signin");
+                document.getElementById("auth-section")?.scrollIntoView({ behavior: "smooth" });
+              }}
+              size="lg"
+              className="w-full sm:w-auto px-8 h-12 uppercase tracking-[0.15em] text-xs font-normal"
+            >
+              Sign In
+            </Button>
+          </div>
+
+          {/* Key Stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-16 pt-12 border-t border-border/40">
+            <div>
+              <div className="text-3xl font-light mb-2 text-foreground">7</div>
+              <div className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Core Modules</div>
+            </div>
+            <div>
+              <div className="text-3xl font-light mb-2 text-foreground">100%</div>
+              <div className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Private & Secure</div>
+            </div>
+            <div>
+              <div className="text-3xl font-light mb-2 text-foreground">Free</div>
+              <div className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Forever</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/20">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-light tracking-[0.1em] mb-4 text-foreground">
+              Everything You Need
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              A comprehensive platform for personal growth, emotional wellness, and productivity
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="p-6 rounded-lg bg-card border border-border/40">
+              <div className="p-3 rounded-lg bg-muted/50 w-fit mb-4">
+                <BookOpen className="h-6 w-6 text-foreground" />
+              </div>
+              <h3 className="text-lg font-medium mb-2 text-foreground">Unified Diary</h3>
+              <p className="text-sm text-muted-foreground">
+                See all your activities, thoughts, and progress in one beautiful feed
+              </p>
+            </div>
+            <div className="p-6 rounded-lg bg-card border border-border/40">
+              <div className="p-3 rounded-lg bg-muted/50 w-fit mb-4">
+                <Heart className="h-6 w-6 text-foreground" />
+              </div>
+              <h3 className="text-lg font-medium mb-2 text-foreground">Emotion Tracking</h3>
+              <p className="text-sm text-muted-foreground">
+                Understand your emotional patterns with visual tracking and insights
+              </p>
+            </div>
+            <div className="p-6 rounded-lg bg-card border border-border/40">
+              <div className="p-3 rounded-lg bg-muted/50 w-fit mb-4">
+                <PenLine className="h-6 w-6 text-foreground" />
+              </div>
+              <h3 className="text-lg font-medium mb-2 text-foreground">Rich Journaling</h3>
+              <p className="text-sm text-muted-foreground">
+                Write freely with a powerful editor and customizable templates
+              </p>
+            </div>
+            <div className="p-6 rounded-lg bg-card border border-border/40">
+              <div className="p-3 rounded-lg bg-muted/50 w-fit mb-4">
+                <Sparkles className="h-6 w-6 text-foreground" />
+              </div>
+              <h3 className="text-lg font-medium mb-2 text-foreground">Goal Manifestation</h3>
+              <p className="text-sm text-muted-foreground">
+                Turn your dreams into reality with daily practices and visualization
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Auth Section */}
+      <section id="auth-section" className="min-h-screen flex flex-col lg:flex-row py-20">
         {/* Left side - Form */}
         <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 md:px-16 xl:px-24 py-12 lg:py-0 relative overflow-hidden">
           {/* Background decoration */}
           <div className="absolute inset-0 bg-gradient-to-br from-muted/20 via-transparent to-transparent" />
 
           <div className="max-w-sm mx-auto w-full relative z-10">
-            {/* Brand name */}
+            {/* Section title */}
             <div className="mb-8">
-              <UnfricLogo size="xl" className="mb-2" />
-              <p className="text-xs text-muted-foreground tracking-[0.1em] uppercase mt-2">
-                Your personal wellness companion
+              <h2 className="text-xs uppercase tracking-[0.2em] font-normal mb-2 text-foreground">
+                {getSectionTitle()}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {mode === "signup"
+                  ? "Create your free account to get started"
+                  : "Welcome back to your wellness journey"}
               </p>
             </div>
 
@@ -264,9 +433,6 @@ export default function Auth() {
                 </p>
               </div>
             )}
-
-            {/* Section title */}
-            <h2 className="text-xs uppercase tracking-[0.2em] font-normal mb-6 text-foreground">{getSectionTitle()}</h2>
 
             {/* Key benefits for new users */}
             {mode === "signup" && (
@@ -488,40 +654,47 @@ export default function Auth() {
         </div>
       </section>
 
-      {/* Stats/Features Section */}
-      <section className="py-16 px-8 lg:px-16 border-t border-border/40">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="text-3xl font-light mb-2 text-foreground">7</div>
-              <div className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-2">Core Modules</div>
-              <p className="text-xs text-muted-foreground">
-                Diary, Emotions, Journal, Manifest, Trackers, Notes & Tasks
+      {/* Module Sections */}
+      <section id="modules" className="border-t border-border/40">
+        {modules.map((module, index) => (
+          <ModuleSection key={index} {...module} />
+        ))}
+      </section>
+
+      {/* About Section */}
+      <section id="about" className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/20">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl lg:text-4xl font-light tracking-[0.1em] mb-6 text-foreground">About Unfric</h2>
+          <p className="text-muted-foreground leading-relaxed mb-8 max-w-2xl mx-auto">
+            Unfric is designed to be your all-in-one companion for personal growth and wellness. We believe that
+            tracking your emotions, journaling your thoughts, and setting intentions are powerful tools for living a
+            more intentional and fulfilling life.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+            <div className="p-6 rounded-lg bg-card border border-border/40">
+              <div className="text-2xl font-light mb-2 text-foreground">Our Mission</div>
+              <p className="text-sm text-muted-foreground">
+                To empower individuals to understand themselves better through thoughtful tracking and reflection
               </p>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-light mb-2 text-foreground">100%</div>
-              <div className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-2">Your Data</div>
-              <p className="text-xs text-muted-foreground">
-                Your information stays private and secure with end-to-end encryption
+            <div className="p-6 rounded-lg bg-card border border-border/40">
+              <div className="text-2xl font-light mb-2 text-foreground">Privacy First</div>
+              <p className="text-sm text-muted-foreground">
+                Your data is yours. We use end-to-end encryption and never share your personal information
               </p>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-light mb-2 text-foreground">Free</div>
-              <div className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-2">Forever</div>
-              <p className="text-xs text-muted-foreground">No subscriptions, no hidden fees, no credit card required</p>
+            <div className="p-6 rounded-lg bg-card border border-border/40">
+              <div className="text-2xl font-light mb-2 text-foreground">Always Free</div>
+              <p className="text-sm text-muted-foreground">
+                No subscriptions, no hidden fees. All core features are available to everyone, forever
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Module Sections */}
-      {modules.map((module, index) => (
-        <ModuleSection key={index} {...module} />
-      ))}
-
       {/* Final CTA Section */}
-      <section className="min-h-[60vh] flex flex-col items-center justify-center px-8 lg:px-16 py-20 bg-muted/20">
+      <section className="min-h-[60vh] flex flex-col items-center justify-center px-8 lg:px-16 py-20 bg-background">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl lg:text-4xl font-light tracking-[0.1em] mb-6 text-foreground">
             Ready to begin your journey?
@@ -532,13 +705,19 @@ export default function Auth() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button
-              onClick={() => setMode("signup")}
+              onClick={() => {
+                setMode("signup");
+                document.getElementById("auth-section")?.scrollIntoView({ behavior: "smooth" });
+              }}
               className="w-full sm:w-auto px-8 h-12 uppercase tracking-[0.15em] text-xs font-normal"
             >
               Create Free Account
             </Button>
             <Button
-              onClick={() => setMode("signin")}
+              onClick={() => {
+                setMode("signin");
+                document.getElementById("auth-section")?.scrollIntoView({ behavior: "smooth" });
+              }}
               variant="outline"
               className="w-full sm:w-auto px-8 h-12 uppercase tracking-[0.15em] text-xs font-normal"
             >
@@ -548,19 +727,19 @@ export default function Auth() {
           <div className="mt-12 pt-8 border-t border-border/40">
             <p className="text-xs text-muted-foreground mb-4">What you'll get:</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-muted-foreground">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 justify-center">
                 <CheckCircle2 className="h-3.5 w-3.5 text-foreground/60" />
                 <span>Unlimited entries across all modules</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 justify-center">
                 <CheckCircle2 className="h-3.5 w-3.5 text-foreground/60" />
                 <span>Beautiful visualizations and insights</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 justify-center">
                 <CheckCircle2 className="h-3.5 w-3.5 text-foreground/60" />
                 <span>Export your data anytime</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 justify-center">
                 <CheckCircle2 className="h-3.5 w-3.5 text-foreground/60" />
                 <span>Sync across all your devices</span>
               </div>
@@ -568,6 +747,78 @@ export default function Auth() {
           </div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="border-t border-border/40 bg-muted/20 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+            <div>
+              <UnfricLogo size="lg" className="mb-4" />
+              <p className="text-xs text-muted-foreground">
+                Your personal wellness companion for tracking emotions, journaling thoughts, and manifesting goals.
+              </p>
+            </div>
+            <div>
+              <h4 className="text-xs uppercase tracking-[0.15em] text-foreground mb-4">Product</h4>
+              <ul className="space-y-2 text-xs text-muted-foreground">
+                <li>
+                  <a href="#features" className="hover:text-foreground transition-colors">
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a href="#modules" className="hover:text-foreground transition-colors">
+                    Modules
+                  </a>
+                </li>
+                <li>
+                  <a href="#about" className="hover:text-foreground transition-colors">
+                    About
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-xs uppercase tracking-[0.15em] text-foreground mb-4">Resources</h4>
+              <ul className="space-y-2 text-xs text-muted-foreground">
+                <li>
+                  <a href="#" className="hover:text-foreground transition-colors">
+                    Documentation
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-foreground transition-colors">
+                    Privacy Policy
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-foreground transition-colors">
+                    Terms of Service
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-xs uppercase tracking-[0.15em] text-foreground mb-4">Connect</h4>
+              <ul className="space-y-2 text-xs text-muted-foreground">
+                <li>
+                  <a href="#" className="hover:text-foreground transition-colors">
+                    Support
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-foreground transition-colors">
+                    Contact
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div className="pt-8 border-t border-border/40 text-center">
+            <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Unfric. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
