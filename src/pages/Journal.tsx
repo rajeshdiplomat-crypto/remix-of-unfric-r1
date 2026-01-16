@@ -118,6 +118,8 @@ export default function Journal() {
   const editorRef = useRef<TiptapEditorRef>(null);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedContentRef = useRef<string>("");
+  const currentDateRef = useRef<string>(format(new Date(), "yyyy-MM-dd"));
+  const isSavingRef = useRef(false);
 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -195,6 +197,15 @@ export default function Journal() {
   useEffect(() => {
     if (!user) return;
     const dateStr = format(selectedDate, "yyyy-MM-dd");
+
+    // Clear any pending autosave when changing dates
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+
+    // Update current date ref
+    currentDateRef.current = dateStr;
     setIsLoading(true);
 
     supabase
@@ -275,8 +286,14 @@ export default function Journal() {
 
   // Save function
   const performSave = useCallback(async () => {
-    if (!user || content === lastSavedContentRef.current) return;
+    // Prevent duplicate saves and skip if content unchanged
+    if (!user || isSavingRef.current) return;
+    if (content === lastSavedContentRef.current) {
+      setSaveStatus("saved");
+      return;
+    }
 
+    isSavingRef.current = true;
     setSaveStatus("saving");
     const dateStr = format(selectedDate, "yyyy-MM-dd");
 
@@ -362,6 +379,8 @@ export default function Journal() {
       console.error("Save error:", err);
       setSaveStatus("unsaved");
       toast({ title: "Error saving", description: "Please try again", variant: "destructive" });
+    } finally {
+      isSavingRef.current = false;
     }
   }, [user, content, selectedDate, currentEntry, currentAnswers, template.questions, selectedMood, toast]);
 
@@ -408,8 +427,25 @@ export default function Journal() {
     };
   }, []);
 
-  const goToPreviousDay = () => setSelectedDate(subDays(selectedDate, 1));
-  const goToNextDay = () => setSelectedDate(addDays(selectedDate, 1));
+  // Save before switching dates
+  const switchDate = useCallback(
+    async (newDate: Date) => {
+      // Clear pending autosave
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+      // If there are unsaved changes, save them first
+      if (content !== lastSavedContentRef.current && !isSavingRef.current) {
+        await performSave();
+      }
+      setSelectedDate(newDate);
+    },
+    [content, performSave],
+  );
+
+  const goToPreviousDay = () => switchDate(subDays(selectedDate, 1));
+  const goToNextDay = () => switchDate(addDays(selectedDate, 1));
 
   const handleInsertPrompt = (prompt: string) => {
     editorRef.current?.editor?.chain().focus().insertContent(`\n\n${prompt}\n\n`).run();
