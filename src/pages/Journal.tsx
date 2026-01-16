@@ -11,17 +11,12 @@ import {
   Cloud,
   CloudOff,
   Calendar,
-  BookOpen,
   PenLine,
   Heart,
   Smile,
   Meh,
   Frown,
   TrendingUp,
-  Sun,
-  Moon,
-  CloudSun,
-  CalendarDays,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -55,14 +50,6 @@ const MOOD_OPTIONS = [
   { id: "okay", label: "Okay", icon: Meh, color: "text-amber-500", bg: "bg-amber-50" },
   { id: "low", label: "Low", icon: Frown, color: "text-rose-500", bg: "bg-rose-50" },
 ];
-
-// Get greeting based on time
-const getGreeting = () => {
-  const hour = new Date().getHours();
-  if (hour < 12) return { text: "Good Morning", icon: Sun, gradient: "from-amber-400 to-orange-500" };
-  if (hour < 17) return { text: "Good Afternoon", icon: CloudSun, gradient: "from-blue-400 to-cyan-500" };
-  return { text: "Good Evening", icon: Moon, gradient: "from-indigo-500 to-purple-600" };
-};
 
 const generateInitialContent = (questions: { text: string }[]) =>
   JSON.stringify({
@@ -178,16 +165,6 @@ export default function Journal() {
     }
     return count;
   }, [entries]);
-
-  // Greeting
-  const greeting = useMemo(() => getGreeting(), []);
-
-  // Week days for calendar
-  const weekDays = useMemo(() => {
-    const start = startOfWeek(selectedDate, { weekStartsOn: 0 });
-    const end = endOfWeek(selectedDate, { weekStartsOn: 0 });
-    return eachDayOfInterval({ start, end });
-  }, [selectedDate]);
 
   // Load all entries on mount
   useEffect(() => {
@@ -443,8 +420,6 @@ export default function Journal() {
     return <PageLoadingScreen module="journal" />;
   }
 
-  const GreetingIcon = greeting.icon;
-
   return (
     <div
       className={cn(
@@ -467,188 +442,46 @@ export default function Journal() {
         />
       )}
 
-      {/* Modern Header */}
+      {/* Compact Header */}
       <div
-        className={cn("sticky top-0 z-40 backdrop-blur-xl border-b", isFullscreen ? "bg-white/90" : "")}
+        className={cn("sticky top-0 z-40 backdrop-blur-xl border-b", isFullscreen ? "bg-white/95" : "")}
         style={{
-          backgroundColor: isFullscreen ? undefined : `${currentSkin.pageBg}f0`,
-          borderColor: `${currentSkin.border}50`,
+          backgroundColor: isFullscreen ? undefined : `${currentSkin.pageBg}f8`,
+          borderColor: `${currentSkin.border}30`,
         }}
       >
-        <div className="px-4 sm:px-6 py-3">
-          {/* Top Row - Greeting & Controls */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className={cn("p-2 rounded-xl bg-gradient-to-br shadow-lg", `${greeting.gradient}`)}>
-                <GreetingIcon className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h2
-                  className={cn("text-lg font-bold bg-gradient-to-r bg-clip-text text-transparent", greeting.gradient)}
-                >
-                  {greeting.text}
-                </h2>
-                <p className="text-xs text-slate-500">{format(selectedDate, "EEEE, MMMM d, yyyy")}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Save Status */}
-              <div
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                  saveStatus === "saved" && "bg-emerald-100 text-emerald-700",
-                  saveStatus === "saving" && "bg-amber-100 text-amber-700",
-                  saveStatus === "unsaved" && "bg-slate-100 text-slate-600",
-                )}
-              >
-                {saveStatus === "saved" && <Cloud className="h-3.5 w-3.5" />}
-                {saveStatus === "saving" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                {saveStatus === "unsaved" && <CloudOff className="h-3.5 w-3.5" />}
-                {saveStatus === "saving" ? "Saving..." : saveStatus === "saved" ? "Saved" : "Unsaved"}
-              </div>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 rounded-xl"
-                onClick={() => setIsFullscreen(!isFullscreen)}
-              >
-                {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-              </Button>
-
-              {!isFullscreen && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 rounded-xl"
-                  onClick={() => setSettingsOpen(true)}
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
-              )}
-
-              <Button
-                size="sm"
-                onClick={handleManualSave}
-                disabled={saveStatus === "saved" || saveStatus === "saving"}
-                className="rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 shadow-lg shadow-purple-200/50"
-              >
-                <Save className="h-4 w-4 mr-1.5" />
-                Save
-              </Button>
-            </div>
-          </div>
-
-          {/* Week Calendar - Improved Design */}
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 rounded-xl border-slate-200 hover:bg-violet-50 hover:border-violet-300 transition-all"
-              onClick={() => setSelectedDate(subDays(selectedDate, 7))}
-            >
+        <div className="px-4 sm:px-6 py-2 flex items-center justify-between gap-4">
+          {/* Left - Date Navigation */}
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={goToPreviousDay}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
 
-            <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-100 p-2">
-              {/* Month/Year Header */}
-              <div className="flex items-center justify-between mb-2 px-2">
-                <span className="text-sm font-semibold text-slate-700">{format(selectedDate, "MMMM yyyy")}</span>
-                <button
-                  onClick={() => setSelectedDate(new Date())}
-                  className="text-xs font-medium text-violet-600 hover:text-violet-700 px-2 py-1 rounded-lg hover:bg-violet-50 transition-all"
-                >
-                  Today
-                </button>
-              </div>
-
-              {/* Day Buttons */}
-              <div className="grid grid-cols-7 gap-1">
-                {weekDays.map((day) => {
-                  const isSelected = isSameDay(day, selectedDate);
-                  const isTodayDate = isToday(day);
-                  const hasEntry = entries.some((e) => e.entryDate === format(day, "yyyy-MM-dd"));
-
-                  return (
-                    <button
-                      key={day.toISOString()}
-                      onClick={() => setSelectedDate(day)}
-                      className={cn(
-                        "flex flex-col items-center py-2 px-1 rounded-xl transition-all relative",
-                        isSelected
-                          ? "bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-200"
-                          : isTodayDate
-                            ? "bg-violet-50 ring-2 ring-violet-200"
-                            : "hover:bg-slate-50",
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "text-[10px] font-semibold uppercase tracking-wide",
-                          isSelected ? "text-white/80" : isTodayDate ? "text-violet-500" : "text-slate-400",
-                        )}
-                      >
-                        {format(day, "EEE")}
-                      </span>
-                      <span
-                        className={cn(
-                          "text-lg font-bold mt-0.5",
-                          isSelected ? "text-white" : isTodayDate ? "text-violet-600" : "text-slate-700",
-                        )}
-                      >
-                        {format(day, "d")}
-                      </span>
-                      {/* Entry indicator */}
-                      {hasEntry && (
-                        <div
-                          className={cn(
-                            "absolute bottom-1.5 w-1.5 h-1.5 rounded-full",
-                            isSelected ? "bg-white" : "bg-violet-400",
-                          )}
-                        />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 rounded-xl border-slate-200 hover:bg-violet-50 hover:border-violet-300 transition-all"
-              onClick={() => setSelectedDate(addDays(selectedDate, 7))}
+            <button
+              onClick={() => setSelectedDate(new Date())}
+              className="flex items-center gap-2 px-3 py-1.5 bg-white/80 hover:bg-white rounded-xl border border-slate-200 transition-all"
             >
+              <Calendar className="h-4 w-4 text-violet-500" />
+              <span className="text-sm font-semibold text-slate-700">{format(selectedDate, "EEE, MMM d")}</span>
+            </button>
+
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={goToNextDay}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-        </div>
-      </div>
 
-      {/* Stats & Mood Bar */}
-      <div className="px-4 sm:px-6 py-3 border-b" style={{ borderColor: `${currentSkin.border}30` }}>
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          {/* Stats */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-violet-50 rounded-xl">
-              <TrendingUp className="h-4 w-4 text-violet-500" />
-              <span className="text-sm font-semibold text-violet-700">{streak} day streak</span>
+          {/* Center - Quick Stats (hidden on small screens) */}
+          <div className="hidden md:flex items-center gap-2">
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-violet-50 rounded-lg">
+              <TrendingUp className="h-3.5 w-3.5 text-violet-500" />
+              <span className="text-xs font-medium text-violet-700">{streak}d</span>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-xl">
-              <PenLine className="h-4 w-4 text-blue-500" />
-              <span className="text-sm font-semibold text-blue-700">{wordCount} words</span>
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 rounded-lg">
+              <PenLine className="h-3.5 w-3.5 text-blue-500" />
+              <span className="text-xs font-medium text-blue-700">{wordCount}w</span>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-xl">
-              <BookOpen className="h-4 w-4 text-emerald-500" />
-              <span className="text-sm font-semibold text-emerald-700">{entries.length} entries</span>
-            </div>
-          </div>
-
-          {/* Mood Selector */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 font-medium">How are you feeling?</span>
-            <div className="flex items-center gap-1">
+            {/* Mood - compact */}
+            <div className="flex items-center gap-0.5">
               {MOOD_OPTIONS.map((mood) => {
                 const MoodIcon = mood.icon;
                 const isActive = selectedMood === mood.id;
@@ -656,19 +489,59 @@ export default function Journal() {
                   <button
                     key={mood.id}
                     onClick={() => handleMoodSelect(mood.id)}
-                    className={cn(
-                      "p-2 rounded-xl transition-all",
-                      isActive
-                        ? `${mood.bg} ring-2 ring-offset-1 ring-${mood.color.replace("text-", "")}`
-                        : "hover:bg-slate-100",
-                    )}
+                    className={cn("p-1.5 rounded-lg transition-all", isActive ? mood.bg : "hover:bg-slate-100")}
                     title={mood.label}
                   >
-                    <MoodIcon className={cn("h-5 w-5", isActive ? mood.color : "text-slate-400")} />
+                    <MoodIcon className={cn("h-4 w-4", isActive ? mood.color : "text-slate-300")} />
                   </button>
                 );
               })}
             </div>
+          </div>
+
+          {/* Right - Controls */}
+          <div className="flex items-center gap-1.5">
+            {/* Save Status */}
+            <div
+              className={cn(
+                "flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium",
+                saveStatus === "saved" && "bg-emerald-50 text-emerald-600",
+                saveStatus === "saving" && "bg-amber-50 text-amber-600",
+                saveStatus === "unsaved" && "bg-slate-100 text-slate-500",
+              )}
+            >
+              {saveStatus === "saved" && <Cloud className="h-3 w-3" />}
+              {saveStatus === "saving" && <Loader2 className="h-3 w-3 animate-spin" />}
+              {saveStatus === "unsaved" && <CloudOff className="h-3 w-3" />}
+              <span className="hidden sm:inline">
+                {saveStatus === "saving" ? "Saving" : saveStatus === "saved" ? "Saved" : "Unsaved"}
+              </span>
+            </div>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-lg"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+            >
+              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
+
+            {!isFullscreen && (
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setSettingsOpen(true)}>
+                <Settings className="h-4 w-4" />
+              </Button>
+            )}
+
+            <Button
+              size="sm"
+              onClick={handleManualSave}
+              disabled={saveStatus === "saved" || saveStatus === "saving"}
+              className="h-8 rounded-lg bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-xs px-3"
+            >
+              <Save className="h-3.5 w-3.5 mr-1" />
+              Save
+            </Button>
           </div>
         </div>
       </div>
