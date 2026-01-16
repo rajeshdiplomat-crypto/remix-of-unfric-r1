@@ -180,9 +180,9 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
       .sort((a, b) => parseTimeToMinutes(a.due_time) - parseTimeToMinutes(b.due_time));
   }, [tasks, selectedDate]);
 
-  // Full 24-hour timeline (12:00 AM to 11:00 PM)
+  // Full 24-hour timeline (12:00 AM to 11:59 PM)
   const timelineStart = 0; // 12:00 AM (midnight)
-  const timelineEnd = 23 * 60; // 11:00 PM
+  const timelineEnd = 24 * 60 - 1; // 11:59 PM (1439 minutes)
   const totalHours = 24;
 
   // Generate hour markers dynamically
