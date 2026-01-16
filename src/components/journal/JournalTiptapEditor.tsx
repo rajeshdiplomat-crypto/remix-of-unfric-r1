@@ -92,6 +92,59 @@ const FontSize = Extension.create({
   },
 });
 
+// Extension to make level 2 headings read-only (question prompts)
+const ReadOnlyHeading = Extension.create({
+  name: "readOnlyHeading",
+  addProseMirrorPlugins() {
+    return [
+      {
+        props: {
+          handleClick: (view, pos) => {
+            const { state } = view;
+            const $pos = state.doc.resolve(pos);
+            const node = $pos.parent;
+
+            // If clicking on a level 2 heading (question prompt), move cursor to next node
+            if (node.type.name === "heading" && node.attrs.level === 2) {
+              const nextPos = $pos.end() + 1;
+              if (nextPos < state.doc.content.size) {
+                const tr = state.tr.setSelection(state.selection.constructor.near(state.doc.resolve(nextPos)));
+                view.dispatch(tr);
+                view.focus();
+                return true;
+              }
+            }
+            return false;
+          },
+          handleKeyDown: (view, event) => {
+            const { state } = view;
+            const { from, to } = state.selection;
+            const $from = state.doc.resolve(from);
+            const node = $from.parent;
+
+            // If inside a level 2 heading, block edits except navigation
+            if (node.type.name === "heading" && node.attrs.level === 2) {
+              const isNavKey = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Tab", "Enter", "Escape"].includes(
+                event.key,
+              );
+              if (!isNavKey && !event.ctrlKey && !event.metaKey) {
+                // Move to next paragraph on any typing key
+                const nextPos = $from.end() + 1;
+                if (nextPos < state.doc.content.size) {
+                  const tr = state.tr.setSelection(state.selection.constructor.near(state.doc.resolve(nextPos)));
+                  view.dispatch(tr);
+                }
+                return true; // Block the key
+              }
+            }
+            return false;
+          },
+        },
+      } as any,
+    ];
+  },
+});
+
 interface Props {
   content: string;
   onChange: (content: string) => void;
@@ -230,6 +283,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
         FontSize,
         Color,
         Highlight.configure({ multicolor: true }),
+        ReadOnlyHeading,
       ],
       content: content ? JSON.parse(content) : undefined,
       onUpdate: ({ editor }) => onChange(JSON.stringify(editor.getJSON())),
