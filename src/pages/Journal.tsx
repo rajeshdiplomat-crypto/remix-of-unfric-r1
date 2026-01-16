@@ -362,34 +362,38 @@ export default function Journal() {
         }
       }
 
-      // Create or update feed_event for diary display
+      // Create or update feed_event for diary display (non-blocking)
       if (entryId && contentPreview) {
-        const { data: existingEvent } = await supabase
-          .from("feed_events")
-          .select("id")
-          .eq("source_module", "journal")
-          .eq("source_id", entryId)
-          .maybeSingle();
+        try {
+          const { data: existingEvent } = await supabase
+            .from("feed_events")
+            .select("id")
+            .eq("source_module", "journal")
+            .eq("source_id", entryId)
+            .maybeSingle();
 
-        const feedEventData = {
-          user_id: user.id,
-          type: "journal_entry",
-          source_module: "journal",
-          source_id: entryId,
-          title: `Journal - ${format(selectedDate, "MMM d, yyyy")}`,
-          summary: contentPreview,
-          content_preview: contentPreview,
-          media: extractedImages.length > 0 ? extractedImages : null,
-          metadata: {
-            entry_date: dateStr,
-            entry_id: entryId,
-          },
-        };
+          const feedEventData = {
+            user_id: user.id,
+            type: "journal_entry",
+            source_module: "journal",
+            source_id: entryId,
+            title: `Journal - ${format(selectedDate, "MMM d, yyyy")}`,
+            summary: contentPreview,
+            content_preview: contentPreview,
+            media: extractedImages.length > 0 ? extractedImages : null,
+            metadata: {
+              entry_date: dateStr,
+              entry_id: entryId,
+            },
+          };
 
-        if (existingEvent) {
-          await supabase.from("feed_events").update(feedEventData).eq("id", existingEvent.id);
-        } else {
-          await supabase.from("feed_events").insert(feedEventData);
+          if (existingEvent) {
+            await supabase.from("feed_events").update(feedEventData).eq("id", existingEvent.id);
+          } else {
+            await supabase.from("feed_events").insert(feedEventData);
+          }
+        } catch (feedErr) {
+          console.error("Feed event error (non-blocking):", feedErr);
         }
       }
       if (currentEntry) {
