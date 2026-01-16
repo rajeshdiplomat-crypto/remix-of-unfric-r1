@@ -99,39 +99,38 @@ const formatDuration = (minutes: number): string => {
   return `${hours}h ${mins}m`;
 };
 
-// Focus Stats Modal Component
+// Focus Stats Modal Component - BIGGER VERSION
 function FocusStatsModal({ onClose }: { onClose: () => void }) {
   const { stats, period, setPeriod } = useFocusStats();
 
-  // Use portal to render at document body level
   return createPortal(
     <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 99999 }}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Modal Content */}
-      <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-md overflow-hidden">
+      {/* Modal Content - BIGGER */}
+      <div className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Focus Stats</h2>
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-700">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Focus Stats</h2>
           <button
             onClick={onClose}
-            className="rounded-full h-8 w-8 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+            className="rounded-full h-10 w-10 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
           >
-            <X className="h-4 w-4 text-gray-500" />
+            <X className="h-5 w-5 text-gray-500" />
           </button>
         </div>
 
         {/* Period Toggle */}
-        <div className="flex gap-2 p-4 pb-3">
+        <div className="flex gap-3 p-6 pb-4">
           {(["today", "week", "month"] as const).map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
               className={cn(
-                "px-4 py-2 rounded-full text-sm font-medium border transition-all",
+                "px-6 py-3 rounded-full text-base font-semibold border transition-all",
                 period === p
-                  ? "bg-blue-500 text-white border-blue-500 shadow-sm"
+                  ? "bg-blue-500 text-white border-blue-500 shadow-lg"
                   : "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700",
               )}
             >
@@ -140,61 +139,61 @@ function FocusStatsModal({ onClose }: { onClose: () => void }) {
           ))}
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-2 p-4 pt-0">
+        {/* Stats Grid - BIGGER CARDS */}
+        <div className="grid grid-cols-3 gap-4 p-6 pt-2">
           {/* Focus Score */}
-          <div className="rounded-xl p-3 bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg">
+          <div className="rounded-2xl p-5 bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-xl aspect-square flex flex-col justify-between">
             <div className="flex items-start justify-between">
-              <p className="text-[10px] font-medium opacity-90">Focus Score</p>
-              <Zap className="h-3.5 w-3.5 opacity-70" />
+              <p className="text-sm font-semibold opacity-90">Focus Score</p>
+              <Zap className="h-6 w-6 opacity-70" />
             </div>
-            <p className="text-2xl font-bold mt-2">{stats.focusScore}</p>
+            <p className="text-5xl font-bold">{stats.focusScore}</p>
           </div>
 
           {/* Focus Time */}
-          <div className="rounded-xl p-3 bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg">
+          <div className="rounded-2xl p-5 bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-xl aspect-square flex flex-col justify-between">
             <div className="flex items-start justify-between">
-              <p className="text-[10px] font-medium opacity-90">Focus Time</p>
-              <Clock className="h-3.5 w-3.5 opacity-70" />
+              <p className="text-sm font-semibold opacity-90">Focus Time</p>
+              <Clock className="h-6 w-6 opacity-70" />
             </div>
-            <p className="text-xl font-bold mt-2">{formatDuration(stats.focusTimeMinutes)}</p>
+            <p className="text-4xl font-bold">{formatDuration(stats.focusTimeMinutes)}</p>
           </div>
 
           {/* Tasks Done */}
-          <div className="rounded-xl p-3 bg-gradient-to-br from-emerald-400 to-green-500 text-white shadow-lg">
+          <div className="rounded-2xl p-5 bg-gradient-to-br from-emerald-400 to-green-500 text-white shadow-xl aspect-square flex flex-col justify-between">
             <div className="flex items-start justify-between">
-              <p className="text-[10px] font-medium opacity-90">Tasks Done</p>
-              <CheckCircle2 className="h-3.5 w-3.5 opacity-70" />
+              <p className="text-sm font-semibold opacity-90">Tasks Done</p>
+              <CheckCircle2 className="h-6 w-6 opacity-70" />
             </div>
-            <p className="text-2xl font-bold mt-2">{stats.tasksCompleted}</p>
+            <p className="text-5xl font-bold">{stats.tasksCompleted}</p>
           </div>
 
           {/* Sessions */}
-          <div className="rounded-xl p-3 bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-lg">
+          <div className="rounded-2xl p-5 bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-xl aspect-square flex flex-col justify-between">
             <div className="flex items-start justify-between">
-              <p className="text-[10px] font-medium opacity-90">Sessions</p>
-              <Timer className="h-3.5 w-3.5 opacity-70" />
+              <p className="text-sm font-semibold opacity-90">Sessions</p>
+              <Timer className="h-6 w-6 opacity-70" />
             </div>
-            <p className="text-2xl font-bold mt-2">{stats.sessionsCount}</p>
+            <p className="text-5xl font-bold">{stats.sessionsCount}</p>
           </div>
 
           {/* Break Time */}
-          <div className="rounded-xl p-3 bg-gradient-to-br from-pink-400 to-rose-500 text-white shadow-lg">
+          <div className="rounded-2xl p-5 bg-gradient-to-br from-pink-400 to-rose-500 text-white shadow-xl aspect-square flex flex-col justify-between">
             <div className="flex items-start justify-between">
-              <p className="text-[10px] font-medium opacity-90">Break Time</p>
-              <Coffee className="h-3.5 w-3.5 opacity-70" />
+              <p className="text-sm font-semibold opacity-90">Break Time</p>
+              <Coffee className="h-6 w-6 opacity-70" />
             </div>
-            <p className="text-xl font-bold mt-2">{formatDuration(stats.breakTimeMinutes)}</p>
+            <p className="text-4xl font-bold">{formatDuration(stats.breakTimeMinutes)}</p>
           </div>
 
           {/* Streak */}
-          <div className="rounded-xl p-3 bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-lg">
+          <div className="rounded-2xl p-5 bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-xl aspect-square flex flex-col justify-between">
             <div className="flex items-start justify-between">
-              <p className="text-[10px] font-medium opacity-90">Streak</p>
-              <Flame className="h-3.5 w-3.5 opacity-70" />
+              <p className="text-sm font-semibold opacity-90">Streak</p>
+              <Flame className="h-6 w-6 opacity-70" />
             </div>
-            <p className="text-xl font-bold mt-2">
-              {stats.streak} <span className="text-sm">days</span>
+            <p className="text-4xl font-bold">
+              {stats.streak} <span className="text-xl">days</span>
             </p>
           </div>
         </div>
