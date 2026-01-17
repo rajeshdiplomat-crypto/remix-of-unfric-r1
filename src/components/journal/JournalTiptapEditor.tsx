@@ -1182,9 +1182,9 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
         .ProseMirror li[data-checked="true"] > div { text-decoration: line-through; color: #94a3b8; }
         .ProseMirror a { color: #3b82f6; text-decoration: underline; }
         .ProseMirror img { max-width: 100%; height: auto; border-radius: 0.5rem; display: block; }
-        .ProseMirror .imageResize-wrapper { display: flex; justify-content: flex-start; margin: 0.5rem 0; }
-        .ProseMirror .imageResize-container { position: relative; display: inline-block; max-width: 100%; }
-        .ProseMirror .imageResize-container img { display: block; width: 100%; height: auto; }
+        .ProseMirror div[style*="display: flex"] { margin: 0.5rem 0; }
+        .ProseMirror div[style*="cursor: pointer"] { max-width: 100%; overflow: hidden; }
+        .ProseMirror div[style*="cursor: pointer"] img { max-width: 100%; height: auto; object-fit: contain; }
       `}</style>
       </div>
     );
