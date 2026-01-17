@@ -34,7 +34,7 @@ import {
   Wind,
   Moon,
 } from "lucide-react";
-import { QuadrantTask, Subtask } from "@/components/tasks/types";
+import { QuadrantTask, Subtask, getDefaultEndTime } from "@/components/tasks/types";
 
 const TIMER_MODES = ["Pomodoro", "Countdown", "Stopwatch"] as const;
 type TimerMode = (typeof TIMER_MODES)[number];
@@ -215,6 +215,7 @@ export default function TaskFocus() {
         description: data.description,
         due_date: data.due_date,
         due_time: data.due_time,
+        end_time: data.due_time ? getDefaultEndTime(data.due_time) : null,
         priority: data.priority || "medium",
         is_completed: data.is_completed || false,
         completed_at: data.completed_at,
