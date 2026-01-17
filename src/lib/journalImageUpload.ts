@@ -1,6 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_DIMENSION = 1920; // Max width/height
+const COMPRESSION_QUALITY = 0.8; // JPEG quality
 
 export interface UploadResult {
   success: boolean;
@@ -9,8 +11,59 @@ export interface UploadResult {
 }
 
 /**
+ * Compresses an image file by resizing and converting to JPEG.
+ */
+async function compressImage(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    img.onload = () => {
+      let { width, height } = img;
+
+      // Calculate new dimensions maintaining aspect ratio
+      if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+        if (width > height) {
+          height = Math.round((height * MAX_DIMENSION) / width);
+          width = MAX_DIMENSION;
+        } else {
+          width = Math.round((width * MAX_DIMENSION) / height);
+          height = MAX_DIMENSION;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      if (!ctx) {
+        reject(new Error("Failed to get canvas context"));
+        return;
+      }
+
+      // Draw and compress
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error("Failed to compress image"));
+          }
+        },
+        "image/jpeg",
+        COMPRESSION_QUALITY
+      );
+    };
+
+    img.onerror = () => reject(new Error("Failed to load image"));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+/**
  * Uploads an image file to Supabase storage and returns the public URL.
- * This prevents storing large base64 strings in the database.
+ * Images are compressed before upload to reduce storage and improve loading.
  */
 export async function uploadJournalImage(file: File, userId: string): Promise<UploadResult> {
   // Validate file size
@@ -29,15 +82,20 @@ export async function uploadJournalImage(file: File, userId: string): Promise<Up
     };
   }
 
-  // Generate unique filename
-  const fileExt = file.name.split(".").pop()?.toLowerCase() || "jpg";
-  const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-
   try {
+    // Compress the image
+    const compressedBlob = await compressImage(file);
+    const compressedFile = new File([compressedBlob], file.name, { type: "image/jpeg" });
+
+    console.log(`Compressed: ${(file.size / 1024).toFixed(1)}KB → ${(compressedFile.size / 1024).toFixed(1)}KB`);
+
+    // Generate unique filename
+    const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).substring(2, 9)}.jpg`;
+
     // Upload to storage
     const { data, error: uploadError } = await supabase.storage
       .from("journal-images")
-      .upload(fileName, file, {
+      .upload(fileName, compressedFile, {
         cacheControl: "3600",
         upsert: false,
       });
