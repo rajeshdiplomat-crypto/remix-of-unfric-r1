@@ -14,6 +14,7 @@ import { Extension } from "@tiptap/core";
 import ImageResize from "tiptap-extension-resize-image";
 import React, { useEffect, forwardRef, useImperativeHandle, useState, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -558,29 +559,39 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
       setImageDialogOpen(false);
       setImageUrl("");
     };
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file || !editor) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const result = ev.target?.result as string;
-        if (result) {
-          try {
-            if ((editor.commands as any).setResizableImage) {
-              (editor.commands as any).setResizableImage({ src: result });
-            } else if ((editor.commands as any).setImage) {
-              (editor.commands as any).setImage({ src: result });
-            } else {
-              editor.chain().focus().insertContent(`<img src="${result}" />`).run();
-            }
-          } catch (err) {
-            console.error("Image upload error:", err);
-            editor.chain().focus().insertContent(`<img src="${result}" />`).run();
-          }
-          setImageDialogOpen(false);
+      
+      // Get user ID for storage path
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error("User not authenticated");
+        return;
+      }
+
+      // Upload to storage instead of base64
+      const { uploadJournalImage } = await import("@/lib/journalImageUpload");
+      const result = await uploadJournalImage(file, user.id);
+      
+      if (!result.success || !result.url) {
+        console.error("Image upload failed:", result.error);
+        return;
+      }
+
+      try {
+        if ((editor.commands as any).setResizableImage) {
+          (editor.commands as any).setResizableImage({ src: result.url });
+        } else if ((editor.commands as any).setImage) {
+          (editor.commands as any).setImage({ src: result.url });
+        } else {
+          editor.chain().focus().insertContent(`<img src="${result.url}" />`).run();
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error("Image insert error:", err);
+        editor.chain().focus().insertContent(`<img src="${result.url}" />`).run();
+      }
+      setImageDialogOpen(false);
       if (e.target) e.target.value = "";
     };
 
