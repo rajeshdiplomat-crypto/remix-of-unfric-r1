@@ -3,27 +3,13 @@ import { StreakDisplay } from "./StreakDisplay";
 import { DailyChallenge } from "./DailyChallenge";
 import { MemoriesCard } from "./MemoriesCard";
 import { WritingStats } from "./WritingStats";
+import { AIPromptsPanel } from "./AIPromptsPanel";
 import { JournalSkin } from "./types";
 import { format, eachDayOfInterval, startOfWeek, endOfWeek, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { JournalEntry } from "./types";
-import { Lightbulb, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
-// Writing prompts for inspiration
-const PROMPTS = [
-  "What made you smile today?",
-  "What are you grateful for right now?",
-  "What's one thing you learned today?",
-  "How are you really feeling?",
-  "What would make tomorrow amazing?",
-  "Describe a moment of peace today",
-  "What's on your mind?",
-  "What's one small win from today?",
-  "What are you looking forward to?",
-  "How did you take care of yourself today?",
-];
 
 interface EnhancedSidebarProps {
   selectedDate: Date;
@@ -36,6 +22,8 @@ interface EnhancedSidebarProps {
   hasMood: boolean;
   hasUsedPrompt: boolean;
   onViewEntry?: (date: Date) => void;
+  mood: string | null;
+  recentEntryPreview?: string;
 }
 
 export function EnhancedSidebar({
@@ -49,6 +37,8 @@ export function EnhancedSidebar({
   hasMood,
   hasUsedPrompt,
   onViewEntry,
+  mood,
+  recentEntryPreview,
 }: EnhancedSidebarProps) {
   const [usedPromptToday, setUsedPromptToday] = useState(hasUsedPrompt);
   
@@ -61,9 +51,6 @@ export function EnhancedSidebar({
     onInsertPrompt(prompt);
     setUsedPromptToday(true);
   };
-
-  // Get random prompt of the day
-  const todayPrompt = PROMPTS[new Date().getDate() % PROMPTS.length];
 
   return (
     <motion.div
@@ -141,38 +128,13 @@ export function EnhancedSidebar({
         totalEntries={entries.length} 
       />
 
-      {/* Today's Prompt */}
-      <motion.div
-        className="p-4 rounded-2xl bg-gradient-to-br from-rose-50/80 to-pink-50/80 backdrop-blur-sm border border-rose-100/50"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        whileHover={{ scale: 1.02 }}
-      >
-        <div className="flex items-center gap-2 mb-3">
-          <motion.div
-            className="p-1.5 rounded-lg bg-gradient-to-br from-rose-500 to-pink-500"
-            animate={{ rotate: [0, 5, -5, 0] }}
-            transition={{ duration: 3, repeat: Infinity }}
-          >
-            <Lightbulb className="h-4 w-4 text-white" />
-          </motion.div>
-          <span className="font-semibold text-sm text-foreground">Today's Prompt</span>
-        </div>
-        
-        <p className="text-sm text-muted-foreground mb-3 italic">
-          "{todayPrompt}"
-        </p>
-        
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => handleInsertPrompt(todayPrompt)}
-          className="w-full bg-white/60 hover:bg-white/80 text-rose-600 hover:text-rose-700 rounded-xl"
-        >
-          <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-          Use this prompt
-        </Button>
-      </motion.div>
+      {/* AI Prompts Panel */}
+      <AIPromptsPanel 
+        mood={mood}
+        recentEntryPreview={recentEntryPreview}
+        streak={streak}
+        onInsertPrompt={handleInsertPrompt}
+      />
 
       {/* Memories/Time Capsule */}
       <MemoriesCard onViewEntry={onViewEntry || onDateSelect} />

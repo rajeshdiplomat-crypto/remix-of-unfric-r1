@@ -380,6 +380,8 @@ export default function Journal() {
               hasMood={!!selectedMood}
               hasUsedPrompt={hasUsedPrompt}
               onViewEntry={setSelectedDate}
+              mood={selectedMood}
+              recentEntryPreview={content ? getWordCount(content) > 0 ? content : undefined : undefined}
             />
           </div>
         )}
