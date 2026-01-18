@@ -400,172 +400,176 @@ export default function Emotions() {
         subtitle={PAGE_HERO_TEXT.emotions.subtitle}
       />
 
-      <div className="px-6 lg:px-8 py-6 space-y-6 flex-1">
-        {/* Stats Row */}
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-              <Heart className="h-4 w-4 text-rose-500" />
-              <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{totalCheckins}</span>
-              <span className="text-xs text-slate-500">Total</span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-              <Sparkles className="h-4 w-4 text-amber-500" />
-              <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{todayCount}</span>
-              <span className="text-xs text-slate-500">Today</span>
-            </div>
-            {latestEntry && (
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+      {/* Stats Strip */}
+      <div className="px-6 lg:px-8 py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <Heart className="h-4 w-4 text-rose-500" />
+            <span className="font-medium text-slate-700 dark:text-slate-200">{totalCheckins}</span>
+            <span className="text-slate-500">check-ins</span>
+          </div>
+          <div className="w-px h-4 bg-slate-200 dark:bg-slate-700" />
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-amber-500" />
+            <span className="font-medium text-slate-700 dark:text-slate-200">{todayCount}</span>
+            <span className="text-slate-500">today</span>
+          </div>
+          {latestEntry && (
+            <>
+              <div className="w-px h-4 bg-slate-200 dark:bg-slate-700" />
+              <div className="flex items-center gap-2">
                 <div
-                  className="w-3 h-3 rounded-full"
+                  className="w-2.5 h-2.5 rounded-full"
                   style={{ backgroundColor: QUADRANTS[latestEntry.quadrant].color }}
                 />
-                <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{latestEntry.emotion}</span>
-                <span className="text-xs text-slate-500">Last</span>
+                <span className="text-slate-500">Last:</span>
+                <span className="font-medium text-slate-700 dark:text-slate-200">{latestEntry.emotion}</span>
               </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
+      </div>
 
-        {/* Check-in Card - Full Width */}
-        <Card className="rounded-2xl border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-          <CardHeader className="pb-3 bg-gradient-to-r from-rose-50 to-orange-50 dark:from-rose-900/20 dark:to-orange-900/20">
-            <CardTitle className="text-lg font-semibold text-slate-800 dark:text-white">
-              How are you feeling?
-            </CardTitle>
-            <p className="text-sm text-slate-500">Take a moment to check in with yourself</p>
-          </CardHeader>
-          <CardContent className="p-5">
-            {step === "sliders" && <EmotionSliderPicker onSelect={handleSliderComplete} />}
+      {/* Main Content */}
+      <div className="flex-1 px-6 lg:px-8 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
+          {/* Left Column - Check-in & Patterns */}
+          <div className="space-y-6">
+            {/* Check-in Card */}
+            <Card className="rounded-2xl border-slate-200 dark:border-slate-700 shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold text-slate-800 dark:text-white">
+                  How are you feeling?
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                {step === "sliders" && <EmotionSliderPicker onSelect={handleSliderComplete} />}
 
-            {step === "details" && selectedQuadrant && selectedEmotion && (
-              <div className="space-y-5 max-w-2xl">
-                <div
-                  className="flex items-center gap-3 p-3 rounded-xl"
-                  style={{ backgroundColor: QUADRANTS[selectedQuadrant].bgColor }}
-                >
-                  <div
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: QUADRANTS[selectedQuadrant].color }}
-                  />
-                  <div>
-                    <p className="font-medium" style={{ color: QUADRANTS[selectedQuadrant].color }}>
-                      {selectedEmotion}
-                    </p>
-                    <p className="text-xs text-slate-500">{QUADRANTS[selectedQuadrant].description}</p>
+                {step === "details" && selectedQuadrant && selectedEmotion && (
+                  <div className="space-y-4">
+                    <div
+                      className="flex items-center gap-3 p-3 rounded-xl"
+                      style={{ backgroundColor: QUADRANTS[selectedQuadrant].bgColor }}
+                    >
+                      <div
+                        className="w-4 h-4 rounded-full"
+                        style={{ backgroundColor: QUADRANTS[selectedQuadrant].color }}
+                      />
+                      <div>
+                        <p className="font-medium" style={{ color: QUADRANTS[selectedQuadrant].color }}>
+                          {selectedEmotion}
+                        </p>
+                        <p className="text-xs text-slate-500">{QUADRANTS[selectedQuadrant].description}</p>
+                      </div>
+                    </div>
+
+                    <EmotionContextFieldsEnhanced
+                      note={note}
+                      onNoteChange={setNote}
+                      context={context}
+                      onContextChange={setContext}
+                      sendToJournal={sendToJournal}
+                      onSendToJournalChange={setSendToJournal}
+                      checkInTime={checkInTime}
+                      onCheckInTimeChange={setCheckInTime}
+                    />
+
+                    <div className="flex gap-3">
+                      <Button variant="outline" onClick={handleBack} className="flex-1 rounded-xl h-10">
+                        <ArrowLeft className="h-4 w-4 mr-2" /> Back
+                      </Button>
+                      <Button
+                        onClick={saveCheckIn}
+                        disabled={saving}
+                        className="flex-1 rounded-xl h-10 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white"
+                      >
+                        {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
+                        Save
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                )}
+              </CardContent>
+            </Card>
 
-                <EmotionContextFieldsEnhanced
-                  note={note}
-                  onNoteChange={setNote}
-                  context={context}
-                  onContextChange={setContext}
-                  sendToJournal={sendToJournal}
-                  onSendToJournalChange={setSendToJournal}
-                  checkInTime={checkInTime}
-                  onCheckInTimeChange={setCheckInTime}
-                />
-
-                <div className="flex gap-3">
-                  <Button variant="outline" onClick={handleBack} className="flex-1 rounded-xl h-11">
-                    <ArrowLeft className="h-4 w-4 mr-2" /> Back
-                  </Button>
-                  <Button
-                    onClick={saveCheckIn}
-                    disabled={saving}
-                    className="flex-1 rounded-xl h-11 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white"
-                  >
-                    {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
-                    Save
-                  </Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
-          {/* Left: Patterns Dashboard */}
-          <div>
+            {/* Patterns Dashboard */}
             <PatternsDashboardEnhanced entries={entries} onDateClick={handleDateClick} />
           </div>
 
-          {/* Right: Recent + Strategies + Reminders */}
+          {/* Right Column - Recent, Strategies, Reminders */}
           <div className="space-y-4">
             {/* Recent Check-ins */}
             {entries.length > 0 && (
               <Card className="rounded-2xl border-slate-200 dark:border-slate-700 shadow-sm">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2 text-slate-700 dark:text-slate-200">
                     <Clock className="h-4 w-4 text-slate-400" />
-                    Recent Check-ins
+                    Recent
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  {entries.slice(0, 5).map((entry) => {
+                <CardContent className="pt-0 space-y-1.5 max-h-64 overflow-y-auto">
+                  {entries.slice(0, 6).map((entry) => {
                     const isExpanded = expandedEntryId === entry.id;
 
                     return (
-                      <div key={entry.id} className="rounded-xl bg-slate-50 dark:bg-slate-800 overflow-hidden">
-                        <div className="flex items-center justify-between p-3">
+                      <div key={entry.id} className="rounded-lg bg-slate-50 dark:bg-slate-800">
+                        <div className="flex items-center justify-between p-2.5">
                           <div className="flex items-center gap-2 flex-1 min-w-0">
                             <div
-                              className="w-2.5 h-2.5 rounded-full shrink-0"
+                              className="w-2 h-2 rounded-full shrink-0"
                               style={{ backgroundColor: QUADRANTS[entry.quadrant].color }}
                             />
                             <span className="text-sm font-medium truncate text-slate-700 dark:text-slate-200">
                               {entry.emotion}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="flex items-center gap-1 shrink-0">
                             <span className="text-xs text-slate-400">
                               {format(new Date(entry.entry_date + "T12:00:00"), "MMM d")}
                             </span>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-6 w-6 p-0"
+                              className="h-5 w-5 p-0"
                               onClick={() => toggleExpandEntry(entry.id)}
                             >
                               {isExpanded ? (
-                                <ChevronUp className="h-3.5 w-3.5" />
+                                <ChevronUp className="h-3 w-3" />
                               ) : (
-                                <ChevronDown className="h-3.5 w-3.5" />
+                                <ChevronDown className="h-3 w-3" />
                               )}
                             </Button>
                           </div>
                         </div>
 
                         {isExpanded && (
-                          <div className="px-3 pb-3 pt-0 space-y-2 border-t border-slate-200 dark:border-slate-700">
-                            {entry.note && <p className="text-sm text-slate-500 mt-2">{entry.note}</p>}
-                            <div className="flex flex-wrap gap-1.5">
+                          <div className="px-2.5 pb-2.5 space-y-2 border-t border-slate-200 dark:border-slate-700">
+                            {entry.note && <p className="text-xs text-slate-500 mt-2">{entry.note}</p>}
+                            <div className="flex flex-wrap gap-1">
                               {entry.context?.who && (
-                                <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded-full">
-                                  With: {entry.context.who}
+                                <span className="text-xs px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded">
+                                  {entry.context.who}
                                 </span>
                               )}
                               {entry.context?.what && (
-                                <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded-full">
+                                <span className="text-xs px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded">
                                   {entry.context.what}
                                 </span>
                               )}
                             </div>
-                            <div className="flex gap-2 pt-2">
+                            <div className="flex gap-1.5 pt-1">
                               <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
-                                className="h-7 text-xs rounded-lg"
+                                className="h-6 text-xs px-2"
                                 onClick={() => startEditEntry(entry)}
                               >
                                 <Pencil className="h-3 w-3 mr-1" /> Edit
                               </Button>
                               <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
-                                className="h-7 text-xs rounded-lg text-red-500 hover:text-red-600"
+                                className="h-6 text-xs px-2 text-red-500 hover:text-red-600"
                                 onClick={() => setDeletingEntryId(entry.id)}
                               >
                                 <Trash2 className="h-3 w-3 mr-1" /> Delete
@@ -581,14 +585,18 @@ export default function Emotions() {
             )}
 
             {/* Strategies */}
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm">
-              <StrategiesPanelEnhanced currentQuadrant={currentQuadrant} currentEmotion={currentEmotion} />
-            </div>
+            <Card className="rounded-2xl border-slate-200 dark:border-slate-700 shadow-sm">
+              <CardContent className="p-4">
+                <StrategiesPanelEnhanced currentQuadrant={currentQuadrant} currentEmotion={currentEmotion} />
+              </CardContent>
+            </Card>
 
             {/* Reminders */}
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm">
-              <CheckinReminders />
-            </div>
+            <Card className="rounded-2xl border-slate-200 dark:border-slate-700 shadow-sm">
+              <CardContent className="p-4">
+                <CheckinReminders />
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
