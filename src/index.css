@@ -258,6 +258,7 @@
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
 }
+
 /* ========================================
    MANIFEST UI DESIGN SYSTEM
    Premium animations and glassmorphism
@@ -302,6 +303,7 @@
   100% {
     filter: drop-shadow(0 0 8px hsl(var(--accent-turquoise) / 0.5));
   }
+
   50% {
     filter: drop-shadow(0 0 20px hsl(var(--accent-turquoise) / 0.7));
   }
@@ -318,6 +320,7 @@
     transform: scale(1);
     opacity: 0.3;
   }
+
   50% {
     transform: scale(1.15);
     opacity: 0.15;
@@ -334,6 +337,7 @@
   100% {
     transform: translateY(0) rotate(0deg);
   }
+
   50% {
     transform: translateY(-8px) rotate(1deg);
   }
@@ -399,4 +403,82 @@
   background: var(--accent-gradient);
   color: white;
   border-color: transparent;
+}
+
+/* ========================================
+   TIPTAP JOURNAL EDITOR STYLES
+   ======================================== */
+
+/* Style journal prompts (h2 headings) - clean look */
+.tiptap h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  /* Black title */
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  letter-spacing: -0.02em;
+}
+
+.tiptap h2 {
+  padding: 0 !important;
+  margin: 0.75rem 0 0.125rem 0 !important;
+  color: #9ca3af;
+  /* Grey prompts */
+  font-weight: 500;
+  font-size: 1.25rem;
+  letter-spacing: -0.01em;
+}
+
+.tiptap p {
+  margin-top: 0 !important;
+  margin-bottom: 0.5rem !important;
+  line-height: 1.35 !important;
+  color: #0f172a;
+  /* Black text for answers */
+}
+
+.dark .tiptap h2 {
+  color: #64748b;
+  /* Desaturated grey for dark mode prompts */
+}
+
+.dark .tiptap h1,
+.dark .tiptap p {
+  color: #f8fafc;
+  /* Near-white for dark mode "black" things */
+}
+
+/* Placeholder styling */
+.tiptap h1.is-empty::before {
+  color: #9ca3af;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Placeholder styling - always visible grey text for empty paragraphs */
+.tiptap p.is-editor-empty:first-child::before,
+.tiptap p.is-empty::before {
+  color: #9ca3af;
+  font-style: normal;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Answer area styling */
+.tiptap h2 + p {
+  min-height: 2rem;
+}
+
+/* Line clamp utility for preview text */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
