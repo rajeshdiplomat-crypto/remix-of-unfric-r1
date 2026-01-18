@@ -28,6 +28,7 @@ import {
   TiptapEditorRef,
 } from "@/components/journal/JournalTiptapEditor";
 import { JournalSidebarPanel } from "@/components/journal/JournalSidebarPanel";
+import { JournalDateDetailsPanel } from "@/components/journal/JournalDateDetailsPanel";
 import { JournalSettingsModal } from "@/components/journal/JournalSettingsModal";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
@@ -131,6 +132,7 @@ export default function Journal() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
 
   const [template, setTemplate] = useState<JournalTemplate>(() => {
     const saved = localStorage.getItem("journal_template");
@@ -487,21 +489,45 @@ export default function Journal() {
         }}
       >
         <div className="px-4 sm:px-6 py-2 flex items-center justify-between gap-4">
-          {/* Left - Date Navigation */}
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={goToPreviousDay}>
+          {/* Left - 7 Day Date Strip */}
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={goToPreviousDay}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
 
-            <button
-              onClick={() => setSelectedDate(new Date())}
-              className="flex items-center gap-2 px-3 py-1.5 bg-white/80 hover:bg-white rounded-xl border border-slate-200 transition-all"
-            >
-              <Calendar className="h-4 w-4 text-violet-500" />
-              <span className="text-sm font-semibold text-slate-700">{format(selectedDate, "EEE, MMM d")}</span>
-            </button>
+            <div className="flex items-center gap-0.5">
+              {Array.from({ length: 7 }, (_, i) => {
+                const day = addDays(subDays(selectedDate, 3), i);
+                const isSelected = isSameDay(day, selectedDate);
+                const isTodayDate = isToday(day);
+                return (
+                  <button
+                    key={day.toISOString()}
+                    onClick={() => setSelectedDate(day)}
+                    className={cn(
+                      "flex flex-col items-center px-2.5 py-1.5 rounded-xl transition-all min-w-[44px]",
+                      isSelected
+                        ? "bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-md"
+                        : isTodayDate
+                          ? "bg-violet-50 text-violet-600 hover:bg-violet-100"
+                          : "hover:bg-slate-100 text-slate-600",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "text-[10px] font-medium uppercase",
+                        isSelected ? "text-white/80" : "text-slate-400",
+                      )}
+                    >
+                      {format(day, "EEE")}
+                    </span>
+                    <span className={cn("text-sm font-bold", isSelected ? "text-white" : "")}>{format(day, "d")}</span>
+                  </button>
+                );
+              })}
+            </div>
 
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={goToNextDay}>
+            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={goToNextDay}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -585,13 +611,17 @@ export default function Journal() {
       {/* Content Area */}
       <div
         className={cn(
-          "flex-1 grid gap-6 w-full px-4 sm:px-6 py-4",
-          isFullscreen ? "grid-cols-1 max-w-4xl mx-auto" : "grid-cols-1 lg:grid-cols-[280px_1fr_280px]",
+          "flex-1 grid gap-6 w-full px-4 sm:px-6 py-4 transition-all duration-300",
+          isFullscreen
+            ? "grid-cols-1 max-w-4xl mx-auto"
+            : leftPanelCollapsed
+              ? "grid-cols-1 lg:grid-cols-[64px_1fr_280px]"
+              : "grid-cols-1 lg:grid-cols-[280px_1fr_280px]",
         )}
       >
         {/* Left Panel - Calendar */}
         {!isFullscreen && (
-          <div className="hidden lg:block">
+          <div className={cn("hidden lg:block transition-all duration-300", leftPanelCollapsed && "w-16")}>
             <JournalSidebarPanel
               selectedDate={selectedDate}
               onDateSelect={setSelectedDate}
@@ -599,6 +629,8 @@ export default function Journal() {
               onInsertPrompt={handleInsertPrompt}
               skin={currentSkin}
               showSection="calendar"
+              isCollapsed={leftPanelCollapsed}
+              onToggleCollapse={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
             />
           </div>
         )}
@@ -623,16 +655,14 @@ export default function Journal() {
           </div>
         </div>
 
-        {/* Right Panel - Recent Entries */}
+        {/* Right Panel - Date Details */}
         {!isFullscreen && (
           <div className="hidden lg:block">
-            <JournalSidebarPanel
+            <JournalDateDetailsPanel
               selectedDate={selectedDate}
-              onDateSelect={setSelectedDate}
-              entries={entries}
-              onInsertPrompt={handleInsertPrompt}
+              wordCount={wordCount}
+              streak={streak}
               skin={currentSkin}
-              showSection="recent"
             />
           </div>
         )}
