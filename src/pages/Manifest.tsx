@@ -358,15 +358,6 @@ export default function Manifest() {
 
       {/* Header Section */}
       <div className="px-6 lg:px-8 pt-6 pb-4">
-        {/* Title */}
-        <div className="mb-6">
-          <span className="text-xs font-semibold uppercase tracking-widest text-teal-600 dark:text-teal-400">
-            Daily Practice
-          </span>
-          <h1 className="text-4xl font-bold text-slate-900 dark:text-white tracking-tight mt-1">MANIFEST</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Create a vision, practice daily, and build evidence</p>
-        </div>
-
         {/* Stats Bar */}
         <ManifestTopBar
           activeCount={activeGoals.length}
