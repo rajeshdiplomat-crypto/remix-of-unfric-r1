@@ -14,18 +14,9 @@ interface JournalSettingsModalProps {
   onOpenChange: (open: boolean) => void;
   template: JournalTemplate;
   onTemplateChange: (template: JournalTemplate) => void;
-  currentSkinId: string;
-  onSkinChange: (skinId: string) => void;
 }
 
-export function JournalSettingsModal({
-  open,
-  onOpenChange,
-  template,
-  onTemplateChange,
-  currentSkinId,
-  onSkinChange,
-}: JournalSettingsModalProps) {
+export function JournalSettingsModal({ open, onOpenChange, template, onTemplateChange }: JournalSettingsModalProps) {
   const [localQuestions, setLocalQuestions] = useState<JournalQuestion[]>(template.questions);
   const [applyOnNewEntry, setApplyOnNewEntry] = useState(template.applyOnNewEntry);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -92,25 +83,13 @@ export function JournalSettingsModal({
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="questions" className="flex-1 overflow-hidden flex flex-col">
-          <TabsList className="grid w-full grid-cols-2 bg-slate-100 p-1 rounded-xl">
-            <TabsTrigger
-              value="questions"
-              className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-violet-700 flex items-center gap-2"
-            >
-              <Edit3 className="h-4 w-4" />
-              Questions
-            </TabsTrigger>
-            <TabsTrigger
-              value="skins"
-              className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-violet-700 flex items-center gap-2"
-            >
-              <Palette className="h-4 w-4" />
-              Themes
-            </TabsTrigger>
-          </TabsList>
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <div className="flex items-center gap-2 mb-4">
+            <Edit3 className="h-4 w-4 text-violet-500" />
+            <span className="text-sm font-semibold text-slate-700">Questions & Template</span>
+          </div>
 
-          <TabsContent value="questions" className="flex-1 overflow-auto space-y-4 mt-4">
+          <div className="flex-1 overflow-auto space-y-4">
             {/* Toggle Card */}
             <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
               <div className="flex items-center gap-3">
@@ -213,52 +192,8 @@ export function JournalSettingsModal({
                 Reset
               </Button>
             </div>
-          </TabsContent>
-
-          <TabsContent value="skins" className="flex-1 overflow-auto mt-4">
-            <div className="grid grid-cols-2 gap-3">
-              {JOURNAL_SKINS.map((skin) => (
-                <button
-                  key={skin.id}
-                  className={cn(
-                    "relative p-4 rounded-2xl border-2 transition-all hover:shadow-lg group",
-                    currentSkinId === skin.id
-                      ? "border-violet-500 ring-2 ring-violet-200 shadow-lg"
-                      : "border-slate-100 hover:border-slate-200",
-                  )}
-                  style={{ backgroundColor: skin.cardBg }}
-                  onClick={() => onSkinChange(skin.id)}
-                >
-                  {/* Selected Badge */}
-                  {currentSkinId === skin.id && (
-                    <div className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg">
-                      <Check className="h-3.5 w-3.5 text-white" />
-                    </div>
-                  )}
-
-                  {/* Preview */}
-                  <div
-                    className="h-16 rounded-xl mb-3 overflow-hidden shadow-inner"
-                    style={{ backgroundColor: skin.pageBg }}
-                  >
-                    <div className="h-full m-2 rounded-lg shadow-sm" style={{ backgroundColor: skin.editorPaperBg }}>
-                      <div className="p-2 space-y-1.5">
-                        <div className="h-1.5 w-12 rounded-full opacity-60" style={{ backgroundColor: skin.text }} />
-                        <div className="h-1 w-20 rounded-full opacity-30" style={{ backgroundColor: skin.mutedText }} />
-                        <div className="h-1 w-16 rounded-full opacity-30" style={{ backgroundColor: skin.mutedText }} />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Name */}
-                  <p className="text-sm font-semibold text-center" style={{ color: skin.text }}>
-                    {skin.name}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
 
         {/* Footer */}
         <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
