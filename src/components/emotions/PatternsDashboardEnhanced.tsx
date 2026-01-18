@@ -1,236 +1,188 @@
 import { useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { QuadrantType, QUADRANTS, EmotionEntry } from "./types";
-import { format, subDays, startOfDay, eachDayOfInterval, startOfWeek, endOfWeek, subWeeks, parseISO, getHours, startOfMonth, endOfMonth, eachDayOfInterval as eachDay, isSameMonth } from "date-fns";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
-import { TrendingUp, Calendar, Activity, Target, Sun, Moon, Sunrise, Sunset, Dumbbell, Users, Briefcase, BedDouble, Heart, Smile, Frown } from "lucide-react";
-import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  format,
+  subDays,
+  startOfDay,
+  eachDayOfInterval,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval as eachDay,
+  parseISO,
+  getHours,
+} from "date-fns";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import {
+  TrendingUp,
+  Calendar,
+  Activity,
+  Target,
+  Sun,
+  Moon,
+  Sunrise,
+  Sunset,
+  Flame,
+  Heart,
+  Sparkles,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 type DateRange = 7 | 30 | 90;
 
-const DATE_RANGE_OPTIONS: { value: DateRange; label: string }[] = [
-  { value: 7, label: '7 days' },
-  { value: 30, label: '30 days' },
-  { value: 90, label: '90 days' },
-];
-
 interface PatternsDashboardEnhancedProps {
   entries: EmotionEntry[];
-  onEditEntry?: (entry: EmotionEntry) => void;
   onDateClick?: (date: string, entries: EmotionEntry[]) => void;
 }
 
-// Time period classification
-function getTimePeriod(timestamp: string): 'morning' | 'afternoon' | 'evening' | 'night' {
+function getTimePeriod(timestamp: string): "morning" | "afternoon" | "evening" | "night" {
   const hour = getHours(parseISO(timestamp));
-  if (hour >= 6 && hour < 12) return 'morning';
-  if (hour >= 12 && hour < 17) return 'afternoon';
-  if (hour >= 17 && hour < 21) return 'evening';
-  return 'night';
+  if (hour >= 6 && hour < 12) return "morning";
+  if (hour >= 12 && hour < 17) return "afternoon";
+  if (hour >= 17 && hour < 21) return "evening";
+  return "night";
 }
 
-const TIME_PERIOD_INFO = {
-  morning: { label: 'Morning', range: '6am–12pm', icon: Sunrise, color: 'hsl(45, 93%, 47%)' },
-  afternoon: { label: 'Afternoon', range: '12pm–5pm', icon: Sun, color: 'hsl(25, 80%, 55%)' },
-  evening: { label: 'Evening', range: '5pm–9pm', icon: Sunset, color: 'hsl(280, 60%, 55%)' },
-  night: { label: 'Night', range: '9pm–6am', icon: Moon, color: 'hsl(230, 50%, 45%)' }
+const TIME_INFO = {
+  morning: { label: "Morning", icon: Sunrise, gradient: "from-amber-400 to-orange-400" },
+  afternoon: { label: "Afternoon", icon: Sun, gradient: "from-orange-400 to-rose-400" },
+  evening: { label: "Evening", icon: Sunset, gradient: "from-purple-400 to-pink-400" },
+  night: { label: "Night", icon: Moon, gradient: "from-indigo-400 to-blue-400" },
 };
 
-// Helper to get short unique quadrant label (combines energy + pleasantness)
-function getShortQuadrantLabel(quadrant: QuadrantType): string {
-  const labels: Record<QuadrantType, string> = {
-    'high-pleasant': 'High Pleasant',
-    'high-unpleasant': 'High Unpleasant',
-    'low-unpleasant': 'Low Unpleasant',
-    'low-pleasant': 'Low Pleasant'
-  };
-  return labels[quadrant];
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  gradient,
+  subValue,
+}: {
+  icon: any;
+  label: string;
+  value: string | number;
+  gradient: string;
+  subValue?: string;
+}) {
+  return (
+    <div className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-3`}>
+        <Icon className="h-5 w-5 text-white" />
+      </div>
+      <p className="text-xs text-slate-500 mb-1">{label}</p>
+      <p className="text-2xl font-bold text-slate-800 dark:text-white">{value}</p>
+      {subValue && <p className="text-xs text-slate-400 mt-0.5">{subValue}</p>}
+    </div>
+  );
 }
 
-// Helper to get emotion color based on quadrant
-function getEmotionColor(emotion: string, entries: EmotionEntry[]): string | null {
-  const entry = entries.find(e => e.emotion === emotion);
-  if (entry) return QUADRANTS[entry.quadrant].color;
-  // Fallback - search through quadrant emotions
-  for (const [key, info] of Object.entries(QUADRANTS)) {
-    if (info.emotions.includes(emotion)) {
-      return info.color;
-    }
-  }
-  return null;
-}
-
-// Enhanced Calendar with full-width grid and color coding based on emotion entries
-function MonthlyCalendar({ entries, onDateClick }: { entries: EmotionEntry[]; onDateClick?: (date: string, entries: EmotionEntry[]) => void }) {
+function MonthlyCalendar({
+  entries,
+  onDateClick,
+}: {
+  entries: EmotionEntry[];
+  onDateClick?: (date: string, entries: EmotionEntry[]) => void;
+}) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  
-  const calendarData = useMemo(() => {
+
+  const { days, firstDayOfWeek, entriesByDate } = useMemo(() => {
     const start = startOfMonth(currentMonth);
     const end = endOfMonth(currentMonth);
     const days = eachDay({ start, end });
-    
-    // Get first day offset for proper grid alignment
     const firstDayOfWeek = start.getDay();
-    
-    // Count entries per day with full quadrant info
-    const entriesByDate: Record<string, { count: number; emotions: string[]; quadrants: QuadrantType[]; entries: EmotionEntry[] }> = {};
-    entries.forEach(entry => {
-      if (!entriesByDate[entry.entry_date]) {
-        entriesByDate[entry.entry_date] = { count: 0, emotions: [], quadrants: [], entries: [] };
-      }
-      entriesByDate[entry.entry_date].count++;
-      entriesByDate[entry.entry_date].entries.push(entry);
-      if (entry.emotion) entriesByDate[entry.entry_date].emotions.push(entry.emotion);
-      if (entry.quadrant) entriesByDate[entry.entry_date].quadrants.push(entry.quadrant);
+
+    const entriesByDate: Record<string, EmotionEntry[]> = {};
+    entries.forEach((entry) => {
+      if (!entriesByDate[entry.entry_date]) entriesByDate[entry.entry_date] = [];
+      entriesByDate[entry.entry_date].push(entry);
     });
-    
+
     return { days, firstDayOfWeek, entriesByDate };
   }, [currentMonth, entries]);
 
-  // Get dominant quadrant based on combined energy + pleasantness
-  const getDominantQuadrant = (quadrants: QuadrantType[]): QuadrantType | null => {
-    if (quadrants.length === 0) return null;
+  const getDominant = (dayEntries: EmotionEntry[]): QuadrantType | null => {
+    if (dayEntries.length === 0) return null;
     const counts: Record<QuadrantType, number> = {
-      'high-pleasant': 0, 'high-unpleasant': 0, 'low-unpleasant': 0, 'low-pleasant': 0
+      "high-pleasant": 0,
+      "high-unpleasant": 0,
+      "low-unpleasant": 0,
+      "low-pleasant": 0,
     };
-    quadrants.forEach(q => counts[q]++);
+    dayEntries.forEach((e) => e.quadrant && counts[e.quadrant]++);
     return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0] as QuadrantType;
   };
 
-  const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const today = startOfDay(new Date());
-  
-  // Calculate number of rows needed
-  const totalCells = calendarData.firstDayOfWeek + calendarData.days.length;
-  const numRows = Math.ceil(totalCells / 7);
-
-  const handleDayClick = (dateStr: string, dayEntries: EmotionEntry[]) => {
-    if (onDateClick && dayEntries.length > 0) {
-      onDateClick(dateStr, dayEntries);
-    }
-  };
 
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-medium text-muted-foreground">Monthly Overview</p>
-        <div className="flex gap-1 items-center">
+    <div className="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold text-slate-800 dark:text-white">Monthly Overview</h3>
+        <div className="flex items-center gap-2">
           <Button
             variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0"
-            onClick={() => setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1))}
+            size="icon"
+            className="h-8 w-8 rounded-lg"
+            onClick={() => setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1))}
           >
-            ←
+            <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="text-xs font-medium min-w-[90px] text-center">
-            {format(currentMonth, 'MMM yyyy')}
-          </span>
+          <span className="text-sm font-medium min-w-[80px] text-center">{format(currentMonth, "MMM yyyy")}</span>
           <Button
             variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0"
-            onClick={() => setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1))}
+            size="icon"
+            className="h-8 w-8 rounded-lg"
+            onClick={() => setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1))}
           >
-            →
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </div>
-      
-      {/* Day headers */}
-      <div className="grid grid-cols-7 gap-1 mb-1">
-        {dayLabels.map(day => (
-          <div key={day} className="text-center text-[10px] text-muted-foreground font-medium py-1">
-            {day}
+
+      <div className="grid grid-cols-7 gap-1 mb-2">
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+          <div key={d} className="text-center text-[10px] font-medium text-slate-400 py-1">
+            {d}
           </div>
         ))}
       </div>
-      
-      {/* Calendar grid - fills available space */}
-      <div className="grid grid-cols-7 gap-1 flex-1" style={{ gridTemplateRows: `repeat(${numRows}, 1fr)` }}>
-        {/* Empty cells for offset */}
-        {Array.from({ length: calendarData.firstDayOfWeek }).map((_, i) => (
-          <div key={`empty-${i}`} className="min-h-[40px]" />
+
+      <div className="grid grid-cols-7 gap-1">
+        {Array.from({ length: firstDayOfWeek }).map((_, i) => (
+          <div key={`e-${i}`} className="h-10" />
         ))}
-        
-        {/* Day cells */}
-        {calendarData.days.map(day => {
-          const dateStr = format(day, 'yyyy-MM-dd');
-          const data = calendarData.entriesByDate[dateStr];
-          const dominant = data ? getDominantQuadrant(data.quadrants) : null;
+        {days.map((day) => {
+          const dateStr = format(day, "yyyy-MM-dd");
+          const dayEntries = entriesByDate[dateStr] || [];
+          const dominant = getDominant(dayEntries);
           const isToday = day.getTime() === today.getTime();
           const isFuture = day > today;
-          const hasEntries = data && data.count > 0;
-          
+
           return (
-            <TooltipProvider key={dateStr}>
-              <UITooltip delayDuration={100}>
-                <TooltipTrigger asChild>
-                  <div
-                    onClick={() => hasEntries && handleDayClick(dateStr, data.entries)}
-                    className={`
-                      min-h-[40px] rounded flex flex-col items-center justify-center transition-all
-                      ${hasEntries ? 'cursor-pointer hover:ring-2 hover:ring-primary/50' : 'cursor-default'}
-                      ${isToday ? 'ring-1 ring-primary ring-offset-1' : ''}
-                      ${isFuture ? 'opacity-30' : ''}
-                      ${!data && !isFuture ? 'bg-muted/30' : ''}
-                    `}
-                    style={
-                      dominant && !isFuture
-                        ? { 
-                            backgroundColor: QUADRANTS[dominant].color,
-                          }
-                        : undefined
-                    }
-                  >
-                    <span 
-                      className={`text-xs font-medium ${dominant && !isFuture ? 'text-white' : ''}`}
-                    >
-                      {format(day, 'd')}
-                    </span>
-                    {data && data.count > 1 && (
-                      <span 
-                        className={`text-[8px] font-medium ${dominant && !isFuture ? 'text-white/80' : 'text-muted-foreground'}`}
-                      >
-                        +{data.count - 1}
-                      </span>
-                    )}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-[200px]">
-                  <p className="font-medium">{format(day, 'EEEE, MMM d')}</p>
-                  {data ? (
-                    <>
-                      <p className="text-muted-foreground text-xs">
-                        {data.count} check-in{data.count > 1 ? 's' : ''} — Click to view
-                      </p>
-                      {data.emotions.length > 0 && (
-                        <p className="text-xs mt-1">
-                          Felt: {data.emotions.slice(0, 3).join(', ')}
-                          {data.emotions.length > 3 ? '...' : ''}
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    <p className="text-muted-foreground text-xs">No check-ins</p>
-                  )}
-                </TooltipContent>
-              </UITooltip>
-            </TooltipProvider>
+            <div
+              key={dateStr}
+              onClick={() => dayEntries.length > 0 && onDateClick?.(dateStr, dayEntries)}
+              className={`h-10 rounded-lg flex flex-col items-center justify-center text-xs font-medium transition-all cursor-pointer ${
+                isToday ? "ring-2 ring-rose-500 ring-offset-2" : ""
+              } ${isFuture ? "opacity-30" : ""} ${dayEntries.length > 0 ? "hover:scale-110" : ""}`}
+              style={
+                dominant && !isFuture
+                  ? { backgroundColor: QUADRANTS[dominant].color, color: "white" }
+                  : { backgroundColor: "rgb(241 245 249)" }
+              }
+            >
+              {format(day, "d")}
+              {dayEntries.length > 1 && <span className="text-[8px] opacity-70">+{dayEntries.length - 1}</span>}
+            </div>
           );
         })}
       </div>
-      
-      {/* Legend */}
-      <div className="flex flex-wrap gap-2 mt-3 justify-center">
+
+      <div className="flex flex-wrap items-center justify-center gap-3 mt-4 pt-3 border-t border-slate-100 dark:border-slate-700">
         {Object.entries(QUADRANTS).map(([key, info]) => (
-          <div key={key} className="flex items-center gap-1 text-[10px]">
-            <div 
-              className="w-2 h-2 rounded"
-              style={{ backgroundColor: info.color }}
-            />
-            <span className="text-muted-foreground">{getShortQuadrantLabel(key as QuadrantType)}</span>
+          <div key={key} className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: info.color }} />
+            <span className="text-[10px] text-slate-500">{info.label}</span>
           </div>
         ))}
       </div>
@@ -238,796 +190,281 @@ function MonthlyCalendar({ entries, onDateClick }: { entries: EmotionEntry[]; on
   );
 }
 
-// Daytime pattern insights - shows percentage distribution of quadrants per time period
-function DaytimeInsights({ entries }: { entries: EmotionEntry[] }) {
-  const insights = useMemo(() => {
-    const periodData: Record<string, { quadrants: QuadrantType[] }> = {
-      morning: { quadrants: [] },
-      afternoon: { quadrants: [] },
-      evening: { quadrants: [] },
-      night: { quadrants: [] }
-    };
-    
-    entries.forEach(entry => {
-      const period = getTimePeriod(entry.created_at);
-      if (entry.quadrant) periodData[period].quadrants.push(entry.quadrant);
-    });
-    
-    // Calculate percentage distribution per period
-    const getQuadrantDistribution = (quadrants: QuadrantType[]) => {
-      if (quadrants.length === 0) return null;
-      
-      const counts: Record<QuadrantType, number> = {
-        'high-pleasant': 0, 'high-unpleasant': 0, 'low-unpleasant': 0, 'low-pleasant': 0
-      };
-      quadrants.forEach(q => counts[q]++);
-      
-      const total = quadrants.length;
-      return Object.entries(counts)
-        .map(([quadrant, count]) => ({
-          quadrant: quadrant as QuadrantType,
-          percentage: Math.round((count / total) * 100),
-          count
-        }))
-        .filter(d => d.count > 0)
-        .sort((a, b) => b.percentage - a.percentage);
-    };
-    
-    return Object.entries(periodData).map(([period, data]) => ({
-      period: period as keyof typeof TIME_PERIOD_INFO,
-      distribution: getQuadrantDistribution(data.quadrants),
-      totalCount: data.quadrants.length
-    }));
-  }, [entries]);
-  
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">Mood by Time of Day</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {insights.map(({ period, distribution, totalCount }) => {
-            const info = TIME_PERIOD_INFO[period];
-            const Icon = info.icon;
-            
-            return (
-              <div 
-                key={period} 
-                className="p-3 rounded-lg bg-muted/30 flex gap-3"
-              >
-                {/* Vertical stacked bar on left */}
-                {distribution && distribution.length > 0 ? (
-                  <div className="flex flex-col w-2 rounded-full overflow-hidden h-16 shrink-0">
-                    {distribution.map(({ quadrant, percentage }) => (
-                      <div 
-                        key={quadrant}
-                        style={{ 
-                          height: `${percentage}%`, 
-                          backgroundColor: QUADRANTS[quadrant].color 
-                        }}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="w-2 h-16 rounded-full bg-muted/50 shrink-0" />
-                )}
-                
-                {/* Content on right */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <Icon className="h-4 w-4 shrink-0" style={{ color: info.color }} />
-                    <p className="text-xs font-medium text-muted-foreground">{info.label}</p>
-                  </div>
-                  
-                  {distribution && distribution.length > 0 ? (
-                    <div className="space-y-0.5">
-                      {distribution.slice(0, 2).map(({ quadrant, percentage }) => (
-                        <p key={quadrant} className="text-[10px] truncate" style={{ color: QUADRANTS[quadrant].color }}>
-                          {percentage}% {getShortQuadrantLabel(quadrant)}
-                        </p>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground/50">—</p>
-                  )}
-                  <p className="text-[10px] text-muted-foreground mt-1">{totalCount} check-ins</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+function DaytimeCard({ period, entries }: { period: keyof typeof TIME_INFO; entries: EmotionEntry[] }) {
+  const info = TIME_INFO[period];
+  const Icon = info.icon;
 
-// Pattern-based correlations
-function PatternCorrelations({ entries }: { entries: EmotionEntry[] }) {
-  const correlations = useMemo(() => {
-    const results: { type: string; icon: any; insight: string }[] = [];
-    
-    // Sleep correlation
-    const sleepData: Record<string, { positive: number; total: number }> = {};
-    entries.forEach(entry => {
-      const sleep = entry.context?.sleepHours;
-      if (sleep) {
-        if (!sleepData[sleep]) sleepData[sleep] = { positive: 0, total: 0 };
-        sleepData[sleep].total++;
-        if (entry.quadrant?.includes('pleasant')) sleepData[sleep].positive++;
-      }
-    });
-    
-    const sleepEntries = Object.entries(sleepData);
-    if (sleepEntries.length > 0) {
-      const bestSleep = sleepEntries.sort((a, b) => 
-        (b[1].positive / b[1].total) - (a[1].positive / a[1].total)
-      )[0];
-      if (bestSleep[1].total >= 3) {
-        results.push({
-          type: 'sleep',
-          icon: Moon,
-          insight: `You felt calmer with ${bestSleep[0]} sleep (${bestSleep[1].total} entries)`
-        });
-      }
-    }
-    
-    // Activity correlation
-    const activityData: Record<string, { positive: number; total: number }> = {};
-    entries.forEach(entry => {
-      const activity = entry.context?.physicalActivity;
-      if (activity && activity !== 'None') {
-        if (!activityData[activity]) activityData[activity] = { positive: 0, total: 0 };
-        activityData[activity].total++;
-        if (entry.quadrant === 'high-pleasant') activityData[activity].positive++;
-      }
-    });
-    
-    const activityEntries = Object.entries(activityData);
-    if (activityEntries.length > 0) {
-      const bestActivity = activityEntries.sort((a, b) => 
-        (b[1].positive / b[1].total) - (a[1].positive / a[1].total)
-      )[0];
-      if (bestActivity[1].total >= 2) {
-        results.push({
-          type: 'activity',
-          icon: Dumbbell,
-          insight: `Most energized after ${bestActivity[0].toLowerCase()} (${bestActivity[1].total} entries)`
-        });
-      }
-    }
-    
-    // People correlation
-    const whoData: Record<string, { quadrants: QuadrantType[] }> = {};
-    entries.forEach(entry => {
-      const who = entry.context?.who;
-      if (who) {
-        if (!whoData[who]) whoData[who] = { quadrants: [] };
-        if (entry.quadrant) whoData[who].quadrants.push(entry.quadrant);
-      }
-    });
-    
-    const whoEntries = Object.entries(whoData);
-    if (whoEntries.length > 0) {
-      whoEntries.forEach(([who, data]) => {
-        const unpleasantCount = data.quadrants.filter(q => q.includes('unpleasant')).length;
-        if (unpleasantCount >= 2 && unpleasantCount / data.quadrants.length > 0.5) {
-          results.push({
-            type: 'people',
-            icon: Users,
-            insight: `More anxious when ${who.toLowerCase()} (${data.quadrants.length} entries)`
-          });
-        }
-      });
-    }
-    
-    // What doing correlation
-    const whatData: Record<string, { quadrants: QuadrantType[] }> = {};
-    entries.forEach(entry => {
-      const what = entry.context?.what;
-      if (what) {
-        if (!whatData[what]) whatData[what] = { quadrants: [] };
-        if (entry.quadrant) whatData[what].quadrants.push(entry.quadrant);
-      }
-    });
-    
-    const whatEntries = Object.entries(whatData);
-    if (whatEntries.length > 0) {
-      whatEntries.forEach(([what, data]) => {
-        if (data.quadrants.length >= 3) {
-          const positiveRate = data.quadrants.filter(q => q.includes('pleasant')).length / data.quadrants.length;
-          if (positiveRate > 0.6) {
-            results.push({
-              type: 'activity',
-              icon: Briefcase,
-              insight: `${what} often makes you feel good (${data.quadrants.length} entries)`
-            });
-          }
-        }
-      });
-    }
-    
-    return results.slice(0, 4);
-  }, [entries]);
-  
-  if (correlations.length === 0) {
-    return null;
-  }
-  
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">Pattern Insights</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {correlations.map((corr, i) => {
-            const Icon = corr.icon;
-            return (
-              <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                <Icon className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                <p className="text-sm">{corr.insight}</p>
-              </div>
-            );
-          })}
-        </div>
-        {correlations.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            Add more context to your check-ins to see patterns
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+  const periodEntries = entries.filter((e) => getTimePeriod(e.created_at) === period);
+  const count = periodEntries.length;
 
-// Context-based insights with percentage breakdown per quadrant
-function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
-  const insights = useMemo(() => {
-    const result: { 
-      category: string; 
-      icon: any; 
-      items: { 
-        label: string; 
-        distribution: { quadrant: QuadrantType; percentage: number }[];
-        total: number;
-      }[] 
-    }[] = [];
-    
-    const getDistribution = (quadrants: QuadrantType[]) => {
-      if (quadrants.length === 0) return [];
-      const counts: Record<QuadrantType, number> = {
-        'high-pleasant': 0, 'high-unpleasant': 0, 'low-unpleasant': 0, 'low-pleasant': 0
-      };
-      quadrants.forEach(q => counts[q]++);
-      const total = quadrants.length;
-      return Object.entries(counts)
-        .map(([quadrant, count]) => ({
-          quadrant: quadrant as QuadrantType,
-          percentage: Math.round((count / total) * 100)
-        }))
-        .filter(d => d.percentage > 0)
-        .sort((a, b) => b.percentage - a.percentage);
+  const dominant = useMemo(() => {
+    if (count === 0) return null;
+    const counts: Record<QuadrantType, number> = {
+      "high-pleasant": 0,
+      "high-unpleasant": 0,
+      "low-unpleasant": 0,
+      "low-pleasant": 0,
     };
-    
-    // Who are you with
-    const whoData: Record<string, QuadrantType[]> = {};
-    entries.forEach(entry => {
-      const who = entry.context?.who;
-      if (who && entry.quadrant) {
-        if (!whoData[who]) whoData[who] = [];
-        whoData[who].push(entry.quadrant);
-      }
-    });
-    
-    if (Object.keys(whoData).length > 0) {
-      result.push({
-        category: 'Who are you with',
-        icon: Users,
-        items: Object.entries(whoData)
-          .sort((a, b) => b[1].length - a[1].length)
-          .slice(0, 4)
-          .map(([label, quadrants]) => ({
-            label,
-            distribution: getDistribution(quadrants),
-            total: quadrants.length
-          }))
-      });
-    }
-    
-    // What are you doing
-    const whatData: Record<string, QuadrantType[]> = {};
-    entries.forEach(entry => {
-      const what = entry.context?.what;
-      if (what && entry.quadrant) {
-        if (!whatData[what]) whatData[what] = [];
-        whatData[what].push(entry.quadrant);
-      }
-    });
-    
-    if (Object.keys(whatData).length > 0) {
-      result.push({
-        category: 'What are you doing',
-        icon: Briefcase,
-        items: Object.entries(whatData)
-          .sort((a, b) => b[1].length - a[1].length)
-          .slice(0, 4)
-          .map(([label, quadrants]) => ({
-            label,
-            distribution: getDistribution(quadrants),
-            total: quadrants.length
-          }))
-      });
-    }
-    
-    // Sleep last night
-    const sleepData: Record<string, QuadrantType[]> = {};
-    entries.forEach(entry => {
-      const sleep = entry.context?.sleepHours;
-      if (sleep && entry.quadrant) {
-        if (!sleepData[sleep]) sleepData[sleep] = [];
-        sleepData[sleep].push(entry.quadrant);
-      }
-    });
-    
-    if (Object.keys(sleepData).length > 0) {
-      result.push({
-        category: 'Sleep last night',
-        icon: BedDouble,
-        items: Object.entries(sleepData)
-          .sort((a, b) => b[1].length - a[1].length)
-          .slice(0, 4)
-          .map(([label, quadrants]) => ({
-            label,
-            distribution: getDistribution(quadrants),
-            total: quadrants.length
-          }))
-      });
-    }
-    
-    // Physical activity
-    const activityData: Record<string, QuadrantType[]> = {};
-    entries.forEach(entry => {
-      const activity = entry.context?.physicalActivity;
-      if (activity && entry.quadrant) {
-        if (!activityData[activity]) activityData[activity] = [];
-        activityData[activity].push(entry.quadrant);
-      }
-    });
-    
-    if (Object.keys(activityData).length > 0) {
-      result.push({
-        category: 'Physical activity',
-        icon: Dumbbell,
-        items: Object.entries(activityData)
-          .sort((a, b) => b[1].length - a[1].length)
-          .slice(0, 4)
-          .map(([label, quadrants]) => ({
-            label,
-            distribution: getDistribution(quadrants),
-            total: quadrants.length
-          }))
-      });
-    }
-    
-    return result;
-  }, [entries]);
-  
-  if (insights.length === 0) {
-    return null;
-  }
-  
+    periodEntries.forEach((e) => e.quadrant && counts[e.quadrant]++);
+    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0] as QuadrantType;
+  }, [periodEntries, count]);
+
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">Context Insights</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {insights.map(({ category, icon: CategoryIcon, items }) => (
-            <div key={category} className="space-y-2">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <CategoryIcon className="h-4 w-4" />
-                <span className="text-xs font-medium">{category}</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {items.map(({ label, distribution, total }) => (
-                  <div
-                    key={label}
-                    className="p-2 rounded-lg bg-muted/30 flex gap-3"
-                  >
-                    {/* Vertical stacked bar on left */}
-                    {distribution.length > 0 ? (
-                      <div className="flex flex-col w-2 rounded-full overflow-hidden h-14 shrink-0">
-                        {distribution.map(({ quadrant, percentage }) => (
-                          <div
-                            key={quadrant}
-                            style={{
-                              height: `${percentage}%`,
-                              backgroundColor: QUADRANTS[quadrant].color
-                            }}
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="w-2 h-14 rounded-full bg-muted/50 shrink-0" />
-                    )}
-                    
-                    {/* Content on right */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium truncate">{label}</span>
-                        <span className="text-[10px] text-muted-foreground shrink-0">{total}</span>
-                      </div>
-                      
-                      {/* Top percentages as colored text */}
-                      <div className="space-y-0.5">
-                        {distribution.slice(0, 2).map(({ quadrant, percentage }) => (
-                          <p 
-                            key={quadrant} 
-                            className="text-[10px] font-medium truncate"
-                            style={{ color: QUADRANTS[quadrant].color }}
-                          >
-                            {percentage}% {getShortQuadrantLabel(quadrant)}
-                          </p>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-        {insights.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            Add context to your check-ins to see how different situations affect your mood
+    <div className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${info.gradient} flex items-center justify-center mb-3`}>
+        <Icon className="h-5 w-5 text-white" />
+      </div>
+      <p className="text-xs text-slate-500 mb-1">{info.label}</p>
+      {count > 0 && dominant ? (
+        <>
+          <p className="text-sm font-semibold" style={{ color: QUADRANTS[dominant].color }}>
+            {QUADRANTS[dominant].label}
           </p>
-        )}
-      </CardContent>
-    </Card>
+          <p className="text-xs text-slate-400 mt-1">{count} check-ins</p>
+        </>
+      ) : (
+        <p className="text-sm text-slate-400">—</p>
+      )}
+    </div>
   );
 }
 
 export function PatternsDashboardEnhanced({ entries, onDateClick }: PatternsDashboardEnhancedProps) {
   const [dateRange, setDateRange] = useState<DateRange>(30);
-  
-  // Filter entries by date range
+
   const filteredEntries = useMemo(() => {
-    const today = startOfDay(new Date());
-    const cutoffDate = subDays(today, dateRange - 1);
-    const cutoffStr = format(cutoffDate, 'yyyy-MM-dd');
-    
-    return entries.filter(entry => entry.entry_date >= cutoffStr);
+    const cutoff = format(subDays(startOfDay(new Date()), dateRange - 1), "yyyy-MM-dd");
+    return entries.filter((e) => e.entry_date >= cutoff);
   }, [entries, dateRange]);
-  
+
   const stats = useMemo(() => {
     const today = startOfDay(new Date());
-    
-    // Entries by quadrant (combines energy + pleasantness)
+
     const quadrantCounts: Record<QuadrantType, number> = {
-      'high-pleasant': 0,
-      'high-unpleasant': 0,
-      'low-unpleasant': 0,
-      'low-pleasant': 0
+      "high-pleasant": 0,
+      "high-unpleasant": 0,
+      "low-unpleasant": 0,
+      "low-pleasant": 0,
     };
-    
-    // Emotion frequency with quadrant tracking
-    const emotionCounts: Record<string, { count: number; quadrant: QuadrantType | null }> = {};
-    
-    // Daily entries for the range (show last 7 days in bar chart for readability)
-    const last7Days = eachDayOfInterval({
-      start: subDays(today, 6),
-      end: today
+    const emotionCounts: Record<string, number> = {};
+
+    filteredEntries.forEach((e) => {
+      if (e.quadrant) quadrantCounts[e.quadrant]++;
+      if (e.emotion) emotionCounts[e.emotion] = (emotionCounts[e.emotion] || 0) + 1;
     });
-    
-    const dailyData = last7Days.map(date => {
-      const dateStr = format(date, 'yyyy-MM-dd');
-      const dayEntries = filteredEntries.filter(e => e.entry_date === dateStr);
-      return {
-        date: format(date, 'EEE'),
-        fullDate: dateStr,
-        count: dayEntries.length,
-        entries: dayEntries
-      };
-    });
-    
-    filteredEntries.forEach(entry => {
-      if (entry.quadrant && quadrantCounts[entry.quadrant] !== undefined) {
-        quadrantCounts[entry.quadrant]++;
-      }
-      if (entry.emotion) {
-        if (!emotionCounts[entry.emotion]) {
-          emotionCounts[entry.emotion] = { count: 0, quadrant: null };
-        }
-        emotionCounts[entry.emotion].count++;
-        emotionCounts[entry.emotion].quadrant = entry.quadrant;
-      }
-    });
-    
-    // Top emotions with count only for display
+
     const topEmotions = Object.entries(emotionCounts)
-      .sort((a, b) => b[1].count - a[1].count)
-      .slice(0, 5)
-      .map(([emotion, data]) => [emotion, data.count] as [string, number]);
-    
-    // Quadrant data for pie chart - shows combined energy + pleasantness
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
     const quadrantData = Object.entries(quadrantCounts)
       .filter(([_, count]) => count > 0)
       .map(([id, count]) => ({
-        name: getShortQuadrantLabel(id as QuadrantType),
+        name: QUADRANTS[id as QuadrantType].label,
         value: count,
-        color: QUADRANTS[id as QuadrantType].color
+        color: QUADRANTS[id as QuadrantType].color,
       }));
-    
-    // Current streak
+
+    const last7Days = eachDayOfInterval({ start: subDays(today, 6), end: today });
+    const dailyData = last7Days.map((date) => {
+      const dateStr = format(date, "yyyy-MM-dd");
+      return { date: format(date, "EEE"), count: filteredEntries.filter((e) => e.entry_date === dateStr).length };
+    });
+
     let streak = 0;
     for (let i = 0; i < 90; i++) {
-      const checkDate = format(subDays(today, i), 'yyyy-MM-dd');
-      const hasEntry = entries.some(e => e.entry_date === checkDate);
-      if (hasEntry) {
-        streak++;
-      } else if (i > 0) {
-        break;
-      }
+      if (entries.some((e) => e.entry_date === format(subDays(today, i), "yyyy-MM-dd"))) streak++;
+      else if (i > 0) break;
     }
-    
+
+    const mostCommon = Object.entries(quadrantCounts).sort((a, b) => b[1] - a[1])[0];
+
     return {
-      totalEntries: filteredEntries.length,
-      quadrantCounts,
-      quadrantData,
+      total: filteredEntries.length,
+      streak,
+      mostCommon,
+      topEmotion: topEmotions[0],
       topEmotions,
+      quadrantData,
       dailyData,
-      streak
     };
   }, [filteredEntries, entries]);
-  
-  const mostCommonQuadrant = Object.entries(stats.quadrantCounts)
-    .sort((a, b) => b[1] - a[1])[0];
-  
+
+  if (entries.length === 0) {
+    return (
+      <div className="p-12 rounded-2xl bg-white dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-slate-700 text-center">
+        <Heart className="h-12 w-12 mx-auto text-rose-300 mb-4" />
+        <h3 className="font-semibold text-slate-700 dark:text-slate-200 mb-2">No check-ins yet</h3>
+        <p className="text-sm text-slate-500">Start logging your emotions to see patterns here</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold mb-1">Your Patterns</h2>
-          <p className="text-sm text-muted-foreground">
-            Insights from your emotional check-ins
-          </p>
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-white flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-rose-500" /> Your Patterns
+          </h2>
+          <p className="text-sm text-slate-500">Insights from your emotional check-ins</p>
         </div>
-        
-        {/* Date range selector */}
-        <div className="flex gap-1">
-          {DATE_RANGE_OPTIONS.map((option) => (
-            <Button
-              key={option.value}
-              variant={dateRange === option.value ? "default" : "outline"}
-              size="sm"
-              onClick={() => setDateRange(option.value)}
-              className="text-xs"
+        <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+          {([7, 30, 90] as DateRange[]).map((d) => (
+            <button
+              key={d}
+              onClick={() => setDateRange(d)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${dateRange === d ? "bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white" : "text-slate-500 hover:text-slate-700"}`}
             >
-              {option.label}
-            </Button>
+              {d}D
+            </button>
           ))}
         </div>
       </div>
-      
-      {entries.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Activity className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-            <p className="text-muted-foreground">No check-ins yet</p>
-            <p className="text-sm text-muted-foreground/70 mt-1">
-              Start logging your emotions to see patterns here
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          {/* Summary cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Calendar className="h-4 w-4" />
-                  <span className="text-xs">Total Check-ins</span>
-                </div>
-                <p className="text-2xl font-semibold">{stats.totalEntries}</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <TrendingUp className="h-4 w-4" />
-                  <span className="text-xs">Current Streak</span>
-                </div>
-                <p className="text-2xl font-semibold">{stats.streak} days</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Target className="h-4 w-4" />
-                  <span className="text-xs">Most Common Zone</span>
-                </div>
-                {mostCommonQuadrant && mostCommonQuadrant[1] > 0 ? (
-                  <p 
-                    className="text-sm font-medium truncate"
-                    style={{ color: QUADRANTS[mostCommonQuadrant[0] as QuadrantType].color }}
+
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard icon={Calendar} label="Total Check-ins" value={stats.total} gradient="from-rose-500 to-pink-500" />
+        <StatCard
+          icon={Flame}
+          label="Current Streak"
+          value={`${stats.streak}`}
+          gradient="from-orange-500 to-amber-500"
+          subValue="days"
+        />
+        <StatCard
+          icon={Target}
+          label="Most Common"
+          value={
+            stats.mostCommon && stats.mostCommon[1] > 0
+              ? QUADRANTS[stats.mostCommon[0] as QuadrantType].label.split(" ")[0]
+              : "—"
+          }
+          gradient="from-purple-500 to-indigo-500"
+        />
+        <StatCard
+          icon={Activity}
+          label="Top Feeling"
+          value={stats.topEmotion?.[0] || "—"}
+          gradient="from-teal-500 to-cyan-500"
+        />
+      </div>
+
+      {/* Daytime Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {(["morning", "afternoon", "evening", "night"] as const).map((period) => (
+          <DaytimeCard key={period} period={period} entries={filteredEntries} />
+        ))}
+      </div>
+
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Weekly Chart */}
+        <div className="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <h3 className="font-semibold text-slate-800 dark:text-white mb-4">Last 7 Days</h3>
+          <div className="h-[160px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={stats.dailyData}>
+                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#94a3b8" }} />
+                <YAxis hide domain={[0, "auto"]} />
+                <Tooltip
+                  content={({ active, payload }) =>
+                    active && payload?.[0] ? (
+                      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border p-2 text-xs">
+                        <p className="font-medium">{payload[0].payload.date}</p>
+                        <p className="text-slate-500">{payload[0].payload.count} check-ins</p>
+                      </div>
+                    ) : null
+                  }
+                />
+                <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                  {stats.dailyData.map((_, i) => (
+                    <Cell key={i} fill={`hsl(${340 - i * 5}, 70%, 55%)`} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Mood Distribution */}
+        {stats.quadrantData.length > 0 && (
+          <div className="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <h3 className="font-semibold text-slate-800 dark:text-white mb-4">Mood Distribution</h3>
+            <div className="h-[160px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={stats.quadrantData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={70}
+                    paddingAngle={3}
+                    dataKey="value"
                   >
-                    {getShortQuadrantLabel(mostCommonQuadrant[0] as QuadrantType)}
-                  </p>
-                ) : (
-                  <p className="text-sm text-muted-foreground">—</p>
-                )}
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Activity className="h-4 w-4" />
-                  <span className="text-xs">Top Feeling</span>
-                </div>
-                {stats.topEmotions[0] ? (
-                  <p className="text-sm font-medium">{stats.topEmotions[0][0]}</p>
-                ) : (
-                  <p className="text-sm text-muted-foreground">—</p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-          
-          {/* Row 1: Daytime insights + Last 7 Days side by side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Daytime insights */}
-            <DaytimeInsights entries={filteredEntries} />
-            
-            {/* Weekly activity */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Last 7 Days</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[160px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={stats.dailyData}>
-                      <XAxis 
-                        dataKey="date" 
-                        axisLine={false} 
-                        tickLine={false}
-                        tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                      />
-                      <YAxis 
-                        hide 
-                        domain={[0, 'auto']}
-                      />
-                      <Tooltip
-                        content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
-                            const data = payload[0].payload;
-                            return (
-                              <div className="bg-popover text-popover-foreground rounded-lg shadow-lg border p-2 text-xs">
-                                <p className="font-medium">{data.fullDate}</p>
-                                <p className="text-muted-foreground">{data.count} check-in{data.count !== 1 ? 's' : ''}</p>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      <Bar 
-                        dataKey="count" 
-                        fill="hsl(var(--primary))" 
-                        radius={[4, 4, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          {/* Row 2: Mood Distribution + Most Frequent Feelings side by side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Quadrant distribution */}
-            {stats.quadrantData.length > 0 && (
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Mood Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={stats.quadrantData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={50}
-                          outerRadius={80}
-                          paddingAngle={2}
-                          dataKey="value"
-                        >
-                          {stats.quadrantData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Legend 
-                          formatter={(value) => <span className="text-xs">{value}</span>}
-                        />
-                        <Tooltip
-                          content={({ active, payload }) => {
-                            if (active && payload && payload.length) {
-                              const data = payload[0].payload;
-                              return (
-                                <div className="bg-popover text-popover-foreground rounded-lg shadow-lg border p-2 text-xs">
-                                  <p className="font-medium">{data.name}</p>
-                                  <p className="text-muted-foreground">{data.value} times</p>
-                                </div>
-                              );
-                            }
-                            return null;
-                          }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            
-            {/* Top emotions - color coded */}
-            {stats.topEmotions.length > 0 && (
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Most Frequent Feelings</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {stats.topEmotions.map(([emotion, count]) => {
-                      const percentage = stats.totalEntries > 0 ? (count / stats.totalEntries) * 100 : 0;
-                      const emotionColor = getEmotionColor(emotion, filteredEntries) || 'hsl(var(--primary))';
-                      
-                      return (
-                        <div key={emotion} className="space-y-1">
-                          <div className="flex justify-between text-sm">
-                            <span className="font-medium" style={{ color: emotionColor }}>{emotion}</span>
-                            <span className="text-muted-foreground">{count} times</span>
-                          </div>
-                          <div className="h-2 bg-muted rounded-full overflow-hidden">
-                            <div 
-                              className="h-full rounded-full transition-all"
-                              style={{ width: `${percentage}%`, backgroundColor: emotionColor }}
-                            />
-                          </div>
+                    {stats.quadrantData.map((entry, i) => (
+                      <Cell key={i} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    content={({ active, payload }) =>
+                      active && payload?.[0] ? (
+                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border p-2 text-xs">
+                          <p className="font-medium">{payload[0].payload.name}</p>
+                          <p className="text-slate-500">{payload[0].payload.value} times</p>
                         </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                      ) : null
+                    }
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex flex-wrap justify-center gap-3 mt-2">
+              {stats.quadrantData.map((d) => (
+                <div key={d.name} className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }} />
+                  <span className="text-[10px] text-slate-500">{d.name}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          
-          {/* Pattern Correlations */}
-          <PatternCorrelations entries={filteredEntries} />
-          
-          {/* Monthly Calendar - at the bottom */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Monthly Overview</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <MonthlyCalendar entries={entries} onDateClick={onDateClick} />
-            </CardContent>
-          </Card>
-          
-          {/* Context-based insights below calendar */}
-          <ContextInsights entries={filteredEntries} />
-        </>
+        )}
+      </div>
+
+      {/* Top Emotions */}
+      {stats.topEmotions.length > 0 && (
+        <div className="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <h3 className="font-semibold text-slate-800 dark:text-white mb-4">Most Frequent Feelings</h3>
+          <div className="space-y-3">
+            {stats.topEmotions.map(([emotion, count]) => {
+              const pct = (count / stats.total) * 100;
+              const entry = filteredEntries.find((e) => e.emotion === emotion);
+              const color = entry?.quadrant ? QUADRANTS[entry.quadrant].color : "#64748b";
+              return (
+                <div key={emotion}>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm font-medium" style={{ color }}>
+                      {emotion}
+                    </span>
+                    <span className="text-xs text-slate-400">{count} times</span>
+                  </div>
+                  <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{ width: `${pct}%`, backgroundColor: color }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
+
+      {/* Monthly Calendar */}
+      <MonthlyCalendar entries={entries} onDateClick={onDateClick} />
     </div>
   );
 }
