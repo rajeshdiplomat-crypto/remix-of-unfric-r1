@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Sparkles, Eye, Zap, Camera, CheckCircle2, Plus, ArrowRight } from "lucide-react";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
+import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { subDays, parseISO, isSameDay, differenceInDays, format } from "date-fns";
 
 import { ManifestTopBar } from "@/components/manifest/ManifestTopBar";
@@ -346,8 +347,17 @@ export default function Manifest() {
 
   return (
     <div className="flex flex-col w-full flex-1 bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 min-h-screen">
+      {/* Hero Image */}
+      <PageHero
+        storageKey="manifest_hero_src"
+        typeKey="manifest_hero_type"
+        badge={PAGE_HERO_TEXT.manifest.badge}
+        title={PAGE_HERO_TEXT.manifest.title}
+        subtitle={PAGE_HERO_TEXT.manifest.subtitle}
+      />
+
       {/* Header Section */}
-      <div className="px-6 lg:px-8 pt-8 pb-6">
+      <div className="px-6 lg:px-8 pt-6 pb-4">
         {/* Title */}
         <div className="mb-6">
           <span className="text-xs font-semibold uppercase tracking-widest text-teal-600 dark:text-teal-400">

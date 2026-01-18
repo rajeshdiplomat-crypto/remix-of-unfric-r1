@@ -330,9 +330,9 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
 
       {/* Scrollable Tasks */}
       <ScrollArea className="flex-1">
-        <div className="p-4 space-y-3">
+        <div className="p-4 space-y-0">
           {/* Progress Indicator */}
-          <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 mb-2">
+          <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 mb-4">
             <div className="flex-1">
               <div className="flex justify-between text-xs mb-2">
                 <span className="text-slate-500 font-medium">Today's Progress</span>
@@ -349,189 +349,198 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
             </div>
           </div>
 
-          {/* Task 1: Visualization */}
-          <TaskItem
-            id="viz"
-            icon={Eye}
-            title={`Visualize (${goal.visualization_minutes} min)`}
-            isComplete={hasVisualization}
-          >
-            <p className="text-sm text-slate-500 mb-3">Close your eyes and vividly imagine your new reality</p>
-            <Button
-              onClick={() => setShowVisualization(true)}
-              className={`w-full rounded-full h-12 ${hasVisualization ? "bg-slate-100 dark:bg-slate-800 text-slate-600 hover:bg-slate-200" : "bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:from-teal-600 hover:to-cyan-600"}`}
-            >
-              <Play className="h-4 w-4 mr-2" />
-              {hasVisualization ? "Add Another Session" : "Start Visualization"}
-            </Button>
-            {visualizations.length > 0 && (
-              <div className="mt-3 space-y-1">
-                {visualizations.map((v, i) => (
-                  <div
-                    key={v.id}
-                    className="flex items-center gap-2 text-xs text-slate-500 bg-teal-50 dark:bg-teal-900/30 px-3 py-2 rounded-lg"
-                  >
-                    <Check className="h-3 w-3 text-teal-500" />
-                    Session {i + 1} • {format(new Date(v.created_at), "h:mm a")}
-                  </div>
-                ))}
-              </div>
-            )}
-          </TaskItem>
-
-          {/* Task 2: Act-as-If */}
-          <TaskItem id="act" icon={Zap} title="Take One Action" isComplete={hasAct}>
-            <p className="text-sm text-slate-500 mb-2">
-              Suggestion: <span className="font-medium text-slate-600">{goal.act_as_if}</span>
-            </p>
-            <div className="flex gap-2">
-              <Input
-                value={currentActText}
-                onChange={(e) => setCurrentActText(e.target.value)}
-                placeholder="What action did you take?"
-                className="flex-1 rounded-xl"
+          {/* Tasks with connecting line */}
+          <div className="relative">
+            {/* Vertical connecting line */}
+            <div className="absolute left-[19px] top-4 bottom-4 w-0.5 bg-slate-200 dark:bg-slate-700 z-0">
+              {/* Filled portion based on progress */}
+              <div
+                className="w-full bg-gradient-to-b from-teal-500 to-cyan-500 transition-all duration-500"
+                style={{ height: `${([hasVisualization, hasAct, hasProof].filter(Boolean).length / 3) * 100}%` }}
               />
-              <Button
-                onClick={handleAddAct}
-                className="rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-4"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
             </div>
-            {acts.length > 0 && (
-              <div className="mt-3 space-y-2">
-                {acts.map((a) => (
-                  <div
-                    key={a.id}
-                    className="flex items-center justify-between bg-teal-50 dark:bg-teal-900/30 px-3 py-2 rounded-lg"
+
+            {/* Task 1: Visualization */}
+            <div className="relative z-10 mb-3">
+              <TaskItem
+                id="viz"
+                icon={Eye}
+                title={`Visualize (${goal.visualization_minutes} min)`}
+                isComplete={hasVisualization}
+              >
+                <p className="text-sm text-slate-500 mb-3">Close your eyes and vividly imagine your new reality</p>
+                <Button
+                  onClick={() => setShowVisualization(true)}
+                  className={`w-full rounded-full h-12 ${hasVisualization ? "bg-slate-100 dark:bg-slate-800 text-slate-600 hover:bg-slate-200" : "bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:from-teal-600 hover:to-cyan-600"}`}
+                >
+                  <Play className="h-4 w-4 mr-2" />
+                  {hasVisualization ? "Add Another Session" : "Start Visualization"}
+                </Button>
+                {visualizations.length > 0 && (
+                  <div className="mt-3 space-y-1">
+                    {visualizations.map((v, i) => (
+                      <div
+                        key={v.id}
+                        className="flex items-center gap-2 text-xs text-slate-500 bg-teal-50 dark:bg-teal-900/30 px-3 py-2 rounded-lg"
+                      >
+                        <Check className="h-3 w-3 text-teal-500" />
+                        Session {i + 1} • {format(new Date(v.created_at), "h:mm a")}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TaskItem>
+            </div>
+
+            {/* Task 2: Act-as-If */}
+            <div className="relative z-10 mb-3">
+              <TaskItem id="act" icon={Zap} title="Take One Action" isComplete={hasAct}>
+                <p className="text-sm text-slate-500 mb-2">
+                  Suggestion: <span className="font-medium text-slate-600">{goal.act_as_if}</span>
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    value={currentActText}
+                    onChange={(e) => setCurrentActText(e.target.value)}
+                    placeholder="What action did you take?"
+                    className="flex-1 rounded-xl"
+                  />
+                  <Button
+                    onClick={handleAddAct}
+                    className="rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-4"
                   >
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-3 w-3 text-teal-500" />
-                      <span className="text-slate-700 dark:text-slate-300">{a.text}</span>
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveAct(a.id)}>
-                      <Trash2 className="h-3 w-3 text-slate-400" />
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {acts.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {acts.map((a) => (
+                      <div
+                        key={a.id}
+                        className="flex items-center justify-between bg-teal-50 dark:bg-teal-900/30 px-3 py-2 rounded-lg"
+                      >
+                        <div className="flex items-center gap-2 text-sm">
+                          <Check className="h-3 w-3 text-teal-500" />
+                          <span className="text-slate-700 dark:text-slate-300">{a.text}</span>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveAct(a.id)}>
+                          <Trash2 className="h-3 w-3 text-slate-400" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TaskItem>
+            </div>
+
+            {/* Task 3: Record Proof */}
+            <div className="relative z-10 mb-3">
+              <TaskItem id="proof" icon={Camera} title="Record Proof" isComplete={hasProof}>
+                <p className="text-sm text-slate-500 mb-2">What happened today that proves your new reality?</p>
+                <Textarea
+                  value={currentProofText}
+                  onChange={(e) => setCurrentProofText(e.target.value)}
+                  placeholder="I received positive feedback on my presentation..."
+                  rows={2}
+                  className="rounded-xl resize-none mb-2"
+                />
+                <input
+                  ref={proofImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProofImageUpload}
+                  className="hidden"
+                />
+
+                {currentProofImageUrl ? (
+                  <div className="relative mb-2">
+                    <img src={currentProofImageUrl} alt="Proof" className="w-full h-24 object-cover rounded-xl" />
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 h-6 w-6 rounded-full"
+                      onClick={() => setCurrentProofImageUrl(null)}
+                    >
+                      <X className="h-3 w-3" />
                     </Button>
                   </div>
-                ))}
-              </div>
-            )}
-          </TaskItem>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-xl border-dashed mb-2"
+                    onClick={() => proofImageInputRef.current?.click()}
+                  >
+                    <ImagePlus className="h-4 w-4 mr-2" />
+                    Attach Screenshot
+                  </Button>
+                )}
 
-          {/* Task 3: Record Proof */}
-          <TaskItem id="proof" icon={Camera} title="Record Proof" isComplete={hasProof}>
-            <p className="text-sm text-slate-500 mb-2">What happened today that proves your new reality?</p>
-            <Textarea
-              value={currentProofText}
-              onChange={(e) => setCurrentProofText(e.target.value)}
-              placeholder="I received positive feedback on my presentation..."
-              rows={2}
-              className="rounded-xl resize-none mb-2"
-            />
-            <input
-              ref={proofImageInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleProofImageUpload}
-              className="hidden"
-            />
-
-            {currentProofImageUrl ? (
-              <div className="relative mb-2">
-                <img src={currentProofImageUrl} alt="Proof" className="w-full h-24 object-cover rounded-xl" />
                 <Button
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-2 right-2 h-6 w-6 rounded-full"
-                  onClick={() => setCurrentProofImageUrl(null)}
+                  onClick={handleAddProof}
+                  disabled={!currentProofText.trim()}
+                  className="w-full rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
                 >
-                  <X className="h-3 w-3" />
+                  Save Proof
                 </Button>
-              </div>
-            ) : (
-              <Button
-                variant="outline"
-                className="w-full rounded-xl border-dashed mb-2"
-                onClick={() => proofImageInputRef.current?.click()}
-              >
-                <ImagePlus className="h-4 w-4 mr-2" />
-                Attach Screenshot
-              </Button>
-            )}
 
-            <Button
-              onClick={handleAddProof}
-              disabled={!currentProofText.trim()}
-              className="w-full rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
-            >
-              Save Proof
-            </Button>
+                {proofs.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {proofs.map((p) => (
+                      <div key={p.id} className="bg-teal-50 dark:bg-teal-900/30 p-3 rounded-lg space-y-2">
+                        <div className="flex items-start justify-between">
+                          <p className="text-sm text-slate-700 dark:text-slate-300 flex-1">{p.text}</p>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => handleRemoveProof(p.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        {p.image_url && (
+                          <img src={p.image_url} alt="Proof" className="w-full h-20 object-cover rounded-lg" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TaskItem>
+            </div>
 
-            {proofs.length > 0 && (
-              <div className="mt-3 space-y-2">
-                {proofs.map((p) => (
-                  <div key={p.id} className="bg-teal-50 dark:bg-teal-900/30 p-3 rounded-lg space-y-2">
-                    <div className="flex items-start justify-between">
-                      <p className="text-sm text-slate-700 dark:text-slate-300 flex-1">{p.text}</p>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveProof(p.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+            {/* Check-in Section - appears when all tasks done */}
+            {allTasksDone && (
+              <div className="relative z-10">
+                <TaskItem id="checkin" icon={Lock} title="Complete Day" isComplete={isLocked}>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm">
+                        Growth Note <span className="text-teal-500">*</span>
+                      </Label>
+                      <Input
+                        value={growthNote}
+                        onChange={(e) => {
+                          setGrowthNote(e.target.value);
+                          savePractice({ growth_note: e.target.value });
+                        }}
+                        placeholder="What did you learn? What will you do tomorrow?"
+                        className="rounded-xl"
+                      />
                     </div>
-                    {p.image_url && (
-                      <img src={p.image_url} alt="Proof" className="w-full h-20 object-cover rounded-lg" />
-                    )}
+
+                    <Button
+                      onClick={handleLockToday}
+                      disabled={!canLock}
+                      className="w-full rounded-full h-12 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg"
+                    >
+                      <Lock className="h-4 w-4 mr-2" />
+                      Complete Today ✨
+                    </Button>
                   </div>
-                ))}
+                </TaskItem>
               </div>
             )}
-          </TaskItem>
-
-          {/* Check-in Section - appears when all tasks done */}
-          {allTasksDone && (
-            <TaskItem id="checkin" icon={Lock} title="Complete Day" isComplete={isLocked}>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <Label>How aligned did you feel?</Label>
-                    <span className="font-bold text-teal-600">{alignment}/10</span>
-                  </div>
-                  <Slider
-                    value={[alignment]}
-                    onValueChange={(v) => {
-                      setAlignment(v[0]);
-                      savePractice({ alignment: v[0] });
-                    }}
-                    min={1}
-                    max={10}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm">
-                    Growth Note <span className="text-teal-500">*</span>
-                  </Label>
-                  <Input
-                    value={growthNote}
-                    onChange={(e) => {
-                      setGrowthNote(e.target.value);
-                      savePractice({ growth_note: e.target.value });
-                    }}
-                    placeholder="What did you learn? What will you do tomorrow?"
-                    className="rounded-xl"
-                  />
-                </div>
-
-                <Button
-                  onClick={handleLockToday}
-                  disabled={!canLock}
-                  className="w-full rounded-full h-12 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg"
-                >
-                  <Lock className="h-4 w-4 mr-2" />
-                  Complete Today ✨
-                </Button>
-              </div>
-            </TaskItem>
-          )}
+          </div>
         </div>
       </ScrollArea>
     </div>
