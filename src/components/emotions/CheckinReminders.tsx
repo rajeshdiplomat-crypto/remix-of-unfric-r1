@@ -15,7 +15,6 @@ interface ReminderTime {
 }
 
 const STORAGE_KEY = "emotion-checkin-reminders";
-
 const DEFAULT_TIMES: ReminderTime[] = [
   { id: "1", hour: 9, minute: 0, enabled: false },
   { id: "2", hour: 14, minute: 0, enabled: false },
@@ -24,16 +23,13 @@ const DEFAULT_TIMES: ReminderTime[] = [
 
 function formatTime(hour: number, minute: number): string {
   const period = hour >= 12 ? "PM" : "AM";
-  const displayHour = hour % 12 || 12;
-  const displayMinute = minute.toString().padStart(2, "0");
-  return `${displayHour}:${displayMinute} ${period}`;
+  return `${hour % 12 || 12}:${minute.toString().padStart(2, "0")} ${period}`;
 }
 
 export function CheckinReminders() {
   const [reminders, setReminders] = useState<ReminderTime[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : DEFAULT_TIMES;
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || "") || DEFAULT_TIMES;
     } catch {
       return DEFAULT_TIMES;
     }
@@ -48,69 +44,48 @@ export function CheckinReminders() {
 
   const toggleReminder = (id: string) => {
     setReminders((prev) => prev.map((r) => (r.id === id ? { ...r, enabled: !r.enabled } : r)));
-
     const reminder = reminders.find((r) => r.id === id);
-    if (reminder && !reminder.enabled) {
-      toast.success(`Reminder set for ${formatTime(reminder.hour, reminder.minute)}`);
-    }
+    if (reminder && !reminder.enabled) toast.success(`Reminder set for ${formatTime(reminder.hour, reminder.minute)}`);
   };
 
   const addReminder = () => {
-    const hour = parseInt(newHour);
-    const minute = parseInt(newMinute);
-
-    const newReminder: ReminderTime = {
-      id: Date.now().toString(),
-      hour,
-      minute,
-      enabled: true,
-    };
-
-    setReminders((prev) => [...prev, newReminder].sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute)));
-
+    const hour = parseInt(newHour),
+      minute = parseInt(newMinute);
+    setReminders((prev) =>
+      [...prev, { id: Date.now().toString(), hour, minute, enabled: true }].sort(
+        (a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute),
+      ),
+    );
     toast.success(`Reminder added for ${formatTime(hour, minute)}`);
     setOpen(false);
-  };
-
-  const removeReminder = (id: string) => {
-    setReminders((prev) => prev.filter((r) => r.id !== id));
   };
 
   const enabledCount = reminders.filter((r) => r.enabled).length;
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white">
-            <Bell className="h-4 w-4" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-slate-800 dark:text-white text-sm">Reminders</h3>
-            {enabledCount > 0 && <p className="text-xs text-slate-500">{enabledCount} active</p>}
-          </div>
+          <Bell className="h-4 w-4 text-muted-foreground" />
+          <h3 className="font-medium text-sm">Check-in Reminders</h3>
+          {enabledCount > 0 && <span className="text-xs text-muted-foreground">({enabledCount} active)</span>}
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
-            >
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
               <Plus className="h-4 w-4" />
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[320px] rounded-2xl">
+          <DialogContent className="sm:max-w-[300px] rounded-xl">
             <DialogHeader>
               <DialogTitle>Add Reminder</DialogTitle>
             </DialogHeader>
-            <div className="flex items-center justify-center gap-3 py-6">
+            <div className="flex items-center justify-center gap-2 py-4">
               <Select value={newHour} onValueChange={setNewHour}>
-                <SelectTrigger className="w-[90px] h-12 rounded-xl text-lg font-medium">
+                <SelectTrigger className="w-[80px]">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl">
+                <SelectContent>
                   {Array.from({ length: 24 }, (_, i) => (
                     <SelectItem key={i} value={i.toString()}>
                       {(i % 12 || 12).toString().padStart(2, "0")} {i >= 12 ? "PM" : "AM"}
@@ -118,12 +93,12 @@ export function CheckinReminders() {
                   ))}
                 </SelectContent>
               </Select>
-              <span className="text-2xl font-light text-slate-300">:</span>
+              <span className="text-muted-foreground">:</span>
               <Select value={newMinute} onValueChange={setNewMinute}>
-                <SelectTrigger className="w-[80px] h-12 rounded-xl text-lg font-medium">
+                <SelectTrigger className="w-[70px]">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl">
+                <SelectContent>
                   {["0", "15", "30", "45"].map((m) => (
                     <SelectItem key={m} value={m}>
                       {m.padStart(2, "0")}
@@ -132,51 +107,35 @@ export function CheckinReminders() {
                 </SelectContent>
               </Select>
             </div>
-            <Button
-              onClick={addReminder}
-              className="w-full h-11 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white"
-            >
+            <Button onClick={addReminder} className="w-full">
               Add Reminder
             </Button>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Reminders List */}
       <div className="space-y-2">
-        {reminders.map((reminder) => (
-          <div
-            key={reminder.id}
-            className={`flex items-center justify-between p-3 rounded-xl transition-all ${
-              reminder.enabled
-                ? "bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800"
-                : "bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <Switch checked={reminder.enabled} onCheckedChange={() => toggleReminder(reminder.id)} />
-              <Label
-                className="text-sm font-medium cursor-pointer flex items-center gap-2"
-                onClick={() => toggleReminder(reminder.id)}
-              >
-                <Clock className="h-3.5 w-3.5 text-slate-400" />
-                {formatTime(reminder.hour, reminder.minute)}
+        {reminders.map((r) => (
+          <div key={r.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30">
+            <div className="flex items-center gap-2">
+              <Switch checked={r.enabled} onCheckedChange={() => toggleReminder(r.id)} />
+              <Label className="text-sm cursor-pointer" onClick={() => toggleReminder(r.id)}>
+                {formatTime(r.hour, r.minute)}
               </Label>
             </div>
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 w-7 p-0 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50"
-              onClick={() => removeReminder(reminder.id)}
+              className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+              onClick={() => setReminders((prev) => prev.filter((x) => x.id !== r.id))}
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-3 w-3" />
             </Button>
           </div>
         ))}
-        {reminders.length === 0 && <p className="text-sm text-slate-500 text-center py-4">No reminders set yet</p>}
+        {reminders.length === 0 && <p className="text-sm text-muted-foreground text-center py-2">No reminders set</p>}
       </div>
-
-      <p className="text-[10px] text-slate-400 text-center">Browser notifications require permission</p>
+      <p className="text-[10px] text-muted-foreground text-center">Browser notifications require permission</p>
     </div>
   );
 }
