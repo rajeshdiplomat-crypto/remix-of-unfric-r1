@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   JournalTiptapEditor,
   MemoizedJournalTiptapEditor,
@@ -161,7 +162,17 @@ export default function Journal() {
     return saved ? JSON.parse(saved) : DEFAULT_TEMPLATE;
   });
 
+  const { theme } = useTheme();
   const [currentSkinId, setCurrentSkinId] = useState(() => localStorage.getItem("journal_skin_id") || "minimal-light");
+
+  // Sync skin with global dark mode if needed
+  useEffect(() => {
+    if (theme.isDark && currentSkinId !== "midnight-dark") {
+      setCurrentSkinId("midnight-dark");
+    } else if (!theme.isDark && currentSkinId === "midnight-dark") {
+      setCurrentSkinId("minimal-light");
+    }
+  }, [theme.isDark, currentSkinId]);
 
   const currentSkin = useMemo(
     () => JOURNAL_SKINS.find((s) => s.id === currentSkinId) || JOURNAL_SKINS[0],
@@ -632,10 +643,13 @@ export default function Journal() {
 
       {/* Compact Header */}
       <div
-        className={cn("sticky top-0 z-40 backdrop-blur-xl border-b", isFullscreen ? "bg-white/95" : "")}
+        className={cn(
+          "sticky top-0 z-40 backdrop-blur-xl border-b",
+          isFullscreen ? "bg-white/95 dark:bg-slate-900/95" : "",
+        )}
         style={{
-          backgroundColor: isFullscreen ? undefined : `${currentSkin.pageBg}f8`,
-          borderColor: `${currentSkin.border}30`,
+          backgroundColor: isFullscreen ? undefined : `${currentSkin.pageBg}e6`,
+          borderColor: isFullscreen ? undefined : `${currentSkin.border}40`,
         }}
       >
         <div className="px-4 sm:px-6 py-2 flex items-center justify-between gap-4">
@@ -661,18 +675,18 @@ export default function Journal() {
           {/* Center - Search Bar */}
           <div className="hidden md:flex flex-1 max-w-md mx-4">
             <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
               <input
                 type="text"
                 placeholder="Search journal entries..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-10 py-1.5 text-sm bg-white/80 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-300 transition-all font-medium text-slate-700"
+                className="w-full pl-9 pr-10 py-1.5 text-sm bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-300 transition-all font-medium text-slate-700 dark:text-slate-200"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-200/50 rounded-lg transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 rounded-lg transition-colors"
                   title="Clear search"
                 >
                   <X className="h-3.5 w-3.5 text-slate-400" />
