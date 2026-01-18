@@ -17,6 +17,8 @@ import {
   Meh,
   Frown,
   TrendingUp,
+  Search,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -52,21 +54,40 @@ const MOOD_OPTIONS = [
   { id: "low", label: "Low", icon: Frown, color: "text-rose-500", bg: "bg-rose-50" },
 ];
 
+const ANSWER_PLACEHOLDERS: { [key: string]: string } = {
+  "How are you feeling today?": "Share your thoughts and emotions...",
+  "What are you grateful for?": "List the things that brought you joy...",
+  "What act of kindness did you do or receive?": "Describe a moment of kindness...",
+  "Additional thoughts…": "Anything else on your mind...",
+};
+
 const generateInitialContent = (questions: { text: string }[]) =>
   JSON.stringify({
     type: "doc",
-    content: questions.flatMap((q) => [
+    content: [
       {
         type: "heading",
-        attrs: { level: 2, textAlign: "left" },
-        content: [{ type: "text", text: q.text }],
-      },
-      {
-        type: "paragraph",
-        attrs: { textAlign: "left" },
+        attrs: { level: 1, textAlign: "left" },
         content: [],
       },
-    ]),
+      ...questions.flatMap((q) => [
+        {
+          type: "heading",
+          attrs: { level: 2, textAlign: "left" },
+          content: [{ type: "text", text: q.text }],
+        },
+        {
+          type: "paragraph",
+          attrs: { textAlign: "left", class: "placeholder-hint" },
+          content: [],
+        },
+        {
+          type: "paragraph",
+          attrs: { textAlign: "left", class: "placeholder-hint" },
+          content: [],
+        },
+      ]),
+    ],
   });
 
 const extractAnswersFromContent = (
@@ -133,6 +154,7 @@ export default function Journal() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [template, setTemplate] = useState<JournalTemplate>(() => {
     const saved = localStorage.getItem("journal_template");
@@ -170,6 +192,45 @@ export default function Journal() {
     return count;
   }, [entries]);
 
+  // Helper: Extract preview from content JSON
+  const extractPreview = (contentJSON: string) => {
+    try {
+      const parsed = JSON.parse(contentJSON);
+      if (parsed?.content) {
+        const textParts: string[] = [];
+        parsed.content.forEach((node: any) => {
+          // Only extract text from paragraphs (answers), skip headings (questions)
+          if (node.type === "paragraph" && node.content) {
+            node.content.forEach((child: any) => {
+              if (child.type === "text" && child.text) {
+                textParts.push(child.text);
+              }
+            });
+          }
+        });
+        return textParts.join(" ").trim().slice(0, 150);
+      }
+    } catch {
+      return "";
+    }
+    return "";
+  };
+  // Helper: Extract title from H1 in content JSON
+  const extractTitle = (contentJSON: string) => {
+    try {
+      const parsed = JSON.parse(contentJSON);
+      if (parsed?.content) {
+        const h1 = parsed.content.find((node: any) => node.type === "heading" && node.attrs?.level === 1);
+        if (h1?.content?.[0]?.text) {
+          return h1.content[0].text;
+        }
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  };
+
   // Load all entries on mount
   useEffect(() => {
     if (!user) return;
@@ -180,17 +241,26 @@ export default function Journal() {
       .order("entry_date", { ascending: false })
       .then(({ data }) => {
         setEntries(
-          (data || []).map((e) => ({
-            id: e.id,
-            entryDate: e.entry_date,
-            createdAt: e.created_at,
-            updatedAt: e.updated_at,
-            title: e.daily_feeling || "Untitled",
-            contentJSON:
-              typeof e.text_formatting === "string" ? e.text_formatting : JSON.stringify(e.text_formatting) || "",
-            mood: e.daily_feeling,
-            tags: e.tags || [],
-          })),
+          (data || []).map((e) => {
+            const contentJSON =
+              typeof e.text_formatting === "string" ? e.text_formatting : JSON.stringify(e.text_formatting) || "";
+
+            // Extract preview text and title
+            const preview = extractPreview(contentJSON);
+            const customTitle = extractTitle(contentJSON);
+
+            return {
+              id: e.id,
+              entryDate: e.entry_date,
+              createdAt: e.created_at,
+              updatedAt: e.updated_at,
+              title: customTitle || e.daily_feeling || "Untitled",
+              preview,
+              contentJSON,
+              mood: e.daily_feeling,
+              tags: e.tags || [],
+            };
+          }),
         );
       });
   }, [user]);
@@ -247,10 +317,21 @@ export default function Journal() {
           setCurrentAnswers(answersData || []);
           setSelectedMood(entryData.daily_feeling || null);
 
-          const newContent = answersData?.length
-            ? JSON.stringify({
-                type: "doc",
-                content: template.questions.flatMap((q) => {
+          // Helper to ensure proper content structure with H1 Title
+          const existingTitle = extractTitle(contentJSON);
+
+          let finalContent = contentJSON;
+
+          if (answersData?.length) {
+            finalContent = JSON.stringify({
+              type: "doc",
+              content: [
+                {
+                  type: "heading",
+                  attrs: { level: 1, textAlign: "left" },
+                  content: existingTitle ? [{ type: "text", text: existingTitle }] : [],
+                },
+                ...template.questions.flatMap((q) => {
                   const answer = answersData.find((a) => a.question_id === q.id);
                   return [
                     {
@@ -265,11 +346,33 @@ export default function Journal() {
                     },
                   ];
                 }),
-              })
-            : contentJSON;
+              ],
+            });
+          } else {
+            // If using existing contentJSON, ensure it starts with H1
+            try {
+              const parsed = JSON.parse(contentJSON);
+              const firstNode = parsed.content?.[0];
+              if (!firstNode || !(firstNode.type === "heading" && firstNode.attrs?.level === 1)) {
+                parsed.content = [
+                  {
+                    type: "heading",
+                    attrs: { level: 1, textAlign: "left" },
+                    content: [],
+                  },
+                  ...(parsed.content || []),
+                ];
+                finalContent = JSON.stringify(parsed);
+              }
+            } catch (e) {
+              console.error("Error patching contentJSON", e);
+            }
+          }
 
-          setContent(newContent);
-          lastSavedContentRef.current = newContent;
+          setContent(finalContent);
+          lastSavedContentRef.current = finalContent;
+          // Updated current entry state to match
+          setCurrentEntry((prev) => (prev ? { ...prev, contentJSON: finalContent } : prev));
         } else {
           setCurrentEntry(null);
           setCurrentAnswers([]);
@@ -292,7 +395,7 @@ export default function Journal() {
     if (!user || isSavingRef.current) return;
     if (content === lastSavedContentRef.current) {
       setSaveStatus("saved");
-      return;
+      return true;
     }
 
     isSavingRef.current = true;
@@ -332,6 +435,22 @@ export default function Journal() {
 
         const { data } = await supabase.from("journal_answers").select("*").eq("journal_entry_id", currentEntry.id);
         setCurrentAnswers(data || []);
+
+        // Update local entries state for sidebar preview
+        setEntries((prev) =>
+          prev.map((e) =>
+            e.id === currentEntry.id
+              ? {
+                  ...e,
+                  updatedAt: new Date().toISOString(),
+                  contentJSON: content,
+                  preview: extractPreview(content),
+                  title: extractTitle(content) || selectedMood || "Untitled",
+                  mood: selectedMood,
+                }
+              : e,
+          ),
+        );
       } else {
         const { data: newEntry, error } = await supabase
           .from("journal_entries")
@@ -361,8 +480,9 @@ export default function Journal() {
             entryDate: newEntry.entry_date,
             createdAt: newEntry.created_at,
             updatedAt: newEntry.updated_at,
-            title: selectedMood || "Untitled",
+            title: extractTitle(content) || selectedMood || "Untitled",
             contentJSON: content,
+            preview: extractPreview(content),
             mood: selectedMood,
             tags: [],
           };
@@ -377,10 +497,12 @@ export default function Journal() {
 
       lastSavedContentRef.current = content;
       setSaveStatus("saved");
+      return true;
     } catch (err) {
       console.error("Save error:", err);
       setSaveStatus("unsaved");
       toast({ title: "Error saving", description: "Please try again", variant: "destructive" });
+      return false;
     } finally {
       isSavingRef.current = false;
     }
@@ -407,12 +529,40 @@ export default function Journal() {
   );
 
   // Manual save
-  const handleManualSave = () => {
+  const handleManualSave = useCallback(async () => {
     if (autosaveTimerRef.current) {
       clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
     }
-    performSave();
-  };
+
+    if (content === lastSavedContentRef.current && saveStatus === "saved") {
+      toast({
+        title: "All changes saved",
+        duration: 2000,
+      });
+      return;
+    }
+
+    const success = await performSave();
+    if (success) {
+      toast({
+        title: "Saved successfully",
+        duration: 2000,
+      });
+    }
+  }, [content, saveStatus, performSave, toast]);
+
+  // Keyboard shortcut for manual save
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault();
+        handleManualSave();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleManualSave]);
 
   // Handle mood selection
   const handleMoodSelect = (moodId: string) => {
@@ -508,32 +658,26 @@ export default function Journal() {
             </Button>
           </div>
 
-          {/* Center - Quick Stats (hidden on small screens) */}
-          <div className="hidden md:flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-violet-50 rounded-lg">
-              <TrendingUp className="h-3.5 w-3.5 text-violet-500" />
-              <span className="text-xs font-medium text-violet-700">{streak}d</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 rounded-lg">
-              <PenLine className="h-3.5 w-3.5 text-blue-500" />
-              <span className="text-xs font-medium text-blue-700">{wordCount}w</span>
-            </div>
-            {/* Mood - compact */}
-            <div className="flex items-center gap-0.5">
-              {MOOD_OPTIONS.map((mood) => {
-                const MoodIcon = mood.icon;
-                const isActive = selectedMood === mood.id;
-                return (
-                  <button
-                    key={mood.id}
-                    onClick={() => handleMoodSelect(mood.id)}
-                    className={cn("p-1.5 rounded-lg transition-all", isActive ? mood.bg : "hover:bg-slate-100")}
-                    title={mood.label}
-                  >
-                    <MoodIcon className={cn("h-4 w-4", isActive ? mood.color : "text-slate-300")} />
-                  </button>
-                );
-              })}
+          {/* Center - Search Bar */}
+          <div className="hidden md:flex flex-1 max-w-md mx-4">
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search journal entries..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-10 py-1.5 text-sm bg-white/80 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-300 transition-all font-medium text-slate-700"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-200/50 rounded-lg transition-colors"
+                  title="Clear search"
+                >
+                  <X className="h-3.5 w-3.5 text-slate-400" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -574,7 +718,7 @@ export default function Journal() {
             <Button
               size="sm"
               onClick={handleManualSave}
-              disabled={saveStatus === "saved" || saveStatus === "saving"}
+              disabled={saveStatus === "saving"}
               className="h-8 rounded-lg bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-xs px-3"
             >
               <Save className="h-3.5 w-3.5 mr-1" />
@@ -597,7 +741,9 @@ export default function Journal() {
       >
         {/* Left Panel - Calendar */}
         {!isFullscreen && (
-          <div className={cn("hidden lg:block transition-all duration-300", leftPanelCollapsed && "w-16")}>
+          <div
+            className={cn("hidden lg:flex flex-col transition-all duration-300 h-full", leftPanelCollapsed && "w-16")}
+          >
             <JournalSidebarPanel
               selectedDate={selectedDate}
               onDateSelect={setSelectedDate}
@@ -607,11 +753,57 @@ export default function Journal() {
               showSection="calendar"
               isCollapsed={leftPanelCollapsed}
               onToggleCollapse={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
+              searchQuery={searchQuery}
             />
           </div>
         )}
 
         <div className="flex flex-col min-w-0">
+          {/* Greeting Section */}
+          <div className="mb-4 px-1">
+            <h2 className="text-xl font-semibold text-slate-800">
+              {(() => {
+                const hour = new Date().getHours();
+                const userName =
+                  user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "";
+                const firstName = userName.split(" ")[0];
+                const greeting =
+                  hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : hour < 21 ? "Good evening" : "Good night";
+                const emoji = hour < 12 ? "☀️" : hour < 17 ? "🌤️" : hour < 21 ? "🌅" : "🌙";
+                return firstName ? `${greeting}, ${firstName} ${emoji}` : `${greeting} ${emoji}`;
+              })()}
+            </h2>
+            <p className="text-sm text-slate-500 mt-1">
+              {(() => {
+                const quotes = [
+                  "Every page you write is a step toward understanding yourself.",
+                  "Your thoughts matter. Let them flow freely today.",
+                  "Writing is the painting of the voice.",
+                  "Today's reflections shape tomorrow's clarity.",
+                  "Be gentle with yourself as you explore your thoughts.",
+                  "Every word you write is a gift to your future self.",
+                  "Let your journal be a safe space for your authentic voice.",
+                ];
+                return quotes[Math.floor(new Date().getDate() % quotes.length)];
+              })()}
+            </p>
+            <p className="text-xs text-violet-500 mt-2">
+              {(() => {
+                if (streak === 0) {
+                  return "Start your journaling journey today — even a few words can make a difference.";
+                } else if (streak === 1) {
+                  return "You wrote yesterday! Keep the momentum going with today's entry.";
+                } else if (streak < 7) {
+                  return `You've been writing for ${streak} days straight. Amazing consistency — keep it up!`;
+                } else if (streak < 30) {
+                  return `Incredible! ${streak} days of journaling. Your dedication is inspiring.`;
+                } else {
+                  return `${streak} days of reflection! You've built a powerful habit. Keep writing.`;
+                }
+              })()}
+            </p>
+          </div>
+
           <div
             className={cn(
               "transition-all duration-200 rounded-2xl overflow-hidden shadow-xl shadow-slate-200/50 bg-white",
@@ -633,7 +825,7 @@ export default function Journal() {
 
         {/* Right Panel - Date Details */}
         {!isFullscreen && (
-          <div className="hidden lg:block">
+          <div className="hidden lg:block h-full">
             <JournalDateDetailsPanel
               selectedDate={selectedDate}
               wordCount={wordCount}
