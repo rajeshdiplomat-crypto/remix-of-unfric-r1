@@ -346,10 +346,10 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
 
           {/* Tasks with Timeline */}
           <div className="relative">
-            {/* Vertical connecting line */}
+            {/* Vertical connecting line - only spans first 3 tasks */}
             <div
               className="absolute w-0.5 bg-slate-200 dark:bg-slate-700"
-              style={{ left: "19px", top: "48px", bottom: "100px" }}
+              style={{ left: "19px", top: "20px", height: "calc(100% - 140px)" }}
             >
               <div
                 className="w-full bg-gradient-to-b from-teal-500 to-cyan-500 transition-all duration-500"
