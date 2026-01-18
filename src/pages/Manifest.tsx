@@ -2,15 +2,14 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Eye, Zap, Camera, CheckCircle2, Plus, ArrowRight } from "lucide-react";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
-import { subDays, parseISO, isSameDay, differenceInDays } from "date-fns";
+import { subDays, parseISO, isSameDay, differenceInDays, format } from "date-fns";
 
 import { ManifestTopBar } from "@/components/manifest/ManifestTopBar";
 import { ManifestCard } from "@/components/manifest/ManifestCard";
 import { ManifestCreateModal } from "@/components/manifest/ManifestCreateModal";
 import { ManifestPracticePanel } from "@/components/manifest/ManifestPracticePanel";
-import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 
 import {
   AlertDialog,
@@ -24,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 import {
   type ManifestGoal,
@@ -46,6 +46,43 @@ function loadAllGoalExtras(): Record<string, Partial<ManifestGoal>> {
 
 function loadAllPractices(): Record<string, ManifestDailyPractice> {
   return JSON.parse(localStorage.getItem(DAILY_PRACTICE_KEY) || "{}");
+}
+
+// Journey Step Component
+function JourneyStep({
+  step,
+  label,
+  icon: Icon,
+  isActive,
+  isComplete,
+}: {
+  step: number;
+  label: string;
+  icon: React.ElementType;
+  isActive: boolean;
+  isComplete: boolean;
+}) {
+  return (
+    <div
+      className={`flex items-center gap-3 px-5 py-3 rounded-full transition-all ${
+        isActive
+          ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/30"
+          : isComplete
+            ? "bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300"
+            : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+      }`}
+    >
+      <div
+        className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${
+          isActive ? "bg-white/20" : isComplete ? "bg-teal-500 text-white" : "bg-slate-200 dark:bg-slate-700"
+        }`}
+      >
+        {isComplete ? <CheckCircle2 className="h-4 w-4" /> : step}
+      </div>
+      <Icon className="h-4 w-4" />
+      <span className="text-sm font-medium hidden sm:inline">{label}</span>
+    </div>
+  );
 }
 
 export default function Manifest() {
@@ -156,8 +193,12 @@ export default function Manifest() {
       const goalProofs = proofs.filter((p) => p.goal_id === goal.id);
       const lastProof = goalProofs[0];
 
+      // Check today's practice
+      const todayStr = format(today, "yyyy-MM-dd");
+      const todayPractice = goalPractices.find((p) => p.entry_date === todayStr);
+
       void activeDays;
-      return { streak, momentum, lastProof };
+      return { streak, momentum, lastProof, todayPractice };
     },
     [practices, proofs],
   );
@@ -304,119 +345,154 @@ export default function Manifest() {
   }
 
   return (
-    <div className="flex flex-col w-full flex-1">
-      {/* Full-bleed Hero */}
-      <PageHero
-        storageKey="manifest_hero_src"
-        typeKey="manifest_hero_type"
-        badge={PAGE_HERO_TEXT.manifest.badge}
-        title={PAGE_HERO_TEXT.manifest.title}
-        subtitle={PAGE_HERO_TEXT.manifest.subtitle}
-      />
+    <div className="flex flex-col w-full flex-1 bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 min-h-screen">
+      {/* Header Section */}
+      <div className="px-6 lg:px-8 pt-8 pb-6">
+        {/* Title */}
+        <div className="mb-6">
+          <span className="text-xs font-semibold uppercase tracking-widest text-teal-600 dark:text-teal-400">
+            Daily Practice
+          </span>
+          <h1 className="text-4xl font-bold text-slate-900 dark:text-white tracking-tight mt-1">MANIFEST</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">Create a vision, practice daily, and build evidence</p>
+        </div>
 
-      {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 px-6 lg:px-8 pt-6">
-        {/* LEFT: Board */}
-        <div className="overflow-y-auto space-y-6 pb-6 pr-1">
+        {/* Journey Flow - Shows the 4-step process */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6">
+          <JourneyStep
+            step={1}
+            label="Set Vision"
+            icon={Eye}
+            isActive={activeGoals.length === 0}
+            isComplete={activeGoals.length > 0}
+          />
+          <ArrowRight className="h-4 w-4 text-slate-300 dark:text-slate-600 shrink-0" />
+          <JourneyStep
+            step={2}
+            label="Daily Actions"
+            icon={Zap}
+            isActive={activeGoals.length > 0 && !selectedGoal}
+            isComplete={false}
+          />
+          <ArrowRight className="h-4 w-4 text-slate-300 dark:text-slate-600 shrink-0" />
+          <JourneyStep step={3} label="Visualize" icon={Sparkles} isActive={!!selectedGoal} isComplete={false} />
+          <ArrowRight className="h-4 w-4 text-slate-300 dark:text-slate-600 shrink-0" />
+          <JourneyStep step={4} label="Build Evidence" icon={Camera} isActive={false} isComplete={false} />
+        </div>
 
+        {/* Stats Bar */}
         <ManifestTopBar
           activeCount={activeGoals.length}
           streak={aggregateStreak}
           avgMomentum={avgMomentum}
           onNewManifest={() => setShowCreateModal(true)}
         />
-
-        {/* Goals List */}
-        {activeGoals.length === 0 ? (
-          <div className="text-center py-14 px-4 rounded-2xl border border-border/50 bg-card shadow-sm">
-            <div className="mx-auto mb-4 h-12 w-12 rounded-2xl bg-muted/40 flex items-center justify-center">
-              <Sparkles className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">Start your manifestation journey</h3>
-            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Write it present-tense. Practice it daily. Celebrate progress.
-            </p>
-            <Button onClick={() => setShowCreateModal(true)} className="rounded-full px-5">
-              Create your first
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {activeGoals.map((goal) => {
-              const { streak, momentum, lastProof } = getGoalMetrics(goal);
-              return (
-                <ManifestCard
-                  key={goal.id}
-                  goal={goal}
-                  streak={streak}
-                  momentum={momentum}
-                  lastProof={lastProof}
-                  isSelected={selectedGoal?.id === goal.id}
-                  onClick={() => handleSelectGoal(goal)}
-                  onEdit={() => handleEditGoal(goal)}
-                  onDelete={() => setDeletingGoal(goal)}
-                />
-              );
-            })}
-          </div>
-        )}
       </div>
 
-      {/* RIGHT: Practice Panel */}
-      <aside
-        className="hidden lg:flex flex-col h-full overflow-y-auto rounded-2xl border border-border/50 bg-card shadow-sm"
-        tabIndex={-1}
-        aria-label="Practice panel"
-      >
-        {selectedGoal ? (
-          <ManifestPracticePanel
-            goal={selectedGoal}
-            streak={getGoalMetrics(selectedGoal).streak}
-            onClose={() => setSelectedGoal(null)}
-            onPracticeComplete={handlePracticeComplete}
-          />
-        ) : (
-          <div className="p-6 flex items-center justify-center h-full">
-            <div className="text-center max-w-xs">
-              <div className="mx-auto mb-3 h-10 w-10 rounded-2xl bg-muted/40 flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-muted-foreground" />
+      {/* Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6 px-6 lg:px-8 pb-8 flex-1">
+        {/* LEFT: Goals Board */}
+        <div className="overflow-y-auto space-y-4 pr-1">
+          {activeGoals.length === 0 ? (
+            <Card className="rounded-2xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20">
+              <CardContent className="py-16 px-8 text-center">
+                <div className="mx-auto mb-6 h-20 w-20 rounded-3xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
+                  <Sparkles className="h-10 w-10 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-3">
+                  Start Your Manifestation Journey
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-md mx-auto">
+                  Write your belief in present tense. Practice it daily. Watch it become your reality.
+                </p>
+                <Button
+                  onClick={() => setShowCreateModal(true)}
+                  size="lg"
+                  className="rounded-full px-8 h-14 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white text-lg shadow-lg shadow-teal-500/30"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  Create Your First Vision
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {activeGoals.map((goal) => {
+                const { streak, momentum, lastProof } = getGoalMetrics(goal);
+                return (
+                  <ManifestCard
+                    key={goal.id}
+                    goal={goal}
+                    streak={streak}
+                    momentum={momentum}
+                    lastProof={lastProof}
+                    isSelected={selectedGoal?.id === goal.id}
+                    onClick={() => handleSelectGoal(goal)}
+                    onEdit={() => handleEditGoal(goal)}
+                    onDelete={() => setDeletingGoal(goal)}
+                  />
+                );
+              })}
+            </>
+          )}
+        </div>
+
+        {/* RIGHT: Practice Panel */}
+        <aside
+          className="hidden lg:flex flex-col h-full overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl"
+          tabIndex={-1}
+          aria-label="Practice panel"
+        >
+          {selectedGoal ? (
+            <ManifestPracticePanel
+              goal={selectedGoal}
+              streak={getGoalMetrics(selectedGoal).streak}
+              onClose={() => setSelectedGoal(null)}
+              onPracticeComplete={handlePracticeComplete}
+            />
+          ) : (
+            <div className="p-8 flex flex-col items-center justify-center h-full text-center">
+              <div className="mx-auto mb-6 h-20 w-20 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
+                <Sparkles className="h-8 w-8 text-slate-400" />
               </div>
-              <p className="text-sm text-muted-foreground">Select a manifestation to begin practice</p>
+              <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-2">Select a Manifestation</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs">
+                Click on any goal from the left to begin your daily practice
+              </p>
             </div>
-          </div>
-        )}
-      </aside>
+          )}
+        </aside>
 
-      {/* Create/Edit Modal */}
-      <ManifestCreateModal
-        open={showCreateModal}
-        onOpenChange={handleCloseModal}
-        onSave={handleSaveGoal}
-        saving={saving}
-        editingGoal={editingGoal}
-      />
+        {/* Create/Edit Modal */}
+        <ManifestCreateModal
+          open={showCreateModal}
+          onOpenChange={handleCloseModal}
+          onSave={handleSaveGoal}
+          saving={saving}
+          editingGoal={editingGoal}
+        />
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deletingGoal} onOpenChange={(open) => !open && setDeletingGoal(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Manifestation</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete &quot;{deletingGoal?.title}&quot;? This action cannot be undone and all
-              practice history for this goal will be lost.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteGoal}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!deletingGoal} onOpenChange={(open) => !open && setDeletingGoal(null)}>
+          <AlertDialogContent className="rounded-2xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Manifestation</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete &quot;{deletingGoal?.title}&quot;? This action cannot be undone and all
+                practice history for this goal will be lost.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="rounded-full">Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteGoal}
+                className="bg-red-500 hover:bg-red-600 text-white rounded-full"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

@@ -6,9 +6,25 @@ import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ArrowRight, Sparkles, ImagePlus, X } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Sparkles,
+  ImagePlus,
+  X,
+  Check,
+  Briefcase,
+  DollarSign,
+  Heart,
+  Target,
+  Users,
+  BookOpen,
+  Clock,
+  Zap,
+  Eye,
+  Camera,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   STARTER_TEMPLATES,
@@ -71,6 +87,21 @@ const initialDraft: DraftState = {
   committed7Days: false,
 };
 
+const categoryIcons: Record<string, React.ReactNode> = {
+  career: <Briefcase className="h-4 w-4" />,
+  wealth: <DollarSign className="h-4 w-4" />,
+  health: <Heart className="h-4 w-4" />,
+  habit: <Target className="h-4 w-4" />,
+  relationships: <Users className="h-4 w-4" />,
+  learning: <BookOpen className="h-4 w-4" />,
+};
+
+const stepInfo = [
+  { num: 1, title: "Your Vision", subtitle: "What reality are you creating?", icon: Eye },
+  { num: 2, title: "Daily Action", subtitle: "How will you embody this?", icon: Zap },
+  { num: 3, title: "Your Ritual", subtitle: "Build your daily practice", icon: Sparkles },
+];
+
 export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editingGoal }: ManifestCreateModalProps) {
   const [draft, setDraft] = useState<DraftState>(initialDraft);
   const isEditing = !!editingGoal;
@@ -115,7 +146,6 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
     const newDraft = { ...draft, ...updates };
     setDraft(newDraft);
     localStorage.setItem(MANIFEST_DRAFT_KEY, JSON.stringify(newDraft));
-    toast.success("Draft saved", { duration: 1200 });
   };
 
   const applyTemplate = (template: StarterTemplate) => {
@@ -125,14 +155,19 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
       actAsIf: template.act_as_if,
       dailyAffirmation: template.affirmation,
     });
+    toast.success(`Applied "${template.name}" template!`);
   };
 
   const handleNext = () => {
-    if (draft.step < 3) saveDraft({ step: draft.step + 1 });
+    if (draft.step < 3) {
+      saveDraft({ step: draft.step + 1 });
+    }
   };
 
   const handleBack = () => {
-    if (draft.step > 1) saveDraft({ step: draft.step - 1 });
+    if (draft.step > 1) {
+      saveDraft({ step: draft.step - 1 });
+    }
   };
 
   const handleSubmit = () => {
@@ -171,161 +206,195 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
     reader.readAsDataURL(file);
   };
 
+  const currentStepInfo = stepInfo[draft.step - 1];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col rounded-2xl border border-border/50">
-        <DialogHeader className="pb-2">
-          <DialogTitle className="flex items-center justify-between gap-3">
-            <span className="font-semibold">
-              {isEditing
-                ? "Edit Manifestation"
-                : draft.step === 1
-                  ? "Step 1 — Basics"
-                  : draft.step === 2
-                    ? "Step 2 — Make it Executable"
-                    : "Step 3 — Daily System"}
-            </span>
-
-            <div className="flex items-center gap-1">
-              {[1, 2, 3].map((s) => (
+      <DialogContent className="max-w-2xl max-h-[92vh] overflow-hidden flex flex-col rounded-3xl border-0 shadow-2xl p-0 gap-0">
+        {/* Header with Steps */}
+        <div className="bg-gradient-to-r from-teal-500 to-cyan-500 px-6 py-6 text-white">
+          {/* Step Indicators */}
+          <div className="flex items-center justify-center gap-3 mb-5">
+            {stepInfo.map((s, i) => (
+              <div key={s.num} className="flex items-center gap-2">
                 <div
-                  key={s}
-                  className={["h-2 w-2 rounded-full", s <= draft.step ? "bg-primary" : "bg-muted"].join(" ")}
-                />
-              ))}
-            </div>
-          </DialogTitle>
-        </DialogHeader>
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                    draft.step === s.num
+                      ? "bg-white text-teal-600 shadow-lg scale-110"
+                      : draft.step > s.num
+                        ? "bg-white/30 text-white"
+                        : "bg-white/20 text-white/60"
+                  }`}
+                >
+                  {draft.step > s.num ? <Check className="h-5 w-5" /> : s.num}
+                </div>
+                {i < stepInfo.length - 1 && (
+                  <div className={`w-12 h-0.5 ${draft.step > s.num ? "bg-white/60" : "bg-white/20"}`} />
+                )}
+              </div>
+            ))}
+          </div>
 
-        <div className="flex-1 overflow-y-auto py-4 space-y-6">
+          {/* Current Step Title */}
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              {currentStepInfo && <currentStepInfo.icon className="h-5 w-5" />}
+              <h2 className="text-2xl font-bold">{currentStepInfo?.title}</h2>
+            </div>
+            <p className="text-white/80 text-sm">{currentStepInfo?.subtitle}</p>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {draft.step === 1 && (
             <>
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Quick Start Templates</Label>
+              {/* Quick Templates */}
+              <div className="space-y-3">
+                <Label className="text-xs text-slate-500 uppercase tracking-wider font-semibold flex items-center gap-2">
+                  <Sparkles className="h-3.5 w-3.5 text-teal-500" />
+                  Quick Start
+                </Label>
                 <div className="flex flex-wrap gap-2">
                   {STARTER_TEMPLATES.map((template) => (
-                    <Button
+                    <button
                       key={template.id}
-                      variant="outline"
-                      size="sm"
                       onClick={() => applyTemplate(template)}
-                      className="text-xs rounded-full"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium transition-all hover:border-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:shadow-md"
                     >
-                      <Sparkles className="h-3 w-3 mr-1" />
                       {template.name}
-                    </Button>
+                    </button>
                   ))}
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-border/50 bg-muted/15 p-4 space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="assumption">Your Assumption *</Label>
-                  <Input
-                    id="assumption"
-                    value={draft.title}
-                    onChange={(e) => saveDraft({ title: e.target.value })}
-                    placeholder="I am confidently working in my ideal role and growing every month."
-                  />
-                  <p className="text-xs text-muted-foreground">State it as your current reality.</p>
-                </div>
+              {/* Vision Statement */}
+              <div className="space-y-3">
+                <Label htmlFor="assumption" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  Your Belief Statement <span className="text-teal-500">*</span>
+                </Label>
+                <Textarea
+                  id="assumption"
+                  value={draft.title}
+                  onChange={(e) => saveDraft({ title: e.target.value })}
+                  placeholder="I am confidently working in my ideal role and growing every month..."
+                  rows={3}
+                  className="rounded-xl border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-teal-500 text-lg resize-none"
+                />
+                <p className="text-xs text-slate-500">💡 Write it as if it's already your reality</p>
+              </div>
 
-                <div className="space-y-2">
-                  <Label>Category</Label>
-                  <Select value={draft.category} onValueChange={(v) => saveDraft({ category: v })}>
-                    <SelectTrigger className="rounded-xl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          {cat.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              {/* Category */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold text-slate-700 dark:text-slate-200">Category</Label>
+                <div className="flex flex-wrap gap-2">
+                  {CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => saveDraft({ category: cat.id })}
+                      className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-medium transition-all ${
+                        draft.category === cat.id
+                          ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white border-transparent shadow-md"
+                          : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-teal-400"
+                      }`}
+                    >
+                      {categoryIcons[cat.id] || <Target className="h-4 w-4" />}
+                      {cat.label}
+                    </button>
+                  ))}
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label>Vision Image (optional)</Label>
-                  {draft.visionImageUrl ? (
-                    <div className="relative w-full h-40 rounded-2xl overflow-hidden border border-border/50 shadow-sm">
-                      <img src={draft.visionImageUrl} alt="Vision" className="w-full h-full object-cover" />
+              {/* Vision Image */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  Vision Board Image{" "}
+                  <span className="text-slate-400 text-xs font-normal">(Makes visualization 3x more powerful!)</span>
+                </Label>
+                {draft.visionImageUrl ? (
+                  <div className="relative w-full h-48 rounded-2xl overflow-hidden border-2 border-teal-200 dark:border-teal-800 group">
+                    <img src={draft.visionImageUrl} alt="Vision" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <Button
                         variant="secondary"
                         size="icon"
-                        className="absolute top-2 right-2 h-7 w-7 rounded-full"
+                        className="h-12 w-12 rounded-full"
                         onClick={() => saveDraft({ visionImageUrl: "" })}
                       >
-                        <X className="h-3 w-3" />
+                        <X className="h-5 w-5" />
                       </Button>
                     </div>
-                  ) : (
-                    <label className="flex items-center justify-center w-full h-28 rounded-2xl border border-dashed border-border cursor-pointer hover:border-primary/50 transition-colors">
-                      <div className="text-center">
-                        <ImagePlus className="h-6 w-6 text-muted-foreground mx-auto mb-1" />
-                        <span className="text-xs text-muted-foreground">Upload image</span>
-                      </div>
-                      <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                    </label>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="start-date">Start Date (optional)</Label>
-                  <Input
-                    id="start-date"
-                    type="date"
-                    value={draft.startDate}
-                    onChange={(e) => saveDraft({ startDate: e.target.value })}
-                    className="w-44 rounded-xl"
-                  />
-                </div>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center w-full h-40 rounded-2xl border-2 border-dashed border-teal-300 dark:border-teal-700 cursor-pointer hover:border-teal-500 hover:bg-teal-50/50 dark:hover:bg-teal-900/20 transition-all group">
+                    <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-100 to-cyan-100 dark:from-teal-900/50 dark:to-cyan-900/50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <ImagePlus className="h-6 w-6 text-teal-600 dark:text-teal-400" />
+                    </div>
+                    <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">
+                      Upload Your Vision Image
+                    </span>
+                    <span className="text-xs text-slate-400 mt-1">This will be your visualization background</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                  </label>
+                )}
               </div>
             </>
           )}
 
           {draft.step === 2 && (
-            <div className="rounded-2xl border border-border/50 bg-muted/15 p-4 space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="live-from-end">If it's already true, what do you do today?</Label>
+            <>
+              {/* If Already True */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  If this is already true, what do you do today?
+                </Label>
                 <Textarea
-                  id="live-from-end"
                   value={draft.liveFromEnd}
                   onChange={(e) => saveDraft({ liveFromEnd: e.target.value })}
-                  placeholder="I speak confidently in meetings and lead with clarity."
-                  rows={2}
+                  placeholder="I walk into meetings with confidence, speak clearly, and my ideas are valued..."
+                  rows={3}
+                  className="rounded-xl border-slate-200 resize-none"
                 />
-                <p className="text-xs text-muted-foreground">Short, vivid scene helps the mind align.</p>
+                <p className="text-xs text-slate-500">🎬 Describe a vivid scene from your new reality</p>
               </div>
 
+              {/* Act-as-If Actions */}
               <div className="space-y-3">
-                <Label>Today's Act-as-If *</Label>
+                <Label className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  Today's Act-as-If Action <span className="text-teal-500">*</span>
+                </Label>
                 <div className="flex flex-wrap gap-2">
                   {ACT_AS_IF_OPTIONS.map((option) => (
-                    <Button
+                    <button
                       key={option}
-                      variant={draft.actAsIf === option ? "default" : "outline"}
-                      size="sm"
                       onClick={() => saveDraft({ actAsIf: option, customActAsIf: "" })}
-                      className="text-xs rounded-full"
+                      className={`px-4 py-2.5 rounded-full border text-sm font-medium transition-all ${
+                        draft.actAsIf === option
+                          ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white border-transparent shadow-md"
+                          : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-teal-400"
+                      }`}
                     >
                       {option}
-                    </Button>
+                    </button>
                   ))}
                 </div>
                 <Input
                   value={draft.customActAsIf}
                   onChange={(e) => saveDraft({ customActAsIf: e.target.value, actAsIf: "custom" })}
-                  placeholder="e.g., Update LinkedIn headline to 'Supply Chain Lead'"
+                  placeholder="Or write your own action..."
+                  className="h-12 rounded-xl"
                 />
-                <p className="text-xs text-muted-foreground">One small, high-impact action.</p>
               </div>
 
-              <div className="space-y-3">
+              {/* Conviction Level */}
+              <div className="space-y-4 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
                 <div className="flex justify-between items-center">
-                  <Label>Conviction</Label>
-                  <span className="text-sm font-semibold text-primary">{draft.conviction}/10</span>
+                  <Label className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                    How much do you believe this?
+                  </Label>
+                  <span className="text-3xl font-bold bg-gradient-to-r from-teal-500 to-cyan-500 bg-clip-text text-transparent">
+                    {draft.conviction}/10
+                  </span>
                 </div>
                 <Slider
                   value={[draft.conviction]}
@@ -333,89 +402,117 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                   min={1}
                   max={10}
                   step={1}
+                  className="py-2"
                 />
-                <div className="flex justify-between text-xs text-muted-foreground">
+                <div className="flex justify-between text-xs text-slate-500">
                   <span>1 — Warming up</span>
-                  <span>10 — Fully embodied</span>
+                  <span>10 — Already living it</span>
                 </div>
               </div>
-            </div>
+            </>
           )}
 
           {draft.step === 3 && (
-            <div className="rounded-2xl border border-border/50 bg-muted/15 p-4 space-y-6">
+            <>
+              {/* Visualization Duration */}
               <div className="space-y-3">
-                <Label>Visualization</Label>
+                <Label className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  Daily Visualization Time
+                </Label>
                 <RadioGroup
                   value={String(draft.visualizationMinutes)}
                   onValueChange={(v) => saveDraft({ visualizationMinutes: Number(v) as 3 | 5 | 10 })}
-                  className="flex gap-4"
+                  className="flex gap-3"
                 >
                   {[3, 5, 10].map((min) => (
-                    <div key={min} className="flex items-center space-x-2">
-                      <RadioGroupItem value={String(min)} id={`viz-${min}`} />
-                      <Label htmlFor={`viz-${min}`} className="text-sm cursor-pointer">
-                        {min} min
-                      </Label>
-                    </div>
+                    <label
+                      key={min}
+                      className={`flex-1 flex flex-col items-center gap-2 p-5 rounded-2xl border cursor-pointer transition-all ${
+                        draft.visualizationMinutes === min
+                          ? "bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-900/30 dark:to-cyan-900/30 border-teal-300 dark:border-teal-700 shadow-md"
+                          : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-teal-300"
+                      }`}
+                    >
+                      <RadioGroupItem value={String(min)} id={`viz-${min}`} className="sr-only" />
+                      <Clock
+                        className={`h-6 w-6 ${draft.visualizationMinutes === min ? "text-teal-600" : "text-slate-400"}`}
+                      />
+                      <span
+                        className={`text-2xl font-bold ${draft.visualizationMinutes === min ? "text-teal-600" : "text-slate-600"}`}
+                      >
+                        {min}
+                      </span>
+                      <span className="text-xs text-slate-500">minutes</span>
+                    </label>
                   ))}
                 </RadioGroup>
-                <p className="text-xs text-muted-foreground">Focused, concrete scenes beat length.</p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="affirmation">Daily Affirmation *</Label>
-                <Input
-                  id="affirmation"
+              {/* Daily Affirmation */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  Daily Affirmation <span className="text-teal-500">*</span>
+                </Label>
+                <Textarea
                   value={draft.dailyAffirmation}
                   onChange={(e) => saveDraft({ dailyAffirmation: e.target.value })}
-                  placeholder="This success is already unfolding for me."
+                  placeholder="This success is already unfolding for me. I trust the process..."
+                  rows={2}
+                  className="rounded-xl resize-none"
                 />
-                <p className="text-xs text-muted-foreground">Read aloud at check-in.</p>
+                <p className="text-xs text-slate-500">🗣️ You'll see this during visualization</p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="check-in-time">Daily Check-in Time</Label>
-                <Input
-                  id="check-in-time"
-                  type="time"
-                  value={draft.checkInTime}
-                  onChange={(e) => saveDraft({ checkInTime: e.target.value })}
-                  className="w-36 rounded-xl"
-                />
-                <p className="text-xs text-muted-foreground">Pick a reliable moment for 1–3 minutes.</p>
+              {/* Check-in Time */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold text-slate-700 dark:text-slate-200">Daily Check-in Time</Label>
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      type="time"
+                      value={draft.checkInTime}
+                      onChange={(e) => saveDraft({ checkInTime: e.target.value })}
+                      className="w-44 h-12 pl-10 rounded-xl"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="flex items-start space-x-3 p-4 rounded-2xl bg-background/40 border border-border/50">
+              {/* Commitment */}
+              <div className="flex items-start space-x-4 p-5 rounded-2xl bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/30 dark:to-cyan-900/30 border border-teal-200 dark:border-teal-800">
                 <Checkbox
                   id="commitment"
                   checked={draft.committed7Days}
                   onCheckedChange={(checked) => saveDraft({ committed7Days: checked === true })}
-                  className="mt-0.5"
+                  className="mt-0.5 h-5 w-5 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
                 />
                 <div>
-                  <Label htmlFor="commitment" className="cursor-pointer font-medium">
-                    I commit to a 7-day practice.
+                  <Label
+                    htmlFor="commitment"
+                    className="cursor-pointer font-semibold text-sm text-slate-700 dark:text-slate-200"
+                  >
+                    I commit to 7 days of practice ✨
                   </Label>
-                  <p className="text-xs text-muted-foreground mt-1">Pledges increase follow-through.</p>
+                  <p className="text-xs text-slate-500 mt-1">Making a commitment increases success by 3x</p>
                 </div>
               </div>
-            </div>
+            </>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-4 border-t border-border/50">
+        <div className="flex items-center justify-between p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
           <Button
             variant="ghost"
             onClick={draft.step === 1 ? () => onOpenChange(false) : handleBack}
-            className="rounded-full"
+            className="rounded-full px-5"
           >
             {draft.step === 1 ? (
               "Cancel"
             ) : (
               <>
-                <ArrowLeft className="h-4 w-4 mr-1" />
+                <ArrowLeft className="h-4 w-4 mr-1.5" />
                 Back
               </>
             )}
@@ -425,15 +522,18 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
             <Button
               onClick={handleNext}
               disabled={(draft.step === 1 && !canProceedStep1) || (draft.step === 2 && !canProceedStep2)}
-              className="rounded-full px-5"
+              className="rounded-full px-8 h-12 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-lg"
             >
-              {draft.step === 1 && "Next: Make it Real"}
-              {draft.step === 2 && "Next: Daily System"}
-              <ArrowRight className="h-4 w-4 ml-1" />
+              Next Step
+              <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           ) : (
-            <Button onClick={handleSubmit} disabled={!canSubmit || saving} className="rounded-full px-6">
-              {saving ? (isEditing ? "Saving..." : "Creating...") : isEditing ? "Save Changes" : "Create & Start"}
+            <Button
+              onClick={handleSubmit}
+              disabled={!canSubmit || saving}
+              className="rounded-full px-8 h-12 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-lg"
+            >
+              {saving ? "Creating..." : isEditing ? "Save Changes ✓" : "Start Manifesting ✨"}
             </Button>
           )}
         </div>

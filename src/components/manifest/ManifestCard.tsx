@@ -1,13 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Pencil, Check, Minus, Clock, History, Trash2 } from "lucide-react";
+import { Pencil, Check, Minus, Clock, History, Trash2, Sparkles, Flame, Play } from "lucide-react";
 import { type ManifestGoal, type ManifestProof, type ManifestDailyPractice, DAILY_PRACTICE_KEY } from "./types";
-import { format, subDays, isSameDay, parseISO } from "date-fns";
-import { useMemo, useState } from "react";
+import { format, subDays, parseISO } from "date-fns";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { getPresetImage } from "@/lib/presetImages";
 import { EntryImageUpload } from "@/components/common/EntryImageUpload";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -33,6 +31,7 @@ export function ManifestCard({
   onDelete,
 }: ManifestCardProps) {
   const navigate = useNavigate();
+
   // Get last 7 days practice history
   const last7DaysHistory = useMemo(() => {
     const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
@@ -62,10 +61,7 @@ export function ManifestCard({
 
   const handleCoverImageChange = async (newImageUrl: string) => {
     try {
-      await supabase
-        .from("manifest_goals")
-        .update({ cover_image_url: newImageUrl })
-        .eq("id", goal.id);
+      await supabase.from("manifest_goals").update({ cover_image_url: newImageUrl }).eq("id", goal.id);
     } catch (error) {
       console.error("Failed to update cover image:", error);
     }
@@ -73,145 +69,149 @@ export function ManifestCard({
 
   return (
     <Card
-      className={`relative cursor-pointer transition-all duration-200 overflow-hidden hover:shadow-md rounded-2xl ${
-        isSelected 
-          ? "ring-2 ring-primary border-primary border-l-4 border-l-primary shadow-md" 
-          : "border-border/40 hover:border-border/60"
+      className={`relative cursor-pointer transition-all duration-300 overflow-hidden rounded-2xl group ${
+        isSelected
+          ? "ring-2 ring-teal-500 shadow-xl shadow-teal-500/20"
+          : "border-slate-200 dark:border-slate-800 hover:shadow-lg hover:border-teal-200 dark:hover:border-teal-800"
       }`}
       onClick={(e) => {
         e.preventDefault();
         onClick();
       }}
     >
-      <div className="flex">
-        {/* Left: Cover Image */}
-        <div 
-          className="w-40 shrink-0 relative overflow-hidden rounded-l-2xl"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <EntryImageUpload
-            currentImageUrl={goal.cover_image_url || null}
-            presetType="manifest"
-            category={goal.category || "other"}
-            onImageChange={handleCoverImageChange}
-            className="w-full h-full min-h-[200px]"
-          />
+      {/* Hero Image Section */}
+      <div className="relative h-40 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <EntryImageUpload
+          currentImageUrl={goal.cover_image_url || goal.vision_image_url || null}
+          presetType="manifest"
+          category={goal.category || "other"}
+          onImageChange={handleCoverImageChange}
+          className="w-full h-full"
+        />
+
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+
+        {/* Badges on image */}
+        <div className="absolute top-3 left-3 flex items-center gap-2 z-10">
+          <Badge className="text-xs rounded-full px-3 py-1 bg-gradient-to-r from-teal-500 to-cyan-500 text-white border-0 shadow-lg">
+            <Sparkles className="h-3 w-3 mr-1" />
+            Active
+          </Badge>
+          {streak > 0 && (
+            <Badge className="text-xs rounded-full px-3 py-1 bg-orange-500 text-white border-0 shadow-lg">
+              <Flame className="h-3 w-3 mr-1" />
+              Day {streak}
+            </Badge>
+          )}
         </div>
 
-        {/* Right: Card Content */}
-        <CardContent className="p-5 relative flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              {/* Assumption Text */}
-              <h3 className="font-medium text-foreground leading-tight mb-3 text-base">{goal.title}</h3>
+        {/* Action Buttons on image */}
+        <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+          {onEdit && (
+            <Button
+              variant="secondary"
+              size="icon"
+              className="h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-lg"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          <Button
+            variant="secondary"
+            size="icon"
+            className="h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-lg"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/manifest/history/${goal.id}`);
+            }}
+          >
+            <History className="h-3.5 w-3.5" />
+          </Button>
+          {onDelete && (
+            <Button
+              variant="secondary"
+              size="icon"
+              className="h-8 w-8 rounded-full bg-white/90 hover:bg-red-50 text-red-500 shadow-lg"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
 
-              {/* Start Date & Check-in Time */}
-              <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
-                <span className="font-medium">Started {startDate}</span>
-                {goal.check_in_time && (
-                  <span className="flex items-center gap-1.5 bg-muted/40 px-2 py-1 rounded-full">
-                    <Clock className="h-3 w-3" />
-                    {goal.check_in_time}
-                  </span>
-                )}
-              </div>
-
-              {/* Status Badges */}
-              <div className="flex flex-wrap items-center gap-2 mb-4">
-                <Badge variant={goal.is_locked ? "secondary" : "default"} className="text-xs rounded-full px-3">
-                  {goal.is_locked ? "Locked" : "Active"}
-                </Badge>
-                {streak > 0 && (
-                  <Badge variant="outline" className="text-xs rounded-full px-3">
-                    🔥 Day {streak}
-                  </Badge>
-                )}
-                <Badge variant="outline" className="text-xs rounded-full px-3">
-                  Conviction {goal.conviction}/10
-                </Badge>
-              </div>
-
-              {/* Last 7 Days History */}
-              <div className="flex items-center gap-1.5 mb-4">
-                <span className="text-xs text-muted-foreground mr-2 font-medium">Last 7 days:</span>
-                {last7DaysHistory.map((day, idx) => (
-                  <div
-                    key={idx}
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors ${
-                      day.completed 
-                        ? "bg-primary text-primary-foreground shadow-sm" 
-                        : "bg-muted/50 text-muted-foreground border border-border/40"
-                    }`}
-                    title={format(day.date, "MMM d")}
-                  >
-                    {day.completed ? <Check className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
-                  </div>
-                ))}
-              </div>
-
-              {/* Momentum Bar */}
-              <div className="space-y-2 mb-4">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span className="font-medium">Momentum</span>
-                  <span className="font-semibold text-foreground">{momentum}%</span>
-                </div>
-                <Progress value={momentum} className="h-2" />
-              </div>
-
-              {/* Last Saved Proof */}
-              {lastProof && (
-                <div className="text-xs text-muted-foreground truncate p-2.5 bg-muted/30 rounded-lg border border-border/30">
-                  <span className="text-foreground/80 font-medium">Last proof:</span> {lastProof.text}
-                </div>
-              )}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col gap-1 shrink-0">
-              {onEdit && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit();
-                  }}
-                  title="Edit goal"
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/manifest/history/${goal.id}`);
-                }}
-                title="View history"
-              >
-                <History className="h-4 w-4" />
-              </Button>
-              {onDelete && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete();
-                  }}
-                  title="Delete goal"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </div>
-        </CardContent>
+        {/* Title on image */}
+        <div className="absolute bottom-3 left-3 right-3 z-10">
+          <h3 className="font-semibold text-white leading-snug text-lg drop-shadow-lg line-clamp-2">{goal.title}</h3>
+        </div>
       </div>
+
+      {/* Card Content */}
+      <CardContent className="p-4 space-y-4">
+        {/* Meta info */}
+        <div className="flex items-center justify-between text-xs text-slate-500">
+          <span>Started {startDate}</span>
+          {goal.check_in_time && (
+            <span className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">
+              <Clock className="h-3 w-3" />
+              {goal.check_in_time}
+            </span>
+          )}
+        </div>
+
+        {/* 7-day History */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-slate-500">Last 7 days</span>
+          <div className="flex items-center gap-1">
+            {last7DaysHistory.map((day, idx) => (
+              <div
+                key={idx}
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-all ${
+                  day.completed
+                    ? "bg-gradient-to-br from-teal-400 to-cyan-500 text-white shadow-sm"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-400"
+                }`}
+                title={format(day.date, "EEE, MMM d")}
+              >
+                {day.completed ? <Check className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Momentum Bar */}
+        <div className="space-y-2">
+          <div className="flex justify-between text-xs">
+            <span className="text-slate-500">Momentum</span>
+            <span className="font-bold text-teal-600">{momentum}%</span>
+          </div>
+          <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-teal-500 to-cyan-500 transition-all duration-500"
+              style={{ width: `${momentum}%` }}
+            />
+          </div>
+        </div>
+
+        {/* CTA Button */}
+        <Button
+          className="w-full rounded-full h-11 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-lg shadow-teal-500/20"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick();
+          }}
+        >
+          <Play className="h-4 w-4 mr-2" />
+          Start Today's Practice
+        </Button>
+      </CardContent>
     </Card>
   );
 }

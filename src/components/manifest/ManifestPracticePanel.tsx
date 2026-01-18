@@ -3,8 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -12,7 +10,6 @@ import {
   Check,
   Camera,
   Lock,
-  ChevronRight,
   X,
   Clock,
   ImagePlus,
@@ -20,6 +17,10 @@ import {
   Plus,
   Sparkles,
   Flame,
+  Eye,
+  Zap,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import {
   type ManifestGoal,
@@ -70,10 +71,10 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
   const [currentProofImageUrl, setCurrentProofImageUrl] = useState<string | null>(null);
 
   const [showVisualization, setShowVisualization] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<string | null>("viz");
 
   const [alignment, setAlignment] = useState(5);
   const [growthNote, setGrowthNote] = useState("");
-  const [gratitude, setGratitude] = useState("");
   const [isLocked, setIsLocked] = useState(false);
 
   useEffect(() => {
@@ -85,8 +86,8 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
     setCurrentProofImageUrl(null);
     setAlignment(5);
     setGrowthNote("");
-    setGratitude("");
     setIsLocked(false);
+    setExpandedSection("viz");
 
     const saved = loadTodaysPractice();
     if (saved.visualizations) setVisualizations(saved.visualizations);
@@ -94,16 +95,14 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
     if (saved.proofs) setProofs(saved.proofs);
     if (saved.alignment) setAlignment(saved.alignment);
     if (saved.growth_note) setGrowthNote(saved.growth_note);
-    if (saved.gratitude) setGratitude(saved.gratitude || "");
     if (saved.locked) setIsLocked(true);
   }, [goal.id, today]);
 
   const hasVisualization = visualizations.length > 0;
   const hasAct = acts.length > 0;
   const hasProof = proofs.length > 0;
-  const section1Complete = hasVisualization && hasAct && hasProof;
-  const section2Ready = section1Complete;
-  const canLock = section2Ready && growthNote.trim().length > 0;
+  const allTasksDone = hasVisualization && hasAct && hasProof;
+  const canLock = allTasksDone && growthNote.trim().length > 0;
 
   const handleVisualizationComplete = () => {
     const newEntry: VisualizationEntry = {
@@ -115,7 +114,8 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
     setVisualizations(updated);
     setShowVisualization(false);
     savePractice({ visualizations: updated, visualization_count: updated.length });
-    toast.success("Visualization complete!");
+    toast.success("Visualization complete! ✨");
+    if (!hasAct) setExpandedSection("act");
   };
 
   const handleAddAct = () => {
@@ -129,7 +129,8 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
     setActs(updated);
     setCurrentActText("");
     savePractice({ acts: updated, act_count: updated.length });
-    toast.success("Nice move — that's practice!");
+    toast.success("Action recorded! 💪");
+    if (!hasProof) setExpandedSection("proof");
   };
 
   const handleRemoveAct = (id: string) => {
@@ -144,21 +145,14 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
 
     const reader = new FileReader();
     reader.onloadend = () => {
-      const base64 = reader.result as string;
-      setCurrentProofImageUrl(base64);
-      toast.success("Image attached!");
+      setCurrentProofImageUrl(reader.result as string);
     };
     reader.readAsDataURL(file);
   };
 
-  const handleRemoveCurrentProofImage = () => {
-    setCurrentProofImageUrl(null);
-    if (proofImageInputRef.current) proofImageInputRef.current.value = "";
-  };
-
   const handleAddProof = () => {
     if (!currentProofText.trim()) {
-      toast.error("Please enter at least one line of proof");
+      toast.error("Describe your proof");
       return;
     }
 
@@ -175,9 +169,9 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
     if (proofImageInputRef.current) proofImageInputRef.current.value = "";
 
     savePractice({ proofs: updated });
-
     confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
-    toast.success("Great — proof saved. Momentum +1");
+    toast.success("Proof saved! 🚀");
+    setExpandedSection("checkin");
   };
 
   const handleRemoveProof = (id: string) => {
@@ -202,19 +196,20 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
       proofs,
       alignment,
       growth_note: growthNote,
-      gratitude: gratitude || undefined,
       locked: true,
     };
 
     savePractice(practice);
     setIsLocked(true);
 
-    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-    toast.success("Day locked — celebrate your progress!");
+    confetti({ particleCount: 150, spread: 80, origin: { y: 0.5 } });
+    toast.success("Day complete! 🎉");
     onPracticeComplete(practice);
   };
 
-  const section1Progress = [hasVisualization, hasAct, hasProof].filter(Boolean).length;
+  const toggleSection = (section: string) => {
+    setExpandedSection(expandedSection === section ? null : section);
+  };
 
   if (showVisualization) {
     return (
@@ -227,312 +222,279 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
     );
   }
 
-  return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-background via-background to-muted/20">
-      {/* Header */}
-      <div className="p-5 border-b border-border/30">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            {goal.vision_image_url && (
-              <div className="w-full h-40 rounded-2xl overflow-hidden mb-4 border border-border/30 shadow-lg vision-card-float">
-                <img src={goal.vision_image_url} alt="Vision" className="w-full h-full object-cover" />
-              </div>
-            )}
+  const TaskItem = ({
+    id,
+    icon: Icon,
+    title,
+    isComplete,
+    children,
+  }: {
+    id: string;
+    icon: React.ElementType;
+    title: string;
+    isComplete: boolean;
+    children: React.ReactNode;
+  }) => {
+    const isExpanded = expandedSection === id;
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge className="text-xs rounded-full bg-[hsl(var(--accent-turquoise))] hover:bg-[hsl(var(--accent-turquoise))]/90">
-                <Sparkles className="h-3 w-3 mr-1" />
-                Active
-              </Badge>
-              <Badge variant="outline" className="text-xs rounded-full border-[hsl(var(--accent-turquoise))]/30">
-                <Flame className="h-3 w-3 mr-1 text-orange-500" />
-                Day {streak}
-              </Badge>
-              <Badge variant="outline" className="text-xs rounded-full">
-                Conviction {goal.conviction}/10
-              </Badge>
+    return (
+      <div
+        className={`rounded-2xl border transition-all ${
+          isComplete
+            ? "border-teal-200 dark:border-teal-800 bg-teal-50/50 dark:bg-teal-900/20"
+            : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+        }`}
+      >
+        <button onClick={() => toggleSection(id)} className="w-full flex items-center justify-between p-4">
+          <div className="flex items-center gap-3">
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                isComplete
+                  ? "bg-gradient-to-br from-teal-500 to-cyan-500 text-white"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+              }`}
+            >
+              {isComplete ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
             </div>
-
-            {goal.check_in_time && (
-              <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Clock className="h-3.5 w-3.5" />
-                <span>Daily check-in: {goal.check_in_time}</span>
-              </div>
+            <span
+              className={`font-medium ${isComplete ? "text-teal-700 dark:text-teal-300" : "text-slate-700 dark:text-slate-200"}`}
+            >
+              {title}
+            </span>
+            {isComplete && (
+              <span className="text-xs bg-teal-100 dark:bg-teal-900/50 text-teal-600 dark:text-teal-400 px-2 py-0.5 rounded-full">
+                Done
+              </span>
             )}
-
-            <p className="mt-3 text-xs text-muted-foreground tracking-wide uppercase">Practicing:</p>
-            <h3 className="mt-1 font-medium text-foreground leading-snug line-clamp-3 text-lg">{goal.title}</h3>
           </div>
+          {isExpanded ? (
+            <ChevronUp className="h-4 w-4 text-slate-400" />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-slate-400" />
+          )}
+        </button>
 
-          <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted/50" onClick={onClose}>
+        {isExpanded && <div className="px-4 pb-4 space-y-3">{children}</div>}
+      </div>
+    );
+  };
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <div className="p-5 border-b border-slate-200 dark:border-slate-800">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <div className="px-3 py-1 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-xs font-semibold flex items-center gap-1">
+                <Sparkles className="h-3 w-3" />
+                Active
+              </div>
+              <div className="px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-xs font-semibold flex items-center gap-1">
+                <Flame className="h-3 w-3" />
+                Day {streak}
+              </div>
+            </div>
+          </div>
+          <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* Vision Image Preview */}
+        {goal.vision_image_url && (
+          <div
+            className="w-full h-32 rounded-xl overflow-hidden mb-4 relative group cursor-pointer"
+            onClick={() => setShowVisualization(true)}
+          >
+            <img src={goal.vision_image_url} alt="Vision" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-center pb-3 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="text-white text-sm font-medium flex items-center gap-2">
+                <Play className="h-4 w-4" /> Start Visualization
+              </span>
+            </div>
+          </div>
+        )}
+
+        <h3 className="font-semibold text-slate-800 dark:text-slate-100 leading-snug line-clamp-2 mb-1">
+          {goal.title}
+        </h3>
+
+        {goal.check_in_time && (
+          <div className="flex items-center gap-1.5 text-xs text-slate-500">
+            <Clock className="h-3 w-3" />
+            <span>Check-in at {goal.check_in_time}</span>
+          </div>
+        )}
       </div>
 
-      {/* Scrollable Content */}
+      {/* Scrollable Tasks */}
       <ScrollArea className="flex-1">
-        <div className="p-5 space-y-6">
-          {/* Section 1 */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="font-semibold text-foreground flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-[hsl(var(--accent-turquoise))]/10 flex items-center justify-center text-xs font-bold text-[hsl(var(--accent-turquoise))]">
-                  1
+        <div className="p-4 space-y-3">
+          {/* Progress Indicator */}
+          <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 mb-2">
+            <div className="flex-1">
+              <div className="flex justify-between text-xs mb-2">
+                <span className="text-slate-500 font-medium">Today's Progress</span>
+                <span className="font-bold text-teal-600">
+                  {[hasVisualization, hasAct, hasProof].filter(Boolean).length}/3 tasks
                 </span>
-                Daily Practice
-              </h4>
-              <Badge variant="outline" className="text-xs rounded-full">
-                {section1Progress}/3
-              </Badge>
-            </div>
-
-            {/* Visualization */}
-            <Card
-              className={`glass-card rounded-2xl border-0 transition-all ${hasVisualization ? "ring-2 ring-[hsl(var(--accent-turquoise))]/30" : ""}`}
-            >
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    {hasVisualization ? (
-                      <div className="w-5 h-5 rounded-full bg-[hsl(var(--accent-turquoise))] flex items-center justify-center">
-                        <Check className="h-3 w-3 text-white" />
-                      </div>
-                    ) : (
-                      <Play className="h-5 w-5 text-muted-foreground" />
-                    )}
-                    <span className="text-sm font-medium">Visualization</span>
-                    {visualizations.length > 0 && (
-                      <Badge className="text-xs rounded-full bg-[hsl(var(--accent-turquoise))]/10 text-[hsl(var(--accent-turquoise))] hover:bg-[hsl(var(--accent-turquoise))]/20">
-                        {visualizations.length}x
-                      </Badge>
-                    )}
-                  </div>
-
-                  <Button
-                    size="sm"
-                    onClick={() => setShowVisualization(true)}
-                    className={`rounded-full ${hasVisualization ? "" : "btn-gradient"}`}
-                    variant={hasVisualization ? "outline" : "default"}
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    {hasVisualization ? "Add Another" : `Visualize (${goal.visualization_minutes}m)`}
-                  </Button>
-                </div>
-
-                {visualizations.length > 0 && (
-                  <div className="space-y-1.5 ml-7">
-                    {visualizations.map((v, i) => (
-                      <div key={v.id} className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Check className="h-3 w-3 text-[hsl(var(--accent-turquoise))]" />
-                        <span>
-                          Session {i + 1} • {v.duration}min • {format(new Date(v.created_at), "h:mm a")}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Act-as-If */}
-            <Card
-              className={`glass-card rounded-2xl border-0 transition-all ${hasAct ? "ring-2 ring-[hsl(var(--accent-turquoise))]/30" : ""}`}
-            >
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  {hasAct ? (
-                    <div className="w-5 h-5 rounded-full bg-[hsl(var(--accent-turquoise))] flex items-center justify-center">
-                      <Check className="h-3 w-3 text-white" />
-                    </div>
-                  ) : (
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                  )}
-                  <span className="text-sm font-medium">Act-as-If</span>
-                  {acts.length > 0 && (
-                    <Badge className="text-xs rounded-full bg-[hsl(var(--accent-turquoise))]/10 text-[hsl(var(--accent-turquoise))] hover:bg-[hsl(var(--accent-turquoise))]/20">
-                      {acts.length}x
-                    </Badge>
-                  )}
-                </div>
-
-                <p className="text-sm text-muted-foreground ml-7">Suggestion: {goal.act_as_if}</p>
-
-                <div className="ml-7 flex gap-2">
-                  <Input
-                    value={currentActText}
-                    onChange={(e) => setCurrentActText(e.target.value)}
-                    placeholder="Or write your own action..."
-                    className="text-sm flex-1 rounded-xl border-border/50 bg-background/60"
-                  />
-                  <Button size="sm" onClick={handleAddAct} className="rounded-full btn-gradient">
-                    <Plus className="h-3 w-3 mr-1" />
-                    Add
-                  </Button>
-                </div>
-
-                {acts.length > 0 && (
-                  <div className="space-y-2 ml-7">
-                    {acts.map((a) => (
-                      <div
-                        key={a.id}
-                        className="flex items-center justify-between gap-2 p-3 bg-[hsl(var(--accent-turquoise))]/5 rounded-xl border border-[hsl(var(--accent-turquoise))]/20"
-                      >
-                        <div className="flex items-center gap-2 text-xs">
-                          <Check className="h-3 w-3 text-[hsl(var(--accent-turquoise))]" />
-                          <span>{a.text}</span>
-                          <span className="text-muted-foreground">• {format(new Date(a.created_at), "h:mm a")}</span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 rounded-full hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => handleRemoveAct(a.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Save Proof */}
-            <Card
-              className={`glass-card rounded-2xl border-0 transition-all ${hasProof ? "ring-2 ring-[hsl(var(--accent-turquoise))]/30" : ""}`}
-            >
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  {hasProof ? (
-                    <div className="w-5 h-5 rounded-full bg-[hsl(var(--accent-turquoise))] flex items-center justify-center">
-                      <Check className="h-3 w-3 text-white" />
-                    </div>
-                  ) : (
-                    <Camera className="h-5 w-5 text-muted-foreground" />
-                  )}
-                  <span className="text-sm font-medium">Save Proof</span>
-                  {proofs.length > 0 && (
-                    <Badge className="text-xs rounded-full bg-[hsl(var(--accent-turquoise))]/10 text-[hsl(var(--accent-turquoise))] hover:bg-[hsl(var(--accent-turquoise))]/20">
-                      {proofs.length}x
-                    </Badge>
-                  )}
-                </div>
-
-                <Textarea
-                  value={currentProofText}
-                  onChange={(e) => setCurrentProofText(e.target.value)}
-                  placeholder="A colleague asked for my input; I felt calm in the meeting."
-                  rows={2}
-                  className="text-sm rounded-xl border-border/50 bg-background/60"
+              </div>
+              <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-teal-500 to-cyan-500 transition-all duration-500"
+                  style={{ width: `${([hasVisualization, hasAct, hasProof].filter(Boolean).length / 3) * 100}%` }}
                 />
+              </div>
+            </div>
+          </div>
 
-                <div className="space-y-2">
-                  <input
-                    ref={proofImageInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleProofImageUpload}
-                    className="hidden"
-                  />
+          {/* Task 1: Visualization */}
+          <TaskItem
+            id="viz"
+            icon={Eye}
+            title={`Visualize (${goal.visualization_minutes} min)`}
+            isComplete={hasVisualization}
+          >
+            <p className="text-sm text-slate-500 mb-3">Close your eyes and vividly imagine your new reality</p>
+            <Button
+              onClick={() => setShowVisualization(true)}
+              className={`w-full rounded-full h-12 ${hasVisualization ? "bg-slate-100 dark:bg-slate-800 text-slate-600 hover:bg-slate-200" : "bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:from-teal-600 hover:to-cyan-600"}`}
+            >
+              <Play className="h-4 w-4 mr-2" />
+              {hasVisualization ? "Add Another Session" : "Start Visualization"}
+            </Button>
+            {visualizations.length > 0 && (
+              <div className="mt-3 space-y-1">
+                {visualizations.map((v, i) => (
+                  <div
+                    key={v.id}
+                    className="flex items-center gap-2 text-xs text-slate-500 bg-teal-50 dark:bg-teal-900/30 px-3 py-2 rounded-lg"
+                  >
+                    <Check className="h-3 w-3 text-teal-500" />
+                    Session {i + 1} • {format(new Date(v.created_at), "h:mm a")}
+                  </div>
+                ))}
+              </div>
+            )}
+          </TaskItem>
 
-                  {currentProofImageUrl ? (
-                    <div className="relative group">
-                      <img
-                        src={currentProofImageUrl}
-                        alt="Proof"
-                        className="w-full h-32 object-cover rounded-xl border border-border/30"
-                      />
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-2 right-2 h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={handleRemoveCurrentProofImage}
-                      >
+          {/* Task 2: Act-as-If */}
+          <TaskItem id="act" icon={Zap} title="Take One Action" isComplete={hasAct}>
+            <p className="text-sm text-slate-500 mb-2">
+              Suggestion: <span className="font-medium text-slate-600">{goal.act_as_if}</span>
+            </p>
+            <div className="flex gap-2">
+              <Input
+                value={currentActText}
+                onChange={(e) => setCurrentActText(e.target.value)}
+                placeholder="What action did you take?"
+                className="flex-1 rounded-xl"
+              />
+              <Button
+                onClick={handleAddAct}
+                className="rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-4"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            {acts.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {acts.map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex items-center justify-between bg-teal-50 dark:bg-teal-900/30 px-3 py-2 rounded-lg"
+                  >
+                    <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-3 w-3 text-teal-500" />
+                      <span className="text-slate-700 dark:text-slate-300">{a.text}</span>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveAct(a.id)}>
+                      <Trash2 className="h-3 w-3 text-slate-400" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TaskItem>
+
+          {/* Task 3: Record Proof */}
+          <TaskItem id="proof" icon={Camera} title="Record Proof" isComplete={hasProof}>
+            <p className="text-sm text-slate-500 mb-2">What happened today that proves your new reality?</p>
+            <Textarea
+              value={currentProofText}
+              onChange={(e) => setCurrentProofText(e.target.value)}
+              placeholder="I received positive feedback on my presentation..."
+              rows={2}
+              className="rounded-xl resize-none mb-2"
+            />
+            <input
+              ref={proofImageInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleProofImageUpload}
+              className="hidden"
+            />
+
+            {currentProofImageUrl ? (
+              <div className="relative mb-2">
+                <img src={currentProofImageUrl} alt="Proof" className="w-full h-24 object-cover rounded-xl" />
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2 h-6 w-6 rounded-full"
+                  onClick={() => setCurrentProofImageUrl(null)}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                className="w-full rounded-xl border-dashed mb-2"
+                onClick={() => proofImageInputRef.current?.click()}
+              >
+                <ImagePlus className="h-4 w-4 mr-2" />
+                Attach Screenshot
+              </Button>
+            )}
+
+            <Button
+              onClick={handleAddProof}
+              disabled={!currentProofText.trim()}
+              className="w-full rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
+            >
+              Save Proof
+            </Button>
+
+            {proofs.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {proofs.map((p) => (
+                  <div key={p.id} className="bg-teal-50 dark:bg-teal-900/30 p-3 rounded-lg space-y-2">
+                    <div className="flex items-start justify-between">
+                      <p className="text-sm text-slate-700 dark:text-slate-300 flex-1">{p.text}</p>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveProof(p.id)}>
                         <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full rounded-full border-dashed hover:border-[hsl(var(--accent-turquoise))] hover:bg-[hsl(var(--accent-turquoise))]/5"
-                      onClick={() => proofImageInputRef.current?.click()}
-                    >
-                      <ImagePlus className="h-4 w-4 mr-2" />
-                      Attach Image
-                    </Button>
-                  )}
-                </div>
-
-                <Button
-                  size="sm"
-                  onClick={handleAddProof}
-                  disabled={!currentProofText.trim()}
-                  className="w-full rounded-full btn-gradient"
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Add Proof
-                </Button>
-
-                {proofs.length > 0 && (
-                  <div className="space-y-2 pt-3 border-t border-border/30">
-                    {proofs.map((p) => (
-                      <div
-                        key={p.id}
-                        className="p-3 bg-[hsl(var(--accent-turquoise))]/5 rounded-xl border border-[hsl(var(--accent-turquoise))]/20 space-y-2"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1">
-                            <p className="text-xs">{p.text}</p>
-                            <span className="text-xs text-muted-foreground">
-                              {format(new Date(p.created_at), "h:mm a")}
-                            </span>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 rounded-full hover:bg-destructive/10 hover:text-destructive"
-                            onClick={() => handleRemoveProof(p.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                        {p.image_url && (
-                          <img src={p.image_url} alt="Proof" className="w-full h-24 object-cover rounded-lg" />
-                        )}
-                      </div>
-                    ))}
+                    {p.image_url && (
+                      <img src={p.image_url} alt="Proof" className="w-full h-20 object-cover rounded-lg" />
+                    )}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                ))}
+              </div>
+            )}
+          </TaskItem>
 
-          {/* Divider */}
-          <div className="flex items-center gap-4">
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-          </div>
-
-          {/* Section 2 */}
-          <div className={`space-y-4 transition-all ${!section2Ready ? "opacity-40 pointer-events-none" : ""}`}>
-            <div className="flex items-center justify-between">
-              <h4 className="font-semibold text-foreground flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-[hsl(var(--accent-turquoise))]/10 flex items-center justify-center text-xs font-bold text-[hsl(var(--accent-turquoise))]">
-                  2
-                </span>
-                Daily Check-in
-              </h4>
-              {!section2Ready && <Lock className="h-4 w-4 text-muted-foreground" />}
-            </div>
-
-            <div className="glass-card rounded-2xl p-5 space-y-5">
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <Label className="text-sm font-medium">Alignment</Label>
-                  <span className="text-lg font-bold text-[hsl(var(--accent-turquoise))]">{alignment}/10</span>
-                </div>
-                <div className="slider-gradient">
+          {/* Check-in Section - appears when all tasks done */}
+          {allTasksDone && (
+            <TaskItem id="checkin" icon={Lock} title="Complete Day" isComplete={isLocked}>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <Label>How aligned did you feel?</Label>
+                    <span className="font-bold text-teal-600">{alignment}/10</span>
+                  </div>
                   <Slider
                     value={[alignment]}
                     onValueChange={(v) => {
@@ -541,53 +503,35 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
                     }}
                     min={1}
                     max={10}
-                    step={1}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">How aligned did you feel?</p>
-              </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">
-                  Growth Note <span className="text-[hsl(var(--accent-turquoise))]">*</span>
-                </Label>
-                <Input
-                  value={growthNote}
-                  onChange={(e) => {
-                    setGrowthNote(e.target.value);
-                    savePractice({ growth_note: e.target.value });
-                  }}
-                  placeholder="Short insight or idea for tomorrow."
-                  className="rounded-xl border-border/50 bg-background/60"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label className="text-sm">
+                    Growth Note <span className="text-teal-500">*</span>
+                  </Label>
+                  <Input
+                    value={growthNote}
+                    onChange={(e) => {
+                      setGrowthNote(e.target.value);
+                      savePractice({ growth_note: e.target.value });
+                    }}
+                    placeholder="What did you learn? What will you do tomorrow?"
+                    className="rounded-xl"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">
-                  Gratitude <span className="text-muted-foreground text-xs">(optional)</span>
-                </Label>
-                <Textarea
-                  value={gratitude}
-                  onChange={(e) => {
-                    setGratitude(e.target.value);
-                    savePractice({ gratitude: e.target.value });
-                  }}
-                  placeholder="1–3 things you appreciate"
-                  rows={2}
-                  className="rounded-xl border-border/50 bg-background/60 resize-none"
-                />
+                <Button
+                  onClick={handleLockToday}
+                  disabled={!canLock}
+                  className="w-full rounded-full h-12 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg"
+                >
+                  <Lock className="h-4 w-4 mr-2" />
+                  Complete Today ✨
+                </Button>
               </div>
-
-              <Button
-                onClick={handleLockToday}
-                disabled={!canLock}
-                className="w-full rounded-full btn-gradient h-12 text-sm font-medium"
-              >
-                <Lock className="h-4 w-4 mr-2" />
-                {isLocked ? "Update Day" : "Lock Today ✨"}
-              </Button>
-            </div>
-          </div>
+            </TaskItem>
+          )}
         </div>
       </ScrollArea>
     </div>
