@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronLeft, ChevronRight, ImagePlus, Sparkles, X, Check } from "lucide-react";
-import { type ManifestGoal, GOAL_DRAFT_KEY } from "./types";
+import { type ManifestGoal, MANIFEST_DRAFT_KEY } from "./types";
 
 interface ManifestCreateModalProps {
   open: boolean;
@@ -62,7 +62,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
       setCheckInTime(editingGoal.check_in_time || "08:00");
       setCommitted(editingGoal.committed_7_days || false);
     } else {
-      const draft = localStorage.getItem(GOAL_DRAFT_KEY);
+      const draft = localStorage.getItem(MANIFEST_DRAFT_KEY);
       if (draft) {
         const d = JSON.parse(draft);
         setAssumption(d.assumption || "");
@@ -82,7 +82,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
 
   const saveDraft = () => {
     localStorage.setItem(
-      GOAL_DRAFT_KEY,
+      MANIFEST_DRAFT_KEY,
       JSON.stringify({
         assumption,
         category,
@@ -120,7 +120,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
       check_in_time: checkInTime,
       committed_7_days: committed,
     });
-    localStorage.removeItem(GOAL_DRAFT_KEY);
+    localStorage.removeItem(MANIFEST_DRAFT_KEY);
   };
 
   const canNext = step === 1 ? assumption.trim().length > 0 : step === 2 ? true : committed;
