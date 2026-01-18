@@ -586,9 +586,23 @@ export default function Journal() {
       <div
         className={cn(
           "flex-1 grid gap-6 w-full px-4 sm:px-6 py-4",
-          isFullscreen ? "grid-cols-1 max-w-4xl mx-auto" : "grid-cols-1 lg:grid-cols-[1fr_320px]",
+          isFullscreen ? "grid-cols-1 max-w-4xl mx-auto" : "grid-cols-1 lg:grid-cols-[280px_1fr_280px]",
         )}
       >
+        {/* Left Panel - Calendar */}
+        {!isFullscreen && (
+          <div className="hidden lg:block">
+            <JournalSidebarPanel
+              selectedDate={selectedDate}
+              onDateSelect={setSelectedDate}
+              entries={entries}
+              onInsertPrompt={handleInsertPrompt}
+              skin={currentSkin}
+              showSection="calendar"
+            />
+          </div>
+        )}
+
         <div className="flex flex-col min-w-0">
           <div
             className={cn(
@@ -609,6 +623,7 @@ export default function Journal() {
           </div>
         </div>
 
+        {/* Right Panel - Recent Entries */}
         {!isFullscreen && (
           <div className="hidden lg:block">
             <JournalSidebarPanel
@@ -617,6 +632,7 @@ export default function Journal() {
               entries={entries}
               onInsertPrompt={handleInsertPrompt}
               skin={currentSkin}
+              showSection="recent"
             />
           </div>
         )}
