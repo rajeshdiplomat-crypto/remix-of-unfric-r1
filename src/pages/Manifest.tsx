@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Sparkles, Eye, Zap, Camera, CheckCircle2, Plus, ArrowRight } from "lucide-react";
+import { Sparkles, Plus } from "lucide-react";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { subDays, parseISO, isSameDay, differenceInDays, format } from "date-fns";
@@ -47,43 +47,6 @@ function loadAllGoalExtras(): Record<string, Partial<ManifestGoal>> {
 
 function loadAllPractices(): Record<string, ManifestDailyPractice> {
   return JSON.parse(localStorage.getItem(DAILY_PRACTICE_KEY) || "{}");
-}
-
-// Journey Step Component
-function JourneyStep({
-  step,
-  label,
-  icon: Icon,
-  isActive,
-  isComplete,
-}: {
-  step: number;
-  label: string;
-  icon: React.ElementType;
-  isActive: boolean;
-  isComplete: boolean;
-}) {
-  return (
-    <div
-      className={`flex items-center gap-3 px-5 py-3 rounded-full transition-all ${
-        isActive
-          ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/30"
-          : isComplete
-            ? "bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300"
-            : "bg-slate-100 dark:bg-slate-800 text-slate-500"
-      }`}
-    >
-      <div
-        className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${
-          isActive ? "bg-white/20" : isComplete ? "bg-teal-500 text-white" : "bg-slate-200 dark:bg-slate-700"
-        }`}
-      >
-        {isComplete ? <CheckCircle2 className="h-4 w-4" /> : step}
-      </div>
-      <Icon className="h-4 w-4" />
-      <span className="text-sm font-medium hidden sm:inline">{label}</span>
-    </div>
-  );
 }
 
 export default function Manifest() {
@@ -163,7 +126,7 @@ export default function Manifest() {
     fetchData();
   }, [fetchData]);
 
-  // Calculate metrics for each goal
+  // Calculate metrics
   const getGoalMetrics = useCallback(
     (goal: ManifestGoal) => {
       const today = new Date();
@@ -177,29 +140,16 @@ export default function Manifest() {
         else if (i > 0) break;
       }
 
-      const activeDays = Math.max(1, differenceInDays(today, parseISO(goal.created_at)));
-
-      const last7Practices = goalPractices.filter((p) => {
-        const entryDate = parseISO(p.entry_date);
-        return entryDate >= subDays(today, 7);
-      });
-
+      const last7Practices = goalPractices.filter((p) => parseISO(p.entry_date) >= subDays(today, 7));
       const convictionAvg = goal.conviction * 10;
       const actConsistency = (last7Practices.filter((p) => (p.act_count || 0) > 0).length / 7) * 100;
-
       const proofRate = Math.min((last7Practices.filter((p) => (p.proofs?.length || 0) > 0).length / 7) * 100, 100);
-
       const momentum = Math.round(convictionAvg * 0.4 + actConsistency * 0.3 + proofRate * 0.3);
 
       const goalProofs = proofs.filter((p) => p.goal_id === goal.id);
       const lastProof = goalProofs[0];
 
-      // Check today's practice
-      const todayStr = format(today, "yyyy-MM-dd");
-      const todayPractice = goalPractices.find((p) => p.entry_date === todayStr);
-
-      void activeDays;
-      return { streak, momentum, lastProof, todayPractice };
+      return { streak, momentum, lastProof };
     },
     [practices, proofs],
   );
@@ -227,21 +177,8 @@ export default function Manifest() {
   }, [activeGoals, getGoalMetrics]);
 
   // Handlers
-  const handleSaveGoal = async (goalData: {
-    title: string;
-    category: string;
-    vision_image_url?: string;
-    start_date?: string;
-    live_from_end?: string;
-    act_as_if: string;
-    conviction: number;
-    visualization_minutes: 3 | 5 | 10;
-    daily_affirmation: string;
-    check_in_time: string;
-    committed_7_days: boolean;
-  }) => {
+  const handleSaveGoal = async (goalData: any) => {
     if (!user) return;
-
     setSaving(true);
 
     try {
@@ -252,24 +189,18 @@ export default function Manifest() {
           .from("manifest_goals")
           .update({ title: goalData.title })
           .eq("id", editingGoal.id);
-
         if (error) throw error;
         goalId = editingGoal.id;
-        toast.success("Manifestation updated!");
+        toast.success("Vision updated!");
       } else {
         const { data, error } = await supabase
           .from("manifest_goals")
-          .insert({
-            user_id: user.id,
-            title: goalData.title,
-            is_completed: false,
-          })
+          .insert({ user_id: user.id, title: goalData.title, is_completed: false })
           .select()
           .single();
-
         if (error) throw error;
         goalId = data.id;
-        toast.success("Manifestation created!");
+        toast.success("Vision created!");
       }
 
       saveGoalExtras(goalId, {
@@ -291,20 +222,13 @@ export default function Manifest() {
       fetchData();
     } catch (error) {
       console.error("Error saving goal:", error);
-      toast.error(editingGoal ? "Failed to update manifestation" : "Failed to create manifestation");
+      toast.error("Failed to save vision");
     } finally {
       setSaving(false);
     }
   };
 
-  const handlePracticeComplete = useCallback(
-    (practice: ManifestDailyPractice) => {
-      void practice;
-      fetchData();
-    },
-    [fetchData],
-  );
-
+  const handlePracticeComplete = useCallback(() => fetchData(), [fetchData]);
   const handleSelectGoal = (goal: ManifestGoal) => setSelectedGoal(goal);
   const handleEditGoal = (goal: ManifestGoal) => {
     setEditingGoal(goal);
@@ -313,7 +237,6 @@ export default function Manifest() {
 
   const handleDeleteGoal = async () => {
     if (!deletingGoal) return;
-
     try {
       const { error } = await supabase.from("manifest_goals").delete().eq("id", deletingGoal.id);
       if (error) throw error;
@@ -322,15 +245,13 @@ export default function Manifest() {
       delete extras[deletingGoal.id];
       localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify(extras));
 
-      if (selectedGoal?.id === deletingGoal.id) {
-        setSelectedGoal(null);
-      }
+      if (selectedGoal?.id === deletingGoal.id) setSelectedGoal(null);
 
-      toast.success("Manifestation deleted");
+      toast.success("Vision deleted");
       fetchData();
     } catch (error) {
       console.error("Error deleting goal:", error);
-      toast.error("Failed to delete manifestation");
+      toast.error("Failed to delete");
     } finally {
       setDeletingGoal(null);
     }
@@ -341,13 +262,11 @@ export default function Manifest() {
     if (!open) setEditingGoal(null);
   };
 
-  if (loading) {
-    return <PageLoadingScreen module="manifest" />;
-  }
+  if (loading) return <PageLoadingScreen module="manifest" />;
 
   return (
-    <div className="flex flex-col w-full flex-1 bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 min-h-screen">
-      {/* Hero Image */}
+    <div className="flex flex-col w-full flex-1 bg-slate-50 dark:bg-slate-950 min-h-screen">
+      {/* Hero */}
       <PageHero
         storageKey="manifest_hero_src"
         typeKey="manifest_hero_type"
@@ -356,9 +275,8 @@ export default function Manifest() {
         subtitle={PAGE_HERO_TEXT.manifest.subtitle}
       />
 
-      {/* Header Section */}
-      <div className="px-6 lg:px-8 pt-6 pb-4">
-        {/* Stats Bar */}
+      {/* Top Bar */}
+      <div className="px-6 lg:px-8 py-5">
         <ManifestTopBar
           activeCount={activeGoals.length}
           streak={aggregateStreak}
@@ -367,34 +285,30 @@ export default function Manifest() {
         />
       </div>
 
-      {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6 px-6 lg:px-8 pb-8 flex-1">
-        {/* LEFT: Goals Board */}
-        <div className="overflow-y-auto space-y-4 pr-1">
+      {/* Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 px-6 lg:px-8 pb-8 flex-1">
+        {/* Goals */}
+        <div className="space-y-4">
           {activeGoals.length === 0 ? (
-            <Card className="rounded-2xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20">
+            <Card className="rounded-2xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900">
               <CardContent className="py-16 px-8 text-center">
-                <div className="mx-auto mb-6 h-20 w-20 rounded-3xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
-                  <Sparkles className="h-10 w-10 text-white" />
+                <div className="mx-auto mb-6 h-16 w-16 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg">
+                  <Sparkles className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-3">
-                  Start Your Manifestation Journey
-                </h3>
-                <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-md mx-auto">
-                  Write your belief in present tense. Practice it daily. Watch it become your reality.
+                <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-2">Start Your First Vision</h3>
+                <p className="text-slate-500 mb-6 max-w-sm mx-auto">
+                  Write a belief in present tense and practice it daily until it becomes your reality.
                 </p>
                 <Button
                   onClick={() => setShowCreateModal(true)}
-                  size="lg"
-                  className="rounded-full px-8 h-14 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white text-lg shadow-lg shadow-teal-500/30"
+                  className="rounded-xl h-11 px-6 bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
                 >
-                  <Plus className="h-5 w-5 mr-2" />
-                  Create Your First Vision
+                  <Plus className="h-4 w-4 mr-2" /> Create Vision
                 </Button>
               </CardContent>
             </Card>
           ) : (
-            <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {activeGoals.map((goal) => {
                 const { streak, momentum, lastProof } = getGoalMetrics(goal);
                 return (
@@ -403,7 +317,6 @@ export default function Manifest() {
                     goal={goal}
                     streak={streak}
                     momentum={momentum}
-                    lastProof={lastProof}
                     isSelected={selectedGoal?.id === goal.id}
                     onClick={() => handleSelectGoal(goal)}
                     onEdit={() => handleEditGoal(goal)}
@@ -411,67 +324,59 @@ export default function Manifest() {
                   />
                 );
               })}
-            </>
+            </div>
           )}
         </div>
 
-        {/* RIGHT: Practice Panel */}
-        <aside
-          className="hidden lg:flex flex-col h-full overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl"
-          tabIndex={-1}
-          aria-label="Practice panel"
-        >
-          {selectedGoal ? (
-            <ManifestPracticePanel
-              goal={selectedGoal}
-              streak={getGoalMetrics(selectedGoal).streak}
-              onClose={() => setSelectedGoal(null)}
-              onPracticeComplete={handlePracticeComplete}
-            />
-          ) : (
-            <div className="p-8 flex flex-col items-center justify-center h-full text-center">
-              <div className="mx-auto mb-6 h-20 w-20 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
-                <Sparkles className="h-8 w-8 text-slate-400" />
+        {/* Practice Panel */}
+        <aside className="hidden lg:block">
+          <div className="sticky top-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden shadow-sm h-[calc(100vh-200px)]">
+            {selectedGoal ? (
+              <ManifestPracticePanel
+                goal={selectedGoal}
+                streak={getGoalMetrics(selectedGoal).streak}
+                onClose={() => setSelectedGoal(null)}
+                onPracticeComplete={handlePracticeComplete}
+              />
+            ) : (
+              <div className="p-8 flex flex-col items-center justify-center h-full text-center">
+                <div className="mx-auto mb-4 h-14 w-14 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                  <Sparkles className="h-6 w-6 text-slate-400" />
+                </div>
+                <h3 className="font-semibold text-slate-700 dark:text-slate-200 mb-1">Select a Vision</h3>
+                <p className="text-sm text-slate-500">Click on any card to start your daily practice</p>
               </div>
-              <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-2">Select a Manifestation</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs">
-                Click on any goal from the left to begin your daily practice
-              </p>
-            </div>
-          )}
+            )}
+          </div>
         </aside>
-
-        {/* Create/Edit Modal */}
-        <ManifestCreateModal
-          open={showCreateModal}
-          onOpenChange={handleCloseModal}
-          onSave={handleSaveGoal}
-          saving={saving}
-          editingGoal={editingGoal}
-        />
-
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={!!deletingGoal} onOpenChange={(open) => !open && setDeletingGoal(null)}>
-          <AlertDialogContent className="rounded-2xl">
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Manifestation</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete &quot;{deletingGoal?.title}&quot;? This action cannot be undone and all
-                practice history for this goal will be lost.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel className="rounded-full">Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDeleteGoal}
-                className="bg-red-500 hover:bg-red-600 text-white rounded-full"
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
+
+      {/* Modal */}
+      <ManifestCreateModal
+        open={showCreateModal}
+        onOpenChange={handleCloseModal}
+        onSave={handleSaveGoal}
+        saving={saving}
+        editingGoal={editingGoal}
+      />
+
+      {/* Delete Dialog */}
+      <AlertDialog open={!!deletingGoal} onOpenChange={(open) => !open && setDeletingGoal(null)}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Vision</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deletingGoal?.title}"? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteGoal} className="bg-red-500 hover:bg-red-600 text-white rounded-xl">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
