@@ -489,45 +489,21 @@ export default function Journal() {
         }}
       >
         <div className="px-4 sm:px-6 py-2 flex items-center justify-between gap-4">
-          {/* Left - 7 Day Date Strip */}
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={goToPreviousDay}>
+          {/* Left - Date Navigation */}
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={goToPreviousDay}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
 
-            <div className="flex items-center gap-0.5">
-              {Array.from({ length: 7 }, (_, i) => {
-                const day = addDays(subDays(selectedDate, 3), i);
-                const isSelected = isSameDay(day, selectedDate);
-                const isTodayDate = isToday(day);
-                return (
-                  <button
-                    key={day.toISOString()}
-                    onClick={() => setSelectedDate(day)}
-                    className={cn(
-                      "flex flex-col items-center px-2.5 py-1.5 rounded-xl transition-all min-w-[44px]",
-                      isSelected
-                        ? "bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-md"
-                        : isTodayDate
-                          ? "bg-violet-50 text-violet-600 hover:bg-violet-100"
-                          : "hover:bg-slate-100 text-slate-600",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "text-[10px] font-medium uppercase",
-                        isSelected ? "text-white/80" : "text-slate-400",
-                      )}
-                    >
-                      {format(day, "EEE")}
-                    </span>
-                    <span className={cn("text-sm font-bold", isSelected ? "text-white" : "")}>{format(day, "d")}</span>
-                  </button>
-                );
-              })}
-            </div>
+            <button
+              onClick={() => setSelectedDate(new Date())}
+              className="flex items-center gap-2 px-3 py-1.5 bg-white/80 hover:bg-white rounded-xl border border-slate-200 transition-all"
+            >
+              <Calendar className="h-4 w-4 text-violet-500" />
+              <span className="text-sm font-semibold text-slate-700">{format(selectedDate, "EEE, MMM d")}</span>
+            </button>
 
-            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={goToNextDay}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={goToNextDay}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
