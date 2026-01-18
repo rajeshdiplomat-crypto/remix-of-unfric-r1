@@ -18,6 +18,8 @@ import {
   Calendar as CalendarIcon,
   BookOpen,
   Clock,
+  PanelLeftClose,
+  PanelLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { JournalEntry, DAILY_PROMPTS, JournalSkin } from "./types";
@@ -29,6 +31,8 @@ interface JournalSidebarPanelProps {
   onInsertPrompt: (prompt: string) => void;
   skin?: JournalSkin;
   showSection?: "calendar" | "recent" | "all";
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export const JournalSidebarPanel = memo(function JournalSidebarPanel({
@@ -38,6 +42,8 @@ export const JournalSidebarPanel = memo(function JournalSidebarPanel({
   onInsertPrompt,
   skin,
   showSection = "all",
+  isCollapsed = false,
+  onToggleCollapse,
 }: JournalSidebarPanelProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [dailyPrompt, setDailyPrompt] = useState(() => DAILY_PROMPTS[Math.floor(Math.random() * DAILY_PROMPTS.length)]);
@@ -60,8 +66,24 @@ export const JournalSidebarPanel = memo(function JournalSidebarPanel({
     setDailyPrompt(DAILY_PROMPTS[Math.floor(Math.random() * DAILY_PROMPTS.length)]);
   }, []);
 
+  // Left panel shows both calendar and recent entries
   const showCalendar = showSection === "calendar" || showSection === "all";
-  const showRecent = showSection === "recent" || showSection === "all";
+  const showRecent = showSection === "calendar" || showSection === "all"; // Recent entries now shown with calendar
+
+  // Collapsed state - show only toggle button
+  if (isCollapsed) {
+    return (
+      <div className="flex flex-col items-center py-4">
+        <button
+          onClick={onToggleCollapse}
+          className="p-2 bg-white rounded-xl shadow-sm border border-slate-100 hover:bg-slate-50 transition-colors"
+          title="Expand panel"
+        >
+          <PanelLeft className="h-5 w-5 text-slate-600" />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full overflow-auto space-y-4 pb-4">
@@ -71,6 +93,16 @@ export const JournalSidebarPanel = memo(function JournalSidebarPanel({
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-50">
             <div className="flex items-center gap-2">
+              {/* Collapse button integrated into header */}
+              {onToggleCollapse && (
+                <button
+                  onClick={onToggleCollapse}
+                  className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+                  title="Collapse panel"
+                >
+                  <PanelLeftClose className="h-4 w-4 text-slate-400" />
+                </button>
+              )}
               <div className="p-1.5 bg-violet-100 rounded-lg">
                 <CalendarIcon className="h-4 w-4 text-violet-600" />
               </div>
@@ -147,32 +179,6 @@ export const JournalSidebarPanel = memo(function JournalSidebarPanel({
               className="w-full mt-3 py-2 text-xs font-medium text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
             >
               Jump to Today
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Daily Prompt Card */}
-      {showCalendar && (
-        <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl border border-violet-100/50 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-violet-100/50">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-white rounded-lg shadow-sm">
-                <Sparkles className="h-4 w-4 text-violet-500" />
-              </div>
-              <span className="text-sm font-semibold text-violet-800">Daily Prompt</span>
-            </div>
-            <button onClick={refreshPrompt} className="p-1.5 hover:bg-white/50 rounded-lg transition-colors">
-              <RefreshCw className="h-3.5 w-3.5 text-violet-500" />
-            </button>
-          </div>
-          <div className="p-4">
-            <p className="text-sm text-violet-700 italic leading-relaxed mb-3">"{dailyPrompt}"</p>
-            <button
-              onClick={() => onInsertPrompt(dailyPrompt)}
-              className="w-full py-2 px-4 bg-white text-violet-600 text-xs font-semibold rounded-xl border border-violet-200 hover:bg-violet-50 transition-colors shadow-sm"
-            >
-              Use This Prompt
             </button>
           </div>
         </div>
