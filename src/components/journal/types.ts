@@ -6,6 +6,7 @@ export interface JournalEntry {
   createdAt: string;
   updatedAt: string;
   title: string;
+  preview?: string; // First 3 lines of content for display
   contentJSON: string; // TipTap JSON content
   mood?: string;
   tags?: string[];

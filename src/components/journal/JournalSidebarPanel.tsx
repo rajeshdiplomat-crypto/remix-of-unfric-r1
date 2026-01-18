@@ -8,6 +8,10 @@ import {
   isToday,
   addMonths,
   subMonths,
+  getMonth,
+  getYear,
+  setMonth as setMonthDate,
+  setYear as setYearDate,
 } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +22,7 @@ import {
   Calendar as CalendarIcon,
   BookOpen,
   Clock,
-  PanelLeftClose,
+  ArrowLeftToLine,
   PanelLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -33,6 +37,7 @@ interface JournalSidebarPanelProps {
   showSection?: "calendar" | "recent" | "all";
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  searchQuery?: string;
 }
 
 export const JournalSidebarPanel = memo(function JournalSidebarPanel({
@@ -44,6 +49,7 @@ export const JournalSidebarPanel = memo(function JournalSidebarPanel({
   showSection = "all",
   isCollapsed = false,
   onToggleCollapse,
+  searchQuery = "",
 }: JournalSidebarPanelProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [dailyPrompt, setDailyPrompt] = useState(() => DAILY_PROMPTS[Math.floor(Math.random() * DAILY_PROMPTS.length)]);
@@ -59,8 +65,17 @@ export const JournalSidebarPanel = memo(function JournalSidebarPanel({
   const hasEntry = useCallback((date: Date) => entriesDates.has(format(date, "yyyy-MM-dd")), [entriesDates]);
 
   const recentEntries = useMemo(() => {
-    return [...entries].sort((a, b) => new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime()).slice(0, 5);
-  }, [entries]);
+    let filtered = [...entries];
+    // Filter by search query if provided
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (e) =>
+          (e.title && e.title.toLowerCase().includes(query)) || (e.preview && e.preview.toLowerCase().includes(query)),
+      );
+    }
+    return filtered.sort((a, b) => new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime()).slice(0, 5);
+  }, [entries, searchQuery]);
 
   const refreshPrompt = useCallback(() => {
     setDailyPrompt(DAILY_PROMPTS[Math.floor(Math.random() * DAILY_PROMPTS.length)]);
@@ -97,10 +112,10 @@ export const JournalSidebarPanel = memo(function JournalSidebarPanel({
               {onToggleCollapse && (
                 <button
                   onClick={onToggleCollapse}
-                  className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+                  className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
                   title="Collapse panel"
                 >
-                  <PanelLeftClose className="h-4 w-4 text-slate-400" />
+                  <ArrowLeftToLine className="h-3 w-3 text-slate-400" />
                 </button>
               )}
               <div className="p-1.5 bg-violet-100 rounded-lg">
@@ -115,9 +130,33 @@ export const JournalSidebarPanel = memo(function JournalSidebarPanel({
               >
                 <ChevronLeft className="h-4 w-4 text-slate-500" />
               </button>
-              <span className="text-xs font-semibold text-slate-700 min-w-[80px] text-center">
-                {format(currentMonth, "MMM yyyy")}
-              </span>
+              <div className="flex items-center gap-0.5">
+                <select
+                  value={getMonth(currentMonth)}
+                  onChange={(e) => setCurrentMonth(setMonthDate(currentMonth, parseInt(e.target.value)))}
+                  className="bg-transparent text-[11px] font-bold text-slate-700 focus:outline-none cursor-pointer hover:text-violet-600 appearance-none text-center"
+                >
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <option key={i} value={i}>
+                      {format(new Date(2000, i, 1), "MMM")}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={getYear(currentMonth)}
+                  onChange={(e) => setCurrentMonth(setYearDate(currentMonth, parseInt(e.target.value)))}
+                  className="bg-transparent text-[11px] font-bold text-slate-700 focus:outline-none cursor-pointer hover:text-violet-600 appearance-none text-center"
+                >
+                  {Array.from({ length: 21 }).map((_, i) => {
+                    const year = getYear(new Date()) - 10 + i;
+                    return (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
               <button
                 onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
                 className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
@@ -156,15 +195,14 @@ export const JournalSidebarPanel = memo(function JournalSidebarPanel({
                       "aspect-square rounded-lg text-xs font-medium transition-all relative flex items-center justify-center",
                       isSelected
                         ? "bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-md"
-                        : isTodayDate
-                          ? "bg-violet-50 text-violet-600 ring-1 ring-violet-200"
-                          : "hover:bg-slate-100 text-slate-700",
+                        : hasEntryOnDay
+                          ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100"
+                          : isTodayDate
+                            ? "bg-violet-50 text-violet-600 ring-1 ring-violet-200"
+                            : "hover:bg-slate-100 text-slate-700",
                     )}
                   >
                     {format(day, "d")}
-                    {hasEntryOnDay && !isSelected && (
-                      <span className="absolute bottom-1 w-1 h-1 rounded-full bg-violet-400" />
-                    )}
                   </button>
                 );
               })}
@@ -207,10 +245,11 @@ export const JournalSidebarPanel = memo(function JournalSidebarPanel({
                       isSameDay(new Date(entry.entryDate), selectedDate) && "bg-violet-50",
                     )}
                   >
-                    <div className="flex items-center gap-2">
+                    {/* Header: date, time, mood */}
+                    <div className="flex items-center gap-2 mb-1">
                       <div
                         className={cn(
-                          "w-2 h-2 rounded-full",
+                          "w-2 h-2 rounded-full flex-shrink-0",
                           entry.mood === "great"
                             ? "bg-emerald-400"
                             : entry.mood === "good"
@@ -222,10 +261,16 @@ export const JournalSidebarPanel = memo(function JournalSidebarPanel({
                                   : "bg-slate-300",
                         )}
                       />
-                      <span className="text-xs font-medium text-slate-700 truncate flex-1">
-                        {entry.title || "Untitled"}
+                      <span className="text-[10px] text-slate-500 flex-1">
+                        {format(new Date(entry.entryDate), "MMM d")} • {format(new Date(entry.updatedAt), "h:mm a")}
                       </span>
-                      <span className="text-[10px] text-slate-400">{format(new Date(entry.entryDate), "MMM d")}</span>
+                    </div>
+                    {/* Title & Preview */}
+                    <div className="space-y-0.5">
+                      {entry.title && <h4 className="text-xs font-bold text-slate-800 leading-snug">{entry.title}</h4>}
+                      <p className="text-[11px] text-slate-500 line-clamp-3 leading-relaxed">
+                        {entry.preview || "No content yet..."}
+                      </p>
                     </div>
                   </button>
                 ))}

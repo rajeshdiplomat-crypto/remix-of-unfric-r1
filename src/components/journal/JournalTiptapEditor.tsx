@@ -6,6 +6,7 @@ import Underline from "@tiptap/extension-underline";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import Link from "@tiptap/extension-link";
+import Image from "@tiptap/extension-image";
 import { TextStyle } from "@tiptap/extension-text-style";
 import FontFamily from "@tiptap/extension-font-family";
 import Color from "@tiptap/extension-color";
@@ -89,6 +90,60 @@ const FontSize = Extension.create({
         (size: string) =>
         ({ chain }: any) =>
           chain().setMark("textStyle", { fontSize: size }).run(),
+    };
+  },
+});
+
+// Extension to protect h2 headings from deletion
+const ProtectedHeading = Extension.create({
+  name: "protectedHeading",
+  addKeyboardShortcuts() {
+    return {
+      Backspace: ({ editor }) => {
+        const { selection } = editor.state;
+        const { $from } = selection;
+
+        // Check if we're at the start of a node after a heading
+        if ($from.parentOffset === 0) {
+          const nodeBefore = $from.nodeBefore;
+          const nodeBeforeParent = $from.depth > 0 ? $from.node($from.depth - 1) : null;
+
+          // If previous node is a heading, prevent deletion
+          if (nodeBefore?.type.name === "heading") {
+            return true; // Prevent default behavior
+          }
+
+          // Check if we're in a paragraph right after a heading
+          const resolvedPos = editor.state.doc.resolve($from.pos - 1);
+          if (resolvedPos.parent?.type.name === "heading") {
+            return true;
+          }
+        }
+
+        // Check if current selection is inside a heading
+        if ($from.parent.type.name === "heading") {
+          // Allow editing text inside heading, but prevent deleting the heading itself
+          if (selection.empty && $from.parentOffset === 0) {
+            return true; // Prevent deleting at start of heading
+          }
+        }
+
+        return false; // Allow default behavior
+      },
+      Delete: ({ editor }) => {
+        const { selection } = editor.state;
+        const { $from } = selection;
+
+        // Prevent deleting headings
+        if ($from.parent.type.name === "heading") {
+          const nodeAfter = $from.nodeAfter;
+          if (!nodeAfter && $from.parentOffset === $from.parent.content.size) {
+            return true; // Prevent deleting at end of heading
+          }
+        }
+
+        return false;
+      },
     };
   },
 });
@@ -219,22 +274,62 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
     const editor = useEditor({
       extensions: [
         StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
-        Placeholder.configure({ placeholder: ({ node }) => (node.type.name === "heading" ? "" : "Start writing...") }),
+        Placeholder.configure({
+          placeholder: ({ node }) => {
+            if (node.type.name === "heading") {
+              if (node.attrs.level === 1) return "Title";
+              return "";
+            }
+            return "Start writing, drag files or start from a template";
+          },
+          showOnlyWhenEditable: true,
+          showOnlyCurrent: false,
+        }),
         TextAlign.configure({ types: ["heading", "paragraph"] }),
         Underline,
         TaskList,
         TaskItem.configure({ nested: true }),
         Link.configure({ openOnClick: false }),
+        Image.configure({
+          inline: true,
+          allowBase64: true,
+        }),
         ImageResize,
         TextStyle,
         FontFamily,
         FontSize,
         Color,
         Highlight.configure({ multicolor: true }),
+        ProtectedHeading,
       ],
       content: content ? JSON.parse(content) : undefined,
       onUpdate: ({ editor }) => onChange(JSON.stringify(editor.getJSON())),
-      editorProps: { attributes: { class: "focus:outline-none min-h-[800px] pl-8 pr-6 py-4" } },
+      editorProps: {
+        attributes: { class: "focus:outline-none min-h-[800px] pl-8 pr-6 pt-4 pb-4" },
+        handleDrop: (view, event, _slice, moved) => {
+          if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0]) {
+            const file = event.dataTransfer.files[0];
+            if (file.type.startsWith("image/")) {
+              handleImageUpload({ target: { files: [file] } } as any);
+              return true;
+            }
+          }
+          return false;
+        },
+        handlePaste: (view, event) => {
+          const items = Array.from(event.clipboardData?.items || []);
+          for (const item of items) {
+            if (item.type.startsWith("image/")) {
+              const file = item.getAsFile();
+              if (file) {
+                handleImageUpload({ target: { files: [file] } } as any);
+                return true;
+              }
+            }
+          }
+          return false;
+        },
+      },
     });
 
     useImperativeHandle(ref, () => ({ editor }));
@@ -562,9 +657,11 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file || !editor) return;
-      
+
       // Get user ID for storage path
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         console.error("User not authenticated");
         return;
@@ -573,7 +670,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
       // Upload to storage instead of base64
       const { uploadJournalImage } = await import("@/lib/journalImageUpload");
       const result = await uploadJournalImage(file, user.id);
-      
+
       if (!result.success || !result.url) {
         console.error("Image upload failed:", result.error);
         return;

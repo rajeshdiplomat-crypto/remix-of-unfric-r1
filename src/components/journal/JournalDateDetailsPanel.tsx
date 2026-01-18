@@ -1,18 +1,6 @@
 import { useState, useEffect, memo } from "react";
 import { format } from "date-fns";
-import {
-  Sparkles,
-  TrendingUp,
-  PenLine,
-  Users,
-  Activity,
-  Moon,
-  Heart,
-  Dumbbell,
-  Clock,
-  Target,
-  Zap,
-} from "lucide-react";
+import { Sparkles, TrendingUp, PenLine, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -51,12 +39,10 @@ export const JournalDateDetailsPanel = memo(function JournalDateDetailsPanel({
   const { user } = useAuth();
   const [emotions, setEmotions] = useState<EmotionEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [tasksCompleted, setTasksCompleted] = useState(0);
-  const [totalTasks, setTotalTasks] = useState(0);
 
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
-  // Fetch emotions and tasks for the selected date
+  // Fetch emotions for the selected date
   useEffect(() => {
     if (!user) return;
 
@@ -108,18 +94,6 @@ export const JournalDateDetailsPanel = memo(function JournalDateDetailsPanel({
         }
 
         setEmotions(emotionsList);
-
-        // Fetch tasks for the date
-        const { data: tasksData } = await supabase
-          .from("tasks")
-          .select("id, is_completed")
-          .eq("user_id", user.id)
-          .eq("due_date", dateStr);
-
-        if (tasksData) {
-          setTotalTasks(tasksData.length);
-          setTasksCompleted(tasksData.filter((t: any) => t.is_completed).length);
-        }
       } catch (err) {
         console.error("Error fetching data:", err);
       } finally {
@@ -189,36 +163,9 @@ export const JournalDateDetailsPanel = memo(function JournalDateDetailsPanel({
     return `Incredible ${streak}-day journey!`;
   };
 
-  const getEmotionsSentence = () => {
-    if (emotions.length === 0) return "No emotional check-ins yet";
-    if (emotions.length === 1) return "You checked in with yourself";
-    return `${emotions.length} emotional check-ins`;
-  };
-
-  const getTasksSentence = () => {
-    if (totalTasks === 0) return "No tasks scheduled today";
-    if (tasksCompleted === 0) return `${totalTasks} tasks waiting for you`;
-    if (tasksCompleted === totalTasks) return "All tasks completed! 🎉";
-    return `${tasksCompleted} of ${totalTasks} tasks done`;
-  };
-
-  const getTimeSentence = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning! Perfect time to reflect";
-    if (hour < 17) return "Afternoon thoughts are powerful";
-    if (hour < 21) return "Evening is great for reflection";
-    return "Night journaling brings clarity";
-  };
-
-  const getFocusSentence = () => {
-    if (wordCount > 0 && emotions.length > 0) return "You're fully present today";
-    if (wordCount > 0 || emotions.length > 0) return "You're making time for yourself";
-    return "Take a moment to be present";
-  };
-
   return (
     <div className="w-full h-full overflow-auto space-y-4 pb-4">
-      {/* Dashboard Box - Sentences instead of numbers */}
+      {/* Dashboard Box - Journal-focused nudges only */}
       <div className="bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50 rounded-2xl shadow-sm border border-violet-100/50 overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-3 border-b border-violet-100/30">
           <div className="p-1.5 bg-white rounded-lg shadow-sm">
@@ -243,36 +190,18 @@ export const JournalDateDetailsPanel = memo(function JournalDateDetailsPanel({
             <p className="text-xs text-slate-600 leading-relaxed">{getStreakSentence()}</p>
           </div>
 
-          {/* Emotions summary */}
-          <div className="flex items-start gap-3 bg-white/60 rounded-xl p-2.5 border border-white/50">
-            <div className="p-1 bg-pink-100 rounded-lg mt-0.5">
-              <Heart className="h-3 w-3 text-pink-600" />
-            </div>
-            <p className="text-xs text-slate-600 leading-relaxed">{getEmotionsSentence()}</p>
-          </div>
-
-          {/* Tasks */}
-          <div className="flex items-start gap-3 bg-white/60 rounded-xl p-2.5 border border-white/50">
-            <div className="p-1 bg-green-100 rounded-lg mt-0.5">
-              <Target className="h-3 w-3 text-green-600" />
-            </div>
-            <p className="text-xs text-slate-600 leading-relaxed">{getTasksSentence()}</p>
-          </div>
-
-          {/* Time of day */}
-          <div className="flex items-start gap-3 bg-white/60 rounded-xl p-2.5 border border-white/50">
-            <div className="p-1 bg-purple-100 rounded-lg mt-0.5">
-              <Clock className="h-3 w-3 text-purple-600" />
-            </div>
-            <p className="text-xs text-slate-600 leading-relaxed">{getTimeSentence()}</p>
-          </div>
-
-          {/* Focus/presence */}
+          {/* Encouraging tip based on writing status */}
           <div className="flex items-start gap-3 bg-white/60 rounded-xl p-2.5 border border-white/50">
             <div className="p-1 bg-indigo-100 rounded-lg mt-0.5">
               <Sparkles className="h-3 w-3 text-indigo-600" />
             </div>
-            <p className="text-xs text-slate-600 leading-relaxed">{getFocusSentence()}</p>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              {wordCount === 0
+                ? "A blank page is full of possibilities"
+                : wordCount < 100
+                  ? "You're building a beautiful habit"
+                  : "Your words tell a story worth keeping"}
+            </p>
           </div>
         </div>
       </div>
@@ -303,75 +232,56 @@ export const JournalDateDetailsPanel = memo(function JournalDateDetailsPanel({
                   key={entry.id}
                   className={cn("rounded-xl p-3 border transition-colors", getEmotionColor(entry.emotion))}
                 >
-                  {/* Emotion header */}
-                  <div className="flex items-center justify-between mb-1">
-                    <div>
-                      <span className={cn("text-sm font-semibold capitalize", getEmotionTextColor(entry.emotion))}>
-                        {entry.emotion}
-                      </span>
-                      {entry.quadrant && (
-                        <p className="text-[10px] text-slate-500 capitalize">{entry.quadrant.replace("-", " & ")}</p>
-                      )}
-                    </div>
-                    <span className="text-[10px] text-slate-400">{entry.time}</span>
-                  </div>
+                  {/* Sentence-based emotion display */}
+                  <p className={cn("text-sm leading-relaxed", getEmotionTextColor(entry.emotion))}>
+                    {(() => {
+                      // Build a grammatically correct sentence
+                      let sentence = `At ${entry.time}, you felt `;
+                      sentence += `**${entry.emotion.toLowerCase()}**`;
 
-                  {/* Note if exists */}
-                  {entry.note && <p className="text-[11px] text-slate-600 italic mb-2">"{entry.note}"</p>}
+                      // Add context with proper grammar
+                      const hasWho = entry.context?.who;
+                      const hasWhat = entry.context?.what;
 
-                  {/* Context details */}
-                  {entry.context && Object.keys(entry.context).length > 0 && (
-                    <div className="space-y-1.5 mt-2 pt-2 border-t border-slate-100/50">
-                      {/* Who with */}
-                      {entry.context.who && (
-                        <div className="flex items-start gap-2">
-                          <Users className="h-3 w-3 text-slate-400 mt-0.5 flex-shrink-0" />
-                          <p className="text-[11px] text-slate-600">
-                            <span className="text-slate-400">With:</span> {entry.context.who}
-                          </p>
-                        </div>
-                      )}
+                      if (hasWho && hasWhat) {
+                        sentence += ` while you were with ${entry.context.who.toLowerCase()}, ${entry.context.what.toLowerCase()}`;
+                      } else if (hasWho) {
+                        sentence += ` while you were with ${entry.context.who.toLowerCase()}`;
+                      } else if (hasWhat) {
+                        sentence += ` while ${entry.context.what.toLowerCase()}`;
+                      }
 
-                      {/* Activity */}
-                      {entry.context.what && (
-                        <div className="flex items-start gap-2">
-                          <Activity className="h-3 w-3 text-slate-400 mt-0.5 flex-shrink-0" />
-                          <p className="text-[11px] text-slate-600">
-                            <span className="text-slate-400">Doing:</span> {entry.context.what}
-                          </p>
-                        </div>
-                      )}
+                      sentence += ".";
+                      return sentence;
+                    })()}
+                  </p>
 
-                      {/* Body sensations */}
-                      {entry.context.body && (
-                        <div className="flex items-start gap-2">
-                          <Heart className="h-3 w-3 text-slate-400 mt-0.5 flex-shrink-0" />
-                          <p className="text-[11px] text-slate-600">
-                            <span className="text-slate-400">Feeling:</span> {entry.context.body}
-                          </p>
-                        </div>
-                      )}
+                  {/* Body and wellness info as a secondary sentence */}
+                  {(entry.context?.body || entry.context?.sleepHours || entry.context?.physicalActivity) && (
+                    <p className="text-xs text-slate-500 mt-1.5">
+                      {(() => {
+                        const wellnessParts: string[] = [];
+                        if (entry.context?.body) {
+                          wellnessParts.push(`feeling ${entry.context.body.toLowerCase()}`);
+                        }
+                        if (entry.context?.sleepHours) {
+                          wellnessParts.push(`with ${entry.context.sleepHours} of sleep`);
+                        }
+                        if (entry.context?.physicalActivity && entry.context.physicalActivity !== "None") {
+                          wellnessParts.push(`and ${entry.context.physicalActivity.toLowerCase()} for exercise`);
+                        }
 
-                      {/* Sleep */}
-                      {entry.context.sleepHours && (
-                        <div className="flex items-start gap-2">
-                          <Moon className="h-3 w-3 text-slate-400 mt-0.5 flex-shrink-0" />
-                          <p className="text-[11px] text-slate-600">
-                            <span className="text-slate-400">Sleep:</span> {entry.context.sleepHours}
-                          </p>
-                        </div>
-                      )}
+                        if (wellnessParts.length === 0) return "";
+                        return `You were ${wellnessParts.join(", ")}.`;
+                      })()}
+                    </p>
+                  )}
 
-                      {/* Physical activity */}
-                      {entry.context.physicalActivity && (
-                        <div className="flex items-start gap-2">
-                          <Dumbbell className="h-3 w-3 text-slate-400 mt-0.5 flex-shrink-0" />
-                          <p className="text-[11px] text-slate-600">
-                            <span className="text-slate-400">Exercise:</span> {entry.context.physicalActivity}
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                  {/* Note as reflection */}
+                  {entry.note && (
+                    <p className="text-xs text-slate-600 mt-2 pt-2 border-t border-slate-100/50">
+                      You also wrote <span className="italic">"{entry.note}"</span>
+                    </p>
                   )}
                 </div>
               ))}
