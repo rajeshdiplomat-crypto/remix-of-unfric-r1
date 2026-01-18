@@ -7,8 +7,20 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Play, Check, Camera, Lock, ChevronRight, X, Clock, ImagePlus, Trash2, Plus } from "lucide-react";
+import {
+  Play,
+  Check,
+  Camera,
+  Lock,
+  ChevronRight,
+  X,
+  Clock,
+  ImagePlus,
+  Trash2,
+  Plus,
+  Sparkles,
+  Flame,
+} from "lucide-react";
 import {
   type ManifestGoal,
   type ManifestDailyPractice,
@@ -216,22 +228,24 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-gradient-to-br from-background via-background to-muted/20">
       {/* Header */}
-      <div className="p-5 border-b border-border/50">
+      <div className="p-5 border-b border-border/30">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             {goal.vision_image_url && (
-              <div className="w-full h-36 rounded-2xl overflow-hidden mb-4 border border-border/50 shadow-sm">
+              <div className="w-full h-40 rounded-2xl overflow-hidden mb-4 border border-border/30 shadow-lg vision-card-float">
                 <img src={goal.vision_image_url} alt="Vision" className="w-full h-full object-cover" />
               </div>
             )}
 
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="default" className="text-xs rounded-full">
+              <Badge className="text-xs rounded-full bg-[hsl(var(--accent-turquoise))] hover:bg-[hsl(var(--accent-turquoise))]/90">
+                <Sparkles className="h-3 w-3 mr-1" />
                 Active
               </Badge>
-              <Badge variant="outline" className="text-xs rounded-full">
+              <Badge variant="outline" className="text-xs rounded-full border-[hsl(var(--accent-turquoise))]/30">
+                <Flame className="h-3 w-3 mr-1 text-orange-500" />
                 Day {streak}
               </Badge>
               <Badge variant="outline" className="text-xs rounded-full">
@@ -240,17 +254,17 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
             </div>
 
             {goal.check_in_time && (
-              <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-                <Clock className="h-3 w-3" />
+              <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Clock className="h-3.5 w-3.5" />
                 <span>Daily check-in: {goal.check_in_time}</span>
               </div>
             )}
 
-            <p className="mt-3 text-xs text-muted-foreground">Practicing:</p>
-            <h3 className="mt-1 font-semibold text-foreground leading-tight line-clamp-3">{goal.title}</h3>
+            <p className="mt-3 text-xs text-muted-foreground tracking-wide uppercase">Practicing:</p>
+            <h3 className="mt-1 font-medium text-foreground leading-snug line-clamp-3 text-lg">{goal.title}</h3>
           </div>
 
-          <Button variant="ghost" size="icon" className="rounded-full" onClick={onClose}>
+          <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted/50" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -262,7 +276,12 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
           {/* Section 1 */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="font-semibold text-foreground">Section 1 — Daily Practice</h4>
+              <h4 className="font-semibold text-foreground flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-[hsl(var(--accent-turquoise))]/10 flex items-center justify-center text-xs font-bold text-[hsl(var(--accent-turquoise))]">
+                  1
+                </span>
+                Daily Practice
+              </h4>
               <Badge variant="outline" className="text-xs rounded-full">
                 {section1Progress}/3
               </Badge>
@@ -270,19 +289,21 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
 
             {/* Visualization */}
             <Card
-              className={`rounded-2xl border-border/50 ${hasVisualization ? "bg-primary/5 border-primary/25" : ""}`}
+              className={`glass-card rounded-2xl border-0 transition-all ${hasVisualization ? "ring-2 ring-[hsl(var(--accent-turquoise))]/30" : ""}`}
             >
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     {hasVisualization ? (
-                      <Check className="h-4 w-4 text-primary" />
+                      <div className="w-5 h-5 rounded-full bg-[hsl(var(--accent-turquoise))] flex items-center justify-center">
+                        <Check className="h-3 w-3 text-white" />
+                      </div>
                     ) : (
-                      <Play className="h-4 w-4 text-muted-foreground" />
+                      <Play className="h-5 w-5 text-muted-foreground" />
                     )}
                     <span className="text-sm font-medium">Visualization</span>
                     {visualizations.length > 0 && (
-                      <Badge variant="secondary" className="text-xs rounded-full">
+                      <Badge className="text-xs rounded-full bg-[hsl(var(--accent-turquoise))]/10 text-[hsl(var(--accent-turquoise))] hover:bg-[hsl(var(--accent-turquoise))]/20">
                         {visualizations.length}x
                       </Badge>
                     )}
@@ -290,9 +311,9 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
 
                   <Button
                     size="sm"
-                    variant={hasVisualization ? "outline" : "default"}
                     onClick={() => setShowVisualization(true)}
-                    className="rounded-full"
+                    className={`rounded-full ${hasVisualization ? "" : "btn-gradient"}`}
+                    variant={hasVisualization ? "outline" : "default"}
                   >
                     <Plus className="h-3 w-3 mr-1" />
                     {hasVisualization ? "Add Another" : `Visualize (${goal.visualization_minutes}m)`}
@@ -300,10 +321,10 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
                 </div>
 
                 {visualizations.length > 0 && (
-                  <div className="space-y-1 ml-6">
+                  <div className="space-y-1.5 ml-7">
                     {visualizations.map((v, i) => (
                       <div key={v.id} className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Check className="h-3 w-3 text-primary" />
+                        <Check className="h-3 w-3 text-[hsl(var(--accent-turquoise))]" />
                         <span>
                           Session {i + 1} • {v.duration}min • {format(new Date(v.created_at), "h:mm a")}
                         </span>
@@ -315,53 +336,57 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
             </Card>
 
             {/* Act-as-If */}
-            <Card className={`rounded-2xl border-border/50 ${hasAct ? "bg-primary/5 border-primary/25" : ""}`}>
+            <Card
+              className={`glass-card rounded-2xl border-0 transition-all ${hasAct ? "ring-2 ring-[hsl(var(--accent-turquoise))]/30" : ""}`}
+            >
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   {hasAct ? (
-                    <Check className="h-4 w-4 text-primary" />
+                    <div className="w-5 h-5 rounded-full bg-[hsl(var(--accent-turquoise))] flex items-center justify-center">
+                      <Check className="h-3 w-3 text-white" />
+                    </div>
                   ) : (
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
                   )}
                   <span className="text-sm font-medium">Act-as-If</span>
                   {acts.length > 0 && (
-                    <Badge variant="secondary" className="text-xs rounded-full">
+                    <Badge className="text-xs rounded-full bg-[hsl(var(--accent-turquoise))]/10 text-[hsl(var(--accent-turquoise))] hover:bg-[hsl(var(--accent-turquoise))]/20">
                       {acts.length}x
                     </Badge>
                   )}
                 </div>
 
-                <p className="text-sm text-muted-foreground ml-6">Suggestion: {goal.act_as_if}</p>
+                <p className="text-sm text-muted-foreground ml-7">Suggestion: {goal.act_as_if}</p>
 
-                <div className="ml-6 flex gap-2">
+                <div className="ml-7 flex gap-2">
                   <Input
                     value={currentActText}
                     onChange={(e) => setCurrentActText(e.target.value)}
                     placeholder="Or write your own action..."
-                    className="text-sm flex-1"
+                    className="text-sm flex-1 rounded-xl border-border/50 bg-background/60"
                   />
-                  <Button size="sm" onClick={handleAddAct} className="rounded-full">
+                  <Button size="sm" onClick={handleAddAct} className="rounded-full btn-gradient">
                     <Plus className="h-3 w-3 mr-1" />
                     Add
                   </Button>
                 </div>
 
                 {acts.length > 0 && (
-                  <div className="space-y-2 ml-6">
+                  <div className="space-y-2 ml-7">
                     {acts.map((a) => (
                       <div
                         key={a.id}
-                        className="flex items-center justify-between gap-2 p-2.5 bg-muted/40 rounded-xl border border-border/40"
+                        className="flex items-center justify-between gap-2 p-3 bg-[hsl(var(--accent-turquoise))]/5 rounded-xl border border-[hsl(var(--accent-turquoise))]/20"
                       >
                         <div className="flex items-center gap-2 text-xs">
-                          <Check className="h-3 w-3 text-primary" />
+                          <Check className="h-3 w-3 text-[hsl(var(--accent-turquoise))]" />
                           <span>{a.text}</span>
                           <span className="text-muted-foreground">• {format(new Date(a.created_at), "h:mm a")}</span>
                         </div>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 rounded-full"
+                          className="h-7 w-7 rounded-full hover:bg-destructive/10 hover:text-destructive"
                           onClick={() => handleRemoveAct(a.id)}
                         >
                           <Trash2 className="h-3 w-3" />
@@ -374,17 +399,21 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
             </Card>
 
             {/* Save Proof */}
-            <Card className={`rounded-2xl border-border/50 ${hasProof ? "bg-primary/5 border-primary/25" : ""}`}>
+            <Card
+              className={`glass-card rounded-2xl border-0 transition-all ${hasProof ? "ring-2 ring-[hsl(var(--accent-turquoise))]/30" : ""}`}
+            >
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   {hasProof ? (
-                    <Check className="h-4 w-4 text-primary" />
+                    <div className="w-5 h-5 rounded-full bg-[hsl(var(--accent-turquoise))] flex items-center justify-center">
+                      <Check className="h-3 w-3 text-white" />
+                    </div>
                   ) : (
-                    <Camera className="h-4 w-4 text-muted-foreground" />
+                    <Camera className="h-5 w-5 text-muted-foreground" />
                   )}
                   <span className="text-sm font-medium">Save Proof</span>
                   {proofs.length > 0 && (
-                    <Badge variant="secondary" className="text-xs rounded-full">
+                    <Badge className="text-xs rounded-full bg-[hsl(var(--accent-turquoise))]/10 text-[hsl(var(--accent-turquoise))] hover:bg-[hsl(var(--accent-turquoise))]/20">
                       {proofs.length}x
                     </Badge>
                   )}
@@ -395,7 +424,7 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
                   onChange={(e) => setCurrentProofText(e.target.value)}
                   placeholder="A colleague asked for my input; I felt calm in the meeting."
                   rows={2}
-                  className="text-sm"
+                  className="text-sm rounded-xl border-border/50 bg-background/60"
                 />
 
                 <div className="space-y-2">
@@ -408,16 +437,16 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
                   />
 
                   {currentProofImageUrl ? (
-                    <div className="relative">
+                    <div className="relative group">
                       <img
                         src={currentProofImageUrl}
                         alt="Proof"
-                        className="w-full h-28 object-cover rounded-2xl border border-border/50"
+                        className="w-full h-32 object-cover rounded-xl border border-border/30"
                       />
                       <Button
                         variant="destructive"
                         size="icon"
-                        className="absolute top-2 right-2 h-7 w-7 rounded-full"
+                        className="absolute top-2 right-2 h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={handleRemoveCurrentProofImage}
                       >
                         <Trash2 className="h-3 w-3" />
@@ -427,7 +456,7 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full rounded-full"
+                      className="w-full rounded-full border-dashed hover:border-[hsl(var(--accent-turquoise))] hover:bg-[hsl(var(--accent-turquoise))]/5"
                       onClick={() => proofImageInputRef.current?.click()}
                     >
                       <ImagePlus className="h-4 w-4 mr-2" />
@@ -440,16 +469,19 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
                   size="sm"
                   onClick={handleAddProof}
                   disabled={!currentProofText.trim()}
-                  className="w-full rounded-full"
+                  className="w-full rounded-full btn-gradient"
                 >
                   <Plus className="h-3 w-3 mr-1" />
                   Add Proof
                 </Button>
 
                 {proofs.length > 0 && (
-                  <div className="space-y-2 pt-2 border-t border-border/50">
+                  <div className="space-y-2 pt-3 border-t border-border/30">
                     {proofs.map((p) => (
-                      <div key={p.id} className="p-3 bg-muted/40 rounded-2xl border border-border/40 space-y-2">
+                      <div
+                        key={p.id}
+                        className="p-3 bg-[hsl(var(--accent-turquoise))]/5 rounded-xl border border-[hsl(var(--accent-turquoise))]/20 space-y-2"
+                      >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1">
                             <p className="text-xs">{p.text}</p>
@@ -460,14 +492,14 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 rounded-full"
+                            className="h-7 w-7 rounded-full hover:bg-destructive/10 hover:text-destructive"
                             onClick={() => handleRemoveProof(p.id)}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
                         {p.image_url && (
-                          <img src={p.image_url} alt="Proof" className="w-full h-24 object-cover rounded-xl" />
+                          <img src={p.image_url} alt="Proof" className="w-full h-24 object-cover rounded-lg" />
                         )}
                       </div>
                     ))}
@@ -477,62 +509,84 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
             </Card>
           </div>
 
-          <Separator />
+          {/* Divider */}
+          <div className="flex items-center gap-4">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+          </div>
 
           {/* Section 2 */}
-          <div className={`space-y-4 ${!section2Ready ? "opacity-50 pointer-events-none" : ""}`}>
+          <div className={`space-y-4 transition-all ${!section2Ready ? "opacity-40 pointer-events-none" : ""}`}>
             <div className="flex items-center justify-between">
-              <h4 className="font-semibold text-foreground">Section 2 — Daily Check-in</h4>
+              <h4 className="font-semibold text-foreground flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-[hsl(var(--accent-turquoise))]/10 flex items-center justify-center text-xs font-bold text-[hsl(var(--accent-turquoise))]">
+                  2
+                </span>
+                Daily Check-in
+              </h4>
               {!section2Ready && <Lock className="h-4 w-4 text-muted-foreground" />}
             </div>
 
-            <div className="space-y-3 rounded-2xl border border-border/50 bg-muted/20 p-4">
-              <div className="flex justify-between items-center">
-                <Label className="text-sm">Alignment</Label>
-                <span className="text-sm font-semibold text-primary">{alignment}/10</span>
+            <div className="glass-card rounded-2xl p-5 space-y-5">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <Label className="text-sm font-medium">Alignment</Label>
+                  <span className="text-lg font-bold text-[hsl(var(--accent-turquoise))]">{alignment}/10</span>
+                </div>
+                <div className="slider-gradient">
+                  <Slider
+                    value={[alignment]}
+                    onValueChange={(v) => {
+                      setAlignment(v[0]);
+                      savePractice({ alignment: v[0] });
+                    }}
+                    min={1}
+                    max={10}
+                    step={1}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">How aligned did you feel?</p>
               </div>
-              <Slider
-                value={[alignment]}
-                onValueChange={(v) => {
-                  setAlignment(v[0]);
-                  savePractice({ alignment: v[0] });
-                }}
-                min={1}
-                max={10}
-                step={1}
-              />
-              <p className="text-xs text-muted-foreground">How aligned did you feel?</p>
-            </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm">Growth Note *</Label>
-              <Input
-                value={growthNote}
-                onChange={(e) => {
-                  setGrowthNote(e.target.value);
-                  savePractice({ growth_note: e.target.value });
-                }}
-                placeholder="Short insight or idea for tomorrow."
-              />
-            </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  Growth Note <span className="text-[hsl(var(--accent-turquoise))]">*</span>
+                </Label>
+                <Input
+                  value={growthNote}
+                  onChange={(e) => {
+                    setGrowthNote(e.target.value);
+                    savePractice({ growth_note: e.target.value });
+                  }}
+                  placeholder="Short insight or idea for tomorrow."
+                  className="rounded-xl border-border/50 bg-background/60"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm">Gratitude (optional)</Label>
-              <Textarea
-                value={gratitude}
-                onChange={(e) => {
-                  setGratitude(e.target.value);
-                  savePractice({ gratitude: e.target.value });
-                }}
-                placeholder="1–3 things you appreciate"
-                rows={2}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  Gratitude <span className="text-muted-foreground text-xs">(optional)</span>
+                </Label>
+                <Textarea
+                  value={gratitude}
+                  onChange={(e) => {
+                    setGratitude(e.target.value);
+                    savePractice({ gratitude: e.target.value });
+                  }}
+                  placeholder="1–3 things you appreciate"
+                  rows={2}
+                  className="rounded-xl border-border/50 bg-background/60 resize-none"
+                />
+              </div>
 
-            <Button onClick={handleLockToday} disabled={!canLock} className="w-full rounded-full">
-              <Lock className="h-4 w-4 mr-2" />
-              {isLocked ? "Update Day" : "Lock Today"}
-            </Button>
+              <Button
+                onClick={handleLockToday}
+                disabled={!canLock}
+                className="w-full rounded-full btn-gradient h-12 text-sm font-medium"
+              >
+                <Lock className="h-4 w-4 mr-2" />
+                {isLocked ? "Update Day" : "Lock Today ✨"}
+              </Button>
+            </div>
           </div>
         </div>
       </ScrollArea>
