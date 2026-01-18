@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { X, Pause, Play, SkipForward } from "lucide-react";
 import { type ManifestGoal } from "./types";
@@ -34,6 +35,14 @@ export function ManifestVisualizationMode({ goal, duration, onComplete, onClose 
     return () => clearInterval(interval);
   }, [isPaused, secondsLeft, onComplete]);
 
+  // Lock body scroll when visualization is open
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
   const formatTime = useCallback((seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -44,9 +53,9 @@ export function ManifestVisualizationMode({ goal, duration, onComplete, onClose 
     onComplete();
   };
 
-  // Timer ring calculations - smaller size for better fit
-  const size = 160;
-  const strokeWidth = 6;
+  // Timer ring calculations
+  const size = 180;
+  const strokeWidth = 8;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference * (1 - progress / 100);
@@ -54,64 +63,116 @@ export function ManifestVisualizationMode({ goal, duration, onComplete, onClose 
   // Fallback affirmation if empty
   const affirmationText = goal.daily_affirmation?.trim() || goal.title || "I am becoming who I want to be.";
 
-  return (
+  const visualizationContent = (
     <div
-      className="fixed inset-0 z-[100] flex flex-col overflow-hidden"
       style={{
         position: "fixed",
         top: 0,
         left: 0,
-        right: 0,
-        bottom: 0,
         width: "100vw",
         height: "100vh",
-        margin: 0,
-        padding: 0,
+        zIndex: 99999,
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
       }}
     >
-      {/* FULL SCREEN VISION IMAGE AS BACKGROUND */}
+      {/* Background Image or Gradient */}
       {goal.vision_image_url ? (
         <div
-          className="absolute inset-0"
           style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             backgroundImage: `url(${goal.vision_image_url})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
           }}
         >
-          {/* Dark gradient overlay for readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/50" />
+          {/* Dark overlay */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "linear-gradient(to top, rgba(0,0,0,0.75), rgba(0,0,0,0.4), rgba(0,0,0,0.55))",
+            }}
+          />
         </div>
       ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-teal-900 to-cyan-900" />
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "linear-gradient(135deg, #0f172a 0%, #134e4a 50%, #164e63 100%)",
+          }}
+        />
       )}
 
-      {/* Close Button - Top Right */}
-      <div className="absolute top-4 right-4 z-20">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          className="rounded-full h-10 w-10 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border border-white/20"
-        >
-          <X className="h-5 w-5" />
-        </Button>
-      </div>
+      {/* Close Button */}
+      <button
+        onClick={onClose}
+        style={{
+          position: "absolute",
+          top: "20px",
+          right: "20px",
+          zIndex: 10,
+          width: "44px",
+          height: "44px",
+          borderRadius: "50%",
+          background: "rgba(255,255,255,0.15)",
+          backdropFilter: "blur(8px)",
+          border: "1px solid rgba(255,255,255,0.2)",
+          color: "white",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+        }}
+      >
+        <X style={{ width: "20px", height: "20px" }} />
+      </button>
 
       {/* Main Content - Centered */}
-      <div className="relative flex-1 flex flex-col items-center justify-center px-6 z-10">
-        {/* Breathing Guide Text */}
-        <p className="text-white/50 text-xs uppercase tracking-widest mb-6">
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "40px 24px",
+          position: "relative",
+          zIndex: 5,
+        }}
+      >
+        {/* Breathing Text */}
+        <p
+          style={{
+            color: "rgba(255,255,255,0.5)",
+            fontSize: "12px",
+            textTransform: "uppercase",
+            letterSpacing: "3px",
+            marginBottom: "32px",
+          }}
+        >
           {isPaused ? "Paused" : "Breathe & Visualize"}
         </p>
 
         {/* Timer Ring */}
-        <div className="relative mb-8" style={{ width: size, height: size }}>
+        <div style={{ position: "relative", width: size, height: size, marginBottom: "40px" }}>
           <svg
-            className="w-full h-full transform -rotate-90"
-            viewBox={`0 0 ${size} ${size}`}
-            style={{ filter: "drop-shadow(0 0 20px rgba(20, 184, 166, 0.4))" }}
+            width={size}
+            height={size}
+            style={{ transform: "rotate(-90deg)", filter: "drop-shadow(0 0 25px rgba(20, 184, 166, 0.5))" }}
           >
             {/* Background circle */}
             <circle
@@ -122,81 +183,147 @@ export function ManifestVisualizationMode({ goal, duration, onComplete, onClose 
               stroke="rgba(255,255,255,0.15)"
               strokeWidth={strokeWidth}
             />
-
             {/* Gradient definition */}
             <defs>
-              <linearGradient id="timerGradientViz" x1="0%" y1="0%" x2="100%" y2="100%">
+              <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#14b8a6" />
                 <stop offset="50%" stopColor="#06b6d4" />
                 <stop offset="100%" stopColor="#22d3ee" />
               </linearGradient>
             </defs>
-
-            {/* Progress circle with gradient */}
+            {/* Progress circle */}
             <circle
               cx={size / 2}
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke="url(#timerGradientViz)"
+              stroke="url(#timerGradient)"
               strokeWidth={strokeWidth}
               strokeLinecap="round"
               strokeDasharray={circumference}
               strokeDashoffset={strokeDashoffset}
-              className="transition-all duration-1000 ease-linear"
+              style={{ transition: "stroke-dashoffset 1s linear" }}
             />
           </svg>
 
           {/* Timer Text */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-5xl font-light text-white">{formatTime(secondsLeft)}</span>
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "48px",
+                fontWeight: 300,
+                color: "white",
+              }}
+            >
+              {formatTime(secondsLeft)}
+            </span>
           </div>
         </div>
 
-        {/* Affirmation Text */}
-        <div className="text-center max-w-xl px-4 mb-10">
-          <p className="text-xl md:text-2xl font-light text-white leading-relaxed">"{affirmationText}"</p>
-        </div>
+        {/* Affirmation */}
+        <p
+          style={{
+            fontSize: "24px",
+            fontWeight: 300,
+            color: "white",
+            textAlign: "center",
+            maxWidth: "600px",
+            lineHeight: 1.5,
+            marginBottom: "48px",
+          }}
+        >
+          "{affirmationText}"
+        </p>
 
         {/* Controls */}
-        <div className="flex items-center gap-3">
-          <Button
-            size="lg"
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <button
             onClick={() => setIsPaused(!isPaused)}
-            className="rounded-full h-12 px-8 bg-white/15 backdrop-blur-sm hover:bg-white/25 text-white border border-white/20"
+            style={{
+              height: "52px",
+              padding: "0 32px",
+              borderRadius: "9999px",
+              background: "rgba(255,255,255,0.15)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid rgba(255,255,255,0.25)",
+              color: "white",
+              fontSize: "16px",
+              fontWeight: 500,
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              cursor: "pointer",
+            }}
           >
             {isPaused ? (
               <>
-                <Play className="h-5 w-5 mr-2 fill-current" />
+                <Play style={{ width: "20px", height: "20px", fill: "currentColor" }} />
                 Resume
               </>
             ) : (
               <>
-                <Pause className="h-5 w-5 mr-2" />
+                <Pause style={{ width: "20px", height: "20px" }} />
                 Pause
               </>
             )}
-          </Button>
+          </button>
 
-          <Button
-            variant="ghost"
-            size="lg"
+          <button
             onClick={handleSkip}
-            className="rounded-full h-12 px-6 text-white/60 hover:text-white hover:bg-white/10"
+            style={{
+              height: "52px",
+              padding: "0 24px",
+              borderRadius: "9999px",
+              background: "transparent",
+              border: "none",
+              color: "rgba(255,255,255,0.6)",
+              fontSize: "14px",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              cursor: "pointer",
+            }}
           >
-            <SkipForward className="h-4 w-4 mr-2" />
+            <SkipForward style={{ width: "18px", height: "18px" }} />
             Skip & Complete
-          </Button>
+          </button>
         </div>
       </div>
 
       {/* Progress Bar at Bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 z-20">
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: "4px",
+          background: "rgba(255,255,255,0.1)",
+        }}
+      >
         <div
-          className="h-full bg-gradient-to-r from-teal-400 to-cyan-400 transition-all duration-1000 ease-linear"
-          style={{ width: `${progress}%` }}
+          style={{
+            height: "100%",
+            background: "linear-gradient(to right, #14b8a6, #06b6d4)",
+            width: `${progress}%`,
+            transition: "width 1s linear",
+          }}
         />
       </div>
     </div>
   );
+
+  // Use portal to render at document body level, escaping all parent containers
+  return createPortal(visualizationContent, document.body);
 }
