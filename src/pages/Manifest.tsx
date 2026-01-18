@@ -367,29 +367,6 @@ export default function Manifest() {
           <p className="text-slate-500 dark:text-slate-400 mt-1">Create a vision, practice daily, and build evidence</p>
         </div>
 
-        {/* Journey Flow - Shows the 4-step process */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6">
-          <JourneyStep
-            step={1}
-            label="Set Vision"
-            icon={Eye}
-            isActive={activeGoals.length === 0}
-            isComplete={activeGoals.length > 0}
-          />
-          <ArrowRight className="h-4 w-4 text-slate-300 dark:text-slate-600 shrink-0" />
-          <JourneyStep
-            step={2}
-            label="Daily Actions"
-            icon={Zap}
-            isActive={activeGoals.length > 0 && !selectedGoal}
-            isComplete={false}
-          />
-          <ArrowRight className="h-4 w-4 text-slate-300 dark:text-slate-600 shrink-0" />
-          <JourneyStep step={3} label="Visualize" icon={Sparkles} isActive={!!selectedGoal} isComplete={false} />
-          <ArrowRight className="h-4 w-4 text-slate-300 dark:text-slate-600 shrink-0" />
-          <JourneyStep step={4} label="Build Evidence" icon={Camera} isActive={false} isComplete={false} />
-        </div>
-
         {/* Stats Bar */}
         <ManifestTopBar
           activeCount={activeGoals.length}
