@@ -258,3 +258,145 @@
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
 }
+/* ========================================
+   MANIFEST UI DESIGN SYSTEM
+   Premium animations and glassmorphism
+   ======================================== */
+
+/* Accent color palette - Turquoise/Cyan */
+:root {
+  --accent-turquoise: 175 84% 40%;
+  --accent-turquoise-light: 175 84% 55%;
+  --accent-turquoise-dark: 175 84% 32%;
+  --accent-cyan: 185 85% 50%;
+  --accent-purple: 260 70% 55%;
+  --accent-gradient: linear-gradient(135deg, hsl(var(--accent-turquoise)) 0%, hsl(var(--accent-cyan)) 100%);
+  --accent-gradient-hover: linear-gradient(135deg, hsl(var(--accent-turquoise-light)) 0%, hsl(185 85% 60%) 100%);
+}
+
+.dark {
+  --accent-turquoise: 175 80% 50%;
+  --accent-turquoise-light: 175 80% 60%;
+  --accent-turquoise-dark: 175 80% 40%;
+  --accent-cyan: 185 80% 55%;
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+  background: linear-gradient(135deg, hsl(0 0% 100% / 0.9) 0%, hsl(0 0% 100% / 0.7) 100%);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--accent-turquoise) / 0.2);
+  box-shadow:
+    0 4px 24px hsl(var(--accent-turquoise) / 0.08),
+    0 1px 2px hsl(0 0% 0% / 0.04);
+}
+
+.dark .glass-card {
+  background: linear-gradient(135deg, hsl(0 0% 12% / 0.9) 0%, hsl(0 0% 8% / 0.8) 100%);
+  border-color: hsl(var(--accent-turquoise) / 0.25);
+}
+
+/* Timer Ring Glow */
+@keyframes timer-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px hsl(var(--accent-turquoise) / 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 20px hsl(var(--accent-turquoise) / 0.7));
+  }
+}
+
+.timer-ring {
+  animation: timer-glow 2s ease-in-out infinite;
+}
+
+/* Breathing Guide */
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.15;
+  }
+}
+
+.breathing-ring {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+/* Floating Vision Card */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1deg);
+  }
+}
+
+.vision-card-float {
+  animation: float 4s ease-in-out infinite;
+  box-shadow:
+    0 20px 60px hsl(var(--accent-turquoise) / 0.15),
+    0 8px 24px hsl(0 0% 0% / 0.1);
+}
+
+/* Gradient Button */
+.btn-gradient {
+  background: var(--accent-gradient);
+  color: white;
+  border: none;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.btn-gradient:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px hsl(var(--accent-turquoise) / 0.35);
+}
+
+/* Progress Bar Gradient */
+.progress-gradient {
+  background: var(--accent-gradient);
+}
+
+/* Step Orb */
+.step-orb {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  background: hsl(var(--muted));
+}
+
+.step-orb.active {
+  background: var(--accent-gradient);
+  color: white;
+}
+
+.step-orb.completed {
+  background: hsl(var(--accent-turquoise));
+  color: white;
+}
+
+/* Chip/Pill Buttons */
+.chip-glow {
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px hsl(0 0% 0% / 0.06);
+}
+
+.chip-glow.selected {
+  background: var(--accent-gradient);
+  color: white;
+  border-color: transparent;
+}
