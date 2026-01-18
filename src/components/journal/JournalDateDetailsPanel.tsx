@@ -78,24 +78,32 @@ export const JournalDateDetailsPanel = memo(function JournalDateDetailsPanel({
             let emotionName = "Emotion logged";
             let quadrant = "";
             let context: EmotionContext = {};
+            let showInJournal = true; // Default to true for backward compatibility
 
             try {
               const parsed = JSON.parse(e.emotion);
               emotionName = parsed.emotion || e.emotion;
               quadrant = parsed.quadrant || "";
               context = parsed.context || {};
+              // Check if showInJournal flag exists (new entries will have it)
+              if (parsed.showInJournal !== undefined) {
+                showInJournal = parsed.showInJournal;
+              }
             } catch {
               emotionName = e.emotion || "Unknown";
             }
 
-            emotionsList.push({
-              id: e.id,
-              emotion: emotionName,
-              quadrant,
-              context,
-              note: e.notes || undefined,
-              time: format(new Date(e.created_at), "h:mm a"),
-            });
+            // Only add emotions that should be shown in journal
+            if (showInJournal) {
+              emotionsList.push({
+                id: e.id,
+                emotion: emotionName,
+                quadrant,
+                context,
+                note: e.notes || undefined,
+                time: format(new Date(e.created_at), "h:mm a"),
+              });
+            }
           });
         }
 

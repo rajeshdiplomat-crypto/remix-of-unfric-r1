@@ -9,11 +9,11 @@ import { ChevronDown, Users, Activity, Heart, Moon, Dumbbell, BookOpen, Clock } 
 import { cn } from "@/lib/utils";
 
 // Preset options
-const WHO_PRESETS = ['Alone', 'Friend', 'Partner', 'Family', 'Team', 'Colleagues', 'Strangers'];
-const WHAT_PRESETS = ['Work', 'Eating', 'Commuting', 'Socializing', 'Resting', 'Exercise', 'Creative', 'Learning'];
-const BODY_PRESETS = ['Tense', 'Calm', 'Fatigued', 'Energized', 'Headache', 'Relaxed', 'Restless', 'Comfortable'];
-const SLEEP_PRESETS = ['< 4 hrs', '4-6 hrs', '6-8 hrs', '> 8 hrs'];
-const ACTIVITY_PRESETS = ['None', 'Walk', 'Gym', 'Yoga', 'Sport', 'Running', 'Swimming', 'Cycling'];
+const WHO_PRESETS = ["Alone", "Friend", "Partner", "Family", "Team", "Colleagues", "Strangers"];
+const WHAT_PRESETS = ["Work", "Eating", "Commuting", "Socializing", "Resting", "Exercise", "Creative", "Learning"];
+const BODY_PRESETS = ["Tense", "Calm", "Fatigued", "Energized", "Headache", "Relaxed", "Restless", "Comfortable"];
+const SLEEP_PRESETS = ["< 4 hrs", "4-6 hrs", "6-8 hrs", "> 8 hrs"];
+const ACTIVITY_PRESETS = ["None", "Walk", "Gym", "Yoga", "Sport", "Running", "Swimming", "Cycling"];
 
 export interface EnhancedContextData {
   who?: string;
@@ -36,25 +36,25 @@ interface EmotionContextFieldsEnhancedProps {
   hideTimeField?: boolean;
 }
 
-function PresetPills({ 
-  options, 
-  selected, 
+function PresetPills({
+  options,
+  selected,
   onSelect,
-  allowCustom = true 
-}: { 
-  options: string[]; 
-  selected?: string; 
+  allowCustom = true,
+}: {
+  options: string[];
+  selected?: string;
   onSelect: (value: string) => void;
   allowCustom?: boolean;
 }) {
   const [showCustom, setShowCustom] = useState(false);
-  const [customValue, setCustomValue] = useState('');
+  const [customValue, setCustomValue] = useState("");
 
   const handleCustomSubmit = () => {
     if (customValue.trim()) {
       onSelect(customValue.trim());
       setShowCustom(false);
-      setCustomValue('');
+      setCustomValue("");
     }
   };
 
@@ -64,13 +64,13 @@ function PresetPills({
         {options.map((option) => (
           <button
             key={option}
-            onClick={() => onSelect(option === selected ? '' : option)}
+            onClick={() => onSelect(option === selected ? "" : option)}
             className={cn(
               "px-2.5 py-1 rounded-full text-xs font-medium transition-all",
               "border focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1",
               selected === option
                 ? "bg-primary text-primary-foreground border-primary"
-                : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted hover:text-foreground"
+                : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted hover:text-foreground",
             )}
           >
             {option}
@@ -81,7 +81,7 @@ function PresetPills({
             onClick={() => setShowCustom(!showCustom)}
             className={cn(
               "px-2.5 py-1 rounded-full text-xs font-medium transition-all",
-              "border border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary"
+              "border border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary",
             )}
           >
             + Other
@@ -95,7 +95,7 @@ function PresetPills({
             onChange={(e) => setCustomValue(e.target.value)}
             placeholder="Enter custom value..."
             className="h-8 text-sm"
-            onKeyDown={(e) => e.key === 'Enter' && handleCustomSubmit()}
+            onKeyDown={(e) => e.key === "Enter" && handleCustomSubmit()}
           />
           <Button size="sm" variant="outline" onClick={handleCustomSubmit} className="h-8">
             Add
@@ -106,24 +106,24 @@ function PresetPills({
   );
 }
 
-export function EmotionContextFieldsEnhanced({ 
-  note, 
-  onNoteChange, 
-  context, 
+export function EmotionContextFieldsEnhanced({
+  note,
+  onNoteChange,
+  context,
   onContextChange,
   sendToJournal,
   onSendToJournalChange,
   checkInTime,
   onCheckInTimeChange,
   hideJournalToggle = false,
-  hideTimeField = false
+  hideTimeField = false,
 }: EmotionContextFieldsEnhancedProps) {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   const updateContext = (field: keyof EnhancedContextData, value: string) => {
     onContextChange({ ...context, [field]: value });
   };
-  
+
   return (
     <div className="space-y-4">
       {/* Quick note */}
@@ -148,7 +148,7 @@ export function EmotionContextFieldsEnhanced({
               <Clock className="h-4 w-4 text-muted-foreground" />
               <input
                 type="datetime-local"
-                value={checkInTime.toISOString().slice(0, 16)}
+                value={`${checkInTime.getFullYear()}-${String(checkInTime.getMonth() + 1).padStart(2, "0")}-${String(checkInTime.getDate()).padStart(2, "0")}T${String(checkInTime.getHours()).padStart(2, "0")}:${String(checkInTime.getMinutes()).padStart(2, "0")}`}
                 onChange={(e) => onCheckInTimeChange(new Date(e.target.value))}
                 className="text-sm bg-transparent border-none focus:outline-none text-foreground"
               />
@@ -160,28 +160,21 @@ export function EmotionContextFieldsEnhanced({
               <Label htmlFor="journal-sync" className="text-sm text-muted-foreground cursor-pointer">
                 Send to Journal
               </Label>
-              <Switch
-                id="journal-sync"
-                checked={sendToJournal}
-                onCheckedChange={onSendToJournalChange}
-              />
+              <Switch id="journal-sync" checked={sendToJournal} onCheckedChange={onSendToJournalChange} />
             </div>
           )}
         </div>
       )}
-      
+
       {/* Collapsible context fields */}
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger asChild>
           <Button variant="ghost" className="w-full justify-between px-3 py-2 h-auto">
             <span className="text-sm text-muted-foreground">Add more details</span>
-            <ChevronDown className={cn(
-              "h-4 w-4 text-muted-foreground transition-transform",
-              isOpen && "rotate-180"
-            )} />
+            <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", isOpen && "rotate-180")} />
           </Button>
         </CollapsibleTrigger>
-        
+
         <CollapsibleContent className="space-y-5 pt-4">
           {/* Who */}
           <div className="space-y-2">
@@ -189,37 +182,25 @@ export function EmotionContextFieldsEnhanced({
               <Users className="h-4 w-4" />
               Who are you with?
             </Label>
-            <PresetPills 
-              options={WHO_PRESETS} 
-              selected={context.who} 
-              onSelect={(v) => updateContext('who', v)} 
-            />
+            <PresetPills options={WHO_PRESETS} selected={context.who} onSelect={(v) => updateContext("who", v)} />
           </div>
-          
+
           {/* What */}
           <div className="space-y-2">
             <Label className="text-sm flex items-center gap-2 text-muted-foreground">
               <Activity className="h-4 w-4" />
               What are you doing?
             </Label>
-            <PresetPills 
-              options={WHAT_PRESETS} 
-              selected={context.what} 
-              onSelect={(v) => updateContext('what', v)} 
-            />
+            <PresetPills options={WHAT_PRESETS} selected={context.what} onSelect={(v) => updateContext("what", v)} />
           </div>
-          
+
           {/* Body */}
           <div className="space-y-2">
             <Label className="text-sm flex items-center gap-2 text-muted-foreground">
               <Heart className="h-4 w-4" />
               Body sensations?
             </Label>
-            <PresetPills 
-              options={BODY_PRESETS} 
-              selected={context.body} 
-              onSelect={(v) => updateContext('body', v)} 
-            />
+            <PresetPills options={BODY_PRESETS} selected={context.body} onSelect={(v) => updateContext("body", v)} />
           </div>
 
           {/* Sleep Hours */}
@@ -228,10 +209,10 @@ export function EmotionContextFieldsEnhanced({
               <Moon className="h-4 w-4" />
               Sleep last night?
             </Label>
-            <PresetPills 
-              options={SLEEP_PRESETS} 
-              selected={context.sleepHours} 
-              onSelect={(v) => updateContext('sleepHours', v)} 
+            <PresetPills
+              options={SLEEP_PRESETS}
+              selected={context.sleepHours}
+              onSelect={(v) => updateContext("sleepHours", v)}
               allowCustom={false}
             />
           </div>
@@ -242,16 +223,14 @@ export function EmotionContextFieldsEnhanced({
               <Dumbbell className="h-4 w-4" />
               Physical activity today?
             </Label>
-            <PresetPills 
-              options={ACTIVITY_PRESETS} 
-              selected={context.physicalActivity} 
-              onSelect={(v) => updateContext('physicalActivity', v)} 
+            <PresetPills
+              options={ACTIVITY_PRESETS}
+              selected={context.physicalActivity}
+              onSelect={(v) => updateContext("physicalActivity", v)}
             />
           </div>
-          
-          <p className="text-xs text-muted-foreground/60 italic">
-            These details help you spot patterns over time
-          </p>
+
+          <p className="text-xs text-muted-foreground/60 italic">These details help you spot patterns over time</p>
         </CollapsibleContent>
       </Collapsible>
     </div>
