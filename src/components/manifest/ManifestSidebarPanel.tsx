@@ -18,14 +18,15 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar as CalendarIcon,
-  Sparkles,
   ArrowLeftToLine,
   PanelLeft,
   Target,
   Flame,
   TrendingUp,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { type ManifestGoal, type ManifestDailyPractice } from "./types";
 
 interface ManifestSidebarPanelProps {
@@ -38,6 +39,7 @@ interface ManifestSidebarPanelProps {
   activeCount?: number;
   streak?: number;
   avgMomentum?: number;
+  onOpenAnalytics?: () => void;
 }
 
 export const ManifestSidebarPanel = memo(
@@ -51,6 +53,7 @@ export const ManifestSidebarPanel = memo(
     activeCount = 0,
     streak = 0,
     avgMomentum = 0,
+    onOpenAnalytics,
   }: ManifestSidebarPanelProps) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
@@ -160,10 +163,21 @@ export const ManifestSidebarPanel = memo(
             </div>
             <div className="flex items-start gap-3 bg-white/60 dark:bg-slate-800/60 rounded-xl p-2.5 border border-white/50 dark:border-slate-700/50">
               <div className="p-1 bg-cyan-100 dark:bg-cyan-900/50 rounded-lg mt-0.5">
-                <Sparkles className="h-3 w-3 text-cyan-600" />
+                <TrendingUp className="h-3 w-3 text-cyan-600" />
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{getMomentumSentence()}</p>
             </div>
+            {/* Analytics Button */}
+            {onOpenAnalytics && (
+              <Button
+                onClick={onOpenAnalytics}
+                variant="outline"
+                className="w-full h-9 rounded-xl border-teal-200 dark:border-teal-800 text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/20 text-xs font-medium"
+              >
+                <BarChart3 className="h-3.5 w-3.5 mr-2" />
+                View Advanced Analytics
+              </Button>
+            )}
           </div>
         </div>
         {/* Calendar Card */}
@@ -286,51 +300,6 @@ export const ManifestSidebarPanel = memo(
             >
               Jump to Today
             </button>
-          </div>
-        </div>
-
-        {/* Recent Practices Card */}
-        <div className="rounded-2xl shadow-sm border overflow-hidden bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 dark:border-slate-700">
-            <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30">
-              <Sparkles className="h-4 w-4 text-emerald-600" />
-            </div>
-            <span className="text-sm font-semibold text-slate-800 dark:text-white">Recent Practices</span>
-          </div>
-          <div className="p-2">
-            {recentPractices.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-4">
-                No completed practices yet. Start manifesting!
-              </p>
-            ) : (
-              <div className="space-y-1">
-                {recentPractices.map((practice) => (
-                  <button
-                    key={practice.id}
-                    onClick={() => onDateSelect(parseISO(practice.entry_date))}
-                    className={cn(
-                      "w-full text-left p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors",
-                      isSameDay(parseISO(practice.entry_date), selectedDate) && "bg-teal-50 dark:bg-teal-900/20"
-                    )}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-2 h-2 rounded-full bg-teal-400 flex-shrink-0" />
-                      <span className="text-[10px] text-slate-500">
-                        {format(parseISO(practice.entry_date), "MMM d")}
-                      </span>
-                    </div>
-                    <h4 className="text-xs font-bold text-slate-800 dark:text-white leading-snug line-clamp-1">
-                      {getGoalTitle(practice.goal_id)}
-                    </h4>
-                    {practice.growth_note && (
-                      <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed mt-0.5">
-                        {practice.growth_note}
-                      </p>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       </div>

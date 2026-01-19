@@ -11,6 +11,9 @@ import { ManifestCard } from "@/components/manifest/ManifestCard";
 import { ManifestCreateModal } from "@/components/manifest/ManifestCreateModal";
 import { ManifestPracticePanel } from "@/components/manifest/ManifestPracticePanel";
 import { ManifestSidebarPanel } from "@/components/manifest/ManifestSidebarPanel";
+import { ManifestViewSwitcher } from "@/components/manifest/ManifestViewSwitcher";
+import { ManifestAnalyticsModal } from "@/components/manifest/ManifestAnalyticsModal";
+import { HistoryDrawer } from "@/components/manifest/HistoryDrawer";
 
 import {
   AlertDialog,
@@ -88,6 +91,9 @@ export default function Manifest() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [newlyCreatedGoalId, setNewlyCreatedGoalId] = useState<string | null>(null);
+  const [entriesView, setEntriesView] = useState<"list" | "board">("list");
+  const [historyGoal, setHistoryGoal] = useState<ManifestGoal | null>(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -382,16 +388,16 @@ export default function Manifest() {
           subtitle={PAGE_HERO_TEXT.manifest.subtitle}
         />
 
-      {/* Content Area - Journal-style 3-column layout */}
+      {/* Content Area - Journal-style 3-column layout: [Left: Progress+Calendar] [Center: Practice] [Right: Entries] */}
       <div
         className={cn(
           "flex-1 grid gap-6 w-full px-4 sm:px-6 py-4 transition-all duration-300",
           leftPanelCollapsed
-            ? "grid-cols-1 lg:grid-cols-[64px_1fr_280px]"
-            : "grid-cols-1 lg:grid-cols-[280px_1fr_280px]"
+            ? "grid-cols-1 lg:grid-cols-[64px_1fr_380px]"
+            : "grid-cols-1 lg:grid-cols-[280px_1fr_380px]"
         )}
       >
-        {/* Left Panel - Calendar & Recent */}
+        {/* Left Panel - Progress & Calendar */}
         <div
           className={cn("hidden lg:flex flex-col transition-all duration-300 h-full", leftPanelCollapsed && "w-16")}
         >
@@ -405,58 +411,94 @@ export default function Manifest() {
             activeCount={activeGoals.length}
             streak={aggregateStreak}
             avgMomentum={avgMomentum}
+            onOpenAnalytics={() => setShowAnalytics(true)}
           />
         </div>
 
-        {/* Center - Main Content */}
+        {/* Center - Practice Panel */}
         <div className="flex flex-col min-w-0 min-h-0">
-          {/* Greeting Section with Create Button */}
-          <div className="mb-4 px-1 flex justify-between items-start gap-4">
-            <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-semibold text-slate-800 dark:text-white">{getGreeting()}</h2>
-              <p className="text-sm text-slate-500 mt-1">{getMotivationalQuote()}</p>
-              <p className="text-xs text-teal-500 mt-2">{getStreakMessage()}</p>
+          {selectedGoal ? (
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 h-full overflow-hidden">
+              <ManifestPracticePanel
+                goal={selectedGoal}
+                streak={getGoalMetrics(selectedGoal).streak}
+                onClose={() => setSelectedGoal(null)}
+                onPracticeComplete={handlePracticeComplete}
+                onGoalUpdate={() => {
+                  fetchData();
+                  const updatedGoal = goals.find((g) => g.id === selectedGoal.id);
+                  if (updatedGoal) setSelectedGoal(updatedGoal);
+                }}
+              />
             </div>
-            <Button
-              onClick={() => setShowCreateModal(true)}
-              className="rounded-xl h-10 px-5 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all flex-shrink-0"
-            >
-              <Plus className="h-4 w-4 mr-2" /> Create New Vision
-            </Button>
+          ) : (
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 h-full p-8 flex flex-col items-center justify-center">
+              <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-teal-100 to-cyan-100 dark:from-teal-900/30 dark:to-cyan-900/30 flex items-center justify-center mb-4">
+                <Sparkles className="h-8 w-8 text-teal-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-1">Select a Vision</h3>
+              <p className="text-sm text-slate-400 text-center max-w-sm">
+                Choose a vision from the right panel to start your daily practice
+              </p>
+              <p className="text-xs text-teal-500 mt-4 text-center">
+                {getMotivationalQuote()}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Right Panel - Entries List/Board */}
+        <div className="hidden lg:flex flex-col h-full min-h-0">
+          {/* Header with Greeting, View Switcher & Create Button */}
+          <div className="mb-3 flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-800 dark:text-white">{getGreeting()}</h2>
+              <Button
+                onClick={() => setShowCreateModal(true)}
+                size="sm"
+                className="rounded-xl h-9 px-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all"
+              >
+                <Plus className="h-4 w-4 mr-1.5" /> New Vision
+              </Button>
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-teal-500">{getStreakMessage()}</p>
+              <ManifestViewSwitcher view={entriesView} onViewChange={setEntriesView} />
+            </div>
           </div>
 
-          {/* Goals Container - Fixed height, only entries scroll */}
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex flex-col overflow-hidden" style={{ maxHeight: "calc(100vh - 220px)" }}>
+          {/* Goals Container */}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex flex-col overflow-hidden flex-1 min-h-0">
             {activeGoals.length === 0 ? (
-              <div className="p-4">
-                <Card className="rounded-2xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900">
-                  <CardContent className="py-16 px-8 text-center">
-                    <div className="mx-auto mb-6 h-16 w-16 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg">
-                      <Sparkles className="h-8 w-8 text-white" />
+              <div className="p-4 flex-1 flex items-center justify-center">
+                <Card className="rounded-2xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900 w-full">
+                  <CardContent className="py-12 px-6 text-center">
+                    <div className="mx-auto mb-4 h-12 w-12 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg">
+                      <Sparkles className="h-6 w-6 text-white" />
                     </div>
-                    <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-2">Start Your First Vision</h3>
-                    <p className="text-slate-500 mb-6 max-w-sm mx-auto">
+                    <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-2">Start Your First Vision</h3>
+                    <p className="text-slate-500 mb-4 text-sm max-w-xs mx-auto">
                       Write a belief in present tense and practice it daily until it becomes your reality.
                     </p>
                     <Button
                       onClick={() => setShowCreateModal(true)}
-                      className="rounded-xl h-11 px-6 bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
+                      className="rounded-xl h-10 px-5 bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
                     >
                       <Plus className="h-4 w-4 mr-2" /> Create Vision
                     </Button>
                   </CardContent>
                 </Card>
               </div>
-            ) : (
+            ) : entriesView === "list" ? (
               <div className="overflow-y-auto p-4 flex-1">
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {activeGoals.map((goal) => {
                     const { streak, momentum, lastProof } = getGoalMetrics(goal);
                     const isNewlyCreated = newlyCreatedGoalId === goal.id;
                     return (
                       <div
                         key={goal.id}
-                        className={isNewlyCreated ? "animate-energy-entry" : ""}
+                        className={isNewlyCreated ? "animate-energy-entry relative" : "relative"}
                       >
                         <ManifestCard
                           goal={goal}
@@ -465,7 +507,8 @@ export default function Manifest() {
                           isSelected={selectedGoal?.id === goal.id}
                           onClick={() => handleSelectGoal(goal)}
                           onEdit={() => handleEditGoal(goal)}
-                          onDelete={() => setDeletingGoal(goal)}
+                          onViewHistory={() => setHistoryGoal(goal)}
+                          onImageUpdate={fetchData}
                         />
                         {/* Energy particles effect for new vision */}
                         {isNewlyCreated && (
@@ -489,39 +532,38 @@ export default function Manifest() {
                   })}
                 </div>
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right Panel - Only Practice Panel */}
-        <div className="hidden lg:block h-full">
-          {selectedGoal ? (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 h-full overflow-hidden">
-              <ManifestPracticePanel
-                goal={selectedGoal}
-                streak={getGoalMetrics(selectedGoal).streak}
-                onClose={() => setSelectedGoal(null)}
-                onPracticeComplete={handlePracticeComplete}
-                onGoalUpdate={() => {
-                  fetchData();
-                  const updatedGoal = goals.find((g) => g.id === selectedGoal.id);
-                  if (updatedGoal) setSelectedGoal(updatedGoal);
-                }}
-              />
-            </div>
-          ) : (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 h-full p-6">
-              <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-teal-100 to-cyan-100 dark:from-teal-900/30 dark:to-cyan-900/30 flex items-center justify-center flex-shrink-0">
-                  <Sparkles className="h-5 w-5 text-teal-500" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-0.5">Select a Vision</h3>
-                  <p className="text-xs text-slate-400">Choose a vision to start your practice</p>
+            ) : (
+              /* Board View */
+              <div className="overflow-x-auto p-4 flex-1">
+                <div className="flex gap-3 min-w-max">
+                  {activeGoals.map((goal) => {
+                    const { streak, momentum } = getGoalMetrics(goal);
+                    const isNewlyCreated = newlyCreatedGoalId === goal.id;
+                    return (
+                      <div
+                        key={goal.id}
+                        className={cn(
+                          "w-64 flex-shrink-0 cursor-pointer transition-all duration-200",
+                          isNewlyCreated && "animate-energy-entry"
+                        )}
+                      >
+                        <ManifestCard
+                          goal={goal}
+                          streak={streak}
+                          momentum={momentum}
+                          isSelected={selectedGoal?.id === goal.id}
+                          onClick={() => handleSelectGoal(goal)}
+                          onEdit={() => handleEditGoal(goal)}
+                          onViewHistory={() => setHistoryGoal(goal)}
+                          onImageUpdate={fetchData}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -551,6 +593,24 @@ export default function Manifest() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Analytics Modal */}
+      <ManifestAnalyticsModal
+        open={showAnalytics}
+        onOpenChange={setShowAnalytics}
+        goals={goals}
+        practices={practices}
+      />
+
+      {/* History Drawer */}
+      {historyGoal && (
+        <HistoryDrawer
+          goal={historyGoal}
+          isOpen={!!historyGoal}
+          onClose={() => setHistoryGoal(null)}
+          onUseAsMicroAction={() => {}}
+        />
+      )}
     </div>
     </>
   );
