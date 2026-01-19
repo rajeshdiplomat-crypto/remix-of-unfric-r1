@@ -13,12 +13,15 @@ interface ManifestVisualizationModeProps {
 
 interface FloatingElement {
   id: string;
-  type: "action" | "proof" | "note" | "image";
+  type: "action" | "proof" | "note" | "image" | "word";
   content: string;
   imageUrl?: string;
   delay: number;
   duration: number;
   left: number;
+  animationStyle: number; // 0-3 for different animation variations
+  scale: number;
+  rotation: number;
 }
 
 export function ManifestVisualizationMode({ 
@@ -48,63 +51,97 @@ export function ManifestVisualizationMode({
     return images;
   }, [goal]);
 
-  // Create floating elements from previous practice
+  // Create floating elements from previous practice - split into words for advanced animation
   const floatingElements = useMemo<FloatingElement[]>(() => {
     if (!previousPractice) return [];
     
     const elements: FloatingElement[] = [];
     let idx = 0;
 
-    // Add actions
+    const addWords = (text: string, type: FloatingElement["type"], baseDelay: number) => {
+      const words = text.split(/\s+/).filter(w => w.length > 0);
+      words.forEach((word, i) => {
+        elements.push({
+          id: `${type}-word-${idx}-${i}`,
+          type: "word",
+          content: word,
+          delay: baseDelay + (i * 0.3),
+          duration: 10 + Math.random() * 4,
+          left: 5 + Math.random() * 80,
+          animationStyle: Math.floor(Math.random() * 4),
+          scale: 0.8 + Math.random() * 0.4,
+          rotation: -15 + Math.random() * 30,
+        });
+      });
+      idx++;
+    };
+
+    // Add actions with word splitting
     previousPractice.acts?.forEach((act, i) => {
+      addWords(act.text, "action", i * 4);
+      // Also add the full action as a card
       elements.push({
         id: `act-${act.id}`,
         type: "action",
         content: act.text,
-        delay: (idx * 3) % 15,
-        duration: 8 + (i % 4),
+        delay: (idx * 5) % 20,
+        duration: 12 + (i % 4),
         left: 10 + (idx * 17) % 70,
+        animationStyle: Math.floor(Math.random() * 4),
+        scale: 1,
+        rotation: -5 + Math.random() * 10,
       });
       idx++;
     });
 
-    // Add proofs
+    // Add proofs with word splitting
     previousPractice.proofs?.forEach((proof, i) => {
       if (proof.text) {
+        addWords(proof.text, "proof", i * 5 + 2);
         elements.push({
           id: `proof-${proof.id}`,
           type: "proof",
           content: proof.text,
           imageUrl: proof.image_url,
-          delay: (idx * 3) % 15,
-          duration: 9 + (i % 3),
+          delay: (idx * 4) % 18,
+          duration: 13 + (i % 3),
           left: 5 + (idx * 19) % 75,
+          animationStyle: Math.floor(Math.random() * 4),
+          scale: 1,
+          rotation: -3 + Math.random() * 6,
         });
         idx++;
       }
-      if (proof.image_url && !proof.text) {
+      if (proof.image_url) {
         elements.push({
           id: `img-${proof.id}`,
           type: "image",
           content: "",
           imageUrl: proof.image_url,
           delay: (idx * 3) % 15,
-          duration: 10 + (i % 3),
+          duration: 14 + (i % 3),
           left: 15 + (idx * 15) % 60,
+          animationStyle: Math.floor(Math.random() * 4),
+          scale: 1,
+          rotation: -8 + Math.random() * 16,
         });
         idx++;
       }
     });
 
-    // Add growth note
+    // Add growth note with word splitting
     if (previousPractice.growth_note) {
+      addWords(previousPractice.growth_note, "note", idx * 3);
       elements.push({
         id: "growth-note",
         type: "note",
         content: previousPractice.growth_note,
         delay: (idx * 3) % 15,
-        duration: 10,
+        duration: 14,
         left: 20 + (idx * 13) % 50,
+        animationStyle: Math.floor(Math.random() * 4),
+        scale: 1,
+        rotation: 0,
       });
     }
 
@@ -205,20 +242,27 @@ export function ManifestVisualizationMode({
           style={{
             position: "absolute",
             left: `${el.left}%`,
-            bottom: "-100px",
-            maxWidth: el.type === "image" ? "120px" : "250px",
-            padding: el.type === "image" ? "0" : "12px 16px",
-            background: el.type === "image" ? "transparent" : "rgba(255,255,255,0.1)",
+            bottom: "-120px",
+            maxWidth: el.type === "image" ? "100px" : el.type === "word" ? "auto" : "220px",
+            padding: el.type === "image" ? "0" : el.type === "word" ? "6px 12px" : "10px 14px",
+            background: el.type === "image" ? "transparent" : el.type === "word" 
+              ? "rgba(255,255,255,0.15)" 
+              : "rgba(255,255,255,0.1)",
             backdropFilter: el.type === "image" ? "none" : "blur(12px)",
-            borderRadius: el.type === "image" ? "12px" : "16px",
-            border: el.type === "image" ? "none" : "1px solid rgba(255,255,255,0.15)",
+            borderRadius: el.type === "image" ? "12px" : el.type === "word" ? "20px" : "14px",
+            border: el.type === "image" ? "none" : "1px solid rgba(255,255,255,0.2)",
             color: "white",
-            fontSize: "13px",
-            animation: `floatUpFade ${el.duration}s ease-in-out infinite`,
+            fontSize: el.type === "word" ? "16px" : "12px",
+            fontWeight: el.type === "word" ? "500" : "400",
+            animation: `floatUpFade${el.animationStyle} ${el.duration}s ease-in-out infinite`,
             animationDelay: `${el.delay}s`,
-            boxShadow: el.type === "image" ? "none" : "0 8px 32px rgba(0,0,0,0.3)",
-            zIndex: 5,
+            boxShadow: el.type === "word" 
+              ? "0 4px 20px rgba(20,184,166,0.3)" 
+              : el.type === "image" ? "none" : "0 8px 32px rgba(0,0,0,0.3)",
+            zIndex: el.type === "word" ? 6 : 5,
             overflow: "hidden",
+            transform: `scale(${el.scale}) rotate(${el.rotation}deg)`,
+            textShadow: el.type === "word" ? "0 0 20px rgba(255,255,255,0.5)" : "none",
           }}
         >
           {el.type === "image" && el.imageUrl && (
@@ -226,36 +270,38 @@ export function ManifestVisualizationMode({
               src={el.imageUrl} 
               alt="Proof" 
               style={{ 
-                width: "100px", 
-                height: "100px", 
+                width: "80px", 
+                height: "80px", 
                 objectFit: "cover", 
-                borderRadius: "12px",
-                border: "2px solid rgba(255,255,255,0.2)",
+                borderRadius: "10px",
+                border: "2px solid rgba(255,255,255,0.3)",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
               }} 
             />
           )}
-          {el.type !== "image" && (
+          {el.type === "word" && el.content}
+          {el.type !== "image" && el.type !== "word" && (
             <>
               <div style={{ 
-                fontSize: "9px", 
+                fontSize: "8px", 
                 textTransform: "uppercase", 
                 letterSpacing: "1px",
-                opacity: 0.7,
-                marginBottom: "4px",
+                opacity: 0.6,
+                marginBottom: "3px",
               }}>
                 {el.type === "action" ? "✨ Action" : el.type === "proof" ? "🎯 Proof" : "💭 Note"}
               </div>
-              <div style={{ lineHeight: 1.4 }}>{el.content}</div>
+              <div style={{ lineHeight: 1.4, fontSize: "11px" }}>{el.content}</div>
               {el.imageUrl && (
                 <img 
                   src={el.imageUrl} 
                   alt="Proof" 
                   style={{ 
                     width: "100%", 
-                    height: "60px", 
+                    height: "50px", 
                     objectFit: "cover", 
-                    borderRadius: "8px",
-                    marginTop: "8px",
+                    borderRadius: "6px",
+                    marginTop: "6px",
                   }} 
                 />
               )}
@@ -637,23 +683,29 @@ export function ManifestVisualizationMode({
           0%, 100% { opacity: 0.3; height: 30%; }
           50% { opacity: 1; height: 60%; }
         }
-        @keyframes floatUpFade {
-          0% {
-            opacity: 0;
-            transform: translateY(0) scale(0.9) rotate(-2deg);
-          }
-          10% {
-            opacity: 1;
-            transform: translateY(-80px) scale(1) rotate(0deg);
-          }
-          80% {
-            opacity: 0.9;
-            transform: translateY(-500px) scale(1) rotate(1deg);
-          }
-          100% {
-            opacity: 0;
-            transform: translateY(-600px) scale(0.95) rotate(2deg);
-          }
+        @keyframes floatUpFade0 {
+          0% { opacity: 0; transform: translateY(0) scale(0.8) rotate(-5deg); }
+          15% { opacity: 1; transform: translateY(-100px) scale(1) rotate(0deg); }
+          75% { opacity: 0.9; transform: translateY(-450px) scale(1.05) rotate(3deg); }
+          100% { opacity: 0; transform: translateY(-550px) scale(0.9) rotate(5deg); }
+        }
+        @keyframes floatUpFade1 {
+          0% { opacity: 0; transform: translateY(0) translateX(0) scale(0.7); }
+          20% { opacity: 1; transform: translateY(-120px) translateX(30px) scale(1); }
+          80% { opacity: 0.85; transform: translateY(-480px) translateX(-20px) scale(1.02); }
+          100% { opacity: 0; transform: translateY(-580px) translateX(10px) scale(0.85); }
+        }
+        @keyframes floatUpFade2 {
+          0% { opacity: 0; transform: translateY(0) rotate(8deg) scale(0.9); }
+          10% { opacity: 1; transform: translateY(-80px) rotate(0deg) scale(1); }
+          70% { opacity: 0.9; transform: translateY(-400px) rotate(-5deg) scale(1.08); }
+          100% { opacity: 0; transform: translateY(-520px) rotate(-8deg) scale(0.92); }
+        }
+        @keyframes floatUpFade3 {
+          0% { opacity: 0; transform: translateY(0) translateX(-20px) scale(0.85); }
+          25% { opacity: 1; transform: translateY(-150px) translateX(40px) scale(1.05); }
+          85% { opacity: 0.8; transform: translateY(-500px) translateX(-30px) scale(1); }
+          100% { opacity: 0; transform: translateY(-600px) translateX(0) scale(0.88); }
         }
       `}</style>
     </div>
