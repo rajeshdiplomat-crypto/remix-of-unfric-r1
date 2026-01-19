@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { X, Pause, Play, SkipForward, Zap } from "lucide-react";
 import { type ManifestGoal, type ManifestDailyPractice } from "./types";
+import { format } from "date-fns";
 
 interface ManifestVisualizationModeProps {
   goal: ManifestGoal;
@@ -53,12 +54,10 @@ export function ManifestVisualizationMode({
 
   // Create floating elements from previous practice - split into words for advanced animation
   const floatingElements = useMemo<FloatingElement[]>(() => {
-    if (!previousPractice) return [];
-    
     const elements: FloatingElement[] = [];
     let idx = 0;
 
-    const addWords = (text: string, type: FloatingElement["type"], baseDelay: number) => {
+    const addWords = (text: string, type: FloatingElement["type"], baseDelay: number, timestamp?: string) => {
       const words = text.split(/\s+/).filter(w => w.length > 0);
       words.forEach((word, i) => {
         elements.push({
@@ -73,80 +72,114 @@ export function ManifestVisualizationMode({
           rotation: -15 + Math.random() * 30,
         });
       });
+      // Add timestamp as floating element
+      if (timestamp) {
+        elements.push({
+          id: `timestamp-${idx}`,
+          type: "word",
+          content: timestamp,
+          delay: baseDelay + words.length * 0.3 + 0.5,
+          duration: 8,
+          left: 10 + Math.random() * 70,
+          animationStyle: Math.floor(Math.random() * 4),
+          scale: 0.7,
+          rotation: 0,
+        });
+      }
       idx++;
     };
 
-    // Add actions with word splitting
-    previousPractice.acts?.forEach((act, i) => {
-      addWords(act.text, "action", i * 4);
-      // Also add the full action as a card
+    // Add vision images as floating elements (instead of background)
+    visionImages.forEach((img, i) => {
       elements.push({
-        id: `act-${act.id}`,
-        type: "action",
-        content: act.text,
-        delay: (idx * 5) % 20,
-        duration: 12 + (i % 4),
-        left: 10 + (idx * 17) % 70,
+        id: `vision-${i}`,
+        type: "image",
+        content: "",
+        imageUrl: img,
+        delay: i * 8,
+        duration: 18 + (i % 5) * 2,
+        left: 5 + (i * 25) % 70,
         animationStyle: Math.floor(Math.random() * 4),
-        scale: 1,
-        rotation: -5 + Math.random() * 10,
+        scale: 1.5,
+        rotation: -8 + Math.random() * 16,
       });
-      idx++;
     });
 
-    // Add proofs with word splitting
-    previousPractice.proofs?.forEach((proof, i) => {
-      if (proof.text) {
-        addWords(proof.text, "proof", i * 5 + 2);
+    if (previousPractice) {
+      // Add actions with word splitting and timestamp
+      previousPractice.acts?.forEach((act, i) => {
+        const time = format(new Date(act.created_at), "h:mm a");
+        addWords(act.text, "action", i * 4 + 2, time);
+        // Also add the full action as a card
         elements.push({
-          id: `proof-${proof.id}`,
-          type: "proof",
-          content: proof.text,
-          imageUrl: proof.image_url,
-          delay: (idx * 4) % 18,
-          duration: 13 + (i % 3),
-          left: 5 + (idx * 19) % 75,
+          id: `act-${act.id}`,
+          type: "action",
+          content: act.text,
+          delay: (idx * 5) % 20,
+          duration: 12 + (i % 4),
+          left: 10 + (idx * 17) % 70,
           animationStyle: Math.floor(Math.random() * 4),
           scale: 1,
-          rotation: -3 + Math.random() * 6,
+          rotation: -5 + Math.random() * 10,
         });
         idx++;
-      }
-      if (proof.image_url) {
+      });
+
+      // Add proofs with word splitting and timestamp
+      previousPractice.proofs?.forEach((proof, i) => {
+        if (proof.text) {
+          const time = format(new Date(proof.created_at), "h:mm a");
+          addWords(proof.text, "proof", i * 5 + 2, time);
+          elements.push({
+            id: `proof-${proof.id}`,
+            type: "proof",
+            content: proof.text,
+            imageUrl: proof.image_url,
+            delay: (idx * 4) % 18,
+            duration: 13 + (i % 3),
+            left: 5 + (idx * 19) % 75,
+            animationStyle: Math.floor(Math.random() * 4),
+            scale: 1,
+            rotation: -3 + Math.random() * 6,
+          });
+          idx++;
+        }
+        if (proof.image_url) {
+          elements.push({
+            id: `img-${proof.id}`,
+            type: "image",
+            content: "",
+            imageUrl: proof.image_url,
+            delay: (idx * 3) % 15,
+            duration: 14 + (i % 3),
+            left: 15 + (idx * 15) % 60,
+            animationStyle: Math.floor(Math.random() * 4),
+            scale: 1,
+            rotation: -8 + Math.random() * 16,
+          });
+          idx++;
+        }
+      });
+
+      // Add growth note with word splitting
+      if (previousPractice.growth_note) {
+        addWords(previousPractice.growth_note, "note", idx * 3);
         elements.push({
-          id: `img-${proof.id}`,
-          type: "image",
-          content: "",
-          imageUrl: proof.image_url,
+          id: "growth-note",
+          type: "note",
+          content: previousPractice.growth_note,
           delay: (idx * 3) % 15,
-          duration: 14 + (i % 3),
-          left: 15 + (idx * 15) % 60,
+          duration: 14,
+          left: 20 + (idx * 13) % 50,
           animationStyle: Math.floor(Math.random() * 4),
           scale: 1,
-          rotation: -8 + Math.random() * 16,
+          rotation: 0,
         });
-        idx++;
       }
-    });
-
-    // Add growth note with word splitting
-    if (previousPractice.growth_note) {
-      addWords(previousPractice.growth_note, "note", idx * 3);
-      elements.push({
-        id: "growth-note",
-        type: "note",
-        content: previousPractice.growth_note,
-        delay: (idx * 3) % 15,
-        duration: 14,
-        left: 20 + (idx * 13) % 50,
-        animationStyle: Math.floor(Math.random() * 4),
-        scale: 1,
-        rotation: 0,
-      });
     }
 
     return elements;
-  }, [previousPractice]);
+  }, [previousPractice, visionImages]);
 
   useEffect(() => {
     if (isPaused || secondsLeft <= 0) return;
@@ -163,14 +196,8 @@ export function ManifestVisualizationMode({
     return () => clearInterval(interval);
   }, [isPaused, secondsLeft, onComplete]);
 
-  // Cycle through vision images
-  useEffect(() => {
-    if (isPaused || visionImages.length <= 1) return;
-    const imageInterval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % visionImages.length);
-    }, 15000); // Change image every 15 seconds
-    return () => clearInterval(imageInterval);
-  }, [isPaused, visionImages.length]);
+  // Remove image cycling since images now float
+  // Background will be static energy gradient
 
   // Energy pulse effect
   useEffect(() => {
@@ -196,27 +223,24 @@ export function ManifestVisualizationMode({
 
   const affirmation = goal.daily_affirmation?.trim() || goal.title || "I am becoming who I want to be.";
 
+  const currentImage = null; // No background image - use energy gradient only
+
   const size = 200;
   const strokeWidth = 8;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - progress / 100);
 
-  const currentImage = visionImages[currentImageIndex];
-
   const content = (
     <div style={{ position: "fixed", inset: 0, zIndex: 99999, display: "flex", flexDirection: "column" }}>
-      {/* Animated Energy Background */}
+      {/* Animated Energy Background - no image, just gradient */}
       <div
         style={{
           position: "absolute",
           inset: 0,
-          backgroundImage: currentImage ? `url(${currentImage})` : undefined,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundColor: currentImage ? undefined : "#0a0a0f",
+          backgroundColor: "#0a0a0f",
           transform: `scale(${pulseIntensity})`,
-          transition: "transform 2s ease-in-out, background-image 1.5s ease-in-out",
+          transition: "transform 2s ease-in-out",
         }}
       >
         {/* Energy gradient overlay */}
@@ -225,90 +249,97 @@ export function ManifestVisualizationMode({
             position: "absolute",
             inset: 0,
             background: `
-              radial-gradient(ellipse at 50% 0%, rgba(20,184,166,0.3) 0%, transparent 50%),
-              radial-gradient(ellipse at 0% 50%, rgba(168,85,247,0.2) 0%, transparent 40%),
-              radial-gradient(ellipse at 100% 50%, rgba(59,130,246,0.2) 0%, transparent 40%),
-              radial-gradient(ellipse at 50% 100%, rgba(236,72,153,0.2) 0%, transparent 50%),
-              linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.4))
+              radial-gradient(ellipse at 50% 0%, rgba(20,184,166,0.4) 0%, transparent 50%),
+              radial-gradient(ellipse at 0% 50%, rgba(168,85,247,0.3) 0%, transparent 40%),
+              radial-gradient(ellipse at 100% 50%, rgba(59,130,246,0.3) 0%, transparent 40%),
+              radial-gradient(ellipse at 50% 100%, rgba(236,72,153,0.3) 0%, transparent 50%),
+              linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0.3))
             `,
           }}
         />
       </div>
 
-      {/* Floating Previous Practice Elements */}
-      {!isPaused && floatingElements.map((el) => (
-        <div
-          key={el.id}
-          style={{
-            position: "absolute",
-            left: `${el.left}%`,
-            bottom: "-120px",
-            maxWidth: el.type === "image" ? "100px" : el.type === "word" ? "auto" : "220px",
-            padding: el.type === "image" ? "0" : el.type === "word" ? "6px 12px" : "10px 14px",
-            background: el.type === "image" ? "transparent" : el.type === "word" 
-              ? "rgba(255,255,255,0.15)" 
-              : "rgba(255,255,255,0.1)",
-            backdropFilter: el.type === "image" ? "none" : "blur(12px)",
-            borderRadius: el.type === "image" ? "12px" : el.type === "word" ? "20px" : "14px",
-            border: el.type === "image" ? "none" : "1px solid rgba(255,255,255,0.2)",
-            color: "white",
-            fontSize: el.type === "word" ? "16px" : "12px",
-            fontWeight: el.type === "word" ? "500" : "400",
-            animation: `floatUpFade${el.animationStyle} ${el.duration}s ease-in-out infinite`,
-            animationDelay: `${el.delay}s`,
-            boxShadow: el.type === "word" 
-              ? "0 4px 20px rgba(20,184,166,0.3)" 
-              : el.type === "image" ? "none" : "0 8px 32px rgba(0,0,0,0.3)",
-            zIndex: el.type === "word" ? 6 : 5,
-            overflow: "hidden",
-            transform: `scale(${el.scale}) rotate(${el.rotation}deg)`,
-            textShadow: el.type === "word" ? "0 0 20px rgba(255,255,255,0.5)" : "none",
-          }}
-        >
-          {el.type === "image" && el.imageUrl && (
-            <img 
-              src={el.imageUrl} 
-              alt="Proof" 
-              style={{ 
-                width: "80px", 
-                height: "80px", 
-                objectFit: "cover", 
-                borderRadius: "10px",
-                border: "2px solid rgba(255,255,255,0.3)",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-              }} 
-            />
-          )}
-          {el.type === "word" && el.content}
-          {el.type !== "image" && el.type !== "word" && (
-            <>
-              <div style={{ 
-                fontSize: "8px", 
-                textTransform: "uppercase", 
-                letterSpacing: "1px",
-                opacity: 0.6,
-                marginBottom: "3px",
-              }}>
-                {el.type === "action" ? "✨ Action" : el.type === "proof" ? "🎯 Proof" : "💭 Note"}
-              </div>
-              <div style={{ lineHeight: 1.4, fontSize: "11px" }}>{el.content}</div>
-              {el.imageUrl && (
-                <img 
-                  src={el.imageUrl} 
-                  alt="Proof" 
-                  style={{ 
-                    width: "100%", 
-                    height: "50px", 
-                    objectFit: "cover", 
-                    borderRadius: "6px",
-                    marginTop: "6px",
-                  }} 
-                />
-              )}
-            </>
-          )}
-        </div>
-      ))}
+      {/* Floating Previous Practice Elements + Vision Images */}
+      {!isPaused && floatingElements.map((el) => {
+        const isVisionImage = el.id.startsWith("vision-");
+        return (
+          <div
+            key={el.id}
+            style={{
+              position: "absolute",
+              left: `${el.left}%`,
+              bottom: "-150px",
+              maxWidth: el.type === "image" ? (isVisionImage ? "180px" : "100px") : el.type === "word" ? "auto" : "220px",
+              padding: el.type === "image" ? "0" : el.type === "word" ? "6px 12px" : "10px 14px",
+              background: el.type === "image" ? "transparent" : el.type === "word" 
+                ? "rgba(255,255,255,0.15)" 
+                : "rgba(255,255,255,0.1)",
+              backdropFilter: el.type === "image" ? "none" : "blur(12px)",
+              borderRadius: el.type === "image" ? "16px" : el.type === "word" ? "20px" : "14px",
+              border: el.type === "image" ? "none" : "1px solid rgba(255,255,255,0.2)",
+              color: "white",
+              fontSize: el.type === "word" ? "16px" : "12px",
+              fontWeight: el.type === "word" ? "500" : "400",
+              animation: `floatUpFade${el.animationStyle} ${el.duration}s ease-in-out infinite`,
+              animationDelay: `${el.delay}s`,
+              boxShadow: isVisionImage 
+                ? "0 8px 40px rgba(20,184,166,0.4), 0 0 60px rgba(168,85,247,0.3)"
+                : el.type === "word" 
+                  ? "0 4px 20px rgba(20,184,166,0.3)" 
+                  : el.type === "image" ? "0 8px 32px rgba(0,0,0,0.4)" : "0 8px 32px rgba(0,0,0,0.3)",
+              zIndex: isVisionImage ? 4 : el.type === "word" ? 6 : 5,
+              overflow: "hidden",
+              transform: `scale(${el.scale}) rotate(${el.rotation}deg)`,
+              textShadow: el.type === "word" ? "0 0 20px rgba(255,255,255,0.5)" : "none",
+            }}
+          >
+            {el.type === "image" && el.imageUrl && (
+              <img 
+                src={el.imageUrl} 
+                alt={isVisionImage ? "Vision" : "Proof"}
+                style={{ 
+                  width: isVisionImage ? "160px" : "80px", 
+                  height: isVisionImage ? "160px" : "80px", 
+                  objectFit: "cover", 
+                  borderRadius: isVisionImage ? "14px" : "10px",
+                  border: isVisionImage ? "3px solid rgba(20,184,166,0.5)" : "2px solid rgba(255,255,255,0.3)",
+                  boxShadow: isVisionImage 
+                    ? "0 0 30px rgba(20,184,166,0.5), inset 0 0 20px rgba(255,255,255,0.1)"
+                    : "0 8px 32px rgba(0,0,0,0.4)",
+                }} 
+              />
+            )}
+            {el.type === "word" && el.content}
+            {el.type !== "image" && el.type !== "word" && (
+              <>
+                <div style={{ 
+                  fontSize: "8px", 
+                  textTransform: "uppercase", 
+                  letterSpacing: "1px",
+                  opacity: 0.6,
+                  marginBottom: "3px",
+                }}>
+                  {el.type === "action" ? "✨ Action" : el.type === "proof" ? "🎯 Proof" : "💭 Note"}
+                </div>
+                <div style={{ lineHeight: 1.4, fontSize: "11px" }}>{el.content}</div>
+                {el.imageUrl && (
+                  <img 
+                    src={el.imageUrl} 
+                    alt="Proof" 
+                    style={{ 
+                      width: "100%", 
+                      height: "50px", 
+                      objectFit: "cover", 
+                      borderRadius: "6px",
+                      marginTop: "6px",
+                    }} 
+                  />
+                )}
+              </>
+            )}
+          </div>
+        );
+      })}
 
       {/* Energy particles */}
       {!isPaused &&
@@ -396,8 +427,8 @@ export function ManifestVisualizationMode({
         <X style={{ width: 22, height: 22 }} />
       </button>
 
-      {/* Image indicator dots */}
-      {visionImages.length > 1 && (
+      {/* Vision images count indicator */}
+      {visionImages.length > 0 && (
         <div
           style={{
             position: "absolute",
@@ -405,22 +436,19 @@ export function ManifestVisualizationMode({
             left: "50%",
             transform: "translateX(-50%)",
             display: "flex",
-            gap: 6,
+            gap: 8,
+            alignItems: "center",
             zIndex: 10,
+            padding: "8px 16px",
+            borderRadius: 9999,
+            background: "rgba(255,255,255,0.1)",
+            backdropFilter: "blur(8px)",
+            border: "1px solid rgba(255,255,255,0.2)",
+            color: "rgba(255,255,255,0.8)",
+            fontSize: 12,
           }}
         >
-          {visionImages.map((_, i) => (
-            <div
-              key={i}
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: i === currentImageIndex ? "white" : "rgba(255,255,255,0.4)",
-                transition: "background 0.3s",
-              }}
-            />
-          ))}
+          {visionImages.length} vision{visionImages.length > 1 ? "s" : ""} floating
         </div>
       )}
 

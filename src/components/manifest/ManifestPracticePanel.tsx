@@ -89,23 +89,32 @@ export function ManifestPracticePanel({
   const [visualizations, setVisualizations] = useState<VisualizationEntry[]>([]);
   const [acts, setActs] = useState<ActEntry[]>([]);
   const [proofs, setProofs] = useState<ProofEntry[]>([]);
+  const [showVisualization, setShowVisualization] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<string | null>("viz");
+  const [isLocked, setIsLocked] = useState(false);
+  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
+  
+  // Use refs for text inputs to prevent re-render issues
   const [currentActText, setCurrentActText] = useState("");
   const [currentProofText, setCurrentProofText] = useState("");
   const [currentProofImageUrl, setCurrentProofImageUrl] = useState<string | null>(null);
-  const [showVisualization, setShowVisualization] = useState(false);
-  const [expandedSection, setExpandedSection] = useState<string | null>("viz");
   const [growthNote, setGrowthNote] = useState("");
-  const [isLocked, setIsLocked] = useState(false);
-  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
+
+  // Track goal id separately to avoid full resets on goal object changes
+  const goalIdRef = useRef(goal.id);
 
   useEffect(() => {
+    // Only reset state when goal actually changes
+    if (goalIdRef.current !== goal.id) {
+      goalIdRef.current = goal.id;
+      setCurrentActText("");
+      setCurrentProofText("");
+      setCurrentProofImageUrl(null);
+      setGrowthNote("");
+    }
     setVisualizations([]);
     setActs([]);
     setProofs([]);
-    setCurrentActText("");
-    setCurrentProofText("");
-    setCurrentProofImageUrl(null);
-    setGrowthNote("");
     setIsLocked(false);
     setExpandedSection("viz");
     setCurrentImageUrl(goal.vision_image_url || goal.cover_image_url || null);
@@ -116,7 +125,7 @@ export function ManifestPracticePanel({
     if (saved.proofs) setProofs(saved.proofs);
     if (saved.growth_note) setGrowthNote(saved.growth_note);
     if (saved.locked) setIsLocked(true);
-  }, [goal.id, dateStr, goal.vision_image_url, goal.cover_image_url]);
+  }, [goal.id, dateStr]);
 
   const hasViz = visualizations.length > 0;
   const hasAct = acts.length > 0;
@@ -309,7 +318,7 @@ export function ManifestPracticePanel({
       {/* Header with Vision Image */}
       <div className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex-shrink-0">
         {/* Vision Image - Full width, editable */}
-        <div className="relative h-32 w-full overflow-hidden">
+        <div className="relative h-36 w-full overflow-hidden">
           <EntryImageUpload
             currentImageUrl={currentImageUrl}
             presetType="manifest"
@@ -348,6 +357,22 @@ export function ManifestPracticePanel({
             <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
               <Clock className="h-3 w-3" /> Check-in at {goal.check_in_time}
             </p>
+          )}
+          
+          {/* Vision Board - Show additional images */}
+          {goal.vision_images && goal.vision_images.length > 0 && (
+            <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1">
+              {goal.vision_images.slice(0, 4).map((img, i) => (
+                <div key={i} className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200 dark:border-slate-600">
+                  <img src={img} alt={`Vision ${i + 1}`} className="w-full h-full object-cover" />
+                </div>
+              ))}
+              {goal.vision_images.length > 4 && (
+                <div className="w-12 h-12 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 text-[10px] text-slate-500">
+                  +{goal.vision_images.length - 4}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -425,13 +450,18 @@ export function ManifestPracticePanel({
                 {acts.map((a) => (
                   <div
                     key={a.id}
-                    className="flex items-center justify-between bg-teal-50 dark:bg-teal-900/30 px-3 py-2 rounded-lg"
+                    className="flex items-start justify-between bg-teal-50 dark:bg-teal-900/30 px-3 py-2 rounded-lg"
                   >
-                    <span className="text-sm text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                      <Check className="h-3 w-3 text-teal-500" /> {a.text}
-                    </span>
+                    <div className="flex-1">
+                      <span className="text-sm text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                        <Check className="h-3 w-3 text-teal-500 flex-shrink-0" /> {a.text}
+                      </span>
+                      <span className="text-[9px] text-slate-400 ml-5">
+                        {format(new Date(a.created_at), "h:mm a")}
+                      </span>
+                    </div>
                     {isViewingToday && (
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveAct(a.id)}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={() => handleRemoveAct(a.id)}>
                         <Trash2 className="h-3 w-3 text-slate-400" />
                       </Button>
                     )}
@@ -492,9 +522,14 @@ export function ManifestPracticePanel({
                 {proofs.map((p) => (
                   <div key={p.id} className="bg-teal-50 dark:bg-teal-900/30 p-3 rounded-lg">
                     <div className="flex items-start justify-between">
-                      <p className="text-sm text-slate-700 dark:text-slate-200 flex-1">{p.text}</p>
+                      <div className="flex-1">
+                        <p className="text-sm text-slate-700 dark:text-slate-200">{p.text}</p>
+                        <span className="text-[9px] text-slate-400">
+                          {format(new Date(p.created_at), "h:mm a")}
+                        </span>
+                      </div>
                       {isViewingToday && (
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveProof(p.id)}>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={() => handleRemoveProof(p.id)}>
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       )}
