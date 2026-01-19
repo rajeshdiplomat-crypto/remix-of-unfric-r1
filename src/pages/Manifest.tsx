@@ -426,7 +426,7 @@ export default function Manifest() {
           </div>
 
           {/* Goals Container - Fixed height, only entries scroll */}
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex flex-col overflow-hidden" style={{ maxHeight: "calc(100vh - 380px)" }}>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex flex-col overflow-hidden" style={{ maxHeight: "calc(100vh - 220px)" }}>
             {activeGoals.length === 0 ? (
               <div className="p-4">
                 <Card className="rounded-2xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900">
