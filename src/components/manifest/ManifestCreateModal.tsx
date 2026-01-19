@@ -27,12 +27,6 @@ const CATEGORIES = [
   { value: "personal", label: "Personal", color: "bg-purple-100 text-purple-600 border-purple-200" },
 ];
 
-const TEMPLATES = [
-  { label: "I am confident", assumption: "I am confident and speak with authority." },
-  { label: "I am wealthy", assumption: "Money flows to me easily and abundantly." },
-  { label: "I am healthy", assumption: "My body is healthy, strong, and full of energy." },
-  { label: "I am loved", assumption: "I am surrounded by love and loving relationships." },
-];
 
 // Category-based auto-fill suggestions
 const CATEGORY_SUGGESTIONS: Record<string, {
@@ -130,15 +124,16 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
     setStep(1);
   }, [open, editingGoal]);
 
-  // Apply category suggestions when category changes
-  const applySuggestions = () => {
-    const suggestions = CATEGORY_SUGGESTIONS[category];
+  // Auto-apply category suggestions when category changes
+  const handleCategoryChange = (newCategory: string) => {
+    setCategory(newCategory);
+    const suggestions = CATEGORY_SUGGESTIONS[newCategory];
     if (suggestions) {
+      // Auto-fill empty fields
       if (!assumption.trim()) setAssumption(suggestions.assumption);
       if (!liveFromEnd.trim()) setLiveFromEnd(suggestions.liveFromEnd);
       if (!actAsIf.trim()) setActAsIf(suggestions.actAsIf);
       if (!affirmation.trim()) setAffirmation(suggestions.affirmation);
-      toast.success("Suggestions applied!");
     }
   };
 
@@ -271,9 +266,6 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
 
   const canNext = step === 1 ? assumption.trim().length > 0 : step === 2 ? true : committed;
 
-  const hasSuggestions = CATEGORY_SUGGESTIONS[category];
-  const canApplySuggestions = hasSuggestions && (!assumption.trim() || !liveFromEnd.trim() || !actAsIf.trim() || !affirmation.trim());
-
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg p-0 rounded-2xl overflow-hidden">
@@ -291,27 +283,15 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
           {step === 1 && (
             <div className="space-y-5">
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label className="text-sm font-medium text-slate-700">Quick Start</Label>
-                  {canApplySuggestions && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={applySuggestions}
-                      className="h-7 text-xs text-teal-600 hover:text-teal-700"
-                    >
-                      <Wand2 className="h-3 w-3 mr-1" /> Auto-fill for {category}
-                    </Button>
-                  )}
-                </div>
+                <Label className="text-sm font-medium text-slate-700 mb-2 block">Category</Label>
                 <div className="flex flex-wrap gap-2">
-                  {TEMPLATES.map((t) => (
+                  {CATEGORIES.map((c) => (
                     <button
-                      key={t.label}
-                      onClick={() => setAssumption(t.assumption)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${assumption === t.assumption ? "bg-teal-500 text-white border-teal-500" : "bg-white text-slate-600 border-slate-200 hover:border-teal-300"}`}
+                      key={c.value}
+                      onClick={() => handleCategoryChange(c.value)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${category === c.value ? "ring-2 ring-teal-500 " + c.color : c.color}`}
                     >
-                      {t.label}
+                      {c.label}
                     </button>
                   ))}
                 </div>
@@ -326,21 +306,6 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                   rows={2}
                   className="rounded-xl resize-none"
                 />
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-slate-700 mb-2 block">Category</Label>
-                <div className="flex flex-wrap gap-2">
-                  {CATEGORIES.map((c) => (
-                    <button
-                      key={c.value}
-                      onClick={() => setCategory(c.value)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${category === c.value ? "ring-2 ring-teal-500 " + c.color : c.color}`}
-                    >
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
               </div>
 
               <div>

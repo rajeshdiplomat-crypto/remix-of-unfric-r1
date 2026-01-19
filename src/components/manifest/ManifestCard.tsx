@@ -93,20 +93,6 @@ export function ManifestCard({ goal, streak, momentum, isSelected, onClick }: Ma
               {goal.title}
             </h3>
 
-            {/* Progress Bar */}
-            <div className="mb-2">
-              <div className="flex justify-between text-[10px] mb-1">
-                <span className="text-slate-500">Progress</span>
-                <span className="font-semibold text-teal-600">{momentum}%</span>
-              </div>
-              <div className="h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-teal-500 to-cyan-400 transition-all"
-                  style={{ width: `${momentum}%` }}
-                />
-              </div>
-            </div>
-
             {/* Week Dots - Compact */}
             <div className="flex gap-1">
               {["M", "T", "W", "T", "F", "S", "S"].map((day, i) => (
