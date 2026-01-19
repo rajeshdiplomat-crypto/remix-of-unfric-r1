@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, Flame, Play, Tag, Pencil, Trash2, CheckCircle } from "lucide-react";
+import { Check, Flame, Play, Tag, Pencil, Trash2, CheckCircle, RotateCcw } from "lucide-react";
 import { type ManifestGoal, type ManifestDailyPractice, DAILY_PRACTICE_KEY, CATEGORIES } from "./types";
 import { format, subDays, parseISO, differenceInDays, formatDistanceToNow } from "date-fns";
 import { useMemo } from "react";
@@ -16,11 +16,12 @@ interface ManifestCardProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onComplete?: () => void;
+  onReactivate?: () => void;
   onImageUpdate?: () => void;
   isCompleted?: boolean;
 }
 
-export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEdit, onDelete, onComplete, onImageUpdate, isCompleted = false }: ManifestCardProps) {
+export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEdit, onDelete, onComplete, onReactivate, onImageUpdate, isCompleted = false }: ManifestCardProps) {
   // Get last 7 days
   const weekProgress = useMemo(() => {
     const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
@@ -105,6 +106,15 @@ export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEd
             title="Mark as Complete"
           >
             <CheckCircle className="h-2.5 w-2.5 text-teal-500" />
+          </button>
+        )}
+        {onReactivate && isCompleted && (
+          <button
+            onClick={onReactivate}
+            className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/50 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors"
+            title="Reactivate Reality"
+          >
+            <RotateCcw className="h-3 w-3 text-amber-600" />
           </button>
         )}
         {onEdit && !isCompleted && (

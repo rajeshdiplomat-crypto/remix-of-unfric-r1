@@ -333,6 +333,22 @@ export default function Manifest() {
     }
   };
 
+  const handleReactivateGoal = async (goal: ManifestGoal) => {
+    try {
+      const { error } = await supabase
+        .from("manifest_goals")
+        .update({ is_completed: false })
+        .eq("id", goal.id);
+      if (error) throw error;
+
+      toast.success("Reality reactivated!");
+      fetchData();
+    } catch (error) {
+      console.error("Error reactivating goal:", error);
+      toast.error("Failed to reactivate reality");
+    }
+  };
+
   const handleCloseModal = (open: boolean) => {
     setShowCreateModal(open);
     if (!open) setEditingGoal(null);
@@ -561,6 +577,7 @@ export default function Manifest() {
                           isSelected={selectedGoal?.id === goal.id}
                           onClick={() => handleSelectGoal(goal)}
                           onDelete={() => setDeletingGoal(goal)}
+                          onReactivate={() => handleReactivateGoal(goal)}
                           onImageUpdate={fetchData}
                           isCompleted
                         />
