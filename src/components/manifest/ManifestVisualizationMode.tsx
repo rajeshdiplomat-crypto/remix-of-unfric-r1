@@ -1,21 +1,115 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { X, Pause, Play, SkipForward, Zap } from "lucide-react";
-import { type ManifestGoal } from "./types";
+import { type ManifestGoal, type ManifestDailyPractice } from "./types";
 
 interface ManifestVisualizationModeProps {
   goal: ManifestGoal;
   duration: 3 | 5 | 10;
+  previousPractice?: ManifestDailyPractice | null;
   onComplete: () => void;
   onClose: () => void;
 }
 
-export function ManifestVisualizationMode({ goal, duration, onComplete, onClose }: ManifestVisualizationModeProps) {
+interface FloatingElement {
+  id: string;
+  type: "action" | "proof" | "note" | "image";
+  content: string;
+  imageUrl?: string;
+  delay: number;
+  duration: number;
+  left: number;
+}
+
+export function ManifestVisualizationMode({ 
+  goal, 
+  duration, 
+  previousPractice,
+  onComplete, 
+  onClose 
+}: ManifestVisualizationModeProps) {
   const totalSeconds = duration * 60;
   const [secondsLeft, setSecondsLeft] = useState(totalSeconds);
   const [isPaused, setIsPaused] = useState(false);
   const [pulseIntensity, setPulseIntensity] = useState(1);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
+
+  // Get all vision images (including the main one)
+  const visionImages = useMemo(() => {
+    const images: string[] = [];
+    if (goal.vision_image_url) images.push(goal.vision_image_url);
+    if (goal.vision_images && goal.vision_images.length > 0) {
+      images.push(...goal.vision_images.filter(img => img && !images.includes(img)));
+    }
+    if (goal.cover_image_url && !images.includes(goal.cover_image_url)) {
+      images.push(goal.cover_image_url);
+    }
+    return images;
+  }, [goal]);
+
+  // Create floating elements from previous practice
+  const floatingElements = useMemo<FloatingElement[]>(() => {
+    if (!previousPractice) return [];
+    
+    const elements: FloatingElement[] = [];
+    let idx = 0;
+
+    // Add actions
+    previousPractice.acts?.forEach((act, i) => {
+      elements.push({
+        id: `act-${act.id}`,
+        type: "action",
+        content: act.text,
+        delay: (idx * 3) % 15,
+        duration: 8 + (i % 4),
+        left: 10 + (idx * 17) % 70,
+      });
+      idx++;
+    });
+
+    // Add proofs
+    previousPractice.proofs?.forEach((proof, i) => {
+      if (proof.text) {
+        elements.push({
+          id: `proof-${proof.id}`,
+          type: "proof",
+          content: proof.text,
+          imageUrl: proof.image_url,
+          delay: (idx * 3) % 15,
+          duration: 9 + (i % 3),
+          left: 5 + (idx * 19) % 75,
+        });
+        idx++;
+      }
+      if (proof.image_url && !proof.text) {
+        elements.push({
+          id: `img-${proof.id}`,
+          type: "image",
+          content: "",
+          imageUrl: proof.image_url,
+          delay: (idx * 3) % 15,
+          duration: 10 + (i % 3),
+          left: 15 + (idx * 15) % 60,
+        });
+        idx++;
+      }
+    });
+
+    // Add growth note
+    if (previousPractice.growth_note) {
+      elements.push({
+        id: "growth-note",
+        type: "note",
+        content: previousPractice.growth_note,
+        delay: (idx * 3) % 15,
+        duration: 10,
+        left: 20 + (idx * 13) % 50,
+      });
+    }
+
+    return elements;
+  }, [previousPractice]);
 
   useEffect(() => {
     if (isPaused || secondsLeft <= 0) return;
@@ -31,6 +125,15 @@ export function ManifestVisualizationMode({ goal, duration, onComplete, onClose 
     }, 1000);
     return () => clearInterval(interval);
   }, [isPaused, secondsLeft, onComplete]);
+
+  // Cycle through vision images
+  useEffect(() => {
+    if (isPaused || visionImages.length <= 1) return;
+    const imageInterval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % visionImages.length);
+    }, 15000); // Change image every 15 seconds
+    return () => clearInterval(imageInterval);
+  }, [isPaused, visionImages.length]);
 
   // Energy pulse effect
   useEffect(() => {
@@ -62,6 +165,8 @@ export function ManifestVisualizationMode({ goal, duration, onComplete, onClose 
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - progress / 100);
 
+  const currentImage = visionImages[currentImageIndex];
+
   const content = (
     <div style={{ position: "fixed", inset: 0, zIndex: 99999, display: "flex", flexDirection: "column" }}>
       {/* Animated Energy Background */}
@@ -69,12 +174,12 @@ export function ManifestVisualizationMode({ goal, duration, onComplete, onClose 
         style={{
           position: "absolute",
           inset: 0,
-          backgroundImage: goal.vision_image_url ? `url(${goal.vision_image_url})` : undefined,
+          backgroundImage: currentImage ? `url(${currentImage})` : undefined,
           backgroundSize: "cover",
           backgroundPosition: "center",
-          backgroundColor: goal.vision_image_url ? undefined : "#0a0a0f",
+          backgroundColor: currentImage ? undefined : "#0a0a0f",
           transform: `scale(${pulseIntensity})`,
-          transition: "transform 2s ease-in-out",
+          transition: "transform 2s ease-in-out, background-image 1.5s ease-in-out",
         }}
       >
         {/* Energy gradient overlay */}
@@ -93,7 +198,73 @@ export function ManifestVisualizationMode({ goal, duration, onComplete, onClose 
         />
       </div>
 
-      {/* Energy particles - more dynamic */}
+      {/* Floating Previous Practice Elements */}
+      {!isPaused && floatingElements.map((el) => (
+        <div
+          key={el.id}
+          style={{
+            position: "absolute",
+            left: `${el.left}%`,
+            bottom: "-100px",
+            maxWidth: el.type === "image" ? "120px" : "250px",
+            padding: el.type === "image" ? "0" : "12px 16px",
+            background: el.type === "image" ? "transparent" : "rgba(255,255,255,0.1)",
+            backdropFilter: el.type === "image" ? "none" : "blur(12px)",
+            borderRadius: el.type === "image" ? "12px" : "16px",
+            border: el.type === "image" ? "none" : "1px solid rgba(255,255,255,0.15)",
+            color: "white",
+            fontSize: "13px",
+            animation: `floatUpFade ${el.duration}s ease-in-out infinite`,
+            animationDelay: `${el.delay}s`,
+            boxShadow: el.type === "image" ? "none" : "0 8px 32px rgba(0,0,0,0.3)",
+            zIndex: 5,
+            overflow: "hidden",
+          }}
+        >
+          {el.type === "image" && el.imageUrl && (
+            <img 
+              src={el.imageUrl} 
+              alt="Proof" 
+              style={{ 
+                width: "100px", 
+                height: "100px", 
+                objectFit: "cover", 
+                borderRadius: "12px",
+                border: "2px solid rgba(255,255,255,0.2)",
+              }} 
+            />
+          )}
+          {el.type !== "image" && (
+            <>
+              <div style={{ 
+                fontSize: "9px", 
+                textTransform: "uppercase", 
+                letterSpacing: "1px",
+                opacity: 0.7,
+                marginBottom: "4px",
+              }}>
+                {el.type === "action" ? "✨ Action" : el.type === "proof" ? "🎯 Proof" : "💭 Note"}
+              </div>
+              <div style={{ lineHeight: 1.4 }}>{el.content}</div>
+              {el.imageUrl && (
+                <img 
+                  src={el.imageUrl} 
+                  alt="Proof" 
+                  style={{ 
+                    width: "100%", 
+                    height: "60px", 
+                    objectFit: "cover", 
+                    borderRadius: "8px",
+                    marginTop: "8px",
+                  }} 
+                />
+              )}
+            </>
+          )}
+        </div>
+      ))}
+
+      {/* Energy particles */}
       {!isPaused &&
         Array.from({ length: 20 }).map((_, i) => (
           <div
@@ -178,6 +349,34 @@ export function ManifestVisualizationMode({ goal, duration, onComplete, onClose 
       >
         <X style={{ width: 22, height: 22 }} />
       </button>
+
+      {/* Image indicator dots */}
+      {visionImages.length > 1 && (
+        <div
+          style={{
+            position: "absolute",
+            top: 20,
+            left: "50%",
+            transform: "translateX(-50%)",
+            display: "flex",
+            gap: 6,
+            zIndex: 10,
+          }}
+        >
+          {visionImages.map((_, i) => (
+            <div
+              key={i}
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: i === currentImageIndex ? "white" : "rgba(255,255,255,0.4)",
+                transition: "background 0.3s",
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Content */}
       <div
@@ -437,6 +636,24 @@ export function ManifestVisualizationMode({ goal, duration, onComplete, onClose 
         @keyframes sideGlow {
           0%, 100% { opacity: 0.3; height: 30%; }
           50% { opacity: 1; height: 60%; }
+        }
+        @keyframes floatUpFade {
+          0% {
+            opacity: 0;
+            transform: translateY(0) scale(0.9) rotate(-2deg);
+          }
+          10% {
+            opacity: 1;
+            transform: translateY(-80px) scale(1) rotate(0deg);
+          }
+          80% {
+            opacity: 0.9;
+            transform: translateY(-500px) scale(1) rotate(1deg);
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(-600px) scale(0.95) rotate(2deg);
+          }
         }
       `}</style>
     </div>

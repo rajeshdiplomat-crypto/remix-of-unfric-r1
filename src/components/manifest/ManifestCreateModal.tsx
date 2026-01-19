@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronLeft, ChevronRight, ImagePlus, Sparkles, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImagePlus, Sparkles, X, Clock, Plus, Trash2, Bell } from "lucide-react";
 import { type ManifestGoal, MANIFEST_DRAFT_KEY } from "./types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -27,8 +27,6 @@ const CATEGORIES = [
   { value: "personal", label: "Personal", color: "bg-purple-100 text-purple-600 border-purple-200" },
 ];
 
-
-// Category-based auto-fill suggestions with multiple options
 const CATEGORY_SUGGESTIONS: Record<string, {
   assumptions: string[];
   liveFromEnds: string[];
@@ -167,14 +165,23 @@ const CATEGORY_SUGGESTIONS: Record<string, {
   },
 };
 
+const DEFAULT_REMINDER_TIMES: Record<number, string[]> = {
+  1: ["08:00"],
+  2: ["08:00", "20:00"],
+  3: ["08:00", "13:00", "20:00"],
+  4: ["08:00", "12:00", "17:00", "21:00"],
+};
+
 export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editingGoal }: ManifestCreateModalProps) {
   const [step, setStep] = useState(1);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const multiImageInputRef = useRef<HTMLInputElement>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
 
   const [assumption, setAssumption] = useState("");
   const [category, setCategory] = useState("personal");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [visionImages, setVisionImages] = useState<string[]>([]);
   const [startDate, setStartDate] = useState("");
   const [liveFromEnd, setLiveFromEnd] = useState("");
   const [actAsIf, setActAsIf] = useState("");
@@ -182,6 +189,10 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
   const [affirmation, setAffirmation] = useState("");
   const [checkInTime, setCheckInTime] = useState("08:00");
   const [committed, setCommitted] = useState(false);
+  
+  // Reminder settings
+  const [reminderCount, setReminderCount] = useState<1 | 2 | 3 | 4>(1);
+  const [reminderTimes, setReminderTimes] = useState<string[]>(["08:00"]);
 
   useEffect(() => {
     if (!open) return;
@@ -189,6 +200,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
       setAssumption(editingGoal.title);
       setCategory(editingGoal.category || "personal");
       setImageUrl(editingGoal.vision_image_url || null);
+      setVisionImages(editingGoal.vision_images || []);
       setStartDate(editingGoal.start_date || "");
       setLiveFromEnd(editingGoal.live_from_end || "");
       setActAsIf(editingGoal.act_as_if || "");
@@ -196,6 +208,8 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
       setAffirmation(editingGoal.daily_affirmation || "");
       setCheckInTime(editingGoal.check_in_time || "08:00");
       setCommitted(editingGoal.committed_7_days || false);
+      setReminderCount(editingGoal.reminder_count || 1);
+      setReminderTimes(editingGoal.reminder_times || ["08:00"]);
     } else {
       try {
         const draft = localStorage.getItem(MANIFEST_DRAFT_KEY);
@@ -203,12 +217,12 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
           const d = JSON.parse(draft);
           setAssumption(d.assumption || "");
           setCategory(d.category || "personal");
-          // Only restore URL if it's not a base64 string
           if (d.imageUrl && !d.imageUrl.startsWith("data:")) {
             setImageUrl(d.imageUrl);
           } else {
             setImageUrl(null);
           }
+          setVisionImages(d.visionImages || []);
           setStartDate(d.startDate || "");
           setLiveFromEnd(d.liveFromEnd || "");
           setActAsIf(d.actAsIf || "");
@@ -216,6 +230,8 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
           setAffirmation(d.affirmation || "");
           setCheckInTime(d.checkInTime || "08:00");
           setCommitted(d.committed || false);
+          setReminderCount(d.reminderCount || 1);
+          setReminderTimes(d.reminderTimes || ["08:00"]);
         }
       } catch (e) {
         console.warn("Failed to load draft:", e);
@@ -224,12 +240,10 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
     setStep(1);
   }, [open, editingGoal]);
 
-  // Auto-apply category suggestions when category changes
   const handleCategoryChange = (newCategory: string) => {
     setCategory(newCategory);
     const suggestions = CATEGORY_SUGGESTIONS[newCategory];
     if (suggestions) {
-      // Auto-fill ALL fields with first suggestion from each category
       setAssumption(suggestions.assumptions[0]);
       setLiveFromEnd(suggestions.liveFromEnds[0]);
       setActAsIf(suggestions.actAsIfs[0]);
@@ -237,38 +251,23 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
     }
   };
 
-  // Get current suggestions based on category
-  const currentSuggestions = CATEGORY_SUGGESTIONS[category] || CATEGORY_SUGGESTIONS.personal;
-
-  const saveDraft = () => {
-    try {
-      // Only save URL, not base64 data
-      const safeImageUrl = imageUrl && !imageUrl.startsWith("data:") ? imageUrl : null;
-      localStorage.setItem(
-        MANIFEST_DRAFT_KEY,
-        JSON.stringify({
-          assumption,
-          category,
-          imageUrl: safeImageUrl,
-          startDate,
-          liveFromEnd,
-          actAsIf,
-          vizMinutes,
-          affirmation,
-          checkInTime,
-          committed,
-        }),
-      );
-    } catch (e) {
-      console.warn("Failed to save draft:", e);
-    }
+  const handleReminderCountChange = (count: 1 | 2 | 3 | 4) => {
+    setReminderCount(count);
+    setReminderTimes(DEFAULT_REMINDER_TIMES[count]);
   };
+
+  const handleReminderTimeChange = (index: number, time: string) => {
+    const newTimes = [...reminderTimes];
+    newTimes[index] = time;
+    setReminderTimes(newTimes);
+  };
+
+  const currentSuggestions = CATEGORY_SUGGESTIONS[category] || CATEGORY_SUGGESTIONS.personal;
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error("Image too large. Max 5MB.");
       return;
@@ -296,10 +295,8 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("Failed to upload image");
-      // Fallback: show preview but don't store base64
       const reader = new FileReader();
       reader.onloadend = () => {
-        // Store temporarily for preview only
         setImageUrl(reader.result as string);
       };
       reader.readAsDataURL(file);
@@ -308,12 +305,70 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
     }
   };
 
+  const handleMultiImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    if (visionImages.length + files.length > 5) {
+      toast.error("Maximum 5 visualization images allowed");
+      return;
+    }
+
+    setUploadingImage(true);
+
+    try {
+      const newUrls: string[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error(`${file.name} is too large. Max 5MB.`);
+          continue;
+        }
+
+        const fileExt = file.name.split(".").pop();
+        const fileName = `manifest-viz-${Date.now()}-${i}.${fileExt}`;
+        const filePath = `vision-images/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("entry-covers")
+          .upload(filePath, file, { upsert: true });
+
+        if (uploadError) {
+          console.error("Upload error:", uploadError);
+          continue;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from("entry-covers")
+          .getPublicUrl(filePath);
+
+        newUrls.push(publicUrl);
+      }
+
+      if (newUrls.length > 0) {
+        setVisionImages([...visionImages, ...newUrls]);
+        toast.success(`${newUrls.length} image(s) uploaded!`);
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Failed to upload images");
+    } finally {
+      setUploadingImage(false);
+      if (multiImageInputRef.current) {
+        multiImageInputRef.current.value = "";
+      }
+    }
+  };
+
+  const removeVisionImage = (index: number) => {
+    setVisionImages(visionImages.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async () => {
-    // If image is still base64, try to upload it first
     let finalImageUrl = imageUrl;
     if (imageUrl && imageUrl.startsWith("data:")) {
       try {
-        // Convert base64 to blob and upload
         const response = await fetch(imageUrl);
         const blob = await response.blob();
         const fileName = `manifest-${Date.now()}.jpg`;
@@ -331,7 +386,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
         }
       } catch (e) {
         console.warn("Failed to upload base64 image:", e);
-        finalImageUrl = undefined; // Don't save base64 to storage
+        finalImageUrl = undefined;
       }
     }
 
@@ -339,6 +394,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
       title: assumption,
       category,
       vision_image_url: finalImageUrl && !finalImageUrl.startsWith("data:") ? finalImageUrl : undefined,
+      vision_images: visionImages.filter(img => !img.startsWith("data:")),
       start_date: startDate || undefined,
       live_from_end: liveFromEnd || undefined,
       act_as_if: actAsIf || "Take one aligned action",
@@ -347,6 +403,8 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
       daily_affirmation: affirmation,
       check_in_time: checkInTime,
       committed_7_days: committed,
+      reminder_count: reminderCount,
+      reminder_times: reminderTimes,
     });
     
     try {
@@ -358,17 +416,16 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
 
   const handleClose = (o: boolean) => {
     if (!o) {
-      // Clear draft when closing without saving (for new visions only)
       if (!editingGoal) {
         try {
           localStorage.removeItem(MANIFEST_DRAFT_KEY);
         } catch (e) {
           console.warn("Failed to clear draft:", e);
         }
-        // Reset all form fields
         setAssumption("");
         setCategory("personal");
         setImageUrl(null);
+        setVisionImages([]);
         setStartDate("");
         setLiveFromEnd("");
         setActAsIf("");
@@ -376,6 +433,8 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
         setAffirmation("");
         setCheckInTime("08:00");
         setCommitted(false);
+        setReminderCount(1);
+        setReminderTimes(["08:00"]);
         setStep(1);
       }
     }
@@ -384,11 +443,18 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
 
   const canNext = step === 1 ? assumption.trim().length > 0 : step === 2 ? true : committed;
 
+  const getReminderLabel = (index: number, total: number) => {
+    if (total === 1) return "Reminder Time";
+    if (total === 2) return index === 0 ? "Morning" : "Evening";
+    if (total === 3) return ["Morning", "Afternoon", "Evening"][index];
+    return ["Morning", "Noon", "Afternoon", "Evening"][index];
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg p-0 rounded-2xl overflow-hidden">
+      <DialogContent className="max-w-lg p-0 rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-teal-500 to-cyan-500 px-6 py-4 text-white">
+        <div className="bg-gradient-to-r from-teal-500 to-cyan-500 px-6 py-4 text-white flex-shrink-0">
           <DialogTitle className="text-lg font-semibold">{editingGoal ? "Edit Vision" : "Create Vision"}</DialogTitle>
           <div className="flex gap-2 mt-3">
             {[1, 2, 3].map((s) => (
@@ -397,7 +463,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto flex-1">
           {step === 1 && (
             <div className="space-y-5">
               <div>
@@ -424,7 +490,6 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                   rows={2}
                   className="rounded-xl resize-none"
                 />
-                {/* Quick select options */}
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {currentSuggestions.assumptions.map((opt, i) => (
                     <button
@@ -444,7 +509,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700 mb-2 block">Vision Image</Label>
+                <Label className="text-sm font-medium text-slate-700 mb-2 block">Cover Image</Label>
                 <input
                   ref={imageInputRef}
                   type="file"
@@ -481,9 +546,55 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                     className="w-full h-32 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-teal-300 hover:text-teal-500 transition disabled:opacity-50"
                   >
                     <ImagePlus className="h-6 w-6" />
-                    <span className="text-sm">{uploadingImage ? "Uploading..." : "Upload Image"}</span>
+                    <span className="text-sm">{uploadingImage ? "Uploading..." : "Upload Cover Image"}</span>
                   </button>
                 )}
+              </div>
+
+              {/* Multiple Visualization Images */}
+              <div>
+                <Label className="text-sm font-medium text-slate-700 mb-2 block">
+                  Visualization Images (up to 5)
+                </Label>
+                <p className="text-xs text-slate-500 mb-2">
+                  These images will cycle during your visualization sessions
+                </p>
+                <input
+                  ref={multiImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleMultiImageUpload}
+                  className="hidden"
+                />
+                <div className="grid grid-cols-5 gap-2">
+                  {visionImages.map((img, i) => (
+                    <div key={i} className="relative aspect-square">
+                      <img
+                        src={img}
+                        alt={`Vision ${i + 1}`}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-1 -right-1 h-5 w-5 rounded-full"
+                        onClick={() => removeVisionImage(i)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                  {visionImages.length < 5 && (
+                    <button
+                      onClick={() => multiImageInputRef.current?.click()}
+                      disabled={uploadingImage}
+                      className="aspect-square rounded-lg border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-400 hover:border-teal-300 hover:text-teal-500 transition disabled:opacity-50"
+                    >
+                      <Plus className="h-5 w-5" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -511,7 +622,6 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                   rows={2}
                   className="rounded-xl resize-none"
                 />
-                {/* Quick select options */}
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {currentSuggestions.liveFromEnds.map((opt, i) => (
                     <button
@@ -538,7 +648,6 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                   placeholder="e.g., Speak confidently in meetings"
                   className="rounded-xl h-10"
                 />
-                {/* Quick select options */}
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {currentSuggestions.actAsIfs.map((opt, i) => (
                     <button
@@ -588,7 +697,6 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                   placeholder={assumption || "I am..."}
                   className="rounded-xl h-10"
                 />
-                {/* Quick select options */}
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {currentSuggestions.affirmations.map((opt, i) => (
                     <button
@@ -607,14 +715,46 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                 </div>
               </div>
 
-              <div>
-                <Label className="text-sm font-medium text-slate-700 mb-2 block">Check-in Time</Label>
-                <Input
-                  type="time"
-                  value={checkInTime}
-                  onChange={(e) => setCheckInTime(e.target.value)}
-                  className="rounded-xl h-10"
-                />
+              {/* Reminder Settings */}
+              <div className="p-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800">
+                <div className="flex items-center gap-2 mb-3">
+                  <Bell className="h-4 w-4 text-amber-600" />
+                  <Label className="text-sm font-medium text-slate-700">Daily Reminders</Label>
+                </div>
+                
+                <p className="text-xs text-slate-500 mb-3">How many times per day would you like to be reminded?</p>
+                
+                <div className="flex gap-2 mb-4">
+                  {[1, 2, 3, 4].map((count) => (
+                    <button
+                      key={count}
+                      type="button"
+                      onClick={() => handleReminderCountChange(count as 1 | 2 | 3 | 4)}
+                      className={`flex-1 py-2 rounded-lg border text-sm font-medium transition ${
+                        reminderCount === count
+                          ? "bg-amber-500 text-white border-amber-500"
+                          : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-amber-200 dark:border-amber-800 hover:border-amber-400"
+                      }`}
+                    >
+                      {count}x
+                    </button>
+                  ))}
+                </div>
+
+                <div className="space-y-2">
+                  {reminderTimes.map((time, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-amber-600" />
+                      <span className="text-xs text-slate-600 w-20">{getReminderLabel(index, reminderCount)}</span>
+                      <Input
+                        type="time"
+                        value={time}
+                        onChange={(e) => handleReminderTimeChange(index, e.target.value)}
+                        className="flex-1 rounded-lg h-9 text-sm"
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <label className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 cursor-pointer hover:border-teal-300 transition">

@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { X, Clock, Filter } from "lucide-react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { X, Clock, ChevronDown, ChevronUp, Filter } from "lucide-react";
 import { format, startOfWeek, endOfWeek, isWithinInterval, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,10 +51,14 @@ interface WeekGroup {
   proofsCount: number;
 }
 
+const ENTRIES_PER_PAGE = 5;
+
 export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: HistoryDrawerProps) {
   const [filter, setFilter] = useState<FilterType>("all");
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [historyData, setHistoryData] = useState<HistoryDay[]>([]);
+  const [visibleCount, setVisibleCount] = useState(ENTRIES_PER_PAGE);
+  const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set());
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
 
@@ -71,7 +75,6 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
     const allPractices = JSON.parse(stored);
     const goalPractices: HistoryDay[] = [];
 
-    // Get all entries for this goal
     Object.keys(allPractices).forEach((key) => {
       if (key.startsWith(`${goal.id}_`)) {
         const practice = allPractices[key] as Partial<ManifestDailyPractice>;
@@ -90,12 +93,16 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
       }
     });
 
-    // Sort by date descending (newest first)
+    // Sort by date descending
     goalPractices.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     setHistoryData(goalPractices);
-
-    // Analytics: view_history_opened
-    console.log("Analytics: view_history_opened", { manifestation_id: goal.id });
+    setVisibleCount(ENTRIES_PER_PAGE);
+    // Expand the first week by default
+    if (goalPractices.length > 0) {
+      const firstDate = parseISO(goalPractices[0].date);
+      const firstWeekStart = startOfWeek(firstDate, { weekStartsOn: 1 });
+      setExpandedWeeks(new Set([firstWeekStart.toISOString()]));
+    }
   }, [isOpen, goal.id]);
 
   // Focus trap and keyboard handling
@@ -117,94 +124,131 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
   }, [isOpen, onClose]);
 
   // Filter data
-  const filteredData = historyData.filter((day) => {
-    switch (filter) {
-      case "practiced":
-        return day.practiced;
-      case "pauses":
-        return !day.practiced;
-      case "with-proofs":
-        return day.proofs.some(p => p.text);
-      case "with-images":
-        return day.proofs.some(p => p.image_url);
-      default:
-        return true;
-    }
-  });
+  const filteredData = useMemo(() => {
+    return historyData.filter((day) => {
+      switch (filter) {
+        case "practiced":
+          return day.practiced;
+        case "pauses":
+          return !day.practiced;
+        case "with-proofs":
+          return day.proofs.some(p => p.text);
+        case "with-images":
+          return day.proofs.some(p => p.image_url);
+        default:
+          return true;
+      }
+    });
+  }, [historyData, filter]);
 
   // Group by week
-  const weekGroups: WeekGroup[] = [];
-  filteredData.forEach((day) => {
-    const dayDate = parseISO(day.date);
-    const weekStart = startOfWeek(dayDate, { weekStartsOn: 1 });
-    const weekEnd = endOfWeek(dayDate, { weekStartsOn: 1 });
+  const weekGroups = useMemo<WeekGroup[]>(() => {
+    const groups: WeekGroup[] = [];
     
-    let group = weekGroups.find(g => 
-      isWithinInterval(dayDate, { start: g.weekStart, end: g.weekEnd })
-    );
-    
-    if (!group) {
-      group = {
-        weekStart,
-        weekEnd,
-        days: [],
-        avgAlignment: 0,
-        actDays: 0,
-        proofsCount: 0,
-      };
-      weekGroups.push(group);
-    }
-    
-    group.days.push(day);
-  });
+    filteredData.forEach((day) => {
+      const dayDate = parseISO(day.date);
+      const weekStart = startOfWeek(dayDate, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(dayDate, { weekStartsOn: 1 });
+      
+      let group = groups.find(g => 
+        isWithinInterval(dayDate, { start: g.weekStart, end: g.weekEnd })
+      );
+      
+      if (!group) {
+        group = {
+          weekStart,
+          weekEnd,
+          days: [],
+          avgAlignment: 0,
+          actDays: 0,
+          proofsCount: 0,
+        };
+        groups.push(group);
+      }
+      
+      group.days.push(day);
+    });
 
-  // Calculate week summaries
-  weekGroups.forEach((group) => {
-    const practicedDays = group.days.filter(d => d.practiced);
-    group.avgAlignment = practicedDays.length > 0
-      ? Math.round(practicedDays.reduce((sum, d) => sum + d.alignment, 0) / practicedDays.length * 10) / 10
-      : 0;
-    group.actDays = group.days.filter(d => d.acts.length > 0).length;
-    group.proofsCount = group.days.reduce((sum, d) => sum + d.proofs.length, 0);
-  });
+    // Calculate week summaries
+    groups.forEach((group) => {
+      const practicedDays = group.days.filter(d => d.practiced);
+      group.avgAlignment = practicedDays.length > 0
+        ? Math.round(practicedDays.reduce((sum, d) => sum + d.alignment, 0) / practicedDays.length * 10) / 10
+        : 0;
+      group.actDays = group.days.filter(d => d.acts.length > 0).length;
+      group.proofsCount = group.days.reduce((sum, d) => sum + d.proofs.length, 0);
+    });
 
-  // Sort weeks by start date descending
-  weekGroups.sort((a, b) => b.weekStart.getTime() - a.weekStart.getTime());
+    // Sort weeks by start date descending
+    groups.sort((a, b) => b.weekStart.getTime() - a.weekStart.getTime());
+
+    return groups;
+  }, [filteredData]);
 
   // Calculate totals
-  const totalDays = historyData.length;
-  const totalProofs = historyData.reduce((sum, d) => sum + d.proofs.length, 0);
-  const practicedDays = historyData.filter(d => d.practiced);
-  const avgAlignment = practicedDays.length > 0
-    ? Math.round(practicedDays.reduce((sum, d) => sum + d.alignment, 0) / practicedDays.length * 10) / 10
-    : 0;
-  
-  // Calculate best streak
-  let bestStreak = 0;
-  let currentStreak = 0;
-  const sortedByDateAsc = [...historyData].sort((a, b) => 
-    new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
-  sortedByDateAsc.forEach((day) => {
-    if (day.practiced) {
-      currentStreak++;
-      bestStreak = Math.max(bestStreak, currentStreak);
-    } else {
-      currentStreak = 0;
-    }
-  });
+  const stats = useMemo(() => {
+    const totalDays = historyData.length;
+    const totalProofs = historyData.reduce((sum, d) => sum + d.proofs.length, 0);
+    const totalImages = historyData.reduce((sum, d) => sum + d.proofs.filter(p => p.image_url).length, 0);
+    const practicedDays = historyData.filter(d => d.practiced);
+    const avgAlignment = practicedDays.length > 0
+      ? Math.round(practicedDays.reduce((sum, d) => sum + d.alignment, 0) / practicedDays.length * 10) / 10
+      : 0;
+    
+    // Calculate best streak
+    let bestStreak = 0;
+    let currentStreak = 0;
+    const sortedByDateAsc = [...historyData].sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+    sortedByDateAsc.forEach((day) => {
+      if (day.practiced) {
+        currentStreak++;
+        bestStreak = Math.max(bestStreak, currentStreak);
+      } else {
+        currentStreak = 0;
+      }
+    });
+
+    return { totalDays, totalProofs, totalImages, avgAlignment, bestStreak, practicedCount: practicedDays.length };
+  }, [historyData]);
 
   const handleFilterChange = (newFilter: FilterType) => {
     setFilter(newFilter);
-    console.log("Analytics: history_filter_changed", { filter: newFilter });
+    setVisibleCount(ENTRIES_PER_PAGE);
   };
 
   const handleImageClick = (imageUrl: string) => {
     setLightboxImage(imageUrl);
-    console.log("Analytics: proof_image_opened", { proof_id: imageUrl });
+  };
+
+  const toggleWeek = (weekKey: string) => {
+    setExpandedWeeks((prev) => {
+      const next = new Set(prev);
+      if (next.has(weekKey)) {
+        next.delete(weekKey);
+      } else {
+        next.add(weekKey);
+      }
+      return next;
+    });
+  };
+
+  const loadMore = () => {
+    setVisibleCount((prev) => prev + ENTRIES_PER_PAGE);
   };
 
   if (!isOpen) return null;
+
+  // Get visible weeks (limit entries shown)
+  let displayedEntryCount = 0;
+  const visibleWeekGroups = weekGroups.filter((week) => {
+    if (displayedEntryCount >= visibleCount) return false;
+    displayedEntryCount += week.days.length;
+    return true;
+  });
+
+  const hasMore = displayedEntryCount < filteredData.length;
 
   return (
     <>
@@ -216,14 +260,14 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
         className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-background border-l border-border shadow-xl flex flex-col"
       >
         {/* Header */}
-        <div className="p-4 border-b border-border/50">
+        <div className="p-4 border-b border-border/50 bg-gradient-to-r from-teal-50/50 to-cyan-50/50 dark:from-teal-900/10 dark:to-cyan-900/10">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <h2 id="history-drawer-title" className="font-semibold text-foreground">
-                {goal.title}
+              <h2 id="history-drawer-title" className="font-semibold text-foreground text-lg">
+                Practice History
               </h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                Practicing: {totalDays} days · {totalProofs} proofs · Avg {avgAlignment}/10 · Best streak: {bestStreak}
+              <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1">
+                {goal.title}
               </p>
             </div>
             <Button
@@ -232,27 +276,47 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
               size="icon"
               onClick={onClose}
               aria-label="Close history"
+              className="rounded-full"
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
 
+          {/* Stats Row */}
+          <div className="grid grid-cols-4 gap-2 mt-4">
+            <div className="bg-white/80 dark:bg-slate-800/80 rounded-xl p-2 text-center">
+              <p className="text-lg font-bold text-teal-600">{stats.practicedCount}</p>
+              <p className="text-[10px] text-muted-foreground">Days</p>
+            </div>
+            <div className="bg-white/80 dark:bg-slate-800/80 rounded-xl p-2 text-center">
+              <p className="text-lg font-bold text-orange-500">{stats.bestStreak}</p>
+              <p className="text-[10px] text-muted-foreground">Best Streak</p>
+            </div>
+            <div className="bg-white/80 dark:bg-slate-800/80 rounded-xl p-2 text-center">
+              <p className="text-lg font-bold text-purple-600">{stats.totalProofs}</p>
+              <p className="text-[10px] text-muted-foreground">Proofs</p>
+            </div>
+            <div className="bg-white/80 dark:bg-slate-800/80 rounded-xl p-2 text-center">
+              <p className="text-lg font-bold text-cyan-600">{stats.totalImages}</p>
+              <p className="text-[10px] text-muted-foreground">Photos</p>
+            </div>
+          </div>
+
           {/* Filter Chips */}
-          <div className="flex flex-wrap gap-2 mt-3">
+          <div className="flex flex-wrap gap-2 mt-4">
             {[
-              { key: "all" as FilterType, label: "All days" },
-              { key: "practiced" as FilterType, label: "Practiced only" },
-              { key: "pauses" as FilterType, label: "Pauses" },
-              { key: "with-proofs" as FilterType, label: "With proofs" },
-              { key: "with-images" as FilterType, label: "With images" },
+              { key: "all" as FilterType, label: "All" },
+              { key: "practiced" as FilterType, label: "Completed" },
+              { key: "with-proofs" as FilterType, label: "With Proofs" },
+              { key: "with-images" as FilterType, label: "With Photos" },
             ].map(({ key, label }) => (
               <button
                 key={key}
                 onClick={() => handleFilterChange(key)}
-                className={`px-2.5 py-1 text-xs transition-colors ${
+                className={`px-3 py-1.5 text-xs rounded-full transition-all ${
                   filter === key
-                    ? "text-foreground border-b border-foreground"
-                    : "text-muted-foreground border-b border-transparent hover:text-foreground"
+                    ? "bg-teal-500 text-white shadow-sm"
+                    : "bg-white dark:bg-slate-800 text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-700 border border-border"
                 }`}
               >
                 {label}
@@ -264,7 +328,7 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
         {/* Timeline Content */}
         <ScrollArea className="flex-1">
           <div className="p-4 space-y-4">
-            {weekGroups.length === 0 ? (
+            {visibleWeekGroups.length === 0 ? (
               <div className="text-center py-12">
                 <Clock className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
                 <p className="text-sm text-muted-foreground">
@@ -272,41 +336,73 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
                 </p>
               </div>
             ) : (
-              weekGroups.map((week, weekIndex) => (
-                <div key={week.weekStart.toISOString()}>
-                  {/* Week Header */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      Week of {format(week.weekStart, "MMM d")}–{format(week.weekEnd, "d")}
-                    </span>
-                    <div className="flex-1 h-px bg-border/50" />
-                  </div>
+              <>
+                {visibleWeekGroups.map((week) => {
+                  const weekKey = week.weekStart.toISOString();
+                  const isExpanded = expandedWeeks.has(weekKey);
 
-                  {/* Day Cards */}
-                  <div className="space-y-2">
-                    {week.days.map((day) => (
-                      <HistoryDayCard
-                        key={day.date}
-                        data={day}
-                        onImageClick={handleImageClick}
-                        onUseAsMicroAction={onUseAsMicroAction}
-                      />
-                    ))}
-                  </div>
+                  return (
+                    <div key={weekKey} className="bg-white dark:bg-slate-800 rounded-xl border border-border/50 overflow-hidden">
+                      {/* Week Header - Collapsible */}
+                      <button
+                        onClick={() => toggleWeek(weekKey)}
+                        className="w-full flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-foreground">
+                            {format(week.weekStart, "MMM d")} – {format(week.weekEnd, "MMM d")}
+                          </span>
+                          <Badge variant="secondary" className="text-[10px]">
+                            {week.days.filter(d => d.practiced).length}/{week.days.length} days
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">
+                            {week.proofsCount} proofs
+                          </span>
+                          {isExpanded ? (
+                            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </div>
+                      </button>
 
-                  {/* Weekly Summary */}
-                  <div className="mt-3 p-3 bg-muted/30 rounded-lg">
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-medium">Week summary:</span>{" "}
-                      Avg alignment {week.avgAlignment}/10 · {week.actDays} act-as-if days · {week.proofsCount} proofs
-                    </p>
-                  </div>
+                      {/* Day Cards */}
+                      {isExpanded && (
+                        <div className="border-t border-border/30 p-3 space-y-2">
+                          {week.days.map((day) => (
+                            <HistoryDayCard
+                              key={day.date}
+                              data={day}
+                              onImageClick={handleImageClick}
+                              onUseAsMicroAction={onUseAsMicroAction}
+                            />
+                          ))}
 
-                  {weekIndex < weekGroups.length - 1 && (
-                    <Separator className="my-4" />
-                  )}
-                </div>
-              ))
+                          {/* Weekly Summary */}
+                          <div className="mt-2 p-2 bg-slate-50 dark:bg-slate-700/30 rounded-lg">
+                            <p className="text-[10px] text-muted-foreground text-center">
+                              Week avg: {week.avgAlignment}/10 alignment · {week.actDays} action days · {week.proofsCount} proofs
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Load More Button */}
+                {hasMore && (
+                  <Button
+                    variant="outline"
+                    onClick={loadMore}
+                    className="w-full rounded-xl"
+                  >
+                    Load More ({filteredData.length - displayedEntryCount} remaining)
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </ScrollArea>
