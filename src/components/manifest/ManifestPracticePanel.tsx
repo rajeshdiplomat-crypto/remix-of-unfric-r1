@@ -293,7 +293,7 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
       {/* Header with Vision Image */}
       <div className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
         {/* Vision Image - Editable */}
-        <div className="relative h-32 w-full">
+        <div className="relative h-28 w-[85%] mx-auto mt-2 rounded-xl overflow-hidden">
           <EntryImageUpload
             currentImageUrl={currentImageUrl}
             presetType="manifest"
@@ -346,7 +346,7 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
       </div>
 
       {/* Steps */}
-      <ScrollArea className="flex-1 px-4 py-4">
+      <div className="flex-1 px-4 py-4 overflow-auto">
         <div className="space-y-3">
           <Step id="viz" icon={Eye} title={`Visualize (${goal.visualization_minutes} min)`} done={hasViz}>
             <p className="text-sm text-slate-500 mb-3">Close your eyes and feel your new reality</p>
@@ -489,7 +489,7 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
             </Step>
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
