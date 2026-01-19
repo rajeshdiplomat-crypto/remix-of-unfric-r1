@@ -426,7 +426,7 @@ export default function Manifest() {
           </div>
 
           {/* Goals Container - Fixed height, only entries scroll */}
-          <div className="flex-1 bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex flex-col min-h-0 overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex flex-col overflow-hidden" style={{ maxHeight: "calc(100vh - 380px)" }}>
             {activeGoals.length === 0 ? (
               <div className="p-4">
                 <Card className="rounded-2xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900">
@@ -448,7 +448,7 @@ export default function Manifest() {
                 </Card>
               </div>
             ) : (
-              <div className="flex-1 overflow-y-auto p-4">
+              <div className="overflow-y-auto p-4 flex-1">
                 <div className="space-y-4">
                   {activeGoals.map((goal) => {
                     const { streak, momentum, lastProof } = getGoalMetrics(goal);
