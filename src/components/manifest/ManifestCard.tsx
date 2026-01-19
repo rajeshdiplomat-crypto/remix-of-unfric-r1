@@ -118,9 +118,9 @@ export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEd
         )}
       </div>
 
-      <div className="flex flex-row h-32">
+      <div className="flex flex-row h-[132px]">
         {/* Image Section - Left side, full height */}
-        <div className="relative w-32 h-full flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+        <div className="relative w-[132px] h-full flex-shrink-0" onClick={(e) => e.stopPropagation()}>
           <EntryImageUpload
             currentImageUrl={goal.cover_image_url || goal.vision_image_url || null}
             presetType="manifest"
@@ -162,39 +162,39 @@ export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEd
               )}
             </div>
 
-            {/* Week Dots with completion count */}
-            <div className="flex items-center gap-1.5">
-              <div className="flex gap-0.5">
+            {/* Week Dots with completion count - stretched */}
+            <div className="flex items-center gap-2 w-full">
+              <div className="flex flex-1 justify-between">
                 {["M", "T", "W", "T", "F", "S", "S"].map((day, i) => (
                   <div key={i} className="flex flex-col items-center gap-0">
                     <span className="text-[7px] text-slate-400">{day}</span>
                     <div
-                      className={`w-3 h-3 rounded-full flex items-center justify-center ${
+                      className={`w-4 h-4 rounded-full flex items-center justify-center ${
                         weekProgress[i] ? "bg-teal-500 text-white" : "bg-slate-100 dark:bg-slate-800"
                       }`}
                     >
-                      {weekProgress[i] && <Check className="h-1.5 w-1.5" />}
+                      {weekProgress[i] && <Check className="h-2 w-2" />}
                     </div>
                   </div>
                 ))}
               </div>
-              <span className="text-[9px] font-medium text-teal-600 dark:text-teal-400">
+              <span className="text-[9px] font-medium text-teal-600 dark:text-teal-400 flex-shrink-0">
                 {weekCompletionCount}/7
               </span>
             </div>
           </div>
 
-          {/* CTA */}
+          {/* CTA - reduced width */}
           <Button
             onClick={(e) => {
               e.stopPropagation();
               onClick();
             }}
             size="sm"
-            className="w-full h-7 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-medium text-[10px] mt-1.5"
+            className="w-auto h-7 px-3 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-medium text-[10px] mt-1.5 ml-auto"
           >
             <Play className="h-2.5 w-2.5 mr-1" />
-            Practice Now
+            Practice
           </Button>
         </div>
       </div>

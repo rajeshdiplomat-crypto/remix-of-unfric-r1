@@ -420,8 +420,8 @@ export default function Manifest() {
         className={cn(
           "flex-1 grid gap-3 w-full px-2 sm:px-4 py-2 transition-all duration-300",
           rightPanelCollapsed
-            ? "grid-cols-1 lg:grid-cols-[380px_1fr_64px]"
-            : "grid-cols-1 lg:grid-cols-[380px_1fr_260px]"
+            ? "grid-cols-1 lg:grid-cols-[420px_1fr_64px]"
+            : "grid-cols-1 lg:grid-cols-[420px_1fr_260px]"
         )}
       >
         {/* Left Panel - Entries List */}
@@ -460,7 +460,10 @@ export default function Manifest() {
                 </Card>
               </div>
             ) : (
-              <div className="overflow-y-auto flex-1 min-h-0 p-2 custom-scrollbar" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+              <div 
+                className="overflow-y-auto flex-1 min-h-0 p-2 custom-scrollbar relative" 
+                style={{ maxHeight: 'calc(5 * 140px + 4 * 8px)' }}
+              >
                 <div className="space-y-2">
                   {activeGoals.map((goal) => {
                     const { streak, momentum } = getGoalMetrics(goal);
