@@ -11,7 +11,6 @@ import { ManifestCard } from "@/components/manifest/ManifestCard";
 import { ManifestCreateModal } from "@/components/manifest/ManifestCreateModal";
 import { ManifestPracticePanel } from "@/components/manifest/ManifestPracticePanel";
 import { ManifestSidebarPanel } from "@/components/manifest/ManifestSidebarPanel";
-import { ManifestProgressPanel } from "@/components/manifest/ManifestProgressPanel";
 
 import {
   AlertDialog,
@@ -358,33 +357,32 @@ export default function Manifest() {
             practices={practices}
             isCollapsed={leftPanelCollapsed}
             onToggleCollapse={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
+            activeCount={activeGoals.length}
+            streak={aggregateStreak}
+            avgMomentum={avgMomentum}
           />
         </div>
 
         {/* Center - Main Content */}
-        <div className="flex flex-col min-w-0">
-          {/* Greeting Section */}
-          <div className="mb-4 px-1">
-            <h2 className="text-xl font-semibold text-slate-800 dark:text-white">{getGreeting()}</h2>
-            <p className="text-sm text-slate-500 mt-1">{getMotivationalQuote()}</p>
-            <p className="text-xs text-teal-500 mt-2">{getStreakMessage()}</p>
-          </div>
-
-          {/* New Vision Button */}
-          <div className="mb-4">
+        <div className="flex flex-col min-w-0 min-h-0">
+          {/* Greeting Section with Create Button */}
+          <div className="mb-4 px-1 flex justify-between items-start gap-4">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl font-semibold text-slate-800 dark:text-white">{getGreeting()}</h2>
+              <p className="text-sm text-slate-500 mt-1">{getMotivationalQuote()}</p>
+              <p className="text-xs text-teal-500 mt-2">{getStreakMessage()}</p>
+            </div>
             <Button
               onClick={() => setShowCreateModal(true)}
-              className="rounded-xl h-10 px-5 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all"
+              className="rounded-xl h-10 px-5 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all flex-shrink-0"
             >
               <Plus className="h-4 w-4 mr-2" /> Create New Vision
             </Button>
           </div>
 
           {/* Goals Grid */}
-          <div
-            className="flex-1 bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 overflow-hidden"
-          >
-            <div className="p-4" style={{ maxHeight: "calc(100vh - 400px)", overflowY: "auto" }}>
+          <div className="flex-1 bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 overflow-hidden flex flex-col min-h-0">
+            <div className="flex-1 p-4 overflow-y-auto">
               {activeGoals.length === 0 ? (
                 <Card className="rounded-2xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900">
                   <CardContent className="py-16 px-8 text-center">
@@ -426,7 +424,7 @@ export default function Manifest() {
           </div>
         </div>
 
-        {/* Right Panel - Practice or Progress */}
+        {/* Right Panel - Only Practice Panel */}
         <div className="hidden lg:block h-full">
           {selectedGoal ? (
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 h-full overflow-hidden">
@@ -443,12 +441,15 @@ export default function Manifest() {
               />
             </div>
           ) : (
-            <ManifestProgressPanel
-              activeCount={activeGoals.length}
-              streak={aggregateStreak}
-              avgMomentum={avgMomentum}
-              practices={practices}
-            />
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 h-full flex items-center justify-center p-6">
+              <div className="text-center">
+                <div className="mx-auto mb-4 h-14 w-14 rounded-2xl bg-gradient-to-br from-teal-100 to-cyan-100 dark:from-teal-900/30 dark:to-cyan-900/30 flex items-center justify-center">
+                  <Sparkles className="h-7 w-7 text-teal-500" />
+                </div>
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">Select a Vision</h3>
+                <p className="text-xs text-slate-400">Choose a vision to start your practice</p>
+              </div>
+            </div>
           )}
         </div>
       </div>

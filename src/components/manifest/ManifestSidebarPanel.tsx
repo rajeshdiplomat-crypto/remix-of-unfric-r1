@@ -14,7 +14,6 @@ import {
   setYear as setYearDate,
   parseISO,
 } from "date-fns";
-import { Button } from "@/components/ui/button";
 import {
   ChevronLeft,
   ChevronRight,
@@ -22,6 +21,9 @@ import {
   Sparkles,
   ArrowLeftToLine,
   PanelLeft,
+  Target,
+  Flame,
+  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type ManifestGoal, type ManifestDailyPractice } from "./types";
@@ -33,6 +35,9 @@ interface ManifestSidebarPanelProps {
   practices: ManifestDailyPractice[];
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  activeCount?: number;
+  streak?: number;
+  avgMomentum?: number;
 }
 
 export const ManifestSidebarPanel = memo(
@@ -43,8 +48,14 @@ export const ManifestSidebarPanel = memo(
     practices,
     isCollapsed = false,
     onToggleCollapse,
+    activeCount = 0,
+    streak = 0,
+    avgMomentum = 0,
   }: ManifestSidebarPanelProps) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
+
+    const activeGoals = useMemo(() => goals.filter((g) => !g.is_completed && !g.is_locked), [goals]);
+    const totalVisions = activeGoals.length;
 
     const daysInMonth = useMemo(() => {
       const start = startOfMonth(currentMonth);
@@ -52,20 +63,25 @@ export const ManifestSidebarPanel = memo(
       return eachDayOfInterval({ start, end });
     }, [currentMonth]);
 
-    // Get dates with practice entries
-    const practiceDates = useMemo(() => {
-      const dates = new Set<string>();
+    // Get practice counts per date
+    const practiceCountByDate = useMemo(() => {
+      const counts: Record<string, number> = {};
       practices.forEach((p) => {
         if (p.locked) {
-          dates.add(p.entry_date);
+          counts[p.entry_date] = (counts[p.entry_date] || 0) + 1;
         }
       });
-      return dates;
+      return counts;
     }, [practices]);
 
     const hasPractice = useCallback(
-      (date: Date) => practiceDates.has(format(date, "yyyy-MM-dd")),
-      [practiceDates]
+      (date: Date) => !!practiceCountByDate[format(date, "yyyy-MM-dd")],
+      [practiceCountByDate]
+    );
+
+    const getPracticeCount = useCallback(
+      (date: Date) => practiceCountByDate[format(date, "yyyy-MM-dd")] || 0,
+      [practiceCountByDate]
     );
 
     // Recent practices for display
@@ -80,6 +96,29 @@ export const ManifestSidebarPanel = memo(
     const getGoalTitle = (goalId: string) => {
       const goal = goals.find((g) => g.id === goalId);
       return goal?.title || "Unknown Vision";
+    };
+
+    // Progress messages
+    const getManifestingSentence = () => {
+      if (activeCount === 0) return "Create your first vision to begin";
+      if (activeCount === 1) return "Manifesting 1 vision";
+      return `Manifesting ${activeCount} visions`;
+    };
+
+    const getStreakSentence = () => {
+      if (streak === 0) return "Start your manifesting journey today";
+      if (streak === 1) return "Day 1 - Great start!";
+      if (streak < 7) return `Day ${streak} - Building momentum`;
+      if (streak < 30) return `Day ${streak} - Amazing consistency!`;
+      return `Day ${streak} - Master manifestor!`;
+    };
+
+    const getMomentumSentence = () => {
+      if (avgMomentum === 0) return "Complete your first practice";
+      if (avgMomentum < 30) return "Keep going, momentum is building";
+      if (avgMomentum < 60) return "Good progress this week";
+      if (avgMomentum < 80) return "Strong momentum!";
+      return "Peak manifestation energy!";
     };
 
     if (isCollapsed) {
@@ -98,6 +137,35 @@ export const ManifestSidebarPanel = memo(
 
     return (
       <div className="w-full h-full overflow-auto space-y-4 pb-4">
+        {/* Progress Box - Above Calendar */}
+        <div className="bg-gradient-to-br from-teal-50 via-cyan-50 to-emerald-50 dark:from-teal-900/20 dark:via-cyan-900/20 dark:to-emerald-900/20 rounded-2xl shadow-sm border border-teal-100/50 dark:border-teal-800/50 overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-teal-100/30 dark:border-teal-800/30">
+            <div className="p-1.5 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
+              <TrendingUp className="h-4 w-4 text-teal-600" />
+            </div>
+            <span className="text-sm font-semibold text-teal-800 dark:text-teal-200">Your Progress</span>
+          </div>
+          <div className="p-3 space-y-2">
+            <div className="flex items-start gap-3 bg-white/60 dark:bg-slate-800/60 rounded-xl p-2.5 border border-white/50 dark:border-slate-700/50">
+              <div className="p-1 bg-teal-100 dark:bg-teal-900/50 rounded-lg mt-0.5">
+                <Target className="h-3 w-3 text-teal-600" />
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{getManifestingSentence()}</p>
+            </div>
+            <div className="flex items-start gap-3 bg-white/60 dark:bg-slate-800/60 rounded-xl p-2.5 border border-white/50 dark:border-slate-700/50">
+              <div className="p-1 bg-orange-100 dark:bg-orange-900/50 rounded-lg mt-0.5">
+                <Flame className="h-3 w-3 text-orange-600" />
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{getStreakSentence()}</p>
+            </div>
+            <div className="flex items-start gap-3 bg-white/60 dark:bg-slate-800/60 rounded-xl p-2.5 border border-white/50 dark:border-slate-700/50">
+              <div className="p-1 bg-cyan-100 dark:bg-cyan-900/50 rounded-lg mt-0.5">
+                <Sparkles className="h-3 w-3 text-cyan-600" />
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{getMomentumSentence()}</p>
+            </div>
+          </div>
+        </div>
         {/* Calendar Card */}
         <div className="rounded-2xl shadow-sm border overflow-hidden bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
           {/* Header */}
@@ -178,13 +246,14 @@ export const ManifestSidebarPanel = memo(
                 const isSelected = isSameDay(day, selectedDate);
                 const isTodayDate = isToday(day);
                 const hasPracticeOnDay = hasPractice(day);
+                const practiceCount = getPracticeCount(day);
 
                 return (
                   <button
                     key={day.toISOString()}
                     onClick={() => onDateSelect(day)}
                     className={cn(
-                      "aspect-square rounded-lg text-xs font-medium transition-all relative flex items-center justify-center",
+                      "aspect-square rounded-lg text-[10px] font-medium transition-all relative flex flex-col items-center justify-center gap-0",
                       isSelected
                         ? "bg-gradient-to-br from-teal-500 to-cyan-500 text-white shadow-md"
                         : hasPracticeOnDay
@@ -194,7 +263,15 @@ export const ManifestSidebarPanel = memo(
                             : "hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
                     )}
                   >
-                    {format(day, "d")}
+                    <span>{format(day, "d")}</span>
+                    {hasPracticeOnDay && totalVisions > 0 && (
+                      <span className={cn(
+                        "text-[7px] leading-none",
+                        isSelected ? "text-white/80" : "text-teal-500 dark:text-teal-400"
+                      )}>
+                        {practiceCount}/{totalVisions}
+                      </span>
+                    )}
                   </button>
                 );
               })}
