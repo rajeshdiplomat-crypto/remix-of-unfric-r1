@@ -219,14 +219,43 @@ export const ManifestSidebarPanel = memo(
 
     if (isCollapsed) {
       return (
-        <div className="flex flex-col items-center py-4">
+        <div className="flex flex-col items-center py-4 gap-3 h-full">
+          {/* Expand button */}
           <button
             onClick={onToggleCollapse}
-            className="p-2 rounded-xl shadow-sm border transition-colors bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+            className="p-2.5 rounded-xl shadow-sm border transition-colors bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
             title="Expand panel"
           >
             <PanelLeft className="h-5 w-5 text-slate-500" />
           </button>
+          
+          {/* Quick stats icons */}
+          <div className="flex flex-col items-center gap-2 mt-2">
+            <div 
+              className="p-2 rounded-lg bg-teal-50 dark:bg-teal-900/30 cursor-pointer hover:bg-teal-100 dark:hover:bg-teal-900/50 transition-colors"
+              onClick={onOpenAnalytics}
+              title="View Analytics"
+            >
+              <BarChart3 className="h-4 w-4 text-teal-600" />
+            </div>
+            <div 
+              className="p-2 rounded-lg bg-cyan-50 dark:bg-cyan-900/30 cursor-pointer hover:bg-cyan-100 dark:hover:bg-cyan-900/50 transition-colors"
+              onClick={onToggleCollapse}
+              title="View Calendar"
+            >
+              <CalendarIcon className="h-4 w-4 text-cyan-600" />
+            </div>
+          </div>
+
+          {/* Streak indicator */}
+          {streak > 0 && (
+            <div className="mt-auto mb-4 flex flex-col items-center gap-1">
+              <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                <span className="text-xs font-bold text-orange-600">{streak}</span>
+              </div>
+              <span className="text-[9px] text-slate-400">streak</span>
+            </div>
+          )}
         </div>
       );
     }
