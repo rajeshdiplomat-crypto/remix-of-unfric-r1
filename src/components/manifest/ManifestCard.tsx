@@ -161,9 +161,9 @@ export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEd
         </div>
 
         {/* Content - Right side */}
-        <div className="flex-1 p-2.5 flex flex-col justify-between min-w-0">
+        <div className="flex-1 p-2.5 flex flex-col justify-between min-w-0 relative">
           <div>
-            <h3 className="font-semibold text-slate-800 dark:text-white text-xs leading-snug mb-1 line-clamp-2">
+            <h3 className="font-semibold text-slate-800 dark:text-white text-xs leading-snug mb-1 line-clamp-2 pr-14">
               {goal.title}
             </h3>
 
