@@ -455,7 +455,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
       <DialogContent className="max-w-lg p-0 rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="bg-gradient-to-r from-teal-500 to-cyan-500 px-6 py-4 text-white flex-shrink-0">
-          <DialogTitle className="text-lg font-semibold">{editingGoal ? "Edit Vision" : "Create Vision"}</DialogTitle>
+          <DialogTitle className="text-lg font-semibold">{editingGoal ? "Edit Reality" : "Create Reality"}</DialogTitle>
           <div className="flex gap-2 mt-3">
             {[1, 2, 3].map((s) => (
               <div key={s} className={`flex-1 h-1.5 rounded-full ${step >= s ? "bg-white" : "bg-white/30"}`} />

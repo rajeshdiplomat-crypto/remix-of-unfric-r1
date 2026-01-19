@@ -10,10 +10,10 @@ interface ManifestTopBarProps {
 }
 
 function getActiveLabel(count: number): string {
-  if (count === 0) return "No active visions yet";
-  if (count === 1) return "Focusing on 1 vision";
+  if (count === 0) return "No active realities yet";
+  if (count === 1) return "Focusing on 1 reality";
   if (count <= 3) return `Building ${count} dreams`;
-  return `Manifesting ${count} visions`;
+  return `Manifesting ${count} realities`;
 }
 
 function getStreakLabel(streak: number): string {
@@ -66,7 +66,7 @@ export function ManifestTopBar({ activeCount, streak, avgMomentum, onNewManifest
         className="h-10 px-5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-medium shadow-md"
       >
         <Plus className="h-4 w-4 mr-2" />
-        New Vision
+        New Reality
       </Button>
     </div>
   );
