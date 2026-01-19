@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, Flame, Play, Tag } from "lucide-react";
+import { Check, Flame, Play, Tag, Pencil, History } from "lucide-react";
 import { type ManifestGoal, type ManifestDailyPractice, DAILY_PRACTICE_KEY, CATEGORIES } from "./types";
 import { format, subDays, parseISO, differenceInDays, formatDistanceToNow } from "date-fns";
 import { useMemo } from "react";
@@ -15,9 +15,11 @@ interface ManifestCardProps {
   onClick: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  onViewHistory?: () => void;
+  onImageUpdate?: () => void;
 }
 
-export function ManifestCard({ goal, streak, momentum, isSelected, onClick }: ManifestCardProps) {
+export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEdit, onViewHistory, onImageUpdate }: ManifestCardProps) {
   // Get last 7 days
   const weekProgress = useMemo(() => {
     const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
@@ -73,6 +75,11 @@ export function ManifestCard({ goal, streak, momentum, isSelected, onClick }: Ma
       const extras = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
       extras[goal.id] = { ...extras[goal.id], cover_image_url: url };
       localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify(extras));
+      
+      // Notify parent to refresh
+      if (onImageUpdate) {
+        onImageUpdate();
+      }
     } catch (e) {
       console.error(e);
     }
@@ -81,10 +88,36 @@ export function ManifestCard({ goal, streak, momentum, isSelected, onClick }: Ma
   return (
     <Card
       onClick={onClick}
-      className={`overflow-hidden rounded-2xl cursor-pointer transition-all duration-200 hover:shadow-lg ${
+      className={`overflow-hidden rounded-2xl cursor-pointer transition-all duration-200 hover:shadow-lg relative ${
         isSelected ? "ring-2 ring-teal-500 shadow-lg" : "border-slate-200 dark:border-slate-700"
       }`}
     >
+      {/* Top-right action buttons */}
+      <div className="absolute top-2 right-2 z-10 flex gap-1" onClick={(e) => e.stopPropagation()}>
+        {onViewHistory && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-sm hover:bg-white dark:hover:bg-slate-700"
+            onClick={onViewHistory}
+            title="View History"
+          >
+            <History className="h-3.5 w-3.5 text-slate-500" />
+          </Button>
+        )}
+        {onEdit && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-sm hover:bg-white dark:hover:bg-slate-700"
+            onClick={onEdit}
+            title="Edit Vision"
+          >
+            <Pencil className="h-3.5 w-3.5 text-slate-500" />
+          </Button>
+        )}
+      </div>
+
       <div className="flex flex-row h-40">
         {/* Image Section - Left side, full height, rounded corners */}
         <div className="relative w-40 h-full flex-shrink-0" onClick={(e) => e.stopPropagation()}>

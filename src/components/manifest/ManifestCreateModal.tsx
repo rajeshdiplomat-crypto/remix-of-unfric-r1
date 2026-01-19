@@ -358,10 +358,25 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
 
   const handleClose = (o: boolean) => {
     if (!o) {
-      try {
-        saveDraft();
-      } catch (e) {
-        console.warn("Draft save failed:", e);
+      // Clear draft when closing without saving (for new visions only)
+      if (!editingGoal) {
+        try {
+          localStorage.removeItem(MANIFEST_DRAFT_KEY);
+        } catch (e) {
+          console.warn("Failed to clear draft:", e);
+        }
+        // Reset all form fields
+        setAssumption("");
+        setCategory("personal");
+        setImageUrl(null);
+        setStartDate("");
+        setLiveFromEnd("");
+        setActAsIf("");
+        setVizMinutes("3");
+        setAffirmation("");
+        setCheckInTime("08:00");
+        setCommitted(false);
+        setStep(1);
       }
     }
     onOpenChange(o);
