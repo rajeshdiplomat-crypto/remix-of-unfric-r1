@@ -199,7 +199,16 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                 />
                 {imageUrl ? (
                   <div className="relative">
-                    <img src={imageUrl} alt="Vision" className="w-full h-32 object-cover rounded-xl" />
+                    <img 
+                      src={imageUrl} 
+                      alt="Vision" 
+                      className="w-full h-32 object-cover rounded-xl" 
+                      onError={(e) => {
+                        // Handle broken base64 or invalid URLs
+                        e.currentTarget.style.display = 'none';
+                        setImageUrl(null);
+                      }}
+                    />
                     <Button
                       variant="destructive"
                       size="icon"

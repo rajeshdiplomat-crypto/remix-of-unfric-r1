@@ -286,7 +286,7 @@ export default function Manifest() {
       </div>
 
       {/* Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-0 flex-1 min-h-0">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_520px] gap-0 flex-1 min-h-0">
         {/* Goals - Left Panel with separate scroll */}
         <div className="overflow-y-auto px-6 lg:px-8 pb-8" style={{ maxHeight: "calc(100vh - 280px)" }}>
           {activeGoals.length === 0 ? (

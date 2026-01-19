@@ -19,6 +19,7 @@ import {
   Zap,
   ChevronDown,
   ChevronUp,
+  Image,
 } from "lucide-react";
 import {
   type ManifestGoal,
@@ -27,11 +28,13 @@ import {
   type ActEntry,
   type VisualizationEntry,
   DAILY_PRACTICE_KEY,
+  GOAL_EXTRAS_KEY,
 } from "./types";
 import { ManifestVisualizationMode } from "./ManifestVisualizationMode";
 import { format } from "date-fns";
 import confetti from "canvas-confetti";
 import { toast } from "sonner";
+import { EntryImageUpload } from "@/components/common/EntryImageUpload";
 
 interface ManifestPracticePanelProps {
   goal: ManifestGoal;
@@ -243,25 +246,47 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
 
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-900">
-      {/* Header */}
-      <div className="p-5 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex gap-2">
-            <span className="text-xs px-2.5 py-1 rounded-full bg-teal-100 text-teal-600 font-medium">Active</span>
-            <span className="text-xs px-2.5 py-1 rounded-full bg-orange-100 text-orange-600 font-medium flex items-center gap-1">
-              <Flame className="h-3 w-3" /> Day {streak}
-            </span>
+      {/* Header with Vision Image */}
+      <div className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+        {/* Vision Image - Editable */}
+        <div className="relative h-32 w-full">
+          <EntryImageUpload
+            currentImageUrl={goal.vision_image_url || goal.cover_image_url || null}
+            presetType="manifest"
+            category={goal.category || "other"}
+            onImageChange={(url) => {
+              // Update local storage
+              const extras = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
+              extras[goal.id] = { ...extras[goal.id], vision_image_url: url };
+              localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify(extras));
+              toast.success("Vision image updated");
+            }}
+            className="w-full h-full"
+          />
+          <div className="absolute bottom-2 right-2 flex items-center gap-1 text-[10px] text-white/80 bg-black/30 px-2 py-1 rounded-full backdrop-blur-sm">
+            <Image className="h-3 w-3" /> Tap to change
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
         </div>
-        <h2 className="font-semibold text-slate-800 dark:text-white text-lg leading-tight">{goal.title}</h2>
-        {goal.check_in_time && (
-          <p className="text-sm text-slate-500 mt-1 flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5" /> Check-in at {goal.check_in_time}
-          </p>
-        )}
+        
+        <div className="p-5">
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex gap-2">
+              <span className="text-xs px-2.5 py-1 rounded-full bg-teal-100 text-teal-600 font-medium">Active</span>
+              <span className="text-xs px-2.5 py-1 rounded-full bg-orange-100 text-orange-600 font-medium flex items-center gap-1">
+                <Flame className="h-3 w-3" /> Day {streak}
+              </span>
+            </div>
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <h2 className="font-semibold text-slate-800 dark:text-white text-lg leading-tight">{goal.title}</h2>
+          {goal.check_in_time && (
+            <p className="text-sm text-slate-500 mt-1 flex items-center gap-1">
+              <Clock className="h-3.5 w-3.5" /> Check-in at {goal.check_in_time}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Progress */}
