@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, Flame, Play, Tag, Pencil, History, Trash2, CheckCircle } from "lucide-react";
+import { Check, Flame, Play, Tag, Pencil, Trash2, CheckCircle } from "lucide-react";
 import { type ManifestGoal, type ManifestDailyPractice, DAILY_PRACTICE_KEY, CATEGORIES } from "./types";
 import { format, subDays, parseISO, differenceInDays, formatDistanceToNow } from "date-fns";
 import { useMemo } from "react";
@@ -16,11 +16,11 @@ interface ManifestCardProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onComplete?: () => void;
-  onViewHistory?: () => void;
   onImageUpdate?: () => void;
+  isCompleted?: boolean;
 }
 
-export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEdit, onDelete, onComplete, onViewHistory, onImageUpdate }: ManifestCardProps) {
+export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEdit, onDelete, onComplete, onImageUpdate, isCompleted = false }: ManifestCardProps) {
   // Get last 7 days
   const weekProgress = useMemo(() => {
     const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
@@ -91,14 +91,14 @@ export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEd
       onClick={onClick}
       className={`overflow-hidden rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg relative ${
         isSelected ? "ring-2 ring-teal-500 shadow-lg" : "border-slate-200 dark:border-slate-700"
-      }`}
+      } ${isCompleted ? "opacity-60 grayscale" : ""}`}
     >
       {/* Top-right action buttons - positioned over content area */}
       <div 
         className="absolute top-1 right-1 z-20 flex items-center gap-0.5" 
         onClick={(e) => e.stopPropagation()}
       >
-        {onComplete && (
+        {onComplete && !isCompleted && (
           <button
             onClick={onComplete}
             className="w-4 h-4 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-teal-50 dark:hover:bg-teal-900/50 transition-colors"
@@ -107,20 +107,11 @@ export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEd
             <CheckCircle className="h-2.5 w-2.5 text-teal-500" />
           </button>
         )}
-        {onViewHistory && (
-          <button
-            onClick={onViewHistory}
-            className="w-4 h-4 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-            title="View History"
-          >
-            <History className="h-2.5 w-2.5 text-slate-500" />
-          </button>
-        )}
-        {onEdit && (
+        {onEdit && !isCompleted && (
           <button
             onClick={onEdit}
             className="w-4 h-4 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-            title="Edit Vision"
+            title="Edit Reality"
           >
             <Pencil className="h-2.5 w-2.5 text-slate-500" />
           </button>
@@ -129,7 +120,7 @@ export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEd
           <button
             onClick={onDelete}
             className="w-4 h-4 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-            title="Delete Vision"
+            title="Delete Reality"
           >
             <Trash2 className="h-2.5 w-2.5 text-destructive" />
           </button>
@@ -203,17 +194,19 @@ export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEd
           </div>
 
           {/* CTA - reduced width */}
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              onClick();
-            }}
-            size="sm"
-            className="w-auto h-7 px-3 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-medium text-[10px] mt-1.5 ml-auto"
-          >
-            <Play className="h-2.5 w-2.5 mr-1" />
-            Practice
-          </Button>
+          {!isCompleted && (
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                onClick();
+              }}
+              size="sm"
+              className="w-auto h-7 px-3 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-medium text-[10px] mt-1.5 ml-auto"
+            >
+              <Play className="h-2.5 w-2.5 mr-1" />
+              Practice
+            </Button>
+          )}
         </div>
       </div>
     </Card>

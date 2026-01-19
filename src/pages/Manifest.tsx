@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Sparkles, Plus } from "lucide-react";
+import { Sparkles, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { subDays, parseISO, isSameDay, format } from "date-fns";
@@ -96,6 +96,7 @@ export default function Manifest() {
   const [newlyCreatedGoalId, setNewlyCreatedGoalId] = useState<string | null>(null);
   const [historyGoal, setHistoryGoal] = useState<ManifestGoal | null>(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(false);
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -192,6 +193,7 @@ export default function Manifest() {
   );
 
   const activeGoals = goals.filter((g) => !g.is_completed && !g.is_locked);
+  const completedGoals = goals.filter((g) => g.is_completed);
 
   const aggregateStreak = useMemo(() => {
     const today = new Date();
@@ -235,7 +237,7 @@ export default function Manifest() {
           .eq("id", editingGoal.id);
         if (error) throw error;
         goalId = editingGoal.id;
-        toast.success("Vision updated!");
+        toast.success("Reality updated!");
       } else {
         const { data, error } = await supabase
           .from("manifest_goals")
@@ -244,10 +246,10 @@ export default function Manifest() {
           .single();
         if (error) throw error;
         goalId = data.id;
-        // Trigger energy animation for new vision
+        // Trigger energy animation for new reality
         setNewlyCreatedGoalId(goalId);
         setTimeout(() => setNewlyCreatedGoalId(null), 2000);
-        toast.success("Vision created!");
+        toast.success("Reality created!");
       }
 
       saveGoalExtras(goalId, {
@@ -272,7 +274,7 @@ export default function Manifest() {
       fetchData();
     } catch (error) {
       console.error("Error saving goal:", error);
-      toast.error("Failed to save vision");
+      toast.error("Failed to save reality");
     } finally {
       setSaving(false);
     }
@@ -303,7 +305,7 @@ export default function Manifest() {
 
       if (selectedGoal?.id === deletingGoal.id) setSelectedGoal(null);
 
-      toast.success("Vision deleted");
+      toast.success("Reality deleted");
       fetchData();
     } catch (error) {
       console.error("Error deleting goal:", error);
@@ -323,11 +325,11 @@ export default function Manifest() {
 
       if (selectedGoal?.id === goal.id) setSelectedGoal(null);
 
-      toast.success("🎉 Vision completed! Congratulations!");
+      toast.success("🎉 Reality manifested! Congratulations!");
       fetchData();
     } catch (error) {
       console.error("Error completing goal:", error);
-      toast.error("Failed to complete vision");
+      toast.error("Failed to complete reality");
     }
   };
 
@@ -448,7 +450,7 @@ export default function Manifest() {
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex flex-col overflow-hidden flex-1 min-h-0">
             {/* Header with Create Button */}
             <div className="p-3 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
-              <h2 className="text-base font-semibold text-slate-800 dark:text-white">Your Visions</h2>
+              <h2 className="text-base font-semibold text-slate-800 dark:text-white">Your Realities</h2>
               <Button
                 onClick={() => setShowCreateModal(true)}
                 size="sm"
@@ -464,7 +466,7 @@ export default function Manifest() {
                     <div className="mx-auto mb-3 h-10 w-10 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg">
                       <Sparkles className="h-5 w-5 text-white" />
                     </div>
-                    <h3 className="text-base font-semibold text-slate-800 dark:text-white mb-1">Start Your First Vision</h3>
+                    <h3 className="text-base font-semibold text-slate-800 dark:text-white mb-1">Start Your First Reality</h3>
                     <p className="text-slate-500 mb-3 text-xs max-w-xs mx-auto">
                       Write a belief in present tense and practice it daily.
                     </p>
@@ -472,7 +474,7 @@ export default function Manifest() {
                       onClick={() => setShowCreateModal(true)}
                       className="rounded-lg h-9 px-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm"
                     >
-                      <Plus className="h-4 w-4 mr-1.5" /> Create Vision
+                      <Plus className="h-4 w-4 mr-1.5" /> Create Reality
                     </Button>
                   </CardContent>
                 </Card>
@@ -500,10 +502,9 @@ export default function Manifest() {
                           onEdit={() => handleEditGoal(goal)}
                           onDelete={() => setDeletingGoal(goal)}
                           onComplete={() => handleCompleteGoal(goal)}
-                          onViewHistory={() => setHistoryGoal(goal)}
                           onImageUpdate={fetchData}
                         />
-                        {/* Energy particles effect for new vision */}
+                        {/* Energy particles effect for new reality */}
                         {isNewlyCreated && (
                           <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
                             <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-teal-500/20 via-cyan-500/20 to-teal-500/20" />
@@ -527,6 +528,45 @@ export default function Manifest() {
                 {/* Fade indicator at bottom */}
                 {activeGoals.length > 5 && (
                   <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white dark:from-slate-900 to-transparent pointer-events-none" />
+                )}
+              </div>
+            )}
+
+            {/* Completed Realities Section */}
+            {completedGoals.length > 0 && (
+              <div className="border-t border-slate-100 dark:border-slate-800">
+                <button
+                  onClick={() => setShowCompleted(!showCompleted)}
+                  className="w-full p-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                >
+                  <span className="text-xs font-medium text-slate-500">
+                    Manifested Realities ({completedGoals.length})
+                  </span>
+                  {showCompleted ? (
+                    <ChevronUp className="h-4 w-4 text-slate-400" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-slate-400" />
+                  )}
+                </button>
+                {showCompleted && (
+                  <div className="p-2 space-y-2 max-h-[300px] overflow-y-auto">
+                    {completedGoals.map((goal) => {
+                      const { streak, momentum } = getGoalMetrics(goal);
+                      return (
+                        <ManifestCard
+                          key={goal.id}
+                          goal={goal}
+                          streak={streak}
+                          momentum={momentum}
+                          isSelected={false}
+                          onClick={() => {}}
+                          onDelete={() => setDeletingGoal(goal)}
+                          onImageUpdate={fetchData}
+                          isCompleted
+                        />
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             )}
@@ -563,9 +603,9 @@ export default function Manifest() {
               <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-teal-100 to-cyan-100 dark:from-teal-900/30 dark:to-cyan-900/30 flex items-center justify-center mb-4">
                 <Sparkles className="h-8 w-8 text-teal-500" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-1">Select a Vision</h3>
+              <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-1">Select a Reality</h3>
               <p className="text-sm text-slate-400 text-center max-w-sm">
-                Choose a vision from the left panel to start your daily practice
+                Choose a reality from the left panel to start your daily practice
               </p>
               <p className="text-xs text-teal-500 mt-4 text-center">
                 {getMotivationalQuote()}
@@ -606,7 +646,7 @@ export default function Manifest() {
       <AlertDialog open={!!deletingGoal} onOpenChange={(open) => !open && setDeletingGoal(null)}>
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Vision</AlertDialogTitle>
+            <AlertDialogTitle>Delete Reality</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete "{deletingGoal?.title}"? This cannot be undone.
             </AlertDialogDescription>

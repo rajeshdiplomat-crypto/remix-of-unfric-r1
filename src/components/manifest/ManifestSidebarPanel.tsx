@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, memo } from "react";
+import { useState, useMemo, useCallback, memo, useEffect } from "react";
 import {
   format,
   startOfMonth,
@@ -12,7 +12,6 @@ import {
   getYear,
   setMonth as setMonthDate,
   setYear as setYearDate,
-  parseISO,
 } from "date-fns";
 import {
   ChevronLeft,
@@ -20,9 +19,6 @@ import {
   Calendar as CalendarIcon,
   ArrowLeftToLine,
   PanelLeft,
-  Target,
-  Flame,
-  TrendingUp,
   BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -56,9 +52,10 @@ export const ManifestSidebarPanel = memo(
     onOpenAnalytics,
   }: ManifestSidebarPanelProps) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [insightIndex, setInsightIndex] = useState(0);
 
     const activeGoals = useMemo(() => goals.filter((g) => !g.is_completed && !g.is_locked), [goals]);
-    const totalVisions = activeGoals.length;
+    const totalRealities = activeGoals.length;
 
     const daysInMonth = useMemo(() => {
       const start = startOfMonth(currentMonth);
@@ -87,42 +84,138 @@ export const ManifestSidebarPanel = memo(
       [practiceCountByDate]
     );
 
-    // Recent practices for display
-    const recentPractices = useMemo(() => {
-      return [...practices]
-        .filter((p) => p.locked)
-        .sort((a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime())
-        .slice(0, 5);
-    }, [practices]);
+    // Calculate analytics for insights
+    const analytics = useMemo(() => {
+      const lockedPractices = practices.filter((p) => p.locked);
+      
+      // Total visualization time
+      const totalVizMinutes = lockedPractices.reduce((sum, p) => {
+        const vizCount = p.visualization_count || 0;
+        const goal = goals.find((g) => g.id === p.goal_id);
+        const vizDuration = goal?.visualization_minutes || 3;
+        return sum + vizCount * vizDuration;
+      }, 0);
 
-    // Get goal title by id
-    const getGoalTitle = (goalId: string) => {
-      const goal = goals.find((g) => g.id === goalId);
-      return goal?.title || "Unknown Vision";
-    };
+      // Total visualizations
+      const totalVisualizations = lockedPractices.reduce(
+        (sum, p) => sum + (p.visualization_count || 0),
+        0
+      );
 
-    // Progress messages
-    const getManifestingSentence = () => {
-      if (activeCount === 0) return "Create your first vision to begin";
-      if (activeCount === 1) return "Manifesting 1 vision";
-      return `Manifesting ${activeCount} visions`;
-    };
+      // Total actions
+      const totalActions = lockedPractices.reduce((sum, p) => sum + (p.act_count || 0), 0);
 
-    const getStreakSentence = () => {
-      if (streak === 0) return "Start your manifesting journey today";
-      if (streak === 1) return "Day 1 - Great start!";
-      if (streak < 7) return `Day ${streak} - Building momentum`;
-      if (streak < 30) return `Day ${streak} - Amazing consistency!`;
-      return `Day ${streak} - Master manifestor!`;
-    };
+      // Total proofs
+      const totalProofs = lockedPractices.reduce(
+        (sum, p) => sum + (p.proofs?.length || 0),
+        0
+      );
 
-    const getMomentumSentence = () => {
-      if (avgMomentum === 0) return "Complete your first practice";
-      if (avgMomentum < 30) return "Keep going, momentum is building";
-      if (avgMomentum < 60) return "Good progress this week";
-      if (avgMomentum < 80) return "Strong momentum!";
-      return "Peak manifestation energy!";
-    };
+      // Unique practice days
+      const uniquePracticeDays = new Set(lockedPractices.map((p) => p.entry_date)).size;
+
+      // Most visualized goal
+      const goalVizCounts: Record<string, number> = {};
+      lockedPractices.forEach((p) => {
+        goalVizCounts[p.goal_id] = (goalVizCounts[p.goal_id] || 0) + (p.visualization_count || 0);
+      });
+      const mostVisualizedGoalId = Object.entries(goalVizCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+      const mostVisualizedGoal = goals.find((g) => g.id === mostVisualizedGoalId);
+
+      return {
+        totalVizMinutes,
+        totalVisualizations,
+        totalActions,
+        totalProofs,
+        uniquePracticeDays,
+        mostVisualizedGoal,
+      };
+    }, [practices, goals]);
+
+    // Generate insight sentences
+    const insights = useMemo(() => {
+      const sentences: string[] = [];
+
+      if (analytics.totalVizMinutes > 0) {
+        const hours = Math.floor(analytics.totalVizMinutes / 60);
+        const mins = analytics.totalVizMinutes % 60;
+        if (hours > 0) {
+          sentences.push(`You've spent ${hours}h ${mins}m visualizing your realities`);
+        } else {
+          sentences.push(`You've spent ${mins} minutes visualizing your realities`);
+        }
+      }
+
+      if (analytics.totalVisualizations > 0) {
+        sentences.push(`You've completed ${analytics.totalVisualizations} visualization sessions`);
+      }
+
+      if (analytics.totalActions > 0) {
+        sentences.push(`You've taken ${analytics.totalActions} aligned actions so far`);
+      }
+
+      if (analytics.totalProofs > 0) {
+        sentences.push(`You've collected ${analytics.totalProofs} proofs of manifestation`);
+      }
+
+      if (streak > 0) {
+        if (streak === 1) {
+          sentences.push(`Day 1 of your manifestation journey - great start!`);
+        } else if (streak < 7) {
+          sentences.push(`${streak} day streak - you're building momentum!`);
+        } else if (streak < 30) {
+          sentences.push(`${streak} day streak - amazing consistency!`);
+        } else {
+          sentences.push(`${streak} day streak - you're a master manifestor!`);
+        }
+      }
+
+      if (analytics.mostVisualizedGoal) {
+        sentences.push(`"${analytics.mostVisualizedGoal.title.slice(0, 30)}${analytics.mostVisualizedGoal.title.length > 30 ? '...' : ''}" is your most practiced reality`);
+      }
+
+      if (analytics.uniquePracticeDays > 0) {
+        sentences.push(`You've practiced on ${analytics.uniquePracticeDays} different days`);
+      }
+
+      if (activeCount > 0) {
+        sentences.push(`You're actively manifesting ${activeCount} ${activeCount === 1 ? 'reality' : 'realities'}`);
+      }
+
+      if (avgMomentum > 50) {
+        sentences.push(`Your momentum is at ${avgMomentum}% - keep it up!`);
+      }
+
+      // Add fallback if no insights
+      if (sentences.length === 0) {
+        sentences.push("Start your manifestation journey today!");
+        sentences.push("Create your first reality to begin");
+        sentences.push("Small steps lead to big transformations");
+      }
+
+      return sentences;
+    }, [analytics, streak, activeCount, avgMomentum]);
+
+    // Auto-shuffle insights every 5 seconds
+    useEffect(() => {
+      if (insights.length <= 3) return;
+      
+      const interval = setInterval(() => {
+        setInsightIndex((prev) => (prev + 1) % (insights.length - 2));
+      }, 5000);
+
+      return () => clearInterval(interval);
+    }, [insights.length]);
+
+    // Get current 3 insights to display
+    const displayedInsights = useMemo(() => {
+      if (insights.length <= 3) return insights;
+      return [
+        insights[insightIndex % insights.length],
+        insights[(insightIndex + 1) % insights.length],
+        insights[(insightIndex + 2) % insights.length],
+      ];
+    }, [insights, insightIndex]);
 
     if (isCollapsed) {
       return (
@@ -140,33 +233,23 @@ export const ManifestSidebarPanel = memo(
 
     return (
       <div className="w-full h-full overflow-auto space-y-4 pb-4">
-        {/* Progress Box - Above Calendar */}
+        {/* Progress Box - Auto-shuffling Insights */}
         <div className="bg-gradient-to-br from-teal-50 via-cyan-50 to-emerald-50 dark:from-teal-900/20 dark:via-cyan-900/20 dark:to-emerald-900/20 rounded-2xl shadow-sm border border-teal-100/50 dark:border-teal-800/50 overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-teal-100/30 dark:border-teal-800/30">
             <div className="p-1.5 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
-              <TrendingUp className="h-4 w-4 text-teal-600" />
+              <BarChart3 className="h-4 w-4 text-teal-600" />
             </div>
             <span className="text-sm font-semibold text-teal-800 dark:text-teal-200">Your Progress</span>
           </div>
           <div className="p-3 space-y-2">
-            <div className="flex items-start gap-3 bg-white/60 dark:bg-slate-800/60 rounded-xl p-2.5 border border-white/50 dark:border-slate-700/50">
-              <div className="p-1 bg-teal-100 dark:bg-teal-900/50 rounded-lg mt-0.5">
-                <Target className="h-3 w-3 text-teal-600" />
+            {displayedInsights.map((insight, i) => (
+              <div 
+                key={`${insightIndex}-${i}`}
+                className="bg-white/60 dark:bg-slate-800/60 rounded-xl p-2.5 border border-white/50 dark:border-slate-700/50 transition-all duration-500"
+              >
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{insight}</p>
               </div>
-              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{getManifestingSentence()}</p>
-            </div>
-            <div className="flex items-start gap-3 bg-white/60 dark:bg-slate-800/60 rounded-xl p-2.5 border border-white/50 dark:border-slate-700/50">
-              <div className="p-1 bg-orange-100 dark:bg-orange-900/50 rounded-lg mt-0.5">
-                <Flame className="h-3 w-3 text-orange-600" />
-              </div>
-              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{getStreakSentence()}</p>
-            </div>
-            <div className="flex items-start gap-3 bg-white/60 dark:bg-slate-800/60 rounded-xl p-2.5 border border-white/50 dark:border-slate-700/50">
-              <div className="p-1 bg-cyan-100 dark:bg-cyan-900/50 rounded-lg mt-0.5">
-                <TrendingUp className="h-3 w-3 text-cyan-600" />
-              </div>
-              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{getMomentumSentence()}</p>
-            </div>
+            ))}
             {/* Analytics Button */}
             {onOpenAnalytics && (
               <Button
@@ -278,12 +361,12 @@ export const ManifestSidebarPanel = memo(
                     )}
                   >
                     <span>{format(day, "d")}</span>
-                    {hasPracticeOnDay && totalVisions > 0 && (
+                    {hasPracticeOnDay && totalRealities > 0 && (
                       <span className={cn(
                         "text-[7px] leading-none",
                         isSelected ? "text-white/80" : "text-teal-500 dark:text-teal-400"
                       )}>
-                        {practiceCount}/{totalVisions}
+                        {practiceCount}/{totalRealities}
                       </span>
                     )}
                   </button>
