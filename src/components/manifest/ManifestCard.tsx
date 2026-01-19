@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, Clock, Flame, Sparkles, Play } from "lucide-react";
+import { Check, Flame, Play } from "lucide-react";
 import { type ManifestGoal, type ManifestDailyPractice, DAILY_PRACTICE_KEY } from "./types";
 import { format, subDays, parseISO, differenceInDays } from "date-fns";
 import { useMemo } from "react";
@@ -55,76 +55,81 @@ export function ManifestCard({ goal, streak, momentum, isSelected, onClick }: Ma
         isSelected ? "ring-2 ring-teal-500 shadow-lg" : "border-slate-200 dark:border-slate-700"
       }`}
     >
-      {/* Image Section */}
-      <div className="relative h-36" onClick={(e) => e.stopPropagation()}>
-        <EntryImageUpload
-          currentImageUrl={goal.cover_image_url || goal.vision_image_url || null}
-          presetType="manifest"
-          category={goal.category || "other"}
-          onImageChange={handleImageChange}
-          className="w-full h-full"
-        />
+      <div className="flex flex-row h-40">
+        {/* Image Section - Left side, full height, rounded corners */}
+        <div className="relative w-40 h-full flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+          <EntryImageUpload
+            currentImageUrl={goal.cover_image_url || goal.vision_image_url || null}
+            presetType="manifest"
+            category={goal.category || "other"}
+            onImageChange={handleImageChange}
+            className="w-full h-full rounded-l-2xl overflow-hidden"
+          />
 
-        {/* Overlay Badges */}
-        <div className="absolute bottom-3 left-3 flex gap-2">
-          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-sm text-teal-600 shadow-sm">
-            Day {dayNumber}
-          </span>
-          {streak > 1 && (
-            <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-orange-500 text-white flex items-center gap-1">
-              <Flame className="h-3 w-3" /> {streak}
+          {/* Overlay Badges */}
+          <div className="absolute bottom-2 left-2 flex flex-col gap-1">
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-sm text-teal-600 shadow-sm">
+              Day {dayNumber}
             </span>
-          )}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="p-4">
-        <h3 className="font-semibold text-slate-800 dark:text-white text-base leading-snug mb-3 line-clamp-2">
-          {goal.title}
-        </h3>
-
-        {/* Progress Bar */}
-        <div className="mb-3">
-          <div className="flex justify-between text-xs mb-1.5">
-            <span className="text-slate-500">Progress</span>
-            <span className="font-semibold text-teal-600">{momentum}%</span>
-          </div>
-          <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-teal-500 to-cyan-400 transition-all"
-              style={{ width: `${momentum}%` }}
-            />
+            {streak > 1 && (
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-orange-500 text-white flex items-center gap-1">
+                <Flame className="h-2.5 w-2.5" /> {streak}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Week Dots */}
-        <div className="flex justify-between mb-4">
-          {["M", "T", "W", "T", "F", "S", "S"].map((day, i) => (
-            <div key={i} className="flex flex-col items-center gap-1">
-              <span className="text-[10px] text-slate-400">{day}</span>
-              <div
-                className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                  weekProgress[i] ? "bg-teal-500 text-white" : "bg-slate-100 dark:bg-slate-800"
-                }`}
-              >
-                {weekProgress[i] && <Check className="h-2.5 w-2.5" />}
+        {/* Content - Right side */}
+        <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
+          <div>
+            <h3 className="font-semibold text-slate-800 dark:text-white text-sm leading-snug mb-2 line-clamp-2">
+              {goal.title}
+            </h3>
+
+            {/* Progress Bar */}
+            <div className="mb-2">
+              <div className="flex justify-between text-[10px] mb-1">
+                <span className="text-slate-500">Progress</span>
+                <span className="font-semibold text-teal-600">{momentum}%</span>
+              </div>
+              <div className="h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-teal-500 to-cyan-400 transition-all"
+                  style={{ width: `${momentum}%` }}
+                />
               </div>
             </div>
-          ))}
-        </div>
 
-        {/* CTA */}
-        <Button
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick();
-          }}
-          className="w-full h-10 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-medium"
-        >
-          <Play className="h-4 w-4 mr-2" />
-          Practice Now
-        </Button>
+            {/* Week Dots - Compact */}
+            <div className="flex gap-1">
+              {["M", "T", "W", "T", "F", "S", "S"].map((day, i) => (
+                <div key={i} className="flex flex-col items-center gap-0.5">
+                  <span className="text-[8px] text-slate-400">{day}</span>
+                  <div
+                    className={`w-3.5 h-3.5 rounded-full flex items-center justify-center ${
+                      weekProgress[i] ? "bg-teal-500 text-white" : "bg-slate-100 dark:bg-slate-800"
+                    }`}
+                  >
+                    {weekProgress[i] && <Check className="h-2 w-2" />}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* CTA */}
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick();
+            }}
+            size="sm"
+            className="w-full h-8 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-medium text-xs"
+          >
+            <Play className="h-3 w-3 mr-1.5" />
+            Practice Now
+          </Button>
+        </div>
       </div>
     </Card>
   );

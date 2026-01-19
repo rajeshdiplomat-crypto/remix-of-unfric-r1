@@ -286,9 +286,9 @@ export default function Manifest() {
       </div>
 
       {/* Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 px-6 lg:px-8 pb-8 flex-1">
-        {/* Goals */}
-        <div className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-0 flex-1 min-h-0">
+        {/* Goals - Left Panel with separate scroll */}
+        <div className="overflow-y-auto px-6 lg:px-8 pb-8" style={{ maxHeight: "calc(100vh - 280px)" }}>
           {activeGoals.length === 0 ? (
             <Card className="rounded-2xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900">
               <CardContent className="py-16 px-8 text-center">
@@ -308,7 +308,7 @@ export default function Manifest() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
               {activeGoals.map((goal) => {
                 const { streak, momentum, lastProof } = getGoalMetrics(goal);
                 return (
@@ -328,9 +328,9 @@ export default function Manifest() {
           )}
         </div>
 
-        {/* Practice Panel */}
-        <aside className="hidden lg:block">
-          <div className="sticky top-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden shadow-sm h-[calc(100vh-200px)]">
+        {/* Practice Panel - Right Panel with separate scroll */}
+        <aside className="hidden lg:block border-l border-slate-200 dark:border-slate-700 overflow-y-auto" style={{ maxHeight: "calc(100vh - 280px)" }}>
+          <div className="bg-white dark:bg-slate-900 h-full">
             {selectedGoal ? (
               <ManifestPracticePanel
                 goal={selectedGoal}
@@ -339,7 +339,7 @@ export default function Manifest() {
                 onPracticeComplete={handlePracticeComplete}
               />
             ) : (
-              <div className="p-8 flex flex-col items-center justify-center h-full text-center">
+              <div className="p-8 flex flex-col items-center justify-center h-full text-center min-h-[400px]">
                 <div className="mx-auto mb-4 h-14 w-14 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                   <Sparkles className="h-6 w-6 text-slate-400" />
                 </div>
