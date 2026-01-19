@@ -95,43 +95,56 @@ export function ManifestPracticePanel({
   const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
   
   // Use refs for text inputs to prevent re-render issues
-  const [currentActText, setCurrentActText] = useState("");
-  const [currentProofText, setCurrentProofText] = useState("");
+  const actInputRef = useRef<HTMLInputElement>(null);
+  const proofTextRef = useRef<HTMLTextAreaElement>(null);
+  const growthNoteRef = useRef<HTMLInputElement>(null);
   const [currentProofImageUrl, setCurrentProofImageUrl] = useState<string | null>(null);
-  const [growthNote, setGrowthNote] = useState("");
+  const [growthNoteValue, setGrowthNoteValue] = useState("");
 
-  // Track goal id separately to avoid full resets on goal object changes
+  // Track goal id and date separately to avoid full resets on goal object changes
   const goalIdRef = useRef(goal.id);
+  const dateStrRef = useRef(dateStr);
 
   useEffect(() => {
-    // Only reset state when goal actually changes
-    if (goalIdRef.current !== goal.id) {
+    // Only reset state when goal or date actually changes
+    const goalChanged = goalIdRef.current !== goal.id;
+    const dateChanged = dateStrRef.current !== dateStr;
+    
+    if (goalChanged || dateChanged) {
       goalIdRef.current = goal.id;
-      setCurrentActText("");
-      setCurrentProofText("");
+      dateStrRef.current = dateStr;
+      
+      // Clear input refs
+      if (actInputRef.current) actInputRef.current.value = "";
+      if (proofTextRef.current) proofTextRef.current.value = "";
+      if (growthNoteRef.current) growthNoteRef.current.value = "";
       setCurrentProofImageUrl(null);
-      setGrowthNote("");
-    }
-    setVisualizations([]);
-    setActs([]);
-    setProofs([]);
-    setIsLocked(false);
-    setExpandedSection("viz");
-    setCurrentImageUrl(goal.vision_image_url || goal.cover_image_url || null);
+      setGrowthNoteValue("");
+      
+      setVisualizations([]);
+      setActs([]);
+      setProofs([]);
+      setIsLocked(false);
+      setExpandedSection("viz");
+      setCurrentImageUrl(goal.vision_image_url || goal.cover_image_url || null);
 
-    const saved = loadPractice(dateStr);
-    if (saved.visualizations) setVisualizations(saved.visualizations);
-    if (saved.acts) setActs(saved.acts);
-    if (saved.proofs) setProofs(saved.proofs);
-    if (saved.growth_note) setGrowthNote(saved.growth_note);
-    if (saved.locked) setIsLocked(true);
+      const saved = loadPractice(dateStr);
+      if (saved.visualizations) setVisualizations(saved.visualizations);
+      if (saved.acts) setActs(saved.acts);
+      if (saved.proofs) setProofs(saved.proofs);
+      if (saved.growth_note) {
+        setGrowthNoteValue(saved.growth_note);
+        if (growthNoteRef.current) growthNoteRef.current.value = saved.growth_note;
+      }
+      if (saved.locked) setIsLocked(true);
+    }
   }, [goal.id, dateStr]);
 
   const hasViz = visualizations.length > 0;
   const hasAct = acts.length > 0;
   const hasProof = proofs.length > 0;
   const allDone = hasViz && hasAct && hasProof;
-  const canLock = allDone && growthNote.trim().length > 0;
+  const canLock = allDone && growthNoteValue.trim().length > 0;
   const completedCount = [hasViz, hasAct, hasProof].filter(Boolean).length;
 
   const handleVisualizationComplete = () => {
@@ -149,11 +162,11 @@ export function ManifestPracticePanel({
   };
 
   const handleAddAct = () => {
-    const text = currentActText.trim() || goal.act_as_if;
+    const text = actInputRef.current?.value.trim() || goal.act_as_if;
     const newEntry: ActEntry = { id: crypto.randomUUID(), text, created_at: new Date().toISOString() };
     const updated = [...acts, newEntry];
     setActs(updated);
-    setCurrentActText("");
+    if (actInputRef.current) actInputRef.current.value = "";
     savePractice({ acts: updated, act_count: updated.length });
     toast.success("Action logged! 💪");
     if (!hasProof) setExpandedSection("proof");
@@ -174,19 +187,20 @@ export function ManifestPracticePanel({
   };
 
   const handleAddProof = () => {
-    if (!currentProofText.trim()) {
+    const proofText = proofTextRef.current?.value.trim() || "";
+    if (!proofText) {
       toast.error("Add a description");
       return;
     }
     const newEntry: ProofEntry = {
       id: crypto.randomUUID(),
-      text: currentProofText.trim(),
+      text: proofText,
       image_url: currentProofImageUrl || undefined,
       created_at: new Date().toISOString(),
     };
     const updated = [...proofs, newEntry];
     setProofs(updated);
-    setCurrentProofText("");
+    if (proofTextRef.current) proofTextRef.current.value = "";
     setCurrentProofImageUrl(null);
     if (proofImageInputRef.current) proofImageInputRef.current.value = "";
     savePractice({ proofs: updated });
@@ -215,7 +229,7 @@ export function ManifestPracticePanel({
       acts,
       proofs,
       alignment: 5,
-      growth_note: growthNote,
+      growth_note: growthNoteValue,
       locked: true,
     };
     savePractice(practice);
@@ -430,8 +444,8 @@ export function ManifestPracticePanel({
             <p className="text-sm text-slate-500 mb-2">Suggestion: {goal.act_as_if}</p>
             <div className="flex gap-2">
               <Input
-                value={currentActText}
-                onChange={(e) => setCurrentActText(e.target.value)}
+                ref={actInputRef}
+                defaultValue=""
                 placeholder="What did you do?"
                 className="flex-1 rounded-xl h-10"
                 disabled={isViewingPast}
@@ -469,8 +483,8 @@ export function ManifestPracticePanel({
           <Step id="proof" icon={Camera} title="Record Proof" done={hasProof} disabled={isViewingPast && !isLocked}>
             <p className="text-sm text-slate-500 mb-2">What happened today that proves your reality?</p>
             <Textarea
-              value={currentProofText}
-              onChange={(e) => setCurrentProofText(e.target.value)}
+              ref={proofTextRef}
+              defaultValue=""
               placeholder="I noticed..."
               rows={2}
               className="rounded-xl resize-none mb-2"
@@ -507,7 +521,7 @@ export function ManifestPracticePanel({
             )}
             <Button
               onClick={handleAddProof}
-              disabled={!currentProofText.trim() || isViewingPast}
+              disabled={isViewingPast}
               className="w-full h-10 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
             >
               Save Proof
@@ -542,9 +556,10 @@ export function ManifestPracticePanel({
             <Step id="complete" icon={Lock} title="Complete Day" done={isLocked} disabled={isViewingPast && !isLocked}>
               <div className="space-y-3">
                 <Input
-                  value={growthNote}
+                  ref={growthNoteRef}
+                  defaultValue={growthNoteValue}
                   onChange={(e) => {
-                    setGrowthNote(e.target.value);
+                    setGrowthNoteValue(e.target.value);
                     savePractice({ growth_note: e.target.value });
                   }}
                   placeholder="What did you learn today?"

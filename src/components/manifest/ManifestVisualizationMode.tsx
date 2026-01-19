@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { X, Pause, Play, SkipForward, Zap, Settings } from "lucide-react";
+import { X, Pause, Play, SkipForward, Zap, Settings, Check } from "lucide-react";
 import { type ManifestGoal, type ManifestDailyPractice } from "./types";
 
 interface ManifestVisualizationModeProps {
@@ -13,15 +13,18 @@ interface ManifestVisualizationModeProps {
 
 interface FloatingElement {
   id: string;
-  type: "action" | "proof" | "note" | "image" | "word";
+  type: "action" | "proof" | "note" | "image";
   content: string;
   imageUrl?: string;
-  delay: number;
-  duration: number;
-  left: number;
-  animationStyle: number; // 0-3 for different animation variations
-  scale: number;
-  rotation: number;
+  slot: number; // 0-3 for the 4 slots
+  animationDelay: number;
+}
+
+interface VisualizationSettings {
+  showActions: boolean;
+  showProofs: boolean;
+  showNotes: boolean;
+  showImages: boolean;
 }
 
 export function ManifestVisualizationMode({ 
@@ -35,10 +38,24 @@ export function ManifestVisualizationMode({
   const [secondsLeft, setSecondsLeft] = useState(totalSeconds);
   const [isPaused, setIsPaused] = useState(false);
   const [pulseIntensity, setPulseIntensity] = useState(1);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showSettings, setShowSettings] = useState(false);
+  const [settings, setSettings] = useState<VisualizationSettings>(() => {
+    try {
+      const stored = localStorage.getItem("manifest_viz_settings");
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return { showActions: true, showProofs: true, showNotes: true, showImages: true };
+  });
+  const [currentBatch, setCurrentBatch] = useState(0);
+  
   const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
 
-  // Get all vision images (including the main one)
+  // Save settings when they change
+  useEffect(() => {
+    localStorage.setItem("manifest_viz_settings", JSON.stringify(settings));
+  }, [settings]);
+
+  // Get all vision images
   const visionImages = useMemo(() => {
     const images: string[] = [];
     if (goal.vision_image_url) images.push(goal.vision_image_url);
@@ -51,118 +68,106 @@ export function ManifestVisualizationMode({
     return images;
   }, [goal]);
 
-  // Create floating elements from previous practice - split into words for advanced animation
-  const floatingElements = useMemo<FloatingElement[]>(() => {
+  // Create structured floating elements - 3-4 at a time, proofs with images+text together
+  const allElements = useMemo(() => {
     const elements: FloatingElement[] = [];
     let idx = 0;
 
-    const addWords = (text: string, type: FloatingElement["type"], baseDelay: number) => {
-      const words = text.split(/\s+/).filter(w => w.length > 0);
-      words.forEach((word, i) => {
+    // Add vision images
+    if (settings.showImages) {
+      visionImages.forEach((img) => {
         elements.push({
-          id: `${type}-word-${idx}-${i}`,
-          type: "word",
-          content: word,
-          delay: baseDelay + (i * 0.5),
-          duration: 18 + Math.random() * 6, // Slower duration
-          left: 5 + Math.random() * 85,
-          animationStyle: Math.floor(Math.random() * 4),
-          scale: 1.1 + Math.random() * 0.5, // Bigger scale
-          rotation: -15 + Math.random() * 30,
-        });
-      });
-      idx++;
-    };
-
-    // Add vision images as floating elements (instead of background)
-    visionImages.forEach((img, i) => {
-      elements.push({
-        id: `vision-${i}`,
-        type: "image",
-        content: "",
-        imageUrl: img,
-        delay: i * 10, // Slower stagger
-        duration: 24 + (i % 5) * 3, // Much slower
-        left: 5 + (i * 25) % 70,
-        animationStyle: Math.floor(Math.random() * 4),
-        scale: 1.8, // Bigger
-        rotation: -8 + Math.random() * 16,
-      });
-    });
-
-    if (previousPractice) {
-      // Add actions with word splitting (no separate timestamp)
-      previousPractice.acts?.forEach((act, i) => {
-        addWords(act.text, "action", i * 6 + 2);
-        // Also add the full action as a card
-        elements.push({
-          id: `act-${act.id}`,
-          type: "action",
-          content: act.text,
-          delay: (idx * 6) % 25,
-          duration: 20 + (i % 4), // Slower
-          left: 10 + (idx * 17) % 70,
-          animationStyle: Math.floor(Math.random() * 4),
-          scale: 1.2, // Bigger
-          rotation: -5 + Math.random() * 10,
+          id: `vision-${idx}`,
+          type: "image",
+          content: "",
+          imageUrl: img,
+          slot: idx % 4,
+          animationDelay: 0,
         });
         idx++;
       });
+    }
 
-      // Add proofs with word splitting (no separate timestamp)
-      previousPractice.proofs?.forEach((proof, i) => {
-        if (proof.text) {
-          addWords(proof.text, "proof", i * 7 + 2);
+    if (previousPractice) {
+      // Add actions
+      if (settings.showActions) {
+        previousPractice.acts?.forEach((act) => {
+          elements.push({
+            id: `act-${act.id}`,
+            type: "action",
+            content: act.text,
+            slot: idx % 4,
+            animationDelay: 0,
+          });
+          idx++;
+        });
+      }
+
+      // Add proofs (with images if they have them)
+      if (settings.showProofs) {
+        previousPractice.proofs?.forEach((proof) => {
           elements.push({
             id: `proof-${proof.id}`,
             type: "proof",
-            content: proof.text,
+            content: proof.text || "",
             imageUrl: proof.image_url,
-            delay: (idx * 5) % 22,
-            duration: 22 + (i % 3), // Slower
-            left: 5 + (idx * 19) % 75,
-            animationStyle: Math.floor(Math.random() * 4),
-            scale: 1.2, // Bigger
-            rotation: -3 + Math.random() * 6,
+            slot: idx % 4,
+            animationDelay: 0,
           });
           idx++;
-        }
-        if (proof.image_url) {
-          elements.push({
-            id: `img-${proof.id}`,
-            type: "image",
-            content: "",
-            imageUrl: proof.image_url,
-            delay: (idx * 4) % 18,
-            duration: 22 + (i % 3), // Slower
-            left: 15 + (idx * 15) % 60,
-            animationStyle: Math.floor(Math.random() * 4),
-            scale: 1.4, // Bigger
-            rotation: -8 + Math.random() * 16,
-          });
-          idx++;
-        }
-      });
+        });
+      }
 
-      // Add growth note with word splitting
-      if (previousPractice.growth_note) {
-        addWords(previousPractice.growth_note, "note", idx * 4);
+      // Add growth note
+      if (settings.showNotes && previousPractice.growth_note) {
         elements.push({
           id: "growth-note",
           type: "note",
           content: previousPractice.growth_note,
-          delay: (idx * 4) % 18,
-          duration: 22,
-          left: 20 + (idx * 13) % 50,
-          animationStyle: Math.floor(Math.random() * 4),
-          scale: 1.2,
-          rotation: 0,
+          slot: idx % 4,
+          animationDelay: 0,
         });
       }
     }
 
+    // Shuffle elements for variety
+    for (let i = elements.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [elements[i], elements[j]] = [elements[j], elements[i]];
+    }
+
+    // Assign slots (0-3) for structured display
+    elements.forEach((el, i) => {
+      el.slot = i % 4;
+      el.animationDelay = (i % 4) * 0.8;
+    });
+
     return elements;
-  }, [previousPractice, visionImages]);
+  }, [previousPractice, visionImages, settings]);
+
+  // Group elements into batches of 3-4
+  const batches = useMemo(() => {
+    const result: FloatingElement[][] = [];
+    for (let i = 0; i < allElements.length; i += 4) {
+      result.push(allElements.slice(i, i + 4));
+    }
+    // Always have at least 1 batch
+    if (result.length === 0 && visionImages.length > 0) {
+      result.push([]);
+    }
+    return result;
+  }, [allElements, visionImages]);
+
+  // Cycle through batches every 8 seconds
+  useEffect(() => {
+    if (isPaused || batches.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentBatch((prev) => (prev + 1) % batches.length);
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [isPaused, batches.length]);
+
+  const currentElements = batches[currentBatch] || [];
 
   useEffect(() => {
     if (isPaused || secondsLeft <= 0) return;
@@ -178,9 +183,6 @@ export function ManifestVisualizationMode({
     }, 1000);
     return () => clearInterval(interval);
   }, [isPaused, secondsLeft, onComplete]);
-
-  // Remove image cycling since images now float
-  // Background will be static energy gradient
 
   // Energy pulse effect
   useEffect(() => {
@@ -206,17 +208,23 @@ export function ManifestVisualizationMode({
 
   const affirmation = goal.daily_affirmation?.trim() || goal.title || "I am becoming who I want to be.";
 
-  const currentImage = null; // No background image - use energy gradient only
-
   const size = 200;
   const strokeWidth = 8;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - progress / 100);
 
+  // Slot positions for structured layout (left%, top%)
+  const slotPositions = [
+    { left: 8, top: 15 },
+    { left: 70, top: 12 },
+    { left: 5, top: 60 },
+    { left: 72, top: 65 },
+  ];
+
   const content = (
     <div style={{ position: "fixed", inset: 0, zIndex: 99999, display: "flex", flexDirection: "column" }}>
-      {/* Animated Energy Background - no image, just gradient */}
+      {/* Animated Energy Background */}
       <div
         style={{
           position: "absolute",
@@ -226,7 +234,6 @@ export function ManifestVisualizationMode({
           transition: "transform 2s ease-in-out",
         }}
       >
-        {/* Energy gradient overlay */}
         <div
           style={{
             position: "absolute",
@@ -242,38 +249,34 @@ export function ManifestVisualizationMode({
         />
       </div>
 
-      {/* Floating Previous Practice Elements + Vision Images - FULLSCREEN */}
-      {!isPaused && floatingElements.map((el) => {
+      {/* Structured Floating Elements - 3-4 at a time */}
+      {!isPaused && currentElements.map((el, index) => {
         const isVisionImage = el.id.startsWith("vision-");
+        const pos = slotPositions[el.slot];
+        const isProofWithImage = el.type === "proof" && el.imageUrl;
+        
         return (
           <div
-            key={el.id}
+            key={`${currentBatch}-${el.id}`}
             style={{
               position: "absolute",
-              left: `${el.left}%`,
-              bottom: "-200px",
-              maxWidth: el.type === "image" ? (isVisionImage ? "240px" : "160px") : el.type === "word" ? "auto" : "280px",
-              padding: el.type === "image" ? "0" : el.type === "word" ? "10px 20px" : "14px 18px",
-              background: el.type === "image" ? "transparent" : el.type === "word" 
-                ? "rgba(255,255,255,0.18)" 
-                : "rgba(255,255,255,0.12)",
+              left: `${pos.left}%`,
+              top: `${pos.top}%`,
+              maxWidth: el.type === "image" ? (isVisionImage ? "280px" : "200px") : "320px",
+              padding: el.type === "image" ? "0" : "18px 24px",
+              background: el.type === "image" ? "transparent" : "rgba(255,255,255,0.12)",
               backdropFilter: el.type === "image" ? "none" : "blur(16px)",
-              borderRadius: el.type === "image" ? "20px" : el.type === "word" ? "24px" : "16px",
+              borderRadius: el.type === "image" ? "24px" : "20px",
               border: el.type === "image" ? "none" : "1px solid rgba(255,255,255,0.25)",
               color: "white",
-              fontSize: el.type === "word" ? "22px" : "14px",
-              fontWeight: el.type === "word" ? "600" : "400",
-              animation: `floatUpFullscreen${el.animationStyle} ${el.duration}s ease-in-out infinite`,
-              animationDelay: `${el.delay}s`,
+              fontSize: "16px",
+              animation: `floatUpStructured 8s ease-in-out forwards`,
+              animationDelay: `${index * 0.5}s`,
               boxShadow: isVisionImage 
-                ? "0 12px 50px rgba(20,184,166,0.5), 0 0 80px rgba(168,85,247,0.4)"
-                : el.type === "word" 
-                  ? "0 6px 30px rgba(20,184,166,0.4)" 
-                  : el.type === "image" ? "0 12px 40px rgba(0,0,0,0.5)" : "0 10px 40px rgba(0,0,0,0.4)",
-              zIndex: isVisionImage ? 4 : el.type === "word" ? 6 : 5,
+                ? "0 16px 60px rgba(20,184,166,0.5), 0 0 100px rgba(168,85,247,0.4)"
+                : "0 12px 50px rgba(0,0,0,0.4)",
+              zIndex: isVisionImage ? 4 : 5,
               overflow: "hidden",
-              transform: `scale(${el.scale}) rotate(${el.rotation}deg)`,
-              textShadow: el.type === "word" ? "0 0 30px rgba(255,255,255,0.6)" : "none",
             }}
           >
             {el.type === "image" && el.imageUrl && (
@@ -281,40 +284,41 @@ export function ManifestVisualizationMode({
                 src={el.imageUrl} 
                 alt={isVisionImage ? "Vision" : "Proof"}
                 style={{ 
-                  width: isVisionImage ? "220px" : "140px", 
-                  height: isVisionImage ? "220px" : "140px", 
+                  width: isVisionImage ? "260px" : "180px", 
+                  height: isVisionImage ? "260px" : "180px", 
                   objectFit: "cover", 
-                  borderRadius: isVisionImage ? "18px" : "14px",
+                  borderRadius: isVisionImage ? "22px" : "18px",
                   border: isVisionImage ? "4px solid rgba(20,184,166,0.6)" : "3px solid rgba(255,255,255,0.4)",
                   boxShadow: isVisionImage 
-                    ? "0 0 40px rgba(20,184,166,0.6), inset 0 0 30px rgba(255,255,255,0.15)"
-                    : "0 12px 40px rgba(0,0,0,0.5)",
+                    ? "0 0 50px rgba(20,184,166,0.6), inset 0 0 40px rgba(255,255,255,0.15)"
+                    : "0 16px 50px rgba(0,0,0,0.5)",
                 }} 
               />
             )}
-            {el.type === "word" && el.content}
-            {el.type !== "image" && el.type !== "word" && (
+            {el.type !== "image" && (
               <>
                 <div style={{ 
-                  fontSize: "10px", 
+                  fontSize: "11px", 
                   textTransform: "uppercase", 
-                  letterSpacing: "1.5px",
+                  letterSpacing: "2px",
                   opacity: 0.7,
-                  marginBottom: "4px",
+                  marginBottom: "8px",
+                  fontWeight: 600,
                 }}>
                   {el.type === "action" ? "✨ Action" : el.type === "proof" ? "🎯 Proof" : "💭 Note"}
                 </div>
-                <div style={{ lineHeight: 1.5, fontSize: "14px" }}>{el.content}</div>
-                {el.imageUrl && (
+                <div style={{ lineHeight: 1.6, fontSize: "16px", fontWeight: 500 }}>{el.content}</div>
+                {isProofWithImage && (
                   <img 
                     src={el.imageUrl} 
                     alt="Proof" 
                     style={{ 
                       width: "100%", 
-                      height: "80px", 
+                      height: "120px", 
                       objectFit: "cover", 
-                      borderRadius: "10px",
-                      marginTop: "8px",
+                      borderRadius: "14px",
+                      marginTop: "12px",
+                      border: "2px solid rgba(255,255,255,0.3)",
                     }} 
                   />
                 )}
@@ -385,6 +389,111 @@ export function ManifestVisualizationMode({
         }}
       />
 
+      {/* Settings Modal */}
+      {showSettings && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "rgba(0,0,0,0.7)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100,
+          }}
+          onClick={() => setShowSettings(false)}
+        >
+          <div
+            style={{
+              background: "rgba(30,30,40,0.95)",
+              borderRadius: 24,
+              padding: 28,
+              minWidth: 320,
+              border: "1px solid rgba(255,255,255,0.15)",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ color: "white", fontSize: 20, fontWeight: 600, marginBottom: 20 }}>
+              Visualization Settings
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {[
+                { key: "showActions", label: "Show Actions", icon: "✨" },
+                { key: "showProofs", label: "Show Proofs", icon: "🎯" },
+                { key: "showNotes", label: "Show Notes", icon: "💭" },
+                { key: "showImages", label: "Show Vision Images", icon: "🖼️" },
+              ].map(({ key, label, icon }) => (
+                <label
+                  key={key}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 14,
+                    cursor: "pointer",
+                    padding: "12px 16px",
+                    borderRadius: 14,
+                    background: settings[key as keyof VisualizationSettings] 
+                      ? "rgba(20,184,166,0.2)" 
+                      : "rgba(255,255,255,0.05)",
+                    border: `1px solid ${settings[key as keyof VisualizationSettings] ? "rgba(20,184,166,0.4)" : "rgba(255,255,255,0.1)"}`,
+                    transition: "all 0.2s",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 8,
+                      background: settings[key as keyof VisualizationSettings]
+                        ? "linear-gradient(135deg, #14b8a6, #06b6d4)"
+                        : "rgba(255,255,255,0.1)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {settings[key as keyof VisualizationSettings] && (
+                      <Check style={{ width: 14, height: 14, color: "white" }} />
+                    )}
+                  </div>
+                  <span style={{ color: "white", fontSize: 15 }}>
+                    {icon} {label}
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={settings[key as keyof VisualizationSettings]}
+                    onChange={(e) =>
+                      setSettings((prev) => ({ ...prev, [key]: e.target.checked }))
+                    }
+                    style={{ display: "none" }}
+                  />
+                </label>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowSettings(false)}
+              style={{
+                marginTop: 24,
+                width: "100%",
+                padding: "14px",
+                borderRadius: 12,
+                background: "linear-gradient(135deg, #14b8a6, #06b6d4)",
+                border: "none",
+                color: "white",
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Close and Settings buttons */}
       <div
         style={{
@@ -397,7 +506,7 @@ export function ManifestVisualizationMode({
         }}
       >
         <button
-          onClick={() => {/* TODO: Add settings modal */}}
+          onClick={() => setShowSettings(true)}
           style={{
             width: 44,
             height: 44,
@@ -437,8 +546,8 @@ export function ManifestVisualizationMode({
         </button>
       </div>
 
-      {/* Vision images count indicator */}
-      {visionImages.length > 0 && (
+      {/* Batch indicator */}
+      {batches.length > 1 && (
         <div
           style={{
             position: "absolute",
@@ -458,7 +567,7 @@ export function ManifestVisualizationMode({
             fontSize: 12,
           }}
         >
-          {visionImages.length} vision{visionImages.length > 1 ? "s" : ""} floating
+          {currentBatch + 1} / {batches.length} visions
         </div>
       )}
 
@@ -504,76 +613,59 @@ export function ManifestVisualizationMode({
           {isPaused ? "Paused" : "Channeling Energy"}
         </div>
 
-        {/* Timer with energy ring */}
+        {/* Timer Circle */}
         <div
           style={{
             position: "relative",
-            width: size + 40,
-            height: size + 40,
-            marginBottom: 48,
+            width: size,
+            height: size,
+            marginBottom: 40,
           }}
         >
-          {/* Outer glow ring */}
+          {/* Glow background */}
           <div
             style={{
               position: "absolute",
-              inset: -10,
+              inset: -20,
               borderRadius: "50%",
-              background: `conic-gradient(from 0deg, rgba(20,184,166,0.3), rgba(168,85,247,0.3), rgba(59,130,246,0.3), rgba(236,72,153,0.3), rgba(20,184,166,0.3))`,
-              animation: isPaused ? "none" : "energyRotate 8s linear infinite",
-              filter: "blur(15px)",
+              background: "radial-gradient(circle, rgba(20,184,166,0.2), transparent 70%)",
+              animation: isPaused ? "none" : "energyPulse 2s ease-in-out infinite",
             }}
           />
-
-          <svg width={size + 40} height={size + 40} style={{ position: "relative", zIndex: 1 }}>
-            <defs>
-              <linearGradient id="energyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#14b8a6">
-                  <animate attributeName="stop-color" values="#14b8a6;#a855f7;#3b82f6;#ec4899;#14b8a6" dur="8s" repeatCount="indefinite" />
-                </stop>
-                <stop offset="50%" stopColor="#a855f7">
-                  <animate attributeName="stop-color" values="#a855f7;#3b82f6;#ec4899;#14b8a6;#a855f7" dur="8s" repeatCount="indefinite" />
-                </stop>
-                <stop offset="100%" stopColor="#3b82f6">
-                  <animate attributeName="stop-color" values="#3b82f6;#ec4899;#14b8a6;#a855f7;#3b82f6" dur="8s" repeatCount="indefinite" />
-                </stop>
-              </linearGradient>
-              <filter id="glow">
-                <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-                <feMerge>
-                  <feMergeNode in="coloredBlur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
+          <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+            {/* Background circle */}
             <circle
-              cx={(size + 40) / 2}
-              cy={(size + 40) / 2}
-              r={radius + 10}
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
               fill="none"
-              stroke="rgba(255,255,255,0.08)"
+              stroke="rgba(255,255,255,0.1)"
               strokeWidth={strokeWidth}
             />
+            {/* Progress circle with gradient */}
+            <defs>
+              <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#14b8a6" />
+                <stop offset="50%" stopColor="#a855f7" />
+                <stop offset="100%" stopColor="#3b82f6" />
+              </linearGradient>
+            </defs>
             <circle
-              cx={(size + 40) / 2}
-              cy={(size + 40) / 2}
-              r={radius + 10}
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
               fill="none"
-              stroke="url(#energyGrad)"
+              stroke="url(#progressGradient)"
               strokeWidth={strokeWidth}
               strokeLinecap="round"
-              strokeDasharray={circumference + 20}
+              strokeDasharray={circumference}
               strokeDashoffset={offset}
               style={{
-                transform: "rotate(-90deg)",
-                transformOrigin: "center",
                 transition: "stroke-dashoffset 1s linear",
-                filter: "url(#glow)",
+                filter: "drop-shadow(0 0 10px rgba(168,85,247,0.5))",
               }}
             />
           </svg>
-
-          {/* Timer text */}
           <div
             style={{
               position: "absolute",
@@ -586,37 +678,45 @@ export function ManifestVisualizationMode({
           >
             <span
               style={{
-                fontSize: 56,
-                fontWeight: 200,
+                fontSize: 48,
+                fontWeight: "200",
                 color: "white",
-                letterSpacing: 2,
-                textShadow: "0 0 30px rgba(20,184,166,0.5)",
+                letterSpacing: 4,
+                fontFamily: "system-ui",
               }}
             >
               {formatTime(secondsLeft)}
             </span>
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 3 }}>
-              remaining
+            <span
+              style={{
+                fontSize: 11,
+                color: "rgba(255,255,255,0.4)",
+                textTransform: "uppercase",
+                letterSpacing: 4,
+                marginTop: 4,
+              }}
+            >
+              Remaining
             </span>
           </div>
         </div>
 
-        {/* Affirmation with energy styling */}
+        {/* Affirmation */}
         <div
           style={{
-            position: "relative",
+            textAlign: "center",
             maxWidth: 600,
-            marginBottom: 56,
+            padding: "0 32px",
           }}
         >
           <p
             style={{
-              fontSize: 26,
-              fontWeight: 300,
+              fontSize: 24,
+              fontWeight: "300",
               color: "white",
-              textAlign: "center",
-              lineHeight: 1.7,
-              textShadow: "0 0 40px rgba(168,85,247,0.3)",
+              lineHeight: 1.6,
+              fontStyle: "italic",
+              textShadow: "0 0 40px rgba(20,184,166,0.4)",
             }}
           >
             "{affirmation}"
@@ -624,7 +724,14 @@ export function ManifestVisualizationMode({
         </div>
 
         {/* Controls */}
-        <div style={{ display: "flex", gap: 16 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+            marginTop: 48,
+          }}
+        >
           <button
             onClick={() => setIsPaused(!isPaused)}
             style={{
@@ -632,19 +739,18 @@ export function ManifestVisualizationMode({
               padding: "0 36px",
               borderRadius: 9999,
               background: isPaused
-                ? "linear-gradient(135deg, #14b8a6, #a855f7)"
+                ? "linear-gradient(135deg, #14b8a6, #06b6d4)"
                 : "rgba(255,255,255,0.1)",
+              backdropFilter: "blur(12px)",
               border: isPaused ? "none" : "1px solid rgba(255,255,255,0.2)",
               color: "white",
-              fontSize: 16,
-              fontWeight: 500,
+              fontSize: 15,
+              fontWeight: "500",
               display: "flex",
               alignItems: "center",
-              gap: 12,
+              gap: 10,
               cursor: "pointer",
-              backdropFilter: "blur(8px)",
               transition: "all 0.3s",
-              boxShadow: isPaused ? "0 0 30px rgba(20,184,166,0.4)" : "none",
             }}
           >
             {isPaused ? (
@@ -679,7 +785,7 @@ export function ManifestVisualizationMode({
         </div>
       </div>
 
-      {/* Progress bar with energy effect */}
+      {/* Progress bar */}
       <div
         style={{
           position: "absolute",
@@ -709,10 +815,6 @@ export function ManifestVisualizationMode({
           90% { opacity: 0.8; }
           100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
         }
-        @keyframes energyRotate {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
         @keyframes energyPulse {
           0%, 100% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.2); opacity: 0.8; }
@@ -721,33 +823,23 @@ export function ManifestVisualizationMode({
           0%, 100% { opacity: 0.3; height: 30%; }
           50% { opacity: 1; height: 60%; }
         }
-        @keyframes floatUpFullscreen0 {
-          0% { opacity: 0; transform: translateY(0) scale(0.8) rotate(-5deg); }
-          10% { opacity: 1; transform: translateY(-15vh) scale(1) rotate(0deg); }
-          50% { opacity: 0.95; transform: translateY(-50vh) scale(1.05) rotate(2deg); }
-          90% { opacity: 0.8; transform: translateY(-90vh) scale(1) rotate(-2deg); }
-          100% { opacity: 0; transform: translateY(-105vh) scale(0.9) rotate(5deg); }
-        }
-        @keyframes floatUpFullscreen1 {
-          0% { opacity: 0; transform: translateY(0) translateX(0) scale(0.7); }
-          12% { opacity: 1; transform: translateY(-12vh) translateX(30px) scale(1); }
-          55% { opacity: 0.9; transform: translateY(-55vh) translateX(-25px) scale(1.03); }
-          88% { opacity: 0.75; transform: translateY(-92vh) translateX(15px) scale(0.98); }
-          100% { opacity: 0; transform: translateY(-108vh) translateX(10px) scale(0.85); }
-        }
-        @keyframes floatUpFullscreen2 {
-          0% { opacity: 0; transform: translateY(0) rotate(8deg) scale(0.85); }
-          8% { opacity: 1; transform: translateY(-10vh) rotate(0deg) scale(1); }
-          48% { opacity: 0.92; transform: translateY(-48vh) rotate(-3deg) scale(1.06); }
-          85% { opacity: 0.7; transform: translateY(-88vh) rotate(2deg) scale(1); }
-          100% { opacity: 0; transform: translateY(-102vh) rotate(-5deg) scale(0.9); }
-        }
-        @keyframes floatUpFullscreen3 {
-          0% { opacity: 0; transform: translateY(0) translateX(-25px) scale(0.8); }
-          15% { opacity: 1; transform: translateY(-18vh) translateX(35px) scale(1.02); }
-          52% { opacity: 0.88; transform: translateY(-52vh) translateX(-20px) scale(1.05); }
-          87% { opacity: 0.65; transform: translateY(-90vh) translateX(10px) scale(0.95); }
-          100% { opacity: 0; transform: translateY(-110vh) translateX(0) scale(0.85); }
+        @keyframes floatUpStructured {
+          0% { 
+            opacity: 0; 
+            transform: translateY(30px) scale(0.9); 
+          }
+          15% { 
+            opacity: 1; 
+            transform: translateY(0) scale(1); 
+          }
+          85% { 
+            opacity: 1; 
+            transform: translateY(-20px) scale(1); 
+          }
+          100% { 
+            opacity: 0; 
+            transform: translateY(-40px) scale(0.95); 
+          }
         }
       `}</style>
     </div>
