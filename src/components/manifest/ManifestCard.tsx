@@ -88,97 +88,97 @@ export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEd
   return (
     <Card
       onClick={onClick}
-      className={`overflow-hidden rounded-2xl cursor-pointer transition-all duration-200 hover:shadow-lg relative ${
+      className={`overflow-hidden rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg relative ${
         isSelected ? "ring-2 ring-teal-500 shadow-lg" : "border-slate-200 dark:border-slate-700"
       }`}
     >
       {/* Top-right action buttons */}
-      <div className="absolute top-2 right-2 z-10 flex gap-1" onClick={(e) => e.stopPropagation()}>
+      <div className="absolute top-1.5 right-1.5 z-10 flex gap-1" onClick={(e) => e.stopPropagation()}>
         {onViewHistory && (
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-sm hover:bg-white dark:hover:bg-slate-700"
+            className="h-6 w-6 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-sm hover:bg-white dark:hover:bg-slate-700"
             onClick={onViewHistory}
             title="View History"
           >
-            <History className="h-3.5 w-3.5 text-slate-500" />
+            <History className="h-3 w-3 text-slate-500" />
           </Button>
         )}
         {onEdit && (
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-sm hover:bg-white dark:hover:bg-slate-700"
+            className="h-6 w-6 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-sm hover:bg-white dark:hover:bg-slate-700"
             onClick={onEdit}
             title="Edit Vision"
           >
-            <Pencil className="h-3.5 w-3.5 text-slate-500" />
+            <Pencil className="h-3 w-3 text-slate-500" />
           </Button>
         )}
       </div>
 
-      <div className="flex flex-row h-40">
-        {/* Image Section - Left side, full height, rounded corners */}
-        <div className="relative w-40 h-full flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+      <div className="flex flex-row h-32">
+        {/* Image Section - Left side, full height */}
+        <div className="relative w-32 h-full flex-shrink-0" onClick={(e) => e.stopPropagation()}>
           <EntryImageUpload
             currentImageUrl={goal.cover_image_url || goal.vision_image_url || null}
             presetType="manifest"
             category={goal.category || "other"}
             onImageChange={handleImageChange}
-            className="w-full h-full rounded-l-2xl overflow-hidden"
+            className="w-full h-full rounded-l-xl overflow-hidden"
           />
 
           {/* Overlay Badges */}
-          <div className="absolute bottom-2 left-2 flex flex-col gap-1">
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-sm text-teal-600 shadow-sm">
+          <div className="absolute bottom-1.5 left-1.5 flex flex-col gap-0.5">
+            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-white/90 backdrop-blur-sm text-teal-600 shadow-sm">
               Day {dayNumber}
             </span>
             {streak > 1 && (
-              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-orange-500 text-white flex items-center gap-1">
-                <Flame className="h-2.5 w-2.5" /> {streak}
+              <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-orange-500 text-white flex items-center gap-0.5">
+                <Flame className="h-2 w-2" /> {streak}
               </span>
             )}
           </div>
         </div>
 
         {/* Content - Right side */}
-        <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
+        <div className="flex-1 p-2.5 flex flex-col justify-between min-w-0">
           <div>
-            <h3 className="font-semibold text-slate-800 dark:text-white text-sm leading-snug mb-1.5 line-clamp-2">
+            <h3 className="font-semibold text-slate-800 dark:text-white text-xs leading-snug mb-1 line-clamp-2">
               {goal.title}
             </h3>
 
             {/* Category & Last Practiced */}
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                <Tag className="h-2.5 w-2.5" />
+            <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+              <span className="inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                <Tag className="h-2 w-2" />
                 {categoryLabel}
               </span>
               {lastPracticed && (
-                <span className="text-[10px] text-slate-400">
-                  Practiced {formatDistanceToNow(lastPracticed, { addSuffix: true })}
+                <span className="text-[9px] text-slate-400">
+                  {formatDistanceToNow(lastPracticed, { addSuffix: true })}
                 </span>
               )}
             </div>
 
             {/* Week Dots with completion count */}
-            <div className="flex items-center gap-2">
-              <div className="flex gap-1">
+            <div className="flex items-center gap-1.5">
+              <div className="flex gap-0.5">
                 {["M", "T", "W", "T", "F", "S", "S"].map((day, i) => (
-                  <div key={i} className="flex flex-col items-center gap-0.5">
-                    <span className="text-[8px] text-slate-400">{day}</span>
+                  <div key={i} className="flex flex-col items-center gap-0">
+                    <span className="text-[7px] text-slate-400">{day}</span>
                     <div
-                      className={`w-3.5 h-3.5 rounded-full flex items-center justify-center ${
+                      className={`w-3 h-3 rounded-full flex items-center justify-center ${
                         weekProgress[i] ? "bg-teal-500 text-white" : "bg-slate-100 dark:bg-slate-800"
                       }`}
                     >
-                      {weekProgress[i] && <Check className="h-2 w-2" />}
+                      {weekProgress[i] && <Check className="h-1.5 w-1.5" />}
                     </div>
                   </div>
                 ))}
               </div>
-              <span className="text-[10px] font-medium text-teal-600 dark:text-teal-400">
+              <span className="text-[9px] font-medium text-teal-600 dark:text-teal-400">
                 {weekCompletionCount}/7
               </span>
             </div>
@@ -191,9 +191,9 @@ export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEd
               onClick();
             }}
             size="sm"
-            className="w-full h-8 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-medium text-xs mt-2"
+            className="w-full h-7 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-medium text-[10px] mt-1.5"
           >
-            <Play className="h-3 w-3 mr-1.5" />
+            <Play className="h-2.5 w-2.5 mr-1" />
             Practice Now
           </Button>
         </div>

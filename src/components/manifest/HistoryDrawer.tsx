@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { X, Clock, ChevronDown, ChevronUp, Filter } from "lucide-react";
+import { X, Clock, ChevronDown, ChevronUp, Sparkles, TrendingUp, Camera, Image } from "lucide-react";
 import { format, startOfWeek, endOfWeek, isWithinInterval, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { type ManifestGoal, type ManifestDailyPractice, DAILY_PRACTICE_KEY } from "./types";
 import { HistoryDayCard } from "./HistoryDayCard";
 import { ProofLightbox } from "./ProofLightbox";
@@ -59,8 +59,6 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
   const [historyData, setHistoryData] = useState<HistoryDay[]>([]);
   const [visibleCount, setVisibleCount] = useState(ENTRIES_PER_PAGE);
   const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set());
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const drawerRef = useRef<HTMLDivElement>(null);
 
   // Load history from localStorage
   useEffect(() => {
@@ -104,24 +102,6 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
       setExpandedWeeks(new Set([firstWeekStart.toISOString()]));
     }
   }, [isOpen, goal.id]);
-
-  // Focus trap and keyboard handling
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    closeButtonRef.current?.focus();
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen, onClose]);
 
   // Filter data
   const filteredData = useMemo(() => {
@@ -238,8 +218,6 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
     setVisibleCount((prev) => prev + ENTRIES_PER_PAGE);
   };
 
-  if (!isOpen) return null;
-
   // Get visible weeks (limit entries shown)
   let displayedEntryCount = 0;
   const visibleWeekGroups = weekGroups.filter((week) => {
@@ -252,161 +230,156 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
 
   return (
     <>
-      <div
-        ref={drawerRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="history-drawer-title"
-        className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-background border-l border-border shadow-xl flex flex-col"
-      >
-        {/* Header */}
-        <div className="p-4 border-b border-border/50 bg-gradient-to-r from-teal-50/50 to-cyan-50/50 dark:from-teal-900/10 dark:to-cyan-900/10">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <h2 id="history-drawer-title" className="font-semibold text-foreground text-lg">
-                Practice History
-              </h2>
-              <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1">
-                {goal.title}
-              </p>
-            </div>
-            <Button
-              ref={closeButtonRef}
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              aria-label="Close history"
-              className="rounded-full"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Stats Row */}
-          <div className="grid grid-cols-4 gap-2 mt-4">
-            <div className="bg-white/80 dark:bg-slate-800/80 rounded-xl p-2 text-center">
-              <p className="text-lg font-bold text-teal-600">{stats.practicedCount}</p>
-              <p className="text-[10px] text-muted-foreground">Days</p>
-            </div>
-            <div className="bg-white/80 dark:bg-slate-800/80 rounded-xl p-2 text-center">
-              <p className="text-lg font-bold text-orange-500">{stats.bestStreak}</p>
-              <p className="text-[10px] text-muted-foreground">Best Streak</p>
-            </div>
-            <div className="bg-white/80 dark:bg-slate-800/80 rounded-xl p-2 text-center">
-              <p className="text-lg font-bold text-purple-600">{stats.totalProofs}</p>
-              <p className="text-[10px] text-muted-foreground">Proofs</p>
-            </div>
-            <div className="bg-white/80 dark:bg-slate-800/80 rounded-xl p-2 text-center">
-              <p className="text-lg font-bold text-cyan-600">{stats.totalImages}</p>
-              <p className="text-[10px] text-muted-foreground">Photos</p>
-            </div>
-          </div>
-
-          {/* Filter Chips */}
-          <div className="flex flex-wrap gap-2 mt-4">
-            {[
-              { key: "all" as FilterType, label: "All" },
-              { key: "practiced" as FilterType, label: "Completed" },
-              { key: "with-proofs" as FilterType, label: "With Proofs" },
-              { key: "with-images" as FilterType, label: "With Photos" },
-            ].map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => handleFilterChange(key)}
-                className={`px-3 py-1.5 text-xs rounded-full transition-all ${
-                  filter === key
-                    ? "bg-teal-500 text-white shadow-sm"
-                    : "bg-white dark:bg-slate-800 text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-700 border border-border"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Timeline Content */}
-        <ScrollArea className="flex-1">
-          <div className="p-4 space-y-4">
-            {visibleWeekGroups.length === 0 ? (
-              <div className="text-center py-12">
-                <Clock className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-                <p className="text-sm text-muted-foreground">
-                  Your practice history will appear here as you continue.
-                </p>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="max-w-2xl h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+          {/* Header */}
+          <div className="p-4 border-b border-border/50 bg-gradient-to-r from-teal-50/80 to-cyan-50/80 dark:from-teal-900/20 dark:to-cyan-900/20 flex-shrink-0">
+            <div className="flex items-start justify-between gap-2 mb-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <Sparkles className="h-4 w-4 text-teal-500" />
+                  <h2 className="font-semibold text-foreground text-lg">Practice History</h2>
+                </div>
+                <p className="text-sm text-muted-foreground line-clamp-1">{goal.title}</p>
               </div>
-            ) : (
-              <>
-                {visibleWeekGroups.map((week) => {
-                  const weekKey = week.weekStart.toISOString();
-                  const isExpanded = expandedWeeks.has(weekKey);
+            </div>
 
-                  return (
-                    <div key={weekKey} className="bg-white dark:bg-slate-800 rounded-xl border border-border/50 overflow-hidden">
-                      {/* Week Header - Collapsible */}
-                      <button
-                        onClick={() => toggleWeek(weekKey)}
-                        className="w-full flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-foreground">
-                            {format(week.weekStart, "MMM d")} – {format(week.weekEnd, "MMM d")}
-                          </span>
-                          <Badge variant="secondary" className="text-[10px]">
-                            {week.days.filter(d => d.practiced).length}/{week.days.length} days
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">
-                            {week.proofsCount} proofs
-                          </span>
-                          {isExpanded ? (
-                            <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                          )}
-                        </div>
-                      </button>
+            {/* Stats Row */}
+            <div className="grid grid-cols-4 gap-2">
+              <div className="bg-white/90 dark:bg-slate-800/90 rounded-lg p-2 text-center shadow-sm">
+                <p className="text-xl font-bold text-teal-600">{stats.practicedCount}</p>
+                <p className="text-[10px] text-muted-foreground">Days</p>
+              </div>
+              <div className="bg-white/90 dark:bg-slate-800/90 rounded-lg p-2 text-center shadow-sm">
+                <div className="flex items-center justify-center gap-1">
+                  <TrendingUp className="h-4 w-4 text-orange-500" />
+                  <p className="text-xl font-bold text-orange-500">{stats.bestStreak}</p>
+                </div>
+                <p className="text-[10px] text-muted-foreground">Best Streak</p>
+              </div>
+              <div className="bg-white/90 dark:bg-slate-800/90 rounded-lg p-2 text-center shadow-sm">
+                <div className="flex items-center justify-center gap-1">
+                  <Camera className="h-4 w-4 text-purple-500" />
+                  <p className="text-xl font-bold text-purple-600">{stats.totalProofs}</p>
+                </div>
+                <p className="text-[10px] text-muted-foreground">Proofs</p>
+              </div>
+              <div className="bg-white/90 dark:bg-slate-800/90 rounded-lg p-2 text-center shadow-sm">
+                <div className="flex items-center justify-center gap-1">
+                  <Image className="h-4 w-4 text-cyan-500" />
+                  <p className="text-xl font-bold text-cyan-600">{stats.totalImages}</p>
+                </div>
+                <p className="text-[10px] text-muted-foreground">Photos</p>
+              </div>
+            </div>
 
-                      {/* Day Cards */}
-                      {isExpanded && (
-                        <div className="border-t border-border/30 p-3 space-y-2">
-                          {week.days.map((day) => (
-                            <HistoryDayCard
-                              key={day.date}
-                              data={day}
-                              onImageClick={handleImageClick}
-                              onUseAsMicroAction={onUseAsMicroAction}
-                            />
-                          ))}
-
-                          {/* Weekly Summary */}
-                          <div className="mt-2 p-2 bg-slate-50 dark:bg-slate-700/30 rounded-lg">
-                            <p className="text-[10px] text-muted-foreground text-center">
-                              Week avg: {week.avgAlignment}/10 alignment · {week.actDays} action days · {week.proofsCount} proofs
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-
-                {/* Load More Button */}
-                {hasMore && (
-                  <Button
-                    variant="outline"
-                    onClick={loadMore}
-                    className="w-full rounded-xl"
-                  >
-                    Load More ({filteredData.length - displayedEntryCount} remaining)
-                  </Button>
-                )}
-              </>
-            )}
+            {/* Filter Chips */}
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {[
+                { key: "all" as FilterType, label: "All" },
+                { key: "practiced" as FilterType, label: "Completed" },
+                { key: "with-proofs" as FilterType, label: "With Proofs" },
+                { key: "with-images" as FilterType, label: "With Photos" },
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => handleFilterChange(key)}
+                  className={`px-2.5 py-1 text-xs rounded-full transition-all ${
+                    filter === key
+                      ? "bg-teal-500 text-white shadow-sm"
+                      : "bg-white dark:bg-slate-800 text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-700 border border-border"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
-        </ScrollArea>
-      </div>
+
+          {/* Timeline Content */}
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="p-4 space-y-3">
+              {visibleWeekGroups.length === 0 ? (
+                <div className="text-center py-12">
+                  <Clock className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                  <p className="text-sm text-muted-foreground">
+                    Your practice history will appear here as you continue.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {visibleWeekGroups.map((week) => {
+                    const weekKey = week.weekStart.toISOString();
+                    const isExpanded = expandedWeeks.has(weekKey);
+
+                    return (
+                      <div key={weekKey} className="bg-white dark:bg-slate-800 rounded-xl border border-border/50 overflow-hidden shadow-sm">
+                        {/* Week Header - Collapsible */}
+                        <button
+                          onClick={() => toggleWeek(weekKey)}
+                          className="w-full flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-foreground">
+                              {format(week.weekStart, "MMM d")} – {format(week.weekEnd, "MMM d")}
+                            </span>
+                            <Badge variant="secondary" className="text-[10px] h-5">
+                              {week.days.filter(d => d.practiced).length}/{week.days.length} days
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">
+                              {week.proofsCount} proofs
+                            </span>
+                            {isExpanded ? (
+                              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
+                        </button>
+
+                        {/* Day Cards */}
+                        {isExpanded && (
+                          <div className="border-t border-border/30 p-3 space-y-2">
+                            {week.days.map((day) => (
+                              <HistoryDayCard
+                                key={day.date}
+                                data={day}
+                                onImageClick={handleImageClick}
+                                onUseAsMicroAction={onUseAsMicroAction}
+                              />
+                            ))}
+
+                            {/* Weekly Summary */}
+                            <div className="mt-2 p-2 bg-slate-50 dark:bg-slate-700/30 rounded-lg">
+                              <p className="text-[10px] text-muted-foreground text-center">
+                                Week avg: {week.avgAlignment}/10 alignment · {week.actDays} action days · {week.proofsCount} proofs
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Load More Button */}
+                  {hasMore && (
+                    <Button
+                      variant="outline"
+                      onClick={loadMore}
+                      className="w-full rounded-xl"
+                      size="sm"
+                    >
+                      Load More ({filteredData.length - displayedEntryCount} remaining)
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
 
       {/* Lightbox */}
       {lightboxImage && (

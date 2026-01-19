@@ -308,8 +308,8 @@ export function ManifestPracticePanel({
     <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-900 overflow-hidden">
       {/* Header with Vision Image */}
       <div className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex-shrink-0">
-        {/* Vision Image - Editable */}
-        <div className="relative h-28 w-[85%] mx-auto mt-2 rounded-xl overflow-hidden">
+        {/* Vision Image - Full width, editable */}
+        <div className="relative h-32 w-full overflow-hidden">
           <EntryImageUpload
             currentImageUrl={currentImageUrl}
             presetType="manifest"
@@ -320,45 +320,47 @@ export function ManifestPracticePanel({
           <div className="absolute bottom-2 right-2 flex items-center gap-1 text-[10px] text-white/80 bg-black/30 px-2 py-1 rounded-full backdrop-blur-sm">
             <Image className="h-3 w-3" /> Tap to change
           </div>
+          {/* Gradient overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
         </div>
         
-        <div className="p-5">
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex gap-2 flex-wrap">
+        <div className="p-3">
+          <div className="flex items-start justify-between mb-2">
+            <div className="flex gap-1.5 flex-wrap">
               {!isViewingToday && (
-                <span className="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-600 font-medium flex items-center gap-1">
-                  <CalendarDays className="h-3 w-3" /> {format(selectedDate, "MMM d, yyyy")}
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-600 font-medium flex items-center gap-1">
+                  <CalendarDays className="h-2.5 w-2.5" /> {format(selectedDate, "MMM d, yyyy")}
                 </span>
               )}
-              <span className="text-xs px-2.5 py-1 rounded-full bg-teal-100 text-teal-600 font-medium">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 text-teal-600 font-medium">
                 {isLocked ? "Completed" : "Active"}
               </span>
-              <span className="text-xs px-2.5 py-1 rounded-full bg-orange-100 text-orange-600 font-medium flex items-center gap-1">
-                <Flame className="h-3 w-3" /> Day {streak}
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 font-medium flex items-center gap-1">
+                <Flame className="h-2.5 w-2.5" /> Day {streak}
               </span>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={onClose}>
-              <X className="h-4 w-4" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={onClose}>
+              <X className="h-3.5 w-3.5" />
             </Button>
           </div>
-          <h2 className="font-semibold text-slate-800 dark:text-white text-lg leading-tight">{goal.title}</h2>
+          <h2 className="font-semibold text-slate-800 dark:text-white text-base leading-tight">{goal.title}</h2>
           {goal.check_in_time && (
-            <p className="text-sm text-slate-500 mt-1 flex items-center gap-1">
-              <Clock className="h-3.5 w-3.5" /> Check-in at {goal.check_in_time}
+            <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
+              <Clock className="h-3 w-3" /> Check-in at {goal.check_in_time}
             </p>
           )}
         </div>
       </div>
 
       {/* Progress */}
-      <div className="px-4 pt-4">
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+      <div className="px-3 pt-3">
+        <div className="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
           <div className="flex-1">
-            <div className="flex justify-between text-xs mb-1.5">
+            <div className="flex justify-between text-[10px] mb-1">
               <span className="text-slate-500">{isViewingToday ? "Today's Progress" : "Day Progress"}</span>
               <span className="font-semibold text-teal-600">{completedCount}/3</span>
             </div>
-            <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-teal-500 to-cyan-400 transition-all"
                 style={{ width: `${(completedCount / 3) * 100}%` }}
@@ -370,16 +372,16 @@ export function ManifestPracticePanel({
 
       {/* Past date warning */}
       {isViewingPast && !isLocked && (
-        <div className="mx-4 mt-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-          <p className="text-xs text-amber-700 dark:text-amber-300">
+        <div className="mx-3 mt-2 p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+          <p className="text-[10px] text-amber-700 dark:text-amber-300">
             You're viewing a past date. This practice was not completed.
           </p>
         </div>
       )}
 
       {/* Steps - Single scrollable area */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
-        <div className="space-y-3">
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3">
+        <div className="space-y-2">
           <Step id="viz" icon={Eye} title={`Visualize (${goal.visualization_minutes} min)`} done={hasViz} disabled={isViewingPast && !isLocked}>
             <p className="text-sm text-slate-500 mb-3">Close your eyes and feel your new reality</p>
             <Button

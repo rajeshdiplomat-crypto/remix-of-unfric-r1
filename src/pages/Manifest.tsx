@@ -418,51 +418,50 @@ export default function Manifest() {
       {/* Content Area - 3-column layout: [Left: Entries] [Center: Greeting+Practice] [Right: Progress+Calendar] */}
       <div
         className={cn(
-          "flex-1 grid gap-6 w-full px-4 sm:px-6 py-4 transition-all duration-300",
+          "flex-1 grid gap-3 w-full px-2 sm:px-4 py-2 transition-all duration-300",
           rightPanelCollapsed
-            ? "grid-cols-1 lg:grid-cols-[320px_1fr_64px]"
-            : "grid-cols-1 lg:grid-cols-[320px_1fr_280px]"
+            ? "grid-cols-1 lg:grid-cols-[380px_1fr_64px]"
+            : "grid-cols-1 lg:grid-cols-[380px_1fr_260px]"
         )}
       >
         {/* Left Panel - Entries List */}
         <div className="hidden lg:flex flex-col h-full min-h-0">
-          {/* Header with Create Button */}
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-800 dark:text-white">Your Visions</h2>
-            <Button
-              onClick={() => setShowCreateModal(true)}
-              size="sm"
-              className="rounded-xl h-9 px-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all"
-            >
-              <Plus className="h-4 w-4 mr-1.5" /> New Vision
-            </Button>
-          </div>
-
           {/* Goals Container */}
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex flex-col overflow-hidden flex-1 min-h-0">
+            {/* Header with Create Button */}
+            <div className="p-3 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
+              <h2 className="text-base font-semibold text-slate-800 dark:text-white">Your Visions</h2>
+              <Button
+                onClick={() => setShowCreateModal(true)}
+                size="sm"
+                className="rounded-lg h-8 px-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all text-xs"
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" /> New
+              </Button>
+            </div>
             {activeGoals.length === 0 ? (
-              <div className="p-4 flex-1 flex items-center justify-center">
-                <Card className="rounded-2xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900 w-full">
-                  <CardContent className="py-12 px-6 text-center">
-                    <div className="mx-auto mb-4 h-12 w-12 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg">
-                      <Sparkles className="h-6 w-6 text-white" />
+              <div className="p-3 flex-1 flex items-center justify-center">
+                <Card className="rounded-xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900 w-full">
+                  <CardContent className="py-8 px-4 text-center">
+                    <div className="mx-auto mb-3 h-10 w-10 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg">
+                      <Sparkles className="h-5 w-5 text-white" />
                     </div>
-                    <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-2">Start Your First Vision</h3>
-                    <p className="text-slate-500 mb-4 text-sm max-w-xs mx-auto">
-                      Write a belief in present tense and practice it daily until it becomes your reality.
+                    <h3 className="text-base font-semibold text-slate-800 dark:text-white mb-1">Start Your First Vision</h3>
+                    <p className="text-slate-500 mb-3 text-xs max-w-xs mx-auto">
+                      Write a belief in present tense and practice it daily.
                     </p>
                     <Button
                       onClick={() => setShowCreateModal(true)}
-                      className="rounded-xl h-10 px-5 bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
+                      className="rounded-lg h-9 px-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm"
                     >
-                      <Plus className="h-4 w-4 mr-2" /> Create Vision
+                      <Plus className="h-4 w-4 mr-1.5" /> Create Vision
                     </Button>
                   </CardContent>
                 </Card>
               </div>
             ) : (
-              <div className="overflow-y-auto p-4 flex-1">
-                <div className="space-y-3">
+              <div className="overflow-y-auto flex-1 min-h-0 p-2 custom-scrollbar" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+                <div className="space-y-2">
                   {activeGoals.map((goal) => {
                     const { streak, momentum } = getGoalMetrics(goal);
                     const isNewlyCreated = newlyCreatedGoalId === goal.id;
@@ -502,17 +501,21 @@ export default function Manifest() {
                     );
                   })}
                 </div>
+                {/* Fade indicator at bottom */}
+                {activeGoals.length > 5 && (
+                  <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white dark:from-slate-900 to-transparent pointer-events-none" />
+                )}
               </div>
             )}
           </div>
         </div>
 
         {/* Center - Greeting + Practice Panel */}
-        <div className="flex flex-col min-w-0 min-h-0 gap-4">
+        <div className="flex flex-col min-w-0 min-h-0 gap-3">
           {/* Greeting Section - Top of center panel */}
-          <div className="bg-gradient-to-r from-teal-50 via-cyan-50 to-emerald-50 dark:from-teal-900/20 dark:via-cyan-900/20 dark:to-emerald-900/20 rounded-2xl p-4 border border-teal-100/50 dark:border-teal-800/50">
-            <h2 className="text-lg font-semibold text-slate-800 dark:text-white">{getGreeting()}</h2>
-            <p className="text-sm text-teal-600 dark:text-teal-400 mt-1">{getStreakMessage()}</p>
+          <div className="bg-gradient-to-r from-teal-50 via-cyan-50 to-emerald-50 dark:from-teal-900/20 dark:via-cyan-900/20 dark:to-emerald-900/20 rounded-xl p-3 border border-teal-100/50 dark:border-teal-800/50">
+            <h2 className="text-base font-semibold text-slate-800 dark:text-white">{getGreeting()}</h2>
+            <p className="text-xs text-teal-600 dark:text-teal-400 mt-0.5">{getStreakMessage()}</p>
           </div>
 
           {/* Practice Panel */}
