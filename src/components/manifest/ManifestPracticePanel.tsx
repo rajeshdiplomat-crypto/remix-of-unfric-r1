@@ -35,32 +35,42 @@ import { format } from "date-fns";
 import confetti from "canvas-confetti";
 import { toast } from "sonner";
 import { EntryImageUpload } from "@/components/common/EntryImageUpload";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ManifestPracticePanelProps {
   goal: ManifestGoal;
   streak: number;
   onClose: () => void;
   onPracticeComplete: (practice: ManifestDailyPractice) => void;
+  onGoalUpdate?: () => void;
 }
 
-export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplete }: ManifestPracticePanelProps) {
+export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplete, onGoalUpdate }: ManifestPracticePanelProps) {
   const today = format(new Date(), "yyyy-MM-dd");
   const proofImageInputRef = useRef<HTMLInputElement>(null);
 
   const loadTodaysPractice = (): Partial<ManifestDailyPractice> => {
-    const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
-    if (stored) {
-      const all = JSON.parse(stored);
-      return all[`${goal.id}_${today}`] || {};
+    try {
+      const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
+      if (stored) {
+        const all = JSON.parse(stored);
+        return all[`${goal.id}_${today}`] || {};
+      }
+    } catch (e) {
+      console.warn("Failed to load practice:", e);
     }
     return {};
   };
 
   const savePractice = (practice: Partial<ManifestDailyPractice>) => {
-    const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
-    const all = stored ? JSON.parse(stored) : {};
-    all[`${goal.id}_${today}`] = { ...all[`${goal.id}_${today}`], ...practice };
-    localStorage.setItem(DAILY_PRACTICE_KEY, JSON.stringify(all));
+    try {
+      const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
+      const all = stored ? JSON.parse(stored) : {};
+      all[`${goal.id}_${today}`] = { ...all[`${goal.id}_${today}`], ...practice };
+      localStorage.setItem(DAILY_PRACTICE_KEY, JSON.stringify(all));
+    } catch (e) {
+      console.warn("Failed to save practice:", e);
+    }
   };
 
   const [visualizations, setVisualizations] = useState<VisualizationEntry[]>([]);
@@ -73,6 +83,7 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
   const [expandedSection, setExpandedSection] = useState<string | null>("viz");
   const [growthNote, setGrowthNote] = useState("");
   const [isLocked, setIsLocked] = useState(false);
+  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     setVisualizations([]);
@@ -84,6 +95,7 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
     setGrowthNote("");
     setIsLocked(false);
     setExpandedSection("viz");
+    setCurrentImageUrl(goal.vision_image_url || goal.cover_image_url || null);
 
     const saved = loadTodaysPractice();
     if (saved.visualizations) setVisualizations(saved.visualizations);
@@ -91,7 +103,7 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
     if (saved.proofs) setProofs(saved.proofs);
     if (saved.growth_note) setGrowthNote(saved.growth_note);
     if (saved.locked) setIsLocked(true);
-  }, [goal.id, today]);
+  }, [goal.id, today, goal.vision_image_url, goal.cover_image_url]);
 
   const hasViz = visualizations.length > 0;
   const hasAct = acts.length > 0;
@@ -191,6 +203,38 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
     onPracticeComplete(practice);
   };
 
+  const handleImageChange = async (url: string | null) => {
+    setCurrentImageUrl(url);
+    
+    // Update local storage
+    try {
+      const extras = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
+      extras[goal.id] = { ...extras[goal.id], vision_image_url: url };
+      localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify(extras));
+    } catch (e) {
+      console.warn("Failed to update local storage:", e);
+    }
+
+    // Update database
+    try {
+      const { error } = await supabase
+        .from("manifest_goals")
+        .update({ cover_image_url: url })
+        .eq("id", goal.id);
+      
+      if (error) throw error;
+      toast.success("Vision image updated");
+      
+      // Notify parent to refresh
+      if (onGoalUpdate) {
+        onGoalUpdate();
+      }
+    } catch (error) {
+      console.error("Failed to update image in database:", error);
+      toast.error("Failed to save image change");
+    }
+  };
+
   const toggle = (id: string) => setExpandedSection(expandedSection === id ? null : id);
 
   if (showVisualization) {
@@ -251,16 +295,10 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
         {/* Vision Image - Editable */}
         <div className="relative h-32 w-full">
           <EntryImageUpload
-            currentImageUrl={goal.vision_image_url || goal.cover_image_url || null}
+            currentImageUrl={currentImageUrl}
             presetType="manifest"
             category={goal.category || "other"}
-            onImageChange={(url) => {
-              // Update local storage
-              const extras = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
-              extras[goal.id] = { ...extras[goal.id], vision_image_url: url };
-              localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify(extras));
-              toast.success("Vision image updated");
-            }}
+            onImageChange={handleImageChange}
             className="w-full h-full"
           />
           <div className="absolute bottom-2 right-2 flex items-center gap-1 text-[10px] text-white/80 bg-black/30 px-2 py-1 rounded-full backdrop-blur-sm">
