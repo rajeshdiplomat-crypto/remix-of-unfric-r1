@@ -87,6 +87,7 @@ export default function Manifest() {
   const [deletingGoal, setDeletingGoal] = useState<ManifestGoal | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
+  const [newlyCreatedGoalId, setNewlyCreatedGoalId] = useState<string | null>(null);
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -225,6 +226,9 @@ export default function Manifest() {
           .single();
         if (error) throw error;
         goalId = data.id;
+        // Trigger energy animation for new vision
+        setNewlyCreatedGoalId(goalId);
+        setTimeout(() => setNewlyCreatedGoalId(null), 2000);
         toast.success("Vision created!");
       }
 
@@ -327,15 +331,56 @@ export default function Manifest() {
   if (loading) return <PageLoadingScreen module="manifest" />;
 
   return (
-    <div className="flex flex-col w-full flex-1 bg-slate-50 dark:bg-slate-950 min-h-screen">
-      {/* Hero */}
-      <PageHero
-        storageKey="manifest_hero_src"
-        typeKey="manifest_hero_type"
-        badge={PAGE_HERO_TEXT.manifest.badge}
-        title={PAGE_HERO_TEXT.manifest.title}
-        subtitle={PAGE_HERO_TEXT.manifest.subtitle}
-      />
+    <>
+      {/* Energy animation styles */}
+      <style>{`
+        @keyframes energy-entry {
+          0% {
+            opacity: 0;
+            transform: scale(0.8) translateY(20px);
+            filter: brightness(1.5);
+          }
+          50% {
+            transform: scale(1.02) translateY(-5px);
+            filter: brightness(1.2);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            filter: brightness(1);
+          }
+        }
+        @keyframes float-particle {
+          0% {
+            opacity: 0;
+            transform: translateY(0) scale(0);
+          }
+          20% {
+            opacity: 1;
+            transform: translateY(-20px) scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(-60px) scale(0.5);
+          }
+        }
+        .animate-energy-entry {
+          animation: energy-entry 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+          position: relative;
+        }
+        .animate-float-particle {
+          animation: float-particle 1.5s ease-out forwards;
+        }
+      `}</style>
+      <div className="flex flex-col w-full flex-1 bg-slate-50 dark:bg-slate-950 min-h-screen overflow-hidden">
+        {/* Hero */}
+        <PageHero
+          storageKey="manifest_hero_src"
+          typeKey="manifest_hero_type"
+          badge={PAGE_HERO_TEXT.manifest.badge}
+          title={PAGE_HERO_TEXT.manifest.title}
+          subtitle={PAGE_HERO_TEXT.manifest.subtitle}
+        />
 
       {/* Content Area - Journal-style 3-column layout */}
       <div
@@ -380,10 +425,10 @@ export default function Manifest() {
             </Button>
           </div>
 
-          {/* Goals Grid */}
-          <div className="flex-1 bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 overflow-hidden flex flex-col min-h-0">
-            <div className="flex-1 p-4 overflow-y-auto">
-              {activeGoals.length === 0 ? (
+          {/* Goals Container - Fixed height, only entries scroll */}
+          <div className="flex-1 bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex flex-col min-h-0 overflow-hidden">
+            {activeGoals.length === 0 ? (
+              <div className="p-4">
                 <Card className="rounded-2xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900">
                   <CardContent className="py-16 px-8 text-center">
                     <div className="mx-auto mb-6 h-16 w-16 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg">
@@ -401,26 +446,50 @@ export default function Manifest() {
                     </Button>
                   </CardContent>
                 </Card>
-              ) : (
+              </div>
+            ) : (
+              <div className="flex-1 overflow-y-auto p-4">
                 <div className="space-y-4">
                   {activeGoals.map((goal) => {
                     const { streak, momentum, lastProof } = getGoalMetrics(goal);
+                    const isNewlyCreated = newlyCreatedGoalId === goal.id;
                     return (
-                      <ManifestCard
+                      <div
                         key={goal.id}
-                        goal={goal}
-                        streak={streak}
-                        momentum={momentum}
-                        isSelected={selectedGoal?.id === goal.id}
-                        onClick={() => handleSelectGoal(goal)}
-                        onEdit={() => handleEditGoal(goal)}
-                        onDelete={() => setDeletingGoal(goal)}
-                      />
+                        className={isNewlyCreated ? "animate-energy-entry" : ""}
+                      >
+                        <ManifestCard
+                          goal={goal}
+                          streak={streak}
+                          momentum={momentum}
+                          isSelected={selectedGoal?.id === goal.id}
+                          onClick={() => handleSelectGoal(goal)}
+                          onEdit={() => handleEditGoal(goal)}
+                          onDelete={() => setDeletingGoal(goal)}
+                        />
+                        {/* Energy particles effect for new vision */}
+                        {isNewlyCreated && (
+                          <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
+                            <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-teal-500/20 via-cyan-500/20 to-teal-500/20" />
+                            {[...Array(8)].map((_, i) => (
+                              <div
+                                key={i}
+                                className="absolute w-2 h-2 rounded-full bg-gradient-to-r from-teal-400 to-cyan-400 animate-float-particle"
+                                style={{
+                                  left: `${10 + i * 12}%`,
+                                  animationDelay: `${i * 0.1}s`,
+                                  top: "50%",
+                                }}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -441,13 +510,15 @@ export default function Manifest() {
               />
             </div>
           ) : (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 h-full flex items-center justify-center p-6">
-              <div className="text-center">
-                <div className="mx-auto mb-4 h-14 w-14 rounded-2xl bg-gradient-to-br from-teal-100 to-cyan-100 dark:from-teal-900/30 dark:to-cyan-900/30 flex items-center justify-center">
-                  <Sparkles className="h-7 w-7 text-teal-500" />
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 h-full p-6">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-teal-100 to-cyan-100 dark:from-teal-900/30 dark:to-cyan-900/30 flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="h-5 w-5 text-teal-500" />
                 </div>
-                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">Select a Vision</h3>
-                <p className="text-xs text-slate-400">Choose a vision to start your practice</p>
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-0.5">Select a Vision</h3>
+                  <p className="text-xs text-slate-400">Choose a vision to start your practice</p>
+                </div>
               </div>
             </div>
           )}
@@ -481,5 +552,6 @@ export default function Manifest() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </>
   );
 }
