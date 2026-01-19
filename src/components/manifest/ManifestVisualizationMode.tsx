@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
-import { X, Pause, Play, SkipForward, Zap, Settings, Check } from "lucide-react";
-import { type ManifestGoal, type ManifestDailyPractice } from "./types";
+import { X, Pause, Play, SkipForward, Zap, Settings, Check, Volume2, VolumeX } from "lucide-react";
+import { type ManifestGoal, type ManifestDailyPractice, DAILY_PRACTICE_KEY } from "./types";
 
 interface ManifestVisualizationModeProps {
   goal: ManifestGoal;
@@ -24,7 +24,16 @@ interface VisualizationSettings {
   showProofs: boolean;
   showNotes: boolean;
   showImages: boolean;
+  soundType: string;
 }
+
+const SOUND_OPTIONS = [
+  { id: 'ocean', label: 'Ocean Waves', emoji: '🌊' },
+  { id: 'rain', label: 'Gentle Rain', emoji: '🌧️' },
+  { id: 'forest', label: 'Forest Calm', emoji: '🌲' },
+  { id: 'wind', label: 'Soft Wind', emoji: '💨' },
+  { id: 'crystal', label: 'Crystal Tones', emoji: '🔮' },
+];
 
 export function ManifestVisualizationMode({ 
   goal, 
@@ -38,15 +47,21 @@ export function ManifestVisualizationMode({
   const [isPaused, setIsPaused] = useState(false);
   const [pulseIntensity, setPulseIntensity] = useState(1);
   const [showSettings, setShowSettings] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const [settings, setSettings] = useState<VisualizationSettings>(() => {
     try {
       const stored = localStorage.getItem("manifest_viz_settings");
       if (stored) return JSON.parse(stored);
     } catch {}
-    return { showActions: true, showProofs: true, showNotes: true, showImages: true };
+    return { showActions: true, showProofs: true, showNotes: true, showImages: true, soundType: 'ocean' };
   });
   const [activeElements, setActiveElements] = useState<FloatingElement[]>([]);
   const [elementIndex, setElementIndex] = useState(0);
+  
+  // Audio refs
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const oscillatorsRef = useRef<OscillatorNode[]>([]);
+  const gainsRef = useRef<GainNode[]>([]);
   
   const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
 
@@ -88,49 +103,65 @@ export function ManifestVisualizationMode({
     // Load today's practice from localStorage for current session
     const loadTodaysPractice = (): Partial<typeof previousPractice> | null => {
       try {
-        const stored = localStorage.getItem("manifest_daily_practice");
+        const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
         if (stored) {
           const all = JSON.parse(stored);
           const today = new Date().toISOString().split('T')[0];
           const key = `${goal.id}_${today}`;
+          console.log('[Viz] Loading today practice, key:', key, 'data:', all[key]);
           return all[key] || null;
         }
-      } catch {}
+      } catch (e) {
+        console.warn('[Viz] Failed to load today practice:', e);
+      }
       return null;
     };
 
     const todaysPractice = loadTodaysPractice();
+    console.log('[Viz] Today practice loaded:', todaysPractice);
+    console.log('[Viz] Previous practice:', previousPractice);
     
     // Combine today's practice with previous practice
+    const todayActs = Array.isArray(todaysPractice?.acts) ? todaysPractice.acts : [];
+    const prevActs = Array.isArray(previousPractice?.acts) ? previousPractice.acts : [];
+    const todayProofs = Array.isArray(todaysPractice?.proofs) ? todaysPractice.proofs : [];
+    const prevProofs = Array.isArray(previousPractice?.proofs) ? previousPractice.proofs : [];
+    
     const combinedPractice = {
-      acts: [...(todaysPractice?.acts || []), ...(previousPractice?.acts || [])],
-      proofs: [...(todaysPractice?.proofs || []), ...(previousPractice?.proofs || [])],
+      acts: [...todayActs, ...prevActs],
+      proofs: [...todayProofs, ...prevProofs],
       growth_note: todaysPractice?.growth_note || previousPractice?.growth_note,
       gratitude: todaysPractice?.gratitude || previousPractice?.gratitude,
     };
+    
+    console.log('[Viz] Combined practice:', combinedPractice);
 
     // Add actions
     if (settings.showActions && combinedPractice.acts.length > 0) {
       combinedPractice.acts.forEach((act: any) => {
-        elements.push({
-          id: `act-${act.id}`,
-          type: "action",
-          content: act.text,
-          horizontalPosition: 10 + Math.random() * 70,
-        });
+        if (act && act.text) {
+          elements.push({
+            id: `act-${act.id || crypto.randomUUID()}`,
+            type: "action",
+            content: act.text,
+            horizontalPosition: 10 + Math.random() * 70,
+          });
+        }
       });
     }
 
     // Add proofs (with images if they have them)
     if (settings.showProofs && combinedPractice.proofs.length > 0) {
       combinedPractice.proofs.forEach((proof: any) => {
-        elements.push({
-          id: `proof-${proof.id}`,
-          type: "proof",
-          content: proof.text || "",
-          imageUrl: proof.image_url,
-          horizontalPosition: 10 + Math.random() * 60,
-        });
+        if (proof) {
+          elements.push({
+            id: `proof-${proof.id || crypto.randomUUID()}`,
+            type: "proof",
+            content: proof.text || "",
+            imageUrl: proof.image_url,
+            horizontalPosition: 10 + Math.random() * 60,
+          });
+        }
       });
     }
 
@@ -144,7 +175,7 @@ export function ManifestVisualizationMode({
           horizontalPosition: 15 + Math.random() * 60,
         });
       }
-      if (combinedPractice.gratitude) {
+      if (combinedPractice.gratitude && combinedPractice.gratitude !== combinedPractice.growth_note) {
         elements.push({
           id: "gratitude-note",
           type: "note",
@@ -160,6 +191,7 @@ export function ManifestVisualizationMode({
       [elements[i], elements[j]] = [elements[j], elements[i]];
     }
 
+    console.log('[Viz] All elements:', elements);
     return elements;
   }, [previousPractice, visionImages, settings, goal.id]);
 
@@ -225,8 +257,203 @@ export function ManifestVisualizationMode({
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "";
+      stopAudio();
     };
   }, []);
+
+  // Audio functions for ambient sounds
+  const createAmbientSound = useCallback((soundType: string) => {
+    if (audioContextRef.current) {
+      stopAudio();
+    }
+    
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioContextRef.current = audioContext;
+      
+      const masterGain = audioContext.createGain();
+      masterGain.gain.value = 0.3;
+      masterGain.connect(audioContext.destination);
+      
+      switch (soundType) {
+        case 'ocean': {
+          // Low rumbling noise for ocean
+          const bufferSize = 2 * audioContext.sampleRate;
+          const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+          const output = noiseBuffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            output[i] = Math.random() * 2 - 1;
+          }
+          const noise = audioContext.createBufferSource();
+          noise.buffer = noiseBuffer;
+          noise.loop = true;
+          
+          const filter = audioContext.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.value = 200;
+          
+          const lfo = audioContext.createOscillator();
+          lfo.frequency.value = 0.1;
+          const lfoGain = audioContext.createGain();
+          lfoGain.gain.value = 100;
+          lfo.connect(lfoGain);
+          lfoGain.connect(filter.frequency);
+          
+          noise.connect(filter);
+          filter.connect(masterGain);
+          noise.start();
+          lfo.start();
+          oscillatorsRef.current = [lfo as any];
+          break;
+        }
+        case 'rain': {
+          // Higher frequency noise for rain
+          const bufferSize = 2 * audioContext.sampleRate;
+          const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+          const output = noiseBuffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            output[i] = Math.random() * 2 - 1;
+          }
+          const noise = audioContext.createBufferSource();
+          noise.buffer = noiseBuffer;
+          noise.loop = true;
+          
+          const filter = audioContext.createBiquadFilter();
+          filter.type = 'highpass';
+          filter.frequency.value = 1000;
+          
+          const gain = audioContext.createGain();
+          gain.gain.value = 0.5;
+          
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(masterGain);
+          noise.start();
+          gainsRef.current = [gain];
+          break;
+        }
+        case 'forest': {
+          // Soft sine waves at various frequencies
+          [220, 330, 440].forEach((freq, i) => {
+            const osc = audioContext.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            
+            const gain = audioContext.createGain();
+            gain.gain.value = 0.05;
+            
+            // Slow modulation
+            const lfo = audioContext.createOscillator();
+            lfo.frequency.value = 0.2 + i * 0.1;
+            const lfoGain = audioContext.createGain();
+            lfoGain.gain.value = 0.03;
+            lfo.connect(lfoGain);
+            lfoGain.connect(gain.gain);
+            
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start();
+            lfo.start();
+            oscillatorsRef.current.push(osc, lfo);
+            gainsRef.current.push(gain);
+          });
+          break;
+        }
+        case 'wind': {
+          // Very low frequency modulated noise
+          const bufferSize = 2 * audioContext.sampleRate;
+          const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+          const output = noiseBuffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            output[i] = Math.random() * 2 - 1;
+          }
+          const noise = audioContext.createBufferSource();
+          noise.buffer = noiseBuffer;
+          noise.loop = true;
+          
+          const filter = audioContext.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.value = 300;
+          filter.Q.value = 0.5;
+          
+          const lfo = audioContext.createOscillator();
+          lfo.frequency.value = 0.05;
+          const lfoGain = audioContext.createGain();
+          lfoGain.gain.value = 200;
+          lfo.connect(lfoGain);
+          lfoGain.connect(filter.frequency);
+          
+          noise.connect(filter);
+          filter.connect(masterGain);
+          noise.start();
+          lfo.start();
+          oscillatorsRef.current = [lfo as any];
+          break;
+        }
+        case 'crystal': {
+          // Pure harmonic tones
+          [261.63, 329.63, 392, 523.25].forEach((freq, i) => {
+            const osc = audioContext.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            
+            const gain = audioContext.createGain();
+            gain.gain.value = 0.08;
+            
+            // Slow fade in/out
+            const lfo = audioContext.createOscillator();
+            lfo.frequency.value = 0.1 + i * 0.02;
+            const lfoGain = audioContext.createGain();
+            lfoGain.gain.value = 0.05;
+            lfo.connect(lfoGain);
+            lfoGain.connect(gain.gain);
+            
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start();
+            lfo.start();
+            oscillatorsRef.current.push(osc, lfo);
+            gainsRef.current.push(gain);
+          });
+          break;
+        }
+      }
+      
+      gainsRef.current.push(masterGain);
+    } catch (e) {
+      console.warn('Failed to create audio:', e);
+    }
+  }, []);
+
+  const stopAudio = useCallback(() => {
+    oscillatorsRef.current.forEach(osc => {
+      try { osc.stop(); } catch {}
+    });
+    oscillatorsRef.current = [];
+    gainsRef.current = [];
+    if (audioContextRef.current) {
+      try { audioContextRef.current.close(); } catch {}
+      audioContextRef.current = null;
+    }
+  }, []);
+
+  // Start/stop audio based on pause and mute state
+  useEffect(() => {
+    if (!isPaused && !isMuted) {
+      createAmbientSound(settings.soundType);
+    } else {
+      stopAudio();
+    }
+    return () => stopAudio();
+  }, [isPaused, isMuted, settings.soundType, createAmbientSound, stopAudio]);
+
+  const handleSoundChange = (soundType: string) => {
+    setSettings(prev => ({ ...prev, soundType }));
+  };
+
+  const toggleMute = () => {
+    setIsMuted(prev => !prev);
+  };
 
   const formatTime = useCallback((seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -443,55 +670,87 @@ export function ManifestVisualizationMode({
                 { key: "showProofs", label: "Show Proofs", icon: "🎯" },
                 { key: "showNotes", label: "Show Notes", icon: "💭" },
                 { key: "showImages", label: "Show Vision Images", icon: "🖼️" },
-              ].map(({ key, label, icon }) => (
-                <label
-                  key={key}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 14,
-                    cursor: "pointer",
-                    padding: "12px 16px",
-                    borderRadius: 14,
-                    background: settings[key as keyof VisualizationSettings] 
-                      ? "rgba(20,184,166,0.2)" 
-                      : "rgba(255,255,255,0.05)",
-                    border: `1px solid ${settings[key as keyof VisualizationSettings] ? "rgba(20,184,166,0.4)" : "rgba(255,255,255,0.1)"}`,
-                    transition: "all 0.2s",
-                  }}
-                >
-                  <div
+              ].map(({ key, label, icon }) => {
+                const isChecked = settings[key as keyof Omit<VisualizationSettings, 'soundType'>] === true;
+                return (
+                  <label
+                    key={key}
                     style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: 8,
-                      background: settings[key as keyof VisualizationSettings]
-                        ? "linear-gradient(135deg, #14b8a6, #06b6d4)"
-                        : "rgba(255,255,255,0.1)",
-                      border: "1px solid rgba(255,255,255,0.2)",
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "center",
+                      gap: 14,
+                      cursor: "pointer",
+                      padding: "12px 16px",
+                      borderRadius: 14,
+                      background: isChecked
+                        ? "rgba(20,184,166,0.2)" 
+                        : "rgba(255,255,255,0.05)",
+                      border: `1px solid ${isChecked ? "rgba(20,184,166,0.4)" : "rgba(255,255,255,0.1)"}`,
+                      transition: "all 0.2s",
                     }}
                   >
-                    {settings[key as keyof VisualizationSettings] && (
-                      <Check style={{ width: 14, height: 14, color: "white" }} />
-                    )}
-                  </div>
-                  <span style={{ color: "white", fontSize: 15 }}>
-                    {icon} {label}
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={settings[key as keyof VisualizationSettings]}
-                    onChange={(e) =>
-                      setSettings((prev) => ({ ...prev, [key]: e.target.checked }))
-                    }
-                    style={{ display: "none" }}
-                  />
-                </label>
-              ))}
+                    <div
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 8,
+                        background: isChecked
+                          ? "linear-gradient(135deg, #14b8a6, #06b6d4)"
+                          : "rgba(255,255,255,0.1)",
+                        border: "1px solid rgba(255,255,255,0.2)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {isChecked && (
+                        <Check style={{ width: 14, height: 14, color: "white" }} />
+                      )}
+                    </div>
+                    <span style={{ color: "white", fontSize: 15 }}>
+                      {icon} {label}
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={(e) =>
+                        setSettings((prev) => ({ ...prev, [key]: e.target.checked }))
+                      }
+                      style={{ display: "none" }}
+                    />
+                  </label>
+                );
+              })}
             </div>
+            
+            {/* Sound Selection */}
+            <div style={{ marginTop: 24, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 20 }}>
+              <h4 style={{ color: 'white', fontSize: 16, fontWeight: 500, marginBottom: 12 }}>
+                🎵 Ambient Sound
+              </h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {SOUND_OPTIONS.map(sound => (
+                  <button 
+                    key={sound.id}
+                    onClick={() => handleSoundChange(sound.id)}
+                    style={{
+                      padding: '14px',
+                      borderRadius: 14,
+                      background: settings.soundType === sound.id ? 'rgba(20,184,166,0.25)' : 'rgba(255,255,255,0.05)',
+                      border: settings.soundType === sound.id ? '1px solid rgba(20,184,166,0.5)' : '1px solid rgba(255,255,255,0.1)',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontSize: 14,
+                      textAlign: 'left',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {sound.emoji} {sound.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
             <button
               onClick={() => setShowSettings(false)}
               style={{
@@ -524,6 +783,27 @@ export function ManifestVisualizationMode({
           gap: 12,
         }}
       >
+        {/* Mute button */}
+        <button
+          onClick={toggleMute}
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
+            background: isMuted ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.1)",
+            backdropFilter: "blur(12px)",
+            border: `1px solid ${isMuted ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.2)"}`,
+            color: "white",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            transition: "all 0.3s",
+          }}
+          title={isMuted ? "Unmute sounds" : "Mute sounds"}
+        >
+          {isMuted ? <VolumeX style={{ width: 18, height: 18 }} /> : <Volume2 style={{ width: 18, height: 18 }} />}
+        </button>
         <button
           onClick={() => setShowSettings(true)}
           style={{

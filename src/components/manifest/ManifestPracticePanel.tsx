@@ -579,13 +579,13 @@ export function ManifestPracticePanel({
                 <Input
                   ref={growthNoteRef}
                   defaultValue={growthNoteValue}
-                  onChange={(e) => {
-                    setGrowthNoteValue(e.target.value);
-                    savePractice({ growth_note: e.target.value });
-                  }}
                   placeholder="I appreciate that..."
                   className="rounded-xl h-10"
                   disabled={isViewingPast || isLocked}
+                  onBlur={(e) => {
+                    setGrowthNoteValue(e.target.value);
+                    savePractice({ growth_note: e.target.value, gratitude: e.target.value });
+                  }}
                 />
                 <Button
                   onClick={handleLockToday}
