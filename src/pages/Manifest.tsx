@@ -5,12 +5,13 @@ import { toast } from "sonner";
 import { Sparkles, Plus } from "lucide-react";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
-import { subDays, parseISO, isSameDay, differenceInDays, format } from "date-fns";
+import { subDays, parseISO, isSameDay, format } from "date-fns";
 
-import { ManifestTopBar } from "@/components/manifest/ManifestTopBar";
 import { ManifestCard } from "@/components/manifest/ManifestCard";
 import { ManifestCreateModal } from "@/components/manifest/ManifestCreateModal";
 import { ManifestPracticePanel } from "@/components/manifest/ManifestPracticePanel";
+import { ManifestSidebarPanel } from "@/components/manifest/ManifestSidebarPanel";
+import { ManifestProgressPanel } from "@/components/manifest/ManifestProgressPanel";
 
 import {
   AlertDialog,
@@ -25,6 +26,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 import {
   type ManifestGoal,
@@ -37,7 +39,6 @@ import {
 // Local storage helpers
 function saveGoalExtras(goalId: string, extras: Partial<ManifestGoal>) {
   try {
-    // Filter out base64 images to prevent quota errors
     const safeExtras = { ...extras };
     if (safeExtras.vision_image_url && safeExtras.vision_image_url.startsWith("data:")) {
       safeExtras.vision_image_url = undefined;
@@ -48,10 +49,8 @@ function saveGoalExtras(goalId: string, extras: Partial<ManifestGoal>) {
     localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify(all));
   } catch (e) {
     console.warn("Failed to save goal extras:", e);
-    // If quota exceeded, try to clear old data
     if (e instanceof DOMException && e.name === "QuotaExceededError") {
       try {
-        // Clear the extras and retry with just this goal
         localStorage.removeItem(GOAL_EXTRAS_KEY);
         const safeExtras = { ...extras };
         if (safeExtras.vision_image_url && safeExtras.vision_image_url.startsWith("data:")) {
@@ -87,6 +86,8 @@ export default function Manifest() {
   const [editingGoal, setEditingGoal] = useState<ManifestGoal | null>(null);
   const [selectedGoal, setSelectedGoal] = useState<ManifestGoal | null>(null);
   const [deletingGoal, setDeletingGoal] = useState<ManifestGoal | null>(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -107,7 +108,8 @@ export default function Manifest() {
         user_id: g.user_id,
         title: g.title,
         category: extras[g.id]?.category || "other",
-        vision_image_url: extras[g.id]?.vision_image_url,
+        vision_image_url: extras[g.id]?.vision_image_url || g.cover_image_url,
+        cover_image_url: g.cover_image_url,
         start_date: extras[g.id]?.start_date,
         live_from_end: extras[g.id]?.live_from_end,
         act_as_if: extras[g.id]?.act_as_if || "Take one small action",
@@ -286,6 +288,43 @@ export default function Manifest() {
     if (!open) setEditingGoal(null);
   };
 
+  // Dynamic greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "";
+    const firstName = userName.split(" ")[0];
+    const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : hour < 21 ? "Good evening" : "Good night";
+    const emoji = hour < 12 ? "☀️" : hour < 17 ? "🌤️" : hour < 21 ? "🌅" : "🌙";
+    return firstName ? `${greeting}, ${firstName} ${emoji}` : `${greeting} ${emoji}`;
+  };
+
+  const getMotivationalQuote = () => {
+    const quotes = [
+      "What you imagine, you create. What you feel, you attract.",
+      "Your beliefs become your reality. Choose them wisely.",
+      "The universe is rearranging itself for your dreams.",
+      "Feel the feeling of your wish fulfilled.",
+      "Assume the feeling of your wish fulfilled today.",
+      "You are the creator of your own experience.",
+      "Every thought is a seed for your future.",
+    ];
+    return quotes[Math.floor(new Date().getDate() % quotes.length)];
+  };
+
+  const getStreakMessage = () => {
+    if (aggregateStreak === 0) {
+      return "Start your manifestation practice today — even small steps create big changes.";
+    } else if (aggregateStreak === 1) {
+      return "You practiced yesterday! Keep the momentum going with today's session.";
+    } else if (aggregateStreak < 7) {
+      return `You've been manifesting for ${aggregateStreak} days straight. Amazing consistency — keep it up!`;
+    } else if (aggregateStreak < 30) {
+      return `Incredible! ${aggregateStreak} days of manifestation. Your dedication is inspiring.`;
+    } else {
+      return `${aggregateStreak} days of aligned action! You've built a powerful manifestation habit.`;
+    }
+  };
+
   if (loading) return <PageLoadingScreen module="manifest" />;
 
   return (
@@ -299,63 +338,98 @@ export default function Manifest() {
         subtitle={PAGE_HERO_TEXT.manifest.subtitle}
       />
 
-      {/* Top Bar */}
-      <div className="px-6 lg:px-8 py-5">
-        <ManifestTopBar
-          activeCount={activeGoals.length}
-          streak={aggregateStreak}
-          avgMomentum={avgMomentum}
-          onNewManifest={() => setShowCreateModal(true)}
-        />
-      </div>
-
-      {/* Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_520px] gap-0 flex-1 min-h-0">
-        {/* Goals - Left Panel with separate scroll */}
-        <div className="overflow-y-auto px-6 lg:px-8 pb-8" style={{ maxHeight: "calc(100vh - 280px)" }}>
-          {activeGoals.length === 0 ? (
-            <Card className="rounded-2xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900">
-              <CardContent className="py-16 px-8 text-center">
-                <div className="mx-auto mb-6 h-16 w-16 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg">
-                  <Sparkles className="h-8 w-8 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-2">Start Your First Vision</h3>
-                <p className="text-slate-500 mb-6 max-w-sm mx-auto">
-                  Write a belief in present tense and practice it daily until it becomes your reality.
-                </p>
-                <Button
-                  onClick={() => setShowCreateModal(true)}
-                  className="rounded-xl h-11 px-6 bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
-                >
-                  <Plus className="h-4 w-4 mr-2" /> Create Vision
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {activeGoals.map((goal) => {
-                const { streak, momentum, lastProof } = getGoalMetrics(goal);
-                return (
-                  <ManifestCard
-                    key={goal.id}
-                    goal={goal}
-                    streak={streak}
-                    momentum={momentum}
-                    isSelected={selectedGoal?.id === goal.id}
-                    onClick={() => handleSelectGoal(goal)}
-                    onEdit={() => handleEditGoal(goal)}
-                    onDelete={() => setDeletingGoal(goal)}
-                  />
-                );
-              })}
-            </div>
-          )}
+      {/* Content Area - Journal-style 3-column layout */}
+      <div
+        className={cn(
+          "flex-1 grid gap-6 w-full px-4 sm:px-6 py-4 transition-all duration-300",
+          leftPanelCollapsed
+            ? "grid-cols-1 lg:grid-cols-[64px_1fr_280px]"
+            : "grid-cols-1 lg:grid-cols-[280px_1fr_280px]"
+        )}
+      >
+        {/* Left Panel - Calendar & Recent */}
+        <div
+          className={cn("hidden lg:flex flex-col transition-all duration-300 h-full", leftPanelCollapsed && "w-16")}
+        >
+          <ManifestSidebarPanel
+            selectedDate={selectedDate}
+            onDateSelect={setSelectedDate}
+            goals={goals}
+            practices={practices}
+            isCollapsed={leftPanelCollapsed}
+            onToggleCollapse={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
+          />
         </div>
 
-        {/* Practice Panel - Right Panel with separate scroll */}
-        <aside className="hidden lg:block border-l border-slate-200 dark:border-slate-700 overflow-y-auto" style={{ maxHeight: "calc(100vh - 280px)" }}>
-          <div className="bg-white dark:bg-slate-900 h-full">
-            {selectedGoal ? (
+        {/* Center - Main Content */}
+        <div className="flex flex-col min-w-0">
+          {/* Greeting Section */}
+          <div className="mb-4 px-1">
+            <h2 className="text-xl font-semibold text-slate-800 dark:text-white">{getGreeting()}</h2>
+            <p className="text-sm text-slate-500 mt-1">{getMotivationalQuote()}</p>
+            <p className="text-xs text-teal-500 mt-2">{getStreakMessage()}</p>
+          </div>
+
+          {/* New Vision Button */}
+          <div className="mb-4">
+            <Button
+              onClick={() => setShowCreateModal(true)}
+              className="rounded-xl h-10 px-5 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all"
+            >
+              <Plus className="h-4 w-4 mr-2" /> Create New Vision
+            </Button>
+          </div>
+
+          {/* Goals Grid */}
+          <div
+            className="flex-1 bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 overflow-hidden"
+          >
+            <div className="p-4" style={{ maxHeight: "calc(100vh - 400px)", overflowY: "auto" }}>
+              {activeGoals.length === 0 ? (
+                <Card className="rounded-2xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900">
+                  <CardContent className="py-16 px-8 text-center">
+                    <div className="mx-auto mb-6 h-16 w-16 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg">
+                      <Sparkles className="h-8 w-8 text-white" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-2">Start Your First Vision</h3>
+                    <p className="text-slate-500 mb-6 max-w-sm mx-auto">
+                      Write a belief in present tense and practice it daily until it becomes your reality.
+                    </p>
+                    <Button
+                      onClick={() => setShowCreateModal(true)}
+                      className="rounded-xl h-11 px-6 bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
+                    >
+                      <Plus className="h-4 w-4 mr-2" /> Create Vision
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {activeGoals.map((goal) => {
+                    const { streak, momentum, lastProof } = getGoalMetrics(goal);
+                    return (
+                      <ManifestCard
+                        key={goal.id}
+                        goal={goal}
+                        streak={streak}
+                        momentum={momentum}
+                        isSelected={selectedGoal?.id === goal.id}
+                        onClick={() => handleSelectGoal(goal)}
+                        onEdit={() => handleEditGoal(goal)}
+                        onDelete={() => setDeletingGoal(goal)}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Panel - Practice or Progress */}
+        <div className="hidden lg:block h-full">
+          {selectedGoal ? (
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 h-full overflow-hidden">
               <ManifestPracticePanel
                 goal={selectedGoal}
                 streak={getGoalMetrics(selectedGoal).streak}
@@ -363,22 +437,20 @@ export default function Manifest() {
                 onPracticeComplete={handlePracticeComplete}
                 onGoalUpdate={() => {
                   fetchData();
-                  // Update selected goal with new image
-                  const updatedGoal = goals.find(g => g.id === selectedGoal.id);
+                  const updatedGoal = goals.find((g) => g.id === selectedGoal.id);
                   if (updatedGoal) setSelectedGoal(updatedGoal);
                 }}
               />
-            ) : (
-              <div className="p-8 flex flex-col items-center justify-center h-full text-center min-h-[400px]">
-                <div className="mx-auto mb-4 h-14 w-14 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                  <Sparkles className="h-6 w-6 text-slate-400" />
-                </div>
-                <h3 className="font-semibold text-slate-700 dark:text-slate-200 mb-1">Select a Vision</h3>
-                <p className="text-sm text-slate-500">Click on any card to start your daily practice</p>
-              </div>
-            )}
-          </div>
-        </aside>
+            </div>
+          ) : (
+            <ManifestProgressPanel
+              activeCount={activeGoals.length}
+              streak={aggregateStreak}
+              avgMomentum={avgMomentum}
+              practices={practices}
+            />
+          )}
+        </div>
       </div>
 
       {/* Modal */}

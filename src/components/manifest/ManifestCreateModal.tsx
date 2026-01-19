@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronLeft, ChevronRight, ImagePlus, Sparkles, X, Wand2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImagePlus, Sparkles, X } from "lucide-react";
 import { type ManifestGoal, MANIFEST_DRAFT_KEY } from "./types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -28,43 +28,143 @@ const CATEGORIES = [
 ];
 
 
-// Category-based auto-fill suggestions
+// Category-based auto-fill suggestions with multiple options
 const CATEGORY_SUGGESTIONS: Record<string, {
-  assumption: string;
-  liveFromEnd: string;
-  actAsIf: string;
-  affirmation: string;
+  assumptions: string[];
+  liveFromEnds: string[];
+  actAsIfs: string[];
+  affirmations: string[];
 }> = {
   health: {
-    assumption: "My body is healthy, strong, and full of energy.",
-    liveFromEnd: "I wake up feeling energized, excited for the day ahead.",
-    actAsIf: "Exercise for 10 minutes",
-    affirmation: "Every cell in my body radiates health and vitality."
+    assumptions: [
+      "My body is healthy, strong, and full of energy.",
+      "I am radiantly healthy and vibrant.",
+      "Every cell in my body functions perfectly.",
+      "I am fit, energetic, and thriving.",
+    ],
+    liveFromEnds: [
+      "I wake up feeling energized, excited for the day ahead.",
+      "I move through my day with ease and vitality.",
+      "I look in the mirror and love what I see.",
+      "I feel strong and capable in my body.",
+    ],
+    actAsIfs: [
+      "Exercise for 10 minutes",
+      "Drink 8 glasses of water",
+      "Take a mindful walk",
+      "Prepare a nourishing meal",
+    ],
+    affirmations: [
+      "Every cell in my body radiates health and vitality.",
+      "I am getting healthier every single day.",
+      "My body heals quickly and efficiently.",
+      "I treat my body with love and respect.",
+    ],
   },
   wealth: {
-    assumption: "Money flows to me easily and abundantly.",
-    liveFromEnd: "I check my finances with joy and gratitude.",
-    actAsIf: "Track my spending today",
-    affirmation: "I am a magnet for financial abundance."
+    assumptions: [
+      "Money flows to me easily and abundantly.",
+      "I am wealthy beyond measure.",
+      "I attract financial opportunities effortlessly.",
+      "Abundance is my natural state.",
+    ],
+    liveFromEnds: [
+      "I check my finances with joy and gratitude.",
+      "I make purchases without financial stress.",
+      "I invest confidently in my future.",
+      "I give generously because I have plenty.",
+    ],
+    actAsIfs: [
+      "Track my spending today",
+      "Research one investment opportunity",
+      "Create a budget for the month",
+      "Save a small amount today",
+    ],
+    affirmations: [
+      "I am a magnet for financial abundance.",
+      "Wealth constantly flows into my life.",
+      "I deserve to be financially free.",
+      "Money comes to me from expected and unexpected sources.",
+    ],
   },
   career: {
-    assumption: "I am thriving in my dream career.",
-    liveFromEnd: "I walk into work feeling confident and valued.",
-    actAsIf: "Update my professional profile",
-    affirmation: "Opportunities flow to me effortlessly."
+    assumptions: [
+      "I am thriving in my dream career.",
+      "I am successful and fulfilled in my work.",
+      "My skills are valued and in high demand.",
+      "I do work that I love and get paid well for it.",
+    ],
+    liveFromEnds: [
+      "I walk into work feeling confident and valued.",
+      "I receive recognition for my contributions.",
+      "I lead projects that make a real impact.",
+      "I collaborate with amazing colleagues.",
+    ],
+    actAsIfs: [
+      "Update my professional profile",
+      "Network with one new person",
+      "Learn something new in my field",
+      "Apply to one dream opportunity",
+    ],
+    affirmations: [
+      "Opportunities flow to me effortlessly.",
+      "I am exactly where I need to be in my career.",
+      "My work makes a positive difference.",
+      "I am becoming more successful every day.",
+    ],
   },
   relationships: {
-    assumption: "I am surrounded by loving, supportive people.",
-    liveFromEnd: "I feel deeply connected and appreciated.",
-    actAsIf: "Send a heartfelt message to someone",
-    affirmation: "Love flows freely in my life."
+    assumptions: [
+      "I am surrounded by loving, supportive people.",
+      "I attract healthy, fulfilling relationships.",
+      "I am deeply loved and appreciated.",
+      "My relationships bring me joy and growth.",
+    ],
+    liveFromEnds: [
+      "I feel deeply connected and appreciated.",
+      "I have meaningful conversations daily.",
+      "I receive love and give love freely.",
+      "My relationships are harmonious and balanced.",
+    ],
+    actAsIfs: [
+      "Send a heartfelt message to someone",
+      "Plan quality time with a loved one",
+      "Express gratitude to someone important",
+      "Practice active listening today",
+    ],
+    affirmations: [
+      "Love flows freely in my life.",
+      "I attract loving, genuine people.",
+      "My relationships are healing and growing.",
+      "I am worthy of deep, meaningful connections.",
+    ],
   },
   personal: {
-    assumption: "I am becoming my best self every day.",
-    liveFromEnd: "I feel proud of who I am becoming.",
-    actAsIf: "Do one thing outside my comfort zone",
-    affirmation: "I embrace growth and positive change."
-  }
+    assumptions: [
+      "I am becoming my best self every day.",
+      "I am confident, capable, and worthy.",
+      "I trust myself completely.",
+      "I am exactly who I want to be.",
+    ],
+    liveFromEnds: [
+      "I feel proud of who I am becoming.",
+      "I handle challenges with grace and wisdom.",
+      "I live authentically and unapologetically.",
+      "I wake up excited about my life.",
+    ],
+    actAsIfs: [
+      "Do one thing outside my comfort zone",
+      "Practice self-care for 15 minutes",
+      "Journal about my growth",
+      "Celebrate a small win today",
+    ],
+    affirmations: [
+      "I embrace growth and positive change.",
+      "I am enough exactly as I am.",
+      "I trust the journey of my life.",
+      "Every day I become more confident.",
+    ],
+  },
 };
 
 export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editingGoal }: ManifestCreateModalProps) {
@@ -129,13 +229,16 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
     setCategory(newCategory);
     const suggestions = CATEGORY_SUGGESTIONS[newCategory];
     if (suggestions) {
-      // Auto-fill empty fields
-      if (!assumption.trim()) setAssumption(suggestions.assumption);
-      if (!liveFromEnd.trim()) setLiveFromEnd(suggestions.liveFromEnd);
-      if (!actAsIf.trim()) setActAsIf(suggestions.actAsIf);
-      if (!affirmation.trim()) setAffirmation(suggestions.affirmation);
+      // Auto-fill ALL fields with first suggestion from each category
+      setAssumption(suggestions.assumptions[0]);
+      setLiveFromEnd(suggestions.liveFromEnds[0]);
+      setActAsIf(suggestions.actAsIfs[0]);
+      setAffirmation(suggestions.affirmations[0]);
     }
   };
+
+  // Get current suggestions based on category
+  const currentSuggestions = CATEGORY_SUGGESTIONS[category] || CATEGORY_SUGGESTIONS.personal;
 
   const saveDraft = () => {
     try {
@@ -306,6 +409,23 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                   rows={2}
                   className="rounded-xl resize-none"
                 />
+                {/* Quick select options */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {currentSuggestions.assumptions.map((opt, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setAssumption(opt)}
+                      className={`text-[10px] px-2 py-1 rounded-full border transition-all ${
+                        assumption === opt
+                          ? "bg-teal-500 text-white border-teal-500"
+                          : "bg-slate-50 text-slate-600 border-slate-200 hover:border-teal-300"
+                      }`}
+                    >
+                      {opt.length > 35 ? opt.slice(0, 35) + "..." : opt}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>
@@ -366,21 +486,9 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
           {step === 2 && (
             <div className="space-y-5">
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    If this is true, what would you do today?
-                  </Label>
-                  {!liveFromEnd.trim() && CATEGORY_SUGGESTIONS[category] && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setLiveFromEnd(CATEGORY_SUGGESTIONS[category].liveFromEnd)}
-                      className="h-6 text-xs text-teal-600"
-                    >
-                      <Wand2 className="h-3 w-3 mr-1" /> Suggest
-                    </Button>
-                  )}
-                </div>
+                <Label className="text-sm font-medium text-slate-700 mb-2 block">
+                  If this is true, what would you do today?
+                </Label>
                 <Textarea
                   value={liveFromEnd}
                   onChange={(e) => setLiveFromEnd(e.target.value)}
@@ -388,28 +496,50 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                   rows={2}
                   className="rounded-xl resize-none"
                 />
+                {/* Quick select options */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {currentSuggestions.liveFromEnds.map((opt, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setLiveFromEnd(opt)}
+                      className={`text-[10px] px-2 py-1 rounded-full border transition-all ${
+                        liveFromEnd === opt
+                          ? "bg-teal-500 text-white border-teal-500"
+                          : "bg-slate-50 text-slate-600 border-slate-200 hover:border-teal-300"
+                      }`}
+                    >
+                      {opt.length > 35 ? opt.slice(0, 35) + "..." : opt}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label className="text-sm font-medium text-slate-700">Daily Act-As-If Action</Label>
-                  {!actAsIf.trim() && CATEGORY_SUGGESTIONS[category] && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setActAsIf(CATEGORY_SUGGESTIONS[category].actAsIf)}
-                      className="h-6 text-xs text-teal-600"
-                    >
-                      <Wand2 className="h-3 w-3 mr-1" /> Suggest
-                    </Button>
-                  )}
-                </div>
+                <Label className="text-sm font-medium text-slate-700 mb-2 block">Daily Act-As-If Action</Label>
                 <Input
                   value={actAsIf}
                   onChange={(e) => setActAsIf(e.target.value)}
                   placeholder="e.g., Speak confidently in meetings"
                   className="rounded-xl h-10"
                 />
+                {/* Quick select options */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {currentSuggestions.actAsIfs.map((opt, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setActAsIf(opt)}
+                      className={`text-[10px] px-2 py-1 rounded-full border transition-all ${
+                        actAsIf === opt
+                          ? "bg-teal-500 text-white border-teal-500"
+                          : "bg-slate-50 text-slate-600 border-slate-200 hover:border-teal-300"
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -436,25 +566,30 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label className="text-sm font-medium text-slate-700">Daily Affirmation</Label>
-                  {!affirmation.trim() && CATEGORY_SUGGESTIONS[category] && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setAffirmation(CATEGORY_SUGGESTIONS[category].affirmation)}
-                      className="h-6 text-xs text-teal-600"
-                    >
-                      <Wand2 className="h-3 w-3 mr-1" /> Suggest
-                    </Button>
-                  )}
-                </div>
+                <Label className="text-sm font-medium text-slate-700 mb-2 block">Daily Affirmation</Label>
                 <Input
                   value={affirmation}
                   onChange={(e) => setAffirmation(e.target.value)}
                   placeholder={assumption || "I am..."}
                   className="rounded-xl h-10"
                 />
+                {/* Quick select options */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {currentSuggestions.affirmations.map((opt, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setAffirmation(opt)}
+                      className={`text-[10px] px-2 py-1 rounded-full border transition-all ${
+                        affirmation === opt
+                          ? "bg-teal-500 text-white border-teal-500"
+                          : "bg-slate-50 text-slate-600 border-slate-200 hover:border-teal-300"
+                      }`}
+                    >
+                      {opt.length > 35 ? opt.slice(0, 35) + "..." : opt}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>
