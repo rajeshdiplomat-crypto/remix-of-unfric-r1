@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, Flame, Play, Tag, Pencil, History } from "lucide-react";
+import { Check, Flame, Play, Tag, Pencil, History, Trash2, CheckCircle } from "lucide-react";
 import { type ManifestGoal, type ManifestDailyPractice, DAILY_PRACTICE_KEY, CATEGORIES } from "./types";
 import { format, subDays, parseISO, differenceInDays, formatDistanceToNow } from "date-fns";
 import { useMemo } from "react";
@@ -15,11 +15,12 @@ interface ManifestCardProps {
   onClick: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  onComplete?: () => void;
   onViewHistory?: () => void;
   onImageUpdate?: () => void;
 }
 
-export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEdit, onViewHistory, onImageUpdate }: ManifestCardProps) {
+export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEdit, onDelete, onComplete, onViewHistory, onImageUpdate }: ManifestCardProps) {
   // Get last 7 days
   const weekProgress = useMemo(() => {
     const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
@@ -93,27 +94,49 @@ export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEd
       }`}
     >
       {/* Top-right action buttons */}
-      <div className="absolute top-1.5 right-1.5 z-10 flex gap-1" onClick={(e) => e.stopPropagation()}>
+      <div className="absolute top-1.5 right-1.5 z-10 flex gap-0.5" onClick={(e) => e.stopPropagation()}>
+        {onComplete && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-sm hover:bg-teal-100 dark:hover:bg-teal-900/50"
+            onClick={onComplete}
+            title="Mark as Complete"
+          >
+            <CheckCircle className="h-2.5 w-2.5 text-teal-500" />
+          </Button>
+        )}
         {onViewHistory && (
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-sm hover:bg-white dark:hover:bg-slate-700"
+            className="h-5 w-5 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-sm hover:bg-white dark:hover:bg-slate-700"
             onClick={onViewHistory}
             title="View History"
           >
-            <History className="h-3 w-3 text-slate-500" />
+            <History className="h-2.5 w-2.5 text-slate-500" />
           </Button>
         )}
         {onEdit && (
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-sm hover:bg-white dark:hover:bg-slate-700"
+            className="h-5 w-5 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-sm hover:bg-white dark:hover:bg-slate-700"
             onClick={onEdit}
             title="Edit Vision"
           >
-            <Pencil className="h-3 w-3 text-slate-500" />
+            <Pencil className="h-2.5 w-2.5 text-slate-500" />
+          </Button>
+        )}
+        {onDelete && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-sm hover:bg-destructive/10 dark:hover:bg-destructive/20"
+            onClick={onDelete}
+            title="Delete Vision"
+          >
+            <Trash2 className="h-2.5 w-2.5 text-destructive" />
           </Button>
         )}
       </div>
