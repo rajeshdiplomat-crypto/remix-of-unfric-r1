@@ -42,7 +42,14 @@ export function ManifestCard({ goal, streak, momentum, isSelected, onClick }: Ma
 
   const handleImageChange = async (url: string) => {
     try {
+      // Update in database
       await supabase.from("manifest_goals").update({ cover_image_url: url }).eq("id", goal.id);
+      
+      // Also update in local storage extras for consistency
+      const GOAL_EXTRAS_KEY = "manifest_goal_extras";
+      const extras = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
+      extras[goal.id] = { ...extras[goal.id], cover_image_url: url };
+      localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify(extras));
     } catch (e) {
       console.error(e);
     }
