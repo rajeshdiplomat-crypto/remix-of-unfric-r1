@@ -359,19 +359,14 @@ export function ManifestPracticePanel({
             </p>
           )}
           
-          {/* Vision Board - Show additional images */}
+          {/* Vision Board - Show additional images - Larger and stretched */}
           {goal.vision_images && goal.vision_images.length > 0 && (
-            <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1">
-              {goal.vision_images.slice(0, 4).map((img, i) => (
-                <div key={i} className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200 dark:border-slate-600">
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-1.5">
+              {goal.vision_images.map((img, i) => (
+                <div key={i} className="flex-1 min-w-0 h-16 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-600">
                   <img src={img} alt={`Vision ${i + 1}`} className="w-full h-full object-cover" />
                 </div>
               ))}
-              {goal.vision_images.length > 4 && (
-                <div className="w-12 h-12 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 text-[10px] text-slate-500">
-                  +{goal.vision_images.length - 4}
-                </div>
-              )}
             </div>
           )}
         </div>
