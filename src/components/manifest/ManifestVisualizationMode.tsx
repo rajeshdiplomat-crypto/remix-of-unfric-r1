@@ -68,7 +68,7 @@ export function ManifestVisualizationMode({
     return images;
   }, [goal]);
 
-  // Create all floating elements
+  // Create all floating elements - includes today's answers AND previous practice
   const allElements = useMemo(() => {
     const elements: FloatingElement[] = [];
 
@@ -85,38 +85,70 @@ export function ManifestVisualizationMode({
       });
     }
 
-    if (previousPractice) {
-      // Add actions
-      if (settings.showActions) {
-        previousPractice.acts?.forEach((act) => {
-          elements.push({
-            id: `act-${act.id}`,
-            type: "action",
-            content: act.text,
-            horizontalPosition: 10 + Math.random() * 70,
-          });
-        });
-      }
+    // Load today's practice from localStorage for current session
+    const loadTodaysPractice = (): Partial<typeof previousPractice> | null => {
+      try {
+        const stored = localStorage.getItem("manifest_daily_practice");
+        if (stored) {
+          const all = JSON.parse(stored);
+          const today = new Date().toISOString().split('T')[0];
+          const key = `${goal.id}_${today}`;
+          return all[key] || null;
+        }
+      } catch {}
+      return null;
+    };
 
-      // Add proofs (with images if they have them)
-      if (settings.showProofs) {
-        previousPractice.proofs?.forEach((proof) => {
-          elements.push({
-            id: `proof-${proof.id}`,
-            type: "proof",
-            content: proof.text || "",
-            imageUrl: proof.image_url,
-            horizontalPosition: 10 + Math.random() * 60,
-          });
-        });
-      }
+    const todaysPractice = loadTodaysPractice();
+    
+    // Combine today's practice with previous practice
+    const combinedPractice = {
+      acts: [...(todaysPractice?.acts || []), ...(previousPractice?.acts || [])],
+      proofs: [...(todaysPractice?.proofs || []), ...(previousPractice?.proofs || [])],
+      growth_note: todaysPractice?.growth_note || previousPractice?.growth_note,
+      gratitude: todaysPractice?.gratitude || previousPractice?.gratitude,
+    };
 
-      // Add growth note
-      if (settings.showNotes && previousPractice.growth_note) {
+    // Add actions
+    if (settings.showActions && combinedPractice.acts.length > 0) {
+      combinedPractice.acts.forEach((act: any) => {
+        elements.push({
+          id: `act-${act.id}`,
+          type: "action",
+          content: act.text,
+          horizontalPosition: 10 + Math.random() * 70,
+        });
+      });
+    }
+
+    // Add proofs (with images if they have them)
+    if (settings.showProofs && combinedPractice.proofs.length > 0) {
+      combinedPractice.proofs.forEach((proof: any) => {
+        elements.push({
+          id: `proof-${proof.id}`,
+          type: "proof",
+          content: proof.text || "",
+          imageUrl: proof.image_url,
+          horizontalPosition: 10 + Math.random() * 60,
+        });
+      });
+    }
+
+    // Add growth note / gratitude
+    if (settings.showNotes) {
+      if (combinedPractice.growth_note) {
         elements.push({
           id: "growth-note",
           type: "note",
-          content: previousPractice.growth_note,
+          content: combinedPractice.growth_note,
+          horizontalPosition: 15 + Math.random() * 60,
+        });
+      }
+      if (combinedPractice.gratitude) {
+        elements.push({
+          id: "gratitude-note",
+          type: "note",
+          content: combinedPractice.gratitude,
           horizontalPosition: 15 + Math.random() * 60,
         });
       }
@@ -129,7 +161,7 @@ export function ManifestVisualizationMode({
     }
 
     return elements;
-  }, [previousPractice, visionImages, settings]);
+  }, [previousPractice, visionImages, settings, goal.id]);
 
   // Spawn new floating elements one by one
   useEffect(() => {
