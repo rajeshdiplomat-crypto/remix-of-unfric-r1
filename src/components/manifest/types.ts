@@ -4,6 +4,7 @@ export interface ManifestGoal {
   title: string; // The assumption (present tense)
   category: string;
   vision_image_url?: string;
+  vision_images?: string[]; // Multiple visualization images
   cover_image_url?: string; // Cover image for card display
   start_date?: string;
   live_from_end?: string;
@@ -17,6 +18,9 @@ export interface ManifestGoal {
   is_locked: boolean;
   created_at: string;
   updated_at?: string;
+  // Reminder settings
+  reminder_count?: 1 | 2 | 3 | 4;
+  reminder_times?: string[];
 }
 
 export interface ManifestProof {

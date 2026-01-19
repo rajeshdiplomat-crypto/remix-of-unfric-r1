@@ -13,13 +13,13 @@ import {
   ImagePlus,
   Trash2,
   Plus,
-  Sparkles,
   Flame,
   Eye,
   Zap,
   ChevronDown,
   ChevronUp,
   Image,
+  CalendarDays,
 } from "lucide-react";
 import {
   type ManifestGoal,
@@ -31,7 +31,7 @@ import {
   GOAL_EXTRAS_KEY,
 } from "./types";
 import { ManifestVisualizationMode } from "./ManifestVisualizationMode";
-import { format } from "date-fns";
+import { format, isToday, isBefore, startOfDay } from "date-fns";
 import confetti from "canvas-confetti";
 import { toast } from "sonner";
 import { EntryImageUpload } from "@/components/common/EntryImageUpload";
@@ -40,21 +40,33 @@ import { supabase } from "@/integrations/supabase/client";
 interface ManifestPracticePanelProps {
   goal: ManifestGoal;
   streak: number;
+  selectedDate?: Date;
+  previousPractice?: ManifestDailyPractice | null;
   onClose: () => void;
   onPracticeComplete: (practice: ManifestDailyPractice) => void;
   onGoalUpdate?: () => void;
 }
 
-export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplete, onGoalUpdate }: ManifestPracticePanelProps) {
-  const today = format(new Date(), "yyyy-MM-dd");
+export function ManifestPracticePanel({ 
+  goal, 
+  streak, 
+  selectedDate = new Date(),
+  previousPractice,
+  onClose, 
+  onPracticeComplete, 
+  onGoalUpdate 
+}: ManifestPracticePanelProps) {
+  const dateStr = format(selectedDate, "yyyy-MM-dd");
+  const isViewingToday = isToday(selectedDate);
+  const isViewingPast = isBefore(startOfDay(selectedDate), startOfDay(new Date()));
   const proofImageInputRef = useRef<HTMLInputElement>(null);
 
-  const loadTodaysPractice = (): Partial<ManifestDailyPractice> => {
+  const loadPractice = (date: string): Partial<ManifestDailyPractice> => {
     try {
       const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
       if (stored) {
         const all = JSON.parse(stored);
-        return all[`${goal.id}_${today}`] || {};
+        return all[`${goal.id}_${date}`] || {};
       }
     } catch (e) {
       console.warn("Failed to load practice:", e);
@@ -63,10 +75,11 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
   };
 
   const savePractice = (practice: Partial<ManifestDailyPractice>) => {
+    if (!isViewingToday) return; // Don't save for past dates
     try {
       const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
       const all = stored ? JSON.parse(stored) : {};
-      all[`${goal.id}_${today}`] = { ...all[`${goal.id}_${today}`], ...practice };
+      all[`${goal.id}_${dateStr}`] = { ...all[`${goal.id}_${dateStr}`], ...practice };
       localStorage.setItem(DAILY_PRACTICE_KEY, JSON.stringify(all));
     } catch (e) {
       console.warn("Failed to save practice:", e);
@@ -97,13 +110,13 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
     setExpandedSection("viz");
     setCurrentImageUrl(goal.vision_image_url || goal.cover_image_url || null);
 
-    const saved = loadTodaysPractice();
+    const saved = loadPractice(dateStr);
     if (saved.visualizations) setVisualizations(saved.visualizations);
     if (saved.acts) setActs(saved.acts);
     if (saved.proofs) setProofs(saved.proofs);
     if (saved.growth_note) setGrowthNote(saved.growth_note);
     if (saved.locked) setIsLocked(true);
-  }, [goal.id, today, goal.vision_image_url, goal.cover_image_url]);
+  }, [goal.id, dateStr, goal.vision_image_url, goal.cover_image_url]);
 
   const hasViz = visualizations.length > 0;
   const hasAct = acts.length > 0;
@@ -182,10 +195,10 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
   const handleLockToday = () => {
     if (!canLock) return;
     const practice: ManifestDailyPractice = {
-      id: `${goal.id}_${today}`,
+      id: `${goal.id}_${dateStr}`,
       goal_id: goal.id,
       user_id: goal.user_id,
-      entry_date: today,
+      entry_date: dateStr,
       created_at: new Date().toISOString(),
       visualization_count: visualizations.length,
       visualizations,
@@ -242,6 +255,7 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
       <ManifestVisualizationMode
         goal={goal}
         duration={goal.visualization_minutes}
+        previousPractice={previousPractice}
         onComplete={handleVisualizationComplete}
         onClose={() => setShowVisualization(false)}
       />
@@ -253,18 +267,20 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
     icon: Icon,
     title,
     done,
+    disabled,
     children,
   }: {
     id: string;
     icon: any;
     title: string;
     done: boolean;
+    disabled?: boolean;
     children: React.ReactNode;
   }) => (
     <div
-      className={`rounded-xl border ${done ? "border-teal-200 bg-teal-50/50 dark:border-teal-800 dark:bg-teal-900/20" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"}`}
+      className={`rounded-xl border ${done ? "border-teal-200 bg-teal-50/50 dark:border-teal-800 dark:bg-teal-900/20" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"} ${disabled ? "opacity-60" : ""}`}
     >
-      <button onClick={() => toggle(id)} className="w-full flex items-center justify-between p-4">
+      <button onClick={() => !disabled && toggle(id)} className="w-full flex items-center justify-between p-4" disabled={disabled}>
         <div className="flex items-center gap-3">
           <div
             className={`w-8 h-8 rounded-full flex items-center justify-center ${done ? "bg-teal-500 text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-500"}`}
@@ -284,7 +300,7 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
           <ChevronDown className="h-4 w-4 text-slate-400" />
         )}
       </button>
-      {expandedSection === id && <div className="px-4 pb-4 space-y-3">{children}</div>}
+      {expandedSection === id && !disabled && <div className="px-4 pb-4 space-y-3">{children}</div>}
     </div>
   );
 
@@ -308,8 +324,15 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
         
         <div className="p-5">
           <div className="flex items-start justify-between mb-3">
-            <div className="flex gap-2">
-              <span className="text-xs px-2.5 py-1 rounded-full bg-teal-100 text-teal-600 font-medium">Active</span>
+            <div className="flex gap-2 flex-wrap">
+              {!isViewingToday && (
+                <span className="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-600 font-medium flex items-center gap-1">
+                  <CalendarDays className="h-3 w-3" /> {format(selectedDate, "MMM d, yyyy")}
+                </span>
+              )}
+              <span className="text-xs px-2.5 py-1 rounded-full bg-teal-100 text-teal-600 font-medium">
+                {isLocked ? "Completed" : "Active"}
+              </span>
               <span className="text-xs px-2.5 py-1 rounded-full bg-orange-100 text-orange-600 font-medium flex items-center gap-1">
                 <Flame className="h-3 w-3" /> Day {streak}
               </span>
@@ -332,7 +355,7 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
         <div className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
           <div className="flex-1">
             <div className="flex justify-between text-xs mb-1.5">
-              <span className="text-slate-500">Today's Progress</span>
+              <span className="text-slate-500">{isViewingToday ? "Today's Progress" : "Day Progress"}</span>
               <span className="font-semibold text-teal-600">{completedCount}/3</span>
             </div>
             <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
@@ -345,14 +368,24 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
         </div>
       </div>
 
+      {/* Past date warning */}
+      {isViewingPast && !isLocked && (
+        <div className="mx-4 mt-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+          <p className="text-xs text-amber-700 dark:text-amber-300">
+            You're viewing a past date. This practice was not completed.
+          </p>
+        </div>
+      )}
+
       {/* Steps - Single scrollable area */}
       <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
         <div className="space-y-3">
-          <Step id="viz" icon={Eye} title={`Visualize (${goal.visualization_minutes} min)`} done={hasViz}>
+          <Step id="viz" icon={Eye} title={`Visualize (${goal.visualization_minutes} min)`} done={hasViz} disabled={isViewingPast && !isLocked}>
             <p className="text-sm text-slate-500 mb-3">Close your eyes and feel your new reality</p>
             <Button
               onClick={() => setShowVisualization(true)}
               className="w-full h-11 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
+              disabled={isViewingPast}
             >
               <Play className="h-4 w-4 mr-2" /> {hasViz ? "Add Session" : "Start"}
             </Button>
@@ -371,7 +404,7 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
             )}
           </Step>
 
-          <Step id="act" icon={Zap} title="Take Action" done={hasAct}>
+          <Step id="act" icon={Zap} title="Take Action" done={hasAct} disabled={isViewingPast && !isLocked}>
             <p className="text-sm text-slate-500 mb-2">Suggestion: {goal.act_as_if}</p>
             <div className="flex gap-2">
               <Input
@@ -379,8 +412,9 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
                 onChange={(e) => setCurrentActText(e.target.value)}
                 placeholder="What did you do?"
                 className="flex-1 rounded-xl h-10"
+                disabled={isViewingPast}
               />
-              <Button onClick={handleAddAct} className="h-10 w-10 rounded-xl bg-teal-500 text-white p-0">
+              <Button onClick={handleAddAct} className="h-10 w-10 rounded-xl bg-teal-500 text-white p-0" disabled={isViewingPast}>
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
@@ -394,16 +428,18 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
                     <span className="text-sm text-slate-700 dark:text-slate-200 flex items-center gap-2">
                       <Check className="h-3 w-3 text-teal-500" /> {a.text}
                     </span>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveAct(a.id)}>
-                      <Trash2 className="h-3 w-3 text-slate-400" />
-                    </Button>
+                    {isViewingToday && (
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveAct(a.id)}>
+                        <Trash2 className="h-3 w-3 text-slate-400" />
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>
             )}
           </Step>
 
-          <Step id="proof" icon={Camera} title="Record Proof" done={hasProof}>
+          <Step id="proof" icon={Camera} title="Record Proof" done={hasProof} disabled={isViewingPast && !isLocked}>
             <p className="text-sm text-slate-500 mb-2">What happened today that proves your reality?</p>
             <Textarea
               value={currentProofText}
@@ -411,6 +447,7 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
               placeholder="I noticed..."
               rows={2}
               className="rounded-xl resize-none mb-2"
+              disabled={isViewingPast}
             />
             <input
               ref={proofImageInputRef}
@@ -436,13 +473,14 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
                 variant="outline"
                 className="w-full rounded-xl border-dashed mb-2 h-10"
                 onClick={() => proofImageInputRef.current?.click()}
+                disabled={isViewingPast}
               >
                 <ImagePlus className="h-4 w-4 mr-2" /> Add Photo
               </Button>
             )}
             <Button
               onClick={handleAddProof}
-              disabled={!currentProofText.trim()}
+              disabled={!currentProofText.trim() || isViewingPast}
               className="w-full h-10 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
             >
               Save Proof
@@ -453,9 +491,11 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
                   <div key={p.id} className="bg-teal-50 dark:bg-teal-900/30 p-3 rounded-lg">
                     <div className="flex items-start justify-between">
                       <p className="text-sm text-slate-700 dark:text-slate-200 flex-1">{p.text}</p>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveProof(p.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      {isViewingToday && (
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveProof(p.id)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                     {p.image_url && (
                       <img src={p.image_url} alt="Proof" className="w-full h-20 object-cover rounded-lg mt-2" />
@@ -467,7 +507,7 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
           </Step>
 
           {allDone && (
-            <Step id="complete" icon={Lock} title="Complete Day" done={isLocked}>
+            <Step id="complete" icon={Lock} title="Complete Day" done={isLocked} disabled={isViewingPast && !isLocked}>
               <div className="space-y-3">
                 <Input
                   value={growthNote}
@@ -477,10 +517,11 @@ export function ManifestPracticePanel({ goal, streak, onClose, onPracticeComplet
                   }}
                   placeholder="What did you learn today?"
                   className="rounded-xl h-10"
+                  disabled={isViewingPast || isLocked}
                 />
                 <Button
                   onClick={handleLockToday}
-                  disabled={!canLock}
+                  disabled={!canLock || isViewingPast || isLocked}
                   className="w-full h-11 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-medium"
                 >
                   <Lock className="h-4 w-4 mr-2" /> Complete Day ✨
