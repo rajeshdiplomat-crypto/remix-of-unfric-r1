@@ -79,10 +79,31 @@ export function ManifestPracticePanel({
     try {
       const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
       const all = stored ? JSON.parse(stored) : {};
+      
+      // Clean up old entries (keep only last 7 days to avoid quota issues)
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - 7);
+      const cutoffStr = cutoffDate.toISOString().split('T')[0];
+      
+      Object.keys(all).forEach(key => {
+        const keyDate = key.split('_').pop();
+        if (keyDate && keyDate < cutoffStr) {
+          delete all[key];
+        }
+      });
+      
       all[`${goal.id}_${dateStr}`] = { ...all[`${goal.id}_${dateStr}`], ...practice };
       localStorage.setItem(DAILY_PRACTICE_KEY, JSON.stringify(all));
     } catch (e) {
       console.warn("Failed to save practice:", e);
+      // Try clearing old data and saving again
+      try {
+        localStorage.removeItem(DAILY_PRACTICE_KEY);
+        const freshData = { [`${goal.id}_${dateStr}`]: practice };
+        localStorage.setItem(DAILY_PRACTICE_KEY, JSON.stringify(freshData));
+      } catch (e2) {
+        console.error("Storage quota exceeded even after cleanup:", e2);
+      }
     }
   };
 
@@ -553,7 +574,7 @@ export function ManifestPracticePanel({
           </Step>
 
           {allDone && (
-            <Step id="complete" icon={Lock} title="Complete Day" done={isLocked} disabled={isViewingPast && !isLocked}>
+            <Step id="complete" icon={Lock} title="Gratitude Notes" done={isLocked} disabled={isViewingPast && !isLocked}>
               <div className="space-y-3">
                 <Input
                   ref={growthNoteRef}
@@ -562,7 +583,7 @@ export function ManifestPracticePanel({
                     setGrowthNoteValue(e.target.value);
                     savePractice({ growth_note: e.target.value });
                   }}
-                  placeholder="What did you learn today?"
+                  placeholder="I appreciate that..."
                   className="rounded-xl h-10"
                   disabled={isViewingPast || isLocked}
                 />
