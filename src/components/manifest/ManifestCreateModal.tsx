@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronLeft, ChevronRight, ImagePlus, Sparkles, X, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImagePlus, Sparkles, X, Wand2 } from "lucide-react";
 import { type ManifestGoal, MANIFEST_DRAFT_KEY } from "./types";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface ManifestCreateModalProps {
   open: boolean;
@@ -33,9 +34,49 @@ const TEMPLATES = [
   { label: "I am loved", assumption: "I am surrounded by love and loving relationships." },
 ];
 
+// Category-based auto-fill suggestions
+const CATEGORY_SUGGESTIONS: Record<string, {
+  assumption: string;
+  liveFromEnd: string;
+  actAsIf: string;
+  affirmation: string;
+}> = {
+  health: {
+    assumption: "My body is healthy, strong, and full of energy.",
+    liveFromEnd: "I wake up feeling energized, excited for the day ahead.",
+    actAsIf: "Exercise for 10 minutes",
+    affirmation: "Every cell in my body radiates health and vitality."
+  },
+  wealth: {
+    assumption: "Money flows to me easily and abundantly.",
+    liveFromEnd: "I check my finances with joy and gratitude.",
+    actAsIf: "Track my spending today",
+    affirmation: "I am a magnet for financial abundance."
+  },
+  career: {
+    assumption: "I am thriving in my dream career.",
+    liveFromEnd: "I walk into work feeling confident and valued.",
+    actAsIf: "Update my professional profile",
+    affirmation: "Opportunities flow to me effortlessly."
+  },
+  relationships: {
+    assumption: "I am surrounded by loving, supportive people.",
+    liveFromEnd: "I feel deeply connected and appreciated.",
+    actAsIf: "Send a heartfelt message to someone",
+    affirmation: "Love flows freely in my life."
+  },
+  personal: {
+    assumption: "I am becoming my best self every day.",
+    liveFromEnd: "I feel proud of who I am becoming.",
+    actAsIf: "Do one thing outside my comfort zone",
+    affirmation: "I embrace growth and positive change."
+  }
+};
+
 export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editingGoal }: ManifestCreateModalProps) {
   const [step, setStep] = useState(1);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [assumption, setAssumption] = useState("");
   const [category, setCategory] = useState("personal");
@@ -62,55 +103,144 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
       setCheckInTime(editingGoal.check_in_time || "08:00");
       setCommitted(editingGoal.committed_7_days || false);
     } else {
-      const draft = localStorage.getItem(MANIFEST_DRAFT_KEY);
-      if (draft) {
-        const d = JSON.parse(draft);
-        setAssumption(d.assumption || "");
-        setCategory(d.category || "personal");
-        setImageUrl(d.imageUrl || null);
-        setStartDate(d.startDate || "");
-        setLiveFromEnd(d.liveFromEnd || "");
-        setActAsIf(d.actAsIf || "");
-        setVizMinutes(d.vizMinutes || "3");
-        setAffirmation(d.affirmation || "");
-        setCheckInTime(d.checkInTime || "08:00");
-        setCommitted(d.committed || false);
+      try {
+        const draft = localStorage.getItem(MANIFEST_DRAFT_KEY);
+        if (draft) {
+          const d = JSON.parse(draft);
+          setAssumption(d.assumption || "");
+          setCategory(d.category || "personal");
+          // Only restore URL if it's not a base64 string
+          if (d.imageUrl && !d.imageUrl.startsWith("data:")) {
+            setImageUrl(d.imageUrl);
+          } else {
+            setImageUrl(null);
+          }
+          setStartDate(d.startDate || "");
+          setLiveFromEnd(d.liveFromEnd || "");
+          setActAsIf(d.actAsIf || "");
+          setVizMinutes(d.vizMinutes || "3");
+          setAffirmation(d.affirmation || "");
+          setCheckInTime(d.checkInTime || "08:00");
+          setCommitted(d.committed || false);
+        }
+      } catch (e) {
+        console.warn("Failed to load draft:", e);
       }
     }
     setStep(1);
   }, [open, editingGoal]);
 
-  const saveDraft = () => {
-    localStorage.setItem(
-      MANIFEST_DRAFT_KEY,
-      JSON.stringify({
-        assumption,
-        category,
-        imageUrl,
-        startDate,
-        liveFromEnd,
-        actAsIf,
-        vizMinutes,
-        affirmation,
-        checkInTime,
-        committed,
-      }),
-    );
+  // Apply category suggestions when category changes
+  const applySuggestions = () => {
+    const suggestions = CATEGORY_SUGGESTIONS[category];
+    if (suggestions) {
+      if (!assumption.trim()) setAssumption(suggestions.assumption);
+      if (!liveFromEnd.trim()) setLiveFromEnd(suggestions.liveFromEnd);
+      if (!actAsIf.trim()) setActAsIf(suggestions.actAsIf);
+      if (!affirmation.trim()) setAffirmation(suggestions.affirmation);
+      toast.success("Suggestions applied!");
+    }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const saveDraft = () => {
+    try {
+      // Only save URL, not base64 data
+      const safeImageUrl = imageUrl && !imageUrl.startsWith("data:") ? imageUrl : null;
+      localStorage.setItem(
+        MANIFEST_DRAFT_KEY,
+        JSON.stringify({
+          assumption,
+          category,
+          imageUrl: safeImageUrl,
+          startDate,
+          liveFromEnd,
+          actAsIf,
+          vizMinutes,
+          affirmation,
+          checkInTime,
+          committed,
+        }),
+      );
+    } catch (e) {
+      console.warn("Failed to save draft:", e);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => setImageUrl(reader.result as string);
-    reader.readAsDataURL(file);
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image too large. Max 5MB.");
+      return;
+    }
+
+    setUploadingImage(true);
+
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `manifest-${Date.now()}.${fileExt}`;
+      const filePath = `vision-images/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("entry-covers")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("entry-covers")
+        .getPublicUrl(filePath);
+
+      setImageUrl(publicUrl);
+      toast.success("Image uploaded!");
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Failed to upload image");
+      // Fallback: show preview but don't store base64
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        // Store temporarily for preview only
+        setImageUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    // If image is still base64, try to upload it first
+    let finalImageUrl = imageUrl;
+    if (imageUrl && imageUrl.startsWith("data:")) {
+      try {
+        // Convert base64 to blob and upload
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const fileName = `manifest-${Date.now()}.jpg`;
+        const filePath = `vision-images/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("entry-covers")
+          .upload(filePath, blob, { upsert: true });
+
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage
+            .from("entry-covers")
+            .getPublicUrl(filePath);
+          finalImageUrl = publicUrl;
+        }
+      } catch (e) {
+        console.warn("Failed to upload base64 image:", e);
+        finalImageUrl = undefined; // Don't save base64 to storage
+      }
+    }
+
     onSave({
       title: assumption,
       category,
-      vision_image_url: imageUrl || undefined,
+      vision_image_url: finalImageUrl && !finalImageUrl.startsWith("data:") ? finalImageUrl : undefined,
       start_date: startDate || undefined,
       live_from_end: liveFromEnd || undefined,
       act_as_if: actAsIf || "Take one aligned action",
@@ -120,19 +250,32 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
       check_in_time: checkInTime,
       committed_7_days: committed,
     });
-    localStorage.removeItem(MANIFEST_DRAFT_KEY);
+    
+    try {
+      localStorage.removeItem(MANIFEST_DRAFT_KEY);
+    } catch (e) {
+      console.warn("Failed to clear draft:", e);
+    }
+  };
+
+  const handleClose = (o: boolean) => {
+    if (!o) {
+      try {
+        saveDraft();
+      } catch (e) {
+        console.warn("Draft save failed:", e);
+      }
+    }
+    onOpenChange(o);
   };
 
   const canNext = step === 1 ? assumption.trim().length > 0 : step === 2 ? true : committed;
 
+  const hasSuggestions = CATEGORY_SUGGESTIONS[category];
+  const canApplySuggestions = hasSuggestions && (!assumption.trim() || !liveFromEnd.trim() || !actAsIf.trim() || !affirmation.trim());
+
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(o) => {
-        if (!o) saveDraft();
-        onOpenChange(o);
-      }}
-    >
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg p-0 rounded-2xl overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-teal-500 to-cyan-500 px-6 py-4 text-white">
@@ -148,7 +291,19 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
           {step === 1 && (
             <div className="space-y-5">
               <div>
-                <Label className="text-sm font-medium text-slate-700 mb-2 block">Quick Start</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-sm font-medium text-slate-700">Quick Start</Label>
+                  {canApplySuggestions && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={applySuggestions}
+                      className="h-7 text-xs text-teal-600 hover:text-teal-700"
+                    >
+                      <Wand2 className="h-3 w-3 mr-1" /> Auto-fill for {category}
+                    </Button>
+                  )}
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {TEMPLATES.map((t) => (
                     <button
@@ -203,11 +358,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                       src={imageUrl} 
                       alt="Vision" 
                       className="w-full h-32 object-cover rounded-xl" 
-                      onError={(e) => {
-                        // Handle broken base64 or invalid URLs
-                        e.currentTarget.style.display = 'none';
-                        setImageUrl(null);
-                      }}
+                      onError={() => setImageUrl(null)}
                     />
                     <Button
                       variant="destructive"
@@ -217,14 +368,20 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                     >
                       <X className="h-4 w-4" />
                     </Button>
+                    {uploadingImage && (
+                      <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center">
+                        <span className="text-white text-sm">Uploading...</span>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <button
                     onClick={() => imageInputRef.current?.click()}
-                    className="w-full h-32 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-teal-300 hover:text-teal-500 transition"
+                    disabled={uploadingImage}
+                    className="w-full h-32 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-teal-300 hover:text-teal-500 transition disabled:opacity-50"
                   >
                     <ImagePlus className="h-6 w-6" />
-                    <span className="text-sm">Upload Image</span>
+                    <span className="text-sm">{uploadingImage ? "Uploading..." : "Upload Image"}</span>
                   </button>
                 )}
               </div>
@@ -244,9 +401,21 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
           {step === 2 && (
             <div className="space-y-5">
               <div>
-                <Label className="text-sm font-medium text-slate-700 mb-2 block">
-                  If this is true, what would you do today?
-                </Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    If this is true, what would you do today?
+                  </Label>
+                  {!liveFromEnd.trim() && CATEGORY_SUGGESTIONS[category] && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setLiveFromEnd(CATEGORY_SUGGESTIONS[category].liveFromEnd)}
+                      className="h-6 text-xs text-teal-600"
+                    >
+                      <Wand2 className="h-3 w-3 mr-1" /> Suggest
+                    </Button>
+                  )}
+                </div>
                 <Textarea
                   value={liveFromEnd}
                   onChange={(e) => setLiveFromEnd(e.target.value)}
@@ -257,7 +426,19 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700 mb-2 block">Daily Act-As-If Action</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-sm font-medium text-slate-700">Daily Act-As-If Action</Label>
+                  {!actAsIf.trim() && CATEGORY_SUGGESTIONS[category] && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setActAsIf(CATEGORY_SUGGESTIONS[category].actAsIf)}
+                      className="h-6 text-xs text-teal-600"
+                    >
+                      <Wand2 className="h-3 w-3 mr-1" /> Suggest
+                    </Button>
+                  )}
+                </div>
                 <Input
                   value={actAsIf}
                   onChange={(e) => setActAsIf(e.target.value)}
@@ -290,7 +471,19 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700 mb-2 block">Daily Affirmation</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-sm font-medium text-slate-700">Daily Affirmation</Label>
+                  {!affirmation.trim() && CATEGORY_SUGGESTIONS[category] && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAffirmation(CATEGORY_SUGGESTIONS[category].affirmation)}
+                      className="h-6 text-xs text-teal-600"
+                    >
+                      <Wand2 className="h-3 w-3 mr-1" /> Suggest
+                    </Button>
+                  )}
+                </div>
                 <Input
                   value={affirmation}
                   onChange={(e) => setAffirmation(e.target.value)}
@@ -339,7 +532,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
             ) : (
               <Button
                 onClick={handleSubmit}
-                disabled={!canNext || saving}
+                disabled={!canNext || saving || uploadingImage}
                 className="rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
               >
                 {saving ? (

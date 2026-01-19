@@ -36,9 +36,33 @@ import {
 
 // Local storage helpers
 function saveGoalExtras(goalId: string, extras: Partial<ManifestGoal>) {
-  const all = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
-  all[goalId] = { ...all[goalId], ...extras };
-  localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify(all));
+  try {
+    // Filter out base64 images to prevent quota errors
+    const safeExtras = { ...extras };
+    if (safeExtras.vision_image_url && safeExtras.vision_image_url.startsWith("data:")) {
+      safeExtras.vision_image_url = undefined;
+    }
+    
+    const all = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
+    all[goalId] = { ...all[goalId], ...safeExtras };
+    localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify(all));
+  } catch (e) {
+    console.warn("Failed to save goal extras:", e);
+    // If quota exceeded, try to clear old data
+    if (e instanceof DOMException && e.name === "QuotaExceededError") {
+      try {
+        // Clear the extras and retry with just this goal
+        localStorage.removeItem(GOAL_EXTRAS_KEY);
+        const safeExtras = { ...extras };
+        if (safeExtras.vision_image_url && safeExtras.vision_image_url.startsWith("data:")) {
+          safeExtras.vision_image_url = undefined;
+        }
+        localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify({ [goalId]: safeExtras }));
+      } catch (e2) {
+        console.error("Failed to save after clearing:", e2);
+      }
+    }
+  }
 }
 
 function loadAllGoalExtras(): Record<string, Partial<ManifestGoal>> {
@@ -337,6 +361,12 @@ export default function Manifest() {
                 streak={getGoalMetrics(selectedGoal).streak}
                 onClose={() => setSelectedGoal(null)}
                 onPracticeComplete={handlePracticeComplete}
+                onGoalUpdate={() => {
+                  fetchData();
+                  // Update selected goal with new image
+                  const updatedGoal = goals.find(g => g.id === selectedGoal.id);
+                  if (updatedGoal) setSelectedGoal(updatedGoal);
+                }}
               />
             ) : (
               <div className="p-8 flex flex-col items-center justify-center h-full text-center min-h-[400px]">
