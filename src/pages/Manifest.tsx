@@ -313,6 +313,24 @@ export default function Manifest() {
     }
   };
 
+  const handleCompleteGoal = async (goal: ManifestGoal) => {
+    try {
+      const { error } = await supabase
+        .from("manifest_goals")
+        .update({ is_completed: true })
+        .eq("id", goal.id);
+      if (error) throw error;
+
+      if (selectedGoal?.id === goal.id) setSelectedGoal(null);
+
+      toast.success("🎉 Vision completed! Congratulations!");
+      fetchData();
+    } catch (error) {
+      console.error("Error completing goal:", error);
+      toast.error("Failed to complete vision");
+    }
+  };
+
   const handleCloseModal = (open: boolean) => {
     setShowCreateModal(open);
     if (!open) setEditingGoal(null);
@@ -480,6 +498,8 @@ export default function Manifest() {
                           isSelected={selectedGoal?.id === goal.id}
                           onClick={() => handleSelectGoal(goal)}
                           onEdit={() => handleEditGoal(goal)}
+                          onDelete={() => setDeletingGoal(goal)}
+                          onComplete={() => handleCompleteGoal(goal)}
                           onViewHistory={() => setHistoryGoal(goal)}
                           onImageUpdate={fetchData}
                         />
