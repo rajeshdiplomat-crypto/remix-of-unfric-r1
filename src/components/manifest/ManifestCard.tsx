@@ -93,51 +93,46 @@ export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEd
         isSelected ? "ring-2 ring-teal-500 shadow-lg" : "border-slate-200 dark:border-slate-700"
       }`}
     >
-      {/* Top-right action buttons */}
-      <div className="absolute top-1.5 right-1.5 z-10 flex gap-0.5" onClick={(e) => e.stopPropagation()}>
+      {/* Top-right action buttons - positioned over content area */}
+      <div 
+        className="absolute top-1 right-1 z-20 flex items-center gap-0.5" 
+        onClick={(e) => e.stopPropagation()}
+      >
         {onComplete && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-5 w-5 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-sm hover:bg-teal-100 dark:hover:bg-teal-900/50"
+          <button
             onClick={onComplete}
+            className="w-4 h-4 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-teal-50 dark:hover:bg-teal-900/50 transition-colors"
             title="Mark as Complete"
           >
             <CheckCircle className="h-2.5 w-2.5 text-teal-500" />
-          </Button>
+          </button>
         )}
         {onViewHistory && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-5 w-5 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-sm hover:bg-white dark:hover:bg-slate-700"
+          <button
             onClick={onViewHistory}
+            className="w-4 h-4 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
             title="View History"
           >
             <History className="h-2.5 w-2.5 text-slate-500" />
-          </Button>
+          </button>
         )}
         {onEdit && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-5 w-5 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-sm hover:bg-white dark:hover:bg-slate-700"
+          <button
             onClick={onEdit}
+            className="w-4 h-4 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
             title="Edit Vision"
           >
             <Pencil className="h-2.5 w-2.5 text-slate-500" />
-          </Button>
+          </button>
         )}
         {onDelete && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-5 w-5 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-sm hover:bg-destructive/10 dark:hover:bg-destructive/20"
+          <button
             onClick={onDelete}
+            className="w-4 h-4 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
             title="Delete Vision"
           >
             <Trash2 className="h-2.5 w-2.5 text-destructive" />
-          </Button>
+          </button>
         )}
       </div>
 
