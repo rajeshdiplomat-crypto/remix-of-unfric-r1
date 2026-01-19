@@ -16,8 +16,7 @@ interface FloatingElement {
   type: "action" | "proof" | "note" | "image";
   content: string;
   imageUrl?: string;
-  slot: number; // 0-3 for the 4 slots
-  animationDelay: number;
+  horizontalPosition: number; // percentage from left (10-80)
 }
 
 interface VisualizationSettings {
@@ -46,7 +45,8 @@ export function ManifestVisualizationMode({
     } catch {}
     return { showActions: true, showProofs: true, showNotes: true, showImages: true };
   });
-  const [currentBatch, setCurrentBatch] = useState(0);
+  const [activeElements, setActiveElements] = useState<FloatingElement[]>([]);
+  const [elementIndex, setElementIndex] = useState(0);
   
   const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
 
@@ -68,23 +68,20 @@ export function ManifestVisualizationMode({
     return images;
   }, [goal]);
 
-  // Create structured floating elements - 3-4 at a time, proofs with images+text together
+  // Create all floating elements
   const allElements = useMemo(() => {
     const elements: FloatingElement[] = [];
-    let idx = 0;
 
     // Add vision images
     if (settings.showImages) {
-      visionImages.forEach((img) => {
+      visionImages.forEach((img, idx) => {
         elements.push({
           id: `vision-${idx}`,
           type: "image",
           content: "",
           imageUrl: img,
-          slot: idx % 4,
-          animationDelay: 0,
+          horizontalPosition: 15 + Math.random() * 60,
         });
-        idx++;
       });
     }
 
@@ -96,10 +93,8 @@ export function ManifestVisualizationMode({
             id: `act-${act.id}`,
             type: "action",
             content: act.text,
-            slot: idx % 4,
-            animationDelay: 0,
+            horizontalPosition: 10 + Math.random() * 70,
           });
-          idx++;
         });
       }
 
@@ -111,10 +106,8 @@ export function ManifestVisualizationMode({
             type: "proof",
             content: proof.text || "",
             imageUrl: proof.image_url,
-            slot: idx % 4,
-            animationDelay: 0,
+            horizontalPosition: 10 + Math.random() * 60,
           });
-          idx++;
         });
       }
 
@@ -124,8 +117,7 @@ export function ManifestVisualizationMode({
           id: "growth-note",
           type: "note",
           content: previousPractice.growth_note,
-          slot: idx % 4,
-          animationDelay: 0,
+          horizontalPosition: 15 + Math.random() * 60,
         });
       }
     }
@@ -136,38 +128,42 @@ export function ManifestVisualizationMode({
       [elements[i], elements[j]] = [elements[j], elements[i]];
     }
 
-    // Assign slots (0-3) for structured display
-    elements.forEach((el, i) => {
-      el.slot = i % 4;
-      el.animationDelay = (i % 4) * 0.8;
-    });
-
     return elements;
   }, [previousPractice, visionImages, settings]);
 
-  // Group elements into batches of 3-4
-  const batches = useMemo(() => {
-    const result: FloatingElement[][] = [];
-    for (let i = 0; i < allElements.length; i += 4) {
-      result.push(allElements.slice(i, i + 4));
-    }
-    // Always have at least 1 batch
-    if (result.length === 0 && visionImages.length > 0) {
-      result.push([]);
-    }
-    return result;
-  }, [allElements, visionImages]);
-
-  // Cycle through batches every 8 seconds
+  // Spawn new floating elements one by one
   useEffect(() => {
-    if (isPaused || batches.length <= 1) return;
+    if (isPaused || allElements.length === 0) return;
+    
+    // Add initial element
+    if (activeElements.length === 0 && allElements.length > 0) {
+      setActiveElements([{ ...allElements[0], id: `${allElements[0].id}-${Date.now()}` }]);
+      setElementIndex(1);
+    }
+    
+    // Add new element every 3 seconds
     const interval = setInterval(() => {
-      setCurrentBatch((prev) => (prev + 1) % batches.length);
-    }, 8000);
+      if (allElements.length === 0) return;
+      const nextIdx = elementIndex % allElements.length;
+      const newElement = { 
+        ...allElements[nextIdx], 
+        id: `${allElements[nextIdx].id}-${Date.now()}`,
+        horizontalPosition: 10 + Math.random() * 70,
+      };
+      
+      setActiveElements(prev => {
+        // Keep max 4 elements at a time, remove oldest
+        const updated = [...prev, newElement];
+        if (updated.length > 4) {
+          return updated.slice(-4);
+        }
+        return updated;
+      });
+      setElementIndex(prev => prev + 1);
+    }, 3000);
+    
     return () => clearInterval(interval);
-  }, [isPaused, batches.length]);
-
-  const currentElements = batches[currentBatch] || [];
+  }, [isPaused, allElements, elementIndex, activeElements.length]);
 
   useEffect(() => {
     if (isPaused || secondsLeft <= 0) return;
@@ -214,13 +210,6 @@ export function ManifestVisualizationMode({
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - progress / 100);
 
-  // Slot positions for structured layout (left%, top%)
-  const slotPositions = [
-    { left: 8, top: 15 },
-    { left: 70, top: 12 },
-    { left: 5, top: 60 },
-    { left: 72, top: 65 },
-  ];
 
   const content = (
     <div style={{ position: "fixed", inset: 0, zIndex: 99999, display: "flex", flexDirection: "column" }}>
@@ -249,29 +238,27 @@ export function ManifestVisualizationMode({
         />
       </div>
 
-      {/* Structured Floating Elements - 3-4 at a time */}
-      {!isPaused && currentElements.map((el, index) => {
+      {/* Floating Elements - one by one from bottom */}
+      {!isPaused && activeElements.map((el) => {
         const isVisionImage = el.id.startsWith("vision-");
-        const pos = slotPositions[el.slot];
         const isProofWithImage = el.type === "proof" && el.imageUrl;
         
         return (
           <div
-            key={`${currentBatch}-${el.id}`}
+            key={el.id}
             style={{
               position: "absolute",
-              left: `${pos.left}%`,
-              top: `${pos.top}%`,
-              maxWidth: el.type === "image" ? (isVisionImage ? "280px" : "200px") : "320px",
-              padding: el.type === "image" ? "0" : "18px 24px",
+              left: `${el.horizontalPosition}%`,
+              bottom: "-200px",
+              maxWidth: el.type === "image" ? (isVisionImage ? "280px" : "220px") : "360px",
+              padding: el.type === "image" ? "0" : "20px 28px",
               background: el.type === "image" ? "transparent" : "rgba(255,255,255,0.12)",
               backdropFilter: el.type === "image" ? "none" : "blur(16px)",
               borderRadius: el.type === "image" ? "24px" : "20px",
               border: el.type === "image" ? "none" : "1px solid rgba(255,255,255,0.25)",
               color: "white",
-              fontSize: "16px",
-              animation: `floatUpStructured 8s ease-in-out forwards`,
-              animationDelay: `${index * 0.5}s`,
+              fontSize: "18px",
+              animation: `floatUpSmooth 12s ease-in-out forwards`,
               boxShadow: isVisionImage 
                 ? "0 16px 60px rgba(20,184,166,0.5), 0 0 100px rgba(168,85,247,0.4)"
                 : "0 12px 50px rgba(0,0,0,0.4)",
@@ -284,8 +271,8 @@ export function ManifestVisualizationMode({
                 src={el.imageUrl} 
                 alt={isVisionImage ? "Vision" : "Proof"}
                 style={{ 
-                  width: isVisionImage ? "260px" : "180px", 
-                  height: isVisionImage ? "260px" : "180px", 
+                  width: isVisionImage ? "280px" : "200px", 
+                  height: isVisionImage ? "280px" : "200px", 
                   objectFit: "cover", 
                   borderRadius: isVisionImage ? "22px" : "18px",
                   border: isVisionImage ? "4px solid rgba(20,184,166,0.6)" : "3px solid rgba(255,255,255,0.4)",
@@ -298,26 +285,26 @@ export function ManifestVisualizationMode({
             {el.type !== "image" && (
               <>
                 <div style={{ 
-                  fontSize: "11px", 
+                  fontSize: "12px", 
                   textTransform: "uppercase", 
                   letterSpacing: "2px",
                   opacity: 0.7,
-                  marginBottom: "8px",
+                  marginBottom: "10px",
                   fontWeight: 600,
                 }}>
                   {el.type === "action" ? "✨ Action" : el.type === "proof" ? "🎯 Proof" : "💭 Note"}
                 </div>
-                <div style={{ lineHeight: 1.6, fontSize: "16px", fontWeight: 500 }}>{el.content}</div>
+                <div style={{ lineHeight: 1.7, fontSize: "18px", fontWeight: 500 }}>{el.content}</div>
                 {isProofWithImage && (
                   <img 
                     src={el.imageUrl} 
                     alt="Proof" 
                     style={{ 
                       width: "100%", 
-                      height: "120px", 
+                      height: "140px", 
                       objectFit: "cover", 
                       borderRadius: "14px",
-                      marginTop: "12px",
+                      marginTop: "14px",
                       border: "2px solid rgba(255,255,255,0.3)",
                     }} 
                   />
@@ -546,8 +533,8 @@ export function ManifestVisualizationMode({
         </button>
       </div>
 
-      {/* Batch indicator */}
-      {batches.length > 1 && (
+      {/* Element count indicator */}
+      {allElements.length > 0 && (
         <div
           style={{
             position: "absolute",
@@ -567,7 +554,7 @@ export function ManifestVisualizationMode({
             fontSize: 12,
           }}
         >
-          {currentBatch + 1} / {batches.length} visions
+          {Math.min(elementIndex, allElements.length)} / {allElements.length} visions
         </div>
       )}
 
@@ -823,22 +810,22 @@ export function ManifestVisualizationMode({
           0%, 100% { opacity: 0.3; height: 30%; }
           50% { opacity: 1; height: 60%; }
         }
-        @keyframes floatUpStructured {
+        @keyframes floatUpSmooth {
           0% { 
             opacity: 0; 
-            transform: translateY(30px) scale(0.9); 
+            transform: translateY(0) scale(0.9); 
           }
-          15% { 
+          8% { 
             opacity: 1; 
-            transform: translateY(0) scale(1); 
+            transform: translateY(-15vh) scale(1); 
           }
           85% { 
             opacity: 1; 
-            transform: translateY(-20px) scale(1); 
+            transform: translateY(-85vh) scale(1); 
           }
           100% { 
             opacity: 0; 
-            transform: translateY(-40px) scale(0.95); 
+            transform: translateY(-100vh) scale(0.95); 
           }
         }
       `}</style>
