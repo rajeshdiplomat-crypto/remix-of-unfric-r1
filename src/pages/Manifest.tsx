@@ -558,8 +558,8 @@ export default function Manifest() {
                           goal={goal}
                           streak={streak}
                           momentum={momentum}
-                          isSelected={false}
-                          onClick={() => {}}
+                          isSelected={selectedGoal?.id === goal.id}
+                          onClick={() => handleSelectGoal(goal)}
                           onDelete={() => setDeletingGoal(goal)}
                           onImageUpdate={fetchData}
                           isCompleted

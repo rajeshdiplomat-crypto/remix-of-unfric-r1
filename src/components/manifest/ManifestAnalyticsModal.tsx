@@ -159,6 +159,7 @@ export function ManifestAnalyticsModal({
   );
 
   const activeGoals = goals.filter((g) => !g.is_completed);
+  const completedGoals = goals.filter((g) => g.is_completed);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -212,6 +213,21 @@ export function ManifestAnalyticsModal({
                     {goal.title.length > 25 ? goal.title.slice(0, 25) + "..." : goal.title}
                   </SelectItem>
                 ))}
+                {completedGoals.length > 0 && (
+                  <>
+                    <div className="px-2 py-1.5 text-[10px] font-semibold text-emerald-600 uppercase tracking-wide">
+                      Manifested
+                    </div>
+                    {completedGoals.map((goal) => (
+                      <SelectItem key={goal.id} value={goal.id} className="text-emerald-600">
+                        <span className="flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          {goal.title.length > 22 ? goal.title.slice(0, 22) + "..." : goal.title}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>

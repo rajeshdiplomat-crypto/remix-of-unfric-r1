@@ -394,6 +394,22 @@ export function ManifestPracticePanel({
             </p>
           )}
           
+          {/* Start Date & Total Practice Days */}
+          <div className="flex gap-3 mt-2">
+            {goal.start_date && (
+              <div className="text-xs text-slate-500">
+                <span className="text-slate-400">Started:</span>{" "}
+                <span className="font-medium text-slate-600 dark:text-slate-300">{format(new Date(goal.start_date), "MMM d, yyyy")}</span>
+              </div>
+            )}
+            {goal.created_at && (
+              <div className="text-xs text-slate-500">
+                <span className="text-slate-400">Practice Days:</span>{" "}
+                <span className="font-medium text-slate-600 dark:text-slate-300">{streak}</span>
+              </div>
+            )}
+          </div>
+          
           {/* Vision Board - Show additional images - Larger and stretched */}
           {goal.vision_images && goal.vision_images.length > 0 && (
             <div className="mt-3 flex gap-2 overflow-x-auto pb-1.5">
