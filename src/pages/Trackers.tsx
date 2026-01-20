@@ -105,7 +105,7 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
     priority: "High",
     description: "Morning planning routine",
     frequencyPattern: [true, true, true, true, true, true, true],
-    habitDays: 31,
+    habitDays: 61,
     startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
     completions: generateSampleCompletions(0.85),
     createdAt: new Date().toISOString(),
@@ -117,7 +117,7 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
     priority: "Medium",
     description: "Morning stretching",
     frequencyPattern: [true, true, true, true, true, true, true],
-    habitDays: 31,
+    habitDays: 54,
     startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
     completions: generateSampleCompletions(0.75),
     createdAt: new Date().toISOString(),
@@ -129,7 +129,7 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
     priority: "High",
     description: "Stay hydrated",
     frequencyPattern: [true, true, true, true, true, true, true],
-    habitDays: 31,
+    habitDays: 90,
     startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
     completions: generateSampleCompletions(0.65),
     createdAt: new Date().toISOString(),
@@ -141,7 +141,7 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
     priority: "High",
     description: "Daily learning",
     frequencyPattern: [true, true, true, true, true, false, false],
-    habitDays: 20,
+    habitDays: 45,
     startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
     completions: generateSampleCompletions(0.9),
     createdAt: new Date().toISOString(),
@@ -153,7 +153,7 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
     priority: "High",
     description: "Gym workout",
     frequencyPattern: [true, false, true, false, true, false, false],
-    habitDays: 15,
+    habitDays: 22,
     startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
     completions: generateSampleCompletions(0.8),
     createdAt: new Date().toISOString(),
@@ -165,7 +165,7 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
     priority: "Medium",
     description: "30 min cardio",
     frequencyPattern: [false, true, false, true, false, true, false],
-    habitDays: 15,
+    habitDays: 27,
     startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
     completions: generateSampleCompletions(0.7),
     createdAt: new Date().toISOString(),
@@ -177,7 +177,7 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
     priority: "Medium",
     description: "Daily reading",
     frequencyPattern: [true, true, true, true, true, true, true],
-    habitDays: 31,
+    habitDays: 66,
     startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
     completions: generateSampleCompletions(0.6),
     createdAt: new Date().toISOString(),
@@ -189,7 +189,7 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
     priority: "High",
     description: "10 min meditation",
     frequencyPattern: [true, true, true, true, true, true, true],
-    habitDays: 31,
+    habitDays: 42,
     startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
     completions: generateSampleCompletions(0.55),
     createdAt: new Date().toISOString(),
@@ -201,7 +201,7 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
     priority: "High",
     description: "Digital detox",
     frequencyPattern: [true, true, true, true, true, true, true],
-    habitDays: 31,
+    habitDays: 30,
     startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
     completions: generateSampleCompletions(0.5),
     createdAt: new Date().toISOString(),
@@ -213,7 +213,7 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
     priority: "Low",
     description: "Write 3 things",
     frequencyPattern: [true, true, true, true, true, true, true],
-    habitDays: 31,
+    habitDays: 21,
     startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
     completions: generateSampleCompletions(0.75),
     createdAt: new Date().toISOString(),
@@ -1017,53 +1017,48 @@ export default function Trackers() {
                             "dark:bg-slate-900/50",
                           )}
                         >
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             {/* Drag Handle */}
                             <button
-                              className="cursor-grab text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                              className="cursor-grab text-slate-300 hover:text-slate-500 dark:hover:text-slate-300"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <GripVertical className="h-4 w-4" />
+                              <GripVertical className="h-3.5 w-3.5" />
+                            </button>
+
+                            {/* Complete Today */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleCompletion(activity.id, new Date());
+                              }}
+                              className={cn(
+                                "p-0.5 rounded transition-colors",
+                                isTodayCompleted ? "text-green-500" : "text-slate-300 hover:text-green-500",
+                              )}
+                              title={isTodayCompleted ? "Completed today" : "Mark complete for today"}
+                            >
+                              <CheckCircle className="h-3.5 w-3.5" />
+                            </button>
+
+                            {/* Delete */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm("Delete this habit?")) {
+                                  handleDelete(activity.id);
+                                }
+                              }}
+                              className="p-0.5 rounded text-slate-300 hover:text-red-500 transition-colors"
+                              title="Delete habit"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
 
                             {/* Habit Name */}
-                            <span className="font-medium text-slate-700 dark:text-slate-300 flex-1 truncate max-w-[120px]">
+                            <span className="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[100px] ml-1">
                               {activity.name}
                             </span>
-
-                            {/* Quick Actions - Always visible */}
-                            <div className="flex items-center gap-1">
-                              {/* Complete Today */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleCompletion(activity.id, new Date());
-                                }}
-                                className={cn(
-                                  "p-1 rounded transition-colors",
-                                  isTodayCompleted
-                                    ? "text-green-600 bg-green-100 dark:bg-green-900/30"
-                                    : "text-slate-400 hover:text-green-600 hover:bg-green-50",
-                                )}
-                                title={isTodayCompleted ? "Completed today" : "Mark complete for today"}
-                              >
-                                <CheckCircle className="h-3.5 w-3.5" />
-                              </button>
-
-                              {/* Delete */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (confirm("Delete this habit?")) {
-                                    handleDelete(activity.id);
-                                  }
-                                }}
-                                className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                title="Delete habit"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
                           </div>
                         </td>
                         <td className="p-2 text-center text-slate-500">{activity.habitDays}</td>
