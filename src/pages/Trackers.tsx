@@ -741,14 +741,18 @@ export default function Trackers() {
                   <svg viewBox="0 0 1000 200" className="w-full h-full" preserveAspectRatio="none">
                     {(() => {
                       // Calculate data points
-                      const dataPoints: { x: number; y: number; value: number }[] = [];
+                      const dataPoints: { x: number; y: number; value: number; isPast: boolean; isFuture: boolean }[] =
+                        [];
                       const numDays = Math.min(daysInMonth.length, 31);
+                      const today = new Date();
 
                       for (let i = 0; i < numDays; i++) {
                         const day = daysInMonth[i];
                         if (!day) continue;
                         const dayStr = format(day, "yyyy-MM-dd");
                         const dayOfWeek = (day.getDay() + 6) % 7;
+                        const isPast = isBefore(day, today) || isToday(day);
+                        const isFuture = isAfter(day, today);
 
                         let completed = 0;
                         let total = 0;
@@ -759,10 +763,10 @@ export default function Trackers() {
                           }
                         });
 
-                        const value = total > 0 ? (completed / total) * 100 : 50;
+                        const value = total > 0 ? (completed / total) * 100 : isFuture ? 50 : 0;
                         const x = (i / (numDays - 1)) * 1000;
                         const y = 180 - (value / 100) * 160;
-                        dataPoints.push({ x, y, value });
+                        dataPoints.push({ x, y, value, isPast, isFuture });
                       }
 
                       if (dataPoints.length < 2) return null;
@@ -822,19 +826,25 @@ export default function Trackers() {
 
                           {/* Data points */}
                           {dataPoints.map((point, i) => {
-                            const isLow = point.value < 10;
+                            const isMissed = point.isPast && point.value === 0;
+                            const pointColor = point.isFuture
+                              ? "#94a3b8" // gray for future
+                              : isMissed
+                                ? "#ef4444" // red for missed
+                                : "#14b8a6"; // teal for completed
+
                             return (
                               <circle
                                 key={i}
                                 cx={point.x}
                                 cy={point.y}
-                                r={isLow ? "6" : "5"}
-                                fill={isLow ? "#ef4444" : "#14b8a6"}
+                                r={isMissed ? "6" : "4"}
+                                fill={pointColor}
                                 stroke="white"
                                 strokeWidth="2"
                                 className="transition-all duration-300"
                               >
-                                <title>{`Day ${i + 1}: ${Math.round(point.value)}%${isLow ? " (Missed)" : ""}`}</title>
+                                <title>{`Day ${i + 1}: ${Math.round(point.value)}%${isMissed ? " (Missed)" : point.isFuture ? " (Upcoming)" : ""}`}</title>
                               </circle>
                             );
                           })}
