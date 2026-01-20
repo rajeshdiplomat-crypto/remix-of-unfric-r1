@@ -7,8 +7,12 @@ import {
   isBefore,
   isToday,
   parseISO,
-  startOfWeek,
+  startOfMonth,
+  endOfMonth,
+  getDaysInMonth,
   subDays,
+  startOfWeek,
+  getDay,
 } from "date-fns";
 import { computeEndDateForHabitDays } from "@/lib/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,13 +27,22 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar as CalendarIcon, ChevronDown, ChevronUp, Plus } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  ChevronDown,
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Check,
+  Flame,
+  Target,
+  TrendingUp,
+  Zap,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ActivityImageUpload, loadActivityImage, saveActivityImage } from "@/components/trackers/ActivityImageUpload";
-import { TrackerCard } from "@/components/trackers/TrackerCard";
-import { TrackerPracticePanel } from "@/components/trackers/TrackerPracticePanel";
-import { TrackerSidebarPanel } from "@/components/trackers/TrackerSidebarPanel";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
@@ -62,75 +75,110 @@ const CATEGORIES = [
 
 const PRIORITIES = ["Low", "Medium", "High"];
 const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
+const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const SAMPLE_ACTIVITIES: ActivityItem[] = [
   {
     id: "1",
-    name: "30-Day Fitness Challenge",
-    category: "health",
+    name: "Plan my day",
+    category: "growth",
     priority: "High",
-    description: "Daily workout routine",
-    frequencyPattern: [true, true, true, true, true, false, false],
-    habitDays: 22,
-    startDate: format(addDays(new Date(), -10), "yyyy-MM-dd"),
-    completions: {
-      [format(addDays(new Date(), -10), "yyyy-MM-dd")]: true,
-      [format(addDays(new Date(), -8), "yyyy-MM-dd")]: true,
-      [format(addDays(new Date(), -7), "yyyy-MM-dd")]: true,
-      [format(addDays(new Date(), -6), "yyyy-MM-dd")]: true,
-      [format(addDays(new Date(), -4), "yyyy-MM-dd")]: true,
-      [format(addDays(new Date(), -3), "yyyy-MM-dd")]: true,
-      [format(addDays(new Date(), -2), "yyyy-MM-dd")]: true,
-      [format(addDays(new Date(), -1), "yyyy-MM-dd")]: true,
-    },
+    description: "Morning planning routine",
+    frequencyPattern: [true, true, true, true, true, true, true],
+    habitDays: 31,
+    startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
+    completions: {},
     createdAt: new Date().toISOString(),
   },
   {
     id: "2",
-    name: "Read 'Atomic Habits'",
-    category: "growth",
+    name: "Stretch for 10 mins",
+    category: "health",
     priority: "Medium",
-    description: "Read 20 pages daily",
+    description: "Morning stretching",
     frequencyPattern: [true, true, true, true, true, true, true],
-    habitDays: 30,
-    startDate: format(addDays(new Date(), -30), "yyyy-MM-dd"),
-    completions: Object.fromEntries(
-      Array.from({ length: 28 }, (_, i) => [format(addDays(new Date(), -30 + i), "yyyy-MM-dd"), true]),
-    ),
+    habitDays: 31,
+    startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
+    completions: {},
     createdAt: new Date().toISOString(),
   },
   {
     id: "3",
-    name: "Spanish Level 1",
-    category: "education",
-    priority: "Medium",
-    description: "Language learning",
-    frequencyPattern: [true, true, true, true, true, false, false],
-    habitDays: 44,
-    startDate: format(addDays(new Date(), 7), "yyyy-MM-dd"),
+    name: "Drink 2.5L of water",
+    category: "health",
+    priority: "High",
+    description: "Stay hydrated",
+    frequencyPattern: [true, true, true, true, true, true, true],
+    habitDays: 31,
+    startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
     completions: {},
     createdAt: new Date().toISOString(),
   },
   {
     id: "4",
-    name: "Digital Detox",
-    category: "wellbeing",
+    name: "Study for 30 mins",
+    category: "education",
     priority: "High",
-    description: "No social media after 8pm",
-    frequencyPattern: [true, true, true, true, true, true, true],
-    habitDays: 7,
-    startDate: format(addDays(new Date(), -5), "yyyy-MM-dd"),
-    completions: {
-      [format(addDays(new Date(), -5), "yyyy-MM-dd")]: true,
-      [format(addDays(new Date(), -4), "yyyy-MM-dd")]: true,
-      [format(addDays(new Date(), -3), "yyyy-MM-dd")]: true,
-      [format(addDays(new Date(), -2), "yyyy-MM-dd")]: true,
-      [format(addDays(new Date(), -1), "yyyy-MM-dd")]: true,
-      [format(new Date(), "yyyy-MM-dd")]: true,
-    },
+    description: "Daily learning",
+    frequencyPattern: [true, true, true, true, true, false, false],
+    habitDays: 20,
+    startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
+    completions: {},
     createdAt: new Date().toISOString(),
   },
 ];
+
+// Progress Ring Component
+function ProgressRing({
+  progress,
+  size = 80,
+  strokeWidth = 8,
+  color = "teal",
+  label,
+}: {
+  progress: number;
+  size?: number;
+  strokeWidth?: number;
+  color?: string;
+  label: string;
+}) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (progress / 100) * circumference;
+
+  const colorMap: Record<string, string> = {
+    teal: "#14b8a6",
+    green: "#22c55e",
+    blue: "#3b82f6",
+    purple: "#a855f7",
+  };
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg width={size} height={size} className="transform -rotate-90">
+          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#e5e7eb" strokeWidth={strokeWidth} />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke={colorMap[color] || colorMap.teal}
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            className="transition-all duration-500"
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-lg font-bold text-slate-700 dark:text-white">{progress}%</span>
+        </div>
+      </div>
+      <p className="text-xs text-slate-500 mt-1 text-center">{label}</p>
+    </div>
+  );
+}
 
 export default function Trackers() {
   const { toast } = useToast();
@@ -138,14 +186,10 @@ export default function Trackers() {
 
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingActivity, setEditingActivity] = useState<ActivityItem | null>(null);
-
-  const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
-  const [showCompleted, setShowCompleted] = useState(false);
 
   // form
   const [formName, setFormName] = useState("");
@@ -219,39 +263,147 @@ export default function Trackers() {
     setLoading(false);
   };
 
-  const getEndDate = (activity: ActivityItem) =>
-    computeEndDateForHabitDays(parseISO(activity.startDate), activity.frequencyPattern, activity.habitDays);
-
-  const getStatus = (activity: ActivityItem): "active" | "completed" | "upcoming" => {
-    const today = new Date();
-    const startDate = parseISO(activity.startDate);
-    const endDate = getEndDate(activity);
-    if (isBefore(today, startDate)) return "upcoming";
-    if (isAfter(today, endDate)) return "completed";
-    return "active";
-  };
-
-  const getScheduledSessions = (activity: ActivityItem) => {
-    let count = 0;
-    const startDate = parseISO(activity.startDate);
-    const endDate = getEndDate(activity);
-
-    let currentDate = startDate;
-    while (!isAfter(currentDate, endDate)) {
-      const dayOfWeek = (currentDate.getDay() + 6) % 7;
-      if (activity.frequencyPattern[dayOfWeek]) count++;
-      currentDate = addDays(currentDate, 1);
+  // Get days in current month
+  const daysInMonth = useMemo(() => {
+    const days: Date[] = [];
+    const start = startOfMonth(currentMonth);
+    const end = endOfMonth(currentMonth);
+    let current = start;
+    while (!isAfter(current, end)) {
+      days.push(current);
+      current = addDays(current, 1);
     }
-    return count;
-  };
+    return days;
+  }, [currentMonth]);
 
-  const isPlannedForDate = (activity: ActivityItem, date: Date) => {
-    const startDate = parseISO(activity.startDate);
-    const endDate = getEndDate(activity);
-    if (isBefore(date, startDate) || isAfter(date, endDate)) return false;
-    const dayOfWeek = (date.getDay() + 6) % 7;
-    return activity.frequencyPattern[dayOfWeek];
-  };
+  // Calculate stats for each activity
+  const activityStats = useMemo(() => {
+    return activities.map((activity) => {
+      let streak = 0;
+      let checkDate = new Date();
+
+      // Calculate current streak
+      while (true) {
+        const dateStr = format(checkDate, "yyyy-MM-dd");
+        const dayOfWeek = (checkDate.getDay() + 6) % 7;
+        const isPlanned = activity.frequencyPattern[dayOfWeek];
+
+        if (isPlanned) {
+          if (activity.completions[dateStr]) streak++;
+          else if (format(checkDate, "yyyy-MM-dd") !== format(new Date(), "yyyy-MM-dd")) break;
+        }
+
+        checkDate = subDays(checkDate, 1);
+        if (isBefore(checkDate, parseISO(activity.startDate))) break;
+      }
+
+      // Calculate monthly completions
+      const monthStart = startOfMonth(currentMonth);
+      const monthEnd = endOfMonth(currentMonth);
+      let monthlyCompleted = 0;
+      let monthlyTotal = 0;
+
+      let day = monthStart;
+      while (!isAfter(day, monthEnd)) {
+        const dayOfWeek = (day.getDay() + 6) % 7;
+        if (activity.frequencyPattern[dayOfWeek]) {
+          monthlyTotal++;
+          if (activity.completions[format(day, "yyyy-MM-dd")]) {
+            monthlyCompleted++;
+          }
+        }
+        day = addDays(day, 1);
+      }
+
+      const progress = monthlyTotal > 0 ? Math.round((monthlyCompleted / monthlyTotal) * 100) : 0;
+
+      return {
+        id: activity.id,
+        streak,
+        completed: monthlyCompleted,
+        total: monthlyTotal,
+        progress,
+      };
+    });
+  }, [activities, currentMonth]);
+
+  // Overall stats
+  const overallStats = useMemo(() => {
+    const today = new Date();
+    const todayStr = format(today, "yyyy-MM-dd");
+    const dayOfWeek = (today.getDay() + 6) % 7;
+
+    let dailyCompleted = 0;
+    let dailyTotal = 0;
+    let weeklyCompleted = 0;
+    let weeklyTotal = 0;
+    let monthlyCompleted = 0;
+    let monthlyTotal = 0;
+
+    activities.forEach((activity) => {
+      // Daily
+      if (activity.frequencyPattern[dayOfWeek]) {
+        dailyTotal++;
+        if (activity.completions[todayStr]) dailyCompleted++;
+      }
+
+      // Weekly (last 7 days)
+      for (let i = 0; i < 7; i++) {
+        const d = subDays(today, i);
+        const dStr = format(d, "yyyy-MM-dd");
+        const dDayOfWeek = (d.getDay() + 6) % 7;
+        if (activity.frequencyPattern[dDayOfWeek]) {
+          weeklyTotal++;
+          if (activity.completions[dStr]) weeklyCompleted++;
+        }
+      }
+
+      // Monthly
+      const stats = activityStats.find((s) => s.id === activity.id);
+      if (stats) {
+        monthlyCompleted += stats.completed;
+        monthlyTotal += stats.total;
+      }
+    });
+
+    const momentum = Math.round(
+      (dailyTotal > 0 ? dailyCompleted / dailyTotal : 0) * 40 +
+        (weeklyTotal > 0 ? weeklyCompleted / weeklyTotal : 0) * 30 +
+        (monthlyTotal > 0 ? monthlyCompleted / monthlyTotal : 0) * 30,
+    );
+
+    return {
+      momentum,
+      dailyProgress: dailyTotal > 0 ? Math.round((dailyCompleted / dailyTotal) * 100) : 0,
+      weeklyProgress: weeklyTotal > 0 ? Math.round((weeklyCompleted / weeklyTotal) * 100) : 0,
+      monthlyProgress: monthlyTotal > 0 ? Math.round((monthlyCompleted / monthlyTotal) * 100) : 0,
+      totalCompleted: monthlyCompleted,
+      totalRemaining: monthlyTotal - monthlyCompleted,
+    };
+  }, [activities, activityStats]);
+
+  // Top habits
+  const topHabits = useMemo(() => {
+    return [...activityStats]
+      .sort((a, b) => b.completed - a.completed)
+      .slice(0, 5)
+      .map((stat) => ({
+        ...stat,
+        name: activities.find((a) => a.id === stat.id)?.name || "",
+      }));
+  }, [activityStats, activities]);
+
+  // Active streaks
+  const activeStreaks = useMemo(() => {
+    return [...activityStats]
+      .filter((s) => s.streak > 0)
+      .sort((a, b) => b.streak - a.streak)
+      .slice(0, 8)
+      .map((stat) => ({
+        ...stat,
+        name: activities.find((a) => a.id === stat.id)?.name || "",
+      }));
+  }, [activityStats, activities]);
 
   const toggleCompletion = async (activityId: string, date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
@@ -259,7 +411,6 @@ export default function Trackers() {
     if (!activity) return;
 
     const wasCompleted = activity.completions[dateStr];
-    const nowCompleted = !wasCompleted;
 
     setActivities((prev) =>
       prev.map((a) => {
@@ -286,28 +437,6 @@ export default function Trackers() {
           completed_date: dateStr,
         });
       }
-
-      // Sync linked task
-      const { data: linkedTasks } = await supabase
-        .from("tasks")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("title", activity.name)
-        .eq("due_date", dateStr)
-        .contains("tags", ["Habit"]);
-
-      if (linkedTasks && linkedTasks.length > 0) {
-        await supabase
-          .from("tasks")
-          .update({
-            is_completed: nowCompleted,
-            completed_at: nowCompleted ? new Date().toISOString() : null,
-          })
-          .in(
-            "id",
-            linkedTasks.map((t) => t.id),
-          );
-      }
     }
   };
 
@@ -325,43 +454,6 @@ export default function Trackers() {
     setFormDuration(30);
     setFormAddToTasks(true);
     setDialogOpen(true);
-  };
-
-  const openEditDialog = (activity: ActivityItem) => {
-    setEditingActivity(activity);
-    setFormName(activity.name);
-    setFormCategory(activity.category);
-    setFormPriority(activity.priority);
-    setFormDescription(activity.description);
-    setFormFrequency([...activity.frequencyPattern]);
-    setFormDays(activity.habitDays);
-    setFormStartDate(parseISO(activity.startDate));
-    setFormImageUrl(loadActivityImage(activity.id));
-    setFormTime(activity.time || "09:00");
-    setFormDuration(activity.duration || 30);
-    setFormAddToTasks(false);
-    setDialogOpen(true);
-  };
-
-  const selectActivity = (activity: ActivityItem) => {
-    const current = activities.find((a) => a.id === activity.id);
-    setSelectedActivity(current || activity);
-  };
-
-  const handleSkipDay = (activityId: string, date: Date) => {
-    const dateStr = format(date, "yyyy-MM-dd");
-    setActivities((prev) =>
-      prev.map((a) => {
-        if (a.id !== activityId) return a;
-        const skipped = { ...(a.skipped || {}), [dateStr]: true };
-        return { ...a, skipped };
-      }),
-    );
-    toast({ title: "Day skipped" });
-  };
-
-  const handleImageChange = (activityId: string, imageUrl: string | null) => {
-    saveActivityImage(activityId, imageUrl);
   };
 
   const handleSave = async () => {
@@ -384,8 +476,6 @@ export default function Trackers() {
       duration: formDuration,
     };
 
-    const scheduledSessions = getScheduledSessions(tempActivity);
-
     if (formImageUrl) saveActivityImage(tempActivity.id, formImageUrl);
 
     setActivities((prev) => {
@@ -398,7 +488,7 @@ export default function Trackers() {
         .map((selected, idx) => (selected ? idx + 1 : null))
         .filter((d): d is number => d !== null);
 
-      const { error } = await supabase.from("habits").upsert({
+      await supabase.from("habits").upsert({
         id: tempActivity.id,
         user_id: user.id,
         name: tempActivity.name,
@@ -406,65 +496,14 @@ export default function Trackers() {
         frequency: "custom",
         target_days: targetDays,
       });
-
-      if (error) {
-        toast({ title: "Sync failed", description: error.message, variant: "destructive" });
-        return;
-      }
-
-      // Create tasks for each scheduled day if enabled
-      if (formAddToTasks && !editingActivity) {
-        const scheduledDates: Date[] = [];
-        let checkDate = formStartDate;
-        let count = 0;
-        const endDate = computeEndDateForHabitDays(formStartDate, formFrequency, formDays);
-
-        while (!isAfter(checkDate, endDate) && count < formDays) {
-          const dayOfWeek = (checkDate.getDay() + 6) % 7;
-          if (formFrequency[dayOfWeek]) {
-            scheduledDates.push(new Date(checkDate));
-            count++;
-          }
-          checkDate = addDays(checkDate, 1);
-        }
-
-        const tasks = scheduledDates.map((date) => ({
-          id: crypto.randomUUID(),
-          user_id: user.id,
-          title: `${tempActivity.name}`,
-          description: tempActivity.description || null,
-          due_date: format(date, "yyyy-MM-dd"),
-          due_time: formTime,
-          priority: formPriority.toLowerCase(),
-          urgency: "low",
-          importance: formPriority === "High" ? "high" : "low",
-          time_of_day:
-            parseInt(formTime.split(":")[0]) < 12
-              ? "morning"
-              : parseInt(formTime.split(":")[0]) < 17
-                ? "afternoon"
-                : "evening",
-          is_completed: false,
-          tags: ["Habit", formCategory],
-        }));
-
-        if (tasks.length > 0) {
-          await supabase.from("tasks").insert(tasks as any);
-        }
-      }
     }
 
-    const tasksMessage = formAddToTasks && !editingActivity ? ` + ${scheduledSessions} tasks added` : "";
-    toast({
-      title: editingActivity ? "Activity updated" : "Activity created",
-      description: `${scheduledSessions} habit sessions scheduled${tasksMessage}`,
-    });
+    toast({ title: editingActivity ? "Activity updated" : "Activity created" });
     setDialogOpen(false);
   };
 
   const handleDelete = async (activityId: string) => {
     setActivities((prev) => prev.filter((a) => a.id !== activityId));
-    if (selectedActivity?.id === activityId) setSelectedActivity(null);
 
     if (user) {
       await supabase.from("habit_completions").delete().eq("habit_id", activityId).eq("user_id", user.id);
@@ -474,26 +513,13 @@ export default function Trackers() {
     toast({ title: "Activity deleted" });
   };
 
-  // Filter activities
-  const activeActivities = useMemo(() => {
-    return activities.filter((a) => getStatus(a) === "active" || getStatus(a) === "upcoming");
-  }, [activities]);
-
-  const completedActivities = useMemo(() => {
-    return activities.filter((a) => getStatus(a) === "completed");
-  }, [activities]);
-
-  const currentSelectedActivity = selectedActivity
-    ? activities.find((a) => a.id === selectedActivity.id) || null
-    : null;
-
   if (loading) {
     return <PageLoadingScreen module="trackers" />;
   }
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col w-full flex-1">
+      <div className="flex flex-col w-full flex-1 bg-slate-50 dark:bg-slate-950 min-h-screen">
         {/* Hero */}
         <PageHero
           storageKey="tracker_hero_src"
@@ -503,155 +529,318 @@ export default function Trackers() {
           subtitle={PAGE_HERO_TEXT.trackers.subtitle}
         />
 
-        {/* 3-Column Layout */}
-        <div
-          className={cn(
-            "grid gap-3 px-2 sm:px-4 py-2 flex-1",
-            rightPanelCollapsed
-              ? "grid-cols-1 lg:grid-cols-[420px_1fr_64px]"
-              : "grid-cols-1 lg:grid-cols-[420px_1fr_260px]",
-          )}
-        >
-          {/* LEFT PANEL - Activity Cards */}
-          <div className="hidden lg:flex flex-col h-full min-h-0">
-            {/* Activities Container - White background like Manifest */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex flex-col overflow-hidden flex-1 min-h-0">
-              {/* Header with Create Button */}
-              <div className="p-3 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
-                <h2 className="text-base font-semibold text-slate-800 dark:text-white">Your Activities</h2>
+        {/* Dashboard Content */}
+        <div className="px-4 py-4 space-y-4">
+          {/* Top Section: Month + Progress Rings */}
+          <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_200px] gap-4">
+            {/* Month Card */}
+            <Card className="p-4 rounded-xl bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950/30 dark:to-cyan-950/30">
+              <div className="flex items-center justify-between mb-2">
                 <Button
-                  onClick={openCreateDialog}
-                  size="sm"
-                  className="rounded-lg h-8 px-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all text-xs"
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setCurrentMonth(addDays(startOfMonth(currentMonth), -1))}
                 >
-                  <Plus className="h-3.5 w-3.5 mr-1" /> New
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <h2 className="text-xl font-bold text-slate-800 dark:text-white italic">
+                  {format(currentMonth, "MMMM")}
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setCurrentMonth(addDays(endOfMonth(currentMonth), 1))}
+                >
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
+              <p className="text-xs text-center text-slate-500 mb-3">- HABIT TRACKER -</p>
 
-              {/* Activity Cards List */}
-              {activeActivities.length === 0 ? (
-                <div className="p-3 flex-1 flex items-center justify-center">
-                  <Card className="rounded-xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900 w-full">
-                    <div className="py-8 px-4 text-center">
-                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">No active activities</p>
-                      <Button size="sm" className="rounded-xl" onClick={openCreateDialog}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create Activity
-                      </Button>
-                    </div>
-                  </Card>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Start Date</span>
+                  <span className="font-medium">{format(startOfMonth(currentMonth), "MMMM d, yyyy")}</span>
                 </div>
-              ) : (
-                <div
-                  className="overflow-y-auto flex-1 min-h-0 p-2 custom-scrollbar relative"
-                  style={{ maxHeight: "calc(5 * 140px + 4 * 8px)" }}
-                >
-                  <div className="space-y-2">
-                    {activeActivities.map((activity) => (
-                      <TrackerCard
-                        key={activity.id}
-                        activity={activity}
-                        isSelected={selectedActivity?.id === activity.id}
-                        onClick={() => selectActivity(activity)}
-                        onEdit={() => openEditDialog(activity)}
-                        onDelete={() => handleDelete(activity.id)}
-                        onImageUpdate={fetchHabits}
+                <div className="flex justify-between">
+                  <span className="text-slate-500">End Date</span>
+                  <span className="font-medium">{format(endOfMonth(currentMonth), "MMMM d, yyyy")}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Days Left</span>
+                  <span className="font-medium">{differenceInDays(endOfMonth(currentMonth), new Date()) + 1}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Daily Habits</span>
+                  <span className="font-medium">{activities.length}</span>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-2">
+                <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/30 text-center">
+                  <p className="text-xs text-green-600 dark:text-green-400 font-medium">COMPLETED</p>
+                  <p className="text-2xl font-bold text-green-700 dark:text-green-300">{overallStats.totalCompleted}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-red-100 dark:bg-red-900/30 text-center">
+                  <p className="text-xs text-red-600 dark:text-red-400 font-medium">REMAINING</p>
+                  <p className="text-2xl font-bold text-red-700 dark:text-red-300">{overallStats.totalRemaining}</p>
+                </div>
+              </div>
+            </Card>
+
+            {/* Progress Rings + Chart */}
+            <Card className="p-4 rounded-xl">
+              <div className="flex justify-around mb-4">
+                <ProgressRing progress={overallStats.momentum} color="teal" label="MOMENTUM" />
+                <ProgressRing progress={overallStats.dailyProgress} color="green" label="DAILY PROGRESS" />
+                <ProgressRing progress={overallStats.weeklyProgress} color="blue" label="WEEKLY PROGRESS" />
+                <ProgressRing progress={overallStats.monthlyProgress} color="purple" label="MONTHLY PROGRESS" />
+              </div>
+
+              {/* Simple progress bar chart */}
+              <div className="mt-4 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                <p className="text-xs font-medium text-slate-500 mb-3 text-center">DAILY PROGRESS</p>
+                <div className="h-24 flex items-end gap-1">
+                  {Array.from({ length: Math.min(daysInMonth.length, 31) }, (_, i) => {
+                    const day = daysInMonth[i];
+                    if (!day) return null;
+                    const dayStr = format(day, "yyyy-MM-dd");
+                    const dayOfWeek = (day.getDay() + 6) % 7;
+
+                    let completed = 0;
+                    let total = 0;
+                    activities.forEach((a) => {
+                      if (a.frequencyPattern[dayOfWeek]) {
+                        total++;
+                        if (a.completions[dayStr]) completed++;
+                      }
+                    });
+
+                    const height = total > 0 ? (completed / total) * 100 : 0;
+                    const isPast = isBefore(day, new Date()) || isToday(day);
+
+                    return (
+                      <div
+                        key={i}
+                        className={cn(
+                          "flex-1 rounded-t transition-all",
+                          isPast ? "bg-teal-400" : "bg-slate-200 dark:bg-slate-700",
+                        )}
+                        style={{ height: `${Math.max(height, 4)}%` }}
+                        title={`${format(day, "MMM d")}: ${completed}/${total}`}
                       />
-                    ))}
-                  </div>
-                  {/* Fade indicator at bottom */}
-                  {activeActivities.length > 5 && (
-                    <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white dark:from-slate-900 to-transparent pointer-events-none" />
-                  )}
+                    );
+                  })}
                 </div>
-              )}
+              </div>
+            </Card>
 
-              {/* Completed Activities Section */}
-              {completedActivities.length > 0 && (
-                <div className="border-t border-slate-100 dark:border-slate-800">
-                  <button
-                    onClick={() => setShowCompleted(!showCompleted)}
-                    className="w-full p-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+            {/* Right Sidebar: Top Habits + Streaks */}
+            <div className="space-y-4">
+              <Card className="p-3 rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">TOP HABITS</p>
+                  <Button
+                    size="sm"
+                    onClick={openCreateDialog}
+                    className="h-6 px-2 text-xs rounded-lg bg-teal-500 hover:bg-teal-600"
                   >
-                    <span className="text-xs font-medium text-slate-500">
-                      Completed Activities ({completedActivities.length})
-                    </span>
-                    {showCompleted ? (
-                      <ChevronUp className="h-4 w-4 text-slate-400" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 text-slate-400" />
-                    )}
-                  </button>
-                  {showCompleted && (
-                    <div className="p-2 space-y-2 max-h-[300px] overflow-y-auto">
-                      {completedActivities.map((activity) => (
-                        <TrackerCard
-                          key={activity.id}
-                          activity={activity}
-                          isSelected={selectedActivity?.id === activity.id}
-                          onClick={() => selectActivity(activity)}
-                          onEdit={() => openEditDialog(activity)}
-                          onDelete={() => handleDelete(activity.id)}
-                          isCompleted
-                          onImageUpdate={fetchHabits}
-                        />
-                      ))}
-                    </div>
-                  )}
+                    <Plus className="h-3 w-3 mr-1" /> Add
+                  </Button>
                 </div>
-              )}
+                <div className="space-y-1">
+                  {topHabits.map((habit, i) => (
+                    <div key={habit.id} className="flex items-center gap-2 text-xs">
+                      <span className="truncate flex-1 text-slate-600 dark:text-slate-400">{habit.name}</span>
+                      <span className="px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium">
+                        {habit.completed}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              <Card className="p-3 rounded-xl">
+                <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-2">ACTIVE STREAKS</p>
+                <div className="space-y-1">
+                  {activeStreaks.map((habit) => (
+                    <div key={habit.id} className="flex items-center gap-2 text-xs">
+                      <span className="truncate flex-1 text-slate-600 dark:text-slate-400">{habit.name}</span>
+                      <div className="flex items-center gap-1">
+                        <div
+                          className="h-2 rounded-full bg-gradient-to-r from-teal-400 to-green-400"
+                          style={{ width: `${Math.min(habit.streak * 8, 60)}px` }}
+                        />
+                        <span className="text-slate-500 font-medium">{habit.streak}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
             </div>
           </div>
 
-          {/* CENTER PANEL - Practice Panel */}
-          <div className="hidden lg:block min-h-0">
-            <Card className="h-full rounded-2xl overflow-hidden border-slate-200 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50">
-              <TrackerPracticePanel
-                activity={currentSelectedActivity}
-                selectedDate={selectedDate}
-                onClose={() => setSelectedActivity(null)}
-                onEdit={openEditDialog}
-                onToggleCompletion={toggleCompletion}
-                onSkipDay={handleSkipDay}
-                onImageChange={handleImageChange}
-                userName={user?.email?.split("@")[0] || "there"}
-              />
-            </Card>
-          </div>
+          {/* Habits Grid */}
+          <Card className="rounded-xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-slate-100 dark:bg-slate-800">
+                    <th className="text-left p-2 font-semibold text-slate-600 dark:text-slate-300 sticky left-0 bg-slate-100 dark:bg-slate-800 min-w-[150px]">
+                      DAILY HABITS
+                    </th>
+                    <th className="p-2 font-semibold text-slate-600 dark:text-slate-300 w-12">GOALS</th>
+                    {daysInMonth.map((day, i) => {
+                      const weekNum = Math.floor(i / 7) + 1;
+                      const isFirstOfWeek = i % 7 === 0;
+                      return (
+                        <th
+                          key={i}
+                          className={cn(
+                            "p-1 font-medium text-center min-w-[28px]",
+                            isFirstOfWeek && "border-l-2 border-slate-200 dark:border-slate-700",
+                            isToday(day) && "bg-teal-100 dark:bg-teal-900/30",
+                          )}
+                        >
+                          <div className="text-slate-400">{DAY_NAMES[(day.getDay() + 6) % 7]}</div>
+                          <div
+                            className={cn(
+                              "text-slate-600 dark:text-slate-300",
+                              isToday(day) && "text-teal-600 dark:text-teal-400 font-bold",
+                            )}
+                          >
+                            {format(day, "d")}
+                          </div>
+                        </th>
+                      );
+                    })}
+                    <th className="p-2 text-center font-semibold text-slate-600 dark:text-slate-300 min-w-[80px]">
+                      PROGRESS
+                    </th>
+                    <th className="p-2 text-center font-semibold text-slate-600 dark:text-slate-300 w-16">STREAK</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activities.map((activity, actIdx) => {
+                    const stats = activityStats.find((s) => s.id === activity.id);
+                    const colors = [
+                      "bg-pink-50",
+                      "bg-blue-50",
+                      "bg-green-50",
+                      "bg-yellow-50",
+                      "bg-purple-50",
+                      "bg-orange-50",
+                    ];
+                    const rowColor = colors[actIdx % colors.length];
 
-          {/* RIGHT SIDEBAR - Stats + Calendar */}
-          <aside className="hidden lg:block min-h-0">
-            <Card
-              className={cn(
-                "h-full rounded-2xl overflow-hidden border-slate-200 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50",
-                rightPanelCollapsed ? "w-16" : "w-full",
-              )}
-            >
-              <TrackerSidebarPanel
-                selectedDate={selectedDate}
-                onDateSelect={setSelectedDate}
-                activities={activities}
-                isCollapsed={rightPanelCollapsed}
-                onToggleCollapse={() => setRightPanelCollapsed(!rightPanelCollapsed)}
-              />
-            </Card>
-          </aside>
+                    return (
+                      <tr
+                        key={activity.id}
+                        className={cn(
+                          "border-b border-slate-100 dark:border-slate-800",
+                          rowColor,
+                          "dark:bg-slate-900/50",
+                        )}
+                      >
+                        <td
+                          className={cn(
+                            "p-2 font-medium text-slate-700 dark:text-slate-300 sticky left-0",
+                            rowColor,
+                            "dark:bg-slate-900/50",
+                          )}
+                        >
+                          {activity.name}
+                        </td>
+                        <td className="p-2 text-center text-slate-500">{activity.habitDays}</td>
+                        {daysInMonth.map((day, i) => {
+                          const dateStr = format(day, "yyyy-MM-dd");
+                          const dayOfWeek = (day.getDay() + 6) % 7;
+                          const isPlanned = activity.frequencyPattern[dayOfWeek];
+                          const isCompleted = activity.completions[dateStr];
+                          const isPast = isBefore(day, new Date()) || isToday(day);
+                          const isFirstOfWeek = i % 7 === 0;
+
+                          return (
+                            <td
+                              key={i}
+                              className={cn(
+                                "p-1 text-center",
+                                isFirstOfWeek && "border-l-2 border-slate-200 dark:border-slate-700",
+                                isToday(day) && "bg-teal-50 dark:bg-teal-900/20",
+                              )}
+                            >
+                              {isPlanned ? (
+                                <button
+                                  onClick={() => isPast && toggleCompletion(activity.id, day)}
+                                  disabled={!isPast}
+                                  className={cn(
+                                    "w-5 h-5 rounded flex items-center justify-center transition-all mx-auto",
+                                    isCompleted
+                                      ? "bg-teal-500 text-white"
+                                      : isPast
+                                        ? "bg-slate-200 dark:bg-slate-700 hover:bg-slate-300"
+                                        : "bg-slate-100 dark:bg-slate-800",
+                                  )}
+                                >
+                                  {isCompleted && <Check className="h-3 w-3" />}
+                                </button>
+                              ) : (
+                                <span className="text-slate-300">-</span>
+                              )}
+                            </td>
+                          );
+                        })}
+                        <td className="p-2">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-teal-400 to-green-400 rounded-full transition-all"
+                                style={{ width: `${stats?.progress || 0}%` }}
+                              />
+                            </div>
+                            <span className="text-slate-600 dark:text-slate-400 w-10 text-right">
+                              {stats?.completed}/{stats?.total}
+                            </span>
+                            <span className="text-slate-500 font-medium w-10">{stats?.progress}%</span>
+                          </div>
+                        </td>
+                        <td className="p-2 text-center">
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
+                              (stats?.streak || 0) > 0
+                                ? "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"
+                                : "bg-slate-100 dark:bg-slate-800 text-slate-400",
+                            )}
+                          >
+                            {(stats?.streak || 0) > 0 && <Flame className="h-3 w-3" />}
+                            {stats?.streak || 0}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
         </div>
 
-        {/* Create/Edit Dialog */}
+        {/* Create Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
             <DialogHeader>
-              <DialogTitle>{editingActivity ? "Edit Activity" : "Create New Activity"}</DialogTitle>
+              <DialogTitle>{editingActivity ? "Edit Activity" : "Create New Habit"}</DialogTitle>
             </DialogHeader>
 
             <div className="space-y-4 pt-2">
               <div>
-                <label className="text-sm font-medium mb-2 block">Activity Name</label>
+                <label className="text-sm font-medium mb-2 block">Habit Name</label>
                 <Input
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  placeholder="e.g. 30 Minutes Reading"
+                  placeholder="e.g. Drink 2.5L of water"
                 />
               </div>
 
@@ -673,127 +862,21 @@ export default function Trackers() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Priority</label>
-                  <Select value={formPriority} onValueChange={setFormPriority}>
-                    <SelectTrigger className="rounded-xl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PRIORITIES.map((p) => (
-                        <SelectItem key={p} value={p}>
-                          {p}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Start Date</label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal rounded-xl h-10">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {format(formStartDate, "PPP")}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formStartDate}
-                        onSelect={(date) => date && setFormStartDate(date)}
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Habit Days</label>
+                  <label className="text-sm font-medium mb-2 block">Goal (days)</label>
                   <Input
                     type="number"
                     min={1}
-                    max={1000}
+                    max={365}
                     value={formDays}
                     onChange={(e) => setFormDays(parseInt(e.target.value) || 30)}
                     className="rounded-xl"
                   />
-                  <p className="text-[11px] text-muted-foreground mt-1">Number of measured habit occurrences</p>
-                  <p className="text-[11px] text-primary font-medium mt-1">
-                    End: {format(computeEndDateForHabitDays(formStartDate, formFrequency, formDays), "d MMM, yyyy")}
-                  </p>
                 </div>
-              </div>
-
-              {/* Time Scheduling */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Scheduled Time</label>
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <p className="text-[11px] text-muted-foreground mb-1.5">Start time</p>
-                    <div className="relative">
-                      <input
-                        type="time"
-                        value={formTime}
-                        onChange={(e) => setFormTime(e.target.value)}
-                        className="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-[11px] text-muted-foreground mb-1.5">Duration</p>
-                    <Select value={String(formDuration)} onValueChange={(v) => setFormDuration(Number(v))}>
-                      <SelectTrigger className="rounded-xl h-10">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="15">15 min</SelectItem>
-                        <SelectItem value="30">30 min</SelectItem>
-                        <SelectItem value="45">45 min</SelectItem>
-                        <SelectItem value="60">1 hour</SelectItem>
-                        <SelectItem value="90">1.5 hours</SelectItem>
-                        <SelectItem value="120">2 hours</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <p className="text-[11px] text-muted-foreground mb-1.5">End time</p>
-                    <div className="h-10 px-3 rounded-xl border border-input bg-muted/30 flex items-center text-sm text-muted-foreground">
-                      {(() => {
-                        const [h, m] = formTime.split(":").map(Number);
-                        const endMinutes = h * 60 + m + formDuration;
-                        const endH = Math.floor(endMinutes / 60) % 24;
-                        const endM = endMinutes % 60;
-                        return `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
-                      })()}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-2 block">Description</label>
-                <Textarea
-                  value={formDescription}
-                  onChange={(e) => setFormDescription(e.target.value)}
-                  placeholder="Why is this activity important to you?"
-                  rows={2}
-                  className="rounded-xl"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-2 block">Cover Image (optional)</label>
-                <ActivityImageUpload imageUrl={formImageUrl} onImageChange={setFormImageUrl} compact />
               </div>
 
               <div>
                 <label className="text-sm font-medium mb-2 block">Frequency Pattern</label>
-                <p className="text-xs text-muted-foreground mb-2">Select the days you plan to perform this activity.</p>
-
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-2">
                   {DAY_LABELS.map((day, idx) => (
                     <button
                       key={idx}
@@ -804,53 +887,21 @@ export default function Trackers() {
                       }}
                       className={cn(
                         "h-9 w-9 rounded-full font-medium text-sm transition-colors",
-                        formFrequency[idx]
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground hover:bg-muted-foreground/15",
+                        formFrequency[idx] ? "bg-teal-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400",
                       )}
                     >
                       {day}
                     </button>
                   ))}
                 </div>
-
-                <p className="text-xs text-muted-foreground mt-2">
-                  {formFrequency.filter(Boolean).length} days/week → {formDays} habit sessions
-                </p>
               </div>
 
-              {/* Add to Tasks toggle */}
-              {!editingActivity && (
-                <div
-                  className="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/10 cursor-pointer hover:bg-primary/10 transition-colors"
-                  onClick={() => setFormAddToTasks(!formAddToTasks)}
-                >
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Add to Tasks page</p>
-                    <p className="text-xs text-muted-foreground">Create time-blocked tasks for each scheduled day</p>
-                  </div>
-                  <Checkbox
-                    checked={formAddToTasks}
-                    onCheckedChange={(checked) => setFormAddToTasks(!!checked)}
-                    className="h-5 w-5"
-                  />
-                </div>
-              )}
-
               <div className="flex gap-2 pt-2">
-                <Button
-                  variant="outline"
-                  className="flex-1 h-11 rounded-xl border-border/50 hover:bg-muted/60 transition-all"
-                  onClick={() => setDialogOpen(false)}
-                >
+                <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button
-                  className="flex-1 h-11 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-lg hover:shadow-primary/20 transition-all duration-300"
-                  onClick={handleSave}
-                  disabled={!formName.trim()}
-                >
-                  {editingActivity ? "Save Changes" : "Create Activity"}
+                <Button className="flex-1 rounded-xl bg-teal-500 hover:bg-teal-600" onClick={handleSave}>
+                  {editingActivity ? "Save Changes" : "Create Habit"}
                 </Button>
               </div>
             </div>
