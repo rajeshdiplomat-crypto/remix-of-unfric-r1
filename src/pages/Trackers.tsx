@@ -77,6 +77,22 @@ const PRIORITIES = ["Low", "Medium", "High"];
 const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+// Generate sample completions for past days
+function generateSampleCompletions(probability: number = 0.7): Record<string, boolean> {
+  const completions: Record<string, boolean> = {};
+  const today = new Date();
+  const monthStart = startOfMonth(today);
+
+  let current = monthStart;
+  while (isBefore(current, today) || format(current, "yyyy-MM-dd") === format(today, "yyyy-MM-dd")) {
+    if (Math.random() < probability) {
+      completions[format(current, "yyyy-MM-dd")] = true;
+    }
+    current = addDays(current, 1);
+  }
+  return completions;
+}
+
 const SAMPLE_ACTIVITIES: ActivityItem[] = [
   {
     id: "1",
@@ -87,7 +103,7 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
     frequencyPattern: [true, true, true, true, true, true, true],
     habitDays: 31,
     startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
-    completions: {},
+    completions: generateSampleCompletions(0.85),
     createdAt: new Date().toISOString(),
   },
   {
@@ -99,7 +115,7 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
     frequencyPattern: [true, true, true, true, true, true, true],
     habitDays: 31,
     startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
-    completions: {},
+    completions: generateSampleCompletions(0.75),
     createdAt: new Date().toISOString(),
   },
   {
@@ -111,7 +127,7 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
     frequencyPattern: [true, true, true, true, true, true, true],
     habitDays: 31,
     startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
-    completions: {},
+    completions: generateSampleCompletions(0.65),
     createdAt: new Date().toISOString(),
   },
   {
@@ -123,7 +139,79 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
     frequencyPattern: [true, true, true, true, true, false, false],
     habitDays: 20,
     startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
-    completions: {},
+    completions: generateSampleCompletions(0.9),
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "5",
+    name: "Strength training",
+    category: "health",
+    priority: "High",
+    description: "Gym workout",
+    frequencyPattern: [true, false, true, false, true, false, false],
+    habitDays: 15,
+    startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
+    completions: generateSampleCompletions(0.8),
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "6",
+    name: "Cardio training",
+    category: "health",
+    priority: "Medium",
+    description: "30 min cardio",
+    frequencyPattern: [false, true, false, true, false, true, false],
+    habitDays: 15,
+    startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
+    completions: generateSampleCompletions(0.7),
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "7",
+    name: "Read for 20 mins",
+    category: "growth",
+    priority: "Medium",
+    description: "Daily reading",
+    frequencyPattern: [true, true, true, true, true, true, true],
+    habitDays: 31,
+    startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
+    completions: generateSampleCompletions(0.6),
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "8",
+    name: "Meditation",
+    category: "wellbeing",
+    priority: "High",
+    description: "10 min meditation",
+    frequencyPattern: [true, true, true, true, true, true, true],
+    habitDays: 31,
+    startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
+    completions: generateSampleCompletions(0.55),
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "9",
+    name: "No social media after 9pm",
+    category: "wellbeing",
+    priority: "High",
+    description: "Digital detox",
+    frequencyPattern: [true, true, true, true, true, true, true],
+    habitDays: 31,
+    startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
+    completions: generateSampleCompletions(0.5),
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "10",
+    name: "Practice gratitude",
+    category: "growth",
+    priority: "Low",
+    description: "Write 3 things",
+    frequencyPattern: [true, true, true, true, true, true, true],
+    habitDays: 31,
+    startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
+    completions: generateSampleCompletions(0.75),
     createdAt: new Date().toISOString(),
   },
 ];
