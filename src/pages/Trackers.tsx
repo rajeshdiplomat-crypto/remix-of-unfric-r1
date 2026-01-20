@@ -734,40 +734,111 @@ export default function Trackers() {
                 <ProgressRing progress={overallStats.monthlyProgress} color="purple" label="MONTHLY PROGRESS" />
               </div>
 
-              {/* Simple progress bar chart */}
-              <div className="mt-4 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+              {/* Smooth Wave Area Chart */}
+              <div className="mt-4 p-4 rounded-lg bg-gradient-to-b from-teal-50 to-teal-100/50 dark:from-teal-950/30 dark:to-teal-900/20">
                 <p className="text-xs font-medium text-slate-500 mb-3 text-center">DAILY PROGRESS</p>
-                <div className="h-24 flex items-end gap-1">
-                  {Array.from({ length: Math.min(daysInMonth.length, 31) }, (_, i) => {
-                    const day = daysInMonth[i];
-                    if (!day) return null;
-                    const dayStr = format(day, "yyyy-MM-dd");
-                    const dayOfWeek = (day.getDay() + 6) % 7;
+                <div className="relative h-32">
+                  <svg viewBox="0 0 1000 200" className="w-full h-full" preserveAspectRatio="none">
+                    {(() => {
+                      // Calculate data points
+                      const dataPoints: { x: number; y: number; value: number }[] = [];
+                      const numDays = Math.min(daysInMonth.length, 31);
 
-                    let completed = 0;
-                    let total = 0;
-                    activities.forEach((a) => {
-                      if (a.frequencyPattern[dayOfWeek]) {
-                        total++;
-                        if (a.completions[dayStr]) completed++;
+                      for (let i = 0; i < numDays; i++) {
+                        const day = daysInMonth[i];
+                        if (!day) continue;
+                        const dayStr = format(day, "yyyy-MM-dd");
+                        const dayOfWeek = (day.getDay() + 6) % 7;
+
+                        let completed = 0;
+                        let total = 0;
+                        activities.forEach((a) => {
+                          if (a.frequencyPattern[dayOfWeek]) {
+                            total++;
+                            if (a.completions[dayStr]) completed++;
+                          }
+                        });
+
+                        const value = total > 0 ? (completed / total) * 100 : 50;
+                        const x = (i / (numDays - 1)) * 1000;
+                        const y = 180 - (value / 100) * 160;
+                        dataPoints.push({ x, y, value });
                       }
-                    });
 
-                    const height = total > 0 ? (completed / total) * 100 : 0;
-                    const isPast = isBefore(day, new Date()) || isToday(day);
+                      if (dataPoints.length < 2) return null;
 
-                    return (
-                      <div
-                        key={i}
-                        className={cn(
-                          "flex-1 rounded-t transition-all",
-                          isPast ? "bg-teal-400" : "bg-slate-200 dark:bg-slate-700",
-                        )}
-                        style={{ height: `${Math.max(height, 4)}%` }}
-                        title={`${format(day, "MMM d")}: ${completed}/${total}`}
-                      />
-                    );
-                  })}
+                      // Create smooth bezier curve path
+                      const createSmoothPath = (points: { x: number; y: number }[]) => {
+                        if (points.length < 2) return "";
+
+                        let path = `M ${points[0].x} ${points[0].y}`;
+
+                        for (let i = 0; i < points.length - 1; i++) {
+                          const current = points[i];
+                          const next = points[i + 1];
+                          const prev = points[i - 1] || current;
+                          const afterNext = points[i + 2] || next;
+
+                          // Control point tension
+                          const tension = 0.3;
+
+                          const cp1x = current.x + (next.x - prev.x) * tension;
+                          const cp1y = current.y + (next.y - prev.y) * tension;
+                          const cp2x = next.x - (afterNext.x - current.x) * tension;
+                          const cp2y = next.y - (afterNext.y - current.y) * tension;
+
+                          path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${next.x} ${next.y}`;
+                        }
+
+                        return path;
+                      };
+
+                      const linePath = createSmoothPath(dataPoints);
+                      const areaPath = `${linePath} L 1000 200 L 0 200 Z`;
+
+                      return (
+                        <>
+                          {/* Gradient definition */}
+                          <defs>
+                            <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#5eead4" stopOpacity="0.6" />
+                              <stop offset="100%" stopColor="#5eead4" stopOpacity="0.1" />
+                            </linearGradient>
+                          </defs>
+
+                          {/* Area fill */}
+                          <path d={areaPath} fill="url(#areaGradient)" className="transition-all duration-500" />
+
+                          {/* Line stroke */}
+                          <path
+                            d={linePath}
+                            fill="none"
+                            stroke="#14b8a6"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="transition-all duration-500"
+                          />
+
+                          {/* Data points */}
+                          {dataPoints.map((point, i) => (
+                            <circle
+                              key={i}
+                              cx={point.x}
+                              cy={point.y}
+                              r="5"
+                              fill="#14b8a6"
+                              stroke="white"
+                              strokeWidth="2"
+                              className="transition-all duration-300 hover:r-8"
+                            >
+                              <title>{`Day ${i + 1}: ${Math.round(point.value)}%`}</title>
+                            </circle>
+                          ))}
+                        </>
+                      );
+                    })()}
+                  </svg>
                 </div>
               </div>
             </Card>
