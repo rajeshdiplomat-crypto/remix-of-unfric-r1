@@ -769,9 +769,17 @@ export default function Trackers() {
                   const startDateStr = selectedHabit?.startDate
                     ? format(parseISO(selectedHabit.startDate), "MMM d, yyyy")
                     : "N/A";
+                  const endDate = selectedHabit?.startDate
+                    ? computeEndDateForHabitDays(
+                        parseISO(selectedHabit.startDate),
+                        selectedHabit.frequencyPattern,
+                        selectedHabit.habitDays,
+                      )
+                    : null;
+                  const endDateStr = endDate ? format(endDate, "MMM d, yyyy") : "N/A";
                   const descriptionText = selectedHabit?.description || "";
                   const truncatedDesc =
-                    descriptionText.length > 40 ? descriptionText.slice(0, 40) + "..." : descriptionText;
+                    descriptionText.length > 30 ? descriptionText.slice(0, 30) + "..." : descriptionText;
 
                   return (
                     <div className="mb-4 p-2 rounded-lg bg-teal-50 dark:bg-teal-900/30">
@@ -789,11 +797,11 @@ export default function Trackers() {
                           <X className="h-3 w-3" /> Clear
                         </button>
                       </div>
-                      {/* Start Date and Description Line */}
+                      {/* Start Date, End Date, and Description Line */}
                       <div className="mt-1 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                         <span className="flex items-center gap-1">
                           <CalendarIcon className="h-3 w-3" />
-                          {startDateStr}
+                          {startDateStr} → {endDateStr}
                         </span>
                         {truncatedDesc && (
                           <>
@@ -1423,7 +1431,28 @@ export default function Trackers() {
 
               <div>
                 <label className="text-sm font-medium mb-2 block">Cover Image (optional)</label>
-                <ActivityImageUpload imageUrl={formImageUrl} onImageChange={setFormImageUrl} compact />
+                <div className="flex gap-4 items-start">
+                  {/* 9:16 Preview */}
+                  <div
+                    className="w-20 rounded-lg overflow-hidden bg-slate-900 border-2 border-slate-700 flex-shrink-0"
+                    style={{ aspectRatio: "9/16" }}
+                  >
+                    {formImageUrl ? (
+                      <img src={formImageUrl} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+                        <Target className="h-5 w-5 text-slate-600 mb-1" />
+                        <p className="text-[8px] text-slate-500 text-center px-1">9:16 Preview</p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <ActivityImageUpload imageUrl={formImageUrl} onImageChange={setFormImageUrl} compact />
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Image will show in 9:16 ratio when viewing habit
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div>
