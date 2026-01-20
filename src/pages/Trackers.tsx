@@ -814,12 +814,30 @@ export default function Trackers() {
                   );
                 })()}
 
-              <div className="flex justify-around mb-4">
-                <ProgressRing progress={overallStats.momentum} color="teal" label="MOMENTUM" />
-                <ProgressRing progress={overallStats.dailyProgress} color="green" label="DAILY PROGRESS" />
-                <ProgressRing progress={overallStats.weeklyProgress} color="blue" label="WEEKLY PROGRESS" />
-                <ProgressRing progress={overallStats.monthlyProgress} color="purple" label="MONTHLY PROGRESS" />
-              </div>
+              {/* Progress Rings - Add Total Goal ring when habit is selected */}
+              {(() => {
+                const selectedHabit = selectedActivityId ? activities.find((a) => a.id === selectedActivityId) : null;
+                const totalCompletions = selectedHabit ? Object.keys(selectedHabit.completions || {}).length : 0;
+                const totalCompletionPercent = selectedHabit
+                  ? Math.round((totalCompletions / selectedHabit.habitDays) * 100)
+                  : 0;
+
+                return (
+                  <div className="flex justify-around mb-4 flex-wrap gap-2">
+                    {selectedActivityId && (
+                      <ProgressRing
+                        progress={Math.min(totalCompletionPercent, 100)}
+                        color="orange"
+                        label="TOTAL GOAL"
+                      />
+                    )}
+                    <ProgressRing progress={overallStats.momentum} color="teal" label="MOMENTUM" />
+                    <ProgressRing progress={overallStats.dailyProgress} color="green" label="DAILY" />
+                    <ProgressRing progress={overallStats.weeklyProgress} color="blue" label="WEEKLY" />
+                    <ProgressRing progress={overallStats.monthlyProgress} color="purple" label="MONTHLY" />
+                  </div>
+                );
+              })()}
 
               {/* Smooth Wave Area Chart */}
               <div className="mt-4 p-4 rounded-lg bg-gradient-to-b from-teal-50 to-teal-100/50 dark:from-teal-950/30 dark:to-teal-900/20">
@@ -982,29 +1000,6 @@ export default function Trackers() {
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3">
                           <p className="text-white font-semibold text-sm truncate">{selectedHabit?.name}</p>
                           <p className="text-white/70 text-xs">{selectedHabit?.category}</p>
-                        </div>
-                      </div>
-
-                      {/* Total Completion Ring */}
-                      <div className="mt-4 flex justify-center">
-                        <ProgressRing
-                          progress={Math.min(totalCompletionPercent, 100)}
-                          color="orange"
-                          label="TOTAL GOAL"
-                        />
-                      </div>
-
-                      {/* Stats */}
-                      <div className="mt-3 grid grid-cols-2 gap-2 text-center">
-                        <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                          <p className="text-lg font-bold text-green-700 dark:text-green-300">{totalCompletions}</p>
-                          <p className="text-[10px] text-green-600 dark:text-green-400">COMPLETED</p>
-                        </div>
-                        <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
-                          <p className="text-lg font-bold text-slate-700 dark:text-slate-300">
-                            {selectedHabit?.habitDays || 0}
-                          </p>
-                          <p className="text-[10px] text-slate-500">TOTAL GOAL</p>
                         </div>
                       </div>
                     </Card>
