@@ -797,13 +797,15 @@ export default function Trackers() {
 
                         const value = total > 0 ? (completed / total) * 100 : isFuture ? 50 : 0;
                         const x = (i / (numDays - 1)) * 1000;
-                        const y = 180 - (value / 100) * 160;
+                        // Clamp Y to stay within bounds (min 20, max 180)
+                        const rawY = 180 - (value / 100) * 140;
+                        const y = Math.max(20, Math.min(180, rawY));
                         dataPoints.push({ x, y, value, isPast, isFuture });
                       }
 
                       if (dataPoints.length < 2) return null;
 
-                      // Create smooth bezier curve path
+                      // Create smooth bezier curve path with gentle curves
                       const createSmoothPath = (points: { x: number; y: number }[]) => {
                         if (points.length < 2) return "";
 
@@ -812,18 +814,14 @@ export default function Trackers() {
                         for (let i = 0; i < points.length - 1; i++) {
                           const current = points[i];
                           const next = points[i + 1];
-                          const prev = points[i - 1] || current;
-                          const afterNext = points[i + 2] || next;
 
-                          // Control point tension
-                          const tension = 0.3;
+                          // Use simple quadratic bezier for gentler curves
+                          const midX = (current.x + next.x) / 2;
+                          const midY = (current.y + next.y) / 2;
 
-                          const cp1x = current.x + (next.x - prev.x) * tension;
-                          const cp1y = current.y + (next.y - prev.y) * tension;
-                          const cp2x = next.x - (afterNext.x - current.x) * tension;
-                          const cp2y = next.y - (afterNext.y - current.y) * tension;
-
-                          path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${next.x} ${next.y}`;
+                          // Add subtle curve control
+                          path += ` Q ${current.x + (midX - current.x) * 0.5} ${current.y}, ${midX} ${midY}`;
+                          path += ` Q ${midX + (next.x - midX) * 0.5} ${next.y}, ${next.x} ${next.y}`;
                         }
 
                         return path;
