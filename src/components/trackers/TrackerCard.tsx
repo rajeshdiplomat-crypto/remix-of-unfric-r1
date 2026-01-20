@@ -132,19 +132,19 @@ export function TrackerCard({
   return (
     <Card
       onClick={onClick}
-      className={`overflow-hidden rounded-2xl cursor-pointer transition-all duration-200 hover:shadow-xl relative bg-white dark:bg-slate-900 shadow-md p-3 ${
-        isSelected ? "ring-2 ring-teal-500 shadow-lg" : "border-slate-100 dark:border-slate-700"
+      className={`overflow-hidden rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg relative ${
+        isSelected ? "ring-2 ring-teal-500 shadow-lg" : "border-slate-200 dark:border-slate-700"
       } ${isCompleted || status === "completed" ? "opacity-60 grayscale" : ""}`}
     >
       {/* Top-right action buttons */}
-      <div className="absolute top-3 right-3 z-20 flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+      <div className="absolute top-1 right-1 z-20 flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
         {onComplete && status === "active" && !isCompleted && (
           <button
             onClick={onComplete}
-            className="w-5 h-5 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-teal-50 dark:hover:bg-teal-900/50 transition-colors"
+            className="w-4 h-4 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-teal-50 dark:hover:bg-teal-900/50 transition-colors"
             title="Mark as Complete"
           >
-            <CheckCircle className="h-3 w-3 text-teal-500" />
+            <CheckCircle className="h-2.5 w-2.5 text-teal-500" />
           </button>
         )}
         {onReactivate && (status === "completed" || isCompleted) && (
@@ -159,24 +159,24 @@ export function TrackerCard({
         {onEdit && status === "active" && !isCompleted && (
           <button
             onClick={onEdit}
-            className="w-5 h-5 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            className="w-4 h-4 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
             title="Edit Activity"
           >
-            <Pencil className="h-3 w-3 text-slate-500" />
+            <Pencil className="h-2.5 w-2.5 text-slate-500" />
           </button>
         )}
         {onDelete && (
           <button
             onClick={onDelete}
-            className="w-5 h-5 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+            className="w-4 h-4 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
             title="Delete Activity"
           >
-            <Trash2 className="h-3 w-3 text-destructive" />
+            <Trash2 className="h-2.5 w-2.5 text-destructive" />
           </button>
         )}
       </div>
 
-      <div className="flex flex-row h-[140px] rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-800/50 shadow-sm">
+      <div className="flex flex-row h-[132px]">
         {/* Image Section - Left side */}
         <div className="relative w-[132px] h-full flex-shrink-0" onClick={(e) => e.stopPropagation()}>
           <EntryImageUpload
