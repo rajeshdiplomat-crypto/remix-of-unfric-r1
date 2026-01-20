@@ -43,7 +43,16 @@ import {
   Trash2,
   CheckCircle,
   X,
+  MoreVertical,
+  Pencil,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ActivityImageUpload, loadActivityImage, saveActivityImage } from "@/components/trackers/ActivityImageUpload";
@@ -553,6 +562,22 @@ export default function Trackers() {
     setDialogOpen(true);
   };
 
+  const openEditDialog = (activity: ActivityItem) => {
+    setEditingActivity(activity);
+    setFormName(activity.name);
+    setFormCategory(activity.category);
+    setFormPriority(activity.priority || "Medium");
+    setFormDescription(activity.description || "");
+    setFormFrequency(activity.frequencyPattern);
+    setFormDays(activity.habitDays);
+    setFormStartDate(activity.startDate ? parseISO(activity.startDate) : new Date());
+    setFormImageUrl(loadActivityImage(activity.id));
+    setFormTime(activity.time || "09:00");
+    setFormDuration(activity.duration || 30);
+    setFormAddToTasks(false);
+    setDialogOpen(true);
+  };
+
   const handleSave = async () => {
     if (!formName.trim()) return;
 
@@ -1026,37 +1051,57 @@ export default function Trackers() {
                               <GripVertical className="h-3.5 w-3.5" />
                             </button>
 
-                            {/* Complete Today */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleCompletion(activity.id, new Date());
-                              }}
-                              className={cn(
-                                "p-0.5 rounded transition-colors",
-                                isTodayCompleted ? "text-green-500" : "text-slate-300 hover:text-green-500",
-                              )}
-                              title={isTodayCompleted ? "Completed today" : "Mark complete for today"}
-                            >
-                              <CheckCircle className="h-3.5 w-3.5" />
-                            </button>
-
-                            {/* Delete */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (confirm("Delete this habit?")) {
-                                  handleDelete(activity.id);
-                                }
-                              }}
-                              className="p-0.5 rounded text-slate-300 hover:text-red-500 transition-colors"
-                              title="Delete habit"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
+                            {/* 3-Dot Menu */}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button
+                                  className="p-0.5 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="start" className="w-40">
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openEditDialog(activity);
+                                  }}
+                                  className="cursor-pointer"
+                                >
+                                  <Pencil className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleCompletion(activity.id, new Date());
+                                  }}
+                                  className="cursor-pointer"
+                                >
+                                  <CheckCircle
+                                    className={cn("h-4 w-4 mr-2", isTodayCompleted ? "text-green-500" : "")}
+                                  />
+                                  {isTodayCompleted ? "Completed" : "Mark Complete"}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (confirm("Delete this habit?")) {
+                                      handleDelete(activity.id);
+                                    }
+                                  }}
+                                  className="cursor-pointer text-red-600 focus:text-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
 
                             {/* Habit Name */}
-                            <span className="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[100px] ml-1">
+                            <span className="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[120px] ml-1">
                               {activity.name}
                             </span>
                           </div>
