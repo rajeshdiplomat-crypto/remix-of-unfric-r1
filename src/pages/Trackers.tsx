@@ -2,68 +2,42 @@ import { useEffect, useMemo, useState } from "react";
 import {
   addDays,
   differenceInDays,
-  eachDayOfInterval,
-  endOfMonth,
   format,
   isAfter,
   isBefore,
   isToday,
   parseISO,
-  startOfMonth,
   startOfWeek,
   subDays,
 } from "date-fns";
-import { computeEndDateForHabitDays, getScheduledDates } from "@/lib/dateUtils";
+import { computeEndDateForHabitDays } from "@/lib/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Activity as ActivityIcon,
-  BarChart2,
   Calendar as CalendarIcon,
-  CalendarDays,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Flame,
-  LayoutGrid,
-  Lightbulb,
-  List,
-  MoreVertical,
+  ChevronDown,
+  ChevronUp,
   Plus,
-  Target,
-  Timer,
-  TrendingUp,
-  Zap,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { BarChart, Bar, ResponsiveContainer } from "recharts";
 import { ActivityImageUpload, loadActivityImage, saveActivityImage } from "@/components/trackers/ActivityImageUpload";
-import { ActivityDetailPanel } from "@/components/trackers/ActivityDetailPanel";
+import { TrackerCard } from "@/components/trackers/TrackerCard";
+import { TrackerPracticePanel } from "@/components/trackers/TrackerPracticePanel";
+import { TrackerSidebarPanel } from "@/components/trackers/TrackerSidebarPanel";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
-import { getPresetImage } from "@/lib/presetImages";
 
 interface ActivityItem {
   id: string;
@@ -79,8 +53,8 @@ interface ActivityItem {
   notes?: Record<string, string>;
   skipped?: Record<string, boolean>;
   reminders?: { time: string; days: number[] };
-  time?: string; // e.g. "09:00"
-  duration?: number; // minutes, e.g. 30
+  time?: string;
+  duration?: number;
 }
 
 const CATEGORIES = [
@@ -93,7 +67,6 @@ const CATEGORIES = [
 
 const PRIORITIES = ["Low", "Medium", "High"];
 const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
-const FULL_DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const SAMPLE_ACTIVITIES: ActivityItem[] = [
   {
@@ -164,8 +137,6 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
   },
 ];
 
-type ViewMode = "week" | "compact" | "heatmap";
-
 export default function Trackers() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -173,17 +144,13 @@ export default function Trackers() {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [viewMode, setViewMode] = useState<ViewMode>("week");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
-
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingActivity, setEditingActivity] = useState<ActivityItem | null>(null);
 
-  const [selectedWeekStart, setSelectedWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
-
-  const [selectedActivities, setSelectedActivities] = useState<Set<string>>(new Set());
   const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(false);
 
   // form
   const [formName, setFormName] = useState("");
@@ -205,7 +172,6 @@ export default function Trackers() {
       return;
     }
     fetchHabits();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const fetchHabits = async () => {
@@ -261,12 +227,6 @@ export default function Trackers() {
   const getEndDate = (activity: ActivityItem) =>
     computeEndDateForHabitDays(parseISO(activity.startDate), activity.frequencyPattern, activity.habitDays);
 
-  const getDaysLeft = (activity: ActivityItem) => {
-    const endDate = getEndDate(activity);
-    const today = new Date();
-    return Math.max(0, differenceInDays(endDate, today));
-  };
-
   const getStatus = (activity: ActivityItem): "active" | "completed" | "upcoming" => {
     const today = new Date();
     const startDate = parseISO(activity.startDate);
@@ -289,192 +249,6 @@ export default function Trackers() {
     }
     return count;
   };
-
-  const getPastScheduledSessions = (activity: ActivityItem) => {
-    let count = 0;
-    const startDate = parseISO(activity.startDate);
-    const today = new Date();
-    const endDate = getEndDate(activity);
-    const effectiveEnd = isBefore(today, endDate) ? today : endDate;
-
-    let currentDate = startDate;
-    while (!isAfter(currentDate, effectiveEnd)) {
-      const dayOfWeek = (currentDate.getDay() + 6) % 7;
-      if (activity.frequencyPattern[dayOfWeek]) count++;
-      currentDate = addDays(currentDate, 1);
-    }
-    return count;
-  };
-
-  const getCompletedSessions = (activity: ActivityItem) => Object.values(activity.completions).filter(Boolean).length;
-
-  const getSessionsLeft = (activity: ActivityItem) =>
-    Math.max(0, getScheduledSessions(activity) - getCompletedSessions(activity));
-
-  const getCompletionPercent = (activity: ActivityItem) => {
-    const scheduled = getPastScheduledSessions(activity);
-    if (scheduled === 0) return 0;
-    return Math.round((getCompletedSessions(activity) / scheduled) * 100);
-  };
-
-  const getCurrentStreak = (activity: ActivityItem) => {
-    let streak = 0;
-    let checkDate = new Date();
-
-    while (true) {
-      const dateStr = format(checkDate, "yyyy-MM-dd");
-      const dayOfWeek = (checkDate.getDay() + 6) % 7;
-      const isPlanned = activity.frequencyPattern[dayOfWeek];
-
-      if (isPlanned) {
-        if (activity.completions[dateStr]) streak++;
-        else if (!isToday(checkDate)) break;
-      }
-
-      checkDate = subDays(checkDate, 1);
-      if (isBefore(checkDate, parseISO(activity.startDate))) break;
-    }
-
-    return streak;
-  };
-
-  const getLongestStreak = (activity: ActivityItem) => {
-    let longest = 0;
-    let current = 0;
-    const startDate = parseISO(activity.startDate);
-    const endDate = getEndDate(activity);
-
-    let checkDate = startDate;
-    while (!isAfter(checkDate, endDate)) {
-      const dateStr = format(checkDate, "yyyy-MM-dd");
-      const dayOfWeek = (checkDate.getDay() + 6) % 7;
-
-      if (activity.frequencyPattern[dayOfWeek]) {
-        if (activity.completions[dateStr]) {
-          current++;
-          longest = Math.max(longest, current);
-        } else current = 0;
-      }
-
-      checkDate = addDays(checkDate, 1);
-    }
-
-    return longest;
-  };
-
-  const getTodayCompletion = () => {
-    const todayStr = format(new Date(), "yyyy-MM-dd");
-    const todayDayOfWeek = (new Date().getDay() + 6) % 7;
-
-    let scheduledToday = 0;
-    let completedToday = 0;
-
-    activities.forEach((a) => {
-      const startDate = parseISO(a.startDate);
-      const endDate = getEndDate(a);
-      const today = new Date();
-
-      if (!isBefore(today, startDate) && !isAfter(today, endDate)) {
-        if (a.frequencyPattern[todayDayOfWeek]) {
-          scheduledToday++;
-          if (a.completions[todayStr]) completedToday++;
-        }
-      }
-    });
-
-    return scheduledToday > 0 ? Math.round((completedToday / scheduledToday) * 100) : 100;
-  };
-
-  const last7DaysTrend = useMemo(() => {
-    const data = [];
-    for (let i = 6; i >= 0; i--) {
-      const date = subDays(new Date(), i);
-      const dateStr = format(date, "yyyy-MM-dd");
-      const dayOfWeek = (date.getDay() + 6) % 7;
-
-      let scheduled = 0;
-      let completed = 0;
-
-      activities.forEach((a) => {
-        const startDate = parseISO(a.startDate);
-        const endDate = getEndDate(a);
-
-        if (!isBefore(date, startDate) && !isAfter(date, endDate)) {
-          if (a.frequencyPattern[dayOfWeek]) {
-            scheduled++;
-            if (a.completions[dateStr]) completed++;
-          }
-        }
-      });
-
-      data.push({
-        day: format(date, "EEE"),
-        completion: scheduled > 0 ? Math.round((completed / scheduled) * 100) : 100,
-        completed,
-        scheduled,
-      });
-    }
-    return data;
-  }, [activities]);
-
-  const weeklyStats = useMemo(() => {
-    const avgCompletion = Math.round(last7DaysTrend.reduce((s, d) => s + d.completion, 0) / 7);
-    const totalCompleted = last7DaysTrend.reduce((s, d) => s + d.completed, 0);
-    const totalScheduled = last7DaysTrend.reduce((s, d) => s + d.scheduled, 0);
-    const missedDays = last7DaysTrend.filter((d) => d.scheduled > 0 && d.completion < 100).length;
-    return { avgCompletion, totalCompleted, totalScheduled, missedDays };
-  }, [last7DaysTrend]);
-
-  const getInsights = (activity: ActivityItem) => {
-    const dayCompletions = [0, 0, 0, 0, 0, 0, 0];
-    const dayPlanned = [0, 0, 0, 0, 0, 0, 0];
-
-    Object.entries(activity.completions).forEach(([dateStr, completed]) => {
-      if (completed) {
-        const date = parseISO(dateStr);
-        const dayOfWeek = (date.getDay() + 6) % 7;
-        dayCompletions[dayOfWeek]++;
-      }
-    });
-
-    const startDate = parseISO(activity.startDate);
-    const endDate = getEndDate(activity);
-    let checkDate = startDate;
-
-    while (!isAfter(checkDate, endDate) && !isAfter(checkDate, new Date())) {
-      const dayOfWeek = (checkDate.getDay() + 6) % 7;
-      if (activity.frequencyPattern[dayOfWeek]) dayPlanned[dayOfWeek]++;
-      checkDate = addDays(checkDate, 1);
-    }
-
-    let bestDay = 0;
-    let worstDay = 0;
-    let bestRate = 0;
-    let worstRate = 100;
-
-    for (let i = 0; i < 7; i++) {
-      if (dayPlanned[i] > 0) {
-        const rate = (dayCompletions[i] / dayPlanned[i]) * 100;
-        if (rate > bestRate) {
-          bestRate = rate;
-          bestDay = i;
-        }
-        if (rate < worstRate) {
-          worstRate = rate;
-          worstDay = i;
-        }
-      }
-    }
-
-    return {
-      bestDay: FULL_DAY_LABELS[bestDay],
-      worstDay: FULL_DAY_LABELS[worstDay],
-      bestRate: Math.round(bestRate),
-      worstRate: Math.round(worstRate),
-    };
-  };
-
-  const getWeekDays = () => Array.from({ length: 7 }, (_, i) => addDays(selectedWeekStart, i));
 
   const isPlannedForDate = (activity: ActivityItem, date: Date) => {
     const startDate = parseISO(activity.startDate);
@@ -503,7 +277,6 @@ export default function Trackers() {
     );
 
     if (user) {
-      // Update habit_completions
       if (wasCompleted) {
         await supabase
           .from("habit_completions")
@@ -519,8 +292,7 @@ export default function Trackers() {
         });
       }
 
-      // SYNC: Also update linked task in tasks table
-      // Find task with matching habit name, date, and "Habit" tag
+      // Sync linked task
       const { data: linkedTasks } = await supabase
         .from("tasks")
         .select("id")
@@ -556,7 +328,7 @@ export default function Trackers() {
     setFormImageUrl(null);
     setFormTime("09:00");
     setFormDuration(30);
-    setFormAddToTasks(true); // Default on for new activities
+    setFormAddToTasks(true);
     setDialogOpen(true);
   };
 
@@ -572,7 +344,7 @@ export default function Trackers() {
     setFormImageUrl(loadActivityImage(activity.id));
     setFormTime(activity.time || "09:00");
     setFormDuration(activity.duration || 30);
-    setFormAddToTasks(false); // Off for edits (already created)
+    setFormAddToTasks(false);
     setDialogOpen(true);
   };
 
@@ -661,7 +433,6 @@ export default function Trackers() {
           checkDate = addDays(checkDate, 1);
         }
 
-        // Create tasks in batches
         const tasks = scheduledDates.map((date) => ({
           id: crypto.randomUUID(),
           user_id: user.id,
@@ -698,11 +469,6 @@ export default function Trackers() {
 
   const handleDelete = async (activityId: string) => {
     setActivities((prev) => prev.filter((a) => a.id !== activityId));
-    setSelectedActivities((prev) => {
-      const next = new Set(prev);
-      next.delete(activityId);
-      return next;
-    });
     if (selectedActivity?.id === activityId) setSelectedActivity(null);
 
     if (user) {
@@ -713,91 +479,15 @@ export default function Trackers() {
     toast({ title: "Activity deleted" });
   };
 
-  const handleBulkComplete = (date: Date) => {
-    const dateStr = format(date, "yyyy-MM-dd");
-    setActivities((prev) =>
-      prev.map((a) => {
-        if (!selectedActivities.has(a.id)) return a;
-        if (!isPlannedForDate(a, date)) return a;
-        return { ...a, completions: { ...a.completions, [dateStr]: true } };
-      }),
-    );
-    toast({ title: `Marked ${selectedActivities.size} activities complete` });
-  };
+  // Filter activities
+  const activeActivities = useMemo(() => {
+    return activities.filter((a) => getStatus(a) === "active" || getStatus(a) === "upcoming");
+  }, [activities]);
 
-  const handleExport = () => {
-    const exportData = {
-      exportedAt: new Date().toISOString(),
-      activities: activities.map((a) => ({
-        ...a,
-        currentStreak: getCurrentStreak(a),
-        longestStreak: getLongestStreak(a),
-        completionPercent: getCompletionPercent(a),
-        scheduledSessions: getScheduledSessions(a),
-        sessionsLeft: getSessionsLeft(a),
-        daysLeft: getDaysLeft(a),
-      })),
-    };
+  const completedActivities = useMemo(() => {
+    return activities.filter((a) => getStatus(a) === "completed");
+  }, [activities]);
 
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `activity-tracker-${format(new Date(), "yyyy-MM-dd")}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    toast({ title: "Exported successfully" });
-  };
-
-  const filteredActivities = activities.filter((a) => {
-    const matchesCategory = categoryFilter === "all" || a.category === categoryFilter;
-    const matchesStatus = statusFilter === "all" || getStatus(a) === statusFilter;
-    return matchesCategory && matchesStatus;
-  });
-
-  const weekDays = getWeekDays();
-  const activeCount = activities.filter((a) => getStatus(a) === "active").length;
-  const totalStreak = activities.reduce((sum, a) => sum + getCurrentStreak(a), 0);
-
-  const completedThisWeek = (() => {
-    let count = 0;
-    activities.forEach((a) => {
-      weekDays.forEach((day) => {
-        const dateStr = format(day, "yyyy-MM-dd");
-        if (a.completions[dateStr]) count++;
-      });
-    });
-    return count;
-  })();
-
-  const plannedThisWeek = (() => {
-    let count = 0;
-    activities.forEach((a) => {
-      weekDays.forEach((day) => {
-        if (isPlannedForDate(a, day)) count++;
-      });
-    });
-    return count;
-  })();
-
-  const getCategoryInfo = (categoryId: string) => CATEGORIES.find((c) => c.id === categoryId) || CATEGORIES[0];
-
-  const getHeatmapData = (activity: ActivityItem) => {
-    const start = startOfMonth(new Date());
-    const end = endOfMonth(new Date());
-    const days = eachDayOfInterval({ start, end });
-
-    return days.map((day) => ({
-      date: day,
-      completed: !!activity.completions[format(day, "yyyy-MM-dd")],
-      planned: isPlannedForDate(activity, day),
-    }));
-  };
-
-  const todayCompletion = getTodayCompletion();
   const currentSelectedActivity = selectedActivity
     ? activities.find((a) => a.id === selectedActivity.id) || null
     : null;
@@ -809,7 +499,7 @@ export default function Trackers() {
   return (
     <TooltipProvider>
       <div className="flex flex-col w-full flex-1">
-        {/* Full-bleed Hero */}
+        {/* Hero */}
         <PageHero
           storageKey="tracker_hero_src"
           typeKey="tracker_hero_type"
@@ -818,752 +508,348 @@ export default function Trackers() {
           subtitle={PAGE_HERO_TEXT.trackers.subtitle}
         />
 
-        {/* Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 px-6 lg:px-8 pt-6">
-          {/* LEFT */}
-          <div className="min-w-0 space-y-6">
+        {/* 3-Column Layout */}
+        <div
+          className={cn(
+            "grid gap-6 px-6 lg:px-8 pt-6 flex-1",
+            rightPanelCollapsed
+              ? "grid-cols-1 lg:grid-cols-[420px_1fr_64px]"
+              : "grid-cols-1 lg:grid-cols-[420px_1fr_260px]",
+          )}
+        >
+          {/* LEFT PANEL - Activity Cards */}
+          <div className="flex flex-col gap-4 min-h-0">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-end gap-4">
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExport}
-                  className="h-10 rounded-full gap-2 shadow-sm bg-background/80 backdrop-blur-sm border-border/50 hover:bg-muted/60 hover:border-border transition-all"
-                >
-                  <Download className="h-4 w-4" />
-                  <span className="hidden sm:inline">Export</span>
-                </Button>
-
-                <Button
-                  size="sm"
-                  onClick={openCreateDialog}
-                  className="h-10 rounded-full gap-2 flex-1 sm:flex-none bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-lg hover:shadow-primary/20 transition-all duration-300"
-                >
-                  <Plus className="h-4 w-4" />
-                  New Activity
-                </Button>
-              </div>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-800 dark:text-white">Your Activities</h2>
+              <Button
+                size="sm"
+                onClick={openCreateDialog}
+                className="h-9 rounded-xl gap-2 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-md"
+              >
+                <Plus className="h-4 w-4" />
+                New
+              </Button>
             </div>
 
-            {/* KPI Row - Unified alignment */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <Card className="rounded-xl border-border/40 bg-card p-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <ActivityIcon className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xl font-semibold leading-none">{activeCount}</p>
-                    <p className="text-xs text-muted-foreground mt-1">Active</p>
-                  </div>
-                </div>
-              </Card>
+            {/* Activity Cards List */}
+            <ScrollArea className="flex-1 -mx-1 px-1">
+              <div className="space-y-3 pb-4">
+                {activeActivities.map((activity) => (
+                  <TrackerCard
+                    key={activity.id}
+                    activity={activity}
+                    isSelected={selectedActivity?.id === activity.id}
+                    onClick={() => selectActivity(activity)}
+                    onEdit={() => openEditDialog(activity)}
+                    onDelete={() => handleDelete(activity.id)}
+                    onImageUpdate={fetchHabits}
+                  />
+                ))}
 
-              <Card className="rounded-xl border-border/40 bg-card p-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-orange-500/10 flex items-center justify-center shrink-0">
-                    <Flame className="h-5 w-5 text-orange-500" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xl font-semibold leading-none">{totalStreak}</p>
-                    <p className="text-xs text-muted-foreground mt-1">Total Streak</p>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="rounded-xl border-border/40 bg-card p-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
-                    <TrendingUp className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xl font-semibold leading-none">{weeklyStats.avgCompletion}%</p>
-                    <p className="text-xs text-muted-foreground mt-1">Weekly Avg</p>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="rounded-xl border-border/40 bg-card p-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xl font-semibold leading-none">
-                      {completedThisWeek}/{plannedThisWeek}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">This Week</p>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="rounded-xl border-border/40 bg-card p-4">
-                <div className="flex flex-col h-full justify-between">
-                  <p className="text-xs text-muted-foreground font-medium">Today</p>
-                  <p className="text-xl font-semibold mt-1">{todayCompletion}%</p>
-                  <div className="mt-2 h-1.5 w-full rounded-full bg-muted">
-                    <div
-                      className="h-1.5 rounded-full bg-primary transition-all"
-                      style={{ width: `${todayCompletion}%` }}
-                    />
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="rounded-xl border-border/40 bg-card p-4">
-                <div className="flex flex-col h-full justify-between">
-                  <p className="text-xs text-muted-foreground font-medium">7-Day Trend</p>
-                  <div className="mt-2 h-10 flex-1">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={last7DaysTrend} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                        <Bar dataKey="completion" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </Card>
-            </div>
-
-            {/* Filters Row */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-              {/* Week navigation */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 rounded-xl"
-                  onClick={() => setSelectedWeekStart(addDays(selectedWeekStart, -7))}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-9 rounded-xl gap-2">
-                      <CalendarIcon className="h-4 w-4" />
-                      {format(selectedWeekStart, "MMM d")} - {format(addDays(selectedWeekStart, 6), "MMM d, yyyy")}
+                {activeActivities.length === 0 && (
+                  <Card className="rounded-xl p-8 text-center border-dashed border-2 border-slate-200 dark:border-slate-700">
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">No active activities</p>
+                    <Button size="sm" className="rounded-xl" onClick={openCreateDialog}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Activity
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={selectedWeekStart}
-                      onSelect={(date) => date && setSelectedWeekStart(startOfWeek(date, { weekStartsOn: 1 }))}
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
+                  </Card>
+                )}
 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 rounded-xl"
-                  onClick={() => setSelectedWeekStart(addDays(selectedWeekStart, 7))}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 rounded-xl text-sm"
-                  onClick={() => setSelectedWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}
-                >
-                  Today
-                </Button>
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* category pills */}
-                <div className="flex items-center gap-1 flex-wrap">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={cn(
-                      "h-8 px-3 rounded-none",
-                      categoryFilter === "all"
-                        ? "text-foreground border-b border-foreground"
-                        : "text-muted-foreground hover:text-foreground border-b border-transparent",
-                    )}
-                    onClick={() => setCategoryFilter("all")}
-                  >
-                    All
-                  </Button>
-
-                  {CATEGORIES.map((cat) => (
-                    <Button
-                      key={cat.id}
-                      variant="ghost"
-                      size="sm"
-                      className={cn(
-                        "h-8 px-3 rounded-none",
-                        categoryFilter === cat.id
-                          ? "text-foreground border-b border-foreground"
-                          : "text-muted-foreground hover:text-foreground border-b border-transparent",
-                      )}
-                      onClick={() => setCategoryFilter(cat.id)}
+                {/* Completed Section */}
+                {completedActivities.length > 0 && (
+                  <div className="pt-4">
+                    <button
+                      onClick={() => setShowCompleted(!showCompleted)}
+                      className="flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors w-full"
                     >
-                      {cat.label.split(" ")[0]}
-                    </Button>
+                      {showCompleted ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      Completed Activities ({completedActivities.length})
+                    </button>
+
+                    {showCompleted && (
+                      <div className="space-y-3 mt-3">
+                        {completedActivities.map((activity) => (
+                          <TrackerCard
+                            key={activity.id}
+                            activity={activity}
+                            isSelected={selectedActivity?.id === activity.id}
+                            onClick={() => selectActivity(activity)}
+                            onEdit={() => openEditDialog(activity)}
+                            onDelete={() => handleDelete(activity.id)}
+                            isCompleted
+                            onImageUpdate={fetchHabits}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+
+          {/* CENTER PANEL - Practice Panel */}
+          <div className="hidden lg:block min-h-0">
+            <Card className="h-full rounded-2xl overflow-hidden border-slate-200 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50">
+              <TrackerPracticePanel
+                activity={currentSelectedActivity}
+                selectedDate={selectedDate}
+                onClose={() => setSelectedActivity(null)}
+                onEdit={openEditDialog}
+                onToggleCompletion={toggleCompletion}
+                onSkipDay={handleSkipDay}
+                onImageChange={handleImageChange}
+                userName={user?.email?.split("@")[0] || "there"}
+              />
+            </Card>
+          </div>
+
+          {/* RIGHT SIDEBAR - Stats + Calendar */}
+          <aside className="hidden lg:block min-h-0">
+            <Card
+              className={cn(
+                "h-full rounded-2xl overflow-hidden border-slate-200 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50",
+                rightPanelCollapsed ? "w-16" : "w-full",
+              )}
+            >
+              <TrackerSidebarPanel
+                selectedDate={selectedDate}
+                onDateSelect={setSelectedDate}
+                activities={activities}
+                isCollapsed={rightPanelCollapsed}
+                onToggleCollapse={() => setRightPanelCollapsed(!rightPanelCollapsed)}
+              />
+            </Card>
+          </aside>
+        </div>
+
+        {/* Create/Edit Dialog */}
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
+            <DialogHeader>
+              <DialogTitle>{editingActivity ? "Edit Activity" : "Create New Activity"}</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 pt-2">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Activity Name</label>
+                <Input
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="e.g. 30 Minutes Reading"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Category</label>
+                  <Select value={formCategory} onValueChange={setFormCategory}>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Priority</label>
+                  <Select value={formPriority} onValueChange={setFormPriority}>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PRIORITIES.map((p) => (
+                        <SelectItem key={p} value={p}>
+                          {p}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Start Date</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal rounded-xl h-10"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {format(formStartDate, "PPP")}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={formStartDate}
+                        onSelect={(date) => date && setFormStartDate(date)}
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Habit Days</label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={1000}
+                    value={formDays}
+                    onChange={(e) => setFormDays(parseInt(e.target.value) || 30)}
+                    className="rounded-xl"
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">Number of measured habit occurrences</p>
+                  <p className="text-[11px] text-primary font-medium mt-1">
+                    End: {format(computeEndDateForHabitDays(formStartDate, formFrequency, formDays), "d MMM, yyyy")}
+                  </p>
+                </div>
+              </div>
+
+              {/* Time Scheduling */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Scheduled Time</label>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <p className="text-[11px] text-muted-foreground mb-1.5">Start time</p>
+                    <div className="relative">
+                      <input
+                        type="time"
+                        value={formTime}
+                        onChange={(e) => setFormTime(e.target.value)}
+                        className="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-muted-foreground mb-1.5">Duration</p>
+                    <Select value={String(formDuration)} onValueChange={(v) => setFormDuration(Number(v))}>
+                      <SelectTrigger className="rounded-xl h-10">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="15">15 min</SelectItem>
+                        <SelectItem value="30">30 min</SelectItem>
+                        <SelectItem value="45">45 min</SelectItem>
+                        <SelectItem value="60">1 hour</SelectItem>
+                        <SelectItem value="90">1.5 hours</SelectItem>
+                        <SelectItem value="120">2 hours</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-muted-foreground mb-1.5">End time</p>
+                    <div className="h-10 px-3 rounded-xl border border-input bg-muted/30 flex items-center text-sm text-muted-foreground">
+                      {(() => {
+                        const [h, m] = formTime.split(":").map(Number);
+                        const endMinutes = h * 60 + m + formDuration;
+                        const endH = Math.floor(endMinutes / 60) % 24;
+                        const endM = endMinutes % 60;
+                        return `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Description</label>
+                <Textarea
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  placeholder="Why is this activity important to you?"
+                  rows={2}
+                  className="rounded-xl"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Cover Image (optional)</label>
+                <ActivityImageUpload imageUrl={formImageUrl} onImageChange={setFormImageUrl} compact />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Frequency Pattern</label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Select the days you plan to perform this activity.
+                </p>
+
+                <div className="flex gap-2 flex-wrap">
+                  {DAY_LABELS.map((day, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        const next = [...formFrequency];
+                        next[idx] = !next[idx];
+                        setFormFrequency(next);
+                      }}
+                      className={cn(
+                        "h-9 w-9 rounded-full font-medium text-sm transition-colors",
+                        formFrequency[idx]
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground hover:bg-muted-foreground/15",
+                      )}
+                    >
+                      {day}
+                    </button>
                   ))}
                 </div>
 
-                {/* view switcher (segmented) */}
-                <div className="inline-flex items-center rounded-xl bg-muted/40 p-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "h-8 w-8 rounded-lg",
-                      viewMode === "week" ? "bg-background shadow-sm" : "text-muted-foreground",
-                    )}
-                    onClick={() => setViewMode("week")}
-                  >
-                    <LayoutGrid className="h-4 w-4" />
-                  </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {formFrequency.filter(Boolean).length} days/week → {formDays} habit sessions
+                </p>
+              </div>
 
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "h-8 w-8 rounded-lg",
-                      viewMode === "heatmap" ? "bg-background shadow-sm" : "text-muted-foreground",
-                    )}
-                    onClick={() => setViewMode("heatmap")}
-                  >
-                    <BarChart2 className="h-4 w-4" />
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "h-8 w-8 rounded-lg",
-                      viewMode === "compact" ? "bg-background shadow-sm" : "text-muted-foreground",
-                    )}
-                    onClick={() => setViewMode("compact")}
-                  >
-                    <List className="h-4 w-4" />
-                  </Button>
+              {/* Add to Tasks toggle */}
+              {!editingActivity && (
+                <div
+                  className="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/10 cursor-pointer hover:bg-primary/10 transition-colors"
+                  onClick={() => setFormAddToTasks(!formAddToTasks)}
+                >
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Add to Tasks page</p>
+                    <p className="text-xs text-muted-foreground">
+                      Create time-blocked tasks for each scheduled day
+                    </p>
+                  </div>
+                  <Checkbox
+                    checked={formAddToTasks}
+                    onCheckedChange={(checked) => setFormAddToTasks(!!checked)}
+                    className="h-5 w-5"
+                  />
                 </div>
+              )}
+
+              <div className="flex gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 h-11 rounded-xl border-border/50 hover:bg-muted/60 transition-all"
+                  onClick={() => setDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 h-11 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-lg hover:shadow-primary/20 transition-all duration-300"
+                  onClick={handleSave}
+                  disabled={!formName.trim()}
+                >
+                  {editingActivity ? "Save Changes" : "Create Activity"}
+                </Button>
               </div>
             </div>
-
-            {/* Bulk actions */}
-            {selectedActivities.size > 0 && (
-              <Card className="rounded-2xl border border-primary/15 bg-primary/5 p-3">
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <span className="text-sm font-medium">{selectedActivities.size} selected</span>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-9 rounded-xl"
-                      onClick={() => handleBulkComplete(new Date())}
-                    >
-                      Mark Today Complete
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-9 rounded-xl"
-                      onClick={() => setSelectedActivities(new Set())}
-                    >
-                      Clear
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            )}
-
-            {/* Activity cards */}
-            <div className="space-y-3">
-              {filteredActivities.map((activity) => {
-                const category = getCategoryInfo(activity.category);
-                const status = getStatus(activity);
-                const currentStreak = getCurrentStreak(activity);
-                const longestStreak = getLongestStreak(activity);
-                const percent = getCompletionPercent(activity);
-                const daysLeft = getDaysLeft(activity);
-
-                return (
-                  <Card
-                    key={activity.id}
-                    className={cn(
-                      "rounded-2xl border-border/60 bg-card/60 transition-colors cursor-pointer overflow-hidden",
-                      "hover:bg-card",
-                      selectedActivity?.id === activity.id && "border-primary/40 ring-1 ring-primary/20",
-                    )}
-                    onClick={() => selectActivity(activity)}
-                  >
-                    <div className="flex">
-                      {/* Left: Cover Image */}
-                      <div className="w-40 shrink-0 relative overflow-hidden">
-                        <img
-                          src={loadActivityImage(activity.id) || getPresetImage("trackers", activity.category)}
-                          alt=""
-                          className="w-full h-full object-cover min-h-[160px]"
-                        />
-                      </div>
-
-                      {/* Right: Card Content */}
-                      <div className="flex-1 p-4">
-                        <div className="flex items-start gap-3">
-                          <div onClick={(e) => e.stopPropagation()} className="pt-0.5">
-                            <Checkbox
-                              checked={selectedActivities.has(activity.id)}
-                              onCheckedChange={(checked) => {
-                                setSelectedActivities((prev) => {
-                                  const next = new Set(prev);
-                                  if (checked) next.add(activity.id);
-                                  else next.delete(activity.id);
-                                  return next;
-                                });
-                              }}
-                            />
-                          </div>
-
-                          <div
-                            className="h-10 w-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-                            style={{ backgroundColor: `hsl(${category.color} / 0.14)` }}
-                          >
-                            <Target className="h-5 w-5" style={{ color: `hsl(${category.color})` }} />
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h3 className="text-sm font-semibold truncate">{activity.name}</h3>
-
-                              <Badge variant="secondary" className="rounded-full text-[11px]">
-                                {category.label.split(" ")[0]}
-                              </Badge>
-
-                              {currentStreak > 0 && (
-                                <Badge variant="outline" className="rounded-full text-[11px] gap-1">
-                                  <Flame className="h-3.5 w-3.5 text-orange-500" />
-                                  {currentStreak}
-                                </Badge>
-                              )}
-
-                              <Badge
-                                className={cn(
-                                  "rounded-full text-[11px] border",
-                                  status === "active" && "bg-green-500/10 text-green-700 border-green-500/15",
-                                  status === "completed" && "bg-primary/10 text-primary border-primary/15",
-                                  status === "upcoming" && "bg-orange-500/10 text-orange-700 border-orange-500/15",
-                                )}
-                              >
-                                {status}
-                              </Badge>
-                            </div>
-
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{activity.description}</p>
-
-                            {/* Simplified stats row */}
-                            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                              <span>
-                                {format(parseISO(activity.startDate), "MMM d")} →{" "}
-                                {format(getEndDate(activity), "MMM d")}
-                              </span>
-                              <span>•</span>
-                              <span className="text-foreground font-medium">{daysLeft}d left</span>
-                            </div>
-
-                            {/* Progress bar with percentage */}
-                            <div className="flex items-center gap-2 mt-2">
-                              <Progress value={percent} className="h-1.5 flex-1" />
-                              <span className="text-xs font-medium tabular-nums w-10 text-right">{percent}%</span>
-                            </div>
-                          </div>
-
-                          <div onClick={(e) => e.stopPropagation()}>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl">
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => selectActivity(activity)}>
-                                  View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => openEditDialog(activity)}>Edit</DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => handleDelete(activity.id)}
-                                  className="text-destructive"
-                                >
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </div>
-
-                        {/* Tracker grid */}
-                        <div className="mt-4 pl-[52px]">
-                          {viewMode === "week" && (
-                            <div className="flex gap-2">
-                              {weekDays.map((day, idx) => {
-                                const isPlanned = isPlannedForDate(activity, day);
-                                const isCompleted = !!activity.completions[format(day, "yyyy-MM-dd")];
-                                const isFuture = isAfter(day, new Date());
-
-                                return (
-                                  <div key={idx} className="flex flex-col items-center flex-1">
-                                    <span className="text-[11px] text-muted-foreground mb-1">{format(day, "EEE")}</span>
-
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (isPlanned && !isFuture) toggleCompletion(activity.id, day);
-                                      }}
-                                      disabled={!isPlanned || isFuture}
-                                      className={cn(
-                                        "h-6 w-full max-w-[34px] rounded-md transition-all",
-                                        isCompleted
-                                          ? "bg-green-500"
-                                          : isPlanned
-                                            ? isFuture
-                                              ? "bg-muted/40"
-                                              : "bg-muted hover:bg-muted-foreground/20"
-                                            : "bg-transparent",
-                                        isToday(day) && "ring-2 ring-primary/30 ring-offset-2 ring-offset-background",
-                                      )}
-                                    />
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-
-                          {viewMode === "heatmap" && (
-                            <div className="grid grid-cols-7 gap-1">
-                              {getHeatmapData(activity).map((day, idx) => (
-                                <button
-                                  key={idx}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (day.planned && !isAfter(day.date, new Date()))
-                                      toggleCompletion(activity.id, day.date);
-                                  }}
-                                  disabled={!day.planned || isAfter(day.date, new Date())}
-                                  className={cn(
-                                    "h-4 w-full rounded-md transition-all",
-                                    day.completed
-                                      ? "bg-green-500"
-                                      : day.planned
-                                        ? "bg-muted hover:bg-muted-foreground/20"
-                                        : "bg-transparent",
-                                    isToday(day.date) && "ring-2 ring-primary/30 ring-offset-2 ring-offset-background",
-                                  )}
-                                  title={format(day.date, "MMM d")}
-                                />
-                              ))}
-                            </div>
-                          )}
-
-                          {viewMode === "compact" && (
-                            <ScrollArea className="w-full">
-                              <div className="flex gap-1">
-                                {getScheduledDates(
-                                  parseISO(activity.startDate),
-                                  activity.frequencyPattern,
-                                  Math.min(activity.habitDays, 60),
-                                ).map((day, i) => {
-                                  const isCompleted = !!activity.completions[format(day, "yyyy-MM-dd")];
-                                  const isFuture = isAfter(day, new Date());
-
-                                  return (
-                                    <button
-                                      key={i}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (!isFuture) toggleCompletion(activity.id, day);
-                                      }}
-                                      disabled={isFuture}
-                                      className={cn(
-                                        "h-3.5 w-3.5 rounded-md flex-shrink-0 transition-all",
-                                        isCompleted ? "bg-green-500" : "bg-muted hover:bg-muted-foreground/20",
-                                      )}
-                                      title={format(day, "EEE, MMM d")}
-                                    />
-                                  );
-                                })}
-                              </div>
-                            </ScrollArea>
-                          )}
-                        </div>
-
-                        {/* Minimal streak indicators */}
-                        <div className="mt-3 pl-[52px] flex items-center gap-3 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1" title="Current streak">
-                            <Flame className="h-3.5 w-3.5 text-orange-500" />
-                            {currentStreak}
-                          </span>
-                          <span className="flex items-center gap-1" title="Best streak">
-                            <Zap className="h-3.5 w-3.5 text-yellow-500" />
-                            {longestStreak}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-
-              {filteredActivities.length === 0 && (
-                <Card className="rounded-2xl p-10 text-center border-border/60 bg-card/60">
-                  <ActivityIcon className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                  <h3 className="text-sm font-semibold text-foreground mb-1">No activities found</h3>
-                  <p className="text-sm text-muted-foreground mb-4">Create your first activity to start tracking</p>
-                  <Button className="h-9 rounded-xl" onClick={openCreateDialog}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    New Activity
-                  </Button>
-                </Card>
-              )}
-            </div>
-
-            {/* Create/Edit dialog */}
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
-                <DialogHeader>
-                  <DialogTitle>{editingActivity ? "Edit Activity" : "Create New Activity"}</DialogTitle>
-                </DialogHeader>
-
-                <div className="space-y-4 pt-2">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Activity Name</label>
-                    <Input
-                      value={formName}
-                      onChange={(e) => setFormName(e.target.value)}
-                      placeholder="e.g. 30 Minutes Reading"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Category</label>
-                      <Select value={formCategory} onValueChange={setFormCategory}>
-                        <SelectTrigger className="rounded-xl">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CATEGORIES.map((cat) => (
-                            <SelectItem key={cat.id} value={cat.id}>
-                              {cat.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Priority</label>
-                      <Select value={formPriority} onValueChange={setFormPriority}>
-                        <SelectTrigger className="rounded-xl">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {PRIORITIES.map((p) => (
-                            <SelectItem key={p} value={p}>
-                              {p}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Start Date</label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className="w-full justify-start text-left font-normal rounded-xl h-10"
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {format(formStartDate, "PPP")}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={formStartDate}
-                            onSelect={(date) => date && setFormStartDate(date)}
-                            className="pointer-events-auto"
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Habit Days</label>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={1000}
-                        value={formDays}
-                        onChange={(e) => setFormDays(parseInt(e.target.value) || 30)}
-                        className="rounded-xl"
-                      />
-                      <p className="text-[11px] text-muted-foreground mt-1">Number of measured habit occurrences</p>
-                      <p className="text-[11px] text-primary font-medium mt-1">
-                        End: {format(computeEndDateForHabitDays(formStartDate, formFrequency, formDays), "d MMM, yyyy")}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Time Scheduling */}
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Scheduled Time</label>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div>
-                        <p className="text-[11px] text-muted-foreground mb-1.5">Start time</p>
-                        <div className="relative">
-                          <input
-                            type="time"
-                            value={formTime}
-                            onChange={(e) => setFormTime(e.target.value)}
-                            className="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-[11px] text-muted-foreground mb-1.5">Duration</p>
-                        <Select value={String(formDuration)} onValueChange={(v) => setFormDuration(Number(v))}>
-                          <SelectTrigger className="rounded-xl h-10">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="15">15 min</SelectItem>
-                            <SelectItem value="30">30 min</SelectItem>
-                            <SelectItem value="45">45 min</SelectItem>
-                            <SelectItem value="60">1 hour</SelectItem>
-                            <SelectItem value="90">1.5 hours</SelectItem>
-                            <SelectItem value="120">2 hours</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <p className="text-[11px] text-muted-foreground mb-1.5">End time</p>
-                        <div className="h-10 px-3 rounded-xl border border-input bg-muted/30 flex items-center text-sm text-muted-foreground">
-                          {(() => {
-                            const [h, m] = formTime.split(":").map(Number);
-                            const endMinutes = h * 60 + m + formDuration;
-                            const endH = Math.floor(endMinutes / 60) % 24;
-                            const endM = endMinutes % 60;
-                            return `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
-                          })()}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Description</label>
-                    <Textarea
-                      value={formDescription}
-                      onChange={(e) => setFormDescription(e.target.value)}
-                      placeholder="Why is this activity important to you?"
-                      rows={2}
-                      className="rounded-xl"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Cover Image (optional)</label>
-                    <ActivityImageUpload imageUrl={formImageUrl} onImageChange={setFormImageUrl} compact />
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Frequency Pattern</label>
-                    <p className="text-xs text-muted-foreground mb-2">
-                      Select the days you plan to perform this activity.
-                    </p>
-
-                    <div className="flex gap-2 flex-wrap">
-                      {DAY_LABELS.map((day, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => {
-                            const next = [...formFrequency];
-                            next[idx] = !next[idx];
-                            setFormFrequency(next);
-                          }}
-                          className={cn(
-                            "h-9 w-9 rounded-full font-medium text-sm transition-colors",
-                            formFrequency[idx]
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-muted-foreground hover:bg-muted-foreground/15",
-                          )}
-                        >
-                          {day}
-                        </button>
-                      ))}
-                    </div>
-
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {formFrequency.filter(Boolean).length} days/week → {formDays} habit sessions
-                    </p>
-                  </div>
-
-                  {/* Add to Tasks toggle */}
-                  {!editingActivity && (
-                    <div
-                      className="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/10 cursor-pointer hover:bg-primary/10 transition-colors"
-                      onClick={() => setFormAddToTasks(!formAddToTasks)}
-                    >
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Add to Tasks page</p>
-                        <p className="text-xs text-muted-foreground">
-                          Create time-blocked tasks for each scheduled day
-                        </p>
-                      </div>
-                      <Checkbox
-                        checked={formAddToTasks}
-                        onCheckedChange={(checked) => setFormAddToTasks(!!checked)}
-                        className="h-5 w-5"
-                      />
-                    </div>
-                  )}
-
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1 h-11 rounded-xl border-border/50 hover:bg-muted/60 transition-all"
-                      onClick={() => setDialogOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      className="flex-1 h-11 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-lg hover:shadow-primary/20 transition-all duration-300"
-                      onClick={handleSave}
-                      disabled={!formName.trim()}
-                    >
-                      {editingActivity ? "Save Changes" : "Create Activity"}
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          {/* RIGHT */}
-          <aside className="hidden lg:flex flex-col h-full overflow-y-auto">
-            <ActivityDetailPanel
-              activity={currentSelectedActivity}
-              onEdit={openEditDialog}
-              onToggleCompletion={toggleCompletion}
-              onSkipDay={handleSkipDay}
-              onImageChange={handleImageChange}
-            />
-          </aside>
-        </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </TooltipProvider>
   );
