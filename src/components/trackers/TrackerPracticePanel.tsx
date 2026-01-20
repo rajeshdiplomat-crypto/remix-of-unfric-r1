@@ -102,42 +102,21 @@ export function TrackerPracticePanel({
     return "Good night";
   };
 
-  // Empty state
-  if (!activity) {
-    return (
-      <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-900 overflow-hidden">
-        {/* Header with greeting */}
-        <div className="relative h-48 bg-gradient-to-br from-teal-500 via-cyan-500 to-emerald-500 flex items-end">
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-          <div className="relative z-10 p-6">
-            <h2 className="text-2xl font-bold text-white">{getGreeting()}, {userName}</h2>
-            <p className="text-white/80 text-sm mt-1">Select an activity to start tracking</p>
-          </div>
-        </div>
-
-        <div className="flex-1 flex items-center justify-center p-6">
-          <Card className="rounded-2xl border-dashed border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-8 text-center max-w-sm">
-            <Target className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-            <h3 className="font-semibold text-slate-700 dark:text-slate-300 mb-2">No Activity Selected</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Click on an activity card to view details and track your progress.
-            </p>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  const categoryInfo = CATEGORIES[activity.category] || CATEGORIES.health;
+  // Calculate derived values (these don't need to be memoized since they're simple)
   const dateStr = format(selectedDate, "yyyy-MM-dd");
   const isViewingToday = isToday(selectedDate);
   const isViewingPast = isBefore(startOfDay(selectedDate), startOfDay(new Date()));
-  const isScheduledToday = isPlannedForDate(activity, selectedDate);
-  const isCompletedToday = !!activity.completions[dateStr];
-  const isSkippedToday = !!activity.skipped?.[dateStr];
+  const categoryInfo = activity ? (CATEGORIES[activity.category] || CATEGORIES.health) : CATEGORIES.health;
+  const isScheduledToday = activity ? isPlannedForDate(activity, selectedDate) : false;
+  const isCompletedToday = activity ? !!activity.completions[dateStr] : false;
+  const isSkippedToday = activity ? !!activity.skipped?.[dateStr] : false;
 
-  // Calculate stats
+  // Calculate stats - always call this hook, but return empty values if no activity
   const stats = useMemo(() => {
+    if (!activity) {
+      return { currentStreak: 0, longestStreak: 0, totalCompletions: 0, daysLeft: 0, completionRate: 0 };
+    }
+
     let currentStreak = 0;
     let longestStreak = 0;
     let tempStreak = 0;
@@ -202,8 +181,10 @@ export function TrackerPracticePanel({
     return { currentStreak, longestStreak, totalCompletions, daysLeft, completionRate };
   }, [activity]);
 
-  // Get last 30 days heatmap data
+  // Get last 30 days heatmap data - always call this hook
   const heatmapData = useMemo(() => {
+    if (!activity) return [];
+    
     const data = [];
     for (let i = 29; i >= 0; i--) {
       const date = subDays(new Date(), i);
@@ -230,6 +211,32 @@ export function TrackerPracticePanel({
   const handleSkip = () => {
     if (activity && isScheduledToday) onSkipDay(activity.id, selectedDate);
   };
+
+  // Empty state - now AFTER all hooks
+  if (!activity) {
+    return (
+      <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-900 overflow-hidden">
+        {/* Header with greeting */}
+        <div className="relative h-48 bg-gradient-to-br from-teal-500 via-cyan-500 to-emerald-500 flex items-end">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          <div className="relative z-10 p-6">
+            <h2 className="text-2xl font-bold text-white">{getGreeting()}, {userName}</h2>
+            <p className="text-white/80 text-sm mt-1">Select an activity to start tracking</p>
+          </div>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center p-6">
+          <Card className="rounded-2xl border-dashed border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-8 text-center max-w-sm">
+            <Target className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+            <h3 className="font-semibold text-slate-700 dark:text-slate-300 mb-2">No Activity Selected</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Click on an activity card to view details and track your progress.
+            </p>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-900 overflow-hidden">
