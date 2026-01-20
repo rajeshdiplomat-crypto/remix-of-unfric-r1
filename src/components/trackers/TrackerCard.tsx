@@ -132,7 +132,7 @@ export function TrackerCard({
   return (
     <Card
       onClick={onClick}
-      className={`overflow-hidden rounded-2xl cursor-pointer transition-all duration-200 hover:shadow-xl relative bg-white dark:bg-slate-900 shadow-md p-2 ${
+      className={`overflow-hidden rounded-2xl cursor-pointer transition-all duration-200 hover:shadow-xl relative bg-white dark:bg-slate-900 shadow-md p-3 ${
         isSelected ? "ring-2 ring-teal-500 shadow-lg" : "border-slate-100 dark:border-slate-700"
       } ${isCompleted || status === "completed" ? "opacity-60 grayscale" : ""}`}
     >
