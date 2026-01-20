@@ -821,20 +821,23 @@ export default function Trackers() {
                           />
 
                           {/* Data points */}
-                          {dataPoints.map((point, i) => (
-                            <circle
-                              key={i}
-                              cx={point.x}
-                              cy={point.y}
-                              r="5"
-                              fill="#14b8a6"
-                              stroke="white"
-                              strokeWidth="2"
-                              className="transition-all duration-300 hover:r-8"
-                            >
-                              <title>{`Day ${i + 1}: ${Math.round(point.value)}%`}</title>
-                            </circle>
-                          ))}
+                          {dataPoints.map((point, i) => {
+                            const isLow = point.value < 10;
+                            return (
+                              <circle
+                                key={i}
+                                cx={point.x}
+                                cy={point.y}
+                                r={isLow ? "6" : "5"}
+                                fill={isLow ? "#ef4444" : "#14b8a6"}
+                                stroke="white"
+                                strokeWidth="2"
+                                className="transition-all duration-300"
+                              >
+                                <title>{`Day ${i + 1}: ${Math.round(point.value)}%${isLow ? " (Missed)" : ""}`}</title>
+                              </circle>
+                            );
+                          })}
                         </>
                       );
                     })()}
