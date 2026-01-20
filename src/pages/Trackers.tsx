@@ -23,12 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Calendar as CalendarIcon,
-  ChevronDown,
-  ChevronUp,
-  Plus,
-} from "lucide-react";
+import { Calendar as CalendarIcon, ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ActivityImageUpload, loadActivityImage, saveActivityImage } from "@/components/trackers/ActivityImageUpload";
@@ -518,76 +513,94 @@ export default function Trackers() {
           )}
         >
           {/* LEFT PANEL - Activity Cards */}
-          <div className="flex flex-col gap-4 min-h-0">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-slate-800 dark:text-white">Your Activities</h2>
-              <Button
-                size="sm"
-                onClick={openCreateDialog}
-                className="h-9 rounded-xl gap-2 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-md"
-              >
-                <Plus className="h-4 w-4" />
-                New
-              </Button>
-            </div>
-
-            {/* Activity Cards List */}
-            <ScrollArea className="flex-1 -mx-1 px-1">
-              <div className="space-y-3 pb-4">
-                {activeActivities.map((activity) => (
-                  <TrackerCard
-                    key={activity.id}
-                    activity={activity}
-                    isSelected={selectedActivity?.id === activity.id}
-                    onClick={() => selectActivity(activity)}
-                    onEdit={() => openEditDialog(activity)}
-                    onDelete={() => handleDelete(activity.id)}
-                    onImageUpdate={fetchHabits}
-                  />
-                ))}
-
-                {activeActivities.length === 0 && (
-                  <Card className="rounded-xl p-8 text-center border-dashed border-2 border-slate-200 dark:border-slate-700">
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">No active activities</p>
-                    <Button size="sm" className="rounded-xl" onClick={openCreateDialog}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Activity
-                    </Button>
-                  </Card>
-                )}
-
-                {/* Completed Section */}
-                {completedActivities.length > 0 && (
-                  <div className="pt-4">
-                    <button
-                      onClick={() => setShowCompleted(!showCompleted)}
-                      className="flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors w-full"
-                    >
-                      {showCompleted ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                      Completed Activities ({completedActivities.length})
-                    </button>
-
-                    {showCompleted && (
-                      <div className="space-y-3 mt-3">
-                        {completedActivities.map((activity) => (
-                          <TrackerCard
-                            key={activity.id}
-                            activity={activity}
-                            isSelected={selectedActivity?.id === activity.id}
-                            onClick={() => selectActivity(activity)}
-                            onEdit={() => openEditDialog(activity)}
-                            onDelete={() => handleDelete(activity.id)}
-                            isCompleted
-                            onImageUpdate={fetchHabits}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+          <div className="hidden lg:flex flex-col h-full min-h-0">
+            {/* Activities Container - White background like Manifest */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex flex-col overflow-hidden flex-1 min-h-0">
+              {/* Header with Create Button */}
+              <div className="p-3 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
+                <h2 className="text-base font-semibold text-slate-800 dark:text-white">Your Activities</h2>
+                <Button
+                  onClick={openCreateDialog}
+                  size="sm"
+                  className="rounded-lg h-8 px-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all text-xs"
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" /> New
+                </Button>
               </div>
-            </ScrollArea>
+
+              {/* Activity Cards List */}
+              {activeActivities.length === 0 ? (
+                <div className="p-3 flex-1 flex items-center justify-center">
+                  <Card className="rounded-xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900 w-full">
+                    <div className="py-8 px-4 text-center">
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">No active activities</p>
+                      <Button size="sm" className="rounded-xl" onClick={openCreateDialog}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Activity
+                      </Button>
+                    </div>
+                  </Card>
+                </div>
+              ) : (
+                <div
+                  className="overflow-y-auto flex-1 min-h-0 p-2 custom-scrollbar relative"
+                  style={{ maxHeight: "calc(5 * 140px + 4 * 8px)" }}
+                >
+                  <div className="space-y-2">
+                    {activeActivities.map((activity) => (
+                      <TrackerCard
+                        key={activity.id}
+                        activity={activity}
+                        isSelected={selectedActivity?.id === activity.id}
+                        onClick={() => selectActivity(activity)}
+                        onEdit={() => openEditDialog(activity)}
+                        onDelete={() => handleDelete(activity.id)}
+                        onImageUpdate={fetchHabits}
+                      />
+                    ))}
+                  </div>
+                  {/* Fade indicator at bottom */}
+                  {activeActivities.length > 5 && (
+                    <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white dark:from-slate-900 to-transparent pointer-events-none" />
+                  )}
+                </div>
+              )}
+
+              {/* Completed Activities Section */}
+              {completedActivities.length > 0 && (
+                <div className="border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    onClick={() => setShowCompleted(!showCompleted)}
+                    className="w-full p-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                  >
+                    <span className="text-xs font-medium text-slate-500">
+                      Completed Activities ({completedActivities.length})
+                    </span>
+                    {showCompleted ? (
+                      <ChevronUp className="h-4 w-4 text-slate-400" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-slate-400" />
+                    )}
+                  </button>
+                  {showCompleted && (
+                    <div className="p-2 space-y-2 max-h-[300px] overflow-y-auto">
+                      {completedActivities.map((activity) => (
+                        <TrackerCard
+                          key={activity.id}
+                          activity={activity}
+                          isSelected={selectedActivity?.id === activity.id}
+                          onClick={() => selectActivity(activity)}
+                          onEdit={() => openEditDialog(activity)}
+                          onDelete={() => handleDelete(activity.id)}
+                          isCompleted
+                          onImageUpdate={fetchHabits}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* CENTER PANEL - Practice Panel */}
@@ -681,10 +694,7 @@ export default function Trackers() {
                   <label className="text-sm font-medium mb-2 block">Start Date</label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal rounded-xl h-10"
-                      >
+                      <Button variant="outline" className="w-full justify-start text-left font-normal rounded-xl h-10">
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {format(formStartDate, "PPP")}
                       </Button>
@@ -781,9 +791,7 @@ export default function Trackers() {
 
               <div>
                 <label className="text-sm font-medium mb-2 block">Frequency Pattern</label>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Select the days you plan to perform this activity.
-                </p>
+                <p className="text-xs text-muted-foreground mb-2">Select the days you plan to perform this activity.</p>
 
                 <div className="flex gap-2 flex-wrap">
                   {DAY_LABELS.map((day, idx) => (
@@ -819,9 +827,7 @@ export default function Trackers() {
                 >
                   <div className="flex-1">
                     <p className="text-sm font-medium">Add to Tasks page</p>
-                    <p className="text-xs text-muted-foreground">
-                      Create time-blocked tasks for each scheduled day
-                    </p>
+                    <p className="text-xs text-muted-foreground">Create time-blocked tasks for each scheduled day</p>
                   </div>
                   <Checkbox
                     checked={formAddToTasks}
