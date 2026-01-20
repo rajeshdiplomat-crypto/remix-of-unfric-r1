@@ -132,7 +132,7 @@ export function TrackerCard({
   return (
     <Card
       onClick={onClick}
-      className={`overflow-hidden rounded-2xl cursor-pointer transition-all duration-200 hover:shadow-lg relative bg-white dark:bg-slate-800 p-2.5 shadow-sm ${
+      className={`overflow-hidden rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg relative ${
         isSelected ? "ring-2 ring-teal-500 shadow-lg" : "border-slate-200 dark:border-slate-700"
       } ${isCompleted || status === "completed" ? "opacity-60 grayscale" : ""}`}
     >
@@ -176,7 +176,7 @@ export function TrackerCard({
         )}
       </div>
 
-      <div className="flex flex-row h-[132px] rounded-xl overflow-hidden">
+      <div className="flex flex-row h-[132px]">
         {/* Image Section - Left side */}
         <div className="relative w-[132px] h-full flex-shrink-0" onClick={(e) => e.stopPropagation()}>
           <EntryImageUpload
