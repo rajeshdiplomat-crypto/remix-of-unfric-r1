@@ -584,9 +584,57 @@ export default function Trackers() {
         frequency: "custom",
         target_days: targetDays,
       });
+
+      // Create tasks for each scheduled day if enabled
+      if (formAddToTasks && !editingActivity) {
+        const scheduledDates: Date[] = [];
+        let checkDate = formStartDate;
+        let count = 0;
+        const endDate = computeEndDateForHabitDays(formStartDate, formFrequency, formDays);
+
+        while (!isAfter(checkDate, endDate) && count < formDays) {
+          const dayOfWeek = (checkDate.getDay() + 6) % 7;
+          if (formFrequency[dayOfWeek]) {
+            scheduledDates.push(new Date(checkDate));
+            count++;
+          }
+          checkDate = addDays(checkDate, 1);
+        }
+
+        const tasks = scheduledDates.map((date) => ({
+          id: crypto.randomUUID(),
+          user_id: user.id,
+          title: `${tempActivity.name}`,
+          description: tempActivity.description || null,
+          due_date: format(date, "yyyy-MM-dd"),
+          due_time: formTime,
+          priority: formPriority.toLowerCase(),
+          urgency: "low",
+          importance: formPriority === "High" ? "high" : "low",
+          time_of_day:
+            parseInt(formTime.split(":")[0]) < 12
+              ? "morning"
+              : parseInt(formTime.split(":")[0]) < 17
+                ? "afternoon"
+                : "evening",
+          is_completed: false,
+          tags: ["Habit", formCategory],
+        }));
+
+        if (tasks.length > 0) {
+          await supabase.from("tasks").insert(tasks as any);
+          toast({
+            title: "Activity created",
+            description: `${scheduledDates.length} tasks added to your schedule`,
+          });
+        }
+      } else {
+        toast({ title: editingActivity ? "Activity updated" : "Activity created" });
+      }
+    } else {
+      toast({ title: editingActivity ? "Activity updated" : "Activity created" });
     }
 
-    toast({ title: editingActivity ? "Activity updated" : "Activity created" });
     setDialogOpen(false);
   };
 
@@ -950,7 +998,45 @@ export default function Trackers() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Goal (days)</label>
+                  <label className="text-sm font-medium mb-2 block">Priority</label>
+                  <Select value={formPriority} onValueChange={setFormPriority}>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PRIORITIES.map((p) => (
+                        <SelectItem key={p} value={p}>
+                          {p}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Start Date</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-left font-normal rounded-xl h-10">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {format(formStartDate, "PPP")}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={formStartDate}
+                        onSelect={(date) => date && setFormStartDate(date)}
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Goal (habit days)</label>
                   <Input
                     type="number"
                     min={1}
@@ -959,11 +1045,75 @@ export default function Trackers() {
                     onChange={(e) => setFormDays(parseInt(e.target.value) || 30)}
                     className="rounded-xl"
                   />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    End: {format(computeEndDateForHabitDays(formStartDate, formFrequency, formDays), "d MMM, yyyy")}
+                  </p>
+                </div>
+              </div>
+
+              {/* Time Scheduling */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Scheduled Time</label>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <p className="text-[11px] text-muted-foreground mb-1.5">Start time</p>
+                    <input
+                      type="time"
+                      value={formTime}
+                      onChange={(e) => setFormTime(e.target.value)}
+                      className="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-muted-foreground mb-1.5">Duration</p>
+                    <Select value={String(formDuration)} onValueChange={(v) => setFormDuration(Number(v))}>
+                      <SelectTrigger className="rounded-xl h-10">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="15">15 min</SelectItem>
+                        <SelectItem value="30">30 min</SelectItem>
+                        <SelectItem value="45">45 min</SelectItem>
+                        <SelectItem value="60">1 hour</SelectItem>
+                        <SelectItem value="90">1.5 hours</SelectItem>
+                        <SelectItem value="120">2 hours</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-muted-foreground mb-1.5">End time</p>
+                    <div className="h-10 px-3 rounded-xl border border-input bg-muted/30 flex items-center text-sm text-muted-foreground">
+                      {(() => {
+                        const [h, m] = formTime.split(":").map(Number);
+                        const endMinutes = h * 60 + m + formDuration;
+                        const endH = Math.floor(endMinutes / 60) % 24;
+                        const endM = endMinutes % 60;
+                        return `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
+                      })()}
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div>
+                <label className="text-sm font-medium mb-2 block">Description</label>
+                <Textarea
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  placeholder="Why is this habit important to you?"
+                  rows={2}
+                  className="rounded-xl"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Cover Image (optional)</label>
+                <ActivityImageUpload imageUrl={formImageUrl} onImageChange={setFormImageUrl} compact />
+              </div>
+
+              <div>
                 <label className="text-sm font-medium mb-2 block">Frequency Pattern</label>
+                <p className="text-xs text-muted-foreground mb-2">Select the days you plan to perform this habit.</p>
                 <div className="flex gap-2">
                   {DAY_LABELS.map((day, idx) => (
                     <button
@@ -983,6 +1133,19 @@ export default function Trackers() {
                   ))}
                 </div>
               </div>
+
+              {!editingActivity && (
+                <div className="flex items-center space-x-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                  <Checkbox
+                    id="addToTasks"
+                    checked={formAddToTasks}
+                    onCheckedChange={(checked) => setFormAddToTasks(checked as boolean)}
+                  />
+                  <label htmlFor="addToTasks" className="text-sm cursor-pointer">
+                    Add scheduled sessions to Tasks page
+                  </label>
+                </div>
+              )}
 
               <div className="flex gap-2 pt-2">
                 <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setDialogOpen(false)}>
