@@ -1031,8 +1031,8 @@ export default function Trackers() {
                               {activity.name}
                             </span>
 
-                            {/* Quick Actions */}
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {/* Quick Actions - Always visible */}
+                            <div className="flex items-center gap-1">
                               {/* Complete Today */}
                               <button
                                 onClick={(e) => {
