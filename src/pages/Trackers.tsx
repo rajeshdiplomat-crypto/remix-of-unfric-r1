@@ -506,7 +506,7 @@ export default function Trackers() {
         {/* 3-Column Layout */}
         <div
           className={cn(
-            "grid gap-6 px-6 lg:px-8 pt-6 flex-1",
+            "grid gap-3 px-2 sm:px-4 py-2 flex-1",
             rightPanelCollapsed
               ? "grid-cols-1 lg:grid-cols-[420px_1fr_64px]"
               : "grid-cols-1 lg:grid-cols-[420px_1fr_260px]",
