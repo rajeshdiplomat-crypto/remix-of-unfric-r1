@@ -39,6 +39,10 @@ import {
   Target,
   TrendingUp,
   Zap,
+  GripVertical,
+  Trash2,
+  CheckCircle,
+  X,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -275,6 +279,8 @@ export default function Trackers() {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingActivity, setEditingActivity] = useState<ActivityItem | null>(null);
@@ -415,7 +421,7 @@ export default function Trackers() {
     });
   }, [activities, currentMonth]);
 
-  // Overall stats
+  // Overall stats (filtered by selected activity if one is selected)
   const overallStats = useMemo(() => {
     const today = new Date();
     const todayStr = format(today, "yyyy-MM-dd");
@@ -428,7 +434,10 @@ export default function Trackers() {
     let monthlyCompleted = 0;
     let monthlyTotal = 0;
 
-    activities.forEach((activity) => {
+    // Filter activities if one is selected
+    const filteredActivities = selectedActivityId ? activities.filter((a) => a.id === selectedActivityId) : activities;
+
+    filteredActivities.forEach((activity) => {
       // Daily
       if (activity.frequencyPattern[dayOfWeek]) {
         dailyTotal++;
@@ -468,7 +477,7 @@ export default function Trackers() {
       totalCompleted: monthlyCompleted,
       totalRemaining: monthlyTotal - monthlyCompleted,
     };
-  }, [activities, activityStats]);
+  }, [activities, activityStats, selectedActivityId]);
 
   // Top habits
   const topHabits = useMemo(() => {
@@ -727,6 +736,24 @@ export default function Trackers() {
 
             {/* Progress Rings + Chart */}
             <Card className="p-4 rounded-xl">
+              {/* Selected Habit Indicator */}
+              {selectedActivityId && (
+                <div className="mb-4 p-2 rounded-lg bg-teal-50 dark:bg-teal-900/30 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-teal-600 dark:text-teal-400">Viewing:</span>
+                    <span className="text-sm font-medium text-teal-700 dark:text-teal-300">
+                      {activities.find((a) => a.id === selectedActivityId)?.name || "Selected Habit"}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setSelectedActivityId(null)}
+                    className="text-xs px-2 py-1 rounded bg-teal-100 dark:bg-teal-800 text-teal-600 dark:text-teal-300 hover:bg-teal-200 transition-colors flex items-center gap-1"
+                  >
+                    <X className="h-3 w-3" /> Clear
+                  </button>
+                </div>
+              )}
+
               <div className="flex justify-around mb-4">
                 <ProgressRing progress={overallStats.momentum} color="teal" label="MOMENTUM" />
                 <ProgressRing progress={overallStats.dailyProgress} color="green" label="DAILY PROGRESS" />
@@ -754,9 +781,14 @@ export default function Trackers() {
                         const isPast = isBefore(day, today) || isToday(day);
                         const isFuture = isAfter(day, today);
 
+                        // Filter by selected activity if one is selected
+                        const chartActivities = selectedActivityId
+                          ? activities.filter((a) => a.id === selectedActivityId)
+                          : activities;
+
                         let completed = 0;
                         let total = 0;
-                        activities.forEach((a) => {
+                        chartActivities.forEach((a) => {
                           if (a.frequencyPattern[dayOfWeek]) {
                             total++;
                             if (a.completions[dayStr]) completed++;
@@ -953,24 +985,88 @@ export default function Trackers() {
                       "bg-orange-50",
                     ];
                     const rowColor = colors[actIdx % colors.length];
+                    const isSelected = selectedActivityId === activity.id;
+                    const todayStr = format(new Date(), "yyyy-MM-dd");
+                    const isTodayCompleted = activity.completions[todayStr];
 
                     return (
                       <tr
                         key={activity.id}
                         className={cn(
-                          "border-b border-slate-100 dark:border-slate-800",
-                          rowColor,
-                          "dark:bg-slate-900/50",
+                          "border-b border-slate-100 dark:border-slate-800 cursor-pointer transition-all",
+                          isSelected ? "ring-2 ring-teal-400 ring-inset bg-teal-50 dark:bg-teal-900/20" : rowColor,
+                          "dark:bg-slate-900/50 hover:bg-opacity-70",
                         )}
+                        onClick={() => setSelectedActivityId(isSelected ? null : activity.id)}
+                        draggable
+                        onDragStart={() => setDraggedIndex(actIdx)}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={() => {
+                          if (draggedIndex !== null && draggedIndex !== actIdx) {
+                            const newActivities = [...activities];
+                            const [removed] = newActivities.splice(draggedIndex, 1);
+                            newActivities.splice(actIdx, 0, removed);
+                            setActivities(newActivities);
+                          }
+                          setDraggedIndex(null);
+                        }}
                       >
+                        {/* Actions Column */}
                         <td
                           className={cn(
-                            "p-2 font-medium text-slate-700 dark:text-slate-300 sticky left-0",
-                            rowColor,
+                            "p-2 sticky left-0",
+                            isSelected ? "bg-teal-50 dark:bg-teal-900/20" : rowColor,
                             "dark:bg-slate-900/50",
                           )}
                         >
-                          {activity.name}
+                          <div className="flex items-center gap-2">
+                            {/* Drag Handle */}
+                            <button
+                              className="cursor-grab text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <GripVertical className="h-4 w-4" />
+                            </button>
+
+                            {/* Habit Name */}
+                            <span className="font-medium text-slate-700 dark:text-slate-300 flex-1 truncate max-w-[120px]">
+                              {activity.name}
+                            </span>
+
+                            {/* Quick Actions */}
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {/* Complete Today */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleCompletion(activity.id, new Date());
+                                }}
+                                className={cn(
+                                  "p-1 rounded transition-colors",
+                                  isTodayCompleted
+                                    ? "text-green-600 bg-green-100 dark:bg-green-900/30"
+                                    : "text-slate-400 hover:text-green-600 hover:bg-green-50",
+                                )}
+                                title={isTodayCompleted ? "Completed today" : "Mark complete for today"}
+                              >
+                                <CheckCircle className="h-3.5 w-3.5" />
+                              </button>
+
+                              {/* Delete */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (confirm("Delete this habit?")) {
+                                    handleDelete(activity.id);
+                                  }
+                                }}
+                                className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                title="Delete habit"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
                         </td>
                         <td className="p-2 text-center text-slate-500">{activity.habitDays}</td>
                         {daysInMonth.map((day, i) => {
@@ -992,7 +1088,10 @@ export default function Trackers() {
                             >
                               {isPlanned ? (
                                 <button
-                                  onClick={() => isPast && toggleCompletion(activity.id, day)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    isPast && toggleCompletion(activity.id, day);
+                                  }}
                                   disabled={!isPast}
                                   className={cn(
                                     "w-5 h-5 rounded flex items-center justify-center transition-all mx-auto",
