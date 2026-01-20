@@ -1426,28 +1426,7 @@ export default function Trackers() {
 
               <div>
                 <label className="text-sm font-medium mb-2 block">Cover Image (optional)</label>
-                <div className="flex gap-4 items-start">
-                  {/* 9:16 Preview */}
-                  <div
-                    className="w-20 rounded-lg overflow-hidden bg-slate-900 border-2 border-slate-700 flex-shrink-0"
-                    style={{ aspectRatio: "9/16" }}
-                  >
-                    {formImageUrl ? (
-                      <img src={formImageUrl} alt="Preview" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
-                        <Target className="h-5 w-5 text-slate-600 mb-1" />
-                        <p className="text-[8px] text-slate-500 text-center px-1">9:16 Preview</p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <ActivityImageUpload imageUrl={formImageUrl} onImageChange={setFormImageUrl} compact />
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      Image will show in 9:16 ratio when viewing habit
-                    </p>
-                  </div>
-                </div>
+                <ActivityImageUpload imageUrl={formImageUrl} onImageChange={setFormImageUrl} compact />
               </div>
 
               <div>
