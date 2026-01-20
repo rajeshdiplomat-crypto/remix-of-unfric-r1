@@ -252,6 +252,7 @@ function ProgressRing({
     green: "#22c55e",
     blue: "#3b82f6",
     purple: "#a855f7",
+    orange: "#f97316",
   };
 
   return (
@@ -762,22 +763,48 @@ export default function Trackers() {
             {/* Progress Rings + Chart */}
             <Card className="p-4 rounded-xl">
               {/* Selected Habit Indicator */}
-              {selectedActivityId && (
-                <div className="mb-4 p-2 rounded-lg bg-teal-50 dark:bg-teal-900/30 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-teal-600 dark:text-teal-400">Viewing:</span>
-                    <span className="text-sm font-medium text-teal-700 dark:text-teal-300">
-                      {activities.find((a) => a.id === selectedActivityId)?.name || "Selected Habit"}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setSelectedActivityId(null)}
-                    className="text-xs px-2 py-1 rounded bg-teal-100 dark:bg-teal-800 text-teal-600 dark:text-teal-300 hover:bg-teal-200 transition-colors flex items-center gap-1"
-                  >
-                    <X className="h-3 w-3" /> Clear
-                  </button>
-                </div>
-              )}
+              {selectedActivityId &&
+                (() => {
+                  const selectedHabit = activities.find((a) => a.id === selectedActivityId);
+                  const startDateStr = selectedHabit?.startDate
+                    ? format(parseISO(selectedHabit.startDate), "MMM d, yyyy")
+                    : "N/A";
+                  const descriptionText = selectedHabit?.description || "";
+                  const truncatedDesc =
+                    descriptionText.length > 40 ? descriptionText.slice(0, 40) + "..." : descriptionText;
+
+                  return (
+                    <div className="mb-4 p-2 rounded-lg bg-teal-50 dark:bg-teal-900/30">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-teal-600 dark:text-teal-400">Viewing:</span>
+                          <span className="text-sm font-medium text-teal-700 dark:text-teal-300">
+                            {selectedHabit?.name || "Selected Habit"}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => setSelectedActivityId(null)}
+                          className="text-xs px-2 py-1 rounded bg-teal-100 dark:bg-teal-800 text-teal-600 dark:text-teal-300 hover:bg-teal-200 transition-colors flex items-center gap-1"
+                        >
+                          <X className="h-3 w-3" /> Clear
+                        </button>
+                      </div>
+                      {/* Start Date and Description Line */}
+                      <div className="mt-1 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <span className="flex items-center gap-1">
+                          <CalendarIcon className="h-3 w-3" />
+                          {startDateStr}
+                        </span>
+                        {truncatedDesc && (
+                          <>
+                            <span className="text-slate-300 dark:text-slate-600">•</span>
+                            <span className="truncate">{truncatedDesc}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
 
               <div className="flex justify-around mb-4">
                 <ProgressRing progress={overallStats.momentum} color="teal" label="MOMENTUM" />
@@ -911,48 +938,115 @@ export default function Trackers() {
               </div>
             </Card>
 
-            {/* Right Sidebar: Top Habits + Streaks */}
+            {/* Right Sidebar: Selected Habit View or Top Habits + Streaks */}
             <div className="space-y-4">
-              <Card className="p-3 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">TOP HABITS</p>
-                  <Button
-                    size="sm"
-                    onClick={openCreateDialog}
-                    className="h-6 px-2 text-xs rounded-lg bg-teal-500 hover:bg-teal-600"
-                  >
-                    <Plus className="h-3 w-3 mr-1" /> Add
-                  </Button>
-                </div>
-                <div className="space-y-1">
-                  {topHabits.map((habit, i) => (
-                    <div key={habit.id} className="flex items-center gap-2 text-xs">
-                      <span className="truncate flex-1 text-slate-600 dark:text-slate-400">{habit.name}</span>
-                      <span className="px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium">
-                        {habit.completed}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </Card>
+              {selectedActivityId ? (
+                // Show selected habit's image in 9:16 phone frame
+                (() => {
+                  const selectedHabit = activities.find((a) => a.id === selectedActivityId);
+                  const habitImage = selectedHabit ? loadActivityImage(selectedHabit.id) : null;
+                  const totalCompletions = selectedHabit ? Object.keys(selectedHabit.completions || {}).length : 0;
+                  const totalCompletionPercent = selectedHabit
+                    ? Math.round((totalCompletions / selectedHabit.habitDays) * 100)
+                    : 0;
 
-              <Card className="p-3 rounded-xl">
-                <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-2">ACTIVE STREAKS</p>
-                <div className="space-y-1">
-                  {activeStreaks.map((habit) => (
-                    <div key={habit.id} className="flex items-center gap-2 text-xs">
-                      <span className="truncate flex-1 text-slate-600 dark:text-slate-400">{habit.name}</span>
-                      <div className="flex items-center gap-1">
-                        <div
-                          className="h-2 rounded-full bg-gradient-to-r from-teal-400 to-green-400"
-                          style={{ width: `${Math.min(habit.streak * 8, 60)}px` }}
-                        />
-                        <span className="text-slate-500 font-medium">{habit.streak}</span>
+                  return (
+                    <Card className="p-3 rounded-xl">
+                      {/* 9:16 Phone Frame */}
+                      <div
+                        className="relative w-full rounded-2xl overflow-hidden bg-slate-900 border-4 border-slate-800"
+                        style={{ aspectRatio: "9/16" }}
+                      >
+                        {habitImage ? (
+                          <img
+                            src={habitImage}
+                            alt={selectedHabit?.name || "Habit"}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-teal-500/20 to-purple-500/20">
+                            <Target className="h-12 w-12 text-teal-400/50 mb-2" />
+                            <p className="text-xs text-slate-400 text-center px-4">No cover image</p>
+                          </div>
+                        )}
+
+                        {/* Overlay with habit name */}
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3">
+                          <p className="text-white font-semibold text-sm truncate">{selectedHabit?.name}</p>
+                          <p className="text-white/70 text-xs">{selectedHabit?.category}</p>
+                        </div>
                       </div>
+
+                      {/* Total Completion Ring */}
+                      <div className="mt-4 flex justify-center">
+                        <ProgressRing
+                          progress={Math.min(totalCompletionPercent, 100)}
+                          color="orange"
+                          label="TOTAL GOAL"
+                        />
+                      </div>
+
+                      {/* Stats */}
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-center">
+                        <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                          <p className="text-lg font-bold text-green-700 dark:text-green-300">{totalCompletions}</p>
+                          <p className="text-[10px] text-green-600 dark:text-green-400">COMPLETED</p>
+                        </div>
+                        <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
+                          <p className="text-lg font-bold text-slate-700 dark:text-slate-300">
+                            {selectedHabit?.habitDays || 0}
+                          </p>
+                          <p className="text-[10px] text-slate-500">TOTAL GOAL</p>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })()
+              ) : (
+                // Default: Show Top Habits and Active Streaks
+                <>
+                  <Card className="p-3 rounded-xl">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">TOP HABITS</p>
+                      <Button
+                        size="sm"
+                        onClick={openCreateDialog}
+                        className="h-6 px-2 text-xs rounded-lg bg-teal-500 hover:bg-teal-600"
+                      >
+                        <Plus className="h-3 w-3 mr-1" /> Add
+                      </Button>
                     </div>
-                  ))}
-                </div>
-              </Card>
+                    <div className="space-y-1">
+                      {topHabits.map((habit, i) => (
+                        <div key={habit.id} className="flex items-center gap-2 text-xs">
+                          <span className="truncate flex-1 text-slate-600 dark:text-slate-400">{habit.name}</span>
+                          <span className="px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium">
+                            {habit.completed}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+
+                  <Card className="p-3 rounded-xl">
+                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-2">ACTIVE STREAKS</p>
+                    <div className="space-y-1">
+                      {activeStreaks.map((habit) => (
+                        <div key={habit.id} className="flex items-center gap-2 text-xs">
+                          <span className="truncate flex-1 text-slate-600 dark:text-slate-400">{habit.name}</span>
+                          <div className="flex items-center gap-1">
+                            <div
+                              className="h-2 rounded-full bg-gradient-to-r from-teal-400 to-green-400"
+                              style={{ width: `${Math.min(habit.streak * 8, 60)}px` }}
+                            />
+                            <span className="text-slate-500 font-medium">{habit.streak}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                </>
+              )}
             </div>
           </div>
 
