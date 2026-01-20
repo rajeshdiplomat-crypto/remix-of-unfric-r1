@@ -176,7 +176,7 @@ export function TrackerCard({
         )}
       </div>
 
-      <div className="flex flex-row h-[140px] rounded-xl overflow-hidden">
+      <div className="flex flex-row h-[140px] rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-800/50 shadow-sm">
         {/* Image Section - Left side */}
         <div className="relative w-[132px] h-full flex-shrink-0" onClick={(e) => e.stopPropagation()}>
           <EntryImageUpload
