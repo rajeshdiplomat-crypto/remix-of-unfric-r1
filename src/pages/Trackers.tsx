@@ -1025,9 +1025,9 @@ export default function Trackers() {
                     : 0;
 
                   return (
-                    <Card className="rounded-xl overflow-hidden">
+                    <Card className="rounded-xl overflow-hidden h-full">
                       {/* Image Frame */}
-                      <div className="relative w-full" style={{ aspectRatio: "9/18" }}>
+                      <div className="relative w-full h-full">
                         {habitImage ? (
                           <img
                             src={habitImage}
