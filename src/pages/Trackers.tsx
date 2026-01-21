@@ -844,6 +844,22 @@ export default function Trackers() {
                   );
                 })()}
 
+              {/* Motivational Quote when no habit is selected */}
+              {!selectedActivityId && (
+                <div className="mb-4 p-2 rounded-lg bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 min-h-[52px] flex items-center justify-center">
+                  <div
+                    className={`text-center transition-opacity duration-500 ${quoteVisible ? "opacity-100" : "opacity-0"}`}
+                  >
+                    <p className="text-sm italic text-purple-700 dark:text-purple-300">
+                      "{MOTIVATIONAL_QUOTES[quoteIndex].text}"
+                    </p>
+                    <p className="text-xs text-purple-500 dark:text-purple-400 mt-1">
+                      — {MOTIVATIONAL_QUOTES[quoteIndex].author}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Progress Rings - TOTAL GOAL always visible */}
               {(() => {
                 const selectedHabit = selectedActivityId ? activities.find((a) => a.id === selectedActivityId) : null;
