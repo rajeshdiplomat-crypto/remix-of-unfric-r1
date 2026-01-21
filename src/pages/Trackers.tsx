@@ -618,6 +618,7 @@ export default function Trackers() {
         description: tempActivity.description || null,
         frequency: "custom",
         target_days: targetDays,
+        habit_days: formDays,
       });
 
       // Create tasks for each scheduled day if enabled
