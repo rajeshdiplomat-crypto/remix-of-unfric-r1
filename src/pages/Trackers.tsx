@@ -356,7 +356,7 @@ export default function Trackers() {
         priority: "Medium",
         description: habit.description || "",
         frequencyPattern,
-        habitDays: 30,
+        habitDays: habit.habit_days || 30,
         startDate: format(new Date(habit.created_at), "yyyy-MM-dd"),
         completions: habitCompletions,
         createdAt: habit.created_at,
