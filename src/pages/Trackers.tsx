@@ -979,11 +979,8 @@ export default function Trackers() {
 
                   return (
                     <Card className="p-3 rounded-xl">
-                      {/* 9:16 Phone Frame */}
-                      <div
-                        className="relative w-full rounded-2xl overflow-hidden bg-slate-900 border-4 border-slate-800"
-                        style={{ aspectRatio: "9/16" }}
-                      >
+                      {/* Image Frame */}
+                      <div className="relative w-full rounded-xl overflow-hidden" style={{ aspectRatio: "9/18" }}>
                         {habitImage ? (
                           <img
                             src={habitImage}
