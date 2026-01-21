@@ -92,7 +92,7 @@ const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 // Motivational quotes for when no habit is selected
 const MOTIVATIONAL_QUOTES = [
-  { text: "Your habits shape your future. Choose wisely.", author: "Unknown" },
+  { text: "Every action you take is a vote for the type of person you wish to become.", author: "James Clear" },
   { text: "Small daily improvements lead to stunning results.", author: "Robin Sharma" },
   { text: "We are what we repeatedly do. Excellence, then, is not an act, but a habit.", author: "Aristotle" },
   { text: "The secret of your future is hidden in your daily routine.", author: "Mike Murdock" },
