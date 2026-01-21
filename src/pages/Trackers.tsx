@@ -744,7 +744,7 @@ export default function Trackers() {
         <div className="px-4 py-4 space-y-4">
           {/* Top Section: Month + Progress Rings */}
           <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_200px] gap-4">
-            {/* Month Card */}
+            {/* Month Card with Quote */}
             <Card className="p-4 rounded-xl bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950/30 dark:to-cyan-950/30">
               <div className="flex items-center justify-between mb-2">
                 <Button
@@ -769,26 +769,21 @@ export default function Trackers() {
               </div>
               <p className="text-xs text-center text-slate-500 mb-3">- HABIT TRACKER -</p>
 
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Start Date</span>
-                  <span className="font-medium">{format(startOfMonth(currentMonth), "MMMM d, yyyy")}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">End Date</span>
-                  <span className="font-medium">{format(endOfMonth(currentMonth), "MMMM d, yyyy")}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Days Left</span>
-                  <span className="font-medium">{differenceInDays(endOfMonth(currentMonth), new Date()) + 1}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Daily Habits</span>
-                  <span className="font-medium">{activities.length}</span>
+              {/* Rotating Quote */}
+              <div className="min-h-[80px] flex items-center justify-center p-2 rounded-lg bg-white/50 dark:bg-slate-800/50 mb-4">
+                <div
+                  className={`text-center transition-opacity duration-500 ${quoteVisible ? "opacity-100" : "opacity-0"}`}
+                >
+                  <p className="text-xs italic text-slate-600 dark:text-slate-300 leading-relaxed">
+                    "{MOTIVATIONAL_QUOTES[quoteIndex].text}"
+                  </p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
+                    — {MOTIVATIONAL_QUOTES[quoteIndex].author}
+                  </p>
                 </div>
               </div>
 
-              <div className="mt-4 space-y-2">
+              <div className="space-y-2">
                 <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/30 text-center">
                   <p className="text-xs text-green-600 dark:text-green-400 font-medium">COMPLETED</p>
                   <p className="text-2xl font-bold text-green-700 dark:text-green-300">{overallStats.totalCompleted}</p>
@@ -802,75 +797,7 @@ export default function Trackers() {
 
             {/* Progress Rings + Chart */}
             <Card className="p-4 rounded-xl">
-              {/* Selected Habit Indicator */}
-              {selectedActivityId &&
-                (() => {
-                  const selectedHabit = activities.find((a) => a.id === selectedActivityId);
-                  const startDateStr = selectedHabit?.startDate
-                    ? format(parseISO(selectedHabit.startDate), "MMM d, yyyy")
-                    : "N/A";
-                  const endDate = selectedHabit?.startDate
-                    ? computeEndDateForHabitDays(
-                        parseISO(selectedHabit.startDate),
-                        selectedHabit.frequencyPattern,
-                        selectedHabit.habitDays,
-                      )
-                    : null;
-                  const endDateStr = endDate ? format(endDate, "MMM d, yyyy") : "N/A";
-                  const descriptionText = selectedHabit?.description || "";
-                  const truncatedDesc =
-                    descriptionText.length > 30 ? descriptionText.slice(0, 30) + "..." : descriptionText;
-
-                  return (
-                    <div className="mb-4 p-2 rounded-lg bg-teal-50 dark:bg-teal-900/30">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-teal-600 dark:text-teal-400">Viewing:</span>
-                          <span className="text-sm font-medium text-teal-700 dark:text-teal-300">
-                            {selectedHabit?.name || "Selected Habit"}
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => setSelectedActivityId(null)}
-                          className="text-xs px-2 py-1 rounded bg-teal-100 dark:bg-teal-800 text-teal-600 dark:text-teal-300 hover:bg-teal-200 transition-colors flex items-center gap-1"
-                        >
-                          <X className="h-3 w-3" /> Clear
-                        </button>
-                      </div>
-                      {/* Start Date, End Date, and Description Line */}
-                      <div className="mt-1 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                        <span className="flex items-center gap-1">
-                          <CalendarIcon className="h-3 w-3" />
-                          {startDateStr} → {endDateStr}
-                        </span>
-                        {truncatedDesc && (
-                          <>
-                            <span className="text-slate-300 dark:text-slate-600">•</span>
-                            <span className="truncate">{truncatedDesc}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-              {/* Motivational Quote when no habit is selected */}
-              {!selectedActivityId && (
-                <div className="mb-4 p-2 rounded-lg bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 min-h-[60px] flex items-center justify-center">
-                  <div
-                    className={`text-center transition-opacity duration-500 ${quoteVisible ? "opacity-100" : "opacity-0"}`}
-                  >
-                    <p className="text-sm italic text-purple-700 dark:text-purple-300">
-                      "{MOTIVATIONAL_QUOTES[quoteIndex].text}"
-                    </p>
-                    <p className="text-xs text-purple-500 dark:text-purple-400 mt-1">
-                      — {MOTIVATIONAL_QUOTES[quoteIndex].author}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Progress Rings - Add Total Goal ring when habit is selected */}
+              {/* Progress Rings - TOTAL GOAL always visible */}
               {(() => {
                 const selectedHabit = selectedActivityId ? activities.find((a) => a.id === selectedActivityId) : null;
                 const totalCompletions = selectedHabit ? Object.keys(selectedHabit.completions || {}).length : 0;
@@ -880,13 +807,7 @@ export default function Trackers() {
 
                 return (
                   <div className="flex justify-around mb-4 flex-wrap gap-2">
-                    {selectedActivityId && (
-                      <ProgressRing
-                        progress={Math.min(totalCompletionPercent, 100)}
-                        color="orange"
-                        label="TOTAL GOAL"
-                      />
-                    )}
+                    <ProgressRing progress={Math.min(totalCompletionPercent, 100)} color="orange" label="TOTAL GOAL" />
                     <ProgressRing progress={overallStats.momentum} color="teal" label="MOMENTUM" />
                     <ProgressRing progress={overallStats.dailyProgress} color="green" label="DAILY" />
                     <ProgressRing progress={overallStats.weeklyProgress} color="blue" label="WEEKLY" />
