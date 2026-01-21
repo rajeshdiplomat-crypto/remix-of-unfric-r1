@@ -1,15 +1,5 @@
 import { useLocation } from "react-router-dom";
-import {
-  BookOpen,
-  Heart,
-  PenLine,
-  Sparkles,
-  BarChart3,
-  FileText,
-  CheckSquare,
-  Settings,
-  LogOut,
-} from "lucide-react";
+import { BookOpen, Heart, PenLine, Sparkles, BarChart3, FileText, CheckSquare, Settings, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -37,7 +27,7 @@ const mainNavItems = [
   { title: "Emotions", url: "/emotions", icon: Heart },
   { title: "Journal", url: "/journal", icon: PenLine },
   { title: "Manifest", url: "/manifest", icon: Sparkles },
-  { title: "Trackers", url: "/trackers", icon: BarChart3 },
+  { title: "Habits", url: "/trackers", icon: BarChart3 },
 ];
 
 const productivityItems = [
@@ -58,11 +48,7 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-3">
-            {collapsed ? (
-              <span className="text-lg font-light text-foreground">u</span>
-            ) : (
-              <UnfricLogo size="sm" />
-            )}
+            {collapsed ? <span className="text-lg font-light text-foreground">u</span> : <UnfricLogo size="sm" />}
           </div>
           <div className="flex items-center gap-1">
             <ThemeToggle collapsed={collapsed} />
@@ -73,16 +59,14 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-muted-foreground text-[10px] uppercase tracking-zara-wider font-normal">Main</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-muted-foreground text-[10px] uppercase tracking-zara-wider font-normal">
+            Main
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={isActive(item.url)}
-                    tooltip={item.title}
-                  >
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
                     <NavLink
                       to={item.url}
                       className="flex items-center gap-3 transition-colors text-xs uppercase tracking-zara font-light"
@@ -99,16 +83,14 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-muted-foreground text-[10px] uppercase tracking-zara-wider font-normal">Productivity</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-muted-foreground text-[10px] uppercase tracking-zara-wider font-normal">
+            Productivity
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {productivityItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={isActive(item.url)}
-                    tooltip={item.title}
-                  >
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
                     <NavLink
                       to={item.url}
                       className="flex items-center gap-3 transition-colors text-xs uppercase tracking-zara font-light"
@@ -128,11 +110,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton 
-                  asChild 
-                  isActive={isActive("/settings")}
-                  tooltip="Settings"
-                >
+                <SidebarMenuButton asChild isActive={isActive("/settings")} tooltip="Settings">
                   <NavLink
                     to="/settings"
                     className="flex items-center gap-3 transition-colors text-xs uppercase tracking-zara font-light"
@@ -160,18 +138,11 @@ export function AppSidebar() {
       <SidebarFooter className="p-3 border-t border-border">
         <div className="flex items-center justify-between">
           {!collapsed && (
-            <p className="text-[10px] text-muted-foreground truncate uppercase tracking-zara">
-              {user?.email}
-            </p>
+            <p className="text-[10px] text-muted-foreground truncate uppercase tracking-zara">{user?.email}</p>
           )}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={signOut}
-                className="h-8 w-8 flex-shrink-0 hover:bg-muted"
-              >
+              <Button variant="ghost" size="icon" onClick={signOut} className="h-8 w-8 flex-shrink-0 hover:bg-muted">
                 <LogOut className="h-4 w-4" />
               </Button>
             </TooltipTrigger>

@@ -5,17 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  BookOpen,
-  Heart,
-  PenLine,
-  Sparkles,
-  BarChart3,
-  FileText,
-  CheckSquare,
-  Settings,
-  LogOut,
-} from "lucide-react";
+import { BookOpen, Heart, PenLine, Sparkles, BarChart3, FileText, CheckSquare, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UnfricLogo } from "@/components/common/UnfricLogo";
 
@@ -24,7 +14,7 @@ const mainNavItems = [
   { title: "Emotions", url: "/emotions", icon: Heart },
   { title: "Journal", url: "/journal", icon: PenLine },
   { title: "Manifest", url: "/manifest", icon: Sparkles },
-  { title: "Trackers", url: "/trackers", icon: BarChart3 },
+  { title: "Habits", url: "/trackers", icon: BarChart3 },
 ];
 
 const productivityItems = [
@@ -39,18 +29,16 @@ interface MobileNavProps {
 export function MobileNav({ onNavigate }: MobileNavProps) {
   const location = useLocation();
   const { user, signOut } = useAuth();
-  
+
   const isActive = (path: string) => location.pathname === path;
 
-  const NavItem = ({ item }: { item: typeof mainNavItems[0] }) => (
+  const NavItem = ({ item }: { item: (typeof mainNavItems)[0] }) => (
     <NavLink
       to={item.url}
       onClick={onNavigate}
       className={cn(
         "flex items-center gap-3 px-4 py-3 transition-colors text-xs uppercase tracking-zara font-light",
-        isActive(item.url) 
-          ? "bg-foreground/5 text-foreground" 
-          : "text-foreground hover:bg-muted"
+        isActive(item.url) ? "bg-foreground/5 text-foreground" : "text-foreground hover:bg-muted",
       )}
     >
       <item.icon className="h-5 w-5" />
@@ -70,9 +58,7 @@ export function MobileNav({ onNavigate }: MobileNavProps) {
       {/* Navigation */}
       <ScrollArea className="flex-1 py-4">
         <div className="px-2 space-y-1">
-          <p className="px-4 text-[10px] font-normal text-muted-foreground uppercase tracking-zara-wider mb-2">
-            Main
-          </p>
+          <p className="px-4 text-[10px] font-normal text-muted-foreground uppercase tracking-zara-wider mb-2">Main</p>
           {mainNavItems.map((item) => (
             <NavItem key={item.title} item={item} />
           ))}
@@ -97,9 +83,7 @@ export function MobileNav({ onNavigate }: MobileNavProps) {
             onClick={onNavigate}
             className={cn(
               "flex items-center gap-3 px-4 py-3 transition-colors text-xs uppercase tracking-zara font-light",
-              isActive("/settings") 
-                ? "bg-foreground/5 text-foreground" 
-                : "text-foreground hover:bg-muted"
+              isActive("/settings") ? "bg-foreground/5 text-foreground" : "text-foreground hover:bg-muted",
             )}
           >
             <Settings className="h-5 w-5" />

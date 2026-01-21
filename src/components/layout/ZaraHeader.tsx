@@ -16,7 +16,7 @@ const modules = [
   { name: "EMOTIONS", path: "/emotions" },
   { name: "JOURNAL", path: "/journal" },
   { name: "MANIFEST", path: "/manifest" },
-  { name: "TRACKERS", path: "/trackers" },
+  { name: "HABITS", path: "/trackers" },
   { name: "NOTES", path: "/notes" },
   { name: "TASKS", path: "/tasks" },
 ];

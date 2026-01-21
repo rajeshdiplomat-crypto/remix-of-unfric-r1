@@ -1,13 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Camera, Play, Pause, Volume2, VolumeX, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 type MediaType = "image" | "video" | null;
@@ -59,10 +53,22 @@ function getPageTypeFromStorageKey(storageKey: string): string {
 }
 
 export const PAGE_HERO_TEXT = {
-  diary: { badge: "YOUR PERSONAL SPACE", title: "DIARY", subtitle: "A curated timeline of your thoughts, tasks, and moments" },
+  diary: {
+    badge: "YOUR PERSONAL SPACE",
+    title: "DIARY",
+    subtitle: "A curated timeline of your thoughts, tasks, and moments",
+  },
   emotions: { badge: "CHECK-IN", title: "EMOTIONS", subtitle: "Understand your patterns and nurture your well-being" },
-  trackers: { badge: "BUILD CONSISTENCY", title: "TRACKERS", subtitle: "Track your progress, celebrate streaks, and stay consistent" },
-  manifest: { badge: "DAILY PRACTICE", title: "MANIFEST", subtitle: "Create a vision, practice daily, and build evidence" },
+  trackers: {
+    badge: "BUILD CONSISTENCY",
+    title: "HABITS",
+    subtitle: "Track your progress, celebrate streaks, and stay consistent",
+  },
+  manifest: {
+    badge: "DAILY PRACTICE",
+    title: "MANIFEST",
+    subtitle: "Create a vision, practice daily, and build evidence",
+  },
   journal: { badge: "REFLECT", title: "JOURNAL", subtitle: "Capture your thoughts, one entry at a time" },
   notes: { badge: "LIFE ATLAS", title: "NOTES", subtitle: "Your ideas, organized in one calm, premium view" },
   tasks: { badge: "FOCUS", title: "TASKS", subtitle: "Prioritize what matters and get things done" },
@@ -102,10 +108,12 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
     setMediaSrc(objectUrl);
     setMediaType(type);
     setDialogOpen(false);
-    
+
     // Note: Object URLs are session-only and will be lost on page refresh
     // For persistence, the AI-generated images (which return URLs) are recommended
-    toast.success(`${type === "image" ? "Image" : "Video"} added! Note: Upload will reset on refresh. Use AI generation for persistent images.`);
+    toast.success(
+      `${type === "image" ? "Image" : "Video"} added! Note: Upload will reset on refresh. Use AI generation for persistent images.`,
+    );
   };
 
   const handleRemove = () => {
@@ -119,18 +127,15 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
     setIsGenerating(true);
     try {
       const pageType = getPageTypeFromStorageKey(storageKey);
-      
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-hero-image`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ pageType }),
-        }
-      );
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-hero-image`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ pageType }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -146,7 +151,7 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
       }
 
       const data = await response.json();
-      
+
       if (data.imageUrl) {
         setMediaSrc(data.imageUrl);
         setMediaType("image");
@@ -184,19 +189,9 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
 
   const textOverlay = (
     <div className="absolute bottom-0 left-0 z-10 p-8 lg:p-12">
-      {badge && (
-        <p className="text-[10px] uppercase tracking-[0.3em] text-foreground/70 mb-3">
-          {badge}
-        </p>
-      )}
-      <h1 className="text-4xl lg:text-6xl font-light uppercase tracking-[0.15em] text-foreground mb-2">
-        {title}
-      </h1>
-      {subtitle && (
-        <p className="text-sm font-light tracking-wider text-foreground/70 max-w-md">
-          {subtitle}
-        </p>
-      )}
+      {badge && <p className="text-[10px] uppercase tracking-[0.3em] text-foreground/70 mb-3">{badge}</p>}
+      <h1 className="text-4xl lg:text-6xl font-light uppercase tracking-[0.15em] text-foreground mb-2">{title}</h1>
+      {subtitle && <p className="text-sm font-light tracking-wider text-foreground/70 max-w-md">{subtitle}</p>}
     </div>
   );
 
@@ -238,11 +233,7 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
             onClick={handleGenerateAI}
             disabled={isGenerating}
           >
-            {isGenerating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4" />
-            )}
+            {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             {isGenerating ? "GENERATING..." : "GENERATE AI IMAGE"}
           </Button>
           <Button
@@ -326,11 +317,7 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
           </div>
         </>
       ) : (
-        <img
-          src={mediaSrc}
-          alt={`${title} hero`}
-          className="w-full h-full object-cover"
-        />
+        <img src={mediaSrc} alt={`${title} hero`} className="w-full h-full object-cover" />
       )}
 
       {/* Gradient overlay */}
