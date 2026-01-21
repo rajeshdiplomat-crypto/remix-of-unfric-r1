@@ -797,6 +797,48 @@ export default function Trackers() {
 
             {/* Progress Rings + Chart */}
             <Card className="p-4 rounded-xl">
+              {/* Selected Habit Indicator */}
+              {selectedActivityId &&
+                (() => {
+                  const selectedHabit = activities.find((a) => a.id === selectedActivityId);
+                  const startDateStr = selectedHabit?.startDate
+                    ? format(parseISO(selectedHabit.startDate), "MMM d, yyyy")
+                    : "N/A";
+                  const endDate = selectedHabit?.startDate
+                    ? computeEndDateForHabitDays(
+                        parseISO(selectedHabit.startDate),
+                        selectedHabit.frequencyPattern,
+                        selectedHabit.habitDays,
+                      )
+                    : null;
+                  const endDateStr = endDate ? format(endDate, "MMM d, yyyy") : "N/A";
+
+                  return (
+                    <div className="mb-4 p-2 rounded-lg bg-teal-50 dark:bg-teal-900/30">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-teal-600 dark:text-teal-400">Viewing:</span>
+                          <span className="text-sm font-medium text-teal-700 dark:text-teal-300">
+                            {selectedHabit?.name || "Selected Habit"}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => setSelectedActivityId(null)}
+                          className="text-xs px-2 py-1 rounded bg-teal-100 dark:bg-teal-800 text-teal-600 dark:text-teal-300 hover:bg-teal-200 transition-colors flex items-center gap-1"
+                        >
+                          <X className="h-3 w-3" /> Clear
+                        </button>
+                      </div>
+                      <div className="mt-1 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <span className="flex items-center gap-1">
+                          <CalendarIcon className="h-3 w-3" />
+                          {startDateStr} → {endDateStr}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
               {/* Progress Rings - TOTAL GOAL always visible */}
               {(() => {
                 const selectedHabit = selectedActivityId ? activities.find((a) => a.id === selectedActivityId) : null;
