@@ -744,7 +744,7 @@ export default function Trackers() {
         <div className="px-4 py-4 space-y-4">
           {/* Top Section: Month + Progress Rings */}
           <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_200px] gap-4">
-            {/* Month Card with Quote */}
+            {/* Month Card */}
             <Card className="p-4 rounded-xl bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950/30 dark:to-cyan-950/30">
               <div className="flex items-center justify-between mb-2">
                 <Button
@@ -769,21 +769,26 @@ export default function Trackers() {
               </div>
               <p className="text-xs text-center text-slate-500 mb-3">- HABIT TRACKER -</p>
 
-              {/* Rotating Quote */}
-              <div className="min-h-[80px] flex items-center justify-center p-2 rounded-lg bg-white/50 dark:bg-slate-800/50 mb-4">
-                <div
-                  className={`text-center transition-opacity duration-500 ${quoteVisible ? "opacity-100" : "opacity-0"}`}
-                >
-                  <p className="text-xs italic text-slate-600 dark:text-slate-300 leading-relaxed">
-                    "{MOTIVATIONAL_QUOTES[quoteIndex].text}"
-                  </p>
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
-                    — {MOTIVATIONAL_QUOTES[quoteIndex].author}
-                  </p>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Start Date</span>
+                  <span className="font-medium">{format(startOfMonth(currentMonth), "MMMM d, yyyy")}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">End Date</span>
+                  <span className="font-medium">{format(endOfMonth(currentMonth), "MMMM d, yyyy")}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Days Left</span>
+                  <span className="font-medium">{differenceInDays(endOfMonth(currentMonth), new Date()) + 1}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Daily Habits</span>
+                  <span className="font-medium">{activities.length}</span>
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="mt-4 space-y-2">
                 <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/30 text-center">
                   <p className="text-xs text-green-600 dark:text-green-400 font-medium">COMPLETED</p>
                   <p className="text-2xl font-bold text-green-700 dark:text-green-300">{overallStats.totalCompleted}</p>
