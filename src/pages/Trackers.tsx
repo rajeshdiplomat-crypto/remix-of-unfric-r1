@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   addDays,
   differenceInDays,
@@ -89,6 +89,23 @@ const CATEGORIES = [
 const PRIORITIES = ["Low", "Medium", "High"];
 const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+// Motivational quotes for when no habit is selected
+const MOTIVATIONAL_QUOTES = [
+  { text: "Your habits shape your future. Choose wisely.", author: "Unknown" },
+  { text: "Small daily improvements lead to stunning results.", author: "Robin Sharma" },
+  { text: "We are what we repeatedly do. Excellence, then, is not an act, but a habit.", author: "Aristotle" },
+  { text: "The secret of your future is hidden in your daily routine.", author: "Mike Murdock" },
+  { text: "Success is the sum of small efforts, repeated day in and day out.", author: "Robert Collier" },
+  { text: "Motivation is what gets you started. Habit is what keeps you going.", author: "Jim Ryun" },
+  { text: "First we make our habits, then our habits make us.", author: "John Dryden" },
+  {
+    text: "The chains of habit are too light to be felt until they are too heavy to be broken.",
+    author: "Warren Buffett",
+  },
+  { text: "You'll never change your life until you change something you do daily.", author: "John C. Maxwell" },
+  { text: "Discipline is choosing between what you want now and what you want most.", author: "Abraham Lincoln" },
+];
 
 // Generate sample completions for past days
 function generateSampleCompletions(probability: number = 0.7): Record<string, boolean> {
@@ -307,6 +324,28 @@ export default function Trackers() {
   const [formTime, setFormTime] = useState("09:00");
   const [formDuration, setFormDuration] = useState(30);
   const [formAddToTasks, setFormAddToTasks] = useState(false);
+
+  // Quote rotation state
+  const [quoteIndex, setQuoteIndex] = useState(0);
+  const [quoteVisible, setQuoteVisible] = useState(true);
+
+  // Quote rotation effect - change every 10 seconds with fade
+  useEffect(() => {
+    if (selectedActivityId) return; // Don't rotate when a habit is selected
+
+    const interval = setInterval(() => {
+      // Fade out
+      setQuoteVisible(false);
+
+      // After fade out, change quote and fade in
+      setTimeout(() => {
+        setQuoteIndex((prev) => (prev + 1) % MOTIVATIONAL_QUOTES.length);
+        setQuoteVisible(true);
+      }, 500); // Wait for fade out animation
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [selectedActivityId]);
 
   useEffect(() => {
     if (!user) {
@@ -814,6 +853,22 @@ export default function Trackers() {
                     </div>
                   );
                 })()}
+
+              {/* Motivational Quote when no habit is selected */}
+              {!selectedActivityId && (
+                <div className="mb-4 p-2 rounded-lg bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 min-h-[60px] flex items-center justify-center">
+                  <div
+                    className={`text-center transition-opacity duration-500 ${quoteVisible ? "opacity-100" : "opacity-0"}`}
+                  >
+                    <p className="text-sm italic text-purple-700 dark:text-purple-300">
+                      "{MOTIVATIONAL_QUOTES[quoteIndex].text}"
+                    </p>
+                    <p className="text-xs text-purple-500 dark:text-purple-400 mt-1">
+                      — {MOTIVATIONAL_QUOTES[quoteIndex].author}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Progress Rings - Add Total Goal ring when habit is selected */}
               {(() => {
