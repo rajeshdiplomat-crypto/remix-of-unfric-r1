@@ -819,7 +819,7 @@ export default function Trackers() {
                   const endDateStr = endDate ? format(endDate, "MMM d, yyyy") : "N/A";
 
                   return (
-                    <div className="mb-4 p-2 rounded-lg bg-teal-50 dark:bg-teal-900/30 min-h-[52px] flex flex-col justify-center">
+                    <div className="mb-4 p-2 rounded-lg bg-teal-50 dark:bg-teal-900/30 h-[56px] flex flex-col justify-center">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-teal-600 dark:text-teal-400">Viewing:</span>
@@ -846,7 +846,7 @@ export default function Trackers() {
 
               {/* Motivational Quote when no habit is selected */}
               {!selectedActivityId && (
-                <div className="mb-4 p-2 rounded-lg bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 min-h-[52px] flex flex-col justify-center">
+                <div className="mb-4 p-2 rounded-lg bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 h-[56px] flex flex-col justify-center">
                   <div
                     className={`text-left transition-opacity duration-500 ${quoteVisible ? "opacity-100" : "opacity-0"}`}
                   >
