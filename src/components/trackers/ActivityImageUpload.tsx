@@ -39,6 +39,42 @@ export function ActivityImageUpload({ imageUrl, onImageChange, compact = false }
   };
 
   if (imageUrl) {
+    // In compact mode, don't show the landscape preview - just show controls
+    if (compact) {
+      return (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-green-600 dark:text-green-400">✓ Image added</span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={() => inputRef.current?.click()}
+          >
+            <RefreshCcw className="h-3 w-3 mr-1" />
+            Change
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-xs text-red-500 hover:text-red-600"
+            onClick={() => onImageChange(null)}
+          >
+            <X className="h-3 w-3 mr-1" />
+            Remove
+          </Button>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={handleInputChange}
+          />
+        </div>
+      );
+    }
+
     return (
       <div
         className={cn("relative overflow-hidden rounded-xl border border-border/60 bg-card", compact ? "h-20" : "h-32")}
