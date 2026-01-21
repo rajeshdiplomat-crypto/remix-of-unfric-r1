@@ -863,14 +863,22 @@ export default function Trackers() {
               {/* Progress Rings - TOTAL GOAL always visible */}
               {(() => {
                 const selectedHabit = selectedActivityId ? activities.find((a) => a.id === selectedActivityId) : null;
-                const totalCompletions = selectedHabit ? Object.keys(selectedHabit.completions || {}).length : 0;
-                const totalCompletionPercent = selectedHabit
-                  ? Math.round((totalCompletions / selectedHabit.habitDays) * 100)
-                  : 0;
+
+                let totalGoalPercent = 0;
+                if (selectedHabit) {
+                  // Show selected habit's progress
+                  const totalCompletions = Object.keys(selectedHabit.completions || {}).length;
+                  totalGoalPercent = Math.round((totalCompletions / selectedHabit.habitDays) * 100);
+                } else {
+                  // Show overall progress (completed / total)
+                  const totalCompleted = overallStats.totalCompleted;
+                  const totalAll = overallStats.totalCompleted + overallStats.totalRemaining;
+                  totalGoalPercent = totalAll > 0 ? Math.round((totalCompleted / totalAll) * 100) : 0;
+                }
 
                 return (
                   <div className="flex justify-around mb-4 flex-wrap gap-2">
-                    <ProgressRing progress={Math.min(totalCompletionPercent, 100)} color="orange" label="TOTAL GOAL" />
+                    <ProgressRing progress={Math.min(totalGoalPercent, 100)} color="orange" label="TOTAL GOAL" />
                     <ProgressRing progress={overallStats.momentum} color="teal" label="MOMENTUM" />
                     <ProgressRing progress={overallStats.dailyProgress} color="green" label="DAILY" />
                     <ProgressRing progress={overallStats.weeklyProgress} color="blue" label="WEEKLY" />
