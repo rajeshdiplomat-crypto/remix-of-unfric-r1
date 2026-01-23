@@ -58,6 +58,12 @@ export interface VisualizationEntry {
   created_at: string;
 }
 
+export interface GratitudeEntry {
+  id: string;
+  text: string;
+  created_at: string;
+}
+
 export interface ManifestDailyPractice {
   id: string;
   goal_id: string;
@@ -75,7 +81,7 @@ export interface ManifestDailyPractice {
   // Section 2 - Daily Check-in
   alignment?: number; // 1-10
   growth_note?: string;
-  gratitude?: string;
+  gratitudes?: GratitudeEntry[];
   
   // Lock state
   locked: boolean;

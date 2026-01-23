@@ -139,7 +139,7 @@ export function ManifestVisualizationMode({
       acts: [...todayActs, ...prevActs],
       proofs: [...todayProofs, ...prevProofs],
       growth_note: todaysPractice?.growth_note || previousPractice?.growth_note,
-      gratitude: todaysPractice?.gratitude || previousPractice?.gratitude,
+      gratitudes: [...(todaysPractice?.gratitudes || []), ...(previousPractice?.gratitudes || [])],
     };
 
     // Add actions
@@ -181,12 +181,16 @@ export function ManifestVisualizationMode({
           horizontalPosition: getRandomSafePosition(),
         });
       }
-      if (combinedPractice.gratitude && combinedPractice.gratitude !== combinedPractice.growth_note) {
-        elements.push({
-          id: "gratitude-note",
-          type: "note",
-          content: combinedPractice.gratitude,
-          horizontalPosition: getRandomSafePosition(),
+      if (combinedPractice.gratitudes && combinedPractice.gratitudes.length > 0) {
+        combinedPractice.gratitudes.forEach((gratitude: any) => {
+          if (gratitude && gratitude.text && gratitude.text !== combinedPractice.growth_note) {
+            elements.push({
+              id: `gratitude-${gratitude.id || crypto.randomUUID()}`,
+              type: "note",
+              content: gratitude.text,
+              horizontalPosition: getRandomSafePosition(),
+            });
+          }
         });
       }
     }
