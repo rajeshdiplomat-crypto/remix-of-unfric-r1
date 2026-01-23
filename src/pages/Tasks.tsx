@@ -571,12 +571,12 @@ export default function Tasks() {
             onNewTask={openNewTaskDrawer}
           />
 
-          <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_280px] gap-6 items-stretch">
-            <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_260px] gap-4 items-start">
+            <div className="flex flex-col gap-2 h-[260px]">
               <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
               <InsightsPanel tasks={filteredTasks} compactMode />
             </div>
-            <div className="h-[280px]">
+            <div className="h-[260px]">
               <TasksClockWidget />
             </div>
           </div>
