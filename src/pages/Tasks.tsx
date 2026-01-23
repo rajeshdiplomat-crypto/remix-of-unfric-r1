@@ -550,14 +550,6 @@ export default function Tasks() {
         contentReady ? "opacity-100" : "opacity-0",
       )}
     >
-      {/* Hero */}
-      <PageHero
-        storageKey="tasks_hero_src"
-        typeKey="tasks_hero_type"
-        badge={PAGE_HERO_TEXT.tasks.badge}
-        title={PAGE_HERO_TEXT.tasks.title}
-        subtitle={PAGE_HERO_TEXT.tasks.subtitle}
-      />
 
       <div className="w-full flex-1 min-h-0 px-6 lg:px-8 pt-6">
         <div className="w-full min-w-0 flex flex-col gap-6 min-h-0">
