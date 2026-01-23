@@ -212,10 +212,11 @@ export function NotesSplitView({
                                   {folderNotes.map((note) => (
                                     <div
                                       key={note.id}
-                                      className={`p-1.5 rounded-lg cursor-pointer transition-all flex items-start gap-1.5 ${selectedNote?.id === note.id
-                                        ? "bg-primary/10 ring-1 ring-primary/20"
-                                        : "hover:bg-slate-50"
-                                        }`}
+                                      className={`p-1.5 rounded-lg cursor-pointer transition-all flex items-start gap-1.5 ${
+                                        selectedNote?.id === note.id
+                                          ? "bg-primary/10 ring-1 ring-primary/20"
+                                          : "hover:bg-slate-50"
+                                      }`}
                                       onClick={() => onSelectNote(note)}
                                     >
                                       <FileText className="h-3 w-3 mt-0.5 text-slate-400 shrink-0" />
@@ -235,10 +236,11 @@ export function NotesSplitView({
                           .map((note) => (
                             <div
                               key={note.id}
-                              className={`p-1.5 rounded-lg cursor-pointer transition-all flex items-start gap-1.5 ${selectedNote?.id === note.id
-                                ? "bg-primary/10 ring-1 ring-primary/20"
-                                : "hover:bg-slate-50"
-                                }`}
+                              className={`p-1.5 rounded-lg cursor-pointer transition-all flex items-start gap-1.5 ${
+                                selectedNote?.id === note.id
+                                  ? "bg-primary/10 ring-1 ring-primary/20"
+                                  : "hover:bg-slate-50"
+                              }`}
                               onClick={() => onSelectNote(note)}
                             >
                               <FileText className="h-3 w-3 mt-0.5 text-slate-400 shrink-0" />
@@ -247,7 +249,9 @@ export function NotesSplitView({
                                   {note.title || "Untitled"}
                                 </span>
                                 <span className="text-[10px] text-slate-400 truncate block">
-                                  {note.plainText && note.plainText !== "undefined" ? note.plainText.slice(0, 30) : "No content"}
+                                  {note.plainText && note.plainText !== "undefined"
+                                    ? note.plainText.slice(0, 30)
+                                    : "No content"}
                                 </span>
                               </div>
                             </div>
@@ -262,7 +266,9 @@ export function NotesSplitView({
         </div>
 
         {/* Right Panel - Editor */}
-        <div className={`flex-1 flex flex-col min-w-0 overflow-hidden relative ${isEditorFullscreen ? 'z-[10000]' : 'z-10'}`}>
+        <div
+          className={`flex-1 flex flex-col min-w-0 overflow-hidden relative ${isEditorFullscreen ? "z-[10000]" : "z-10"}`}
+        >
           {selectedNote ? (
             <>
               <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100 bg-white shrink-0">
@@ -344,3 +350,5 @@ export function NotesSplitView({
         </div>
       </div>
     </div>
+  );
+}
