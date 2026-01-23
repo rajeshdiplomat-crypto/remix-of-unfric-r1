@@ -13,7 +13,7 @@ import { TopFocusBar } from "@/components/tasks/TopFocusBar";
 import { AllTasksList } from "@/components/tasks/AllTasksList";
 import { QuadrantGrid } from "@/components/tasks/QuadrantGrid";
 import { BoardView } from "@/components/tasks/BoardView";
-import { TasksClockCard } from "@/components/tasks/TasksClockCard";
+import { TasksClockWidget } from "@/components/tasks/TasksClockWidget";
 import { UnifiedTaskDrawer } from "@/components/tasks/UnifiedTaskDrawer";
 import { DeepFocusPrompt } from "@/components/tasks/DeepFocusPromptModal";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
@@ -571,13 +571,13 @@ export default function Tasks() {
             onNewTask={openNewTaskDrawer}
           />
 
-          <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_380px] gap-8 items-stretch">
-            <div className="flex flex-col gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_280px] gap-6 items-stretch">
+            <div className="flex flex-col gap-4">
               <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
               <InsightsPanel tasks={filteredTasks} compactMode />
             </div>
-            <div className="h-full">
-              <TasksClockCard />
+            <div className="h-[280px]">
+              <TasksClockWidget />
             </div>
           </div>
 
