@@ -28,19 +28,19 @@ interface VisualizationSettings {
 }
 
 const SOUND_OPTIONS = [
-  { id: 'ocean', label: 'Ocean Waves', emoji: '🌊' },
-  { id: 'rain', label: 'Gentle Rain', emoji: '🌧️' },
-  { id: 'forest', label: 'Forest Calm', emoji: '🌲' },
-  { id: 'wind', label: 'Soft Wind', emoji: '💨' },
-  { id: 'crystal', label: 'Crystal Tones', emoji: '🔮' },
+  { id: "ocean", label: "Ocean Waves", emoji: "🌊" },
+  { id: "rain", label: "Gentle Rain", emoji: "🌧️" },
+  { id: "forest", label: "Forest Calm", emoji: "🌲" },
+  { id: "wind", label: "Soft Wind", emoji: "💨" },
+  { id: "crystal", label: "Crystal Tones", emoji: "🔮" },
 ];
 
-export function ManifestVisualizationMode({ 
-  goal, 
-  duration, 
+export function ManifestVisualizationMode({
+  goal,
+  duration,
   previousPractice,
-  onComplete, 
-  onClose 
+  onComplete,
+  onClose,
 }: ManifestVisualizationModeProps) {
   const totalSeconds = duration * 60;
   const [secondsLeft, setSecondsLeft] = useState(totalSeconds);
@@ -53,16 +53,16 @@ export function ManifestVisualizationMode({
       const stored = localStorage.getItem("manifest_viz_settings");
       if (stored) return JSON.parse(stored);
     } catch {}
-    return { showActions: true, showProofs: true, showNotes: true, showImages: true, soundType: 'ocean' };
+    return { showActions: true, showProofs: true, showNotes: true, showImages: true, soundType: "ocean" };
   });
   const [activeElements, setActiveElements] = useState<FloatingElement[]>([]);
   const [elementIndex, setElementIndex] = useState(0);
-  
+
   // Audio refs
   const audioContextRef = useRef<AudioContext | null>(null);
   const oscillatorsRef = useRef<OscillatorNode[]>([]);
   const gainsRef = useRef<GainNode[]>([]);
-  
+
   const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
 
   // Save settings when they change
@@ -75,13 +75,24 @@ export function ManifestVisualizationMode({
     const images: string[] = [];
     if (goal.vision_image_url) images.push(goal.vision_image_url);
     if (goal.vision_images && goal.vision_images.length > 0) {
-      images.push(...goal.vision_images.filter(img => img && !images.includes(img)));
+      images.push(...goal.vision_images.filter((img) => img && !images.includes(img)));
     }
     if (goal.cover_image_url && !images.includes(goal.cover_image_url)) {
       images.push(goal.cover_image_url);
     }
     return images;
   }, [goal]);
+
+  // Helper to get random position avoiding center (35-65%)
+  const getRandomSafePosition = () => {
+    // 50% chance for left side (5-30%), 50% for right side (70-95%)
+    const isLeft = Math.random() > 0.5;
+    if (isLeft) {
+      return 5 + Math.random() * 25; // 5% to 30%
+    } else {
+      return 70 + Math.random() * 25; // 70% to 95%
+    }
+  };
 
   // Create all floating elements - includes today's answers AND previous practice
   const allElements = useMemo(() => {
@@ -95,7 +106,7 @@ export function ManifestVisualizationMode({
           type: "image",
           content: "",
           imageUrl: img,
-          horizontalPosition: 15 + Math.random() * 60,
+          horizontalPosition: getRandomSafePosition(),
         });
       });
     }
@@ -106,35 +117,30 @@ export function ManifestVisualizationMode({
         const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
         if (stored) {
           const all = JSON.parse(stored);
-          const today = new Date().toISOString().split('T')[0];
+          const today = new Date().toISOString().split("T")[0];
           const key = `${goal.id}_${today}`;
-          console.log('[Viz] Loading today practice, key:', key, 'data:', all[key]);
           return all[key] || null;
         }
       } catch (e) {
-        console.warn('[Viz] Failed to load today practice:', e);
+        console.warn("[Viz] Failed to load today practice:", e);
       }
       return null;
     };
 
     const todaysPractice = loadTodaysPractice();
-    console.log('[Viz] Today practice loaded:', todaysPractice);
-    console.log('[Viz] Previous practice:', previousPractice);
-    
+
     // Combine today's practice with previous practice
     const todayActs = Array.isArray(todaysPractice?.acts) ? todaysPractice.acts : [];
     const prevActs = Array.isArray(previousPractice?.acts) ? previousPractice.acts : [];
     const todayProofs = Array.isArray(todaysPractice?.proofs) ? todaysPractice.proofs : [];
     const prevProofs = Array.isArray(previousPractice?.proofs) ? previousPractice.proofs : [];
-    
+
     const combinedPractice = {
       acts: [...todayActs, ...prevActs],
       proofs: [...todayProofs, ...prevProofs],
       growth_note: todaysPractice?.growth_note || previousPractice?.growth_note,
       gratitude: todaysPractice?.gratitude || previousPractice?.gratitude,
     };
-    
-    console.log('[Viz] Combined practice:', combinedPractice);
 
     // Add actions
     if (settings.showActions && combinedPractice.acts.length > 0) {
@@ -144,7 +150,7 @@ export function ManifestVisualizationMode({
             id: `act-${act.id || crypto.randomUUID()}`,
             type: "action",
             content: act.text,
-            horizontalPosition: 10 + Math.random() * 70,
+            horizontalPosition: getRandomSafePosition(),
           });
         }
       });
@@ -159,7 +165,7 @@ export function ManifestVisualizationMode({
             type: "proof",
             content: proof.text || "",
             imageUrl: proof.image_url,
-            horizontalPosition: 10 + Math.random() * 60,
+            horizontalPosition: getRandomSafePosition(),
           });
         }
       });
@@ -172,7 +178,7 @@ export function ManifestVisualizationMode({
           id: "growth-note",
           type: "note",
           content: combinedPractice.growth_note,
-          horizontalPosition: 15 + Math.random() * 60,
+          horizontalPosition: getRandomSafePosition(),
         });
       }
       if (combinedPractice.gratitude && combinedPractice.gratitude !== combinedPractice.growth_note) {
@@ -180,7 +186,7 @@ export function ManifestVisualizationMode({
           id: "gratitude-note",
           type: "note",
           content: combinedPractice.gratitude,
-          horizontalPosition: 15 + Math.random() * 60,
+          horizontalPosition: getRandomSafePosition(),
         });
       }
     }
@@ -191,31 +197,30 @@ export function ManifestVisualizationMode({
       [elements[i], elements[j]] = [elements[j], elements[i]];
     }
 
-    console.log('[Viz] All elements:', elements);
     return elements;
   }, [previousPractice, visionImages, settings, goal.id]);
 
   // Spawn new floating elements one by one
   useEffect(() => {
     if (isPaused || allElements.length === 0) return;
-    
+
     // Add initial element
     if (activeElements.length === 0 && allElements.length > 0) {
       setActiveElements([{ ...allElements[0], id: `${allElements[0].id}-${Date.now()}` }]);
       setElementIndex(1);
     }
-    
+
     // Add new element every 3 seconds
     const interval = setInterval(() => {
       if (allElements.length === 0) return;
       const nextIdx = elementIndex % allElements.length;
-      const newElement = { 
-        ...allElements[nextIdx], 
+      const newElement = {
+        ...allElements[nextIdx],
         id: `${allElements[nextIdx].id}-${Date.now()}`,
-        horizontalPosition: 10 + Math.random() * 70,
+        horizontalPosition: getRandomSafePosition(),
       };
-      
-      setActiveElements(prev => {
+
+      setActiveElements((prev) => {
         // Keep max 4 elements at a time, remove oldest
         const updated = [...prev, newElement];
         if (updated.length > 4) {
@@ -223,9 +228,9 @@ export function ManifestVisualizationMode({
         }
         return updated;
       });
-      setElementIndex(prev => prev + 1);
+      setElementIndex((prev) => prev + 1);
     }, 3000);
-    
+
     return () => clearInterval(interval);
   }, [isPaused, allElements, elementIndex, activeElements.length]);
 
@@ -266,17 +271,17 @@ export function ManifestVisualizationMode({
     if (audioContextRef.current) {
       stopAudio();
     }
-    
+
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       audioContextRef.current = audioContext;
-      
+
       const masterGain = audioContext.createGain();
       masterGain.gain.value = 0.3;
       masterGain.connect(audioContext.destination);
-      
+
       switch (soundType) {
-        case 'ocean': {
+        case "ocean": {
           // Low rumbling noise for ocean
           const bufferSize = 2 * audioContext.sampleRate;
           const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
@@ -287,18 +292,18 @@ export function ManifestVisualizationMode({
           const noise = audioContext.createBufferSource();
           noise.buffer = noiseBuffer;
           noise.loop = true;
-          
+
           const filter = audioContext.createBiquadFilter();
-          filter.type = 'lowpass';
+          filter.type = "lowpass";
           filter.frequency.value = 200;
-          
+
           const lfo = audioContext.createOscillator();
           lfo.frequency.value = 0.1;
           const lfoGain = audioContext.createGain();
           lfoGain.gain.value = 100;
           lfo.connect(lfoGain);
           lfoGain.connect(filter.frequency);
-          
+
           noise.connect(filter);
           filter.connect(masterGain);
           noise.start();
@@ -306,7 +311,7 @@ export function ManifestVisualizationMode({
           oscillatorsRef.current = [lfo as any];
           break;
         }
-        case 'rain': {
+        case "rain": {
           // Higher frequency noise for rain
           const bufferSize = 2 * audioContext.sampleRate;
           const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
@@ -317,14 +322,14 @@ export function ManifestVisualizationMode({
           const noise = audioContext.createBufferSource();
           noise.buffer = noiseBuffer;
           noise.loop = true;
-          
+
           const filter = audioContext.createBiquadFilter();
-          filter.type = 'highpass';
+          filter.type = "highpass";
           filter.frequency.value = 1000;
-          
+
           const gain = audioContext.createGain();
           gain.gain.value = 0.5;
-          
+
           noise.connect(filter);
           filter.connect(gain);
           gain.connect(masterGain);
@@ -332,16 +337,16 @@ export function ManifestVisualizationMode({
           gainsRef.current = [gain];
           break;
         }
-        case 'forest': {
+        case "forest": {
           // Soft sine waves at various frequencies
           [220, 330, 440].forEach((freq, i) => {
             const osc = audioContext.createOscillator();
-            osc.type = 'sine';
+            osc.type = "sine";
             osc.frequency.value = freq;
-            
+
             const gain = audioContext.createGain();
             gain.gain.value = 0.05;
-            
+
             // Slow modulation
             const lfo = audioContext.createOscillator();
             lfo.frequency.value = 0.2 + i * 0.1;
@@ -349,7 +354,7 @@ export function ManifestVisualizationMode({
             lfoGain.gain.value = 0.03;
             lfo.connect(lfoGain);
             lfoGain.connect(gain.gain);
-            
+
             osc.connect(gain);
             gain.connect(masterGain);
             osc.start();
@@ -359,7 +364,7 @@ export function ManifestVisualizationMode({
           });
           break;
         }
-        case 'wind': {
+        case "wind": {
           // Very low frequency modulated noise
           const bufferSize = 2 * audioContext.sampleRate;
           const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
@@ -370,19 +375,19 @@ export function ManifestVisualizationMode({
           const noise = audioContext.createBufferSource();
           noise.buffer = noiseBuffer;
           noise.loop = true;
-          
+
           const filter = audioContext.createBiquadFilter();
-          filter.type = 'bandpass';
+          filter.type = "bandpass";
           filter.frequency.value = 300;
           filter.Q.value = 0.5;
-          
+
           const lfo = audioContext.createOscillator();
           lfo.frequency.value = 0.05;
           const lfoGain = audioContext.createGain();
           lfoGain.gain.value = 200;
           lfo.connect(lfoGain);
           lfoGain.connect(filter.frequency);
-          
+
           noise.connect(filter);
           filter.connect(masterGain);
           noise.start();
@@ -390,16 +395,16 @@ export function ManifestVisualizationMode({
           oscillatorsRef.current = [lfo as any];
           break;
         }
-        case 'crystal': {
+        case "crystal": {
           // Pure harmonic tones
           [261.63, 329.63, 392, 523.25].forEach((freq, i) => {
             const osc = audioContext.createOscillator();
-            osc.type = 'sine';
+            osc.type = "sine";
             osc.frequency.value = freq;
-            
+
             const gain = audioContext.createGain();
             gain.gain.value = 0.08;
-            
+
             // Slow fade in/out
             const lfo = audioContext.createOscillator();
             lfo.frequency.value = 0.1 + i * 0.02;
@@ -407,7 +412,7 @@ export function ManifestVisualizationMode({
             lfoGain.gain.value = 0.05;
             lfo.connect(lfoGain);
             lfoGain.connect(gain.gain);
-            
+
             osc.connect(gain);
             gain.connect(masterGain);
             osc.start();
@@ -418,21 +423,25 @@ export function ManifestVisualizationMode({
           break;
         }
       }
-      
+
       gainsRef.current.push(masterGain);
     } catch (e) {
-      console.warn('Failed to create audio:', e);
+      console.warn("Failed to create audio:", e);
     }
   }, []);
 
   const stopAudio = useCallback(() => {
-    oscillatorsRef.current.forEach(osc => {
-      try { osc.stop(); } catch {}
+    oscillatorsRef.current.forEach((osc) => {
+      try {
+        osc.stop();
+      } catch {}
     });
     oscillatorsRef.current = [];
     gainsRef.current = [];
     if (audioContextRef.current) {
-      try { audioContextRef.current.close(); } catch {}
+      try {
+        audioContextRef.current.close();
+      } catch {}
       audioContextRef.current = null;
     }
   }, []);
@@ -448,11 +457,11 @@ export function ManifestVisualizationMode({
   }, [isPaused, isMuted, settings.soundType, createAmbientSound, stopAudio]);
 
   const handleSoundChange = (soundType: string) => {
-    setSettings(prev => ({ ...prev, soundType }));
+    setSettings((prev) => ({ ...prev, soundType }));
   };
 
   const toggleMute = () => {
-    setIsMuted(prev => !prev);
+    setIsMuted((prev) => !prev);
   };
 
   const formatTime = useCallback((seconds: number) => {
@@ -468,7 +477,6 @@ export function ManifestVisualizationMode({
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - progress / 100);
-
 
   const content = (
     <div style={{ position: "fixed", inset: 0, zIndex: 99999, display: "flex", flexDirection: "column" }}>
@@ -498,81 +506,84 @@ export function ManifestVisualizationMode({
       </div>
 
       {/* Floating Elements - one by one from bottom */}
-      {!isPaused && activeElements.map((el) => {
-        const isVisionImage = el.id.startsWith("vision-");
-        const isProofWithImage = el.type === "proof" && el.imageUrl;
-        
-        return (
-          <div
-            key={el.id}
-            style={{
-              position: "absolute",
-              left: `${el.horizontalPosition}%`,
-              bottom: "-200px",
-              maxWidth: el.type === "image" ? (isVisionImage ? "280px" : "220px") : "360px",
-              padding: el.type === "image" ? "0" : "20px 28px",
-              background: el.type === "image" ? "transparent" : "rgba(255,255,255,0.12)",
-              backdropFilter: el.type === "image" ? "none" : "blur(16px)",
-              borderRadius: el.type === "image" ? "24px" : "20px",
-              border: el.type === "image" ? "none" : "1px solid rgba(255,255,255,0.25)",
-              color: "white",
-              fontSize: "18px",
-              animation: `floatUpSmooth 12s ease-in-out forwards`,
-              boxShadow: isVisionImage 
-                ? "0 16px 60px rgba(20,184,166,0.5), 0 0 100px rgba(168,85,247,0.4)"
-                : "0 12px 50px rgba(0,0,0,0.4)",
-              zIndex: isVisionImage ? 4 : 5,
-              overflow: "hidden",
-            }}
-          >
-            {el.type === "image" && el.imageUrl && (
-              <img 
-                src={el.imageUrl} 
-                alt={isVisionImage ? "Vision" : "Proof"}
-                style={{ 
-                  width: isVisionImage ? "280px" : "200px", 
-                  height: isVisionImage ? "280px" : "200px", 
-                  objectFit: "cover", 
-                  borderRadius: isVisionImage ? "22px" : "18px",
-                  border: isVisionImage ? "4px solid rgba(20,184,166,0.6)" : "3px solid rgba(255,255,255,0.4)",
-                  boxShadow: isVisionImage 
-                    ? "0 0 50px rgba(20,184,166,0.6), inset 0 0 40px rgba(255,255,255,0.15)"
-                    : "0 16px 50px rgba(0,0,0,0.5)",
-                }} 
-              />
-            )}
-            {el.type !== "image" && (
-              <>
-                <div style={{ 
-                  fontSize: "12px", 
-                  textTransform: "uppercase", 
-                  letterSpacing: "2px",
-                  opacity: 0.7,
-                  marginBottom: "10px",
-                  fontWeight: 600,
-                }}>
-                  {el.type === "action" ? "✨ Action" : el.type === "proof" ? "🎯 Proof" : "💭 Note"}
-                </div>
-                <div style={{ lineHeight: 1.7, fontSize: "18px", fontWeight: 500 }}>{el.content}</div>
-                {isProofWithImage && (
-                  <img 
-                    src={el.imageUrl} 
-                    alt="Proof" 
-                    style={{ 
-                      width: "100%", 
-                      height: "140px", 
-                      objectFit: "cover", 
-                      borderRadius: "14px",
-                      marginTop: "14px",
-                      border: "2px solid rgba(255,255,255,0.3)",
-                    }} 
-                  />
-                )}
-              </>
-            )}
-          </div>
-        );
-      })}
+      {!isPaused &&
+        activeElements.map((el) => {
+          const isVisionImage = el.id.startsWith("vision-");
+          const isProofWithImage = el.type === "proof" && el.imageUrl;
+
+          return (
+            <div
+              key={el.id}
+              style={{
+                position: "absolute",
+                left: `${el.horizontalPosition}%`,
+                bottom: "-200px",
+                maxWidth: el.type === "image" ? (isVisionImage ? "280px" : "220px") : "360px",
+                padding: el.type === "image" ? "0" : "20px 28px",
+                background: el.type === "image" ? "transparent" : "rgba(255,255,255,0.12)",
+                backdropFilter: el.type === "image" ? "none" : "blur(16px)",
+                borderRadius: el.type === "image" ? "24px" : "20px",
+                border: el.type === "image" ? "none" : "1px solid rgba(255,255,255,0.25)",
+                color: "white",
+                fontSize: "18px",
+                animation: `floatUpSmooth 12s ease-in-out forwards`,
+                boxShadow: isVisionImage
+                  ? "0 16px 60px rgba(20,184,166,0.5), 0 0 100px rgba(168,85,247,0.4)"
+                  : "0 12px 50px rgba(0,0,0,0.4)",
+                zIndex: isVisionImage ? 4 : 5,
+                overflow: "hidden",
+              }}
+            >
+              {el.type === "image" && el.imageUrl && (
+                <img
+                  src={el.imageUrl}
+                  alt={isVisionImage ? "Vision" : "Proof"}
+                  style={{
+                    width: isVisionImage ? "280px" : "200px",
+                    height: isVisionImage ? "280px" : "200px",
+                    objectFit: "cover",
+                    borderRadius: isVisionImage ? "22px" : "18px",
+                    border: isVisionImage ? "4px solid rgba(20,184,166,0.6)" : "3px solid rgba(255,255,255,0.4)",
+                    boxShadow: isVisionImage
+                      ? "0 0 50px rgba(20,184,166,0.6), inset 0 0 40px rgba(255,255,255,0.15)"
+                      : "0 16px 50px rgba(0,0,0,0.5)",
+                  }}
+                />
+              )}
+              {el.type !== "image" && (
+                <>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      textTransform: "uppercase",
+                      letterSpacing: "2px",
+                      opacity: 0.7,
+                      marginBottom: "10px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {el.type === "action" ? "✨ Action" : el.type === "proof" ? "🎯 Proof" : "💭 Note"}
+                  </div>
+                  <div style={{ lineHeight: 1.7, fontSize: "18px", fontWeight: 500 }}>{el.content}</div>
+                  {isProofWithImage && (
+                    <img
+                      src={el.imageUrl}
+                      alt="Proof"
+                      style={{
+                        width: "100%",
+                        height: "140px",
+                        objectFit: "cover",
+                        borderRadius: "14px",
+                        marginTop: "14px",
+                        border: "2px solid rgba(255,255,255,0.3)",
+                      }}
+                    />
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })}
 
       {/* Energy particles */}
       {!isPaused &&
@@ -593,7 +604,7 @@ export function ManifestVisualizationMode({
                       ? "rgba(59,130,246,0.9)"
                       : "rgba(236,72,153,0.9)"
               }, transparent)`,
-              left: `${5 + (i * 4.5)}%`,
+              left: `${5 + i * 4.5}%`,
               bottom: "-20px",
               animation: `energyFloat ${6 + (i % 5)}s ease-in-out infinite`,
               animationDelay: `${i * -0.3}s`,
@@ -661,9 +672,7 @@ export function ManifestVisualizationMode({
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ color: "white", fontSize: 20, fontWeight: 600, marginBottom: 20 }}>
-              Visualization Settings
-            </h3>
+            <h3 style={{ color: "white", fontSize: 20, fontWeight: 600, marginBottom: 20 }}>Visualization Settings</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {[
                 { key: "showActions", label: "Show Actions", icon: "✨" },
@@ -671,7 +680,7 @@ export function ManifestVisualizationMode({
                 { key: "showNotes", label: "Show Notes", icon: "💭" },
                 { key: "showImages", label: "Show Vision Images", icon: "🖼️" },
               ].map(({ key, label, icon }) => {
-                const isChecked = settings[key as keyof Omit<VisualizationSettings, 'soundType'>] === true;
+                const isChecked = settings[key as keyof Omit<VisualizationSettings, "soundType">] === true;
                 return (
                   <label
                     key={key}
@@ -682,9 +691,7 @@ export function ManifestVisualizationMode({
                       cursor: "pointer",
                       padding: "12px 16px",
                       borderRadius: 14,
-                      background: isChecked
-                        ? "rgba(20,184,166,0.2)" 
-                        : "rgba(255,255,255,0.05)",
+                      background: isChecked ? "rgba(20,184,166,0.2)" : "rgba(255,255,255,0.05)",
                       border: `1px solid ${isChecked ? "rgba(20,184,166,0.4)" : "rgba(255,255,255,0.1)"}`,
                       transition: "all 0.2s",
                     }}
@@ -694,18 +701,14 @@ export function ManifestVisualizationMode({
                         width: 24,
                         height: 24,
                         borderRadius: 8,
-                        background: isChecked
-                          ? "linear-gradient(135deg, #14b8a6, #06b6d4)"
-                          : "rgba(255,255,255,0.1)",
+                        background: isChecked ? "linear-gradient(135deg, #14b8a6, #06b6d4)" : "rgba(255,255,255,0.1)",
                         border: "1px solid rgba(255,255,255,0.2)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                       }}
                     >
-                      {isChecked && (
-                        <Check style={{ width: 14, height: 14, color: "white" }} />
-                      )}
+                      {isChecked && <Check style={{ width: 14, height: 14, color: "white" }} />}
                     </div>
                     <span style={{ color: "white", fontSize: 15 }}>
                       {icon} {label}
@@ -713,36 +716,35 @@ export function ManifestVisualizationMode({
                     <input
                       type="checkbox"
                       checked={isChecked}
-                      onChange={(e) =>
-                        setSettings((prev) => ({ ...prev, [key]: e.target.checked }))
-                      }
+                      onChange={(e) => setSettings((prev) => ({ ...prev, [key]: e.target.checked }))}
                       style={{ display: "none" }}
                     />
                   </label>
                 );
               })}
             </div>
-            
+
             {/* Sound Selection */}
-            <div style={{ marginTop: 24, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 20 }}>
-              <h4 style={{ color: 'white', fontSize: 16, fontWeight: 500, marginBottom: 12 }}>
-                🎵 Ambient Sound
-              </h4>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                {SOUND_OPTIONS.map(sound => (
-                  <button 
+            <div style={{ marginTop: 24, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 20 }}>
+              <h4 style={{ color: "white", fontSize: 16, fontWeight: 500, marginBottom: 12 }}>🎵 Ambient Sound</h4>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                {SOUND_OPTIONS.map((sound) => (
+                  <button
                     key={sound.id}
                     onClick={() => handleSoundChange(sound.id)}
                     style={{
-                      padding: '14px',
+                      padding: "14px",
                       borderRadius: 14,
-                      background: settings.soundType === sound.id ? 'rgba(20,184,166,0.25)' : 'rgba(255,255,255,0.05)',
-                      border: settings.soundType === sound.id ? '1px solid rgba(20,184,166,0.5)' : '1px solid rgba(255,255,255,0.1)',
-                      color: 'white',
-                      cursor: 'pointer',
+                      background: settings.soundType === sound.id ? "rgba(20,184,166,0.25)" : "rgba(255,255,255,0.05)",
+                      border:
+                        settings.soundType === sound.id
+                          ? "1px solid rgba(20,184,166,0.5)"
+                          : "1px solid rgba(255,255,255,0.1)",
+                      color: "white",
+                      cursor: "pointer",
                       fontSize: 14,
-                      textAlign: 'left',
-                      transition: 'all 0.2s',
+                      textAlign: "left",
+                      transition: "all 0.2s",
                     }}
                   >
                     {sound.emoji} {sound.label}
@@ -750,7 +752,7 @@ export function ManifestVisualizationMode({
                 ))}
               </div>
             </div>
-            
+
             <button
               onClick={() => setShowSettings(false)}
               style={{
@@ -1037,9 +1039,7 @@ export function ManifestVisualizationMode({
               height: 56,
               padding: "0 36px",
               borderRadius: 9999,
-              background: isPaused
-                ? "linear-gradient(135deg, #14b8a6, #06b6d4)"
-                : "rgba(255,255,255,0.1)",
+              background: isPaused ? "linear-gradient(135deg, #14b8a6, #06b6d4)" : "rgba(255,255,255,0.1)",
               backdropFilter: "blur(12px)",
               border: isPaused ? "none" : "1px solid rgba(255,255,255,0.2)",
               color: "white",
