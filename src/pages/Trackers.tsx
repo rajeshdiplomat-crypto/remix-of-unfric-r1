@@ -395,7 +395,7 @@ export default function Trackers() {
         priority: "Medium",
         description: habit.description || "",
         frequencyPattern,
-        habitDays: habit.habit_days || 30,
+        habitDays: (habit as any).habit_days || 30,
         startDate: format(new Date(habit.created_at), "yyyy-MM-dd"),
         completions: habitCompletions,
         createdAt: habit.created_at,
@@ -743,10 +743,11 @@ export default function Trackers() {
         {/* Dashboard Content */}
         <div className="px-4 py-4 space-y-4">
           {/* Top Section: Month + Progress Rings */}
-          <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_200px] gap-4">
-            {/* Month Card */}
-            <Card className="p-4 rounded-xl bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950/30 dark:to-cyan-950/30">
-              <div className="flex items-center justify-between mb-2">
+          <div className="grid grid-cols-1 lg:grid-cols-[180px_1fr_200px] gap-4">
+            {/* Month Card - Slim Design */}
+            <Card className="p-3 rounded-xl bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950/30 dark:to-cyan-950/30">
+              {/* Month Header */}
+              <div className="flex items-center justify-between mb-3">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -755,8 +756,8 @@ export default function Trackers() {
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <h2 className="text-xl font-bold text-slate-800 dark:text-white italic">
-                  {format(currentMonth, "MMMM")}
+                <h2 className="text-base font-semibold text-slate-800 dark:text-white">
+                  {format(currentMonth, "MMM-yy")}
                 </h2>
                 <Button
                   variant="ghost"
@@ -767,35 +768,71 @@ export default function Trackers() {
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
-              <p className="text-xs text-center text-slate-500 mb-3">- HABIT TRACKER -</p>
 
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Start Date</span>
-                  <span className="font-medium">{format(startOfMonth(currentMonth), "MMMM d, yyyy")}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">End Date</span>
-                  <span className="font-medium">{format(endOfMonth(currentMonth), "MMMM d, yyyy")}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Days Left</span>
-                  <span className="font-medium">{differenceInDays(endOfMonth(currentMonth), new Date()) + 1}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Daily Habits</span>
-                  <span className="font-medium">{activities.length}</span>
+              {/* Habits Stats */}
+              <div className="mb-3">
+                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-1.5">Habits</p>
+                <div className="grid grid-cols-3 gap-1 text-center">
+                  <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
+                    <p className="text-sm font-bold text-teal-600 dark:text-teal-400">
+                      {activities.filter(a => {
+                        const today = new Date();
+                        const startDate = parseISO(a.startDate);
+                        const endDate = computeEndDateForHabitDays(startDate, a.frequencyPattern, a.habitDays);
+                        return !isBefore(today, startDate) && !isAfter(today, endDate);
+                      }).length}
+                    </p>
+                    <p className="text-[9px] text-slate-500">Active</p>
+                  </div>
+                  <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
+                    <p className="text-sm font-bold text-green-600 dark:text-green-400">
+                      {activities.filter(a => {
+                        const today = new Date();
+                        const endDate = computeEndDateForHabitDays(parseISO(a.startDate), a.frequencyPattern, a.habitDays);
+                        return isAfter(today, endDate);
+                      }).length}
+                    </p>
+                    <p className="text-[9px] text-slate-500">Done</p>
+                  </div>
+                  <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
+                    <p className="text-sm font-bold text-slate-600 dark:text-slate-300">{activities.length}</p>
+                    <p className="text-[9px] text-slate-500">Total</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-4 space-y-2">
-                <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/30 text-center">
-                  <p className="text-xs text-green-600 dark:text-green-400 font-medium">COMPLETED</p>
-                  <p className="text-2xl font-bold text-green-700 dark:text-green-300">{overallStats.totalCompleted}</p>
+              {/* Habit Days Stats */}
+              <div className="mb-3">
+                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-1.5">Habit Days</p>
+                <div className="grid grid-cols-3 gap-1 text-center">
+                  <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
+                    <p className="text-sm font-bold text-teal-600 dark:text-teal-400">
+                      {overallStats.totalCompleted + overallStats.totalRemaining}
+                    </p>
+                    <p className="text-[9px] text-slate-500">Active</p>
+                  </div>
+                  <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
+                    <p className="text-sm font-bold text-green-600 dark:text-green-400">{overallStats.totalCompleted}</p>
+                    <p className="text-[9px] text-slate-500">Done</p>
+                  </div>
+                  <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
+                    <p className="text-sm font-bold text-slate-600 dark:text-slate-300">
+                      {activities.reduce((sum, a) => sum + a.habitDays, 0)}
+                    </p>
+                    <p className="text-[9px] text-slate-500">Total</p>
+                  </div>
                 </div>
-                <div className="p-3 rounded-lg bg-red-100 dark:bg-red-900/30 text-center">
-                  <p className="text-xs text-red-600 dark:text-red-400 font-medium">REMAINING</p>
-                  <p className="text-2xl font-bold text-red-700 dark:text-red-300">{overallStats.totalRemaining}</p>
+              </div>
+
+              {/* Completion Summary */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-center">
+                  <p className="text-lg font-bold text-green-700 dark:text-green-300">{overallStats.totalCompleted}</p>
+                  <p className="text-[9px] text-green-600 dark:text-green-400 font-medium">COMPLETED</p>
+                </div>
+                <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-center">
+                  <p className="text-lg font-bold text-red-700 dark:text-red-300">{overallStats.totalRemaining}</p>
+                  <p className="text-[9px] text-red-600 dark:text-red-400 font-medium">REMAINING</p>
                 </div>
               </div>
             </Card>
