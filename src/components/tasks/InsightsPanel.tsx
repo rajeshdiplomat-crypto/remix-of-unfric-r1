@@ -4,18 +4,34 @@ import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { QuadrantTask, computeTaskStatus } from "./types";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, Line, Area, XAxis, YAxis, Tooltip, CartesianGrid, ComposedChart } from "recharts";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  Line,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ComposedChart,
+} from "recharts";
 import { format, subDays, addDays, startOfDay, isSameDay } from "date-fns";
+
 interface InsightsPanelProps {
   tasks: QuadrantTask[];
   compactMode?: boolean;
 }
+
 function KpiCard({
   icon,
   iconBg,
   iconColor,
   value,
-  label
+  label,
 }: {
   icon: ReactNode;
   iconBg: string;
@@ -23,12 +39,21 @@ function KpiCard({
   value: ReactNode;
   label: string;
 }) {
-  return <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
-      <CardContent className={cn("flex items-center gap-3 min-w-0", "p-3 h-[72px]" // Reduced from p-4 h-[86px]
-    )}>
-        <div className={cn("rounded-xl flex items-center justify-center shrink-0", "h-8 w-8",
-      // Reduced from h-9 w-9
-      iconBg)}>
+  return (
+    <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
+      <CardContent
+        className={cn(
+          "flex items-center gap-3 min-w-0",
+          "p-3 h-[72px]", // Reduced from p-4 h-[86px]
+        )}
+      >
+        <div
+          className={cn(
+            "rounded-xl flex items-center justify-center shrink-0",
+            "h-8 w-8", // Reduced from h-9 w-9
+            iconBg,
+          )}
+        >
           <div className={cn("h-4 w-4 flex items-center justify-center", iconColor)}>{icon}</div>
         </div>
 
@@ -37,36 +62,72 @@ function KpiCard({
           <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</div>
         </div>
       </CardContent>
-    </Card>;
+    </Card>
+  );
 }
-function CenterAnalogClock({
-  now,
-  size = 64
-}: {
-  now: Date;
-  size?: number;
-}) {
+
+function CenterAnalogClock({ now, size = 64 }: { now: Date; size?: number }) {
   const h = now.getHours() % 12;
   const m = now.getMinutes();
+
   const hourAngle = h * 30 + m * 0.5;
   const minuteAngle = m * 6;
-  return <svg width={size} height={size} viewBox="0 0 64 64" className="text-muted-foreground">
+
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" className="text-muted-foreground">
       <circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.25" />
-      {Array.from({
-      length: 12
-    }).map((_, i) => <line key={i} x1="32" y1="10" x2="32" y2={i % 3 === 0 ? "15" : "13"} stroke="currentColor" strokeWidth="1" opacity={i % 3 === 0 ? 0.45 : 0.22} transform={`rotate(${i * 30} 32 32)`} />)}
-      <line x1="32" y1="32" x2="32" y2="21" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" transform={`rotate(${hourAngle} 32 32)`} className="text-foreground" opacity="0.9" />
-      <line x1="32" y1="32" x2="32" y2="15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" transform={`rotate(${minuteAngle} 32 32)`} className="text-foreground" opacity="0.75" />
+      {Array.from({ length: 12 }).map((_, i) => (
+        <line
+          key={i}
+          x1="32"
+          y1="10"
+          x2="32"
+          y2={i % 3 === 0 ? "15" : "13"}
+          stroke="currentColor"
+          strokeWidth="1"
+          opacity={i % 3 === 0 ? 0.45 : 0.22}
+          transform={`rotate(${i * 30} 32 32)`}
+        />
+      ))}
+      <line
+        x1="32"
+        y1="32"
+        x2="32"
+        y2="21"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        transform={`rotate(${hourAngle} 32 32)`}
+        className="text-foreground"
+        opacity="0.9"
+      />
+      <line
+        x1="32"
+        y1="32"
+        x2="32"
+        y2="15"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        transform={`rotate(${minuteAngle} 32 32)`}
+        className="text-foreground"
+        opacity="0.75"
+      />
       <circle cx="32" cy="32" r="2.2" fill="currentColor" opacity="0.55" />
-    </svg>;
+    </svg>
+  );
 }
+
 function ClockKpiCard() {
   const [now, setNow] = useState(new Date());
+
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
-  return <Card className="rounded-2xl border border-primary/20 bg-primary/5 backdrop-blur-sm shadow-sm">
+
+  return (
+    <Card className="rounded-2xl border border-primary/20 bg-primary/5 backdrop-blur-sm shadow-sm">
       <CardContent className="h-[86px] px-5 py-3 flex items-center gap-4 min-w-0">
         {/* Bigger icon */}
         <div className="h-14 w-14 rounded-2xl bg-background/60 border border-border/30 flex items-center justify-center shrink-0">
@@ -94,80 +155,92 @@ function ClockKpiCard() {
           </span>
         </div>
       </CardContent>
-    </Card>;
+    </Card>
+  );
 }
-export function InsightsPanel({
-  tasks,
-  compactMode
-}: InsightsPanelProps) {
+
+export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
   const [expanded, setExpanded] = useState(true);
   const today = startOfDay(new Date());
-  const todayTasks = tasks.filter(t => t.due_date && isSameDay(new Date(t.due_date), today));
+
+  const todayTasks = tasks.filter((t) => t.due_date && isSameDay(new Date(t.due_date), today));
   const plannedToday = todayTasks.length;
-  const completedToday = todayTasks.filter(t => t.is_completed || t.completed_at).length;
-  const allTasksWithStatus = tasks.map(t => ({
-    ...t,
-    computedStatus: computeTaskStatus(t)
-  }));
-  const overdueTasks = allTasksWithStatus.filter(t => t.computedStatus === "overdue").length;
+  const completedToday = todayTasks.filter((t) => t.is_completed || t.completed_at).length;
+
+  const allTasksWithStatus = tasks.map((t) => ({ ...t, computedStatus: computeTaskStatus(t) }));
+  const overdueTasks = allTasksWithStatus.filter((t) => t.computedStatus === "overdue").length;
+
   const totalFocusMinutes = tasks.reduce((sum, t) => sum + (t.total_focus_minutes || 0), 0);
+
   const past7DaysData = useMemo(() => {
     const data = [];
     for (let i = 6; i >= 0; i--) {
       const date = subDays(today, i);
       const dayStart = startOfDay(date);
-      const planned = tasks.filter(t => t.due_date && isSameDay(new Date(t.due_date), dayStart)).length;
-      const actual = tasks.filter(t => t.completed_at && isSameDay(new Date(t.completed_at), dayStart)).length;
-      data.push({
-        date: format(date, "EEE"),
-        fullDate: format(date, "MMM d"),
-        plan: planned,
-        actual
-      });
+      const planned = tasks.filter((t) => t.due_date && isSameDay(new Date(t.due_date), dayStart)).length;
+      const actual = tasks.filter((t) => t.completed_at && isSameDay(new Date(t.completed_at), dayStart)).length;
+      data.push({ date: format(date, "EEE"), fullDate: format(date, "MMM d"), plan: planned, actual });
     }
     return data;
   }, [tasks, today]);
+
   const future7DaysData = useMemo(() => {
     const data = [];
     for (let i = 0; i < 7; i++) {
       const date = addDays(today, i);
       const dayStart = startOfDay(date);
-      const upcoming = tasks.filter(t => {
+      const upcoming = tasks.filter((t) => {
         if (!t.due_date || t.is_completed || t.completed_at) return false;
         return isSameDay(new Date(t.due_date), dayStart);
       }).length;
-      data.push({
-        date: i === 0 ? "Today" : format(date, "EEE"),
-        fullDate: format(date, "MMM d"),
-        tasks: upcoming
-      });
+      data.push({ date: i === 0 ? "Today" : format(date, "EEE"), fullDate: format(date, "MMM d"), tasks: upcoming });
     }
     return data;
   }, [tasks, today]);
-  const quadrantData = useMemo(() => [{
-    name: "Urgent & Important",
-    value: tasks.filter(t => t.urgency === "high" && t.importance === "high").length,
-    color: "hsl(var(--destructive))"
-  }, {
-    name: "Urgent & Not Important",
-    value: tasks.filter(t => t.urgency === "high" && t.importance === "low").length,
-    color: "hsl(var(--primary))"
-  }, {
-    name: "Not Urgent & Important",
-    value: tasks.filter(t => t.urgency === "low" && t.importance === "high").length,
-    color: "hsl(var(--chart-1))"
-  }, {
-    name: "Not Urgent & Not Important",
-    value: tasks.filter(t => t.urgency === "low" && t.importance === "low").length,
-    color: "hsl(var(--muted))"
-  }].filter(d => d.value > 0), [tasks]);
+
+  const quadrantData = useMemo(
+    () =>
+      [
+        {
+          name: "Urgent & Important",
+          value: tasks.filter((t) => t.urgency === "high" && t.importance === "high").length,
+          color: "hsl(var(--destructive))",
+        },
+        {
+          name: "Urgent & Not Important",
+          value: tasks.filter((t) => t.urgency === "high" && t.importance === "low").length,
+          color: "hsl(var(--primary))",
+        },
+        {
+          name: "Not Urgent & Important",
+          value: tasks.filter((t) => t.urgency === "low" && t.importance === "high").length,
+          color: "hsl(var(--chart-1))",
+        },
+        {
+          name: "Not Urgent & Not Important",
+          value: tasks.filter((t) => t.urgency === "low" && t.importance === "low").length,
+          color: "hsl(var(--muted))",
+        },
+      ].filter((d) => d.value > 0),
+    [tasks],
+  );
+
   if (!expanded) {
-    return <Button variant="ghost" size="sm" onClick={() => setExpanded(true)} className="text-muted-foreground hover:text-foreground px-0">
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setExpanded(true)}
+        className="text-muted-foreground hover:text-foreground px-0"
+      >
         Show insights
-      </Button>;
+      </Button>
+    );
   }
-  return <Card className="rounded-xl border border-primary/20 bg-gradient-to-br from-card/80 via-card/60 to-chart-1/5 backdrop-blur-sm shadow-md flex-1 overflow-hidden">
-      <CardContent className="p-1.5 h-full px-[3px] py-[3px]">
+
+  return (
+    <Card className="rounded-xl border border-primary/20 bg-gradient-to-br from-card/80 via-card/60 to-chart-1/5 backdrop-blur-sm shadow-md flex-1 overflow-hidden">
+      <CardContent className="p-1.5 h-full">
         {/* Main content: KPIs left (2x2), Charts right (3 cols) */}
         <div className="h-full flex gap-2">
           {/* Left: KPI Cards in 2x2 grid - stretch to full height */}
@@ -236,19 +309,10 @@ export function InsightsPanel({
                         <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
                       </linearGradient>
                     </defs>
-                    <XAxis dataKey="date" tick={{
-                    fontSize: 8,
-                    fill: "hsl(var(--muted-foreground))"
-                  }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{
-                    fontSize: 8,
-                    fill: "hsl(var(--muted-foreground))"
-                  }} axisLine={false} tickLine={false} width={14} allowDecimals={false} />
+                    <XAxis dataKey="date" tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={14} allowDecimals={false} />
                     <Area type="monotone" dataKey="plan" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#planGradient2)" />
-                    <Line type="monotone" dataKey="actual" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{
-                    r: 3,
-                    fill: "hsl(var(--chart-1))"
-                  }} />
+                    <Line type="monotone" dataKey="actual" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--chart-1))" }} />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
@@ -271,14 +335,8 @@ export function InsightsPanel({
                         <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
                       </linearGradient>
                     </defs>
-                    <XAxis dataKey="date" tick={{
-                    fontSize: 8,
-                    fill: "hsl(var(--muted-foreground))"
-                  }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{
-                    fontSize: 8,
-                    fill: "hsl(var(--muted-foreground))"
-                  }} axisLine={false} tickLine={false} width={14} allowDecimals={false} />
+                    <XAxis dataKey="date" tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={14} allowDecimals={false} />
                     <Bar dataKey="tasks" fill="url(#barGradient)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -294,17 +352,24 @@ export function InsightsPanel({
                 <span className="text-[8px] font-semibold text-chart-2 uppercase">By Quadrant</span>
               </div>
               <div className="flex-1 min-h-0 flex items-center justify-center">
-                {quadrantData.length > 0 ? <ResponsiveContainer width="100%" height="100%">
+                {quadrantData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={quadrantData} cx="50%" cy="50%" innerRadius={18} outerRadius={36} paddingAngle={3} dataKey="value">
-                        {quadrantData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />)}
+                        {quadrantData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                        ))}
                       </Pie>
                     </PieChart>
-                  </ResponsiveContainer> : <p className="text-[8px] text-muted-foreground">No data</p>}
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-[8px] text-muted-foreground">No data</p>
+                )}
               </div>
             </div>
           </div>
         </div>
       </CardContent>
-    </Card>;
+    </Card>
+  );
 }
