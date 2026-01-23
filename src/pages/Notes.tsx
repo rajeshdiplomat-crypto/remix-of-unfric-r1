@@ -348,8 +348,8 @@ export default function Notes() {
         const q = searchQuery.trim().toLowerCase();
         const matchesSearch = q
           ? note.title.toLowerCase().includes(q) ||
-            note.plainText.toLowerCase().includes(q) ||
-            note.tags.some((tag) => tag.toLowerCase().includes(q))
+          note.plainText.toLowerCase().includes(q) ||
+          note.tags.some((tag) => tag.toLowerCase().includes(q))
           : true;
 
         const matchesFilter = filterGroupId === "all" || note.groupId === filterGroupId;
@@ -403,16 +403,18 @@ export default function Notes() {
       });
 
       if (error) {
+        console.error("Supabase sync error:", error);
         toast({
           title: "Couldn't sync note to Diary",
-          description: "Please try saving again.",
+          description: error.message || "Unknown error occurred",
           variant: "destructive",
         });
       }
-    } catch {
+    } catch (err: any) {
+      console.error("Supabase sync exception:", err);
       toast({
         title: "Couldn't sync note to Diary",
-        description: "Please try saving again.",
+        description: err.message || "Please try saving again.",
         variant: "destructive",
       });
     }
@@ -975,5 +977,3 @@ export default function Notes() {
       onBack={handleBackToOverview}
       onCreateNote={handleQuickNote}
     />
-  );
-}
