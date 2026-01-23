@@ -46,7 +46,7 @@ function saveGoalExtras(goalId: string, extras: Partial<ManifestGoal>) {
     }
     // Filter out base64 from vision_images array
     if (safeExtras.vision_images) {
-      safeExtras.vision_images = safeExtras.vision_images.filter((img) => !img.startsWith("data:"));
+      safeExtras.vision_images = safeExtras.vision_images.filter(img => !img.startsWith("data:"));
     }
 
     const all = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
@@ -317,7 +317,10 @@ export default function Manifest() {
 
   const handleCompleteGoal = async (goal: ManifestGoal) => {
     try {
-      const { error } = await supabase.from("manifest_goals").update({ is_completed: true }).eq("id", goal.id);
+      const { error } = await supabase
+        .from("manifest_goals")
+        .update({ is_completed: true })
+        .eq("id", goal.id);
       if (error) throw error;
 
       if (selectedGoal?.id === goal.id) setSelectedGoal(null);
@@ -332,7 +335,10 @@ export default function Manifest() {
 
   const handleReactivateGoal = async (goal: ManifestGoal) => {
     try {
-      const { error } = await supabase.from("manifest_goals").update({ is_completed: false }).eq("id", goal.id);
+      const { error } = await supabase
+        .from("manifest_goals")
+        .update({ is_completed: false })
+        .eq("id", goal.id);
       if (error) throw error;
 
       toast.success("Reality reactivated!");
@@ -359,8 +365,7 @@ export default function Manifest() {
     const hour = new Date().getHours();
     const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "";
     const firstName = userName.split(" ")[0];
-    const greeting =
-      hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : hour < 21 ? "Good evening" : "Good night";
+    const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : hour < 21 ? "Good evening" : "Good night";
     const emoji = hour < 12 ? "☀️" : hour < 17 ? "🌤️" : hour < 21 ? "🌅" : "🌙";
     return firstName ? `${greeting}, ${firstName} ${emoji}` : `${greeting} ${emoji}`;
   };
@@ -452,7 +457,7 @@ export default function Manifest() {
             "flex-1 grid gap-3 w-full px-2 sm:px-4 py-2 transition-all duration-300",
             rightPanelCollapsed
               ? "grid-cols-1 lg:grid-cols-[420px_1fr_64px]"
-              : "grid-cols-1 lg:grid-cols-[420px_1fr_260px]",
+              : "grid-cols-1 lg:grid-cols-[420px_1fr_260px]"
           )}
         >
           {/* Left Panel - Entries List */}
@@ -477,9 +482,7 @@ export default function Manifest() {
                       <div className="mx-auto mb-3 h-10 w-10 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg">
                         <Sparkles className="h-5 w-5 text-white" />
                       </div>
-                      <h3 className="text-base font-semibold text-slate-800 dark:text-white mb-1">
-                        Start Your First Reality
-                      </h3>
+                      <h3 className="text-base font-semibold text-slate-800 dark:text-white mb-1">Start Your First Reality</h3>
                       <p className="text-slate-500 mb-3 text-xs max-w-xs mx-auto">
                         Write a belief in present tense and practice it daily.
                       </p>
@@ -495,18 +498,22 @@ export default function Manifest() {
               ) : (
                 <div
                   className="overflow-y-auto flex-1 min-h-0 p-2 custom-scrollbar relative"
-                  style={{ maxHeight: "calc(5 * 140px + 4 * 8px)" }}
+                  style={{ maxHeight: 'calc(5 * 140px + 4 * 8px)' }}
                 >
                   <div className="space-y-2">
                     {activeGoals.map((goal) => {
                       const { streak, momentum } = getGoalMetrics(goal);
                       const isNewlyCreated = newlyCreatedGoalId === goal.id;
                       return (
-                        <div key={goal.id} className={isNewlyCreated ? "animate-energy-entry relative" : "relative"}>
+                        <div
+                          key={goal.id}
+                          className={isNewlyCreated ? "animate-energy-entry relative" : "relative"}
+                        >
                           <ManifestCard
                             goal={goal}
                             streak={streak}
                             momentum={momentum}
+                            practices={practices}
                             isSelected={selectedGoal?.id === goal.id}
                             onClick={() => handleSelectGoal(goal)}
                             onEdit={() => handleEditGoal(goal)}
@@ -568,6 +575,7 @@ export default function Manifest() {
                             goal={goal}
                             streak={streak}
                             momentum={momentum}
+                            practices={practices}
                             isSelected={selectedGoal?.id === goal.id}
                             onClick={() => handleSelectGoal(goal)}
                             onDelete={() => setDeletingGoal(goal)}
@@ -618,7 +626,9 @@ export default function Manifest() {
                 <p className="text-sm text-slate-400 text-center max-w-sm">
                   Choose a reality from the left panel to start your daily practice
                 </p>
-                <p className="text-xs text-teal-500 mt-4 text-center">{getMotivationalQuote()}</p>
+                <p className="text-xs text-teal-500 mt-4 text-center">
+                  {getMotivationalQuote()}
+                </p>
               </div>
             )}
           </div>
@@ -662,10 +672,7 @@ export default function Manifest() {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDeleteGoal}
-                className="bg-red-500 hover:bg-red-600 text-white rounded-xl"
-              >
+              <AlertDialogAction onClick={handleDeleteGoal} className="bg-red-500 hover:bg-red-600 text-white rounded-xl">
                 Delete
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -686,10 +693,8 @@ export default function Manifest() {
             goal={historyGoal}
             isOpen={!!historyGoal}
             onClose={() => setHistoryGoal(null)}
-            onUseAsMicroAction={() => {}}
+            onUseAsMicroAction={() => { }}
           />
         )}
       </div>
-    </>
-  );
-}
+ 

@@ -11,6 +11,7 @@ interface ManifestCardProps {
   goal: ManifestGoal;
   streak: number;
   momentum: number;
+  practices?: ManifestDailyPractice[]; // Added practices prop
   isSelected: boolean;
   onClick: () => void;
   onEdit?: () => void;
@@ -21,21 +22,34 @@ interface ManifestCardProps {
   isCompleted?: boolean;
 }
 
-export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEdit, onDelete, onComplete, onReactivate, onImageUpdate, isCompleted = false }: ManifestCardProps) {
+export function ManifestCard({
+  goal,
+  streak,
+  momentum,
+  practices = [],
+  isSelected,
+  onClick,
+  onEdit,
+  onDelete,
+  onComplete,
+  onReactivate,
+  onImageUpdate,
+  isCompleted = false,
+}: ManifestCardProps) {
   // Get last 7 days
   const weekProgress = useMemo(() => {
-    const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
-    const allPractices: Record<string, ManifestDailyPractice> = stored ? JSON.parse(stored) : {};
     const days: boolean[] = [];
+
+    // Create a lookup map for faster access
+    const practiceMap = new Set(practices.filter((p) => p.goal_id === goal.id && p.locked).map((p) => p.entry_date));
 
     for (let i = 6; i >= 0; i--) {
       const date = subDays(new Date(), i);
       const dateStr = format(date, "yyyy-MM-dd");
-      const practice = allPractices[`${goal.id}_${dateStr}`];
-      days.push(practice?.locked === true);
+      days.push(practiceMap.has(dateStr));
     }
     return days;
-  }, [goal.id]);
+  }, [goal.id, practices]);
 
   const dayNumber = useMemo(() => {
     if (goal.start_date) {
@@ -46,15 +60,13 @@ export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEd
 
   // Get last practiced info
   const lastPracticed = useMemo(() => {
-    const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
-    const allPractices: Record<string, ManifestDailyPractice> = stored ? JSON.parse(stored) : {};
-    const goalPractices = Object.values(allPractices)
+    const goalPractices = practices
       .filter((p) => p.goal_id === goal.id && p.locked)
       .sort((a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime());
-    
+
     if (goalPractices.length === 0) return null;
     return parseISO(goalPractices[0].entry_date);
-  }, [goal.id]);
+  }, [goal.id, practices]);
 
   // Get this week's completion count
   const weekCompletionCount = useMemo(() => {
@@ -71,13 +83,13 @@ export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEd
     try {
       // Update in database
       await supabase.from("manifest_goals").update({ cover_image_url: url }).eq("id", goal.id);
-      
+
       // Also update in local storage extras for consistency
       const GOAL_EXTRAS_KEY = "manifest_goal_extras";
       const extras = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
       extras[goal.id] = { ...extras[goal.id], cover_image_url: url };
       localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify(extras));
-      
+
       // Notify parent to refresh
       if (onImageUpdate) {
         onImageUpdate();
@@ -95,10 +107,7 @@ export function ManifestCard({ goal, streak, momentum, isSelected, onClick, onEd
       } ${isCompleted ? "opacity-60 grayscale" : ""}`}
     >
       {/* Top-right action buttons - positioned over content area */}
-      <div 
-        className="absolute top-1 right-1 z-20 flex items-center gap-0.5" 
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="absolute top-1 right-1 z-20 flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
         {onComplete && !isCompleted && (
           <button
             onClick={onComplete}
