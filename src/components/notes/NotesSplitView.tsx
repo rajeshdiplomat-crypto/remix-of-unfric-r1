@@ -134,7 +134,7 @@ export function NotesSplitView({
     <div className="w-full h-[calc(100vh-80px)] p-4">
       <div className="flex h-full border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
         {/* Left Sidebar */}
-        <div className="w-56 shrink-0 border-r border-slate-100 flex flex-col bg-gradient-to-b from-slate-50/80 to-white overflow-hidden">
+        <div className="w-56 shrink-0 border-r border-slate-100 flex flex-col bg-gradient-to-b from-slate-50/80 to-white overflow-hidden relative z-[150]">
           <div className="p-3 border-b border-slate-100 flex items-center justify-between shrink-0">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               {isInFocusMode ? "Context" : "Notes"}
