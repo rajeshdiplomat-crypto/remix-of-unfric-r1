@@ -39,7 +39,11 @@ interface HistoryDay {
     created_at: string;
   }>;
   growth_note?: string;
-  gratitude?: string;
+  gratitudes?: Array<{
+    id: string;
+    text: string;
+    created_at: string;
+  }>;
 }
 
 interface WeekGroup {
@@ -147,7 +151,7 @@ export default function ManifestHistory() {
           acts: practice.acts || [],
           proofs: practice.proofs || [],
           growth_note: practice.growth_note,
-          gratitude: practice.gratitude,
+          gratitudes: practice.gratitudes || [],
         });
       }
     });
