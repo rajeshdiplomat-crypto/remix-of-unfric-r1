@@ -83,17 +83,94 @@ const App = () => (
                   <Routes>
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/" element={<Navigate to="/diary" replace />} />
-                    <Route path="/diary" element={<ProtectedRoute><Diary /></ProtectedRoute>} />
-                    <Route path="/emotions" element={<ProtectedRoute><Emotions /></ProtectedRoute>} />
-                    <Route path="/journal" element={<ProtectedRoute><Journal /></ProtectedRoute>} />
-                    <Route path="/manifest" element={<ProtectedRoute><Manifest /></ProtectedRoute>} />
-                    <Route path="/manifest/history/:goalId" element={<ProtectedRoute><ManifestHistory /></ProtectedRoute>} />
-                    <Route path="/trackers" element={<ProtectedRoute><Trackers /></ProtectedRoute>} />
-                    <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
-                    <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-                    <Route path="/tasks/focus/:taskId" element={<ProtectedFullscreenRoute><TaskFocus /></ProtectedFullscreenRoute>} />
-                    <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                    <Route path="/clarity" element={<ProtectedFullscreenRoute><ClarityWindow /></ProtectedFullscreenRoute>} />
+                    <Route
+                      path="/diary"
+                      element={
+                        <ProtectedRoute>
+                          <Diary />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/emotions"
+                      element={
+                        <ProtectedRoute>
+                          <Emotions />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/journal"
+                      element={
+                        <ProtectedRoute>
+                          <Journal />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/manifest"
+                      element={
+                        <ProtectedRoute>
+                          <Manifest />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/manifest/history/:goalId"
+                      element={
+                        <ProtectedRoute>
+                          <ManifestHistory />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/trackers"
+                      element={
+                        <ProtectedRoute>
+                          <Trackers />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/notes"
+                      element={
+                        <ProtectedRoute>
+                          <Notes />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/tasks"
+                      element={
+                        <ProtectedRoute>
+                          <Tasks />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/tasks/focus/:taskId"
+                      element={
+                        <ProtectedFullscreenRoute>
+                          <TaskFocus />
+                        </ProtectedFullscreenRoute>
+                      }
+                    />
+                    <Route
+                      path="/settings"
+                      element={
+                        <ProtectedRoute>
+                          <Settings />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/clarity"
+                      element={
+                        <ProtectedFullscreenRoute>
+                          <ClarityWindow />
+                        </ProtectedFullscreenRoute>
+                      }
+                    />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </AuthProvider>

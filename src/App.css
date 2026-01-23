@@ -36,10 +36,14 @@
 }
 
 /* Smooth hover transitions for interactive elements */
-button, a, [role="button"], .interactive {
-  transition: background-color var(--transition-medium) ease, 
-              border-color var(--transition-medium) ease,
-              color var(--transition-fast) ease;
+button,
+a,
+[role="button"],
+.interactive {
+  transition:
+    background-color var(--transition-medium) ease,
+    border-color var(--transition-medium) ease,
+    color var(--transition-fast) ease;
 }
 
 /* Cards - Zara-style flat styling */
@@ -110,8 +114,9 @@ button, a, [role="button"], .interactive {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   border: 1px solid hsl(var(--border));
-  transition: border-color var(--transition-fast) ease,
-              background-color var(--transition-fast) ease;
+  transition:
+    border-color var(--transition-fast) ease,
+    background-color var(--transition-fast) ease;
 }
 
 .chip:hover {
@@ -164,14 +169,21 @@ button, a, [role="button"], .interactive {
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
 }
 
 /* Zara-style uppercase headings */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-weight: 300;
   letter-spacing: 0.02em;
 }
