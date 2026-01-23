@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ChevronUp, Calendar, CheckCircle, AlertTriangle, Clock as ClockIcon, TrendingUp } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { QuadrantTask, computeTaskStatus } from "./types";
@@ -23,7 +22,6 @@ import { format, subDays, addDays, startOfDay, isSameDay } from "date-fns";
 
 interface InsightsPanelProps {
   tasks: QuadrantTask[];
-  compactMode?: boolean;
 }
 
 function KpiCard({
@@ -148,7 +146,7 @@ function ClockKpiCard() {
   );
 }
 
-export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
+export function InsightsPanel({ tasks }: InsightsPanelProps) {
   const [expanded, setExpanded] = useState(true);
   const today = startOfDay(new Date());
 
@@ -246,12 +244,7 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
       {/* KPI ROW:
           We use 6 columns on lg so the clock can span 2 columns (longer).
           Total spans: 1 + 1 + 2 + 1 + 1 = 6 */}
-      <div
-        className={cn(
-          "grid gap-3",
-          compactMode ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6",
-        )}
-      >
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
         <div className="lg:col-span-1">
           <KpiCard
             icon={<Calendar className="h-4 w-4" />}
@@ -272,11 +265,9 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
           />
         </div>
 
-        {!compactMode && (
-          <div className="lg:col-span-2">
-            <ClockKpiCard />
-          </div>
-        )}
+        <div className="lg:col-span-2">
+          <ClockKpiCard />
+        </div>
 
         <div className="lg:col-span-1">
           <KpiCard
@@ -300,7 +291,7 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
       </div>
 
       {/* Charts Row */}
-      <div className={cn("grid grid-cols-1 gap-4", compactMode ? "lg:grid-cols-1" : "lg:grid-cols-3")}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Plan vs Actual */}
         <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
           <CardContent className="p-4">
