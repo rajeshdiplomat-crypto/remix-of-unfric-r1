@@ -255,112 +255,115 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
           </Button>
         </div>
 
-        {/* KPI Row - Compact */}
-        <div className="grid grid-cols-4 gap-1.5 mb-2 shrink-0">
-          <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-muted/30">
-            <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center shrink-0">
-              <Calendar className="h-2.5 w-2.5 text-primary" />
+        {/* Main content: KPIs left (2x2), Charts right (3 cols) */}
+        <div className="flex-1 flex gap-3 min-h-0">
+          {/* Left: KPI Cards in 2x2 grid */}
+          <div className="grid grid-cols-2 gap-1.5 w-[180px] shrink-0 content-start">
+            <div className="flex items-center gap-1.5 p-2 rounded-md bg-muted/30">
+              <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center shrink-0">
+                <Calendar className="h-3 w-3 text-primary" />
+              </div>
+              <div>
+                <p className="text-base font-bold text-foreground leading-none">{plannedToday}</p>
+                <p className="text-[8px] text-muted-foreground uppercase">Planned</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-bold text-foreground leading-none">{plannedToday}</p>
-              <p className="text-[7px] text-muted-foreground uppercase">Planned</p>
+            
+            <div className="flex items-center gap-1.5 p-2 rounded-md bg-muted/30">
+              <div className="h-6 w-6 rounded bg-chart-1/10 flex items-center justify-center shrink-0">
+                <CheckCircle className="h-3 w-3 text-chart-1" />
+              </div>
+              <div>
+                <p className="text-base font-bold text-foreground leading-none">{completedToday}</p>
+                <p className="text-[8px] text-muted-foreground uppercase">Done</p>
+              </div>
             </div>
-          </div>
-          
-          <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-muted/30">
-            <div className="h-5 w-5 rounded bg-chart-1/10 flex items-center justify-center shrink-0">
-              <CheckCircle className="h-2.5 w-2.5 text-chart-1" />
+            
+            <div className="flex items-center gap-1.5 p-2 rounded-md bg-muted/30">
+              <div className="h-6 w-6 rounded bg-destructive/10 flex items-center justify-center shrink-0">
+                <AlertTriangle className="h-3 w-3 text-destructive" />
+              </div>
+              <div>
+                <p className="text-base font-bold text-foreground leading-none">{overdueTasks}</p>
+                <p className="text-[8px] text-muted-foreground uppercase">Overdue</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-bold text-foreground leading-none">{completedToday}</p>
-              <p className="text-[7px] text-muted-foreground uppercase">Done</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-muted/30">
-            <div className="h-5 w-5 rounded bg-destructive/10 flex items-center justify-center shrink-0">
-              <AlertTriangle className="h-2.5 w-2.5 text-destructive" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-foreground leading-none">{overdueTasks}</p>
-              <p className="text-[7px] text-muted-foreground uppercase">Overdue</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-muted/30">
-            <div className="h-5 w-5 rounded bg-muted/40 flex items-center justify-center shrink-0">
-              <ClockIcon className="h-2.5 w-2.5 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-foreground leading-none">{totalFocusMinutes}m</p>
-              <p className="text-[7px] text-muted-foreground uppercase">Focus</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Charts Row - Takes remaining space */}
-        <div className="grid grid-cols-3 gap-1.5 flex-1 min-h-0">
-          {/* Plan vs Actual */}
-          <div className="rounded-md bg-muted/20 p-1.5 flex flex-col">
-            <div className="flex items-center gap-1 mb-0.5 shrink-0">
-              <TrendingUp className="h-2.5 w-2.5 text-primary" />
-              <span className="text-[7px] font-medium text-muted-foreground uppercase">Plan vs Actual</span>
-            </div>
-            <div className="flex-1 min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={past7DaysData}>
-                  <defs>
-                    <linearGradient id="planGradient2" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="date" tick={{ fontSize: 6, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 6, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={10} allowDecimals={false} />
-                  <Area type="monotone" dataKey="plan" stroke="hsl(var(--primary))" strokeWidth={1} fill="url(#planGradient2)" />
-                  <Line type="monotone" dataKey="actual" stroke="hsl(var(--chart-1))" strokeWidth={1} dot={{ r: 1 }} />
-                </ComposedChart>
-              </ResponsiveContainer>
+            
+            <div className="flex items-center gap-1.5 p-2 rounded-md bg-muted/30">
+              <div className="h-6 w-6 rounded bg-muted/40 flex items-center justify-center shrink-0">
+                <ClockIcon className="h-3 w-3 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-base font-bold text-foreground leading-none">{totalFocusMinutes}m</p>
+                <p className="text-[8px] text-muted-foreground uppercase">Focus</p>
+              </div>
             </div>
           </div>
 
-          {/* Upcoming */}
-          <div className="rounded-md bg-muted/20 p-1.5 flex flex-col">
-            <div className="flex items-center gap-1 mb-0.5 shrink-0">
-              <Calendar className="h-2.5 w-2.5 text-primary" />
-              <span className="text-[7px] font-medium text-muted-foreground uppercase">Upcoming</span>
-            </div>
-            <div className="flex-1 min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={future7DaysData}>
-                  <XAxis dataKey="date" tick={{ fontSize: 6, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 6, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={10} allowDecimals={false} />
-                  <Bar dataKey="tasks" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* By Quadrant */}
-          <div className="rounded-md bg-muted/20 p-1.5 flex flex-col">
-            <div className="flex items-center gap-1 mb-0.5 shrink-0">
-              <ClockIcon className="h-2.5 w-2.5 text-primary" />
-              <span className="text-[7px] font-medium text-muted-foreground uppercase">By Quadrant</span>
-            </div>
-            <div className="flex-1 min-h-0 flex items-center justify-center">
-              {quadrantData.length > 0 ? (
+          {/* Right: Charts - 3 columns taking remaining space */}
+          <div className="flex-1 grid grid-cols-3 gap-2 min-h-0">
+            {/* Plan vs Actual */}
+            <div className="rounded-lg bg-muted/20 p-2 flex flex-col min-h-0">
+              <div className="flex items-center gap-1 mb-1 shrink-0">
+                <TrendingUp className="h-3 w-3 text-primary" />
+                <span className="text-[8px] font-medium text-muted-foreground uppercase">Plan vs Actual</span>
+              </div>
+              <div className="flex-1 min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={quadrantData} cx="50%" cy="50%" innerRadius={12} outerRadius={24} paddingAngle={2} dataKey="value">
-                      {quadrantData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                  </PieChart>
+                  <ComposedChart data={past7DaysData}>
+                    <defs>
+                      <linearGradient id="planGradient2" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="date" tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={14} allowDecimals={false} />
+                    <Area type="monotone" dataKey="plan" stroke="hsl(var(--primary))" strokeWidth={1.5} fill="url(#planGradient2)" />
+                    <Line type="monotone" dataKey="actual" stroke="hsl(var(--chart-1))" strokeWidth={1.5} dot={{ r: 2 }} />
+                  </ComposedChart>
                 </ResponsiveContainer>
-              ) : (
-                <p className="text-[7px] text-muted-foreground">No data</p>
-              )}
+              </div>
+            </div>
+
+            {/* Upcoming */}
+            <div className="rounded-lg bg-muted/20 p-2 flex flex-col min-h-0">
+              <div className="flex items-center gap-1 mb-1 shrink-0">
+                <Calendar className="h-3 w-3 text-primary" />
+                <span className="text-[8px] font-medium text-muted-foreground uppercase">Upcoming</span>
+              </div>
+              <div className="flex-1 min-h-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={future7DaysData}>
+                    <XAxis dataKey="date" tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={14} allowDecimals={false} />
+                    <Bar dataKey="tasks" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* By Quadrant */}
+            <div className="rounded-lg bg-muted/20 p-2 flex flex-col min-h-0">
+              <div className="flex items-center gap-1 mb-1 shrink-0">
+                <ClockIcon className="h-3 w-3 text-primary" />
+                <span className="text-[8px] font-medium text-muted-foreground uppercase">By Quadrant</span>
+              </div>
+              <div className="flex-1 min-h-0 flex items-center justify-center">
+                {quadrantData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={quadrantData} cx="50%" cy="50%" innerRadius={18} outerRadius={36} paddingAngle={2} dataKey="value">
+                        {quadrantData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-[8px] text-muted-foreground">No data</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
