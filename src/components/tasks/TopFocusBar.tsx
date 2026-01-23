@@ -230,7 +230,7 @@ export function TopFocusBar({ tasks, onStartFocus }: TopFocusBarProps) {
   return (
     <>
       <Card className="rounded-lg border border-border/60 bg-background/70 backdrop-blur-xl shadow-sm">
-        <CardContent className="flex items-center gap-2 py-1.5 px-2.5">
+        <CardContent className="flex items-center gap-2 py-1 px-2">
           {/* Left icon */}
           <div className="h-6 w-6 rounded-md flex items-center justify-center shrink-0 border border-border/60 bg-background/60">
             <Play className="h-3 w-3" />
