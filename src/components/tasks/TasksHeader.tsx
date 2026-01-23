@@ -46,13 +46,15 @@ export function TasksHeader({
         </Select>
 
         {/* Segmented control (Board / Quadrant) */}
-        <div className="flex items-center rounded-xl border border-border/40 bg-background/60 p-1 shadow-sm">
+        <div className="flex items-center rounded-xl border border-primary/20 bg-gradient-to-r from-primary/5 to-chart-1/5 p-1 shadow-sm">
           <button
             type="button"
             onClick={() => onViewChange("board")}
             className={[
-              "h-8 px-3 rounded-lg text-[13px] font-medium transition",
-              view === "board" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
+              "h-8 px-3 rounded-lg text-[13px] font-medium transition-all duration-200",
+              view === "board" 
+                ? "bg-gradient-to-r from-primary to-chart-1 text-primary-foreground shadow-md" 
+                : "text-muted-foreground hover:text-foreground hover:bg-background/60",
             ].join(" ")}
           >
             📅 Planner
@@ -61,10 +63,10 @@ export function TasksHeader({
             type="button"
             onClick={() => onViewChange("quadrant")}
             className={[
-              "h-8 px-3 rounded-lg text-[13px] font-medium transition",
+              "h-8 px-3 rounded-lg text-[13px] font-medium transition-all duration-200",
               view === "quadrant"
-                ? "bg-card shadow-sm text-foreground"
-                : "text-muted-foreground hover:text-foreground",
+                ? "bg-gradient-to-r from-primary to-chart-1 text-primary-foreground shadow-md"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/60",
             ].join(" ")}
           >
             Quadrant
@@ -84,7 +86,7 @@ export function TasksHeader({
           />
         </div>
 
-        <Button onClick={onNewTask} className="h-10 rounded-xl px-4 shadow-sm">
+        <Button onClick={onNewTask} className="h-10 rounded-xl px-4 shadow-md bg-gradient-to-r from-primary via-chart-1 to-primary hover:opacity-90 transition-opacity">
           <Plus className="h-4 w-4 mr-2" />
           New Task
         </Button>
