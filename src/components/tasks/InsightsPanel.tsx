@@ -41,15 +41,19 @@ function KpiCard({
 }) {
   return (
     <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
-      <CardContent className={cn(
-        "flex items-center gap-3 min-w-0",
-        "p-3 h-[72px]" // Reduced from p-4 h-[86px]
-      )}>
-        <div className={cn(
-          "rounded-xl flex items-center justify-center shrink-0",
-          "h-8 w-8", // Reduced from h-9 w-9
-          iconBg
-        )}>
+      <CardContent
+        className={cn(
+          "flex items-center gap-3 min-w-0",
+          "p-3 h-[72px]", // Reduced from p-4 h-[86px]
+        )}
+      >
+        <div
+          className={cn(
+            "rounded-xl flex items-center justify-center shrink-0",
+            "h-8 w-8", // Reduced from h-9 w-9
+            iconBg,
+          )}
+        >
           <div className={cn("h-4 w-4 flex items-center justify-center", iconColor)}>{icon}</div>
         </div>
 
@@ -253,10 +257,12 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
       {/* KPI ROW:
           We use 6 columns on lg so the clock can span 2 columns (longer).
           Total spans: 1 + 1 + 2 + 1 + 1 = 6 */}
-      <div className={cn(
-        "grid gap-3",
-        compactMode ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6"
-      )}>
+      <div
+        className={cn(
+          "grid gap-3",
+          compactMode ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6",
+        )}
+      >
         <div className="lg:col-span-1">
           <KpiCard
             icon={<Calendar className="h-4 w-4" />}
@@ -305,10 +311,7 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
       </div>
 
       {/* Charts Row */}
-      <div className={cn(
-        "grid grid-cols-1 gap-4",
-        compactMode ? "lg:grid-cols-2" : "lg:grid-cols-3"
-      )}>
+      <div className={cn("grid grid-cols-1 gap-4", compactMode ? "lg:grid-cols-2" : "lg:grid-cols-3")}>
         {/* Plan vs Actual */}
         <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
           <CardContent className="p-3">
@@ -377,9 +380,7 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-2">
               <Calendar className="h-3.5 w-3.5 text-primary" />
-              <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.14em]">
-                UPCOMING
-              </h4>
+              <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.14em]">UPCOMING</h4>
             </div>
 
             <div className={cn("h-[100px]", compactMode ? "h-[80px]" : "h-[120px]")}>
@@ -416,10 +417,12 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
         </Card>
 
         {/* By Quadrant */}
-        <Card className={cn(
-          "rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm",
-          compactMode && "lg:col-span-2"
-        )}>
+        <Card
+          className={cn(
+            "rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm",
+            compactMode && "lg:col-span-2",
+          )}
+        >
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-2">
               <ClockIcon className="h-3.5 w-3.5 text-primary" />
@@ -456,3 +459,13 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
                     />
                   </PieChart>
                 </ResponsiveContainer>
+              ) : (
+                <p className="text-[10px] text-muted-foreground">No data</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
