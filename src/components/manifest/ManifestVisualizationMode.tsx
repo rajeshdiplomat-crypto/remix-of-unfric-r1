@@ -506,120 +506,120 @@ export function ManifestVisualizationMode({
       </div>
 
       {/* Floating Elements - one by one from bottom */}
-      {!isPaused &&
-        activeElements.map((el) => {
-          const isVisionImage = el.id.startsWith("vision-");
-          const isProofWithImage = el.type === "proof" && el.imageUrl;
+      {activeElements.map((el) => {
+        const isVisionImage = el.id.startsWith("vision-");
+        const isProofWithImage = el.type === "proof" && el.imageUrl;
 
-          return (
-            <div
-              key={el.id}
-              style={{
-                position: "absolute",
-                left: `${el.horizontalPosition}%`,
-                bottom: "-200px",
-                maxWidth: el.type === "image" ? (isVisionImage ? "280px" : "220px") : "360px",
-                padding: el.type === "image" ? "0" : "20px 28px",
-                background: el.type === "image" ? "transparent" : "rgba(255,255,255,0.12)",
-                backdropFilter: el.type === "image" ? "none" : "blur(16px)",
-                borderRadius: el.type === "image" ? "24px" : "20px",
-                border: el.type === "image" ? "none" : "1px solid rgba(255,255,255,0.25)",
-                color: "white",
-                fontSize: "18px",
-                animation: `floatUpSmooth 12s ease-in-out forwards`,
-                boxShadow: isVisionImage
-                  ? "0 16px 60px rgba(20,184,166,0.5), 0 0 100px rgba(168,85,247,0.4)"
-                  : "0 12px 50px rgba(0,0,0,0.4)",
-                zIndex: isVisionImage ? 4 : 5,
-                overflow: "hidden",
-              }}
-            >
-              {el.type === "image" && el.imageUrl && (
-                <img
-                  src={el.imageUrl}
-                  alt={isVisionImage ? "Vision" : "Proof"}
-                  style={{
-                    width: isVisionImage ? "280px" : "200px",
-                    height: isVisionImage ? "280px" : "200px",
-                    objectFit: "cover",
-                    borderRadius: isVisionImage ? "22px" : "18px",
-                    border: isVisionImage ? "4px solid rgba(20,184,166,0.6)" : "3px solid rgba(255,255,255,0.4)",
-                    boxShadow: isVisionImage
-                      ? "0 0 50px rgba(20,184,166,0.6), inset 0 0 40px rgba(255,255,255,0.15)"
-                      : "0 16px 50px rgba(0,0,0,0.5)",
-                  }}
-                />
-              )}
-              {el.type !== "image" && (
-                <>
-                  <div
-                    style={{
-                      fontSize: "12px",
-                      textTransform: "uppercase",
-                      letterSpacing: "2px",
-                      opacity: 0.7,
-                      marginBottom: "10px",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {el.type === "action" ? "✨ Action" : el.type === "proof" ? "🎯 Proof" : "💭 Note"}
-                  </div>
-                  <div style={{ lineHeight: 1.7, fontSize: "18px", fontWeight: 500 }}>{el.content}</div>
-                  {isProofWithImage && (
-                    <img
-                      src={el.imageUrl}
-                      alt="Proof"
-                      style={{
-                        width: "100%",
-                        height: "140px",
-                        objectFit: "cover",
-                        borderRadius: "14px",
-                        marginTop: "14px",
-                        border: "2px solid rgba(255,255,255,0.3)",
-                      }}
-                    />
-                  )}
-                </>
-              )}
-            </div>
-          );
-        })}
-
-      {/* Energy particles */}
-      {!isPaused &&
-        Array.from({ length: 20 }).map((_, i) => (
+        return (
           <div
-            key={i}
+            key={el.id}
             style={{
               position: "absolute",
-              width: 4 + (i % 3) * 4,
-              height: 4 + (i % 3) * 4,
-              borderRadius: "50%",
-              background: `radial-gradient(circle, ${
-                i % 4 === 0
-                  ? "rgba(20,184,166,0.9)"
-                  : i % 4 === 1
-                    ? "rgba(168,85,247,0.9)"
-                    : i % 4 === 2
-                      ? "rgba(59,130,246,0.9)"
-                      : "rgba(236,72,153,0.9)"
-              }, transparent)`,
-              left: `${5 + i * 4.5}%`,
-              bottom: "-20px",
-              animation: `energyFloat ${6 + (i % 5)}s ease-in-out infinite`,
-              animationDelay: `${i * -0.3}s`,
-              boxShadow: `0 0 ${10 + (i % 3) * 5}px ${
-                i % 4 === 0
-                  ? "rgba(20,184,166,0.5)"
-                  : i % 4 === 1
-                    ? "rgba(168,85,247,0.5)"
-                    : i % 4 === 2
-                      ? "rgba(59,130,246,0.5)"
-                      : "rgba(236,72,153,0.5)"
-              }`,
+              left: `${el.horizontalPosition}%`,
+              bottom: "-200px",
+              maxWidth: el.type === "image" ? (isVisionImage ? "280px" : "220px") : "360px",
+              padding: el.type === "image" ? "0" : "20px 28px",
+              background: el.type === "image" ? "transparent" : "rgba(255,255,255,0.12)",
+              backdropFilter: el.type === "image" ? "none" : "blur(16px)",
+              borderRadius: el.type === "image" ? "24px" : "20px",
+              border: el.type === "image" ? "none" : "1px solid rgba(255,255,255,0.25)",
+              color: "white",
+              fontSize: "18px",
+              animation: `floatUpSmooth 12s ease-in-out forwards`,
+              animationPlayState: isPaused ? "paused" : "running",
+              boxShadow: isVisionImage
+                ? "0 16px 60px rgba(20,184,166,0.5), 0 0 100px rgba(168,85,247,0.4)"
+                : "0 12px 50px rgba(0,0,0,0.4)",
+              zIndex: isVisionImage ? 4 : 5,
+              overflow: "hidden",
             }}
-          />
-        ))}
+          >
+            {el.type === "image" && el.imageUrl && (
+              <img
+                src={el.imageUrl}
+                alt={isVisionImage ? "Vision" : "Proof"}
+                style={{
+                  width: isVisionImage ? "280px" : "200px",
+                  height: isVisionImage ? "280px" : "200px",
+                  objectFit: "cover",
+                  borderRadius: isVisionImage ? "22px" : "18px",
+                  border: isVisionImage ? "4px solid rgba(20,184,166,0.6)" : "3px solid rgba(255,255,255,0.4)",
+                  boxShadow: isVisionImage
+                    ? "0 0 50px rgba(20,184,166,0.6), inset 0 0 40px rgba(255,255,255,0.15)"
+                    : "0 16px 50px rgba(0,0,0,0.5)",
+                }}
+              />
+            )}
+            {el.type !== "image" && (
+              <>
+                <div
+                  style={{
+                    fontSize: "12px",
+                    textTransform: "uppercase",
+                    letterSpacing: "2px",
+                    opacity: 0.7,
+                    marginBottom: "10px",
+                    fontWeight: 600,
+                  }}
+                >
+                  {el.type === "action" ? "✨ Action" : el.type === "proof" ? "🎯 Proof" : "💭 Note"}
+                </div>
+                <div style={{ lineHeight: 1.7, fontSize: "18px", fontWeight: 500 }}>{el.content}</div>
+                {isProofWithImage && (
+                  <img
+                    src={el.imageUrl}
+                    alt="Proof"
+                    style={{
+                      width: "100%",
+                      height: "140px",
+                      objectFit: "cover",
+                      borderRadius: "14px",
+                      marginTop: "14px",
+                      border: "2px solid rgba(255,255,255,0.3)",
+                    }}
+                  />
+                )}
+              </>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Energy particles */}
+      {Array.from({ length: 20 }).map((_, i) => (
+        <div
+          key={i}
+          style={{
+            position: "absolute",
+            width: 4 + (i % 3) * 4,
+            height: 4 + (i % 3) * 4,
+            borderRadius: "50%",
+            background: `radial-gradient(circle, ${
+              i % 4 === 0
+                ? "rgba(20,184,166,0.9)"
+                : i % 4 === 1
+                  ? "rgba(168,85,247,0.9)"
+                  : i % 4 === 2
+                    ? "rgba(59,130,246,0.9)"
+                    : "rgba(236,72,153,0.9)"
+            }, transparent)`,
+            left: `${5 + i * 4.5}%`,
+            bottom: "-20px",
+            animation: `energyFloat ${6 + (i % 5)}s ease-in-out infinite`,
+            animationDelay: `${i * -0.3}s`,
+            animationPlayState: isPaused ? "paused" : "running",
+            boxShadow: `0 0 ${10 + (i % 3) * 5}px ${
+              i % 4 === 0
+                ? "rgba(20,184,166,0.5)"
+                : i % 4 === 1
+                  ? "rgba(168,85,247,0.5)"
+                  : i % 4 === 2
+                    ? "rgba(59,130,246,0.5)"
+                    : "rgba(236,72,153,0.5)"
+            }`,
+          }}
+        />
+      ))}
 
       {/* Side energy streams */}
       <div
@@ -631,6 +631,7 @@ export function ManifestVisualizationMode({
           width: 2,
           background: "linear-gradient(to bottom, transparent, rgba(168,85,247,0.8), transparent)",
           animation: "sideGlow 3s ease-in-out infinite",
+          animationPlayState: isPaused ? "paused" : "running",
         }}
       />
       <div
@@ -643,6 +644,7 @@ export function ManifestVisualizationMode({
           background: "linear-gradient(to bottom, transparent, rgba(59,130,246,0.8), transparent)",
           animation: "sideGlow 3s ease-in-out infinite",
           animationDelay: "1.5s",
+          animationPlayState: isPaused ? "paused" : "running",
         }}
       />
 
