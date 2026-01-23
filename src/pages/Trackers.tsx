@@ -492,18 +492,24 @@ export default function Trackers() {
       : activities.filter((a) => !a.isArchived); // Exclude archived from active stats
 
     filteredActivities.forEach((activity) => {
-      // Daily
-      if (activity.frequencyPattern[dayOfWeek]) {
+      const habitStartDate = parseISO(activity.startDate);
+      const habitEndDate = computeEndDateForHabitDays(habitStartDate, activity.frequencyPattern, activity.habitDays);
+
+      // Daily - only count if today is within the habit's date range
+      const isTodayInRange = !isBefore(today, habitStartDate) && !isAfter(today, habitEndDate);
+      if (activity.frequencyPattern[dayOfWeek] && isTodayInRange) {
         dailyTotal++;
         if (activity.completions[todayStr]) dailyCompleted++;
       }
 
-      // Weekly (last 7 days)
+      // Weekly (last 7 days) - only count days within the habit's date range
       for (let i = 0; i < 7; i++) {
         const d = subDays(today, i);
         const dStr = format(d, "yyyy-MM-dd");
         const dDayOfWeek = (d.getDay() + 6) % 7;
-        if (activity.frequencyPattern[dDayOfWeek]) {
+        const isDayInRange = !isBefore(d, habitStartDate) && !isAfter(d, habitEndDate);
+
+        if (activity.frequencyPattern[dDayOfWeek] && isDayInRange) {
           weeklyTotal++;
           if (activity.completions[dStr]) weeklyCompleted++;
         }
