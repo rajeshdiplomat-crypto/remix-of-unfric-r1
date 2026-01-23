@@ -399,7 +399,7 @@ export default function Trackers() {
         description: habit.description || "",
         frequencyPattern,
         habitDays: (habit as any).habit_days || 30,
-        startDate: format(new Date(habit.created_at), "yyyy-MM-dd"),
+        startDate: (habit as any).start_date || format(new Date(habit.created_at), "yyyy-MM-dd"),
         completions: habitCompletions,
         createdAt: habit.created_at,
       };
@@ -742,6 +742,8 @@ export default function Trackers() {
           description: tempActivity.description || null,
           frequency: "custom",
           target_days: targetDays,
+          habit_days: parseInt(formDays) || 1,
+          start_date: format(formStartDate, "yyyy-MM-dd"),
         });
 
         if (error) {
