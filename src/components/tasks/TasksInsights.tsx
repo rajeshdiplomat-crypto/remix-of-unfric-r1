@@ -122,157 +122,126 @@ export function TasksInsights({ tasks }: TasksInsightsProps) {
         </Button>
       </div>
 
-      {/* KPI Cards Row */}
-      <div className="grid grid-cols-5 gap-3">
+      {/* Compact KPI Cards Row */}
+      <div className="grid grid-cols-5 gap-2">
         <Card className="bg-card/50 border-border/50">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Calendar className="h-4 w-4 text-primary" />
-              </div>
+          <CardContent className="p-2 flex items-center gap-2">
+            <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+              <Calendar className="h-3 w-3 text-primary" />
             </div>
-            <p className="text-2xl font-bold text-foreground">{plannedToday}</p>
-            <p className="text-xs text-muted-foreground">Planned Today</p>
+            <div className="min-w-0">
+              <p className="text-lg font-bold text-foreground leading-none">{plannedToday}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Planned</p>
+            </div>
           </CardContent>
         </Card>
 
         <Card className="bg-card/50 border-border/50">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="h-7 w-7 rounded-lg bg-chart-1/10 flex items-center justify-center">
-                <CheckCircle className="h-4 w-4 text-chart-1" />
-              </div>
+          <CardContent className="p-2 flex items-center gap-2">
+            <div className="h-6 w-6 rounded-md bg-chart-1/10 flex items-center justify-center shrink-0">
+              <CheckCircle className="h-3 w-3 text-chart-1" />
             </div>
-            <p className="text-2xl font-bold text-foreground">{completedToday}</p>
-            <p className="text-xs text-muted-foreground">Done Today</p>
+            <div className="min-w-0">
+              <p className="text-lg font-bold text-foreground leading-none">{completedToday}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Done</p>
+            </div>
           </CardContent>
         </Card>
 
         <Card className="bg-card/50 border-border/50">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="h-7 w-7 rounded-lg bg-destructive/10 flex items-center justify-center">
-                <AlertTriangle className="h-4 w-4 text-destructive" />
-              </div>
+          <CardContent className="p-2 flex items-center gap-2">
+            <div className="h-6 w-6 rounded-md bg-destructive/10 flex items-center justify-center shrink-0">
+              <AlertTriangle className="h-3 w-3 text-destructive" />
             </div>
-            <p className="text-2xl font-bold text-foreground">{overdueTasks}</p>
-            <p className="text-xs text-muted-foreground">Overdue</p>
+            <div className="min-w-0">
+              <p className="text-lg font-bold text-foreground leading-none">{overdueTasks}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Overdue</p>
+            </div>
           </CardContent>
         </Card>
 
         <Card className="bg-card/50 border-border/50">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="h-7 w-7 rounded-lg bg-chart-2/10 flex items-center justify-center">
-                <TrendingUp className="h-4 w-4 text-chart-2" />
-              </div>
+          <CardContent className="p-2 flex items-center gap-2">
+            <div className="h-6 w-6 rounded-md bg-chart-2/10 flex items-center justify-center shrink-0">
+              <TrendingUp className="h-3 w-3 text-chart-2" />
             </div>
-            <p className="text-2xl font-bold text-foreground">{completionRate}%</p>
-            <p className="text-xs text-muted-foreground">Today Rate</p>
+            <div className="min-w-0">
+              <p className="text-lg font-bold text-foreground leading-none">{completionRate}%</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Rate</p>
+            </div>
           </CardContent>
         </Card>
 
         <Card className="bg-card/50 border-border/50">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="h-7 w-7 rounded-lg bg-muted/20 flex items-center justify-center">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </div>
+          <CardContent className="p-2 flex items-center gap-2">
+            <div className="h-6 w-6 rounded-md bg-muted/20 flex items-center justify-center shrink-0">
+              <Clock className="h-3 w-3 text-muted-foreground" />
             </div>
-            <p className="text-2xl font-bold text-foreground">{totalFocusMinutes}m</p>
-            <p className="text-xs text-muted-foreground">Focus Time</p>
+            <div className="min-w-0">
+              <p className="text-lg font-bold text-foreground leading-none">{totalFocusMinutes}m</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Focus</p>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-3 gap-4">
-        {/* Plan vs Actual (Past 7 Days) */}
+      {/* Compact Charts Row */}
+      <div className="grid grid-cols-3 gap-3">
+        {/* Plan vs Actual */}
         <Card className="bg-card/50 border-border/50">
-          <CardContent className="p-4">
-            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-              Plan vs Actual (7 Days)
+          <CardContent className="p-3">
+            <h4 className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" /> Plan vs Actual
             </h4>
-            <div className="h-[120px]">
+            <div className="h-[80px]">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={past7DaysData}>
-                  <defs>
-                    <linearGradient id="planGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.05}/>
-                    </linearGradient>
-                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
-                  <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+                  <XAxis dataKey="date" tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }} />
+                  <YAxis tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }} width={20} />
                   <Tooltip 
                     contentStyle={{ 
                       background: 'hsl(var(--card))', 
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '8px',
-                      fontSize: '12px'
+                      fontSize: '10px'
                     }}
-                    formatter={(value: number, name: string) => [value, name === 'plan' ? 'Planned' : 'Completed']}
-                    labelFormatter={(label, payload) => payload?.[0]?.payload?.fullDate || label}
                   />
-                  <Area 
-                    type="monotone" 
-                    dataKey="plan" 
-                    stroke="#3b82f6" 
-                    strokeWidth={2}
-                    fill="url(#planGradient)"
-                    dot={{ fill: '#3b82f6', strokeWidth: 0, r: 4 }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="actual" 
-                    stroke="#22c55e" 
-                    strokeWidth={3}
-                    dot={{ fill: '#22c55e', strokeWidth: 0, r: 4 }}
-                  />
+                  <Area type="monotone" dataKey="plan" stroke="#3b82f6" strokeWidth={1.5} fill="url(#planGradient)" />
+                  <Line type="monotone" dataKey="actual" stroke="#22c55e" strokeWidth={2} dot={{ r: 2 }} />
+                  <defs>
+                    <linearGradient id="planGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.05}/>
+                    </linearGradient>
+                  </defs>
                 </ComposedChart>
               </ResponsiveContainer>
-            </div>
-            <div className="flex justify-center gap-4 mt-2">
-              <div className="flex items-center gap-1">
-                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: '#3b82f6' }} />
-                <span className="text-xs text-muted-foreground font-medium">Plan</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: '#22c55e' }} />
-                <span className="text-xs text-muted-foreground font-medium">Actual</span>
-              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Future 7 Days */}
+        {/* Upcoming */}
         <Card className="bg-card/50 border-border/50">
-          <CardContent className="p-4">
-            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-              Upcoming (7 Days)
+          <CardContent className="p-3">
+            <h4 className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
+              <Calendar className="h-3 w-3" /> Upcoming
             </h4>
-            <div className="h-[120px]">
+            <div className="h-[80px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={future7DaysData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
-                  <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+                  <XAxis dataKey="date" tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }} />
+                  <YAxis tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }} width={20} />
                   <Tooltip 
                     contentStyle={{ 
                       background: 'hsl(var(--card))', 
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '8px',
-                      fontSize: '12px'
+                      fontSize: '10px'
                     }}
-                    formatter={(value: number) => [value, 'Tasks Due']}
-                    labelFormatter={(label, payload) => payload?.[0]?.payload?.fullDate || label}
                   />
-                  <Bar 
-                    dataKey="tasks" 
-                    fill="hsl(var(--primary))" 
-                    radius={[4, 4, 0, 0]}
-                  />
+                  <Bar dataKey="tasks" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -281,11 +250,11 @@ export function TasksInsights({ tasks }: TasksInsightsProps) {
 
         {/* Quadrant Distribution */}
         <Card className="bg-card/50 border-border/50">
-          <CardContent className="p-4">
-            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-              By Quadrant
+          <CardContent className="p-3">
+            <h4 className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
+              <Clock className="h-3 w-3" /> By Quadrant
             </h4>
-            <div className="h-[120px] flex items-center justify-center">
+            <div className="h-[80px] flex items-center justify-center">
               {quadrantData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -293,8 +262,8 @@ export function TasksInsights({ tasks }: TasksInsightsProps) {
                       data={quadrantData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={30}
-                      outerRadius={50}
+                      innerRadius={20}
+                      outerRadius={35}
                       paddingAngle={2}
                       dataKey="value"
                     >
@@ -307,13 +276,13 @@ export function TasksInsights({ tasks }: TasksInsightsProps) {
                         background: 'hsl(var(--card))', 
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px',
-                        fontSize: '12px'
+                        fontSize: '10px'
                       }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <p className="text-xs text-muted-foreground">No data</p>
+                <p className="text-[10px] text-muted-foreground">No data</p>
               )}
             </div>
           </CardContent>
