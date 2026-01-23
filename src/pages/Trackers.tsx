@@ -1618,7 +1618,17 @@ export default function Trackers() {
                     min={1}
                     max={365}
                     value={formDays}
-                    onChange={(e) => setFormDays(parseInt(e.target.value) || 30)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "") {
+                        setFormDays(1); // Minimum value when cleared
+                      } else {
+                        const num = parseInt(val);
+                        if (!isNaN(num) && num >= 1 && num <= 365) {
+                          setFormDays(num);
+                        }
+                      }
+                    }}
                     className="rounded-xl"
                   />
                   <p className="text-[10px] text-muted-foreground mt-1">
