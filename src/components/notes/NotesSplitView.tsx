@@ -129,12 +129,13 @@ export function NotesSplitView({
 
   const sortedGroups = [...groups].sort((a, b) => a.sortOrder - b.sortOrder);
   const isInFocusMode = !!selectedNote;
+  const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
 
   return (
     <div className="w-full h-[calc(100vh-80px)] p-4">
       <div className="flex h-full border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
         {/* Left Sidebar */}
-        <div className="w-56 shrink-0 border-r border-slate-100 flex flex-col bg-slate-50 overflow-visible relative z-[200]">
+        <div className="w-56 shrink-0 border-r border-slate-100 flex flex-col bg-slate-50 overflow-hidden relative z-[200] shadow-[1px_0_10px_rgba(0,0,0,0.02)]">
           <div className="p-3 border-b border-slate-100 flex items-center justify-between shrink-0">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               {isInFocusMode ? "Context" : "Notes"}
@@ -211,11 +212,10 @@ export function NotesSplitView({
                                   {folderNotes.map((note) => (
                                     <div
                                       key={note.id}
-                                      className={`p-1.5 rounded-lg cursor-pointer transition-all flex items-start gap-1.5 ${
-                                        selectedNote?.id === note.id
-                                          ? "bg-primary/10 ring-1 ring-primary/20"
-                                          : "hover:bg-slate-50"
-                                      }`}
+                                      className={`p-1.5 rounded-lg cursor-pointer transition-all flex items-start gap-1.5 ${selectedNote?.id === note.id
+                                        ? "bg-primary/10 ring-1 ring-primary/20"
+                                        : "hover:bg-slate-50"
+                                        }`}
                                       onClick={() => onSelectNote(note)}
                                     >
                                       <FileText className="h-3 w-3 mt-0.5 text-slate-400 shrink-0" />
@@ -235,11 +235,10 @@ export function NotesSplitView({
                           .map((note) => (
                             <div
                               key={note.id}
-                              className={`p-1.5 rounded-lg cursor-pointer transition-all flex items-start gap-1.5 ${
-                                selectedNote?.id === note.id
-                                  ? "bg-primary/10 ring-1 ring-primary/20"
-                                  : "hover:bg-slate-50"
-                              }`}
+                              className={`p-1.5 rounded-lg cursor-pointer transition-all flex items-start gap-1.5 ${selectedNote?.id === note.id
+                                ? "bg-primary/10 ring-1 ring-primary/20"
+                                : "hover:bg-slate-50"
+                                }`}
                               onClick={() => onSelectNote(note)}
                             >
                               <FileText className="h-3 w-3 mt-0.5 text-slate-400 shrink-0" />
@@ -248,7 +247,7 @@ export function NotesSplitView({
                                   {note.title || "Untitled"}
                                 </span>
                                 <span className="text-[10px] text-slate-400 truncate block">
-                                  {note.plainText?.slice(0, 30) || "No content"}
+                                  {note.plainText && note.plainText !== "undefined" ? note.plainText.slice(0, 30) : "No content"}
                                 </span>
                               </div>
                             </div>
@@ -263,7 +262,7 @@ export function NotesSplitView({
         </div>
 
         {/* Right Panel - Editor */}
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-0">
+        <div className={`flex-1 flex flex-col min-w-0 overflow-hidden relative ${isEditorFullscreen ? 'z-[10000]' : 'z-10'}`}>
           {selectedNote ? (
             <>
               <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100 bg-white shrink-0">
@@ -321,6 +320,7 @@ export function NotesSplitView({
                   folders={folders}
                   onSave={handleSave}
                   onBack={handleBack}
+                  onFullscreenChange={setIsEditorFullscreen}
                 />
               </div>
             </>
@@ -344,5 +344,3 @@ export function NotesSplitView({
         </div>
       </div>
     </div>
-  );
-}

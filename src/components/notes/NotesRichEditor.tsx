@@ -103,6 +103,7 @@ interface NotesRichEditorProps {
   folders?: NoteFolder[];
   onSave: (note: Note) => void;
   onBack: () => void;
+  onFullscreenChange?: (isFullscreen: boolean) => void;
 }
 
 const FONTS = [
@@ -171,7 +172,7 @@ interface Stroke {
   penType: string;
 }
 
-export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEditorProps) {
+export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChange }: NotesRichEditorProps) {
   const [title, setTitle] = useState(note.title);
   const [tags, setTags] = useState<string[]>(note.tags);
   const [newTag, setNewTag] = useState("");
@@ -184,6 +185,10 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
   const [currentFont, setCurrentFont] = useState("inter");
   const [currentSize, setCurrentSize] = useState("16");
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    onFullscreenChange?.(isFullscreen);
+  }, [isFullscreen, onFullscreenChange]);
 
   // Theme & Line Style states
   const [pageTheme, setPageTheme] = useState("white");
@@ -657,7 +662,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
   );
 
   const containerClass = isFullscreen
-    ? "fixed inset-0 z-[10000] flex flex-col bg-white"
+    ? "fixed inset-0 z-[9999] flex flex-col"
     : "flex flex-col h-full w-full overflow-hidden";
 
   // Should show lines based on lineStyle selection
