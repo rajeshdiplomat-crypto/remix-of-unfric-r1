@@ -627,6 +627,30 @@ export default function Trackers() {
               tasks.map((t) => t.id),
             );
         }
+
+        // Check if all habit days are now completed - auto-archive if so
+        const newCompletionsCount = Object.keys(activity.completions).length + 1; // +1 because we just added one
+        if (newCompletionsCount >= activity.habitDays && !activity.isArchived) {
+          // Auto-archive the habit
+          setActivities((prev) => prev.map((a) => (a.id === activityId ? { ...a, isArchived: true } : a)));
+
+          // Update in database
+          await supabase
+            .from("habits")
+            .update({ is_archived: true, archived_at: new Date().toISOString() } as any)
+            .eq("id", activityId)
+            .eq("user_id", user.id);
+
+          toast({
+            title: "🎉 Habit Completed!",
+            description: `Congratulations! "${activity.name}" has been moved to completed habits.`,
+          });
+
+          // Clear selection if this habit was selected
+          if (selectedActivityId === activityId) {
+            setSelectedActivityId(null);
+          }
+        }
       }
     }
   };
@@ -1108,30 +1132,13 @@ export default function Trackers() {
                 <div className="grid grid-cols-3 gap-1 text-center">
                   <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
                     <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                      {
-                        activities.filter((a) => {
-                          const today = new Date();
-                          const startDate = parseISO(a.startDate);
-                          const endDate = computeEndDateForHabitDays(startDate, a.frequencyPattern, a.habitDays);
-                          return !isBefore(today, startDate) && !isAfter(today, endDate);
-                        }).length
-                      }
+                      {activities.filter((a) => !a.isArchived).length}
                     </p>
                     <p className="text-[9px] text-slate-500">Active</p>
                   </div>
                   <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
                     <p className="text-sm font-bold text-green-600 dark:text-green-400">
-                      {
-                        activities.filter((a) => {
-                          const today = new Date();
-                          const endDate = computeEndDateForHabitDays(
-                            parseISO(a.startDate),
-                            a.frequencyPattern,
-                            a.habitDays,
-                          );
-                          return isAfter(today, endDate);
-                        }).length
-                      }
+                      {activities.filter((a) => a.isArchived).length}
                     </p>
                     <p className="text-[9px] text-slate-500">Done</p>
                   </div>
