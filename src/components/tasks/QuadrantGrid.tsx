@@ -50,9 +50,34 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
   const [viewAllQuadrant, setViewAllQuadrant] = useState<QuadrantConfig | null>(null);
   const [viewAllTasks, setViewAllTasks] = useState<QuadrantTask[]>([]);
 
+  // Filter tasks by time radius based on mode
+  const filteredByRadius = tasks.filter((task) => {
+    const now = new Date();
+    
+    if (mode === "time") {
+      // 24 hours radius for Time of Day view
+      const cutoff = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      if (!task.due_date) return true; // Include tasks without due date
+      const taskDate = new Date(task.due_date);
+      if (task.due_time) {
+        const [h, m] = task.due_time.split(":").map(Number);
+        taskDate.setHours(h, m, 0, 0);
+      } else {
+        taskDate.setHours(23, 59, 59, 999);
+      }
+      return taskDate >= now && taskDate <= cutoff;
+    } else {
+      // 7 days radius for other views
+      const cutoff = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      if (!task.due_date) return true; // Include tasks without due date
+      const taskDate = new Date(task.due_date);
+      taskDate.setHours(23, 59, 59, 999);
+      return taskDate <= cutoff;
+    }
+  });
+
   const getTasksForQuadrant = (quadrantId: string): QuadrantTask[] => {
-    return tasks.filter((task) => {
-      // All tasks should appear in quadrant view based on their properties
+    return filteredByRadius.filter((task) => {
       switch (mode) {
         case "urgent-important":
           if (quadrantId === "urgent-important") return task.urgency === "high" && task.importance === "high";
@@ -65,9 +90,7 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
         case "date":
           return task.date_bucket === quadrantId;
         case "time":
-          // Only show today's tasks in Time of Day mode
-          const isToday = task.date_bucket === "today";
-          return isToday && task.time_of_day === quadrantId;
+          return task.time_of_day === quadrantId;
       }
       return false;
     });
