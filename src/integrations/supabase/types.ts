@@ -272,8 +272,10 @@ export type Database = {
           created_at: string
           description: string | null
           frequency: string | null
+          habit_days: number | null
           id: string
           name: string
+          start_date: string | null
           target_days: number[] | null
           user_id: string
         }
@@ -282,8 +284,10 @@ export type Database = {
           created_at?: string
           description?: string | null
           frequency?: string | null
+          habit_days?: number | null
           id?: string
           name: string
+          start_date?: string | null
           target_days?: number[] | null
           user_id: string
         }
@@ -292,8 +296,10 @@ export type Database = {
           created_at?: string
           description?: string | null
           frequency?: string | null
+          habit_days?: number | null
           id?: string
           name?: string
+          start_date?: string | null
           target_days?: number[] | null
           user_id?: string
         }
