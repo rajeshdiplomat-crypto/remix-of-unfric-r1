@@ -486,8 +486,10 @@ export default function Trackers() {
     let allTimeCompleted = 0;
     let allTimeTotal = 0;
 
-    // Filter activities if one is selected
-    const filteredActivities = selectedActivityId ? activities.filter((a) => a.id === selectedActivityId) : activities;
+    // Filter activities if one is selected, also exclude archived habits from daily/weekly stats
+    const filteredActivities = selectedActivityId
+      ? activities.filter((a) => a.id === selectedActivityId)
+      : activities.filter((a) => !a.isArchived); // Exclude archived from active stats
 
     filteredActivities.forEach((activity) => {
       // Daily
@@ -818,6 +820,25 @@ export default function Trackers() {
     }
   };
 
+  const handleRestoreHabit = async (activityId: string) => {
+    // Mark the habit as not archived (restore to active)
+    setActivities((prev) => prev.map((a) => (a.id === activityId ? { ...a, isArchived: false } : a)));
+
+    if (user) {
+      // Update the habit in database to remove archived status
+      await supabase
+        .from("habits")
+        .update({ is_archived: false, archived_at: null } as any)
+        .eq("id", activityId)
+        .eq("user_id", user.id);
+    }
+
+    toast({
+      title: "Habit Restored",
+      description: "This habit has been moved back to active tracking.",
+    });
+  };
+
   if (loading) {
     return <PageLoadingScreen module="trackers" />;
   }
@@ -907,33 +928,49 @@ export default function Trackers() {
                   <Pencil className="h-4 w-4 mr-2" />
                   Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleCompletion(activity.id, new Date());
-                  }}
-                  className="cursor-pointer"
-                >
-                  <Check className={cn("h-4 w-4 mr-2", isTodayCompleted ? "text-green-500" : "")} />
-                  {isTodayCompleted ? "Today Done ✓" : "Mark Today"}
-                </DropdownMenuItem>
+
+                {/* Mark Today - Only for active habits */}
+                {!isArchived && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleCompletion(activity.id, new Date());
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <Check className={cn("h-4 w-4 mr-2", isTodayCompleted ? "text-green-500" : "")} />
+                    {isTodayCompleted ? "Today Done ✓" : "Mark Today"}
+                  </DropdownMenuItem>
+                )}
 
                 {/* Complete Habit Action - Only for active habits */}
                 {!isArchived && (
-                  <>
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (confirm("Mark this habit as fully completed? It will be archived and no longer tracked.")) {
-                          handleCompleteHabit(activity.id);
-                        }
-                      }}
-                      className="cursor-pointer text-emerald-600 focus:text-emerald-600"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Complete Habit
-                    </DropdownMenuItem>
-                  </>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm("Mark this habit as fully completed? It will be archived and no longer tracked.")) {
+                        handleCompleteHabit(activity.id);
+                      }
+                    }}
+                    className="cursor-pointer text-emerald-600 focus:text-emerald-600"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Complete Habit
+                  </DropdownMenuItem>
+                )}
+
+                {/* Move to Active - Only for archived habits */}
+                {isArchived && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRestoreHabit(activity.id);
+                    }}
+                    className="cursor-pointer text-blue-600 focus:text-blue-600"
+                  >
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    Move to Active
+                  </DropdownMenuItem>
                 )}
 
                 <DropdownMenuSeparator />
@@ -1003,19 +1040,21 @@ export default function Trackers() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    // Allow toggling past days even if archived? Usually yes for correction.
-                    isPast && toggleCompletion(activity.id, day);
+                    // Don't allow toggling for archived habits
+                    if (!isArchived && isPast) {
+                      toggleCompletion(activity.id, day);
+                    }
                   }}
-                  disabled={!isPast}
+                  disabled={!isPast || isArchived}
                   className={cn(
                     "w-5 h-5 rounded flex items-center justify-center transition-all mx-auto",
                     isCompleted
                       ? isArchived
-                        ? "bg-slate-400 text-white"
+                        ? "bg-slate-400 text-white cursor-not-allowed"
                         : "bg-emerald-500 text-white"
-                      : isPast
+                      : isPast && !isArchived
                         ? "bg-slate-200 dark:bg-slate-700 hover:bg-slate-300"
-                        : "bg-slate-100 dark:bg-slate-800",
+                        : "bg-slate-100 dark:bg-slate-800 cursor-not-allowed",
                   )}
                 >
                   {isCompleted && <Check className="h-3 w-3" />}
