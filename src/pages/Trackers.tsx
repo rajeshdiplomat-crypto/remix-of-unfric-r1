@@ -405,7 +405,7 @@ export default function Trackers() {
       };
     });
 
-    setActivities(transformedActivities.length === 0 ? SAMPLE_ACTIVITIES : transformedActivities);
+    setActivities(transformedActivities);
     setLoading(false);
   };
 
@@ -1300,13 +1300,24 @@ export default function Trackers() {
                         let completed = 0;
                         let total = 0;
                         chartActivities.forEach((a) => {
-                          if (a.frequencyPattern[dayOfWeek]) {
+                          // Check if day is within habit's valid date range
+                          const habitStartDate = parseISO(a.startDate);
+                          const habitEndDate = computeEndDateForHabitDays(
+                            habitStartDate,
+                            a.frequencyPattern,
+                            a.habitDays,
+                          );
+                          const isWithinHabitRange = !isBefore(day, habitStartDate) && !isAfter(day, habitEndDate);
+
+                          if (a.frequencyPattern[dayOfWeek] && isWithinHabitRange) {
                             total++;
                             if (a.completions[dayStr]) completed++;
                           }
                         });
 
-                        const value = total > 0 ? (completed / total) * 100 : isFuture ? 50 : 0;
+                        // Only show value if there are habits scheduled for this day
+                        // For future days within range, show 50% as placeholder; for days with no scheduled habits, show 0
+                        const value = total > 0 ? (completed / total) * 100 : 0;
                         const x = (i / (numDays - 1)) * 1000;
                         // Clamp Y to stay within bounds (min 20, max 180)
                         const rawY = 180 - (value / 100) * 140;
