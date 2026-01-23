@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { QuadrantTask, QuadrantMode, QuadrantConfig, QUADRANT_MODES, computeTaskStatus } from "./types";
+import { QuadrantTask, QuadrantMode, QuadrantConfig, QUADRANT_MODES, computeTaskStatus, computeDateBucket } from "./types";
 import { QuadrantViewAllDrawer } from "./QuadrantViewAllDrawer";
 
 interface QuadrantGridProps {
@@ -88,7 +88,8 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
         case "status":
           return computeTaskStatus(task) === quadrantId;
         case "date":
-          return task.date_bucket === quadrantId;
+          // Dynamically compute date bucket instead of using stored value
+          return computeDateBucket(task.due_date) === quadrantId;
         case "time":
           return task.time_of_day === quadrantId;
       }
