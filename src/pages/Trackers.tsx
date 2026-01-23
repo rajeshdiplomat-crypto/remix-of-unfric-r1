@@ -675,7 +675,7 @@ export default function Trackers() {
     setFormImageUrl(null);
     setFormTime("09:00");
     setFormDuration(30);
-    setFormAddToTasks(true);
+    setFormAddToTasks(false);
     setDialogOpen(true);
   };
 
