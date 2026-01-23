@@ -239,49 +239,53 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
   }
 
   return (
-    <Card className="rounded-xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm flex-1 overflow-hidden">
+    <Card className="rounded-xl border border-primary/20 bg-gradient-to-br from-card/80 via-card/60 to-chart-1/5 backdrop-blur-sm shadow-md flex-1 overflow-hidden">
       <CardContent className="p-1.5 h-full">
         {/* Main content: KPIs left (2x2), Charts right (3 cols) */}
         <div className="h-full flex gap-2">
           {/* Left: KPI Cards in 2x2 grid - stretch to full height */}
           <div className="grid grid-cols-2 gap-1 w-[180px] shrink-0 auto-rows-fr">
-            <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-muted/30">
-              <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center shrink-0">
-                <Calendar className="h-3 w-3 text-primary" />
+            {/* Planned - Blue gradient */}
+            <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 shadow-sm">
+              <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shrink-0 shadow-sm">
+                <Calendar className="h-3 w-3 text-primary-foreground" />
               </div>
               <div>
                 <p className="text-base font-bold text-foreground leading-none">{plannedToday}</p>
-                <p className="text-[8px] text-muted-foreground uppercase">Planned</p>
+                <p className="text-[8px] text-primary/80 uppercase font-medium">Planned</p>
               </div>
             </div>
             
-            <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-muted/30">
-              <div className="h-6 w-6 rounded bg-chart-1/10 flex items-center justify-center shrink-0">
-                <CheckCircle className="h-3 w-3 text-chart-1" />
+            {/* Done - Green gradient */}
+            <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-gradient-to-br from-chart-1/20 to-chart-1/5 border border-chart-1/20 shadow-sm">
+              <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-chart-1 to-chart-1/70 flex items-center justify-center shrink-0 shadow-sm">
+                <CheckCircle className="h-3 w-3 text-primary-foreground" />
               </div>
               <div>
                 <p className="text-base font-bold text-foreground leading-none">{completedToday}</p>
-                <p className="text-[8px] text-muted-foreground uppercase">Done</p>
+                <p className="text-[8px] text-chart-1/80 uppercase font-medium">Done</p>
               </div>
             </div>
             
-            <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-muted/30">
-              <div className="h-6 w-6 rounded bg-destructive/10 flex items-center justify-center shrink-0">
-                <AlertTriangle className="h-3 w-3 text-destructive" />
+            {/* Overdue - Red/Orange gradient */}
+            <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-gradient-to-br from-destructive/20 to-destructive/5 border border-destructive/20 shadow-sm">
+              <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-destructive to-destructive/70 flex items-center justify-center shrink-0 shadow-sm">
+                <AlertTriangle className="h-3 w-3 text-destructive-foreground" />
               </div>
               <div>
                 <p className="text-base font-bold text-foreground leading-none">{overdueTasks}</p>
-                <p className="text-[8px] text-muted-foreground uppercase">Overdue</p>
+                <p className="text-[8px] text-destructive/80 uppercase font-medium">Overdue</p>
               </div>
             </div>
             
-            <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-muted/30">
-              <div className="h-6 w-6 rounded bg-muted/40 flex items-center justify-center shrink-0">
-                <ClockIcon className="h-3 w-3 text-muted-foreground" />
+            {/* Focus - Purple/Violet gradient */}
+            <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-gradient-to-br from-chart-2/20 to-chart-2/5 border border-chart-2/20 shadow-sm">
+              <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-chart-2 to-chart-2/70 flex items-center justify-center shrink-0 shadow-sm">
+                <ClockIcon className="h-3 w-3 text-primary-foreground" />
               </div>
               <div>
                 <p className="text-base font-bold text-foreground leading-none">{totalFocusMinutes}m</p>
-                <p className="text-[8px] text-muted-foreground uppercase">Focus</p>
+                <p className="text-[8px] text-chart-2/80 uppercase font-medium">Focus</p>
               </div>
             </div>
           </div>
@@ -289,59 +293,71 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
           {/* Right: Charts - 3 columns taking remaining space */}
           <div className="flex-1 grid grid-cols-3 gap-2 min-h-0">
             {/* Plan vs Actual */}
-            <div className="rounded-lg bg-muted/20 p-2 flex flex-col min-h-0">
+            <div className="rounded-lg bg-gradient-to-br from-primary/10 to-chart-1/5 border border-primary/10 p-2 flex flex-col min-h-0">
               <div className="flex items-center gap-1 mb-1 shrink-0">
-                <TrendingUp className="h-3 w-3 text-primary" />
-                <span className="text-[8px] font-medium text-muted-foreground uppercase">Plan vs Actual</span>
+                <div className="h-4 w-4 rounded bg-primary/20 flex items-center justify-center">
+                  <TrendingUp className="h-2.5 w-2.5 text-primary" />
+                </div>
+                <span className="text-[8px] font-semibold text-primary uppercase">Plan vs Actual</span>
               </div>
               <div className="flex-1 min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={past7DaysData}>
                     <defs>
                       <linearGradient id="planGradient2" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
                         <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
                       </linearGradient>
                     </defs>
                     <XAxis dataKey="date" tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={14} allowDecimals={false} />
-                    <Area type="monotone" dataKey="plan" stroke="hsl(var(--primary))" strokeWidth={1.5} fill="url(#planGradient2)" />
-                    <Line type="monotone" dataKey="actual" stroke="hsl(var(--chart-1))" strokeWidth={1.5} dot={{ r: 2 }} />
+                    <Area type="monotone" dataKey="plan" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#planGradient2)" />
+                    <Line type="monotone" dataKey="actual" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--chart-1))" }} />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
             {/* Upcoming */}
-            <div className="rounded-lg bg-muted/20 p-2 flex flex-col min-h-0">
+            <div className="rounded-lg bg-gradient-to-br from-chart-1/10 to-chart-2/5 border border-chart-1/10 p-2 flex flex-col min-h-0">
               <div className="flex items-center gap-1 mb-1 shrink-0">
-                <Calendar className="h-3 w-3 text-primary" />
-                <span className="text-[8px] font-medium text-muted-foreground uppercase">Upcoming</span>
+                <div className="h-4 w-4 rounded bg-chart-1/20 flex items-center justify-center">
+                  <Calendar className="h-2.5 w-2.5 text-chart-1" />
+                </div>
+                <span className="text-[8px] font-semibold text-chart-1 uppercase">Upcoming</span>
               </div>
               <div className="flex-1 min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={future7DaysData}>
+                    <defs>
+                      <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(var(--chart-1))" stopOpacity={1} />
+                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
+                      </linearGradient>
+                    </defs>
                     <XAxis dataKey="date" tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={14} allowDecimals={false} />
-                    <Bar dataKey="tasks" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="tasks" fill="url(#barGradient)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
             {/* By Quadrant */}
-            <div className="rounded-lg bg-muted/20 p-2 flex flex-col min-h-0">
+            <div className="rounded-lg bg-gradient-to-br from-chart-2/10 to-destructive/5 border border-chart-2/10 p-2 flex flex-col min-h-0">
               <div className="flex items-center gap-1 mb-1 shrink-0">
-                <ClockIcon className="h-3 w-3 text-primary" />
-                <span className="text-[8px] font-medium text-muted-foreground uppercase">By Quadrant</span>
+                <div className="h-4 w-4 rounded bg-chart-2/20 flex items-center justify-center">
+                  <ClockIcon className="h-2.5 w-2.5 text-chart-2" />
+                </div>
+                <span className="text-[8px] font-semibold text-chart-2 uppercase">By Quadrant</span>
               </div>
               <div className="flex-1 min-h-0 flex items-center justify-center">
                 {quadrantData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={quadrantData} cx="50%" cy="50%" innerRadius={18} outerRadius={36} paddingAngle={2} dataKey="value">
+                      <Pie data={quadrantData} cx="50%" cy="50%" innerRadius={18} outerRadius={36} paddingAngle={3} dataKey="value">
                         {quadrantData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
+                          <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                         ))}
                       </Pie>
                     </PieChart>

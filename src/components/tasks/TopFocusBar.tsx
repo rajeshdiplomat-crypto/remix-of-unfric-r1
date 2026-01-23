@@ -229,21 +229,24 @@ export function TopFocusBar({ tasks, onStartFocus }: TopFocusBarProps) {
 
   return (
     <>
-      <Card className="rounded-lg border border-border/60 bg-background/70 backdrop-blur-xl shadow-sm">
-        <CardContent className="flex items-center gap-2 py-1 px-2">
+      <Card className="rounded-lg border border-primary/30 bg-gradient-to-r from-primary/10 via-chart-1/10 to-chart-2/10 backdrop-blur-xl shadow-md overflow-hidden">
+        <CardContent className="flex items-center gap-2 py-1 px-2 relative">
+          {/* Subtle animated gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent opacity-50" />
+          
           {/* Left icon */}
-          <div className="h-6 w-6 rounded-md flex items-center justify-center shrink-0 border border-border/60 bg-background/60">
-            <Play className="h-3 w-3" />
+          <div className="h-6 w-6 rounded-md flex items-center justify-center shrink-0 bg-gradient-to-br from-primary to-chart-1 shadow-sm relative z-10">
+            <Play className="h-3 w-3 text-primary-foreground" />
           </div>
 
           {/* Main content */}
-          <div className="min-w-0 flex-1 flex items-center gap-2">
-            <span className="text-[8px] font-semibold uppercase tracking-[0.15em] text-muted-foreground shrink-0">
+          <div className="min-w-0 flex-1 flex items-center gap-2 relative z-10">
+            <span className="text-[8px] font-bold uppercase tracking-[0.15em] text-primary shrink-0">
               Top focus
             </span>
-            <p className="text-[11px] font-semibold min-w-0 truncate">{topTask.title}</p>
+            <p className="text-[11px] font-semibold min-w-0 truncate text-foreground">{topTask.title}</p>
             {!!dueLabel && (
-              <Badge variant="outline" className="h-4 px-1.5 text-[8px] rounded-full bg-background/60 border-border/60 shrink-0">
+              <Badge variant="outline" className="h-4 px-1.5 text-[8px] rounded-full bg-chart-2/20 border-chart-2/40 text-chart-2 shrink-0">
                 <Clock3 className="h-2 w-2 mr-0.5" />
                 {dueLabel}
               </Badge>
@@ -251,16 +254,20 @@ export function TopFocusBar({ tasks, onStartFocus }: TopFocusBarProps) {
           </div>
 
           {/* Right actions */}
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1 shrink-0 relative z-10">
             <Button
               variant="outline"
               onClick={() => setShowStats(true)}
-              className="rounded-full border-border/60 bg-background/60 hover:bg-primary/10 h-6 px-2 text-[9px]"
+              className="rounded-full border-chart-1/40 bg-chart-1/10 hover:bg-chart-1/20 text-chart-1 h-6 px-2 text-[9px]"
             >
               <BarChart3 className="h-2.5 w-2.5 mr-0.5" />
               Stats
             </Button>
-            <Button variant="default" onClick={() => onStartFocus(topTask)} className="rounded-full h-6 px-2.5 text-[9px]">
+            <Button 
+              variant="default" 
+              onClick={() => onStartFocus(topTask)} 
+              className="rounded-full h-6 px-2.5 text-[9px] bg-gradient-to-r from-primary to-chart-1 hover:opacity-90 shadow-sm"
+            >
               Focus
             </Button>
           </div>
