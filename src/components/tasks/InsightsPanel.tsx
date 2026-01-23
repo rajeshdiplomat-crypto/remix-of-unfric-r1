@@ -239,233 +239,132 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
   }
 
   return (
-    <div className="space-y-4 w-full">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-[12px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Insights</h3>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setExpanded(false)}
-          className="text-muted-foreground hover:text-foreground gap-1"
-        >
-          <ChevronUp className="h-4 w-4" />
-          Hide
-        </Button>
-      </div>
-
-      {/* KPI ROW:
-          We use 6 columns on lg so the clock can span 2 columns (longer).
-          Total spans: 1 + 1 + 2 + 1 + 1 = 6 */}
-      <div
-        className={cn(
-          "grid gap-3",
-          compactMode ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6",
-        )}
-      >
-        <div className="lg:col-span-1">
-          <KpiCard
-            icon={<Calendar className="h-4 w-4" />}
-            iconBg="bg-primary/10"
-            iconColor="text-primary"
-            value={plannedToday}
-            label="Planned Today"
-          />
+    <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm h-[280px] overflow-hidden">
+      <CardContent className="p-4 h-full flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3 shrink-0">
+          <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Insights</h3>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setExpanded(false)}
+            className="h-6 px-2 text-muted-foreground hover:text-foreground gap-1 text-[10px]"
+          >
+            <ChevronUp className="h-3 w-3" />
+            Hide
+          </Button>
         </div>
 
-        <div className="lg:col-span-1">
-          <KpiCard
-            icon={<CheckCircle className="h-4 w-4" />}
-            iconBg="bg-chart-1/10"
-            iconColor="text-chart-1"
-            value={completedToday}
-            label="Done Today"
-          />
-        </div>
-
-        {!compactMode && (
-          <div className="lg:col-span-2">
-            <ClockKpiCard />
-          </div>
-        )}
-
-        <div className="lg:col-span-1">
-          <KpiCard
-            icon={<AlertTriangle className="h-4 w-4" />}
-            iconBg="bg-destructive/10"
-            iconColor="text-destructive"
-            value={overdueTasks}
-            label="Overdue"
-          />
-        </div>
-
-        <div className="lg:col-span-1">
-          <KpiCard
-            icon={<ClockIcon className="h-4 w-4" />}
-            iconBg="bg-muted/20"
-            iconColor="text-muted-foreground"
-            value={`${totalFocusMinutes}m`}
-            label="Focus Time"
-          />
-        </div>
-      </div>
-
-      {/* Charts Row */}
-      <div className={cn("grid grid-cols-1 gap-4", compactMode ? "lg:grid-cols-2" : "lg:grid-cols-3")}>
-        {/* Plan vs Actual */}
-        <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="h-3.5 w-3.5 text-primary" />
-              <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.14em]">
-                PLAN VS ACTUAL
-              </h4>
+        {/* KPI Row - Compact */}
+        <div className="grid grid-cols-4 gap-2 mb-3 shrink-0">
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30">
+            <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+              <Calendar className="h-3 w-3 text-primary" />
             </div>
+            <div>
+              <p className="text-base font-bold text-foreground leading-none">{plannedToday}</p>
+              <p className="text-[8px] text-muted-foreground uppercase">Planned</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30">
+            <div className="h-6 w-6 rounded-md bg-chart-1/10 flex items-center justify-center shrink-0">
+              <CheckCircle className="h-3 w-3 text-chart-1" />
+            </div>
+            <div>
+              <p className="text-base font-bold text-foreground leading-none">{completedToday}</p>
+              <p className="text-[8px] text-muted-foreground uppercase">Done</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30">
+            <div className="h-6 w-6 rounded-md bg-destructive/10 flex items-center justify-center shrink-0">
+              <AlertTriangle className="h-3 w-3 text-destructive" />
+            </div>
+            <div>
+              <p className="text-base font-bold text-foreground leading-none">{overdueTasks}</p>
+              <p className="text-[8px] text-muted-foreground uppercase">Overdue</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30">
+            <div className="h-6 w-6 rounded-md bg-muted/40 flex items-center justify-center shrink-0">
+              <ClockIcon className="h-3 w-3 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="text-base font-bold text-foreground leading-none">{totalFocusMinutes}m</p>
+              <p className="text-[8px] text-muted-foreground uppercase">Focus</p>
+            </div>
+          </div>
+        </div>
 
-            <div className={cn("h-[100px]", compactMode ? "h-[80px]" : "h-[120px]")}>
+        {/* Charts Row - Takes remaining space */}
+        <div className="grid grid-cols-3 gap-2 flex-1 min-h-0">
+          {/* Plan vs Actual */}
+          <div className="rounded-lg bg-muted/20 p-2 flex flex-col">
+            <div className="flex items-center gap-1 mb-1 shrink-0">
+              <TrendingUp className="h-3 w-3 text-primary" />
+              <span className="text-[8px] font-medium text-muted-foreground uppercase">Plan vs Actual</span>
+            </div>
+            <div className="flex-1 min-h-0">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={past7DaysData}>
                   <defs>
-                    <linearGradient id="planGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.06} />
+                    <linearGradient id="planGradient2" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.35} />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={15}
-                    allowDecimals={false}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "12px",
-                      fontSize: "11px",
-                      boxShadow: "0 12px 30px rgba(0,0,0,0.10)",
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="plan"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={1.5}
-                    fill="url(#planGradient)"
-                    dot={{ fill: "hsl(var(--primary))", strokeWidth: 0, r: 2 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="actual"
-                    stroke="hsl(var(--chart-1))"
-                    strokeWidth={1.5}
-                    dot={{ fill: "hsl(var(--chart-1))", strokeWidth: 0, r: 2 }}
-                  />
+                  <XAxis dataKey="date" tick={{ fontSize: 7, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 7, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={12} allowDecimals={false} />
+                  <Area type="monotone" dataKey="plan" stroke="hsl(var(--primary))" strokeWidth={1} fill="url(#planGradient2)" />
+                  <Line type="monotone" dataKey="actual" stroke="hsl(var(--chart-1))" strokeWidth={1.5} dot={{ r: 1.5 }} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Upcoming */}
-        <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Calendar className="h-3.5 w-3.5 text-primary" />
-              <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.14em]">UPCOMING</h4>
+          {/* Upcoming */}
+          <div className="rounded-lg bg-muted/20 p-2 flex flex-col">
+            <div className="flex items-center gap-1 mb-1 shrink-0">
+              <Calendar className="h-3 w-3 text-primary" />
+              <span className="text-[8px] font-medium text-muted-foreground uppercase">Upcoming</span>
             </div>
-
-            <div className={cn("h-[100px]", compactMode ? "h-[80px]" : "h-[120px]")}>
+            <div className="flex-1 min-h-0">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={future7DaysData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.35} />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={15}
-                    allowDecimals={false}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "12px",
-                      fontSize: "11px",
-                      boxShadow: "0 12px 30px rgba(0,0,0,0.10)",
-                    }}
-                  />
-                  <Bar dataKey="tasks" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  <XAxis dataKey="date" tick={{ fontSize: 7, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 7, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={12} allowDecimals={false} />
+                  <Bar dataKey="tasks" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* By Quadrant */}
-        <Card
-          className={cn(
-            "rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm",
-            compactMode && "lg:col-span-2",
-          )}
-        >
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <ClockIcon className="h-3.5 w-3.5 text-primary" />
-              <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.14em]">
-                BY QUADRANT
-              </h4>
+          {/* By Quadrant */}
+          <div className="rounded-lg bg-muted/20 p-2 flex flex-col">
+            <div className="flex items-center gap-1 mb-1 shrink-0">
+              <ClockIcon className="h-3 w-3 text-primary" />
+              <span className="text-[8px] font-medium text-muted-foreground uppercase">By Quadrant</span>
             </div>
-
-            <div className={cn("flex items-center justify-center", compactMode ? "h-[80px]" : "h-[120px]")}>
+            <div className="flex-1 min-h-0 flex items-center justify-center">
               {quadrantData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie
-                      data={quadrantData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={compactMode ? 20 : 28}
-                      outerRadius={compactMode ? 35 : 46}
-                      paddingAngle={2}
-                      dataKey="value"
-                    >
+                    <Pie data={quadrantData} cx="50%" cy="50%" innerRadius={15} outerRadius={30} paddingAngle={2} dataKey="value">
                       {quadrantData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        background: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "12px",
-                        fontSize: "11px",
-                        boxShadow: "0 12px 30px rgba(0,0,0,0.10)",
-                      }}
-                    />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <p className="text-[10px] text-muted-foreground">No data</p>
+                <p className="text-[8px] text-muted-foreground">No data</p>
               )}
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
