@@ -240,23 +240,9 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
 
   return (
     <Card className="rounded-xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm flex-1 overflow-hidden">
-      <CardContent className="p-3 h-full flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-2 shrink-0">
-          <h3 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Insights</h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setExpanded(false)}
-            className="h-5 px-1.5 text-muted-foreground hover:text-foreground gap-0.5 text-[9px]"
-          >
-            <ChevronUp className="h-2.5 w-2.5" />
-            Hide
-          </Button>
-        </div>
-
+      <CardContent className="p-2 h-full">
         {/* Main content: KPIs left (2x2), Charts right (3 cols) */}
-        <div className="flex-1 flex gap-3 min-h-0">
+        <div className="h-full flex gap-3">
           {/* Left: KPI Cards in 2x2 grid */}
           <div className="grid grid-cols-2 gap-1.5 w-[180px] shrink-0 content-start">
             <div className="flex items-center gap-1.5 p-2 rounded-md bg-muted/30">
