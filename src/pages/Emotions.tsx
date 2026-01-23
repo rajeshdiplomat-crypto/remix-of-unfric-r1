@@ -404,7 +404,7 @@ export default function Emotions() {
       <div className="px-6 lg:px-8 py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-2">
-            <Heart className="h-4 w-4 text-rose-500" />
+            <Heart className="h-4 w-4 text-indigo-500" />
             <span className="font-medium text-slate-700 dark:text-slate-200">{totalCheckins}</span>
             <span className="text-slate-500">check-ins</span>
           </div>
@@ -481,9 +481,13 @@ export default function Emotions() {
                       <Button
                         onClick={saveCheckIn}
                         disabled={saving}
-                        className="flex-1 rounded-xl h-10 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white"
+                        className="flex-1 rounded-xl h-10 bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-600 hover:to-violet-600 text-white"
                       >
-                        {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
+                        {saving ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <Check className="h-4 w-4 mr-2" />
+                        )}
                         Save
                       </Button>
                     </div>
@@ -533,11 +537,7 @@ export default function Emotions() {
                               className="h-5 w-5 p-0"
                               onClick={() => toggleExpandEntry(entry.id)}
                             >
-                              {isExpanded ? (
-                                <ChevronUp className="h-3 w-3" />
-                              ) : (
-                                <ChevronDown className="h-3 w-3" />
-                              )}
+                              {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                             </Button>
                           </div>
                         </div>
@@ -697,7 +697,7 @@ export default function Emotions() {
                 <Button
                   onClick={saveEditedEntry}
                   disabled={saving}
-                  className="flex-1 rounded-xl bg-gradient-to-r from-rose-500 to-orange-500 text-white"
+                  className="flex-1 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 text-white"
                 >
                   {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
                   Save

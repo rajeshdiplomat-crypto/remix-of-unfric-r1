@@ -82,11 +82,6 @@ const generateInitialContent = (questions: { text: string }[]) =>
           attrs: { textAlign: "left", class: "placeholder-hint" },
           content: [],
         },
-        {
-          type: "paragraph",
-          attrs: { textAlign: "left", class: "placeholder-hint" },
-          content: [],
-        },
       ]),
     ],
   });
@@ -663,7 +658,7 @@ export default function Journal() {
               onClick={() => setSelectedDate(new Date())}
               className="flex items-center gap-2 px-3 py-1.5 bg-white/80 hover:bg-white rounded-xl border border-slate-200 transition-all"
             >
-              <Calendar className="h-4 w-4 text-violet-500" />
+              <Calendar className="h-4 w-4 text-stone-500" />
               <span className="text-sm font-semibold text-slate-700">{format(selectedDate, "EEE, MMM d")}</span>
             </button>
 
@@ -681,7 +676,7 @@ export default function Journal() {
                 placeholder="Search journal entries..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-10 py-1.5 text-sm bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-300 transition-all font-medium text-slate-700 dark:text-slate-200"
+                className="w-full pl-9 pr-10 py-1.5 text-sm bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-200 focus:border-stone-300 transition-all font-medium text-slate-700 dark:text-slate-200"
               />
               {searchQuery && (
                 <button
@@ -733,7 +728,7 @@ export default function Journal() {
               size="sm"
               onClick={handleManualSave}
               disabled={saveStatus === "saving"}
-              className="h-8 rounded-lg bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-xs px-3"
+              className="h-8 rounded-lg bg-gradient-to-r from-stone-500 to-orange-600 hover:from-stone-600 hover:to-orange-700 text-xs px-3"
             >
               <Save className="h-3.5 w-3.5 mr-1" />
               Save
@@ -801,7 +796,7 @@ export default function Journal() {
                 return quotes[Math.floor(new Date().getDate() % quotes.length)];
               })()}
             </p>
-            <p className="text-xs text-violet-500 mt-2">
+            <p className="text-xs text-stone-500 mt-2">
               {(() => {
                 if (streak === 0) {
                   return "Start your journaling journey today — even a few words can make a difference.";

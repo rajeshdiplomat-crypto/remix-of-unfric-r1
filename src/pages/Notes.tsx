@@ -252,7 +252,7 @@ function StatCard({
   accentColor?: string;
 }) {
   const gradients: Record<string, string> = {
-    primary: "from-violet-500/20 to-indigo-500/10",
+    primary: "from-slate-500/20 to-zinc-500/10",
     blue: "from-blue-500/20 to-cyan-500/10",
     green: "from-emerald-500/20 to-teal-500/10",
     orange: "from-orange-500/20 to-amber-500/10",
@@ -623,10 +623,10 @@ export default function Notes() {
                       <DropdownMenuTrigger asChild>
                         <Button
                           size="sm"
-                          className="group relative h-9 px-4 rounded-lg overflow-hidden bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg hover:shadow-xl transition-all duration-500 gap-2 border-0"
+                          className="group relative h-9 px-4 rounded-lg overflow-hidden bg-gradient-to-r from-slate-600 via-gray-600 to-zinc-600 text-white shadow-lg hover:shadow-xl transition-all duration-500 gap-2 border-0"
                         >
                           {/* Animated aurora background */}
-                          <span className="absolute inset-0 bg-gradient-to-r from-violet-500 via-pink-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse" />
+                          <span className="absolute inset-0 bg-gradient-to-r from-slate-500 via-pink-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse" />
                           {/* Shimmer sweep */}
                           <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
                           {/* Sparkle particles */}

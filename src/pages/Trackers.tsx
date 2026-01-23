@@ -76,6 +76,7 @@ interface ActivityItem {
   reminders?: { time: string; days: number[] };
   time?: string;
   duration?: number;
+  isArchived?: boolean; // When true, habit is fully completed and no longer tracked
 }
 
 const CATEGORIES = [
@@ -310,7 +311,9 @@ export default function Trackers() {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   const [dialogOpen, setDialogOpen] = useState(false);
+
   const [editingActivity, setEditingActivity] = useState<ActivityItem | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   // form
   const [formName, setFormName] = useState("");
@@ -470,7 +473,7 @@ export default function Trackers() {
     });
   }, [activities, currentMonth]);
 
-  // Overall stats (filtered by selected activity if one is selected)
+  // Overall stats (filtered by selected activity if one is selected) - INDEPENDENT OF MONTH
   const overallStats = useMemo(() => {
     const today = new Date();
     const todayStr = format(today, "yyyy-MM-dd");
@@ -480,8 +483,8 @@ export default function Trackers() {
     let dailyTotal = 0;
     let weeklyCompleted = 0;
     let weeklyTotal = 0;
-    let monthlyCompleted = 0;
-    let monthlyTotal = 0;
+    let allTimeCompleted = 0;
+    let allTimeTotal = 0;
 
     // Filter activities if one is selected
     const filteredActivities = selectedActivityId ? activities.filter((a) => a.id === selectedActivityId) : activities;
@@ -504,29 +507,27 @@ export default function Trackers() {
         }
       }
 
-      // Monthly
-      const stats = activityStats.find((s) => s.id === activity.id);
-      if (stats) {
-        monthlyCompleted += stats.completed;
-        monthlyTotal += stats.total;
-      }
+      // All-time (total habit days completed vs total habit days)
+      const totalCompletions = Object.keys(activity.completions || {}).length;
+      allTimeCompleted += totalCompletions;
+      allTimeTotal += activity.habitDays;
     });
 
     const momentum = Math.round(
       (dailyTotal > 0 ? dailyCompleted / dailyTotal : 0) * 40 +
         (weeklyTotal > 0 ? weeklyCompleted / weeklyTotal : 0) * 30 +
-        (monthlyTotal > 0 ? monthlyCompleted / monthlyTotal : 0) * 30,
+        (allTimeTotal > 0 ? allTimeCompleted / allTimeTotal : 0) * 30,
     );
 
     return {
       momentum,
       dailyProgress: dailyTotal > 0 ? Math.round((dailyCompleted / dailyTotal) * 100) : 0,
       weeklyProgress: weeklyTotal > 0 ? Math.round((weeklyCompleted / weeklyTotal) * 100) : 0,
-      monthlyProgress: monthlyTotal > 0 ? Math.round((monthlyCompleted / monthlyTotal) * 100) : 0,
-      totalCompleted: monthlyCompleted,
-      totalRemaining: monthlyTotal - monthlyCompleted,
+      monthlyProgress: allTimeTotal > 0 ? Math.round((allTimeCompleted / allTimeTotal) * 100) : 0,
+      totalCompleted: allTimeCompleted,
+      totalRemaining: allTimeTotal - allTimeCompleted,
     };
-  }, [activities, activityStats, selectedActivityId]);
+  }, [activities, selectedActivityId]);
 
   // Top habits
   const topHabits = useMemo(() => {
@@ -576,12 +577,56 @@ export default function Trackers() {
           .eq("habit_id", activityId)
           .eq("user_id", user.id)
           .eq("completed_date", dateStr);
+
+        // SYNC: Uncomplete the corresponding task if it exists
+        const { data: tasks } = await supabase
+          .from("tasks")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("title", activity.name)
+          .eq("due_date", dateStr);
+
+        if (tasks && tasks.length > 0) {
+          await supabase
+            .from("tasks")
+            .update({
+              is_completed: false,
+              completed_at: null,
+              status: "ongoing", // Reset to ongoing
+            } as any)
+            .in(
+              "id",
+              tasks.map((t) => t.id),
+            );
+        }
       } else {
         await supabase.from("habit_completions").insert({
           habit_id: activityId,
           user_id: user.id,
           completed_date: dateStr,
         });
+
+        // SYNC: Complete the corresponding task if it exists
+        const { data: tasks } = await supabase
+          .from("tasks")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("title", activity.name)
+          .eq("due_date", dateStr);
+
+        if (tasks && tasks.length > 0) {
+          await supabase
+            .from("tasks")
+            .update({
+              is_completed: true,
+              completed_at: new Date().toISOString(),
+              status: "completed",
+            } as any)
+            .in(
+              "id",
+              tasks.map((t) => t.id),
+            );
+        }
       }
     }
   };
@@ -724,9 +769,273 @@ export default function Trackers() {
     toast({ title: "Activity deleted" });
   };
 
+  const handleCompleteHabit = async (activityId: string) => {
+    // Mark the habit as archived (fully completed)
+    setActivities((prev) => prev.map((a) => (a.id === activityId ? { ...a, isArchived: true } : a)));
+
+    if (user) {
+      // Update the habit in database to mark as archived
+      await supabase
+        .from("habits")
+        .update({ is_archived: true, archived_at: new Date().toISOString() } as any)
+        .eq("id", activityId)
+        .eq("user_id", user.id);
+    }
+
+    toast({
+      title: "🎉 Habit Completed!",
+      description: "Congratulations! This habit has been archived.",
+    });
+
+    // Clear selection if this habit was selected
+    if (selectedActivityId === activityId) {
+      setSelectedActivityId(null);
+    }
+  };
+
   if (loading) {
     return <PageLoadingScreen module="trackers" />;
   }
+
+  const renderRow = (activity: ActivityItem, originalIndex: number, isActive: boolean) => {
+    const stats = activityStats.find((s) => s.id === activity.id);
+    const isSelected = selectedActivityId === activity.id;
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    const isTodayCompleted = activity.completions[todayStr];
+    const isArchived = !!activity.isArchived;
+
+    // Calculate progress based on total habit days completed vs total habit days
+    const totalCompletions = Object.keys(activity.completions || {}).length;
+    const progressPercent = activity.habitDays > 0 ? Math.round((totalCompletions / activity.habitDays) * 100) : 0;
+
+    return (
+      <tr
+        key={activity.id}
+        className={cn(
+          "border-b border-slate-100 dark:border-slate-800 transition-all",
+          isSelected
+            ? "bg-emerald-50 dark:bg-emerald-900/30 ring-2 ring-emerald-500 ring-inset shadow-sm"
+            : isArchived
+              ? "bg-slate-50 dark:bg-slate-900/30 opacity-70 grayscale-[0.5]"
+              : "bg-white dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-800/50",
+          "cursor-pointer",
+        )}
+        onClick={() => setSelectedActivityId(isSelected ? null : activity.id)}
+        draggable={isActive}
+        onDragStart={isActive ? () => setDraggedIndex(originalIndex) : undefined}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={
+          isActive
+            ? () => {
+                if (draggedIndex !== null && draggedIndex !== originalIndex) {
+                  const newActivities = [...activities];
+                  const [removed] = newActivities.splice(draggedIndex, 1);
+                  newActivities.splice(originalIndex, 0, removed);
+                  setActivities(newActivities);
+                }
+                setDraggedIndex(null);
+              }
+            : undefined
+        }
+      >
+        {/* Actions Column */}
+        <td
+          className={cn(
+            "p-2 sticky left-0",
+            isSelected
+              ? "bg-emerald-50 dark:bg-emerald-900/30"
+              : isArchived
+                ? "bg-slate-50 dark:bg-slate-900/30"
+                : "bg-white dark:bg-slate-900/50",
+          )}
+        >
+          <div className="flex items-center gap-1.5">
+            {/* Drag Handle - Only for active */}
+            {isActive && (
+              <button
+                className="cursor-grab text-slate-300 hover:text-slate-500 dark:hover:text-slate-300"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <GripVertical className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {!isActive && <div className="w-3.5" />}
+
+            {/* 3-Dot Menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="p-0.5 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-40">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openEditDialog(activity);
+                  }}
+                  className="cursor-pointer"
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleCompletion(activity.id, new Date());
+                  }}
+                  className="cursor-pointer"
+                >
+                  <Check className={cn("h-4 w-4 mr-2", isTodayCompleted ? "text-green-500" : "")} />
+                  {isTodayCompleted ? "Today Done ✓" : "Mark Today"}
+                </DropdownMenuItem>
+
+                {/* Complete Habit Action - Only for active habits */}
+                {!isArchived && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm("Mark this habit as fully completed? It will be archived and no longer tracked.")) {
+                          handleCompleteHabit(activity.id);
+                        }
+                      }}
+                      className="cursor-pointer text-emerald-600 focus:text-emerald-600"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Complete Habit
+                    </DropdownMenuItem>
+                  </>
+                )}
+
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (confirm("Delete this habit?")) {
+                      handleDelete(activity.id);
+                    }
+                  }}
+                  className="cursor-pointer text-red-600 focus:text-red-600"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Habit Name */}
+            <span
+              className={cn(
+                "font-medium truncate max-w-[120px] ml-1",
+                isArchived ? "text-slate-500 line-through" : "text-slate-700 dark:text-slate-300",
+              )}
+            >
+              {activity.name}
+            </span>
+          </div>
+        </td>
+        <td className="p-2 text-center text-slate-500">{activity.habitDays}</td>
+        {daysInMonth.map((day, i) => {
+          const dateStr = format(day, "yyyy-MM-dd");
+          const dayOfWeek = (day.getDay() + 6) % 7;
+          const isPlanned = activity.frequencyPattern[dayOfWeek];
+          const isCompleted = activity.completions[dateStr];
+          const isPast = isBefore(day, new Date()) || isToday(day);
+
+          const isMonday = day.getDay() === 1;
+          const isFirstDay = i === 0;
+
+          // Check if day is within habit's date range
+          const habitStartDate = parseISO(activity.startDate);
+          const habitEndDate = computeEndDateForHabitDays(
+            habitStartDate,
+            activity.frequencyPattern,
+            activity.habitDays,
+          );
+          const isWithinRange = !isBefore(day, habitStartDate) && !isAfter(day, habitEndDate);
+
+          const today = new Date();
+          const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+          const weekEnd = addDays(weekStart, 6);
+          const isCurrentWeek = !isBefore(day, weekStart) && !isAfter(day, weekEnd);
+
+          return (
+            <td
+              key={i}
+              className={cn(
+                "p-1 text-center",
+                (isMonday || isFirstDay) && "border-l-2 border-slate-200 dark:border-slate-700",
+                isToday(day) && "bg-emerald-50 dark:bg-emerald-900/20",
+                isCurrentWeek && !isToday(day) && "bg-blue-50/50 dark:bg-blue-900/10",
+                isArchived && "opacity-50",
+              )}
+            >
+              {isPlanned && isWithinRange ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Allow toggling past days even if archived? Usually yes for correction.
+                    isPast && toggleCompletion(activity.id, day);
+                  }}
+                  disabled={!isPast}
+                  className={cn(
+                    "w-5 h-5 rounded flex items-center justify-center transition-all mx-auto",
+                    isCompleted
+                      ? isArchived
+                        ? "bg-slate-400 text-white"
+                        : "bg-emerald-500 text-white"
+                      : isPast
+                        ? "bg-slate-200 dark:bg-slate-700 hover:bg-slate-300"
+                        : "bg-slate-100 dark:bg-slate-800",
+                  )}
+                >
+                  {isCompleted && <Check className="h-3 w-3" />}
+                </button>
+              ) : (
+                <span className="text-slate-300">-</span>
+              )}
+            </td>
+          );
+        })}
+        <td className="p-2">
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all",
+                  isArchived ? "bg-slate-400" : "bg-gradient-to-r from-emerald-400 to-green-400",
+                )}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <span className="text-slate-600 dark:text-slate-400 w-10 text-right">
+              {totalCompletions}/{activity.habitDays}
+            </span>
+            <span className="text-slate-500 font-medium w-10">{progressPercent}%</span>
+          </div>
+        </td>
+        <td className="p-2 text-center">
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
+              (stats?.streak || 0) > 0
+                ? isArchived
+                  ? "bg-slate-200 text-slate-500"
+                  : "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-400",
+            )}
+          >
+            {(stats?.streak || 0) > 0 && <Flame className="h-3 w-3" />}
+            {stats?.streak || 0}
+          </span>
+        </td>
+      </tr>
+    );
+  };
 
   return (
     <TooltipProvider>
@@ -743,13 +1052,24 @@ export default function Trackers() {
         {/* Dashboard Content */}
         <div className="px-4 py-4 space-y-4">
           {/* Top Section: Month + Progress Rings */}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-slate-800 dark:text-white">Habits Tracker</h2>
+            <Button
+              onClick={openCreateDialog}
+              size="sm"
+              className="bg-emerald-500 hover:bg-emerald-600 text-white h-8 px-3 text-xs"
+            >
+              <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Habit
+            </Button>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-[160px_1fr_200px] gap-4">
             {/* Month Card - Slim Design, Clickable */}
-            <Card 
-              className="p-3 rounded-xl bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950/30 dark:to-cyan-950/30 cursor-pointer hover:shadow-md transition-shadow"
+            <Card
+              className="p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-cyan-50 dark:from-emerald-950/30 dark:to-cyan-950/30 cursor-pointer hover:shadow-md transition-shadow"
               onClick={() => {
-                const habitsTable = document.querySelector('[data-habits-table]');
-                habitsTable?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                const habitsTable = document.querySelector("[data-habits-table]");
+                habitsTable?.scrollIntoView({ behavior: "smooth", block: "start" });
               }}
             >
               {/* Month Header */}
@@ -786,23 +1106,31 @@ export default function Trackers() {
                 <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-1.5">Habits</p>
                 <div className="grid grid-cols-3 gap-1 text-center">
                   <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
-                    <p className="text-sm font-bold text-teal-600 dark:text-teal-400">
-                      {activities.filter(a => {
-                        const today = new Date();
-                        const startDate = parseISO(a.startDate);
-                        const endDate = computeEndDateForHabitDays(startDate, a.frequencyPattern, a.habitDays);
-                        return !isBefore(today, startDate) && !isAfter(today, endDate);
-                      }).length}
+                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                      {
+                        activities.filter((a) => {
+                          const today = new Date();
+                          const startDate = parseISO(a.startDate);
+                          const endDate = computeEndDateForHabitDays(startDate, a.frequencyPattern, a.habitDays);
+                          return !isBefore(today, startDate) && !isAfter(today, endDate);
+                        }).length
+                      }
                     </p>
                     <p className="text-[9px] text-slate-500">Active</p>
                   </div>
                   <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
                     <p className="text-sm font-bold text-green-600 dark:text-green-400">
-                      {activities.filter(a => {
-                        const today = new Date();
-                        const endDate = computeEndDateForHabitDays(parseISO(a.startDate), a.frequencyPattern, a.habitDays);
-                        return isAfter(today, endDate);
-                      }).length}
+                      {
+                        activities.filter((a) => {
+                          const today = new Date();
+                          const endDate = computeEndDateForHabitDays(
+                            parseISO(a.startDate),
+                            a.frequencyPattern,
+                            a.habitDays,
+                          );
+                          return isAfter(today, endDate);
+                        }).length
+                      }
                     </p>
                     <p className="text-[9px] text-slate-500">Done</p>
                   </div>
@@ -814,17 +1142,19 @@ export default function Trackers() {
               </div>
 
               {/* Habit Days Stats - Active = Pending (Total - Done) */}
-              <div>
+              <div className="mb-3">
                 <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-1.5">Habit Days</p>
                 <div className="grid grid-cols-3 gap-1 text-center">
                   <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
-                    <p className="text-sm font-bold text-teal-600 dark:text-teal-400">
+                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                       {activities.reduce((sum, a) => sum + a.habitDays, 0) - overallStats.totalCompleted}
                     </p>
                     <p className="text-[9px] text-slate-500">Pending</p>
                   </div>
                   <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
-                    <p className="text-sm font-bold text-green-600 dark:text-green-400">{overallStats.totalCompleted}</p>
+                    <p className="text-sm font-bold text-green-600 dark:text-green-400">
+                      {overallStats.totalCompleted}
+                    </p>
                     <p className="text-[9px] text-slate-500">Done</p>
                   </div>
                   <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
@@ -833,6 +1163,24 @@ export default function Trackers() {
                     </p>
                     <p className="text-[9px] text-slate-500">Total</p>
                   </div>
+                </div>
+              </div>
+
+              {/* Top Habits */}
+              <div>
+                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-1.5">Top Habits</p>
+                <div className="space-y-0.5">
+                  {topHabits.slice(0, 3).map((habit) => (
+                    <div
+                      key={habit.id}
+                      className="flex items-center gap-1.5 text-[10px] p-1 rounded bg-white/40 dark:bg-slate-800/40"
+                    >
+                      <span className="truncate flex-1 text-slate-600 dark:text-slate-400">{habit.name}</span>
+                      <span className="px-1 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium text-[9px]">
+                        {habit.completed}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </Card>
@@ -856,17 +1204,17 @@ export default function Trackers() {
                   const endDateStr = endDate ? format(endDate, "MMM d, yyyy") : "N/A";
 
                   return (
-                    <div className="mb-4 p-2 rounded-lg bg-teal-50 dark:bg-teal-900/30 h-[56px] flex flex-col justify-center">
+                    <div className="mb-4 p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 h-[56px] flex flex-col justify-center">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-teal-600 dark:text-teal-400">Viewing:</span>
-                          <span className="text-sm font-medium text-teal-700 dark:text-teal-300">
+                          <span className="text-xs text-emerald-600 dark:text-emerald-400">Viewing:</span>
+                          <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
                             {selectedHabit?.name || "Selected Habit"}
                           </span>
                         </div>
                         <button
                           onClick={() => setSelectedActivityId(null)}
-                          className="text-xs px-2 py-1 rounded bg-teal-100 dark:bg-teal-800 text-teal-600 dark:text-teal-300 hover:bg-teal-200 transition-colors flex items-center gap-1"
+                          className="text-xs px-2 py-1 rounded bg-emerald-100 dark:bg-emerald-800 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-200 transition-colors flex items-center gap-1"
                         >
                           <X className="h-3 w-3" /> Clear
                         </button>
@@ -919,13 +1267,13 @@ export default function Trackers() {
                     <ProgressRing progress={overallStats.momentum} color="teal" label="MOMENTUM" />
                     <ProgressRing progress={overallStats.dailyProgress} color="green" label="DAILY" />
                     <ProgressRing progress={overallStats.weeklyProgress} color="blue" label="WEEKLY" />
-                    <ProgressRing progress={overallStats.monthlyProgress} color="purple" label="MONTHLY" />
+                    <ProgressRing progress={overallStats.monthlyProgress} color="purple" label="OVERALL" />
                   </div>
                 );
               })()}
 
               {/* Smooth Wave Area Chart */}
-              <div className="mt-4 p-4 rounded-lg bg-gradient-to-b from-teal-50 to-teal-100/50 dark:from-teal-950/30 dark:to-teal-900/20">
+              <div className="mt-4 p-4 rounded-lg bg-gradient-to-b from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20">
                 <p className="text-xs font-medium text-slate-500 mb-3 text-center">DAILY PROGRESS</p>
                 <div className="relative h-32">
                   <svg viewBox="0 0 1000 200" className="w-full h-full" preserveAspectRatio="none">
@@ -1049,89 +1397,45 @@ export default function Trackers() {
               </div>
             </Card>
 
-            {/* Right Sidebar: Selected Habit View or Top Habits + Streaks */}
+            {/* Right Sidebar: Habit Image Display */}
             <div className="space-y-4">
-              {selectedActivityId ? (
-                // Show selected habit's image in 9:16 phone frame
-                (() => {
-                  const selectedHabit = activities.find((a) => a.id === selectedActivityId);
-                  const habitImage = selectedHabit ? loadActivityImage(selectedHabit.id) : null;
-                  const totalCompletions = selectedHabit ? Object.keys(selectedHabit.completions || {}).length : 0;
-                  const totalCompletionPercent = selectedHabit
-                    ? Math.round((totalCompletions / selectedHabit.habitDays) * 100)
-                    : 0;
+              {(() => {
+                const selectedHabit = selectedActivityId ? activities.find((a) => a.id === selectedActivityId) : null;
+                const habitImage = selectedHabit ? loadActivityImage(selectedHabit.id) : null;
 
-                  return (
-                    <Card className="rounded-xl overflow-hidden h-full">
-                      {/* Image Frame */}
-                      <div className="relative w-full h-full">
-                        {habitImage ? (
+                return (
+                  <Card className="rounded-xl overflow-hidden h-full min-h-[400px]">
+                    <div className="relative w-full h-full">
+                      {habitImage ? (
+                        // Show selected habit's image
+                        <>
                           <img
                             src={habitImage}
                             alt={selectedHabit?.name || "Habit"}
                             className="w-full h-full object-cover"
                           />
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-teal-500/20 to-purple-500/20">
-                            <Target className="h-12 w-12 text-teal-400/50 mb-2" />
-                            <p className="text-xs text-slate-400 text-center px-4">No cover image</p>
+                          {/* Overlay with habit name */}
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3">
+                            <p className="text-white font-semibold text-sm truncate">{selectedHabit?.name}</p>
+                            <p className="text-white/70 text-xs capitalize">{selectedHabit?.category}</p>
                           </div>
-                        )}
-
-                        {/* Overlay with habit name */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3">
-                          <p className="text-white font-semibold text-sm truncate">{selectedHabit?.name}</p>
-                          <p className="text-white/70 text-xs">{selectedHabit?.category}</p>
+                        </>
+                      ) : (
+                        // Show default placeholder
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-emerald-500/10 to-purple-500/10">
+                          <Target className="h-20 w-20 text-emerald-400/30 mb-4" />
+                          <p className="text-sm text-slate-400 text-center px-4">
+                            {selectedHabit ? "No cover image" : "Select a habit to view"}
+                          </p>
+                          {selectedHabit && (
+                            <p className="text-xs text-slate-500 text-center px-4 mt-1">Add image in habit settings</p>
+                          )}
                         </div>
-                      </div>
-                    </Card>
-                  );
-                })()
-              ) : (
-                // Default: Show Top Habits and Active Streaks
-                <>
-                  <Card className="p-3 rounded-xl">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">TOP HABITS</p>
-                      <Button
-                        size="sm"
-                        onClick={openCreateDialog}
-                        className="h-6 px-2 text-xs rounded-lg bg-teal-500 hover:bg-teal-600"
-                      >
-                        <Plus className="h-3 w-3 mr-1" /> Add
-                      </Button>
-                    </div>
-                    <div className="space-y-1">
-                      {topHabits.map((habit, i) => (
-                        <div key={habit.id} className="flex items-center gap-2 text-xs">
-                          <span className="truncate flex-1 text-slate-600 dark:text-slate-400">{habit.name}</span>
-                          <span className="px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium">
-                            {habit.completed}
-                          </span>
-                        </div>
-                      ))}
+                      )}
                     </div>
                   </Card>
-
-                  <Card className="p-3 rounded-xl">
-                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-2">ACTIVE STREAKS</p>
-                    <div className="space-y-1">
-                      {activeStreaks.map((habit) => (
-                        <div key={habit.id} className="flex items-center gap-2 text-xs">
-                          <span className="truncate flex-1 text-slate-600 dark:text-slate-400">{habit.name}</span>
-                          <div className="flex items-center gap-1">
-                            <div
-                              className="h-2 rounded-full bg-gradient-to-r from-teal-400 to-green-400"
-                              style={{ width: `${Math.min(habit.streak * 8, 60)}px` }}
-                            />
-                            <span className="text-slate-500 font-medium">{habit.streak}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </Card>
-                </>
-              )}
+                );
+              })()}
             </div>
           </div>
 
@@ -1146,22 +1450,31 @@ export default function Trackers() {
                     </th>
                     <th className="p-2 font-semibold text-slate-600 dark:text-slate-300 w-12">GOALS</th>
                     {daysInMonth.map((day, i) => {
-                      const weekNum = Math.floor(i / 7) + 1;
-                      const isFirstOfWeek = i % 7 === 0;
+                      // Correct week partition: Border on left of Mondays
+                      const isMonday = day.getDay() === 1;
+                      const isFirstDay = i === 0;
+                      const isCurrentWeek = (() => {
+                        const today = new Date();
+                        const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday
+                        const weekEnd = addDays(weekStart, 6);
+                        return !isBefore(day, weekStart) && !isAfter(day, weekEnd);
+                      })();
+
                       return (
                         <th
                           key={i}
                           className={cn(
                             "p-1 font-medium text-center min-w-[28px]",
-                            isFirstOfWeek && "border-l-2 border-slate-200 dark:border-slate-700",
-                            isToday(day) && "bg-teal-100 dark:bg-teal-900/30",
+                            (isMonday || isFirstDay) && "border-l-2 border-slate-200 dark:border-slate-700",
+                            isToday(day) && "bg-emerald-100 dark:bg-emerald-900/30",
+                            isCurrentWeek && !isToday(day) && "bg-blue-50 dark:bg-blue-900/20",
                           )}
                         >
                           <div className="text-slate-400">{DAY_NAMES[(day.getDay() + 6) % 7]}</div>
                           <div
                             className={cn(
                               "text-slate-600 dark:text-slate-300",
-                              isToday(day) && "text-teal-600 dark:text-teal-400 font-bold",
+                              isToday(day) && "text-emerald-600 dark:text-emerald-400 font-bold",
                             )}
                           >
                             {format(day, "d")}
@@ -1176,187 +1489,39 @@ export default function Trackers() {
                   </tr>
                 </thead>
                 <tbody>
-                  {activities.map((activity, actIdx) => {
-                    const stats = activityStats.find((s) => s.id === activity.id);
-                    const colors = [
-                      "bg-pink-50",
-                      "bg-blue-50",
-                      "bg-green-50",
-                      "bg-yellow-50",
-                      "bg-purple-50",
-                      "bg-orange-50",
-                    ];
-                    const rowColor = colors[actIdx % colors.length];
-                    const isSelected = selectedActivityId === activity.id;
-                    const todayStr = format(new Date(), "yyyy-MM-dd");
-                    const isTodayCompleted = activity.completions[todayStr];
+                  {/* Render Active Habits */}
+                  {activities
+                    .map((a, i) => ({ ...a, originalIndex: i }))
+                    .filter((a) => !a.isArchived)
+                    .map((activity) => renderRow(activity, activity.originalIndex, true))}
 
-                    return (
+                  {/* Render Archived Habits Section */}
+                  {activities.some((a) => a.isArchived) && (
+                    <>
+                      {/* Separator / Toggle Row */}
                       <tr
-                        key={activity.id}
-                        className={cn(
-                          "border-b border-slate-100 dark:border-slate-800 cursor-pointer transition-all",
-                          isSelected ? "ring-2 ring-teal-400 ring-inset bg-teal-50 dark:bg-teal-900/20" : rowColor,
-                          "dark:bg-slate-900/50 hover:bg-opacity-70",
-                        )}
-                        onClick={() => setSelectedActivityId(isSelected ? null : activity.id)}
-                        draggable
-                        onDragStart={() => setDraggedIndex(actIdx)}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={() => {
-                          if (draggedIndex !== null && draggedIndex !== actIdx) {
-                            const newActivities = [...activities];
-                            const [removed] = newActivities.splice(draggedIndex, 1);
-                            newActivities.splice(actIdx, 0, removed);
-                            setActivities(newActivities);
-                          }
-                          setDraggedIndex(null);
-                        }}
+                        className="bg-slate-50/80 border-b border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors"
+                        onClick={() => setShowArchived(!showArchived)}
                       >
-                        {/* Actions Column */}
-                        <td
-                          className={cn(
-                            "p-2 sticky left-0",
-                            isSelected ? "bg-teal-50 dark:bg-teal-900/20" : rowColor,
-                            "dark:bg-slate-900/50",
-                          )}
-                        >
-                          <div className="flex items-center gap-1.5">
-                            {/* Drag Handle */}
-                            <button
-                              className="cursor-grab text-slate-300 hover:text-slate-500 dark:hover:text-slate-300"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <GripVertical className="h-3.5 w-3.5" />
-                            </button>
-
-                            {/* 3-Dot Menu */}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <button
-                                  className="p-0.5 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <MoreVertical className="h-4 w-4" />
-                                </button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="start" className="w-40">
-                                <DropdownMenuItem
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openEditDialog(activity);
-                                  }}
-                                  className="cursor-pointer"
-                                >
-                                  <Pencil className="h-4 w-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleCompletion(activity.id, new Date());
-                                  }}
-                                  className="cursor-pointer"
-                                >
-                                  <CheckCircle
-                                    className={cn("h-4 w-4 mr-2", isTodayCompleted ? "text-green-500" : "")}
-                                  />
-                                  {isTodayCompleted ? "Completed" : "Mark Complete"}
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (confirm("Delete this habit?")) {
-                                      handleDelete(activity.id);
-                                    }
-                                  }}
-                                  className="cursor-pointer text-red-600 focus:text-red-600"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-
-                            {/* Habit Name */}
-                            <span className="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[120px] ml-1">
-                              {activity.name}
+                        <td colSpan={daysInMonth.length + 4} className="p-3 text-center">
+                          <div className="flex items-center justify-center gap-2 text-sm font-medium text-slate-500">
+                            {showArchived ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            <span>
+                              {showArchived ? "Hide" : "Show"} {activities.filter((a) => a.isArchived).length} Completed
+                              Habits
                             </span>
                           </div>
-                        </td>
-                        <td className="p-2 text-center text-slate-500">{activity.habitDays}</td>
-                        {daysInMonth.map((day, i) => {
-                          const dateStr = format(day, "yyyy-MM-dd");
-                          const dayOfWeek = (day.getDay() + 6) % 7;
-                          const isPlanned = activity.frequencyPattern[dayOfWeek];
-                          const isCompleted = activity.completions[dateStr];
-                          const isPast = isBefore(day, new Date()) || isToday(day);
-                          const isFirstOfWeek = i % 7 === 0;
-
-                          return (
-                            <td
-                              key={i}
-                              className={cn(
-                                "p-1 text-center",
-                                isFirstOfWeek && "border-l-2 border-slate-200 dark:border-slate-700",
-                                isToday(day) && "bg-teal-50 dark:bg-teal-900/20",
-                              )}
-                            >
-                              {isPlanned ? (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    isPast && toggleCompletion(activity.id, day);
-                                  }}
-                                  disabled={!isPast}
-                                  className={cn(
-                                    "w-5 h-5 rounded flex items-center justify-center transition-all mx-auto",
-                                    isCompleted
-                                      ? "bg-teal-500 text-white"
-                                      : isPast
-                                        ? "bg-slate-200 dark:bg-slate-700 hover:bg-slate-300"
-                                        : "bg-slate-100 dark:bg-slate-800",
-                                  )}
-                                >
-                                  {isCompleted && <Check className="h-3 w-3" />}
-                                </button>
-                              ) : (
-                                <span className="text-slate-300">-</span>
-                              )}
-                            </td>
-                          );
-                        })}
-                        <td className="p-2">
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-gradient-to-r from-teal-400 to-green-400 rounded-full transition-all"
-                                style={{ width: `${stats?.progress || 0}%` }}
-                              />
-                            </div>
-                            <span className="text-slate-600 dark:text-slate-400 w-10 text-right">
-                              {stats?.completed}/{stats?.total}
-                            </span>
-                            <span className="text-slate-500 font-medium w-10">{stats?.progress}%</span>
-                          </div>
-                        </td>
-                        <td className="p-2 text-center">
-                          <span
-                            className={cn(
-                              "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
-                              (stats?.streak || 0) > 0
-                                ? "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"
-                                : "bg-slate-100 dark:bg-slate-800 text-slate-400",
-                            )}
-                          >
-                            {(stats?.streak || 0) > 0 && <Flame className="h-3 w-3" />}
-                            {stats?.streak || 0}
-                          </span>
                         </td>
                       </tr>
-                    );
-                  })}
+
+                      {/* Archived Rows */}
+                      {showArchived &&
+                        activities
+                          .map((a, i) => ({ ...a, originalIndex: i }))
+                          .filter((a) => a.isArchived)
+                          .map((activity) => renderRow(activity, activity.originalIndex, false))}
+                    </>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -1543,7 +1708,9 @@ export default function Trackers() {
                       }}
                       className={cn(
                         "h-9 w-9 rounded-full font-medium text-sm transition-colors",
-                        formFrequency[idx] ? "bg-teal-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400",
+                        formFrequency[idx]
+                          ? "bg-emerald-500 text-white"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-400",
                       )}
                     >
                       {day}
@@ -1569,7 +1736,7 @@ export default function Trackers() {
                 <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button className="flex-1 rounded-xl bg-teal-500 hover:bg-teal-600" onClick={handleSave}>
+                <Button className="flex-1 rounded-xl bg-emerald-500 hover:bg-emerald-600" onClick={handleSave}>
                   {editingActivity ? "Save Changes" : "Create Habit"}
                 </Button>
               </div>

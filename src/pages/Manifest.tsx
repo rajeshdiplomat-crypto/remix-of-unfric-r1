@@ -46,9 +46,9 @@ function saveGoalExtras(goalId: string, extras: Partial<ManifestGoal>) {
     }
     // Filter out base64 from vision_images array
     if (safeExtras.vision_images) {
-      safeExtras.vision_images = safeExtras.vision_images.filter(img => !img.startsWith("data:"));
+      safeExtras.vision_images = safeExtras.vision_images.filter((img) => !img.startsWith("data:"));
     }
-    
+
     const all = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
     all[goalId] = { ...all[goalId], ...safeExtras };
     localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify(all));
@@ -281,13 +281,13 @@ export default function Manifest() {
   };
 
   const handlePracticeComplete = useCallback(() => fetchData(), [fetchData]);
-  
+
   const handleSelectGoal = (goal: ManifestGoal) => {
     setSelectedGoal(goal);
     // When selecting a goal, reset to today's date
     setSelectedDate(new Date());
   };
-  
+
   const handleEditGoal = (goal: ManifestGoal) => {
     setEditingGoal(goal);
     setShowCreateModal(true);
@@ -317,10 +317,7 @@ export default function Manifest() {
 
   const handleCompleteGoal = async (goal: ManifestGoal) => {
     try {
-      const { error } = await supabase
-        .from("manifest_goals")
-        .update({ is_completed: true })
-        .eq("id", goal.id);
+      const { error } = await supabase.from("manifest_goals").update({ is_completed: true }).eq("id", goal.id);
       if (error) throw error;
 
       if (selectedGoal?.id === goal.id) setSelectedGoal(null);
@@ -335,10 +332,7 @@ export default function Manifest() {
 
   const handleReactivateGoal = async (goal: ManifestGoal) => {
     try {
-      const { error } = await supabase
-        .from("manifest_goals")
-        .update({ is_completed: false })
-        .eq("id", goal.id);
+      const { error } = await supabase.from("manifest_goals").update({ is_completed: false }).eq("id", goal.id);
       if (error) throw error;
 
       toast.success("Reality reactivated!");
@@ -365,7 +359,8 @@ export default function Manifest() {
     const hour = new Date().getHours();
     const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "";
     const firstName = userName.split(" ")[0];
-    const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : hour < 21 ? "Good evening" : "Good night";
+    const greeting =
+      hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : hour < 21 ? "Good evening" : "Good night";
     const emoji = hour < 12 ? "☀️" : hour < 17 ? "🌤️" : hour < 21 ? "🌅" : "🌙";
     return firstName ? `${greeting}, ${firstName} ${emoji}` : `${greeting} ${emoji}`;
   };
@@ -451,250 +446,250 @@ export default function Manifest() {
           subtitle={PAGE_HERO_TEXT.manifest.subtitle}
         />
 
-      {/* Content Area - 3-column layout: [Left: Entries] [Center: Greeting+Practice] [Right: Progress+Calendar] */}
-      <div
-        className={cn(
-          "flex-1 grid gap-3 w-full px-2 sm:px-4 py-2 transition-all duration-300",
-          rightPanelCollapsed
-            ? "grid-cols-1 lg:grid-cols-[420px_1fr_64px]"
-            : "grid-cols-1 lg:grid-cols-[420px_1fr_260px]"
-        )}
-      >
-        {/* Left Panel - Entries List */}
-        <div className="hidden lg:flex flex-col h-full min-h-0">
-          {/* Goals Container */}
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex flex-col overflow-hidden flex-1 min-h-0">
-            {/* Header with Create Button */}
-            <div className="p-3 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
-              <h2 className="text-base font-semibold text-slate-800 dark:text-white">Your Realities</h2>
-              <Button
-                onClick={() => setShowCreateModal(true)}
-                size="sm"
-                className="rounded-lg h-8 px-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all text-xs"
-              >
-                <Plus className="h-3.5 w-3.5 mr-1" /> New
-              </Button>
-            </div>
-            {activeGoals.length === 0 ? (
-              <div className="p-3 flex-1 flex items-center justify-center">
-                <Card className="rounded-xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900 w-full">
-                  <CardContent className="py-8 px-4 text-center">
-                    <div className="mx-auto mb-3 h-10 w-10 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg">
-                      <Sparkles className="h-5 w-5 text-white" />
-                    </div>
-                    <h3 className="text-base font-semibold text-slate-800 dark:text-white mb-1">Start Your First Reality</h3>
-                    <p className="text-slate-500 mb-3 text-xs max-w-xs mx-auto">
-                      Write a belief in present tense and practice it daily.
-                    </p>
-                    <Button
-                      onClick={() => setShowCreateModal(true)}
-                      className="rounded-lg h-9 px-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm"
-                    >
-                      <Plus className="h-4 w-4 mr-1.5" /> Create Reality
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-            ) : (
-              <div 
-                className="overflow-y-auto flex-1 min-h-0 p-2 custom-scrollbar relative" 
-                style={{ maxHeight: 'calc(5 * 140px + 4 * 8px)' }}
-              >
-                <div className="space-y-2">
-                  {activeGoals.map((goal) => {
-                    const { streak, momentum } = getGoalMetrics(goal);
-                    const isNewlyCreated = newlyCreatedGoalId === goal.id;
-                    return (
-                      <div
-                        key={goal.id}
-                        className={isNewlyCreated ? "animate-energy-entry relative" : "relative"}
-                      >
-                        <ManifestCard
-                          goal={goal}
-                          streak={streak}
-                          momentum={momentum}
-                          isSelected={selectedGoal?.id === goal.id}
-                          onClick={() => handleSelectGoal(goal)}
-                          onEdit={() => handleEditGoal(goal)}
-                          onDelete={() => setDeletingGoal(goal)}
-                          onComplete={() => handleCompleteGoal(goal)}
-                          onImageUpdate={fetchData}
-                        />
-                        {/* Energy particles effect for new reality */}
-                        {isNewlyCreated && (
-                          <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
-                            <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-teal-500/20 via-cyan-500/20 to-teal-500/20" />
-                            {[...Array(8)].map((_, i) => (
-                              <div
-                                key={i}
-                                className="absolute w-2 h-2 rounded-full bg-gradient-to-r from-teal-400 to-cyan-400 animate-float-particle"
-                                style={{
-                                  left: `${10 + i * 12}%`,
-                                  animationDelay: `${i * 0.1}s`,
-                                  top: "50%",
-                                }}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-                {/* Fade indicator at bottom */}
-                {activeGoals.length > 5 && (
-                  <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white dark:from-slate-900 to-transparent pointer-events-none" />
-                )}
-              </div>
-            )}
-
-            {/* Completed Realities Section */}
-            {completedGoals.length > 0 && (
-              <div className="border-t border-slate-100 dark:border-slate-800">
-                <button
-                  onClick={() => setShowCompleted(!showCompleted)}
-                  className="w-full p-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+        {/* Content Area - 3-column layout: [Left: Entries] [Center: Greeting+Practice] [Right: Progress+Calendar] */}
+        <div
+          className={cn(
+            "flex-1 grid gap-3 w-full px-2 sm:px-4 py-2 transition-all duration-300",
+            rightPanelCollapsed
+              ? "grid-cols-1 lg:grid-cols-[420px_1fr_64px]"
+              : "grid-cols-1 lg:grid-cols-[420px_1fr_260px]",
+          )}
+        >
+          {/* Left Panel - Entries List */}
+          <div className="hidden lg:flex flex-col h-full min-h-0">
+            {/* Goals Container */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex flex-col overflow-hidden flex-1 min-h-0">
+              {/* Header with Create Button */}
+              <div className="p-3 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
+                <h2 className="text-base font-semibold text-slate-800 dark:text-white">Your Realities</h2>
+                <Button
+                  onClick={() => setShowCreateModal(true)}
+                  size="sm"
+                  className="rounded-lg h-8 px-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all text-xs"
                 >
-                  <span className="text-xs font-medium text-slate-500">
-                    Manifested Realities ({completedGoals.length})
-                  </span>
-                  {showCompleted ? (
-                    <ChevronUp className="h-4 w-4 text-slate-400" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-slate-400" />
-                  )}
-                </button>
-                {showCompleted && (
-                  <div className="p-2 space-y-2 max-h-[300px] overflow-y-auto">
-                    {completedGoals.map((goal) => {
+                  <Plus className="h-3.5 w-3.5 mr-1" /> New
+                </Button>
+              </div>
+              {activeGoals.length === 0 ? (
+                <div className="p-3 flex-1 flex items-center justify-center">
+                  <Card className="rounded-xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900 w-full">
+                    <CardContent className="py-8 px-4 text-center">
+                      <div className="mx-auto mb-3 h-10 w-10 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg">
+                        <Sparkles className="h-5 w-5 text-white" />
+                      </div>
+                      <h3 className="text-base font-semibold text-slate-800 dark:text-white mb-1">
+                        Start Your First Reality
+                      </h3>
+                      <p className="text-slate-500 mb-3 text-xs max-w-xs mx-auto">
+                        Write a belief in present tense and practice it daily.
+                      </p>
+                      <Button
+                        onClick={() => setShowCreateModal(true)}
+                        className="rounded-lg h-9 px-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm"
+                      >
+                        <Plus className="h-4 w-4 mr-1.5" /> Create Reality
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : (
+                <div
+                  className="overflow-y-auto flex-1 min-h-0 p-2 custom-scrollbar relative"
+                  style={{ maxHeight: "calc(5 * 140px + 4 * 8px)" }}
+                >
+                  <div className="space-y-2">
+                    {activeGoals.map((goal) => {
                       const { streak, momentum } = getGoalMetrics(goal);
+                      const isNewlyCreated = newlyCreatedGoalId === goal.id;
                       return (
-                        <ManifestCard
-                          key={goal.id}
-                          goal={goal}
-                          streak={streak}
-                          momentum={momentum}
-                          isSelected={selectedGoal?.id === goal.id}
-                          onClick={() => handleSelectGoal(goal)}
-                          onDelete={() => setDeletingGoal(goal)}
-                          onReactivate={() => handleReactivateGoal(goal)}
-                          onImageUpdate={fetchData}
-                          isCompleted
-                        />
+                        <div key={goal.id} className={isNewlyCreated ? "animate-energy-entry relative" : "relative"}>
+                          <ManifestCard
+                            goal={goal}
+                            streak={streak}
+                            momentum={momentum}
+                            isSelected={selectedGoal?.id === goal.id}
+                            onClick={() => handleSelectGoal(goal)}
+                            onEdit={() => handleEditGoal(goal)}
+                            onDelete={() => setDeletingGoal(goal)}
+                            onComplete={() => handleCompleteGoal(goal)}
+                            onImageUpdate={fetchData}
+                          />
+                          {/* Energy particles effect for new reality */}
+                          {isNewlyCreated && (
+                            <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
+                              <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-teal-500/20 via-cyan-500/20 to-teal-500/20" />
+                              {[...Array(8)].map((_, i) => (
+                                <div
+                                  key={i}
+                                  className="absolute w-2 h-2 rounded-full bg-gradient-to-r from-teal-400 to-cyan-400 animate-float-particle"
+                                  style={{
+                                    left: `${10 + i * 12}%`,
+                                    animationDelay: `${i * 0.1}s`,
+                                    top: "50%",
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
-                )}
+                  {/* Fade indicator at bottom */}
+                  {activeGoals.length > 5 && (
+                    <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white dark:from-slate-900 to-transparent pointer-events-none" />
+                  )}
+                </div>
+              )}
+
+              {/* Completed Realities Section */}
+              {completedGoals.length > 0 && (
+                <div className="border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    onClick={() => setShowCompleted(!showCompleted)}
+                    className="w-full p-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                  >
+                    <span className="text-xs font-medium text-slate-500">
+                      Manifested Realities ({completedGoals.length})
+                    </span>
+                    {showCompleted ? (
+                      <ChevronUp className="h-4 w-4 text-slate-400" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-slate-400" />
+                    )}
+                  </button>
+                  {showCompleted && (
+                    <div className="p-2 space-y-2 max-h-[300px] overflow-y-auto">
+                      {completedGoals.map((goal) => {
+                        const { streak, momentum } = getGoalMetrics(goal);
+                        return (
+                          <ManifestCard
+                            key={goal.id}
+                            goal={goal}
+                            streak={streak}
+                            momentum={momentum}
+                            isSelected={selectedGoal?.id === goal.id}
+                            onClick={() => handleSelectGoal(goal)}
+                            onDelete={() => setDeletingGoal(goal)}
+                            onReactivate={() => handleReactivateGoal(goal)}
+                            onImageUpdate={fetchData}
+                            isCompleted
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Center - Greeting + Practice Panel */}
+          <div className="flex flex-col min-w-0 min-h-0 gap-3">
+            {/* Greeting Section - Top of center panel */}
+            <div className="bg-gradient-to-r from-teal-50 via-cyan-50 to-emerald-50 dark:from-teal-900/20 dark:via-cyan-900/20 dark:to-emerald-900/20 rounded-xl p-3 border border-teal-100/50 dark:border-teal-800/50">
+              <h2 className="text-base font-semibold text-slate-800 dark:text-white">{getGreeting()}</h2>
+              <p className="text-xs text-teal-600 dark:text-teal-400 mt-0.5">{getStreakMessage()}</p>
+            </div>
+
+            {/* Practice Panel */}
+            {selectedGoal ? (
+              <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex-1 overflow-hidden">
+                <ManifestPracticePanel
+                  goal={selectedGoal}
+                  streak={getGoalMetrics(selectedGoal).streak}
+                  selectedDate={selectedDate}
+                  previousPractice={getPreviousDayPractice(selectedGoal.id)}
+                  onClose={() => setSelectedGoal(null)}
+                  onPracticeComplete={handlePracticeComplete}
+                  onGoalUpdate={() => {
+                    fetchData();
+                    const updatedGoal = goals.find((g) => g.id === selectedGoal.id);
+                    if (updatedGoal) setSelectedGoal(updatedGoal);
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex-1 p-8 flex flex-col items-center justify-center">
+                <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-teal-100 to-cyan-100 dark:from-teal-900/30 dark:to-cyan-900/30 flex items-center justify-center mb-4">
+                  <Sparkles className="h-8 w-8 text-teal-500" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-1">Select a Reality</h3>
+                <p className="text-sm text-slate-400 text-center max-w-sm">
+                  Choose a reality from the left panel to start your daily practice
+                </p>
+                <p className="text-xs text-teal-500 mt-4 text-center">{getMotivationalQuote()}</p>
               </div>
             )}
           </div>
-        </div>
 
-        {/* Center - Greeting + Practice Panel */}
-        <div className="flex flex-col min-w-0 min-h-0 gap-3">
-          {/* Greeting Section - Top of center panel */}
-          <div className="bg-gradient-to-r from-teal-50 via-cyan-50 to-emerald-50 dark:from-teal-900/20 dark:via-cyan-900/20 dark:to-emerald-900/20 rounded-xl p-3 border border-teal-100/50 dark:border-teal-800/50">
-            <h2 className="text-base font-semibold text-slate-800 dark:text-white">{getGreeting()}</h2>
-            <p className="text-xs text-teal-600 dark:text-teal-400 mt-0.5">{getStreakMessage()}</p>
+          {/* Right Panel - Progress & Calendar */}
+          <div
+            className={cn("hidden lg:flex flex-col transition-all duration-300 h-full", rightPanelCollapsed && "w-16")}
+          >
+            <ManifestSidebarPanel
+              selectedDate={selectedDate}
+              onDateSelect={handleDateSelect}
+              goals={goals}
+              practices={practices}
+              isCollapsed={rightPanelCollapsed}
+              onToggleCollapse={() => setRightPanelCollapsed(!rightPanelCollapsed)}
+              activeCount={activeGoals.length}
+              streak={aggregateStreak}
+              avgMomentum={avgMomentum}
+              onOpenAnalytics={() => setShowAnalytics(true)}
+            />
           </div>
-
-          {/* Practice Panel */}
-          {selectedGoal ? (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex-1 overflow-hidden">
-              <ManifestPracticePanel
-                goal={selectedGoal}
-                streak={getGoalMetrics(selectedGoal).streak}
-                selectedDate={selectedDate}
-                previousPractice={getPreviousDayPractice(selectedGoal.id)}
-                onClose={() => setSelectedGoal(null)}
-                onPracticeComplete={handlePracticeComplete}
-                onGoalUpdate={() => {
-                  fetchData();
-                  const updatedGoal = goals.find((g) => g.id === selectedGoal.id);
-                  if (updatedGoal) setSelectedGoal(updatedGoal);
-                }}
-              />
-            </div>
-          ) : (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex-1 p-8 flex flex-col items-center justify-center">
-              <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-teal-100 to-cyan-100 dark:from-teal-900/30 dark:to-cyan-900/30 flex items-center justify-center mb-4">
-                <Sparkles className="h-8 w-8 text-teal-500" />
-              </div>
-              <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-1">Select a Reality</h3>
-              <p className="text-sm text-slate-400 text-center max-w-sm">
-                Choose a reality from the left panel to start your daily practice
-              </p>
-              <p className="text-xs text-teal-500 mt-4 text-center">
-                {getMotivationalQuote()}
-              </p>
-            </div>
-          )}
         </div>
 
-        {/* Right Panel - Progress & Calendar */}
-        <div
-          className={cn("hidden lg:flex flex-col transition-all duration-300 h-full", rightPanelCollapsed && "w-16")}
-        >
-          <ManifestSidebarPanel
-            selectedDate={selectedDate}
-            onDateSelect={handleDateSelect}
-            goals={goals}
-            practices={practices}
-            isCollapsed={rightPanelCollapsed}
-            onToggleCollapse={() => setRightPanelCollapsed(!rightPanelCollapsed)}
-            activeCount={activeGoals.length}
-            streak={aggregateStreak}
-            avgMomentum={avgMomentum}
-            onOpenAnalytics={() => setShowAnalytics(true)}
-          />
-        </div>
-      </div>
-
-      {/* Modal */}
-      <ManifestCreateModal
-        open={showCreateModal}
-        onOpenChange={handleCloseModal}
-        onSave={handleSaveGoal}
-        saving={saving}
-        editingGoal={editingGoal}
-      />
-
-      {/* Delete Dialog */}
-      <AlertDialog open={!!deletingGoal} onOpenChange={(open) => !open && setDeletingGoal(null)}>
-        <AlertDialogContent className="rounded-2xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Reality</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete "{deletingGoal?.title}"? This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteGoal} className="bg-red-500 hover:bg-red-600 text-white rounded-xl">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Analytics Modal */}
-      <ManifestAnalyticsModal
-        open={showAnalytics}
-        onOpenChange={setShowAnalytics}
-        goals={goals}
-        practices={practices}
-      />
-
-      {/* History Drawer */}
-      {historyGoal && (
-        <HistoryDrawer
-          goal={historyGoal}
-          isOpen={!!historyGoal}
-          onClose={() => setHistoryGoal(null)}
-          onUseAsMicroAction={() => {}}
+        {/* Modal */}
+        <ManifestCreateModal
+          open={showCreateModal}
+          onOpenChange={handleCloseModal}
+          onSave={handleSaveGoal}
+          saving={saving}
+          editingGoal={editingGoal}
         />
-      )}
-    </div>
+
+        {/* Delete Dialog */}
+        <AlertDialog open={!!deletingGoal} onOpenChange={(open) => !open && setDeletingGoal(null)}>
+          <AlertDialogContent className="rounded-2xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Reality</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{deletingGoal?.title}"? This cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteGoal}
+                className="bg-red-500 hover:bg-red-600 text-white rounded-xl"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Analytics Modal */}
+        <ManifestAnalyticsModal
+          open={showAnalytics}
+          onOpenChange={setShowAnalytics}
+          goals={goals}
+          practices={practices}
+        />
+
+        {/* History Drawer */}
+        {historyGoal && (
+          <HistoryDrawer
+            goal={historyGoal}
+            isOpen={!!historyGoal}
+            onClose={() => setHistoryGoal(null)}
+            onUseAsMicroAction={() => {}}
+          />
+        )}
+      </div>
     </>
   );
 }
