@@ -229,29 +229,25 @@ export function TopFocusBar({ tasks, onStartFocus }: TopFocusBarProps) {
 
   return (
     <>
-      <Card className="rounded-xl border border-border/60 bg-background/70 backdrop-blur-xl shadow-sm">
-        <CardContent className="flex items-center gap-2 py-2 px-3">
+      <Card className="rounded-lg border border-border/60 bg-background/70 backdrop-blur-xl shadow-sm">
+        <CardContent className="flex items-center gap-2 py-1.5 px-2.5">
           {/* Left icon */}
-          <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0 border border-border/60 bg-background/60">
-            <Play className="h-3.5 w-3.5" />
+          <div className="h-6 w-6 rounded-md flex items-center justify-center shrink-0 border border-border/60 bg-background/60">
+            <Play className="h-3 w-3" />
           </div>
 
           {/* Main content */}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground shrink-0">
-                Top focus
-              </span>
-              <p className="text-xs font-semibold min-w-0 truncate">{topTask.title}</p>
-            </div>
-            <div className="flex items-center gap-1 mt-0.5">
-              {!!dueLabel && (
-                <Badge variant="outline" className="h-4 px-1.5 text-[9px] rounded-full bg-background/60 border-border/60">
-                  <Clock3 className="h-2.5 w-2.5 mr-0.5" />
-                  {dueLabel}
-                </Badge>
-              )}
-            </div>
+          <div className="min-w-0 flex-1 flex items-center gap-2">
+            <span className="text-[8px] font-semibold uppercase tracking-[0.15em] text-muted-foreground shrink-0">
+              Top focus
+            </span>
+            <p className="text-[11px] font-semibold min-w-0 truncate">{topTask.title}</p>
+            {!!dueLabel && (
+              <Badge variant="outline" className="h-4 px-1.5 text-[8px] rounded-full bg-background/60 border-border/60 shrink-0">
+                <Clock3 className="h-2 w-2 mr-0.5" />
+                {dueLabel}
+              </Badge>
+            )}
           </div>
 
           {/* Right actions */}
@@ -259,21 +255,13 @@ export function TopFocusBar({ tasks, onStartFocus }: TopFocusBarProps) {
             <Button
               variant="outline"
               onClick={() => setShowStats(true)}
-              className="rounded-full border-border/60 bg-background/60 hover:bg-primary/10 h-7 px-2.5 text-[10px]"
+              className="rounded-full border-border/60 bg-background/60 hover:bg-primary/10 h-6 px-2 text-[9px]"
             >
-              <BarChart3 className="h-3 w-3 mr-1" />
+              <BarChart3 className="h-2.5 w-2.5 mr-0.5" />
               Stats
             </Button>
-            <Button variant="default" onClick={() => onStartFocus(topTask)} className="rounded-full h-7 px-3 text-[10px]">
+            <Button variant="default" onClick={() => onStartFocus(topTask)} className="rounded-full h-6 px-2.5 text-[9px]">
               Focus
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setCollapsed((v) => !v)}
-              className="rounded-full border-border/60 bg-background/60 h-7 w-7"
-            >
-              {collapsed ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
             </Button>
           </div>
         </CardContent>
