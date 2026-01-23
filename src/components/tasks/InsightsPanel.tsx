@@ -240,12 +240,12 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
 
   return (
     <Card className="rounded-xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm flex-1 overflow-hidden">
-      <CardContent className="p-2 h-full">
+      <CardContent className="p-1.5 h-full">
         {/* Main content: KPIs left (2x2), Charts right (3 cols) */}
-        <div className="h-full flex gap-3">
-          {/* Left: KPI Cards in 2x2 grid */}
-          <div className="grid grid-cols-2 gap-1.5 w-[180px] shrink-0 content-start">
-            <div className="flex items-center gap-1.5 p-2 rounded-md bg-muted/30">
+        <div className="h-full flex gap-2">
+          {/* Left: KPI Cards in 2x2 grid - stretch to full height */}
+          <div className="grid grid-cols-2 gap-1 w-[180px] shrink-0 auto-rows-fr">
+            <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-muted/30">
               <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center shrink-0">
                 <Calendar className="h-3 w-3 text-primary" />
               </div>
@@ -255,7 +255,7 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
               </div>
             </div>
             
-            <div className="flex items-center gap-1.5 p-2 rounded-md bg-muted/30">
+            <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-muted/30">
               <div className="h-6 w-6 rounded bg-chart-1/10 flex items-center justify-center shrink-0">
                 <CheckCircle className="h-3 w-3 text-chart-1" />
               </div>
@@ -265,7 +265,7 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
               </div>
             </div>
             
-            <div className="flex items-center gap-1.5 p-2 rounded-md bg-muted/30">
+            <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-muted/30">
               <div className="h-6 w-6 rounded bg-destructive/10 flex items-center justify-center shrink-0">
                 <AlertTriangle className="h-3 w-3 text-destructive" />
               </div>
@@ -275,7 +275,7 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
               </div>
             </div>
             
-            <div className="flex items-center gap-1.5 p-2 rounded-md bg-muted/30">
+            <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-muted/30">
               <div className="h-6 w-6 rounded bg-muted/40 flex items-center justify-center shrink-0">
                 <ClockIcon className="h-3 w-3 text-muted-foreground" />
               </div>

@@ -26,7 +26,7 @@ export function TasksHeader({
   onNewTask,
 }: TasksHeaderProps) {
   return (
-    <div className="flex items-center gap-2 flex-wrap justify-end">
+    <div className="flex items-center gap-2 flex-wrap justify-start">
       {/* Mode select */}
       <div className="flex items-center gap-2">
         <span className="hidden sm:inline text-[12px] uppercase tracking-[0.16em] text-muted-foreground">
