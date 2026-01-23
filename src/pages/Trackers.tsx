@@ -523,8 +523,8 @@ export default function Trackers() {
 
     const momentum = Math.round(
       (dailyTotal > 0 ? dailyCompleted / dailyTotal : 0) * 40 +
-      (weeklyTotal > 0 ? weeklyCompleted / weeklyTotal : 0) * 30 +
-      (allTimeTotal > 0 ? allTimeCompleted / allTimeTotal : 0) * 30,
+        (weeklyTotal > 0 ? weeklyCompleted / weeklyTotal : 0) * 30 +
+        (allTimeTotal > 0 ? allTimeCompleted / allTimeTotal : 0) * 30,
     );
 
     return {
@@ -600,11 +600,13 @@ export default function Trackers() {
             .update({
               is_completed: false,
               completed_at: null,
-              status: "ongoing" // Reset to ongoing
+              status: "ongoing", // Reset to ongoing
             } as any)
-            .in("id", tasks.map(t => t.id));
+            .in(
+              "id",
+              tasks.map((t) => t.id),
+            );
         }
-
       } else {
         await supabase.from("habit_completions").insert({
           habit_id: activityId,
@@ -626,18 +628,19 @@ export default function Trackers() {
             .update({
               is_completed: true,
               completed_at: new Date().toISOString(),
-              status: "completed"
+              status: "completed",
             } as any)
-            .in("id", tasks.map(t => t.id));
+            .in(
+              "id",
+              tasks.map((t) => t.id),
+            );
         }
 
         // Check if all habit days are now completed - auto-archive if so
         const newCompletionsCount = Object.keys(activity.completions).length + 1; // +1 because we just added one
         if (newCompletionsCount >= activity.habitDays && !activity.isArchived) {
           // Auto-archive the habit
-          setActivities((prev) =>
-            prev.map((a) => (a.id === activityId ? { ...a, isArchived: true } : a))
-          );
+          setActivities((prev) => prev.map((a) => (a.id === activityId ? { ...a, isArchived: true } : a)));
 
           // Update in database
           await supabase
@@ -790,8 +793,9 @@ export default function Trackers() {
             });
           }
         } else {
-          toast({ title: editingActivity ? "Activity updated" : "Activity created" });
+          toast({ title: editingActivity ? "Activity updated" : "Activity saved to cloud" });
         }
+        await fetchHabits();
       } else {
         toast({ title: editingActivity ? "Activity updated" : "Activity created" });
       }
@@ -820,9 +824,7 @@ export default function Trackers() {
 
   const handleCompleteHabit = async (activityId: string) => {
     // Mark the habit as archived (fully completed)
-    setActivities((prev) =>
-      prev.map((a) => (a.id === activityId ? { ...a, isArchived: true } : a))
-    );
+    setActivities((prev) => prev.map((a) => (a.id === activityId ? { ...a, isArchived: true } : a)));
 
     if (user) {
       // Update the habit in database to mark as archived
@@ -846,9 +848,7 @@ export default function Trackers() {
 
   const handleRestoreHabit = async (activityId: string) => {
     // Mark the habit as not archived (restore to active)
-    setActivities((prev) =>
-      prev.map((a) => (a.id === activityId ? { ...a, isArchived: false } : a))
-    );
+    setActivities((prev) => prev.map((a) => (a.id === activityId ? { ...a, isArchived: false } : a)));
 
     if (user) {
       // Update the habit in database to remove archived status
@@ -890,7 +890,7 @@ export default function Trackers() {
             : isArchived
               ? "bg-slate-50 dark:bg-slate-900/30 opacity-70 grayscale-[0.5]"
               : "bg-white dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-800/50",
-          "cursor-pointer"
+          "cursor-pointer",
         )}
         onClick={() => setSelectedActivityId(isSelected ? null : activity.id)}
         draggable={isActive}
@@ -899,14 +899,14 @@ export default function Trackers() {
         onDrop={
           isActive
             ? () => {
-              if (draggedIndex !== null && draggedIndex !== originalIndex) {
-                const newActivities = [...activities];
-                const [removed] = newActivities.splice(draggedIndex, 1);
-                newActivities.splice(originalIndex, 0, removed);
-                setActivities(newActivities);
+                if (draggedIndex !== null && draggedIndex !== originalIndex) {
+                  const newActivities = [...activities];
+                  const [removed] = newActivities.splice(draggedIndex, 1);
+                  newActivities.splice(originalIndex, 0, removed);
+                  setActivities(newActivities);
+                }
+                setDraggedIndex(null);
               }
-              setDraggedIndex(null);
-            }
             : undefined
         }
       >
@@ -914,7 +914,11 @@ export default function Trackers() {
         <td
           className={cn(
             "p-2 sticky left-0",
-            isSelected ? "bg-emerald-50 dark:bg-emerald-900/30" : isArchived ? "bg-slate-50 dark:bg-slate-900/30" : "bg-white dark:bg-slate-900/50",
+            isSelected
+              ? "bg-emerald-50 dark:bg-emerald-900/30"
+              : isArchived
+                ? "bg-slate-50 dark:bg-slate-900/30"
+                : "bg-white dark:bg-slate-900/50",
           )}
         >
           <div className="flex items-center gap-1.5">
@@ -960,9 +964,7 @@ export default function Trackers() {
                     }}
                     className="cursor-pointer"
                   >
-                    <Check
-                      className={cn("h-4 w-4 mr-2", isTodayCompleted ? "text-green-500" : "")}
-                    />
+                    <Check className={cn("h-4 w-4 mr-2", isTodayCompleted ? "text-green-500" : "")} />
                     {isTodayCompleted ? "Today Done ✓" : "Mark Today"}
                   </DropdownMenuItem>
                 )}
@@ -1014,10 +1016,12 @@ export default function Trackers() {
             </DropdownMenu>
 
             {/* Habit Name */}
-            <span className={cn(
-              "font-medium truncate max-w-[120px] ml-1",
-              isArchived ? "text-slate-500 line-through" : "text-slate-700 dark:text-slate-300"
-            )}>
+            <span
+              className={cn(
+                "font-medium truncate max-w-[120px] ml-1",
+                isArchived ? "text-slate-500 line-through" : "text-slate-700 dark:text-slate-300",
+              )}
+            >
               {activity.name}
             </span>
           </div>
@@ -1035,7 +1039,11 @@ export default function Trackers() {
 
           // Check if day is within habit's date range
           const habitStartDate = parseISO(activity.startDate);
-          const habitEndDate = computeEndDateForHabitDays(habitStartDate, activity.frequencyPattern, activity.habitDays);
+          const habitEndDate = computeEndDateForHabitDays(
+            habitStartDate,
+            activity.frequencyPattern,
+            activity.habitDays,
+          );
           const isWithinRange = !isBefore(day, habitStartDate) && !isAfter(day, habitEndDate);
 
           const today = new Date();
@@ -1051,7 +1059,7 @@ export default function Trackers() {
                 (isMonday || isFirstDay) && "border-l-2 border-slate-200 dark:border-slate-700",
                 isToday(day) && "bg-emerald-50 dark:bg-emerald-900/20",
                 isCurrentWeek && !isToday(day) && "bg-blue-50/50 dark:bg-blue-900/10",
-                isArchived && "opacity-50"
+                isArchived && "opacity-50",
               )}
             >
               {isPlanned && isWithinRange ? (
@@ -1067,7 +1075,9 @@ export default function Trackers() {
                   className={cn(
                     "w-5 h-5 rounded flex items-center justify-center transition-all mx-auto",
                     isCompleted
-                      ? isArchived ? "bg-slate-400 text-white cursor-not-allowed" : "bg-emerald-500 text-white"
+                      ? isArchived
+                        ? "bg-slate-400 text-white cursor-not-allowed"
+                        : "bg-emerald-500 text-white"
                       : isPast && !isArchived
                         ? "bg-slate-200 dark:bg-slate-700 hover:bg-slate-300"
                         : "bg-slate-100 dark:bg-slate-800 cursor-not-allowed",
@@ -1087,7 +1097,7 @@ export default function Trackers() {
               <div
                 className={cn(
                   "h-full rounded-full transition-all",
-                  isArchived ? "bg-slate-400" : "bg-gradient-to-r from-emerald-400 to-green-400"
+                  isArchived ? "bg-slate-400" : "bg-gradient-to-r from-emerald-400 to-green-400",
                 )}
                 style={{ width: `${progressPercent}%` }}
               />
@@ -1103,7 +1113,9 @@ export default function Trackers() {
             className={cn(
               "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
               (stats?.streak || 0) > 0
-                ? isArchived ? "bg-slate-200 text-slate-500" : "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"
+                ? isArchived
+                  ? "bg-slate-200 text-slate-500"
+                  : "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"
                 : "bg-slate-100 dark:bg-slate-800 text-slate-400",
             )}
           >
@@ -1114,7 +1126,6 @@ export default function Trackers() {
       </tr>
     );
   };
-
 
   return (
     <TooltipProvider>
@@ -1147,8 +1158,8 @@ export default function Trackers() {
             <Card
               className="p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-cyan-50 dark:from-emerald-950/30 dark:to-cyan-950/30 cursor-pointer hover:shadow-md transition-shadow"
               onClick={() => {
-                const habitsTable = document.querySelector('[data-habits-table]');
-                habitsTable?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                const habitsTable = document.querySelector("[data-habits-table]");
+                habitsTable?.scrollIntoView({ behavior: "smooth", block: "start" });
               }}
             >
               {/* Month Header */}
@@ -1186,13 +1197,13 @@ export default function Trackers() {
                 <div className="grid grid-cols-3 gap-1 text-center">
                   <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
                     <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                      {activities.filter(a => !a.isArchived).length}
+                      {activities.filter((a) => !a.isArchived).length}
                     </p>
                     <p className="text-[9px] text-slate-500">Active</p>
                   </div>
                   <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
                     <p className="text-sm font-bold text-green-600 dark:text-green-400">
-                      {activities.filter(a => a.isArchived).length}
+                      {activities.filter((a) => a.isArchived).length}
                     </p>
                     <p className="text-[9px] text-slate-500">Done</p>
                   </div>
@@ -1214,7 +1225,9 @@ export default function Trackers() {
                     <p className="text-[9px] text-slate-500">Pending</p>
                   </div>
                   <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
-                    <p className="text-sm font-bold text-green-600 dark:text-green-400">{overallStats.totalCompleted}</p>
+                    <p className="text-sm font-bold text-green-600 dark:text-green-400">
+                      {overallStats.totalCompleted}
+                    </p>
                     <p className="text-[9px] text-slate-500">Done</p>
                   </div>
                   <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
@@ -1231,7 +1244,10 @@ export default function Trackers() {
                 <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-1.5">Top Habits</p>
                 <div className="space-y-0.5">
                   {topHabits.slice(0, 3).map((habit) => (
-                    <div key={habit.id} className="flex items-center gap-1.5 text-[10px] p-1 rounded bg-white/40 dark:bg-slate-800/40">
+                    <div
+                      key={habit.id}
+                      className="flex items-center gap-1.5 text-[10px] p-1 rounded bg-white/40 dark:bg-slate-800/40"
+                    >
                       <span className="truncate flex-1 text-slate-600 dark:text-slate-400">{habit.name}</span>
                       <span className="px-1 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium text-[9px]">
                         {habit.completed}
@@ -1253,10 +1269,10 @@ export default function Trackers() {
                     : "N/A";
                   const endDate = selectedHabit?.startDate
                     ? computeEndDateForHabitDays(
-                      parseISO(selectedHabit.startDate),
-                      selectedHabit.frequencyPattern,
-                      selectedHabit.habitDays,
-                    )
+                        parseISO(selectedHabit.startDate),
+                        selectedHabit.frequencyPattern,
+                        selectedHabit.habitDays,
+                      )
                     : null;
                   const endDateStr = endDate ? format(endDate, "MMM d, yyyy") : "N/A";
 
@@ -1359,7 +1375,11 @@ export default function Trackers() {
                         chartActivities.forEach((a) => {
                           // Check if day is within habit's valid date range
                           const habitStartDate = parseISO(a.startDate);
-                          const habitEndDate = computeEndDateForHabitDays(habitStartDate, a.frequencyPattern, a.habitDays);
+                          const habitEndDate = computeEndDateForHabitDays(
+                            habitStartDate,
+                            a.frequencyPattern,
+                            a.habitDays,
+                          );
                           const isWithinHabitRange = !isBefore(day, habitStartDate) && !isAfter(day, habitEndDate);
 
                           if (a.frequencyPattern[dayOfWeek] && isWithinHabitRange) {
@@ -1554,12 +1574,13 @@ export default function Trackers() {
                 </thead>
                 <tbody>
                   {/* Render Active Habits */}
-                  {activities.map((a, i) => ({ ...a, originalIndex: i }))
-                    .filter(a => !a.isArchived)
+                  {activities
+                    .map((a, i) => ({ ...a, originalIndex: i }))
+                    .filter((a) => !a.isArchived)
                     .map((activity) => renderRow(activity, activity.originalIndex, true))}
 
                   {/* Render Archived Habits Section */}
-                  {activities.some(a => a.isArchived) && (
+                  {activities.some((a) => a.isArchived) && (
                     <>
                       {/* Separator / Toggle Row */}
                       <tr
@@ -1570,16 +1591,19 @@ export default function Trackers() {
                           <div className="flex items-center justify-center gap-2 text-sm font-medium text-slate-500">
                             {showArchived ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                             <span>
-                              {showArchived ? "Hide" : "Show"} {activities.filter(a => a.isArchived).length} Completed Habits
+                              {showArchived ? "Hide" : "Show"} {activities.filter((a) => a.isArchived).length} Completed
+                              Habits
                             </span>
                           </div>
                         </td>
                       </tr>
 
                       {/* Archived Rows */}
-                      {showArchived && activities.map((a, i) => ({ ...a, originalIndex: i }))
-                        .filter(a => a.isArchived)
-                        .map((activity) => renderRow(activity, activity.originalIndex, false))}
+                      {showArchived &&
+                        activities
+                          .map((a, i) => ({ ...a, originalIndex: i }))
+                          .filter((a) => a.isArchived)
+                          .map((activity) => renderRow(activity, activity.originalIndex, false))}
                     </>
                   )}
                 </tbody>
@@ -1679,7 +1703,11 @@ export default function Trackers() {
                     className="rounded-xl"
                   />
                   <p className="text-[10px] text-muted-foreground mt-1">
-                    End: {format(computeEndDateForHabitDays(formStartDate, formFrequency, parseInt(formDays) || 1), "d MMM, yyyy")}
+                    End:{" "}
+                    {format(
+                      computeEndDateForHabitDays(formStartDate, formFrequency, parseInt(formDays) || 1),
+                      "d MMM, yyyy",
+                    )}
                   </p>
                 </div>
               </div>
@@ -1776,7 +1804,9 @@ export default function Trackers() {
                       }}
                       className={cn(
                         "h-9 w-9 rounded-full font-medium text-sm transition-colors",
-                        formFrequency[idx] ? "bg-emerald-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400",
+                        formFrequency[idx]
+                          ? "bg-emerald-500 text-white"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-400",
                       )}
                     >
                       {day}
@@ -1794,3 +1824,22 @@ export default function Trackers() {
                   />
                   <label htmlFor="addToTasks" className="text-sm cursor-pointer">
                     Add scheduled sessions to Tasks page
+                  </label>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-2">
+                <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button className="flex-1 rounded-xl bg-emerald-500 hover:bg-emerald-600" onClick={handleSave}>
+                  {editingActivity ? "Save Changes" : "Create Habit"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </TooltipProvider>
+  );
+}
