@@ -41,14 +41,21 @@ function KpiCard({
 }) {
   return (
     <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
-      <CardContent className="p-4 h-[86px] flex items-center gap-3 min-w-0">
-        <div className={`h-9 w-9 rounded-xl flex items-center justify-center ${iconBg}`}>
-          <div className={iconColor}>{icon}</div>
+      <CardContent className={cn(
+        "flex items-center gap-3 min-w-0",
+        "p-3 h-[72px]" // Reduced from p-4 h-[86px]
+      )}>
+        <div className={cn(
+          "rounded-xl flex items-center justify-center shrink-0",
+          "h-8 w-8", // Reduced from h-9 w-9
+          iconBg
+        )}>
+          <div className={cn("h-4 w-4 flex items-center justify-center", iconColor)}>{icon}</div>
         </div>
 
         <div className="min-w-0 leading-tight">
-          <div className="text-[26px] font-semibold tracking-tight text-foreground">{value}</div>
-          <div className="text-[11px] text-muted-foreground">{label}</div>
+          <div className="text-[22px] font-semibold tracking-tight text-foreground">{value}</div>
+          <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</div>
         </div>
       </CardContent>
     </Card>
@@ -246,12 +253,10 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
       {/* KPI ROW:
           We use 6 columns on lg so the clock can span 2 columns (longer).
           Total spans: 1 + 1 + 2 + 1 + 1 = 6 */}
-      <div
-        className={cn(
-          "grid gap-3",
-          compactMode ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6",
-        )}
-      >
+      <div className={cn(
+        "grid gap-3",
+        compactMode ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6"
+      )}>
         <div className="lg:col-span-1">
           <KpiCard
             icon={<Calendar className="h-4 w-4" />}
@@ -300,18 +305,21 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
       </div>
 
       {/* Charts Row */}
-      <div className={cn("grid grid-cols-1 gap-4", compactMode ? "lg:grid-cols-1" : "lg:grid-cols-3")}>
+      <div className={cn(
+        "grid grid-cols-1 gap-4",
+        compactMode ? "lg:grid-cols-2" : "lg:grid-cols-3"
+      )}>
         {/* Plan vs Actual */}
         <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <TrendingUp className="h-4 w-4 text-primary" />
-              <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.14em]">
-                PLAN VS ACTUAL (7 DAYS)
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="h-3.5 w-3.5 text-primary" />
+              <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.14em]">
+                PLAN VS ACTUAL
               </h4>
             </div>
 
-            <div className="h-[120px]">
+            <div className={cn("h-[100px]", compactMode ? "h-[80px]" : "h-[120px]")}>
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={past7DaysData}>
                   <defs>
@@ -323,15 +331,15 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.35} />
                   <XAxis
                     dataKey="date"
-                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                    tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                    tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
                     axisLine={false}
                     tickLine={false}
-                    width={20}
+                    width={15}
                     allowDecimals={false}
                   />
                   <Tooltip
@@ -339,7 +347,7 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
                       background: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
                       borderRadius: "12px",
-                      fontSize: "12px",
+                      fontSize: "11px",
                       boxShadow: "0 12px 30px rgba(0,0,0,0.10)",
                     }}
                   />
@@ -347,16 +355,16 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
                     type="monotone"
                     dataKey="plan"
                     stroke="hsl(var(--primary))"
-                    strokeWidth={2}
+                    strokeWidth={1.5}
                     fill="url(#planGradient)"
-                    dot={{ fill: "hsl(var(--primary))", strokeWidth: 0, r: 2.5 }}
+                    dot={{ fill: "hsl(var(--primary))", strokeWidth: 0, r: 2 }}
                   />
                   <Line
                     type="monotone"
                     dataKey="actual"
                     stroke="hsl(var(--chart-1))"
-                    strokeWidth={2}
-                    dot={{ fill: "hsl(var(--chart-1))", strokeWidth: 0, r: 2.5 }}
+                    strokeWidth={1.5}
+                    dot={{ fill: "hsl(var(--chart-1))", strokeWidth: 0, r: 2 }}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -366,29 +374,29 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
 
         {/* Upcoming */}
         <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Calendar className="h-4 w-4 text-primary" />
-              <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.14em]">
-                UPCOMING (7 DAYS)
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Calendar className="h-3.5 w-3.5 text-primary" />
+              <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.14em]">
+                UPCOMING
               </h4>
             </div>
 
-            <div className="h-[120px]">
+            <div className={cn("h-[100px]", compactMode ? "h-[80px]" : "h-[120px]")}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={future7DaysData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.35} />
                   <XAxis
                     dataKey="date"
-                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                    tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                    tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
                     axisLine={false}
                     tickLine={false}
-                    width={20}
+                    width={15}
                     allowDecimals={false}
                   />
                   <Tooltip
@@ -396,11 +404,11 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
                       background: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
                       borderRadius: "12px",
-                      fontSize: "12px",
+                      fontSize: "11px",
                       boxShadow: "0 12px 30px rgba(0,0,0,0.10)",
                     }}
                   />
-                  <Bar dataKey="tasks" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="tasks" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -408,16 +416,19 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
         </Card>
 
         {/* By Quadrant */}
-        <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <ClockIcon className="h-4 w-4 text-primary" />
-              <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.14em]">
+        <Card className={cn(
+          "rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm",
+          compactMode && "lg:col-span-2"
+        )}>
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <ClockIcon className="h-3.5 w-3.5 text-primary" />
+              <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.14em]">
                 BY QUADRANT
               </h4>
             </div>
 
-            <div className="h-[120px] flex items-center justify-center">
+            <div className={cn("flex items-center justify-center", compactMode ? "h-[80px]" : "h-[120px]")}>
               {quadrantData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -425,8 +436,8 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
                       data={quadrantData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={28}
-                      outerRadius={46}
+                      innerRadius={compactMode ? 20 : 28}
+                      outerRadius={compactMode ? 35 : 46}
                       paddingAngle={2}
                       dataKey="value"
                     >
@@ -439,19 +450,9 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
                         background: "hsl(var(--card))",
                         border: "1px solid hsl(var(--border))",
                         borderRadius: "12px",
-                        fontSize: "12px",
+                        fontSize: "11px",
                         boxShadow: "0 12px 30px rgba(0,0,0,0.10)",
                       }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
-              ) : (
-                <p className="text-xs text-muted-foreground">No data</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}

@@ -571,7 +571,7 @@ export default function Tasks() {
             onNewTask={openNewTaskDrawer}
           />
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_380px] gap-8 items-stretch">
             <div className="flex flex-col gap-6">
               <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
               <InsightsPanel tasks={filteredTasks} compactMode />
