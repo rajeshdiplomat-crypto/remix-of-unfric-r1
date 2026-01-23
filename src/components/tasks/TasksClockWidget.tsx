@@ -164,7 +164,7 @@ export function TasksClockWidget() {
               </div>
             </div>}
 
-          {mode === "analog" && <div className="relative w-24 h-24">
+          {mode === "analog" && <div className="relative w- h-24">
               {/* Clock face */}
               <div className="absolute inset-0 rounded-full border-border/50 bg-card/50 border-0" />
               
