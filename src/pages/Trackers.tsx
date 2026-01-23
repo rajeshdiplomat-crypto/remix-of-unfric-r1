@@ -321,7 +321,7 @@ export default function Trackers() {
   const [formPriority, setFormPriority] = useState("Medium");
   const [formDescription, setFormDescription] = useState("");
   const [formFrequency, setFormFrequency] = useState([true, true, true, true, true, false, false]);
-  const [formDays, setFormDays] = useState(30);
+  const [formDays, setFormDays] = useState("30");
   const [formStartDate, setFormStartDate] = useState<Date>(new Date());
   const [formImageUrl, setFormImageUrl] = useState<string | null>(null);
   const [formTime, setFormTime] = useState("09:00");
@@ -638,7 +638,7 @@ export default function Trackers() {
     setFormPriority("Medium");
     setFormDescription("");
     setFormFrequency([true, true, true, true, true, false, false]);
-    setFormDays(30);
+    setFormDays("30");
     setFormStartDate(new Date());
     setFormImageUrl(null);
     setFormTime("09:00");
@@ -654,7 +654,7 @@ export default function Trackers() {
     setFormPriority(activity.priority || "Medium");
     setFormDescription(activity.description || "");
     setFormFrequency(activity.frequencyPattern);
-    setFormDays(activity.habitDays);
+    setFormDays(String(activity.habitDays));
     setFormStartDate(activity.startDate ? parseISO(activity.startDate) : new Date());
     setFormImageUrl(loadActivityImage(activity.id));
     setFormTime(activity.time || "09:00");
@@ -673,7 +673,7 @@ export default function Trackers() {
       priority: formPriority,
       description: formDescription,
       frequencyPattern: formFrequency,
-      habitDays: formDays,
+      habitDays: parseInt(formDays) || 1,
       startDate: format(formStartDate, "yyyy-MM-dd"),
       completions: editingActivity?.completions || {},
       createdAt: editingActivity?.createdAt || new Date().toISOString(),
@@ -702,7 +702,7 @@ export default function Trackers() {
         description: tempActivity.description || null,
         frequency: "custom",
         target_days: targetDays,
-        habit_days: formDays,
+        habit_days: parseInt(formDays) || 1,
       });
 
       // Create tasks for each scheduled day if enabled
@@ -710,9 +710,10 @@ export default function Trackers() {
         const scheduledDates: Date[] = [];
         let checkDate = formStartDate;
         let count = 0;
-        const endDate = computeEndDateForHabitDays(formStartDate, formFrequency, formDays);
+        const habitDaysNum = parseInt(formDays) || 1;
+        const endDate = computeEndDateForHabitDays(formStartDate, formFrequency, habitDaysNum);
 
-        while (!isAfter(checkDate, endDate) && count < formDays) {
+        while (!isAfter(checkDate, endDate) && count < habitDaysNum) {
           const dayOfWeek = (checkDate.getDay() + 6) % 7;
           if (formFrequency[dayOfWeek]) {
             scheduledDates.push(new Date(checkDate));
@@ -1618,21 +1619,23 @@ export default function Trackers() {
                     min={1}
                     max={365}
                     value={formDays}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === "") {
-                        setFormDays(1); // Minimum value when cleared
-                      } else {
-                        const num = parseInt(val);
-                        if (!isNaN(num) && num >= 1 && num <= 365) {
-                          setFormDays(num);
-                        }
+                    onChange={(e) => setFormDays(e.target.value)}
+                    onBlur={(e) => {
+                      const num = parseInt(e.target.value);
+                      if (isNaN(num) || num < 1) {
+                        setFormDays("1");
+                      } else if (num > 365) {
+                        setFormDays("365");
                       }
                     }}
                     className="rounded-xl"
                   />
                   <p className="text-[10px] text-muted-foreground mt-1">
-                    End: {format(computeEndDateForHabitDays(formStartDate, formFrequency, formDays), "d MMM, yyyy")}
+                    End:{" "}
+                    {format(
+                      computeEndDateForHabitDays(formStartDate, formFrequency, parseInt(formDays) || 1),
+                      "d MMM, yyyy",
+                    )}
                   </p>
                 </div>
               </div>
