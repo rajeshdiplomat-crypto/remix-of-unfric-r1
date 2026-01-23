@@ -433,14 +433,12 @@ export function ManifestPracticePanel({
 
           {/* Start Date & Total Practice Days */}
           <div className="flex gap-3 mt-2">
-            {goal.start_date && (
-              <div className="text-xs text-slate-500">
-                <span className="text-slate-400">Started:</span>{" "}
-                <span className="font-medium text-slate-600 dark:text-slate-300">
-                  {format(new Date(goal.start_date), "MMM d, yyyy")}
-                </span>
-              </div>
-            )}
+            <div className="text-xs text-slate-500">
+              <span className="text-slate-400">Started:</span>{" "}
+              <span className="font-medium text-slate-600 dark:text-slate-300">
+                {format(new Date(goal.start_date || goal.created_at), "MMM d, yyyy")}
+              </span>
+            </div>
             {goal.created_at && (
               <div className="text-xs text-slate-500">
                 <span className="text-slate-400">Practice Days:</span>{" "}
