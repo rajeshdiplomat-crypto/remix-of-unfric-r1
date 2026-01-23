@@ -229,82 +229,51 @@ export function TopFocusBar({ tasks, onStartFocus }: TopFocusBarProps) {
 
   return (
     <>
-      <Card className="rounded-2xl border border-border/60 bg-background/70 backdrop-blur-xl shadow-[0_12px_36px_rgba(0,0,0,0.08)]">
-        <CardContent className={cn("flex items-center gap-2", collapsed ? "py-2 px-2.5" : "py-3 px-3")}>
+      <Card className="rounded-xl border border-border/60 bg-background/70 backdrop-blur-xl shadow-sm">
+        <CardContent className="flex items-center gap-2 py-2 px-3">
           {/* Left icon */}
-          <div
-            className={cn(
-              "rounded-2xl flex items-center justify-center shrink-0 border border-border/60 bg-background/60",
-              collapsed ? "h-9 w-9" : "h-10 w-10",
-            )}
-          >
-            <Play className="h-4 w-4" />
+          <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0 border border-border/60 bg-background/60">
+            <Play className="h-3.5 w-3.5" />
           </div>
 
           {/* Main content */}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 min-w-0">
-              {!collapsed && (
-                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Top focus
-                </span>
-              )}
-              <p className={cn("min-w-0 truncate", collapsed ? "text-sm font-medium" : "text-sm font-semibold")}>
-                {topTask.title}
-              </p>
+              <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground shrink-0">
+                Top focus
+              </span>
+              <p className="text-xs font-semibold min-w-0 truncate">{topTask.title}</p>
             </div>
-
-            {!collapsed && (
-              <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-                {topTask.urgency === "high" && (
-                  <Badge
-                    variant="outline"
-                    className="h-5 px-2 text-[10px] rounded-full bg-background/60 border-border/60"
-                  >
-                    Urgent
-                  </Badge>
-                )}
-                {topTask.importance === "high" && (
-                  <Badge
-                    variant="outline"
-                    className="h-5 px-2 text-[10px] rounded-full bg-background/60 border-border/60"
-                  >
-                    Important
-                  </Badge>
-                )}
-                {!!dueLabel && (
-                  <Badge
-                    variant="outline"
-                    className="h-5 px-2 text-[10px] rounded-full bg-background/60 border-border/60"
-                  >
-                    <Clock3 className="h-3 w-3 mr-1" />
-                    {dueLabel}
-                  </Badge>
-                )}
-              </div>
-            )}
+            <div className="flex items-center gap-1 mt-0.5">
+              {!!dueLabel && (
+                <Badge variant="outline" className="h-4 px-1.5 text-[9px] rounded-full bg-background/60 border-border/60">
+                  <Clock3 className="h-2.5 w-2.5 mr-0.5" />
+                  {dueLabel}
+                </Badge>
+              )}
+            </div>
           </div>
 
           {/* Right actions */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             <Button
               variant="outline"
               onClick={() => setShowStats(true)}
-              className="rounded-full border-border/60 bg-background/60 hover:bg-primary/10 h-9 px-3 text-xs"
+              className="rounded-full border-border/60 bg-background/60 hover:bg-primary/10 h-7 px-2.5 text-[10px]"
             >
-              <BarChart3 className="h-4 w-4 mr-1.5" />
+              <BarChart3 className="h-3 w-3 mr-1" />
               Stats
             </Button>
-            <Button variant="default" onClick={() => onStartFocus(topTask)} className="rounded-full h-9 px-4 text-xs">
+            <Button variant="default" onClick={() => onStartFocus(topTask)} className="rounded-full h-7 px-3 text-[10px]">
               Focus
             </Button>
             <Button
               variant="outline"
               size="icon"
               onClick={() => setCollapsed((v) => !v)}
-              className="rounded-full border-border/60 bg-background/60 h-9 w-9"
+              className="rounded-full border-border/60 bg-background/60 h-7 w-7"
             >
-              {collapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              {collapsed ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
             </Button>
           </div>
         </CardContent>

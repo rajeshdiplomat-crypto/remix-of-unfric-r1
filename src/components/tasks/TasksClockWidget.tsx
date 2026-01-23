@@ -108,7 +108,7 @@ export function TasksClockWidget() {
   ];
 
   return (
-    <Card className="h-full rounded-2xl border-0 bg-gradient-to-br from-card via-card/95 to-card/90 shadow-xl overflow-hidden relative">
+    <Card className="h-full rounded-xl border-0 bg-gradient-to-br from-card via-card/95 to-card/90 shadow-xl overflow-hidden relative">
       {/* Subtle background effects */}
       <div className="absolute top-0 right-0 -mr-12 -mt-12 w-40 h-40 bg-gradient-to-br from-primary/8 to-transparent rounded-full blur-2xl pointer-events-none" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
