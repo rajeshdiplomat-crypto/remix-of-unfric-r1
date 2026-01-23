@@ -743,16 +743,25 @@ export default function Trackers() {
         {/* Dashboard Content */}
         <div className="px-4 py-4 space-y-4">
           {/* Top Section: Month + Progress Rings */}
-          <div className="grid grid-cols-1 lg:grid-cols-[180px_1fr_200px] gap-4">
-            {/* Month Card - Slim Design */}
-            <Card className="p-3 rounded-xl bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950/30 dark:to-cyan-950/30">
+          <div className="grid grid-cols-1 lg:grid-cols-[160px_1fr_200px] gap-4">
+            {/* Month Card - Slim Design, Clickable */}
+            <Card 
+              className="p-3 rounded-xl bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950/30 dark:to-cyan-950/30 cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => {
+                const habitsTable = document.querySelector('[data-habits-table]');
+                habitsTable?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+            >
               {/* Month Header */}
               <div className="flex items-center justify-between mb-3">
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6"
-                  onClick={() => setCurrentMonth(addDays(startOfMonth(currentMonth), -1))}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentMonth(addDays(startOfMonth(currentMonth), -1));
+                  }}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -763,7 +772,10 @@ export default function Trackers() {
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6"
-                  onClick={() => setCurrentMonth(addDays(endOfMonth(currentMonth), 1))}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentMonth(addDays(endOfMonth(currentMonth), 1));
+                  }}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -801,15 +813,15 @@ export default function Trackers() {
                 </div>
               </div>
 
-              {/* Habit Days Stats */}
-              <div className="mb-3">
+              {/* Habit Days Stats - Active = Pending (Total - Done) */}
+              <div>
                 <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-1.5">Habit Days</p>
                 <div className="grid grid-cols-3 gap-1 text-center">
                   <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
                     <p className="text-sm font-bold text-teal-600 dark:text-teal-400">
-                      {overallStats.totalCompleted + overallStats.totalRemaining}
+                      {activities.reduce((sum, a) => sum + a.habitDays, 0) - overallStats.totalCompleted}
                     </p>
-                    <p className="text-[9px] text-slate-500">Active</p>
+                    <p className="text-[9px] text-slate-500">Pending</p>
                   </div>
                   <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
                     <p className="text-sm font-bold text-green-600 dark:text-green-400">{overallStats.totalCompleted}</p>
@@ -821,18 +833,6 @@ export default function Trackers() {
                     </p>
                     <p className="text-[9px] text-slate-500">Total</p>
                   </div>
-                </div>
-              </div>
-
-              {/* Completion Summary */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-center">
-                  <p className="text-lg font-bold text-green-700 dark:text-green-300">{overallStats.totalCompleted}</p>
-                  <p className="text-[9px] text-green-600 dark:text-green-400 font-medium">COMPLETED</p>
-                </div>
-                <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-center">
-                  <p className="text-lg font-bold text-red-700 dark:text-red-300">{overallStats.totalRemaining}</p>
-                  <p className="text-[9px] text-red-600 dark:text-red-400 font-medium">REMAINING</p>
                 </div>
               </div>
             </Card>
@@ -1136,7 +1136,7 @@ export default function Trackers() {
           </div>
 
           {/* Habits Grid */}
-          <Card className="rounded-xl overflow-hidden">
+          <Card className="rounded-xl overflow-hidden" data-habits-table>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
