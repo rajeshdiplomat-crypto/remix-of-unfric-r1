@@ -26,8 +26,8 @@ export function TasksHeader({
   onNewTask,
 }: TasksHeaderProps) {
   return (
-    <div className="flex items-center gap-2 flex-wrap justify-start">
-      {/* Mode select */}
+    <div className="flex items-center gap-2 flex-wrap justify-between">
+      {/* Left: View mode + Planner/Quadrant */}
       <div className="flex items-center gap-2">
         <span className="hidden sm:inline text-[12px] uppercase tracking-[0.16em] text-muted-foreground">
           View mode
@@ -44,50 +44,51 @@ export function TasksHeader({
             <SelectItem value="time">🕐 Time of Day</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* Segmented control (Board / Quadrant) */}
+        <div className="flex items-center rounded-xl border border-border/40 bg-background/60 p-1 shadow-sm">
+          <button
+            type="button"
+            onClick={() => onViewChange("board")}
+            className={[
+              "h-8 px-3 rounded-lg text-[13px] font-medium transition",
+              view === "board" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
+            ].join(" ")}
+          >
+            📅 Planner
+          </button>
+          <button
+            type="button"
+            onClick={() => onViewChange("quadrant")}
+            className={[
+              "h-8 px-3 rounded-lg text-[13px] font-medium transition",
+              view === "quadrant"
+                ? "bg-card shadow-sm text-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            ].join(" ")}
+          >
+            Quadrant
+          </button>
+        </div>
       </div>
 
-      {/* Search */}
-      <div className="relative w-[220px]">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search tasks..."
-          className={`pl-9 ${controlBase}`}
-        />
-      </div>
+      {/* Right: Search + New Task */}
+      <div className="flex items-center gap-2">
+        <div className="relative w-[220px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Search tasks..."
+            className={`pl-9 ${controlBase}`}
+          />
+        </div>
 
-      {/* Segmented control (Board / Quadrant) */}
-      <div className="flex items-center rounded-xl border border-border/40 bg-background/60 p-1 shadow-sm">
-        <button
-          type="button"
-          onClick={() => onViewChange("board")}
-          className={[
-            "h-8 px-3 rounded-lg text-[13px] font-medium transition",
-            view === "board" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
-          ].join(" ")}
-        >
-          📅 Planner
-        </button>
-        <button
-          type="button"
-          onClick={() => onViewChange("quadrant")}
-          className={[
-            "h-8 px-3 rounded-lg text-[13px] font-medium transition",
-            view === "quadrant"
-              ? "bg-card shadow-sm text-foreground"
-              : "text-muted-foreground hover:text-foreground",
-          ].join(" ")}
-        >
-          Quadrant
-        </button>
+        <Button onClick={onNewTask} className="h-10 rounded-xl px-4 shadow-sm">
+          <Plus className="h-4 w-4 mr-2" />
+          New Task
+        </Button>
       </div>
-
-      {/* Primary CTA */}
-      <Button onClick={onNewTask} className="h-10 rounded-xl px-4 shadow-sm">
-        <Plus className="h-4 w-4 mr-2" />
-        New Task
-      </Button>
     </div>
   );
 }
