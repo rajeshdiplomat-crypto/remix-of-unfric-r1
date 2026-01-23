@@ -136,7 +136,7 @@ export function NotesSplitView({
       <div className="h-full border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm relative">
         <ResizablePanelGroup direction="horizontal" className="h-full">
           {/* Left Sidebar */}
-          <ResizablePanel defaultSize={15} minSize={15} maxSize={40} className="border-r border-slate-100 flex flex-col bg-slate-50 overflow-visible relative z-[10000]">
+          <ResizablePanel defaultSize={8} minSize={8} maxSize={40} className="border-r border-slate-100 flex flex-col bg-slate-50 overflow-visible relative z-[10000]">
           <div className="p-3 border-b border-slate-100 flex items-center justify-between shrink-0">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               {isInFocusMode ? "Context" : "Notes"}
