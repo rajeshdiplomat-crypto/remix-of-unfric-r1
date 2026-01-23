@@ -657,7 +657,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack }: NotesRichEdito
   );
 
   const containerClass = isFullscreen
-    ? "fixed inset-0 z-[9999] flex flex-col"
+    ? "fixed inset-0 z-[10000] flex flex-col bg-white"
     : "flex flex-col h-full w-full overflow-hidden";
 
   // Should show lines based on lineStyle selection
