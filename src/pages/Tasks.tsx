@@ -582,6 +582,7 @@ export default function Tasks() {
                 onTaskClick={openTaskDetail}
                 onStartTask={handleStartTask}
                 onCompleteTask={handleCompleteTask}
+                onDeleteTask={(task) => handleDeleteTask(task.id)}
                 collapsed={allTasksCollapsed}
                 onToggleCollapse={() => setAllTasksCollapsed((v) => !v)}
               />
