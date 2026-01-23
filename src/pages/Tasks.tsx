@@ -554,9 +554,9 @@ export default function Tasks() {
       <PageHero
         storageKey="tasks_hero_src"
         typeKey="tasks_hero_type"
-        badge={PAGE_HERO_TEXT.tasks.badge}
-        title={PAGE_HERO_TEXT.tasks.title}
-        subtitle={PAGE_HERO_TEXT.tasks.subtitle}
+        badge=""
+        title=""
+        subtitle=""
       />
 
       <div className="w-full flex-1 min-h-0 px-6 lg:px-8 pt-6">
