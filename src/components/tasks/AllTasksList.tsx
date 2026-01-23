@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Play, Check, Calendar, Clock, ChevronsLeft, ChevronsRight, ListChecks } from "lucide-react";
+import { Play, Check, Calendar, Clock, ChevronsLeft, ChevronsRight, ListChecks, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ interface AllTasksListProps {
   onTaskClick: (task: QuadrantTask) => void;
   onStartTask: (task: QuadrantTask) => void;
   onCompleteTask: (task: QuadrantTask) => void;
+  onDeleteTask?: (task: QuadrantTask) => void;
 
   /** NEW */
   collapsed?: boolean;
@@ -26,6 +27,7 @@ export function AllTasksList({
   onTaskClick,
   onStartTask,
   onCompleteTask,
+  onDeleteTask,
   collapsed = false,
   onToggleCollapse,
 }: AllTasksListProps) {
@@ -148,6 +150,20 @@ export function AllTasksList({
             >
               <Check className={cn("h-3.5 w-3.5", isCompleted && "text-chart-1")} />
             </Button>
+            {onDeleteTask && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 opacity-70 hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteTask(task);
+                }}
+                title="Delete Task"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
           </div>
         </div>
       </div>
