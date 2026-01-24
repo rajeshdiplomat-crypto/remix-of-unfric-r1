@@ -27,26 +27,26 @@ export function RecentEntriesList({
 
   if (entries.length === 0) {
     return (
-      <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm p-6 text-center">
-        <Clock className="h-8 w-8 mx-auto text-slate-300 mb-2" />
-        <p className="text-sm text-slate-500">No check-ins yet</p>
+      <div className="rounded-2xl bg-card border border-border shadow-sm p-6 text-center h-full flex flex-col items-center justify-center">
+        <Clock className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
+        <p className="text-sm text-muted-foreground">No check-ins yet</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+    <div className="rounded-2xl bg-card border border-border shadow-sm overflow-hidden h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-900/20 dark:to-violet-900/20 border-b border-slate-200 dark:border-slate-700">
+      <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-900/20 dark:to-violet-900/20 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
           <Clock className="h-4 w-4 text-indigo-500" />
-          <span className="font-semibold text-sm text-slate-800 dark:text-white">Recent Check-ins</span>
+          <span className="font-semibold text-sm text-foreground">Recent Check-ins</span>
         </div>
-        <span className="text-xs text-slate-500">{entries.length} total</span>
+        <span className="text-xs text-muted-foreground">{entries.length} total</span>
       </div>
 
-      {/* Entries List */}
-      <div className="divide-y divide-slate-100 dark:divide-slate-700 max-h-[400px] overflow-y-auto">
+      {/* Entries List - fills remaining height */}
+      <div className="divide-y divide-border flex-1 overflow-y-auto">
         {entries.slice(0, maxItems).map((entry) => {
           const isExpanded = expandedEntryId === entry.id;
           const quadrant = QUADRANTS[entry.quadrant];
@@ -57,7 +57,7 @@ export function RecentEntriesList({
           return (
             <div key={entry.id} className="group">
               <div
-                className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors"
+                className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 cursor-pointer transition-colors"
                 onClick={() => toggleExpand(entry.id)}
               >
                 {/* Color indicator */}
@@ -69,16 +69,16 @@ export function RecentEntriesList({
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm text-slate-800 dark:text-white truncate">
+                    <span className="font-medium text-sm text-foreground truncate">
                       {entry.emotion}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[11px] text-slate-400">{timeAgo}</span>
-                    <span className="text-[10px] text-slate-300">•</span>
-                    <span className="text-[11px] text-slate-400">{dateDisplay}</span>
-                    <span className="text-[10px] text-slate-300">•</span>
-                    <span className="text-[11px] text-slate-400">{timeDisplay}</span>
+                    <span className="text-[11px] text-muted-foreground">{timeAgo}</span>
+                    <span className="text-[10px] text-muted-foreground/50">•</span>
+                    <span className="text-[11px] text-muted-foreground">{dateDisplay}</span>
+                    <span className="text-[10px] text-muted-foreground/50">•</span>
+                    <span className="text-[11px] text-muted-foreground">{timeDisplay}</span>
                   </div>
                 </div>
 
@@ -90,7 +90,7 @@ export function RecentEntriesList({
 
               {/* Expanded content */}
               {isExpanded && (
-                <div className="px-4 pb-3 space-y-2 bg-slate-50/50 dark:bg-slate-800/50">
+                <div className="px-4 pb-3 space-y-2 bg-muted/30">
                   {/* Quadrant label */}
                   <div
                     className="text-xs px-2 py-1 rounded-md inline-block"
@@ -101,19 +101,19 @@ export function RecentEntriesList({
 
                   {/* Note */}
                   {entry.note && (
-                    <p className="text-sm text-slate-600 dark:text-slate-400">{entry.note}</p>
+                    <p className="text-sm text-muted-foreground">{entry.note}</p>
                   )}
 
                   {/* Context tags */}
                   {entry.context && (entry.context.who || entry.context.what) && (
                     <div className="flex flex-wrap gap-1.5">
                       {entry.context.who && (
-                        <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-600 dark:text-slate-300">
+                        <span className="text-xs px-2 py-0.5 bg-muted rounded-full text-muted-foreground">
                           With: {entry.context.who}
                         </span>
                       )}
                       {entry.context.what && (
-                        <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-600 dark:text-slate-300">
+                        <span className="text-xs px-2 py-0.5 bg-muted rounded-full text-muted-foreground">
                           {entry.context.what}
                         </span>
                       )}
