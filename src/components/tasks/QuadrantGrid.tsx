@@ -139,7 +139,7 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
     return (
       <div
         className={cn(
-          "relative flex flex-col rounded-2xl border-2 transition-all duration-300 overflow-hidden",
+          "relative flex flex-col rounded-xl border-2 transition-all duration-300 overflow-hidden max-h-[200px]",
           `bg-gradient-to-br ${gradients[position]}`,
           isTopLeft ? "border-primary/30 shadow-lg" : "border-border/30 shadow-sm",
           "hover:shadow-lg hover:border-border/50",
@@ -186,7 +186,7 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
         </div>
 
         {/* Active Task List */}
-        <div className="flex-1 p-2 space-y-1.5 overflow-y-auto min-h-[80px] max-h-[140px]">
+        <div className="flex-1 p-2 space-y-1 overflow-y-auto">
           {activeTasks.slice(0, 3).map((task) => {
             const status = computeTaskStatus(task);
             const isOngoing = status === "ongoing";
