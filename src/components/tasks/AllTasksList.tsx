@@ -185,7 +185,7 @@ export function AllTasksList({
             className={cn(
               "px-2 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all",
               urgencyFilter === tab.id
-                ? "bg-chart-1 text-primary-foreground"
+                ? "bg-primary text-primary-foreground shadow-sm"
                 : "bg-muted/50 text-muted-foreground hover:bg-muted"
             )}
           >
