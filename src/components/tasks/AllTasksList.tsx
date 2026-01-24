@@ -21,8 +21,7 @@ interface AllTasksListProps {
 }
 
 type FilterTab = "all" | "upcoming" | "ongoing" | "completed" | "overdue";
-type UrgencyFilter = "all" | "urgent" | "not-urgent";
-type ImportanceFilter = "all" | "important" | "not-important";
+type QuadrantFilter = "all" | "ui" | "uni" | "nui" | "nuni";
 
 export function AllTasksList({
   tasks,
@@ -34,19 +33,17 @@ export function AllTasksList({
   onToggleCollapse,
 }: AllTasksListProps) {
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
-  const [urgencyFilter, setUrgencyFilter] = useState<UrgencyFilter>("all");
-  const [importanceFilter, setImportanceFilter] = useState<ImportanceFilter>("all");
+  const [quadrantFilter, setQuadrantFilter] = useState<QuadrantFilter>("all");
 
   // Apply all filters
   const filteredTasks = tasks.filter((t) => {
     // Status filter
     if (activeTab !== "all" && computeTaskStatus(t) !== activeTab) return false;
-    // Urgency filter
-    if (urgencyFilter === "urgent" && t.urgency !== "high") return false;
-    if (urgencyFilter === "not-urgent" && t.urgency !== "low") return false;
-    // Importance filter
-    if (importanceFilter === "important" && t.importance !== "high") return false;
-    if (importanceFilter === "not-important" && t.importance !== "low") return false;
+    // Quadrant filter
+    if (quadrantFilter === "ui" && !(t.urgency === "high" && t.importance === "high")) return false;
+    if (quadrantFilter === "uni" && !(t.urgency === "high" && t.importance === "low")) return false;
+    if (quadrantFilter === "nui" && !(t.urgency === "low" && t.importance === "high")) return false;
+    if (quadrantFilter === "nuni" && !(t.urgency === "low" && t.importance === "low")) return false;
     return true;
   });
 
@@ -291,52 +288,37 @@ export function AllTasksList({
             {/* Divider */}
             <div className="w-px h-4 bg-border/50 mx-1" />
 
-            {/* Urgency & Priority Filters - Combined inline */}
+            {/* Quadrant Filters - U&I, U&NI, NU&I, NU&NI */}
             {[
-              { value: "all" as UrgencyFilter, label: "All", type: "urgency" },
-              { value: "urgent" as UrgencyFilter, label: "🔥", type: "urgency" },
-              { value: "not-urgent" as UrgencyFilter, label: "⏳", type: "urgency" },
+              { value: "all" as QuadrantFilter, label: "All", color: "bg-primary" },
+              { value: "ui" as QuadrantFilter, label: "U&I", color: "bg-gradient-to-r from-rose-500 to-red-500" },
+              { value: "uni" as QuadrantFilter, label: "U&NI", color: "bg-gradient-to-r from-amber-500 to-orange-500" },
+              { value: "nui" as QuadrantFilter, label: "NU&I", color: "bg-gradient-to-r from-blue-500 to-indigo-500" },
+              {
+                value: "nuni" as QuadrantFilter,
+                label: "NU&NI",
+                color: "bg-gradient-to-r from-slate-400 to-slate-500",
+              },
             ].map((filter) => (
               <button
-                key={`u-${filter.value}`}
-                onClick={() => setUrgencyFilter(filter.value)}
+                key={filter.value}
+                onClick={() => setQuadrantFilter(filter.value)}
                 className={cn(
-                  "px-2 py-1 rounded-full text-[11px] font-medium transition-all",
-                  urgencyFilter === filter.value
-                    ? filter.value === "urgent"
-                      ? "bg-gradient-to-r from-rose-500 to-red-500 text-white shadow-sm"
-                      : "bg-primary text-white shadow-sm"
-                    : "bg-muted/40 text-muted-foreground hover:bg-muted",
-                )}
-                title={filter.value === "all" ? "All Urgency" : filter.value === "urgent" ? "Urgent" : "Not Urgent"}
-              >
-                {filter.label}
-              </button>
-            ))}
-
-            {/* Priority filters */}
-            {[
-              { value: "all" as ImportanceFilter, label: "All", type: "importance" },
-              { value: "important" as ImportanceFilter, label: "⭐", type: "importance" },
-              { value: "not-important" as ImportanceFilter, label: "○", type: "importance" },
-            ].map((filter) => (
-              <button
-                key={`i-${filter.value}`}
-                onClick={() => setImportanceFilter(filter.value)}
-                className={cn(
-                  "px-2 py-1 rounded-full text-[11px] font-medium transition-all",
-                  importanceFilter === filter.value
-                    ? filter.value === "important"
-                      ? "bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-sm"
-                      : "bg-slate-500 text-white shadow-sm"
+                  "px-2 py-1 rounded-full text-[10px] font-semibold transition-all",
+                  quadrantFilter === filter.value
+                    ? `${filter.color} text-white shadow-sm`
                     : "bg-muted/40 text-muted-foreground hover:bg-muted",
                 )}
                 title={
                   filter.value === "all"
-                    ? "All Priority"
-                    : filter.value === "important"
-                      ? "High Priority"
-                      : "Low Priority"
+                    ? "All Priorities"
+                    : filter.value === "ui"
+                      ? "Urgent & Important"
+                      : filter.value === "uni"
+                        ? "Urgent & Not Important"
+                        : filter.value === "nui"
+                          ? "Not Urgent & Important"
+                          : "Not Urgent & Not Important"
                 }
               >
                 {filter.label}
