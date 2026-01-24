@@ -1,26 +1,31 @@
-import { useState } from "react";
-import { Play, Check, Calendar, Clock, ChevronsLeft, ChevronsRight, ListChecks, Trash2 } from "lucide-react";
-import { format } from "date-fns";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useMemo, useState } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Play,
+  Check,
+  Trash2,
+  ListChecks,
+  Loader2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { QuadrantTask, computeTaskStatus } from "./types";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { QuadrantTask } from "./types";
 
 interface AllTasksListProps {
   tasks: QuadrantTask[];
   onTaskClick: (task: QuadrantTask) => void;
   onStartTask: (task: QuadrantTask) => void;
   onCompleteTask: (task: QuadrantTask) => void;
-  onDeleteTask?: (task: QuadrantTask) => void;
-
-  /** NEW */
+  onDeleteTask: (task: QuadrantTask) => void;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
 }
 
-type FilterTab = "all" | "upcoming" | "ongoing" | "completed" | "overdue";
+type FilterTab = "all" | "upcoming" | "ongoing" | "done" | "due";
+type UrgencyFilter = "all" | "U&I" | "U&NI" | "NU&I" | "NU&NI";
 
 export function AllTasksList({
   tasks,
@@ -32,233 +37,270 @@ export function AllTasksList({
   onToggleCollapse,
 }: AllTasksListProps) {
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
+  const [urgencyFilter, setUrgencyFilter] = useState<UrgencyFilter>("all");
 
-  const filteredTasks = activeTab === "all" ? tasks : tasks.filter((t) => computeTaskStatus(t) === activeTab);
+  // Calculate counts for each tab
+  const counts = useMemo(() => {
+    const all = tasks.length;
+    const upcoming = tasks.filter((t) => t.status === "upcoming" && !t.is_completed).length;
+    const ongoing = tasks.filter((t) => t.status === "ongoing" && !t.is_completed).length;
+    const done = tasks.filter((t) => t.is_completed).length;
+    const due = tasks.filter((t) => t.status === "overdue" && !t.is_completed).length;
+    return { all, upcoming, ongoing, done, due };
+  }, [tasks]);
 
-  const counts = {
-    all: tasks.length,
-    upcoming: tasks.filter((t) => computeTaskStatus(t) === "upcoming").length,
-    ongoing: tasks.filter((t) => computeTaskStatus(t) === "ongoing").length,
-    completed: tasks.filter((t) => computeTaskStatus(t) === "completed").length,
-    overdue: tasks.filter((t) => computeTaskStatus(t) === "overdue").length,
+  // Filter tasks based on active tab and urgency filter
+  const filteredTasks = useMemo(() => {
+    let result = tasks;
+
+    // Apply status filter
+    switch (activeTab) {
+      case "upcoming":
+        result = result.filter((t) => t.status === "upcoming" && !t.is_completed);
+        break;
+      case "ongoing":
+        result = result.filter((t) => t.status === "ongoing" && !t.is_completed);
+        break;
+      case "done":
+        result = result.filter((t) => t.is_completed);
+        break;
+      case "due":
+        result = result.filter((t) => t.status === "overdue" && !t.is_completed);
+        break;
+    }
+
+    // Apply urgency/importance filter
+    switch (urgencyFilter) {
+      case "U&I":
+        result = result.filter((t) => t.urgency === "high" && t.importance === "high");
+        break;
+      case "U&NI":
+        result = result.filter((t) => t.urgency === "high" && t.importance === "low");
+        break;
+      case "NU&I":
+        result = result.filter((t) => t.urgency === "low" && t.importance === "high");
+        break;
+      case "NU&NI":
+        result = result.filter((t) => t.urgency === "low" && t.importance === "low");
+        break;
+    }
+
+    return result;
+  }, [tasks, activeTab, urgencyFilter]);
+
+  const tabs: { id: FilterTab; label: string; count: number }[] = [
+    { id: "all", label: "All", count: counts.all },
+    { id: "upcoming", label: "Up", count: counts.upcoming },
+    { id: "ongoing", label: "On", count: counts.ongoing },
+    { id: "done", label: "Done", count: counts.done },
+    { id: "due", label: "Due", count: counts.due },
+  ];
+
+  const urgencyTabs: { id: UrgencyFilter; label: string }[] = [
+    { id: "all", label: "All" },
+    { id: "U&I", label: "U&I" },
+    { id: "U&NI", label: "U&NI" },
+    { id: "NU&I", label: "NU&I" },
+    { id: "NU&NI", label: "NU&NI" },
+  ];
+
+  // Format time display
+  const formatTimeRange = (task: QuadrantTask) => {
+    if (!task.due_date) return "";
+    const date = new Date(task.due_date);
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
+    let result = `${day}/${month}`;
+    if (task.due_time) {
+      result += ` ${task.due_time}`;
+      if (task.end_time && task.end_time !== task.due_time) {
+        result += `-${task.end_time}`;
+      }
+    }
+    return result;
   };
 
-  const getUrgencyBadge = (urgency: string) =>
-    urgency === "high" ? (
-      <Badge
-        variant="outline"
-        className="text-[10px] px-1.5 py-0 bg-destructive/10 text-destructive border-destructive/30"
-      >
-        Urgent
-      </Badge>
-    ) : (
-      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-        Not Urgent
-      </Badge>
-    );
-
-  const getImportanceBadge = (importance: string) =>
-    importance === "high" ? (
-      <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/30">
-        Important
-      </Badge>
-    ) : (
-      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-        Not Important
-      </Badge>
-    );
-
-  const getTimeOfDayBadge = (timeOfDay: string) => {
-    const icons: Record<string, string> = { morning: "🌅", afternoon: "☀️", evening: "🌆", night: "🌙" };
-    return (
-      <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">
-        {icons[timeOfDay] || ""} {timeOfDay}
-      </Badge>
-    );
-  };
-
-  const TaskCard = ({ task }: { task: QuadrantTask }) => {
-    const isCompleted = task.is_completed || !!task.completed_at;
-    const status = computeTaskStatus(task);
-
-    const isOngoing = status === "ongoing";
-
-    return (
-      <div
-        className={cn(
-          "group p-3 rounded-xl border transition-all",
-          "hover:shadow-md hover:border-border cursor-pointer",
-          isOngoing ? "bg-primary/5 border-l-2 border-l-primary border-border/50" : "bg-background border-border/50",
-          isCompleted && "opacity-60",
-        )}
-      >
-        <div className="flex items-start gap-2">
-          <div className="flex-1 min-w-0" onClick={() => onTaskClick(task)}>
-            <p className={cn("text-sm font-medium text-foreground truncate", isCompleted && "line-through")}>
-              {task.title}
-            </p>
-
-            <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
-              {task.due_date && (
-                <span className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  {format(new Date(task.due_date), "MMM d")}
-                </span>
-              )}
-              {task.due_time && (
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {task.due_time}
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-1 mt-2">
-              {getUrgencyBadge(task.urgency)}
-              {getImportanceBadge(task.importance)}
-              {getTimeOfDayBadge(task.time_of_day)}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1 flex-shrink-0">
-            {!isCompleted && status !== "completed" && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 opacity-70 hover:opacity-100 hover:bg-primary/10 hover:text-primary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onStartTask(task);
-                }}
-                title="Start / Deep Focus"
-              >
-                <Play className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "h-7 w-7 opacity-70 hover:opacity-100",
-                isCompleted ? "hover:bg-amber-500/10 hover:text-amber-500" : "hover:bg-chart-1/10 hover:text-chart-1",
-              )}
-              onClick={(e) => {
-                e.stopPropagation();
-                onCompleteTask(task);
-              }}
-              title={isCompleted ? "Mark Incomplete" : "Mark Complete"}
-            >
-              <Check className={cn("h-3.5 w-3.5", isCompleted && "text-chart-1")} />
-            </Button>
-            {onDeleteTask && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 opacity-70 hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteTask(task);
-                }}
-                title="Delete Task"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ✅ Collapsed rail UI
+  // Collapsed state - just show toggle button
   if (collapsed) {
     return (
-      <div className="flex flex-col h-full bg-card/50 rounded-2xl border border-border/50 items-center py-3 gap-3">
+      <div className="h-full flex flex-col items-center py-4 bg-card rounded-2xl border border-border/50">
         <Button
           variant="ghost"
           size="icon"
-          className="h-9 w-9 rounded-xl"
           onClick={onToggleCollapse}
-          title="Expand All Tasks"
+          className="h-10 w-10 rounded-full"
         >
-          <ChevronsRight className="h-4 w-4" />
+          <ChevronRight className="h-5 w-5" />
         </Button>
-
-        <div className="h-10 w-10 rounded-2xl bg-muted/30 flex items-center justify-center">
-          <ListChecks className="h-5 w-5 text-muted-foreground" />
-        </div>
-
-        <div className="flex flex-col items-center gap-2 mt-1">
-          <Badge variant="outline" className="text-[10px] px-2 py-0.5">
-            All {counts.all}
-          </Badge>
-          <Badge
-            variant="outline"
-            className="text-[10px] px-2 py-0.5 bg-destructive/10 text-destructive border-destructive/30"
-          >
-            Due {counts.overdue}
-          </Badge>
-        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-card/50 rounded-2xl border border-border/50">
+    <div className="h-full flex flex-col bg-card rounded-2xl border border-border/50 overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-border/30 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">All Tasks</h2>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 rounded-xl"
-          onClick={onToggleCollapse}
-          title="Collapse All Tasks"
-        >
-          <ChevronsLeft className="h-4 w-4" />
-        </Button>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+            <ListChecks className="h-4 w-4 text-primary-foreground" />
+          </div>
+          <span className="font-semibold text-foreground">All Tasks</span>
+        </div>
+        {onToggleCollapse && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggleCollapse}
+            className="h-8 w-8 rounded-lg"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
-      {/* Tabs */}
-      <Tabs
-        value={activeTab}
-        onValueChange={(v) => setActiveTab(v as FilterTab)}
-        className="flex-1 flex flex-col min-h-0"
-      >
-        <div className="px-3 pt-3">
-          <TabsList className="w-full grid grid-cols-5 h-8 bg-transparent gap-1">
-            <TabsTrigger value="all" className="text-xs px-1">
-              All ({counts.all})
-            </TabsTrigger>
-            <TabsTrigger value="upcoming" className="text-xs px-1">
-              Up ({counts.upcoming})
-            </TabsTrigger>
-            <TabsTrigger value="ongoing" className="text-xs px-1">
-              On ({counts.ongoing})
-            </TabsTrigger>
-            <TabsTrigger value="completed" className="text-xs px-1">
-              Done ({counts.completed})
-            </TabsTrigger>
-            <TabsTrigger value="overdue" className="text-xs px-1 text-destructive">
-              Due ({counts.overdue})
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        {/* Task list with max height for exactly 12 entries */}
-        <ScrollArea className="flex-1 px-3 pb-3" style={{ maxHeight: "1400px" }}>
-          <div className="space-y-2 mt-3">
-            {filteredTasks.length > 0 ? (
-              filteredTasks.map((task) => <TaskCard key={task.id} task={task} />)
-            ) : (
-              <div className="flex items-center justify-center h-32 text-muted-foreground/60 text-sm italic">
-                No {activeTab === "all" ? "" : activeTab} tasks
-              </div>
+      {/* Filter tabs - Status */}
+      <div className="flex items-center gap-1 px-3 py-2 border-b border-border/30 overflow-x-auto">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={cn(
+              "px-2 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all",
+              activeTab === tab.id
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted"
             )}
-          </div>
-        </ScrollArea>
-      </Tabs>
+          >
+            {tab.label} {tab.count}
+          </button>
+        ))}
+      </div>
+
+      {/* Filter tabs - Urgency/Importance */}
+      <div className="flex items-center gap-1 px-3 py-2 border-b border-border/30 overflow-x-auto">
+        {urgencyTabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setUrgencyFilter(tab.id)}
+            className={cn(
+              "px-2 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all",
+              urgencyFilter === tab.id
+                ? "bg-chart-1 text-primary-foreground"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted"
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Task list */}
+      <ScrollArea className="flex-1">
+        <div className="p-3 space-y-2">
+          {filteredTasks.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground text-sm">
+              No tasks found
+            </div>
+          ) : (
+            filteredTasks.map((task) => (
+              <div
+                key={task.id}
+                onClick={() => onTaskClick(task)}
+                className={cn(
+                  "group p-3 rounded-xl border cursor-pointer transition-all",
+                  "hover:shadow-md hover:border-primary/30",
+                  task.is_completed
+                    ? "bg-muted/30 border-border/30"
+                    : task.status === "overdue"
+                      ? "bg-destructive/5 border-destructive/20"
+                      : "bg-background border-border/50"
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className={cn(
+                        "font-medium text-sm truncate",
+                        task.is_completed && "line-through text-muted-foreground"
+                      )}
+                    >
+                      {task.title}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      {formatTimeRange(task) && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                          {formatTimeRange(task)}
+                        </span>
+                      )}
+                      {task.urgency === "high" && (
+                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-orange-300 text-orange-600 bg-orange-50 dark:bg-orange-900/20">
+                          U
+                        </Badge>
+                      )}
+                      {task.importance === "high" && (
+                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-blue-300 text-blue-600 bg-blue-50 dark:bg-blue-900/20">
+                          I
+                        </Badge>
+                      )}
+                      {task.tags?.slice(0, 1).map((tag) => (
+                        <Badge key={tag} variant="secondary" className="text-[10px] px-1 py-0 h-4">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {!task.is_completed && task.status !== "ongoing" && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onStartTask(task);
+                        }}
+                        className="h-6 w-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                        title="Start task"
+                      >
+                        <Play className="h-3 w-3" />
+                      </button>
+                    )}
+                    {task.status === "ongoing" && !task.is_completed && (
+                      <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCompleteTask(task);
+                      }}
+                      className={cn(
+                        "h-6 w-6 rounded-full flex items-center justify-center transition-colors",
+                        task.is_completed
+                          ? "text-emerald-500 bg-emerald-100 dark:bg-emerald-900/30"
+                          : "text-muted-foreground hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                      )}
+                      title={task.is_completed ? "Mark incomplete" : "Mark complete"}
+                    >
+                      <Check className="h-3 w-3" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteTask(task);
+                      }}
+                      className="h-6 w-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
+                      title="Delete task"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </ScrollArea>
     </div>
   );
 }
+
+export default AllTasksList;

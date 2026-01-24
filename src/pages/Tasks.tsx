@@ -31,6 +31,7 @@ import {
   createDefaultTask,
   suggestTimeOfDay,
   computeDateBucket,
+  getDefaultEndTime,
 } from "@/components/tasks/types";
 
 // Sample data
@@ -240,14 +241,18 @@ export default function Tasks() {
 
     if (!error && data) {
       const quadrantTasks: QuadrantTask[] = data.map((t: any) => {
-        const dueTime = t.due_time || null;
+        const rawDueTime = t.due_time || null;
+        const dueTime = rawDueTime ? rawDueTime.substring(0, 5) : null;
+        const rawEndTime = t.end_time || null;
+        const endTime = rawEndTime ? rawEndTime.substring(0, 5) : dueTime ? getDefaultEndTime(dueTime) : null;
+
         const task: QuadrantTask = {
           id: t.id,
           title: t.title,
           description: t.description,
           due_date: t.due_date,
           due_time: dueTime,
-          end_time: t.end_time || null,
+          end_time: endTime,
           priority: t.priority || "medium",
           is_completed: t.is_completed || false,
           completed_at: t.completed_at,
@@ -307,6 +312,7 @@ export default function Tasks() {
         description: task.description || null,
         due_date: task.due_date || null,
         due_time: task.due_time || null,
+        end_time: task.end_time || null,
         priority: task.priority,
         urgency: task.urgency,
         importance: task.importance,
@@ -375,61 +381,91 @@ export default function Tasks() {
   };
 
   const handleCompleteTask = async (task: QuadrantTask) => {
-    const completedAt = new Date().toISOString();
-    const updated: QuadrantTask = {
-      ...task,
-      is_completed: true,
-      completed_at: completedAt,
-      status: "completed",
-    };
+    const isCurrentlyCompleted = task.is_completed || !!task.completed_at;
 
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
-    setDrawerOpen(false);
+    if (isCurrentlyCompleted) {
+      // UNCOMPLETE the task
+      const updated: QuadrantTask = {
+        ...task,
+        is_completed: false,
+        completed_at: null,
+        status: computeTaskStatus({ ...task, is_completed: false, completed_at: null }),
+      };
 
-    // Sync completion to Supabase
-    if (user) {
-      await supabase
-        .from("tasks")
-        .update({
-          is_completed: true,
-          completed_at: completedAt,
-        })
-        .eq("id", task.id)
-        .eq("user_id", user.id);
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+      setDrawerOpen(false);
 
-      // SYNC: If this is a habit-linked task, also mark the habit as complete
-      if (task.tags?.includes("Habit") && task.due_date) {
-        // Find the habit by matching the task title
-        const { data: habits } = await supabase
-          .from("habits")
-          .select("id, name")
-          .eq("user_id", user.id)
-          .eq("name", task.title);
+      // Sync to Supabase
+      if (user) {
+        await supabase
+          .from("tasks")
+          .update({
+            is_completed: false,
+            completed_at: null,
+          })
+          .eq("id", task.id)
+          .eq("user_id", user.id);
+      }
 
-        if (habits && habits.length > 0) {
-          const habitId = habits[0].id;
-          const completedDate = task.due_date.split("T")[0]; // Format: yyyy-MM-dd
+      toast({ title: "Reopened!", description: "Task marked as incomplete" });
+    } else {
+      // COMPLETE the task
+      const completedAt = new Date().toISOString();
+      const updated: QuadrantTask = {
+        ...task,
+        is_completed: true,
+        completed_at: completedAt,
+        status: "completed",
+      };
 
-          // Check if already marked complete
-          const { data: existing } = await supabase
-            .from("habit_completions")
-            .select("id")
-            .eq("habit_id", habitId)
-            .eq("completed_date", completedDate);
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+      setDrawerOpen(false);
 
-          // Only insert if not already complete
-          if (!existing || existing.length === 0) {
-            await supabase.from("habit_completions").insert({
-              habit_id: habitId,
-              user_id: user.id,
-              completed_date: completedDate,
-            });
+      // Sync completion to Supabase
+      if (user) {
+        await supabase
+          .from("tasks")
+          .update({
+            is_completed: true,
+            completed_at: completedAt,
+          })
+          .eq("id", task.id)
+          .eq("user_id", user.id);
+
+        // SYNC: If this is a habit-linked task, also mark the habit as complete
+        if (task.tags?.includes("Habit") && task.due_date) {
+          // Find the habit by matching the task title
+          const { data: habits } = await supabase
+            .from("habits")
+            .select("id, name")
+            .eq("user_id", user.id)
+            .eq("name", task.title);
+
+          if (habits && habits.length > 0) {
+            const habitId = habits[0].id;
+            const completedDate = task.due_date.split("T")[0]; // Format: yyyy-MM-dd
+
+            // Check if already marked complete
+            const { data: existing } = await supabase
+              .from("habit_completions")
+              .select("id")
+              .eq("habit_id", habitId)
+              .eq("completed_date", completedDate);
+
+            // Only insert if not already complete
+            if (!existing || existing.length === 0) {
+              await supabase.from("habit_completions").insert({
+                habit_id: habitId,
+                user_id: user.id,
+                completed_date: completedDate,
+              });
+            }
           }
         }
       }
-    }
 
-    toast({ title: "Completed!", description: "Task marked as done" });
+      toast({ title: "Completed!", description: "Task marked as done" });
+    }
   };
 
   const handleStartFocus = (task: QuadrantTask) => {
@@ -583,7 +619,7 @@ export default function Tasks() {
 
           <div className={`flex-1 grid grid-cols-1 ${gridCols} gap-8 min-h-0 min-w-0`}>
             {/* Left */}
-            <div className="min-h-0 min-w-0">
+            <div className="min-h-0 min-w-0 h-[600px]">
               <AllTasksList
                 tasks={filteredTasks}
                 onTaskClick={openTaskDetail}
@@ -596,7 +632,7 @@ export default function Tasks() {
             </div>
 
             {/* Right */}
-            <div className="min-h-0 overflow-auto w-full min-w-0">
+            <div className="w-full min-w-0 h-[600px]">
               {view === "quadrant" && (
                 <QuadrantGrid
                   mode={quadrantMode}

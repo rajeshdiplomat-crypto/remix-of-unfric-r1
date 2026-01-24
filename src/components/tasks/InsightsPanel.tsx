@@ -266,31 +266,59 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
     }
     return data;
   }, [tasks, today]);
+  // Filter for pending tasks only (not completed)
+  const pendingPeriodTasks = periodTasks.filter((t) => !t.is_completed && !t.completed_at);
+
+  // Get overdue tasks (due before the selected period start, not completed)
+  const getPeriodStart = () => {
+    switch (timePeriod) {
+      case "today":
+        return today;
+      case "tomorrow":
+        return tomorrow;
+      case "week":
+        return today;
+      default:
+        return today;
+    }
+  };
+  const periodStart = getPeriodStart();
+
+  const overdueTasks = tasks.filter((t) => {
+    if (!t.due_date) return false;
+    if (t.is_completed || t.completed_at) return false;
+    const dueDate = startOfDay(new Date(t.due_date));
+    return isBefore(dueDate, periodStart);
+  });
+
+  // Combine pending period tasks + overdue tasks for pie chart
+  const pieChartTasks = [...pendingPeriodTasks, ...overdueTasks];
+
   const quadrantData = useMemo(
     () =>
       [
         {
           name: "Urgent & Important",
-          value: periodTasks.filter((t) => t.urgency === "high" && t.importance === "high").length,
+          value: pieChartTasks.filter((t) => t.urgency === "high" && t.importance === "high").length,
           color: "hsl(var(--destructive))",
         },
         {
           name: "Urgent & Not Important",
-          value: periodTasks.filter((t) => t.urgency === "high" && t.importance === "low").length,
+          value: pieChartTasks.filter((t) => t.urgency === "high" && t.importance === "low").length,
           color: "hsl(var(--primary))",
         },
         {
           name: "Not Urgent & Important",
-          value: periodTasks.filter((t) => t.urgency === "low" && t.importance === "high").length,
+          value: pieChartTasks.filter((t) => t.urgency === "low" && t.importance === "high").length,
           color: "hsl(var(--chart-1))",
         },
         {
           name: "Not Urgent & Not Important",
-          value: periodTasks.filter((t) => t.urgency === "low" && t.importance === "low").length,
+          value: pieChartTasks.filter((t) => t.urgency === "low" && t.importance === "low").length,
           color: "hsl(var(--muted))",
         },
       ].filter((d) => d.value > 0),
-    [periodTasks],
+    [pieChartTasks],
   );
   if (!expanded) {
     return (
@@ -306,9 +334,9 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
   }
   return (
     <Card className="rounded-xl border border-primary/20 bg-gradient-to-br from-card/80 via-card/60 to-chart-1/5 backdrop-blur-sm shadow-md flex-1 overflow-hidden">
-      <CardContent className="p-1.5 h-full px-[5px] py-[5px] rounded-sm">
-        {/* Main content: Time selector left, KPIs middle (2x3), Charts right */}
-        <div className="h-full flex gap-2">
+      <CardContent className="p-1 h-full px-1 py-1 rounded-sm">
+        {/* Main content: Time selector left, KPIs middle, Charts right */}
+        <div className="h-full flex gap-1.5">
           {/* Far Left: Time Period Selector - vertical slim buttons */}
           <div className="flex flex-col gap-1 shrink-0 justify-center">
             {(["today", "tomorrow", "week"] as TimePeriod[]).map((period) => (
@@ -332,8 +360,8 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
             ))}
           </div>
 
-          {/* Left: KPI Cards in 2x3 grid - stretch to full height */}
-          <div className="grid grid-cols-2 gap-1 w-[180px] shrink-0 auto-rows-fr">
+          {/* Left: KPI Cards in 2x2 grid */}
+          <div className="grid grid-cols-2 gap-0.5 w-[200px] shrink-0 auto-rows-fr">
             {/* Pending - Blue gradient */}
             <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 shadow-sm">
               <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shrink-0 shadow-sm">
@@ -487,7 +515,7 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
                 <div className="h-4 w-4 rounded bg-chart-2/20 flex items-center justify-center">
                   <ClockIcon className="h-2.5 w-2.5 text-chart-2" />
                 </div>
-                <span className="text-[9px] font-semibold text-chart-2 uppercase">Week Priority</span>
+                <span className="text-[9px] font-semibold text-chart-2 uppercase">Priority</span>
               </div>
               <div className="flex-1 min-h-0 flex items-center gap-2">
                 {quadrantData.length > 0 ? (
