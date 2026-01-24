@@ -112,51 +112,44 @@ export function AllTasksList({
         <div className="flex items-center gap-2">
           <div className="flex-1 min-w-0" onClick={() => onTaskClick(task)}>
             {/* Title */}
-            <p
-              className={cn(
-                "text-xs font-semibold text-foreground truncate",
-                isCompleted && "line-through text-muted-foreground",
-              )}
-            >
+            <p className={cn(
+              "text-xs font-semibold text-foreground truncate",
+              isCompleted && "line-through text-muted-foreground"
+            )}>
               {task.title}
             </p>
 
             {/* Date/Time + Priority on same row */}
             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-              {/* Date & Time */}
+              {/* Date & Time (Start - End) */}
               {task.due_date && (
                 <span className="text-[9px] text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded">
                   {format(new Date(task.due_date), "d/M")}
                   {task.due_time && ` ${task.due_time}`}
+                  {task.due_time && task.end_time && `-${task.end_time}`}
                 </span>
               )}
               {/* Urgency & Importance combined */}
-              <span
-                className={cn(
-                  "text-[9px] px-1.5 py-0.5 rounded font-medium",
-                  task.urgency === "high" ? "bg-destructive/10 text-destructive" : "bg-muted/40 text-muted-foreground",
-                )}
-              >
+              <span className={cn(
+                "text-[9px] px-1.5 py-0.5 rounded font-medium",
+                task.urgency === "high"
+                  ? "bg-destructive/10 text-destructive"
+                  : "bg-muted/40 text-muted-foreground"
+              )}>
                 {task.urgency === "high" ? "U" : "NU"}
               </span>
-              <span
-                className={cn(
-                  "text-[9px] px-1.5 py-0.5 rounded font-medium",
-                  task.importance === "high" ? "bg-primary/10 text-primary" : "bg-muted/40 text-muted-foreground",
-                )}
-              >
+              <span className={cn(
+                "text-[9px] px-1.5 py-0.5 rounded font-medium",
+                task.importance === "high"
+                  ? "bg-primary/10 text-primary"
+                  : "bg-muted/40 text-muted-foreground"
+              )}>
                 {task.importance === "high" ? "I" : "NI"}
               </span>
               {/* Time of day */}
               {task.time_of_day && (
                 <span className="text-[9px] text-muted-foreground">
-                  {task.time_of_day === "morning"
-                    ? "🌅"
-                    : task.time_of_day === "afternoon"
-                      ? "☀️"
-                      : task.time_of_day === "evening"
-                        ? "🌆"
-                        : "🌙"}
+                  {task.time_of_day === "morning" ? "🌅" : task.time_of_day === "afternoon" ? "☀️" : task.time_of_day === "evening" ? "🌆" : "🌙"}
                 </span>
               )}
             </div>
@@ -169,10 +162,7 @@ export function AllTasksList({
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6 rounded-lg opacity-60 hover:opacity-100 hover:bg-primary/20 hover:text-primary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onStartTask(task);
-                }}
+                onClick={(e) => { e.stopPropagation(); onStartTask(task); }}
                 title="Start / Deep Focus"
               >
                 <Play className="h-3 w-3" />
@@ -183,14 +173,9 @@ export function AllTasksList({
               size="icon"
               className={cn(
                 "h-6 w-6 rounded-lg opacity-60 hover:opacity-100",
-                isCompleted
-                  ? "hover:bg-amber-500/20 hover:text-amber-500"
-                  : "hover:bg-emerald-500/20 hover:text-emerald-500",
+                isCompleted ? "hover:bg-amber-500/20 hover:text-amber-500" : "hover:bg-emerald-500/20 hover:text-emerald-500"
               )}
-              onClick={(e) => {
-                e.stopPropagation();
-                onCompleteTask(task);
-              }}
+              onClick={(e) => { e.stopPropagation(); onCompleteTask(task); }}
               title={isCompleted ? "Mark Incomplete" : "Mark Complete"}
             >
               {isCompleted ? <RotateCcw className="h-3 w-3 text-amber-500" /> : <Check className="h-3 w-3" />}
@@ -200,10 +185,7 @@ export function AllTasksList({
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6 rounded-lg opacity-60 hover:opacity-100 hover:bg-rose-500/20 hover:text-rose-500"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteTask(task);
-                }}
+                onClick={(e) => { e.stopPropagation(); onDeleteTask(task); }}
                 title="Delete Task"
               >
                 <Trash2 className="h-3 w-3" />
@@ -279,15 +261,13 @@ export function AllTasksList({
         <div className="px-4 pt-3 pb-2 space-y-2">
           {/* Status Pills - Slim style */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            {(
-              [
-                { value: "all", label: "All", count: counts.all, color: "from-slate-500 to-slate-600" },
-                { value: "upcoming", label: "Up", count: counts.upcoming, color: "from-blue-500 to-indigo-500" },
-                { value: "ongoing", label: "On", count: counts.ongoing, color: "from-amber-500 to-orange-500" },
-                { value: "completed", label: "Done", count: counts.completed, color: "from-emerald-500 to-green-600" },
-                { value: "overdue", label: "Due", count: counts.overdue, color: "from-rose-500 to-red-600" },
-              ] as const
-            ).map((tab) => (
+            {([
+              { value: "all", label: "All", count: counts.all, color: "from-slate-500 to-slate-600" },
+              { value: "upcoming", label: "Up", count: counts.upcoming, color: "from-blue-500 to-indigo-500" },
+              { value: "ongoing", label: "On", count: counts.ongoing, color: "from-amber-500 to-orange-500" },
+              { value: "completed", label: "Done", count: counts.completed, color: "from-emerald-500 to-green-600" },
+              { value: "overdue", label: "Due", count: counts.overdue, color: "from-rose-500 to-red-600" },
+            ] as const).map((tab) => (
               <button
                 key={tab.value}
                 onClick={() => setActiveTab(tab.value)}
@@ -295,11 +275,14 @@ export function AllTasksList({
                   "px-2 py-1 rounded-full text-[11px] font-medium transition-all duration-200 flex items-center gap-1",
                   activeTab === tab.value
                     ? `bg-gradient-to-r ${tab.color} text-white shadow-sm`
-                    : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground",
+                    : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
                 {tab.label}
-                <span className={cn("text-[9px] font-bold", activeTab === tab.value ? "opacity-80" : "opacity-60")}>
+                <span className={cn(
+                  "text-[9px] font-bold",
+                  activeTab === tab.value ? "opacity-80" : "opacity-60"
+                )}>
                   {tab.count}
                 </span>
               </button>
@@ -310,25 +293,13 @@ export function AllTasksList({
 
             {/* Quadrant Filters - All on same line */}
             <div className="flex items-center gap-1">
-              {[
+              {([
                 { value: "all" as QuadrantFilter, label: "All", color: "bg-primary" },
                 { value: "ui" as QuadrantFilter, label: "U&I", color: "bg-gradient-to-r from-rose-500 to-red-500" },
-                {
-                  value: "uni" as QuadrantFilter,
-                  label: "U&NI",
-                  color: "bg-gradient-to-r from-amber-500 to-orange-500",
-                },
-                {
-                  value: "nui" as QuadrantFilter,
-                  label: "NU&I",
-                  color: "bg-gradient-to-r from-blue-500 to-indigo-500",
-                },
-                {
-                  value: "nuni" as QuadrantFilter,
-                  label: "NU&NI",
-                  color: "bg-gradient-to-r from-slate-400 to-slate-500",
-                },
-              ].map((filter) => (
+                { value: "uni" as QuadrantFilter, label: "U&NI", color: "bg-gradient-to-r from-amber-500 to-orange-500" },
+                { value: "nui" as QuadrantFilter, label: "NU&I", color: "bg-gradient-to-r from-blue-500 to-indigo-500" },
+                { value: "nuni" as QuadrantFilter, label: "NU&NI", color: "bg-gradient-to-r from-slate-400 to-slate-500" },
+              ]).map((filter) => (
                 <button
                   key={filter.value}
                   onClick={() => setQuadrantFilter(filter.value)}
@@ -336,18 +307,14 @@ export function AllTasksList({
                     "px-1.5 py-0.5 rounded-full text-[10px] font-semibold transition-all whitespace-nowrap",
                     quadrantFilter === filter.value
                       ? `${filter.color} text-white shadow-sm`
-                      : "bg-muted/40 text-muted-foreground hover:bg-muted",
+                      : "bg-muted/40 text-muted-foreground hover:bg-muted"
                   )}
                   title={
-                    filter.value === "all"
-                      ? "All Priorities"
-                      : filter.value === "ui"
-                        ? "Urgent & Important"
-                        : filter.value === "uni"
-                          ? "Urgent & Not Important"
-                          : filter.value === "nui"
-                            ? "Not Urgent & Important"
-                            : "Not Urgent & Not Important"
+                    filter.value === "all" ? "All Priorities" :
+                      filter.value === "ui" ? "Urgent & Important" :
+                        filter.value === "uni" ? "Urgent & Not Important" :
+                          filter.value === "nui" ? "Not Urgent & Important" :
+                            "Not Urgent & Not Important"
                   }
                 >
                   {filter.label}
@@ -376,3 +343,4 @@ export function AllTasksList({
     </div>
   );
 }
+start and

@@ -207,10 +207,11 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
                   <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
                     {task.due_date && (
                       <span>
-                        {new Date(task.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        {new Date(task.due_date).getDate()}/{new Date(task.due_date).getMonth() + 1}
+                        {task.due_time && ` ${task.due_time}`}
+                        {task.due_time && task.end_time && `-${task.end_time}`}
                       </span>
                     )}
-                    {task.due_time && <span>@ {task.due_time}</span>}
                     {status === "overdue" && (
                       <Badge
                         variant="outline"
