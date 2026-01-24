@@ -350,15 +350,24 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
             {/* Timeline spine - vertical line */}
             <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-300 via-blue-400 to-blue-300 dark:from-blue-600 dark:via-blue-500 dark:to-blue-600" />
 
-            {/* Current time indicator */}
+            {/* Current time indicator - extends full width */}
             {isToday && isCurrentTimeVisible && (
-              <div
-                className="absolute left-0 right-4 flex items-center z-30 pointer-events-none"
-                style={{ top: `${currentTimePosition + 8}px` }}
-              >
-                <div className="w-3 h-3 rounded-full bg-rose-500 shadow-lg shadow-rose-300 dark:shadow-rose-900 animate-pulse ml-[18px]" />
-                <div className="flex-1 h-[2px] bg-rose-500" />
-              </div>
+              <>
+                {/* Line extending into hour labels area */}
+                <div
+                  className="absolute -left-20 right-0 flex items-center z-30 pointer-events-none"
+                  style={{ top: `${currentTimePosition + 8}px` }}
+                >
+                  <div className="flex-1 h-[2px] bg-rose-500" />
+                </div>
+                {/* Pulse dot on the timeline spine */}
+                <div
+                  className="absolute z-30 pointer-events-none"
+                  style={{ top: `${currentTimePosition + 8}px`, left: '18px' }}
+                >
+                  <div className="w-3 h-3 rounded-full bg-rose-500 shadow-lg shadow-rose-300 dark:shadow-rose-900 animate-pulse -translate-y-1/2" />
+                </div>
+              </>
             )}
 
             {/* Empty state */}
@@ -451,8 +460,10 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
                           {task.title}
                         </span>
 
-                        {/* Time */}
-                        <span className="text-[10px] text-slate-400 shrink-0">{formatTime(event.startMinutes)}</span>
+                        {/* Time range */}
+                        <span className="text-[10px] text-slate-400 shrink-0">
+                          {formatTime(event.startMinutes)}-{formatTime(event.endMinutes)}
+                        </span>
 
                         {/* Urgency/Importance badges - compact */}
                         {(task.urgency === "high" || task.importance === "high") && (
