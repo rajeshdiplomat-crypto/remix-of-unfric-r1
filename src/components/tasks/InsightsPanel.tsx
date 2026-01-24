@@ -307,29 +307,31 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
   return (
     <Card className="rounded-xl border border-primary/20 bg-gradient-to-br from-card/80 via-card/60 to-chart-1/5 backdrop-blur-sm shadow-md flex-1 overflow-hidden">
       <CardContent className="p-1.5 h-full px-[5px] py-[5px] rounded-sm">
-        {/* Time Period Selector */}
-        <div className="flex items-center gap-1 mb-1.5">
-          {(["today", "tomorrow", "week"] as TimePeriod[]).map((period) => (
-            <button
-              key={period}
-              onClick={() => setTimePeriod(period)}
-              className={cn(
-                "flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-medium uppercase tracking-wide transition-all",
-                timePeriod === period
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-            >
-              {period === "today" && <Sun className="h-3 w-3" />}
-              {period === "tomorrow" && <Sunrise className="h-3 w-3" />}
-              {period === "week" && <CalendarDays className="h-3 w-3" />}
-              {period === "today" ? "Today" : period === "tomorrow" ? "Tomorrow" : "Week"}
-            </button>
-          ))}
-        </div>
+        {/* Main content: Time selector left, KPIs middle (2x3), Charts right */}
+        <div className="h-full flex gap-2">
+          {/* Far Left: Time Period Selector - vertical slim buttons */}
+          <div className="flex flex-col gap-1 shrink-0">
+            {(["today", "tomorrow", "week"] as TimePeriod[]).map((period) => (
+              <button
+                key={period}
+                onClick={() => setTimePeriod(period)}
+                className={cn(
+                  "flex items-center justify-center gap-1 px-1.5 py-1.5 rounded-md text-[7px] font-medium uppercase tracking-wide transition-all w-[52px]",
+                  timePeriod === period
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                {period === "today" && <Sun className="h-2.5 w-2.5" />}
+                {period === "tomorrow" && <Sunrise className="h-2.5 w-2.5" />}
+                {period === "week" && <CalendarDays className="h-2.5 w-2.5" />}
+                <span className="hidden sm:inline">
+                  {period === "today" ? "Today" : period === "tomorrow" ? "Tmrw" : "Week"}
+                </span>
+              </button>
+            ))}
+          </div>
 
-        {/* Main content: KPIs left (2x3), Charts right (narrower pie chart) */}
-        <div className="h-[calc(100%-32px)] flex gap-2">
           {/* Left: KPI Cards in 2x3 grid - stretch to full height */}
           <div className="grid grid-cols-2 gap-1 w-[180px] shrink-0 auto-rows-fr">
             {/* Planned - Blue gradient */}
