@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -9,16 +9,11 @@ import {
   Check,
   Loader2,
   ArrowLeft,
-  ChevronDown,
-  ChevronUp,
   Pencil,
   Trash2,
   Heart,
   Sparkles,
-  TrendingUp,
-  Clock,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -35,14 +30,14 @@ import { QuadrantType, EmotionEntry, QUADRANTS } from "@/components/emotions/typ
 import { EmotionSliderPicker } from "@/components/emotions/EmotionSliderPicker";
 import { EmotionContextFieldsEnhanced } from "@/components/emotions/EmotionContextFieldsEnhanced";
 import { StrategiesPanelEnhanced } from "@/components/emotions/StrategiesPanelEnhanced";
-import { PatternsDashboardEnhanced } from "@/components/emotions/PatternsDashboardEnhanced";
-import { CheckinReminders } from "@/components/emotions/CheckinReminders";
+import { EmotionCalendarSidebar } from "@/components/emotions/EmotionCalendarSidebar";
+import { RecentEntriesList } from "@/components/emotions/RecentEntriesList";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function Emotions() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [entries, setEntries] = useState<EmotionEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -65,9 +60,6 @@ export default function Emotions() {
   // For viewing entries by date
   const [viewingDate, setViewingDate] = useState<string | null>(null);
   const [viewingEntries, setViewingEntries] = useState<EmotionEntry[]>([]);
-
-  // For expanded check-in cards
-  const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
 
   // For editing entries
   const [editingEntry, setEditingEntry] = useState<EmotionEntry | null>(null);
@@ -208,7 +200,7 @@ export default function Emotions() {
     emotionId: string,
     quadrant: QuadrantType,
     emotion: string,
-    note?: string,
+    noteText?: string,
     ctx?: typeof context,
     entryDate?: string,
   ) => {
@@ -228,7 +220,7 @@ export default function Emotions() {
         source_id: emotionId,
         title: `Feeling ${emotion}`,
         summary: summary,
-        content_preview: note || null,
+        content_preview: noteText || null,
         media: [],
         metadata: { quadrant, emotion, context: ctx, entry_date: entryDate },
       });
@@ -299,8 +291,6 @@ export default function Emotions() {
     setViewingDate(date);
     setViewingEntries(dayEntries);
   };
-
-  const toggleExpandEntry = (entryId: string) => setExpandedEntryId((prev) => (prev === entryId ? null : entryId));
 
   const startEditEntry = (entry: EmotionEntry) => {
     setEditingEntry(entry);
@@ -390,7 +380,7 @@ export default function Emotions() {
   if (loading) return <PageLoadingScreen module="emotions" />;
 
   return (
-    <div className="flex flex-col w-full flex-1 bg-slate-50 dark:bg-slate-950 min-h-screen">
+    <div className="flex flex-col w-full flex-1 bg-muted/30 min-h-screen">
       {/* Hero */}
       <PageHero
         storageKey="emotion_hero_src"
@@ -401,48 +391,49 @@ export default function Emotions() {
       />
 
       {/* Stats Strip */}
-      <div className="px-6 lg:px-8 py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+      <div className="px-6 lg:px-8 py-3 border-b border-border bg-card">
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-2">
-            <Heart className="h-4 w-4 text-indigo-500" />
-            <span className="font-medium text-slate-700 dark:text-slate-200">{totalCheckins}</span>
-            <span className="text-slate-500">check-ins</span>
+            <Heart className="h-4 w-4 text-rose-500" />
+            <span className="font-medium text-foreground">{totalCheckins}</span>
+            <span className="text-muted-foreground">check-ins</span>
           </div>
-          <div className="w-px h-4 bg-slate-200 dark:bg-slate-700" />
+          <div className="w-px h-4 bg-border" />
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-amber-500" />
-            <span className="font-medium text-slate-700 dark:text-slate-200">{todayCount}</span>
-            <span className="text-slate-500">today</span>
+            <span className="font-medium text-foreground">{todayCount}</span>
+            <span className="text-muted-foreground">today</span>
           </div>
           {latestEntry && (
             <>
-              <div className="w-px h-4 bg-slate-200 dark:bg-slate-700" />
+              <div className="w-px h-4 bg-border" />
               <div className="flex items-center gap-2">
                 <div
                   className="w-2.5 h-2.5 rounded-full"
                   style={{ backgroundColor: QUADRANTS[latestEntry.quadrant].color }}
                 />
-                <span className="text-slate-500">Last:</span>
-                <span className="font-medium text-slate-700 dark:text-slate-200">{latestEntry.emotion}</span>
+                <span className="text-muted-foreground">Last:</span>
+                <span className="font-medium text-foreground">{latestEntry.emotion}</span>
               </div>
             </>
           )}
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content - Two Column Layout */}
       <div className="flex-1 px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
-          {/* Left Column - Check-in & Patterns */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 h-full">
+          {/* Left Column - Check-in & Strategies (wider) */}
           <div className="space-y-6">
             {/* Check-in Card */}
-            <Card className="rounded-2xl border-slate-200 dark:border-slate-700 shadow-sm">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold text-slate-800 dark:text-white">
+            <Card className="rounded-2xl border-border shadow-sm overflow-hidden">
+              <CardHeader className="pb-2 bg-gradient-to-r from-rose-50/50 to-amber-50/50 dark:from-rose-900/10 dark:to-amber-900/10">
+                <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                  <Heart className="h-4 w-4 text-rose-500" />
                   How are you feeling?
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
+              <CardContent className="pt-4">
                 {step === "sliders" && <EmotionSliderPicker onSelect={handleSliderComplete} />}
 
                 {step === "details" && selectedQuadrant && selectedEmotion && (
@@ -459,7 +450,7 @@ export default function Emotions() {
                         <p className="font-medium" style={{ color: QUADRANTS[selectedQuadrant].color }}>
                           {selectedEmotion}
                         </p>
-                        <p className="text-xs text-slate-500">{QUADRANTS[selectedQuadrant].description}</p>
+                        <p className="text-xs text-muted-foreground">{QUADRANTS[selectedQuadrant].description}</p>
                       </div>
                     </div>
 
@@ -481,7 +472,7 @@ export default function Emotions() {
                       <Button
                         onClick={saveCheckIn}
                         disabled={saving}
-                        className="flex-1 rounded-xl h-10 bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-600 hover:to-violet-600 text-white"
+                        className="flex-1 rounded-xl h-10 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white border-0"
                       >
                         {saving ? (
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -496,107 +487,29 @@ export default function Emotions() {
               </CardContent>
             </Card>
 
-            {/* Patterns Dashboard */}
-            <PatternsDashboardEnhanced entries={entries} onDateClick={handleDateClick} />
-          </div>
-
-          {/* Right Column - Recent, Strategies, Reminders */}
-          <div className="space-y-4">
-            {/* Recent Check-ins */}
-            {entries.length > 0 && (
-              <Card className="rounded-2xl border-slate-200 dark:border-slate-700 shadow-sm">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2 text-slate-700 dark:text-slate-200">
-                    <Clock className="h-4 w-4 text-slate-400" />
-                    Recent
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0 space-y-1.5 max-h-64 overflow-y-auto">
-                  {entries.slice(0, 6).map((entry) => {
-                    const isExpanded = expandedEntryId === entry.id;
-
-                    return (
-                      <div key={entry.id} className="rounded-lg bg-slate-50 dark:bg-slate-800">
-                        <div className="flex items-center justify-between p-2.5">
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <div
-                              className="w-2 h-2 rounded-full shrink-0"
-                              style={{ backgroundColor: QUADRANTS[entry.quadrant].color }}
-                            />
-                            <span className="text-sm font-medium truncate text-slate-700 dark:text-slate-200">
-                              {entry.emotion}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <span className="text-xs text-slate-400">
-                              {format(new Date(entry.entry_date + "T12:00:00"), "MMM d")}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-5 w-5 p-0"
-                              onClick={() => toggleExpandEntry(entry.id)}
-                            >
-                              {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                            </Button>
-                          </div>
-                        </div>
-
-                        {isExpanded && (
-                          <div className="px-2.5 pb-2.5 space-y-2 border-t border-slate-200 dark:border-slate-700">
-                            {entry.note && <p className="text-xs text-slate-500 mt-2">{entry.note}</p>}
-                            <div className="flex flex-wrap gap-1">
-                              {entry.context?.who && (
-                                <span className="text-xs px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded">
-                                  {entry.context.who}
-                                </span>
-                              )}
-                              {entry.context?.what && (
-                                <span className="text-xs px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded">
-                                  {entry.context.what}
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex gap-1.5 pt-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 text-xs px-2"
-                                onClick={() => startEditEntry(entry)}
-                              >
-                                <Pencil className="h-3 w-3 mr-1" /> Edit
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 text-xs px-2 text-red-500 hover:text-red-600"
-                                onClick={() => setDeletingEntryId(entry.id)}
-                              >
-                                <Trash2 className="h-3 w-3 mr-1" /> Delete
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Strategies */}
-            <Card className="rounded-2xl border-slate-200 dark:border-slate-700 shadow-sm">
-              <CardContent className="p-4">
+            {/* Strategies Panel */}
+            <Card className="rounded-2xl border-border shadow-sm">
+              <CardContent className="p-5">
                 <StrategiesPanelEnhanced currentQuadrant={currentQuadrant} currentEmotion={currentEmotion} />
               </CardContent>
             </Card>
+          </div>
 
-            {/* Reminders */}
-            <Card className="rounded-2xl border-slate-200 dark:border-slate-700 shadow-sm">
-              <CardContent className="p-4">
-                <CheckinReminders />
-              </CardContent>
-            </Card>
+          {/* Right Column - Calendar & Recent (scrollable) */}
+          <div className="lg:h-[calc(100vh-280px)]">
+            <ScrollArea className="h-full pr-2">
+              <div className="space-y-4">
+                {/* Calendar */}
+                <EmotionCalendarSidebar entries={entries} onDateClick={handleDateClick} />
+
+                {/* Recent Entries */}
+                <RecentEntriesList
+                  entries={entries}
+                  onEditEntry={startEditEntry}
+                  onDeleteEntry={setDeletingEntryId}
+                />
+              </div>
+            </ScrollArea>
           </div>
         </div>
       </div>
@@ -620,27 +533,27 @@ export default function Emotions() {
                     {entry.emotion}
                   </span>
                   <div className="flex items-center gap-1 ml-auto">
-                    <span className="text-xs text-slate-500">{format(new Date(entry.created_at), "h:mm a")}</span>
+                    <span className="text-xs text-muted-foreground">{format(new Date(entry.created_at), "h:mm a")}</span>
                     <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => startEditEntry(entry)}>
                       <Pencil className="h-3 w-3" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 w-6 p-0 text-red-500"
+                      className="h-6 w-6 p-0 text-destructive"
                       onClick={() => setDeletingEntryId(entry.id)}
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
-                {entry.note && <p className="text-sm text-slate-500 mb-2">{entry.note}</p>}
+                {entry.note && <p className="text-sm text-muted-foreground mb-2">{entry.note}</p>}
                 <div className="flex flex-wrap gap-1.5">
                   {entry.context?.who && (
-                    <span className="text-xs px-2 py-0.5 bg-white/50 rounded-full">With: {entry.context.who}</span>
+                    <span className="text-xs px-2 py-0.5 bg-background/50 rounded-full">With: {entry.context.who}</span>
                   )}
                   {entry.context?.what && (
-                    <span className="text-xs px-2 py-0.5 bg-white/50 rounded-full">{entry.context.what}</span>
+                    <span className="text-xs px-2 py-0.5 bg-background/50 rounded-full">{entry.context.what}</span>
                   )}
                 </div>
               </div>
@@ -673,7 +586,7 @@ export default function Emotions() {
                   type="date"
                   value={format(editDate, "yyyy-MM-dd")}
                   onChange={(e) => setEditDate(new Date(e.target.value + "T12:00:00"))}
-                  className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
+                  className="w-full h-10 px-3 rounded-xl border border-border bg-background text-sm"
                 />
               </div>
 
@@ -697,7 +610,7 @@ export default function Emotions() {
                 <Button
                   onClick={saveEditedEntry}
                   disabled={saving}
-                  className="flex-1 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 text-white"
+                  className="flex-1 rounded-xl bg-gradient-to-r from-rose-500 to-orange-500 text-white border-0"
                 >
                   {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
                   Save
@@ -722,7 +635,7 @@ export default function Emotions() {
             <AlertDialogAction
               onClick={() => deletingEntryId && deleteEntry(deletingEntryId)}
               disabled={isDeleting}
-              className="bg-red-500 hover:bg-red-600 text-white rounded-xl"
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-xl"
             >
               {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Delete
