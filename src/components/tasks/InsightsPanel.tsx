@@ -519,10 +519,10 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
                             {entry.name === "Urgent & Important"
                               ? "U&I"
                               : entry.name === "Urgent & Not Important"
-                                ? "Urgent"
+                                ? "U&NI"
                                 : entry.name === "Not Urgent & Important"
-                                  ? "Important"
-                                  : "Low"}
+                                  ? "NU&I"
+                                  : "NU&NI"}
                           </span>
                         </div>
                       ))}{" "}
