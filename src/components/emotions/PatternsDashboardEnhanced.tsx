@@ -144,7 +144,7 @@ export function PatternsDashboardEnhanced({ entries, onDateClick }: PatternsDash
 
     const topEmotions = Object.entries(emotionCounts)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
+      .slice(0, 5); // Only 5 most frequent
 
     const quadrantData = Object.entries(quadrantCounts)
       .filter(([_, count]) => count > 0)
