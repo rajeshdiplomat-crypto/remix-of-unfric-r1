@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { QuadrantType, QUADRANTS, EmotionEntry } from "./types";
-import { format, subDays, startOfDay, eachDayOfInterval, parseISO, getHours } from "date-fns";
+import { format, subDays, eachDayOfInterval } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import {
   TrendingUp,
@@ -15,23 +15,15 @@ import {
   Flame,
   Heart,
   Sparkles,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
+import { useTimezone } from "@/hooks/useTimezone";
+import { getTimePeriodInTimezone, getTodayInTimezone, getStartOfTodayInTimezone } from "@/lib/formatDate";
 
 type DateRange = 7 | 30 | 90;
 
 interface PatternsDashboardEnhancedProps {
   entries: EmotionEntry[];
   onDateClick?: (date: string, entries: EmotionEntry[]) => void;
-}
-
-function getTimePeriod(timestamp: string): "morning" | "afternoon" | "evening" | "night" {
-  const hour = getHours(parseISO(timestamp));
-  if (hour >= 6 && hour < 12) return "morning";
-  if (hour >= 12 && hour < 17) return "afternoon";
-  if (hour >= 17 && hour < 21) return "evening";
-  return "night";
 }
 
 const TIME_INFO = {
@@ -70,11 +62,19 @@ function StatCard({
   );
 }
 
-function DaytimeCard({ period, entries }: { period: keyof typeof TIME_INFO; entries: EmotionEntry[] }) {
+function DaytimeCard({ 
+  period, 
+  entries,
+  timezone 
+}: { 
+  period: keyof typeof TIME_INFO; 
+  entries: EmotionEntry[];
+  timezone: string;
+}) {
   const info = TIME_INFO[period];
   const Icon = info.icon;
 
-  const periodEntries = entries.filter((e) => getTimePeriod(e.created_at) === period);
+  const periodEntries = entries.filter((e) => getTimePeriodInTimezone(e.created_at, timezone) === period);
   const count = periodEntries.length;
 
   const dominant = useMemo(() => {
@@ -117,14 +117,17 @@ function DaytimeCard({ period, entries }: { period: keyof typeof TIME_INFO; entr
 
 export function PatternsDashboardEnhanced({ entries, onDateClick }: PatternsDashboardEnhancedProps) {
   const [dateRange, setDateRange] = useState<DateRange>(30);
+  const { timezone } = useTimezone();
 
   const filteredEntries = useMemo(() => {
-    const cutoff = format(subDays(startOfDay(new Date()), dateRange - 1), "yyyy-MM-dd");
+    const today = getStartOfTodayInTimezone(timezone);
+    const cutoff = format(subDays(today, dateRange - 1), "yyyy-MM-dd");
     return entries.filter((e) => e.entry_date >= cutoff);
-  }, [entries, dateRange]);
+  }, [entries, dateRange, timezone]);
 
   const stats = useMemo(() => {
-    const today = startOfDay(new Date());
+    const today = getStartOfTodayInTimezone(timezone);
+    const todayStr = getTodayInTimezone(timezone);
 
     const quadrantCounts: Record<QuadrantType, number> = {
       "high-pleasant": 0,
@@ -159,7 +162,8 @@ export function PatternsDashboardEnhanced({ entries, onDateClick }: PatternsDash
 
     let streak = 0;
     for (let i = 0; i < 90; i++) {
-      if (entries.some((e) => e.entry_date === format(subDays(today, i), "yyyy-MM-dd"))) streak++;
+      const checkDate = format(subDays(today, i), "yyyy-MM-dd");
+      if (entries.some((e) => e.entry_date === checkDate)) streak++;
       else if (i > 0) break;
     }
 
@@ -174,7 +178,7 @@ export function PatternsDashboardEnhanced({ entries, onDateClick }: PatternsDash
       quadrantData,
       dailyData,
     };
-  }, [filteredEntries, entries]);
+  }, [filteredEntries, entries, timezone]);
 
   if (entries.length === 0) {
     return (
@@ -240,7 +244,7 @@ export function PatternsDashboardEnhanced({ entries, onDateClick }: PatternsDash
       {/* Daytime Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {(["morning", "afternoon", "evening", "night"] as const).map((period) => (
-          <DaytimeCard key={period} period={period} entries={filteredEntries} />
+          <DaytimeCard key={period} period={period} entries={filteredEntries} timezone={timezone} />
         ))}
       </div>
 

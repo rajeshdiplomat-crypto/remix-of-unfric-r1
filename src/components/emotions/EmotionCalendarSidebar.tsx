@@ -6,9 +6,10 @@ import {
   startOfMonth,
   endOfMonth,
   eachDayOfInterval,
-  startOfDay,
 } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { useTimezone } from "@/hooks/useTimezone";
+import { getTodayInTimezone, getStartOfTodayInTimezone } from "@/lib/formatDate";
 
 interface EmotionCalendarSidebarProps {
   entries: EmotionEntry[];
@@ -17,8 +18,9 @@ interface EmotionCalendarSidebarProps {
 
 export function EmotionCalendarSidebar({ entries, onDateClick }: EmotionCalendarSidebarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const { timezone } = useTimezone();
 
-  const { days, firstDayOfWeek, entriesByDate } = useMemo(() => {
+  const { days, firstDayOfWeek, entriesByDate, today, todayStr } = useMemo(() => {
     const start = startOfMonth(currentMonth);
     const end = endOfMonth(currentMonth);
     const days = eachDayOfInterval({ start, end });
@@ -30,8 +32,12 @@ export function EmotionCalendarSidebar({ entries, onDateClick }: EmotionCalendar
       entriesByDate[entry.entry_date].push(entry);
     });
 
-    return { days, firstDayOfWeek, entriesByDate };
-  }, [currentMonth, entries]);
+    // Get today in user's timezone
+    const todayStr = getTodayInTimezone(timezone);
+    const today = getStartOfTodayInTimezone(timezone);
+
+    return { days, firstDayOfWeek, entriesByDate, today, todayStr };
+  }, [currentMonth, entries, timezone]);
 
   const getDominant = (dayEntries: EmotionEntry[]): QuadrantType | null => {
     if (dayEntries.length === 0) return null;
@@ -44,8 +50,6 @@ export function EmotionCalendarSidebar({ entries, onDateClick }: EmotionCalendar
     dayEntries.forEach((e) => e.quadrant && counts[e.quadrant]++);
     return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0] as QuadrantType;
   };
-
-  const today = startOfDay(new Date());
 
   return (
     <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
@@ -96,7 +100,7 @@ export function EmotionCalendarSidebar({ entries, onDateClick }: EmotionCalendar
             const dateStr = format(day, "yyyy-MM-dd");
             const dayEntries = entriesByDate[dateStr] || [];
             const dominant = getDominant(dayEntries);
-            const isToday = day.getTime() === today.getTime();
+            const isToday = dateStr === todayStr;
             const isFuture = day > today;
 
             return (
