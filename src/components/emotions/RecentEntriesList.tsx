@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { EmotionEntry, QUADRANTS } from "./types";
-import { format, formatDistanceToNow } from "date-fns";
 import { ChevronDown, ChevronUp, Pencil, Trash2, Clock } from "lucide-react";
+import { useTimezone } from "@/hooks/useTimezone";
+import { formatTimeAgo, formatDateInTimezone, formatTimeInTimezone } from "@/lib/formatDate";
 
 interface RecentEntriesListProps {
   entries: EmotionEntry[];
@@ -18,6 +19,7 @@ export function RecentEntriesList({
   maxItems = 20,
 }: RecentEntriesListProps) {
   const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
+  const { timezone } = useTimezone();
 
   const toggleExpand = (id: string) => {
     setExpandedEntryId((prev) => (prev === id ? null : id));
@@ -48,7 +50,9 @@ export function RecentEntriesList({
         {entries.slice(0, maxItems).map((entry) => {
           const isExpanded = expandedEntryId === entry.id;
           const quadrant = QUADRANTS[entry.quadrant];
-          const timeAgo = formatDistanceToNow(new Date(entry.created_at), { addSuffix: true });
+          const timeAgo = formatTimeAgo(entry.created_at);
+          const dateDisplay = formatDateInTimezone(entry.created_at, "MMM d", timezone);
+          const timeDisplay = formatTimeInTimezone(entry.created_at, timezone);
 
           return (
             <div key={entry.id} className="group">
@@ -72,7 +76,9 @@ export function RecentEntriesList({
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-[11px] text-slate-400">{timeAgo}</span>
                     <span className="text-[10px] text-slate-300">•</span>
-                    <span className="text-[11px] text-slate-400">{format(new Date(entry.entry_date), "MMM d")}</span>
+                    <span className="text-[11px] text-slate-400">{dateDisplay}</span>
+                    <span className="text-[10px] text-slate-300">•</span>
+                    <span className="text-[11px] text-slate-400">{timeDisplay}</span>
                   </div>
                 </div>
 
