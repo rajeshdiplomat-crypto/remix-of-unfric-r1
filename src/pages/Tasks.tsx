@@ -632,7 +632,7 @@ export default function Tasks() {
             </div>
 
             {/* Right */}
-            <div className="min-h-0 overflow-auto w-full min-w-0">
+            <div className="w-full min-w-0 h-[600px]">
               {view === "quadrant" && (
                 <QuadrantGrid
                   mode={quadrantMode}
