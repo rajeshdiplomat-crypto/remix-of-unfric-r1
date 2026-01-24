@@ -1,306 +1,684 @@
-import { useMemo, useState } from "react";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Play,
-  Check,
-  Trash2,
-  ListChecks,
-  Loader2,
-} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { QuadrantTask } from "./types";
 
-interface AllTasksListProps {
-  tasks: QuadrantTask[];
-  onTaskClick: (task: QuadrantTask) => void;
-  onStartTask: (task: QuadrantTask) => void;
-  onCompleteTask: (task: QuadrantTask) => void;
-  onDeleteTask: (task: QuadrantTask) => void;
-  collapsed?: boolean;
-  onToggleCollapse?: () => void;
-}
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
-type FilterTab = "all" | "upcoming" | "ongoing" | "done" | "due";
-type UrgencyFilter = "all" | "U&I" | "U&NI" | "NU&I" | "NU&NI";
+import { TasksHeader } from "@/components/tasks/TasksHeader";
+import { SummaryStrip } from "@/components/tasks/SummaryStrip";
+import { InsightsPanel } from "@/components/tasks/InsightsPanel";
+import { TopFocusBar } from "@/components/tasks/TopFocusBar";
+import { AllTasksList } from "@/components/tasks/AllTasksList";
+import { QuadrantGrid } from "@/components/tasks/QuadrantGrid";
+import { BoardView } from "@/components/tasks/BoardView";
+import { TasksClockWidget } from "@/components/tasks/TasksClockWidget";
+import { UnifiedTaskDrawer } from "@/components/tasks/UnifiedTaskDrawer";
+import { DeepFocusPrompt } from "@/components/tasks/DeepFocusPromptModal";
+import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
+import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 
-export function AllTasksList({
-  tasks,
-  onTaskClick,
-  onStartTask,
-  onCompleteTask,
-  onDeleteTask,
-  collapsed = false,
-  onToggleCollapse,
-}: AllTasksListProps) {
-  const [activeTab, setActiveTab] = useState<FilterTab>("all");
-  const [urgencyFilter, setUrgencyFilter] = useState<UrgencyFilter>("all");
+import {
+  QuadrantTask,
+  QuadrantMode,
+  Urgency,
+  Importance,
+  Status,
+  TimeOfDay,
+  DateBucket,
+  computeTaskStatus,
+  createDefaultTask,
+  suggestTimeOfDay,
+  computeDateBucket,
+  getDefaultEndTime,
+} from "@/components/tasks/types";
 
-  // Calculate counts for each tab
-  const counts = useMemo(() => {
-    const all = tasks.length;
-    const upcoming = tasks.filter((t) => t.status === "upcoming" && !t.is_completed).length;
-    const ongoing = tasks.filter((t) => t.status === "ongoing" && !t.is_completed).length;
-    const done = tasks.filter((t) => t.is_completed).length;
-    const due = tasks.filter((t) => t.status === "overdue" && !t.is_completed).length;
-    return { all, upcoming, ongoing, done, due };
-  }, [tasks]);
+// Sample data
+const SAMPLE_TASKS: QuadrantTask[] = [
+  {
+    id: "sample-1",
+    title: "Prepare launch checklist",
+    description: "Complete all pre-launch requirements",
+    due_date: new Date().toISOString(),
+    due_time: "14:00",
+    end_time: "15:00",
+    priority: "high",
+    is_completed: false,
+    completed_at: null,
+    created_at: new Date().toISOString(),
+    started_at: new Date().toISOString(),
+    reminder_at: null,
+    alarm_enabled: false,
+    total_focus_minutes: 45,
+    urgency: "high",
+    importance: "high",
+    status: "ongoing",
+    time_of_day: "afternoon",
+    date_bucket: "today",
+    tags: ["Launch"],
+    subtasks: [
+      { id: "1", title: "Confirm final designs", completed: true },
+      { id: "2", title: "Sync with engineering", completed: false },
+    ],
+    quadrant_assigned: true,
+  },
+  {
+    id: "sample-2",
+    title: "Q3 report analysis",
+    description: "Analyze quarterly performance metrics",
+    due_date: new Date(Date.now() - 86400000).toISOString(),
+    due_time: "09:00",
+    end_time: null,
+    priority: "high",
+    is_completed: false,
+    completed_at: null,
+    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+    started_at: null,
+    reminder_at: null,
+    alarm_enabled: false,
+    total_focus_minutes: 0,
+    urgency: "high",
+    importance: "high",
+    status: "overdue",
+    time_of_day: "morning",
+    date_bucket: "yesterday",
+    tags: ["Reports"],
+    subtasks: [],
+    quadrant_assigned: true,
+  },
+  {
+    id: "sample-3",
+    title: "Review marketing assets",
+    description: "Review and approve marketing materials",
+    due_date: new Date().toISOString(),
+    due_time: "10:00",
+    end_time: "10:30",
+    priority: "medium",
+    is_completed: false,
+    completed_at: null,
+    created_at: new Date().toISOString(),
+    started_at: new Date().toISOString(),
+    reminder_at: null,
+    alarm_enabled: false,
+    total_focus_minutes: 15,
+    urgency: "high",
+    importance: "low",
+    status: "ongoing",
+    time_of_day: "morning",
+    date_bucket: "today",
+    tags: ["Marketing"],
+    subtasks: [],
+    quadrant_assigned: true,
+  },
+  {
+    id: "sample-4",
+    title: "Draft Q4 objectives",
+    description: "Plan next quarter goals",
+    due_date: new Date(Date.now() + 86400000 * 3).toISOString(),
+    due_time: "21:00",
+    end_time: null,
+    priority: "medium",
+    is_completed: false,
+    completed_at: null,
+    created_at: new Date().toISOString(),
+    started_at: null,
+    reminder_at: null,
+    alarm_enabled: false,
+    total_focus_minutes: 0,
+    urgency: "low",
+    importance: "high",
+    status: "upcoming",
+    time_of_day: "night",
+    date_bucket: "week",
+    tags: ["Planning"],
+    subtasks: [],
+    quadrant_assigned: true,
+  },
+  {
+    id: "sample-5",
+    title: "Weekly team sync prep",
+    description: "Prepare agenda for team meeting",
+    due_date: new Date(Date.now() + 86400000).toISOString(),
+    due_time: "09:00",
+    end_time: "09:30",
+    priority: "medium",
+    is_completed: false,
+    completed_at: null,
+    created_at: new Date().toISOString(),
+    started_at: null,
+    reminder_at: null,
+    alarm_enabled: false,
+    total_focus_minutes: 0,
+    urgency: "low",
+    importance: "high",
+    status: "upcoming",
+    time_of_day: "morning",
+    date_bucket: "tomorrow",
+    tags: ["Team"],
+    subtasks: [],
+    quadrant_assigned: true,
+  },
+  {
+    id: "sample-6",
+    title: "Explore automation tools",
+    description: "Research automation options",
+    due_date: new Date(Date.now() + 86400000 * 5).toISOString(),
+    due_time: null,
+    end_time: null,
+    priority: "low",
+    is_completed: false,
+    completed_at: null,
+    created_at: new Date().toISOString(),
+    started_at: null,
+    reminder_at: null,
+    alarm_enabled: false,
+    total_focus_minutes: 0,
+    urgency: "low",
+    importance: "low",
+    status: "upcoming",
+    time_of_day: "afternoon",
+    date_bucket: "week",
+    tags: ["Research"],
+    subtasks: [],
+    quadrant_assigned: true,
+  },
+];
 
-  // Filter tasks based on active tab and urgency filter
-  const filteredTasks = useMemo(() => {
-    let result = tasks;
+export default function Tasks() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
-    // Apply status filter
-    switch (activeTab) {
-      case "upcoming":
-        result = result.filter((t) => t.status === "upcoming" && !t.is_completed);
-        break;
-      case "ongoing":
-        result = result.filter((t) => t.status === "ongoing" && !t.is_completed);
-        break;
-      case "done":
-        result = result.filter((t) => t.is_completed);
-        break;
-      case "due":
-        result = result.filter((t) => t.status === "overdue" && !t.is_completed);
-        break;
+  const [view, setView] = useState<"board" | "quadrant">("board");
+  const [quadrantMode, setQuadrantMode] = useState<QuadrantMode>("urgent-important");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const [tasks, setTasks] = useState<QuadrantTask[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<QuadrantTask | null>(null);
+  const [isNewTask, setIsNewTask] = useState(false);
+
+  const [focusPromptOpen, setFocusPromptOpen] = useState(false);
+  const [focusPromptTask, setFocusPromptTask] = useState<QuadrantTask | null>(null);
+
+  // ✅ NEW: collapse left panel
+  const [allTasksCollapsed, setAllTasksCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      setTasks(SAMPLE_TASKS);
+      setLoading(false);
+      return;
+    }
+    fetchTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTasks((prev) =>
+        prev.map((t) => ({
+          ...t,
+          status: computeTaskStatus(t),
+        })),
+      );
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchTasks = async () => {
+    if (!user) return;
+    setLoading(true);
+
+    const { data, error } = await supabase
+      .from("tasks")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      const quadrantTasks: QuadrantTask[] = data.map((t: any) => {
+        const rawDueTime = t.due_time || null;
+        const dueTime = rawDueTime ? rawDueTime.substring(0, 5) : null;
+        const rawEndTime = t.end_time || null;
+        const endTime = rawEndTime ? rawEndTime.substring(0, 5) : dueTime ? getDefaultEndTime(dueTime) : null;
+
+        const task: QuadrantTask = {
+          id: t.id,
+          title: t.title,
+          description: t.description,
+          due_date: t.due_date,
+          due_time: dueTime,
+          end_time: endTime,
+          priority: t.priority || "medium",
+          is_completed: t.is_completed || false,
+          completed_at: t.completed_at,
+          created_at: t.created_at,
+          started_at: t.started_at || null,
+          reminder_at: t.reminder_at || null,
+          alarm_enabled: t.alarm_enabled || false,
+          total_focus_minutes: t.total_focus_minutes || 0,
+          urgency: (t.urgency || "low") as Urgency,
+          importance: (t.importance || "low") as Importance,
+          status: "upcoming" as Status,
+          time_of_day: (t.time_of_day || suggestTimeOfDay(dueTime)) as TimeOfDay,
+          date_bucket: computeDateBucket(t.due_date) as DateBucket,
+          tags: t.tags || [],
+          subtasks: (t.subtasks as any[]) || [],
+          quadrant_assigned: !!(t.urgency || t.importance),
+        };
+        task.status = computeTaskStatus(task);
+        return task;
+      });
+
+      // Don't use sample data for logged-in users - show empty state
+      setTasks(quadrantTasks);
     }
 
-    // Apply urgency/importance filter
-    switch (urgencyFilter) {
-      case "U&I":
-        result = result.filter((t) => t.urgency === "high" && t.importance === "high");
-        break;
-      case "U&NI":
-        result = result.filter((t) => t.urgency === "high" && t.importance === "low");
-        break;
-      case "NU&I":
-        result = result.filter((t) => t.urgency === "low" && t.importance === "high");
-        break;
-      case "NU&NI":
-        result = result.filter((t) => t.urgency === "low" && t.importance === "low");
-        break;
-    }
-
-    return result;
-  }, [tasks, activeTab, urgencyFilter]);
-
-  const tabs: { id: FilterTab; label: string; count: number }[] = [
-    { id: "all", label: "All", count: counts.all },
-    { id: "upcoming", label: "Up", count: counts.upcoming },
-    { id: "ongoing", label: "On", count: counts.ongoing },
-    { id: "done", label: "Done", count: counts.done },
-    { id: "due", label: "Due", count: counts.due },
-  ];
-
-  const urgencyTabs: { id: UrgencyFilter; label: string }[] = [
-    { id: "all", label: "All" },
-    { id: "U&I", label: "U&I" },
-    { id: "U&NI", label: "U&NI" },
-    { id: "NU&I", label: "NU&I" },
-    { id: "NU&NI", label: "NU&NI" },
-  ];
-
-  // Format time display
-  const formatTimeRange = (task: QuadrantTask) => {
-    if (!task.due_date) return "";
-    const date = new Date(task.due_date);
-    const day = date.getDate();
-    const month = date.getMonth() + 1;
-    let result = `${day}/${month}`;
-    if (task.due_time) {
-      result += ` ${task.due_time}`;
-      if (task.end_time && task.end_time !== task.due_time) {
-        result += `-${task.end_time}`;
-      }
-    }
-    return result;
+    setLoading(false);
   };
 
-  // Collapsed state - just show toggle button
-  if (collapsed) {
-    return (
-      <div className="h-full flex flex-col items-center py-4 bg-card rounded-2xl border border-border/50">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onToggleCollapse}
-          className="h-10 w-10 rounded-full"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </Button>
-      </div>
-    );
+  const openNewTaskDrawer = () => {
+    setSelectedTask(null);
+    setIsNewTask(true);
+    setDrawerOpen(true);
+  };
+
+  const openTaskDetail = (task: QuadrantTask) => {
+    setSelectedTask(task);
+    setIsNewTask(false);
+    setDrawerOpen(true);
+  };
+
+  const handleSaveTask = async (task: QuadrantTask) => {
+    task.status = computeTaskStatus(task);
+
+    // Update local state immediately for responsiveness
+    if (isNewTask) {
+      setTasks((prev) => [task, ...prev]);
+    } else {
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? task : t)));
+    }
+
+    // Sync to Supabase if user is logged in
+    if (user) {
+      const { error } = await supabase.from("tasks").upsert({
+        id: task.id,
+        user_id: user.id,
+        title: task.title,
+        description: task.description || null,
+        due_date: task.due_date || null,
+        due_time: task.due_time || null,
+        end_time: task.end_time || null,
+        priority: task.priority,
+        urgency: task.urgency,
+        importance: task.importance,
+        time_of_day: task.time_of_day,
+        is_completed: task.is_completed,
+        completed_at: task.completed_at || null,
+        started_at: task.started_at || null,
+        reminder_at: task.reminder_at || null,
+        alarm_enabled: task.alarm_enabled,
+        subtasks: task.subtasks as any,
+        tags: task.tags,
+        total_focus_minutes: task.total_focus_minutes,
+      } as any);
+
+      if (error) {
+        toast({ title: "Sync failed", description: error.message, variant: "destructive" });
+        return;
+      }
+    }
+
+    toast({
+      title: isNewTask ? "Created!" : "Updated!",
+      description: isNewTask ? "Your task has been created" : "Task has been updated",
+    });
+    setDrawerOpen(false);
+  };
+
+  const handleDeleteTask = async (id: string) => {
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+    setDrawerOpen(false);
+
+    if (user) {
+      await supabase.from("tasks").delete().eq("id", id).eq("user_id", user.id);
+    }
+
+    toast({ title: "Deleted", description: "Task has been removed" });
+  };
+
+  const handleStartTask = async (task: QuadrantTask) => {
+    const updated: QuadrantTask = {
+      ...task,
+      started_at: task.started_at || new Date().toISOString(),
+      status: "ongoing",
+    };
+
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+    setSelectedTask(updated);
+
+    // Sync started status to Supabase
+    if (user) {
+      await supabase
+        .from("tasks")
+        .update({
+          is_completed: false,
+          completed_at: null,
+          started_at: updated.started_at,
+        } as any)
+        .eq("id", task.id)
+        .eq("user_id", user.id);
+    }
+
+    toast({ title: "Started!", description: "Task moved to Ongoing" });
+
+    setFocusPromptTask(updated);
+    setFocusPromptOpen(true);
+  };
+
+  const handleCompleteTask = async (task: QuadrantTask) => {
+    const isCurrentlyCompleted = task.is_completed || !!task.completed_at;
+
+    if (isCurrentlyCompleted) {
+      // UNCOMPLETE the task
+      const updated: QuadrantTask = {
+        ...task,
+        is_completed: false,
+        completed_at: null,
+        status: computeTaskStatus({ ...task, is_completed: false, completed_at: null }),
+      };
+
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+      setDrawerOpen(false);
+
+      // Sync to Supabase
+      if (user) {
+        await supabase
+          .from("tasks")
+          .update({
+            is_completed: false,
+            completed_at: null,
+          })
+          .eq("id", task.id)
+          .eq("user_id", user.id);
+      }
+
+      toast({ title: "Reopened!", description: "Task marked as incomplete" });
+    } else {
+      // COMPLETE the task
+      const completedAt = new Date().toISOString();
+      const updated: QuadrantTask = {
+        ...task,
+        is_completed: true,
+        completed_at: completedAt,
+        status: "completed",
+      };
+
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+      setDrawerOpen(false);
+
+      // Sync completion to Supabase
+      if (user) {
+        await supabase
+          .from("tasks")
+          .update({
+            is_completed: true,
+            completed_at: completedAt,
+          })
+          .eq("id", task.id)
+          .eq("user_id", user.id);
+
+        // SYNC: If this is a habit-linked task, also mark the habit as complete
+        if (task.tags?.includes("Habit") && task.due_date) {
+          // Find the habit by matching the task title
+          const { data: habits } = await supabase
+            .from("habits")
+            .select("id, name")
+            .eq("user_id", user.id)
+            .eq("name", task.title);
+
+          if (habits && habits.length > 0) {
+            const habitId = habits[0].id;
+            const completedDate = task.due_date.split("T")[0]; // Format: yyyy-MM-dd
+
+            // Check if already marked complete
+            const { data: existing } = await supabase
+              .from("habit_completions")
+              .select("id")
+              .eq("habit_id", habitId)
+              .eq("completed_date", completedDate);
+
+            // Only insert if not already complete
+            if (!existing || existing.length === 0) {
+              await supabase.from("habit_completions").insert({
+                habit_id: habitId,
+                user_id: user.id,
+                completed_date: completedDate,
+              });
+            }
+          }
+        }
+      }
+
+      toast({ title: "Completed!", description: "Task marked as done" });
+    }
+  };
+
+  const handleStartFocus = (task: QuadrantTask) => {
+    if (!task.started_at) {
+      const updated: QuadrantTask = {
+        ...task,
+        started_at: new Date().toISOString(),
+        status: "ongoing",
+      };
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+    }
+
+    setDrawerOpen(false);
+    setFocusPromptOpen(false);
+    navigate(`/tasks/focus/${task.id}`);
+  };
+
+  const handleBoardQuickAdd = async (title: string, columnId: string) => {
+    const newTask = createDefaultTask({
+      title,
+      status: columnId as Status,
+      started_at: columnId === "ongoing" ? new Date().toISOString() : null,
+      is_completed: columnId === "completed",
+      completed_at: columnId === "completed" ? new Date().toISOString() : null,
+      quadrant_assigned: true,
+    });
+
+    setTasks((prev) => [newTask, ...prev]);
+
+    // Sync to Supabase
+    if (user) {
+      await supabase.from("tasks").insert({
+        id: newTask.id,
+        user_id: user.id,
+        title: newTask.title,
+        description: newTask.description || null,
+        due_date: newTask.due_date || null,
+        due_time: newTask.due_time || null,
+        priority: newTask.priority,
+        urgency: newTask.urgency,
+        importance: newTask.importance,
+        time_of_day: newTask.time_of_day,
+        is_completed: newTask.is_completed,
+        completed_at: newTask.completed_at || null,
+        started_at: newTask.started_at || null,
+        tags: newTask.tags,
+        subtasks: newTask.subtasks as any,
+      } as any);
+    }
+
+    toast({ title: "Task added" });
+  };
+
+  const handleBoardDrop = async (columnId: string, task: QuadrantTask) => {
+    const updated: QuadrantTask = { ...task };
+
+    if (columnId === "ongoing") {
+      updated.started_at = updated.started_at || new Date().toISOString();
+      updated.is_completed = false;
+      updated.completed_at = null;
+    } else if (columnId === "completed") {
+      updated.is_completed = true;
+      updated.completed_at = new Date().toISOString();
+    } else if (columnId === "upcoming") {
+      updated.started_at = null;
+      updated.is_completed = false;
+      updated.completed_at = null;
+    }
+
+    updated.status = computeTaskStatus(updated);
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+
+    // Sync to Supabase
+    if (user) {
+      await supabase
+        .from("tasks")
+        .update({
+          is_completed: updated.is_completed,
+          completed_at: updated.completed_at,
+          started_at: updated.started_at,
+        } as any)
+        .eq("id", task.id)
+        .eq("user_id", user.id);
+    }
+
+    toast({ title: "Task updated" });
+  };
+
+  const filteredTasks = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return tasks;
+    return tasks.filter((t) => t.title.toLowerCase().includes(q));
+  }, [tasks, searchQuery]);
+
+  const [contentReady, setContentReady] = useState(false);
+
+  useEffect(() => {
+    if (!loading) {
+      // Slight delay for smooth transition from loading screen
+      const timer = setTimeout(() => setContentReady(true), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
+
+  if (loading) {
+    return <PageLoadingScreen module="tasks" />;
   }
 
+  const gridCols = allTasksCollapsed
+    ? "xl:grid-cols-[72px_minmax(0,1fr)]"
+    : "xl:grid-cols-[minmax(300px,340px)_minmax(0,1fr)]";
+
   return (
-    <div className="h-full flex flex-col bg-card rounded-2xl border border-border/50 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-            <ListChecks className="h-4 w-4 text-primary-foreground" />
-          </div>
-          <span className="font-semibold text-foreground">All Tasks</span>
-        </div>
-        {onToggleCollapse && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onToggleCollapse}
-            className="h-8 w-8 rounded-lg"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
+    <div
+      className={cn(
+        "h-full w-full flex flex-col bg-background overflow-x-hidden",
+        "transition-all duration-500 ease-out",
+        contentReady ? "opacity-100" : "opacity-0",
+      )}
+    >
+      {/* Hero */}
+      <PageHero
+        storageKey="tasks_hero_src"
+        typeKey="tasks_hero_type"
+        badge={PAGE_HERO_TEXT.tasks.badge}
+        title={PAGE_HERO_TEXT.tasks.title}
+        subtitle={PAGE_HERO_TEXT.tasks.subtitle}
+      />
 
-      {/* Filter tabs - Status */}
-      <div className="flex items-center gap-1 px-3 py-2 border-b border-border/30 overflow-x-auto">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "px-2 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all",
-              activeTab === tab.id
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted/50 text-muted-foreground hover:bg-muted"
-            )}
-          >
-            {tab.label} {tab.count}
-          </button>
-        ))}
-      </div>
+      <div className="w-full flex-1 min-h-0 px-6 lg:px-8 pt-6">
+        <div className="w-full min-w-0 flex flex-col gap-6 min-h-0">
+          <TasksHeader
+            view={view}
+            onViewChange={setView}
+            quadrantMode={quadrantMode}
+            onQuadrantModeChange={setQuadrantMode}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onNewTask={openNewTaskDrawer}
+          />
 
-      {/* Filter tabs - Urgency/Importance */}
-      <div className="flex items-center gap-1 px-3 py-2 border-b border-border/30 overflow-x-auto">
-        {urgencyTabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setUrgencyFilter(tab.id)}
-            className={cn(
-              "px-2 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all",
-              urgencyFilter === tab.id
-                ? "bg-chart-1 text-primary-foreground"
-                : "bg-muted/50 text-muted-foreground hover:bg-muted"
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Task list */}
-      <ScrollArea className="flex-1">
-        <div className="p-3 space-y-2">
-          {filteredTasks.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground text-sm">
-              No tasks found
+          <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_260px] gap-4 items-start">
+            <div className="flex flex-col gap-2 h-[260px]">
+              <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
+              <InsightsPanel tasks={filteredTasks} compactMode />
             </div>
-          ) : (
-            filteredTasks.map((task) => (
-              <div
-                key={task.id}
-                onClick={() => onTaskClick(task)}
-                className={cn(
-                  "group p-3 rounded-xl border cursor-pointer transition-all",
-                  "hover:shadow-md hover:border-primary/30",
-                  task.is_completed
-                    ? "bg-muted/30 border-border/30"
-                    : task.status === "overdue"
-                      ? "bg-destructive/5 border-destructive/20"
-                      : "bg-background border-border/50"
-                )}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className={cn(
-                        "font-medium text-sm truncate",
-                        task.is_completed && "line-through text-muted-foreground"
-                      )}
-                    >
-                      {task.title}
-                    </p>
-                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                      {formatTimeRange(task) && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                          {formatTimeRange(task)}
-                        </span>
-                      )}
-                      {task.urgency === "high" && (
-                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-orange-300 text-orange-600 bg-orange-50 dark:bg-orange-900/20">
-                          U
-                        </Badge>
-                      )}
-                      {task.importance === "high" && (
-                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-blue-300 text-blue-600 bg-blue-50 dark:bg-blue-900/20">
-                          I
-                        </Badge>
-                      )}
-                      {task.tags?.slice(0, 1).map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-[10px] px-1 py-0 h-4">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
+            <div className="h-[260px]">
+              <TasksClockWidget />
+            </div>
+          </div>
 
-                  {/* Action buttons */}
-                  <div className="flex items-center gap-1 shrink-0">
-                    {!task.is_completed && task.status !== "ongoing" && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onStartTask(task);
-                        }}
-                        className="h-6 w-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                        title="Start task"
-                      >
-                        <Play className="h-3 w-3" />
-                      </button>
-                    )}
-                    {task.status === "ongoing" && !task.is_completed && (
-                      <Loader2 className="h-4 w-4 text-primary animate-spin" />
-                    )}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onCompleteTask(task);
-                      }}
-                      className={cn(
-                        "h-6 w-6 rounded-full flex items-center justify-center transition-colors",
-                        task.is_completed
-                          ? "text-emerald-500 bg-emerald-100 dark:bg-emerald-900/30"
-                          : "text-muted-foreground hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
-                      )}
-                      title={task.is_completed ? "Mark incomplete" : "Mark complete"}
-                    >
-                      <Check className="h-3 w-3" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteTask(task);
-                      }}
-                      className="h-6 w-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
-                      title="Delete task"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
+          <div className={`flex-1 grid grid-cols-1 ${gridCols} gap-8 min-h-0 min-w-0`}>
+            {/* Left */}
+            <div className="min-h-0 min-w-0 h-[600px]">
+              <AllTasksList
+                tasks={filteredTasks}
+                onTaskClick={openTaskDetail}
+                onStartTask={handleStartTask}
+                onCompleteTask={handleCompleteTask}
+                onDeleteTask={(task) => handleDeleteTask(task.id)}
+                collapsed={allTasksCollapsed}
+                onToggleCollapse={() => setAllTasksCollapsed((v) => !v)}
+              />
+            </div>
+
+            {/* Right */}
+            <div className="w-full min-w-0 h-[600px]">
+              {view === "quadrant" && (
+                <QuadrantGrid
+                  mode={quadrantMode}
+                  tasks={filteredTasks}
+                  onTaskClick={openTaskDetail}
+                  onStartTask={handleStartTask}
+                  onCompleteTask={handleCompleteTask}
+                />
+              )}
+
+              {view === "board" && (
+                <BoardView
+                  mode="status"
+                  tasks={filteredTasks}
+                  onTaskClick={openTaskDetail}
+                  onDragStart={() => {}}
+                  onDrop={handleBoardDrop}
+                  onQuickAdd={handleBoardQuickAdd}
+                  onStartTask={handleStartTask}
+                  onCompleteTask={handleCompleteTask}
+                />
+              )}
+            </div>
+          </div>
+
+          <UnifiedTaskDrawer
+            task={selectedTask}
+            isNew={isNewTask}
+            open={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            onSave={handleSaveTask}
+            onDelete={handleDeleteTask}
+            onStartFocus={handleStartFocus}
+            onStartTask={handleStartTask}
+            onCompleteTask={handleCompleteTask}
+          />
+
+          <DeepFocusPrompt
+            open={focusPromptOpen}
+            task={focusPromptTask}
+            onClose={() => setFocusPromptOpen(false)}
+            onStartFocus={() => focusPromptTask && handleStartFocus(focusPromptTask)}
+            onSkip={() => setFocusPromptOpen(false)}
+          />
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
-
-export default AllTasksList;
