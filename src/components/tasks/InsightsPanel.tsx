@@ -194,7 +194,7 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
     });
   }, [tasks, timePeriod, today, tomorrow, weekEnd]);
 
-  const plannedCount = periodTasks.length;
+  const pendingCount = periodTasks.filter((t) => !t.is_completed && !t.completed_at).length;
   const completedCount = periodTasks.filter((t) => t.is_completed || t.completed_at).length;
 
   // Calculate overdue based on time period
@@ -334,14 +334,14 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
 
           {/* Left: KPI Cards in 2x3 grid - stretch to full height */}
           <div className="grid grid-cols-2 gap-1 w-[180px] shrink-0 auto-rows-fr">
-            {/* Planned - Blue gradient */}
+            {/* Pending - Blue gradient */}
             <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 shadow-sm">
               <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shrink-0 shadow-sm">
                 <Calendar className="h-3 w-3 text-primary-foreground" />
               </div>
               <div>
-                <p className="text-base font-bold text-foreground leading-none">{plannedCount}</p>
-                <p className="text-[8px] text-primary/80 uppercase font-medium">Planned</p>
+                <p className="text-base font-bold text-foreground leading-none">{pendingCount}</p>
+                <p className="text-[8px] text-primary/80 uppercase font-medium">Pending</p>
               </div>
             </div>
 
@@ -490,25 +490,45 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
                 </div>
                 <span className="text-[9px] font-semibold text-chart-2 uppercase">Priority</span>
               </div>
-              <div className="flex-1 min-h-0 flex items-center justify-center">
+              <div className="flex-1 min-h-0 flex flex-col">
                 {quadrantData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={quadrantData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={18}
-                        outerRadius={36}
-                        paddingAngle={3}
-                        dataKey="value"
-                      >
-                        {quadrantData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <>
+                    <div className="flex-1 min-h-0">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={quadrantData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={14}
+                            outerRadius={28}
+                            paddingAngle={3}
+                            dataKey="value"
+                          >
+                            {quadrantData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                            ))}
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="flex flex-wrap gap-x-2 gap-y-0.5 justify-center mt-0.5">
+                      {quadrantData.map((entry, index) => (
+                        <div key={index} className="flex items-center gap-0.5">
+                          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                          <span className="text-[6px] text-muted-foreground">
+                            {entry.name === "Urgent & Important"
+                              ? "U&I"
+                              : entry.name === "Urgent & Not Important"
+                                ? "U"
+                                : entry.name === "Not Urgent & Important"
+                                  ? "I"
+                                  : "Other"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 ) : (
                   <p className="text-[8px] text-muted-foreground">No data</p>
                 )}
