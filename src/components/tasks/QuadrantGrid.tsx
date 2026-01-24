@@ -331,7 +331,7 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
 
   return (
     <>
-      <div className="relative h-full">
+      <div className="relative h-full overflow-hidden">
         {/* Axis Labels */}
         {mode === "urgent-important" && (
           <>
