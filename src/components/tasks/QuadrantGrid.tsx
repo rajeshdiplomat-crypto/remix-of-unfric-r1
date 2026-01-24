@@ -349,7 +349,7 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
         )}
 
         {/* 2x2 Grid */}
-        <div className="grid grid-cols-2 gap-4 h-full pl-2">
+        <div className="grid grid-cols-2 grid-rows-2 gap-2 pl-2">
           <QuadrantCard quadrant={modeConfig.quadrants[0]} position={0} />
           <QuadrantCard quadrant={modeConfig.quadrants[1]} position={1} />
           <QuadrantCard quadrant={modeConfig.quadrants[2]} position={2} />
