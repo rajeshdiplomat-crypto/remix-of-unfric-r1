@@ -1,11 +1,39 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { ChevronUp, Calendar, CheckCircle, AlertTriangle, Clock as ClockIcon, TrendingUp } from "lucide-react";
+import {
+  ChevronUp,
+  Calendar,
+  CheckCircle,
+  AlertTriangle,
+  Clock as ClockIcon,
+  TrendingUp,
+  Sun,
+  Sunrise,
+  CalendarDays,
+  Play,
+  ListTodo,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { QuadrantTask, computeTaskStatus } from "./types";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, Line, Area, XAxis, YAxis, Tooltip, CartesianGrid, ComposedChart } from "recharts";
-import { format, subDays, addDays, startOfDay, isSameDay } from "date-fns";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  Line,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ComposedChart,
+} from "recharts";
+import { format, subDays, addDays, startOfDay, isSameDay, isWithinInterval, isBefore, endOfDay } from "date-fns";
+
+type TimePeriod = "today" | "tomorrow" | "week";
 interface InsightsPanelProps {
   tasks: QuadrantTask[];
   compactMode?: boolean;
@@ -15,7 +43,7 @@ function KpiCard({
   iconBg,
   iconColor,
   value,
-  label
+  label,
 }: {
   icon: ReactNode;
   iconBg: string;
@@ -23,12 +51,22 @@ function KpiCard({
   value: ReactNode;
   label: string;
 }) {
-  return <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
-      <CardContent className={cn("flex items-center gap-3 min-w-0", "p-3 h-[72px]" // Reduced from p-4 h-[86px]
-    )}>
-        <div className={cn("rounded-xl flex items-center justify-center shrink-0", "h-8 w-8",
-      // Reduced from h-9 w-9
-      iconBg)}>
+  return (
+    <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
+      <CardContent
+        className={cn(
+          "flex items-center gap-3 min-w-0",
+          "p-3 h-[72px]", // Reduced from p-4 h-[86px]
+        )}
+      >
+        <div
+          className={cn(
+            "rounded-xl flex items-center justify-center shrink-0",
+            "h-8 w-8",
+            // Reduced from h-9 w-9
+            iconBg,
+          )}
+        >
           <div className={cn("h-4 w-4 flex items-center justify-center", iconColor)}>{icon}</div>
         </div>
 
@@ -37,28 +75,59 @@ function KpiCard({
           <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</div>
         </div>
       </CardContent>
-    </Card>;
+    </Card>
+  );
 }
-function CenterAnalogClock({
-  now,
-  size = 64
-}: {
-  now: Date;
-  size?: number;
-}) {
+function CenterAnalogClock({ now, size = 64 }: { now: Date; size?: number }) {
   const h = now.getHours() % 12;
   const m = now.getMinutes();
   const hourAngle = h * 30 + m * 0.5;
   const minuteAngle = m * 6;
-  return <svg width={size} height={size} viewBox="0 0 64 64" className="text-muted-foreground">
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" className="text-muted-foreground">
       <circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.25" />
       {Array.from({
-      length: 12
-    }).map((_, i) => <line key={i} x1="32" y1="10" x2="32" y2={i % 3 === 0 ? "15" : "13"} stroke="currentColor" strokeWidth="1" opacity={i % 3 === 0 ? 0.45 : 0.22} transform={`rotate(${i * 30} 32 32)`} />)}
-      <line x1="32" y1="32" x2="32" y2="21" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" transform={`rotate(${hourAngle} 32 32)`} className="text-foreground" opacity="0.9" />
-      <line x1="32" y1="32" x2="32" y2="15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" transform={`rotate(${minuteAngle} 32 32)`} className="text-foreground" opacity="0.75" />
+        length: 12,
+      }).map((_, i) => (
+        <line
+          key={i}
+          x1="32"
+          y1="10"
+          x2="32"
+          y2={i % 3 === 0 ? "15" : "13"}
+          stroke="currentColor"
+          strokeWidth="1"
+          opacity={i % 3 === 0 ? 0.45 : 0.22}
+          transform={`rotate(${i * 30} 32 32)`}
+        />
+      ))}
+      <line
+        x1="32"
+        y1="32"
+        x2="32"
+        y2="21"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        transform={`rotate(${hourAngle} 32 32)`}
+        className="text-foreground"
+        opacity="0.9"
+      />
+      <line
+        x1="32"
+        y1="32"
+        x2="32"
+        y2="15"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        transform={`rotate(${minuteAngle} 32 32)`}
+        className="text-foreground"
+        opacity="0.75"
+      />
       <circle cx="32" cy="32" r="2.2" fill="currentColor" opacity="0.55" />
-    </svg>;
+    </svg>
+  );
 }
 function ClockKpiCard() {
   const [now, setNow] = useState(new Date());
@@ -66,7 +135,8 @@ function ClockKpiCard() {
     const t = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
-  return <Card className="rounded-2xl border border-primary/20 bg-primary/5 backdrop-blur-sm shadow-sm">
+  return (
+    <Card className="rounded-2xl border border-primary/20 bg-primary/5 backdrop-blur-sm shadow-sm">
       <CardContent className="h-[86px] px-5 py-3 flex items-center gap-4 min-w-0">
         {/* Bigger icon */}
         <div className="h-14 w-14 rounded-2xl bg-background/60 border border-border/30 flex items-center justify-center shrink-0">
@@ -94,35 +164,87 @@ function ClockKpiCard() {
           </span>
         </div>
       </CardContent>
-    </Card>;
+    </Card>
+  );
 }
-export function InsightsPanel({
-  tasks,
-  compactMode
-}: InsightsPanelProps) {
+export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
   const [expanded, setExpanded] = useState(true);
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>("today");
+
   const today = startOfDay(new Date());
-  const todayTasks = tasks.filter(t => t.due_date && isSameDay(new Date(t.due_date), today));
-  const plannedToday = todayTasks.length;
-  const completedToday = todayTasks.filter(t => t.is_completed || t.completed_at).length;
-  const allTasksWithStatus = tasks.map(t => ({
-    ...t,
-    computedStatus: computeTaskStatus(t)
-  }));
-  const overdueTasks = allTasksWithStatus.filter(t => t.computedStatus === "overdue").length;
-  const totalFocusMinutes = tasks.reduce((sum, t) => sum + (t.total_focus_minutes || 0), 0);
+  const tomorrow = startOfDay(addDays(today, 1));
+  const weekEnd = endOfDay(addDays(today, 6));
+
+  // Get tasks filtered by time period
+  const periodTasks = useMemo(() => {
+    return tasks.filter((t) => {
+      if (!t.due_date) return false;
+      const dueDate = startOfDay(new Date(t.due_date));
+
+      switch (timePeriod) {
+        case "today":
+          return isSameDay(dueDate, today);
+        case "tomorrow":
+          return isSameDay(dueDate, tomorrow);
+        case "week":
+          return isWithinInterval(dueDate, { start: today, end: weekEnd });
+        default:
+          return false;
+      }
+    });
+  }, [tasks, timePeriod, today, tomorrow, weekEnd]);
+
+  const plannedCount = periodTasks.length;
+  const completedCount = periodTasks.filter((t) => t.is_completed || t.completed_at).length;
+
+  // Calculate overdue based on time period
+  const overdueCount = useMemo(() => {
+    const allTasksWithStatus = tasks.map((t) => ({
+      ...t,
+      computedStatus: computeTaskStatus(t),
+    }));
+
+    switch (timePeriod) {
+      case "today":
+        // Tasks that are past their due date (before today)
+        return allTasksWithStatus.filter((t) => t.computedStatus === "overdue").length;
+      case "tomorrow":
+        // Currently overdue + today's incomplete tasks (will be overdue by tomorrow)
+        const currentlyOverdue = allTasksWithStatus.filter((t) => t.computedStatus === "overdue").length;
+        const todayIncomplete = tasks.filter((t) => {
+          if (!t.due_date) return false;
+          const dueDate = startOfDay(new Date(t.due_date));
+          return isSameDay(dueDate, today) && !t.is_completed && !t.completed_at;
+        }).length;
+        return currentlyOverdue + todayIncomplete;
+      case "week":
+        // All currently overdue tasks
+        return allTasksWithStatus.filter((t) => t.computedStatus === "overdue").length;
+      default:
+        return 0;
+    }
+  }, [tasks, timePeriod, today]);
+
+  // Total focus minutes for period tasks
+  const totalFocusMinutes = periodTasks.reduce((sum, t) => sum + (t.total_focus_minutes || 0), 0);
+
+  // Ongoing tasks (started but not completed) in period
+  const ongoingCount = periodTasks.filter((t) => t.started_at && !t.is_completed && !t.completed_at).length;
+
+  // Total tasks count (all tasks regardless of completion)
+  const totalTasksCount = periodTasks.length;
   const past7DaysData = useMemo(() => {
     const data = [];
     for (let i = 6; i >= 0; i--) {
       const date = subDays(today, i);
       const dayStart = startOfDay(date);
-      const planned = tasks.filter(t => t.due_date && isSameDay(new Date(t.due_date), dayStart)).length;
-      const actual = tasks.filter(t => t.completed_at && isSameDay(new Date(t.completed_at), dayStart)).length;
+      const planned = tasks.filter((t) => t.due_date && isSameDay(new Date(t.due_date), dayStart)).length;
+      const actual = tasks.filter((t) => t.completed_at && isSameDay(new Date(t.completed_at), dayStart)).length;
       data.push({
         date: format(date, "EEE"),
         fullDate: format(date, "MMM d"),
         plan: planned,
-        actual
+        actual,
       });
     }
     return data;
@@ -132,45 +254,83 @@ export function InsightsPanel({
     for (let i = 0; i < 7; i++) {
       const date = addDays(today, i);
       const dayStart = startOfDay(date);
-      const upcoming = tasks.filter(t => {
+      const upcoming = tasks.filter((t) => {
         if (!t.due_date || t.is_completed || t.completed_at) return false;
         return isSameDay(new Date(t.due_date), dayStart);
       }).length;
       data.push({
         date: i === 0 ? "Today" : format(date, "EEE"),
         fullDate: format(date, "MMM d"),
-        tasks: upcoming
+        tasks: upcoming,
       });
     }
     return data;
   }, [tasks, today]);
-  const quadrantData = useMemo(() => [{
-    name: "Urgent & Important",
-    value: tasks.filter(t => t.urgency === "high" && t.importance === "high").length,
-    color: "hsl(var(--destructive))"
-  }, {
-    name: "Urgent & Not Important",
-    value: tasks.filter(t => t.urgency === "high" && t.importance === "low").length,
-    color: "hsl(var(--primary))"
-  }, {
-    name: "Not Urgent & Important",
-    value: tasks.filter(t => t.urgency === "low" && t.importance === "high").length,
-    color: "hsl(var(--chart-1))"
-  }, {
-    name: "Not Urgent & Not Important",
-    value: tasks.filter(t => t.urgency === "low" && t.importance === "low").length,
-    color: "hsl(var(--muted))"
-  }].filter(d => d.value > 0), [tasks]);
+  const quadrantData = useMemo(
+    () =>
+      [
+        {
+          name: "Urgent & Important",
+          value: tasks.filter((t) => t.urgency === "high" && t.importance === "high").length,
+          color: "hsl(var(--destructive))",
+        },
+        {
+          name: "Urgent & Not Important",
+          value: tasks.filter((t) => t.urgency === "high" && t.importance === "low").length,
+          color: "hsl(var(--primary))",
+        },
+        {
+          name: "Not Urgent & Important",
+          value: tasks.filter((t) => t.urgency === "low" && t.importance === "high").length,
+          color: "hsl(var(--chart-1))",
+        },
+        {
+          name: "Not Urgent & Not Important",
+          value: tasks.filter((t) => t.urgency === "low" && t.importance === "low").length,
+          color: "hsl(var(--muted))",
+        },
+      ].filter((d) => d.value > 0),
+    [tasks],
+  );
   if (!expanded) {
-    return <Button variant="ghost" size="sm" onClick={() => setExpanded(true)} className="text-muted-foreground hover:text-foreground px-0">
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setExpanded(true)}
+        className="text-muted-foreground hover:text-foreground px-0"
+      >
         Show insights
-      </Button>;
+      </Button>
+    );
   }
-  return <Card className="rounded-xl border border-primary/20 bg-gradient-to-br from-card/80 via-card/60 to-chart-1/5 backdrop-blur-sm shadow-md flex-1 overflow-hidden">
+  return (
+    <Card className="rounded-xl border border-primary/20 bg-gradient-to-br from-card/80 via-card/60 to-chart-1/5 backdrop-blur-sm shadow-md flex-1 overflow-hidden">
       <CardContent className="p-1.5 h-full px-[5px] py-[5px] rounded-sm">
-        {/* Main content: KPIs left (2x2), Charts right (3 cols) */}
-        <div className="h-full flex gap-2">
-          {/* Left: KPI Cards in 2x2 grid - stretch to full height */}
+        {/* Time Period Selector */}
+        <div className="flex items-center gap-1 mb-1.5">
+          {(["today", "tomorrow", "week"] as TimePeriod[]).map((period) => (
+            <button
+              key={period}
+              onClick={() => setTimePeriod(period)}
+              className={cn(
+                "flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-medium uppercase tracking-wide transition-all",
+                timePeriod === period
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+            >
+              {period === "today" && <Sun className="h-3 w-3" />}
+              {period === "tomorrow" && <Sunrise className="h-3 w-3" />}
+              {period === "week" && <CalendarDays className="h-3 w-3" />}
+              {period === "today" ? "Today" : period === "tomorrow" ? "Tomorrow" : "Week"}
+            </button>
+          ))}
+        </div>
+
+        {/* Main content: KPIs left (2x3), Charts right (narrower pie chart) */}
+        <div className="h-[calc(100%-32px)] flex gap-2">
+          {/* Left: KPI Cards in 2x3 grid - stretch to full height */}
           <div className="grid grid-cols-2 gap-1 w-[180px] shrink-0 auto-rows-fr">
             {/* Planned - Blue gradient */}
             <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 shadow-sm">
@@ -178,33 +338,33 @@ export function InsightsPanel({
                 <Calendar className="h-3 w-3 text-primary-foreground" />
               </div>
               <div>
-                <p className="text-base font-bold text-foreground leading-none">{plannedToday}</p>
+                <p className="text-base font-bold text-foreground leading-none">{plannedCount}</p>
                 <p className="text-[8px] text-primary/80 uppercase font-medium">Planned</p>
               </div>
             </div>
-            
+
             {/* Done - Green gradient */}
             <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-gradient-to-br from-chart-1/20 to-chart-1/5 border border-chart-1/20 shadow-sm">
               <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-chart-1 to-chart-1/70 flex items-center justify-center shrink-0 shadow-sm">
                 <CheckCircle className="h-3 w-3 text-primary-foreground" />
               </div>
               <div>
-                <p className="text-base font-bold text-foreground leading-none">{completedToday}</p>
+                <p className="text-base font-bold text-foreground leading-none">{completedCount}</p>
                 <p className="text-[8px] text-chart-1/80 uppercase font-medium">Done</p>
               </div>
             </div>
-            
+
             {/* Overdue - Red/Orange gradient */}
             <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-gradient-to-br from-destructive/20 to-destructive/5 border border-destructive/20 shadow-sm">
               <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-destructive to-destructive/70 flex items-center justify-center shrink-0 shadow-sm">
                 <AlertTriangle className="h-3 w-3 text-destructive-foreground" />
               </div>
               <div>
-                <p className="text-base font-bold text-foreground leading-none">{overdueTasks}</p>
+                <p className="text-base font-bold text-foreground leading-none">{overdueCount}</p>
                 <p className="text-[8px] text-destructive/80 uppercase font-medium">Overdue</p>
               </div>
             </div>
-            
+
             {/* Focus - Purple/Violet gradient */}
             <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-gradient-to-br from-chart-2/20 to-chart-2/5 border border-chart-2/20 shadow-sm">
               <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-chart-2 to-chart-2/70 flex items-center justify-center shrink-0 shadow-sm">
@@ -215,10 +375,33 @@ export function InsightsPanel({
                 <p className="text-[8px] text-chart-2/80 uppercase font-medium">Focus</p>
               </div>
             </div>
+
+            {/* Ongoing - Amber/Yellow gradient */}
+            <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-gradient-to-br from-amber-500/20 to-amber-500/5 border border-amber-500/20 shadow-sm">
+              <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-amber-500 to-amber-500/70 flex items-center justify-center shrink-0 shadow-sm">
+                <Play className="h-3 w-3 text-primary-foreground" />
+              </div>
+              <div>
+                <p className="text-base font-bold text-foreground leading-none">{ongoingCount}</p>
+                <p className="text-[8px] text-amber-600/80 uppercase font-medium">Ongoing</p>
+              </div>
+            </div>
+
+            {/* Total - Gray/Slate gradient */}
+            <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-gradient-to-br from-slate-500/20 to-slate-500/5 border border-slate-500/20 shadow-sm">
+              <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-slate-500 to-slate-500/70 flex items-center justify-center shrink-0 shadow-sm">
+                <ListTodo className="h-3 w-3 text-primary-foreground" />
+              </div>
+              <div>
+                <p className="text-base font-bold text-foreground leading-none">{totalTasksCount}</p>
+                <p className="text-[8px] text-slate-500/80 uppercase font-medium">Total</p>
+              </div>
+            </div>
           </div>
 
           {/* Right: Charts - 3 columns taking remaining space */}
-          <div className="flex-1 grid grid-cols-3 gap-2 min-h-0">
+          {/* Right: Charts - 2 equal columns + 1 narrow pie chart column */}
+          <div className="flex-1 grid grid-cols-[1fr_1fr_100px] gap-2 min-h-0">
             {/* Plan vs Actual */}
             <div className="rounded-lg bg-gradient-to-br from-primary/10 to-chart-1/5 border border-primary/10 p-2 flex flex-col min-h-0">
               <div className="flex items-center gap-1 mb-1 shrink-0">
@@ -236,19 +419,42 @@ export function InsightsPanel({
                         <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
                       </linearGradient>
                     </defs>
-                    <XAxis dataKey="date" tick={{
-                    fontSize: 8,
-                    fill: "hsl(var(--muted-foreground))"
-                  }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{
-                    fontSize: 8,
-                    fill: "hsl(var(--muted-foreground))"
-                  }} axisLine={false} tickLine={false} width={14} allowDecimals={false} />
-                    <Area type="monotone" dataKey="plan" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#planGradient2)" />
-                    <Line type="monotone" dataKey="actual" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{
-                    r: 3,
-                    fill: "hsl(var(--chart-1))"
-                  }} />
+                    <XAxis
+                      dataKey="date"
+                      tick={{
+                        fontSize: 8,
+                        fill: "hsl(var(--muted-foreground))",
+                      }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{
+                        fontSize: 8,
+                        fill: "hsl(var(--muted-foreground))",
+                      }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={14}
+                      allowDecimals={false}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="plan"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      fill="url(#planGradient2)"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="actual"
+                      stroke="hsl(var(--chart-1))"
+                      strokeWidth={2}
+                      dot={{
+                        r: 3,
+                        fill: "hsl(var(--chart-1))",
+                      }}
+                    />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
@@ -271,14 +477,25 @@ export function InsightsPanel({
                         <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
                       </linearGradient>
                     </defs>
-                    <XAxis dataKey="date" tick={{
-                    fontSize: 8,
-                    fill: "hsl(var(--muted-foreground))"
-                  }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{
-                    fontSize: 8,
-                    fill: "hsl(var(--muted-foreground))"
-                  }} axisLine={false} tickLine={false} width={14} allowDecimals={false} />
+                    <XAxis
+                      dataKey="date"
+                      tick={{
+                        fontSize: 8,
+                        fill: "hsl(var(--muted-foreground))",
+                      }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{
+                        fontSize: 8,
+                        fill: "hsl(var(--muted-foreground))",
+                      }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={14}
+                      allowDecimals={false}
+                    />
                     <Bar dataKey="tasks" fill="url(#barGradient)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -294,17 +511,32 @@ export function InsightsPanel({
                 <span className="text-[8px] font-semibold text-chart-2 uppercase">By Quadrant</span>
               </div>
               <div className="flex-1 min-h-0 flex items-center justify-center">
-                {quadrantData.length > 0 ? <ResponsiveContainer width="100%" height="100%">
+                {quadrantData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={quadrantData} cx="50%" cy="50%" innerRadius={18} outerRadius={36} paddingAngle={3} dataKey="value">
-                        {quadrantData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />)}
+                      <Pie
+                        data={quadrantData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={18}
+                        outerRadius={36}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {quadrantData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                        ))}
                       </Pie>
                     </PieChart>
-                  </ResponsiveContainer> : <p className="text-[8px] text-muted-foreground">No data</p>}
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-[8px] text-muted-foreground">No data</p>
+                )}
               </div>
             </div>
           </div>
         </div>
       </CardContent>
-    </Card>;
+    </Card>
+  );
 }
