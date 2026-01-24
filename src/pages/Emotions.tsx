@@ -89,12 +89,14 @@ export default function Emotions() {
         let quadrant: QuadrantType = "low-pleasant";
         let emotion = row.emotion;
         let parsedContext: EmotionEntry["context"] = undefined;
+        let showInJournal: boolean | undefined = undefined;
 
         try {
           const parsedData = JSON.parse(row.emotion);
           if (parsedData.quadrant) quadrant = parsedData.quadrant;
           if (parsedData.emotion) emotion = parsedData.emotion;
           if (parsedData.context) parsedContext = parsedData.context;
+          if (parsedData.showInJournal !== undefined) showInJournal = parsedData.showInJournal;
         } catch {
           emotion = row.emotion;
         }
@@ -109,6 +111,7 @@ export default function Emotions() {
           emotion,
           note: row.notes || undefined,
           context: parsedContext,
+          showInJournal,
           entry_date: row.entry_date,
           created_at: row.created_at,
         };
@@ -146,10 +149,12 @@ export default function Emotions() {
     if (!user || !selectedQuadrant || !selectedEmotion) return;
     setSaving(true);
     try {
+      // Include showInJournal flag so JournalDateDetailsPanel knows whether to display it
       const emotionData = JSON.stringify({
         quadrant: selectedQuadrant,
         emotion: selectedEmotion,
         context: context,
+        showInJournal: sendToJournal,
       });
 
       const entryDate = format(checkInTime, "yyyy-MM-dd");
@@ -313,7 +318,13 @@ export default function Emotions() {
     const wasViewingDate = viewingDate;
 
     try {
-      const emotionData = JSON.stringify({ quadrant: editQuadrant, emotion: editEmotion, context: editContext });
+      // Preserve the original showInJournal flag when editing
+      const emotionData = JSON.stringify({ 
+        quadrant: editQuadrant, 
+        emotion: editEmotion, 
+        context: editContext,
+        showInJournal: editingEntry.showInJournal ?? false,
+      });
       const newEntryDate = format(editDate, "yyyy-MM-dd");
 
       const { error } = await supabase
