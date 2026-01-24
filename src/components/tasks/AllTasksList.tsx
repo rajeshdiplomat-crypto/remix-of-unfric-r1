@@ -92,80 +92,100 @@ export function AllTasksList({
   const TaskCard = ({ task }: { task: QuadrantTask }) => {
     const isCompleted = task.is_completed || !!task.completed_at;
     const status = computeTaskStatus(task);
-
     const isOngoing = status === "ongoing";
 
     return (
       <div
         className={cn(
-          "group p-4 rounded-2xl border-2 transition-all duration-300",
-          "hover:shadow-lg hover:scale-[1.01] cursor-pointer",
+          "group p-2.5 rounded-xl border transition-all duration-200",
+          "hover:shadow-md cursor-pointer",
           isOngoing
-            ? "bg-gradient-to-br from-primary/10 via-chart-1/5 to-transparent border-l-4 border-l-primary border-primary/30"
+            ? "bg-gradient-to-r from-primary/10 to-chart-1/5 border-l-3 border-l-primary border-primary/20"
             : status === "overdue"
-              ? "bg-gradient-to-br from-rose-500/10 via-rose-500/5 to-transparent border-rose-500/30"
+              ? "bg-gradient-to-r from-rose-500/5 to-transparent border-rose-500/20"
               : status === "completed"
-                ? "bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border-emerald-500/30"
-                : "bg-gradient-to-br from-background via-background to-muted/20 border-border/40",
-          isCompleted && "opacity-70",
+                ? "bg-gradient-to-r from-emerald-500/5 to-transparent border-emerald-500/20"
+                : "bg-background/80 border-border/30",
+          isCompleted && "opacity-60",
         )}
       >
-        <div className="flex items-start gap-3">
+        <div className="flex items-center gap-2">
           <div className="flex-1 min-w-0" onClick={() => onTaskClick(task)}>
+            {/* Title */}
             <p
               className={cn(
-                "text-sm font-semibold text-foreground truncate",
+                "text-xs font-semibold text-foreground truncate",
                 isCompleted && "line-through text-muted-foreground",
               )}
             >
               {task.title}
             </p>
 
-            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+            {/* Date/Time + Priority on same row */}
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              {/* Date & Time */}
               {task.due_date && (
-                <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-muted/50">
-                  <Calendar className="h-3 w-3" />
-                  {format(new Date(task.due_date), "MMM d")}
+                <span className="text-[9px] text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded">
+                  {format(new Date(task.due_date), "d/M")}
+                  {task.due_time && ` ${task.due_time}`}
                 </span>
               )}
-              {task.due_time && (
-                <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-muted/50">
-                  <Clock className="h-3 w-3" />
-                  {task.due_time}
+              {/* Urgency & Importance combined */}
+              <span
+                className={cn(
+                  "text-[9px] px-1.5 py-0.5 rounded font-medium",
+                  task.urgency === "high" ? "bg-destructive/10 text-destructive" : "bg-muted/40 text-muted-foreground",
+                )}
+              >
+                {task.urgency === "high" ? "U" : "NU"}
+              </span>
+              <span
+                className={cn(
+                  "text-[9px] px-1.5 py-0.5 rounded font-medium",
+                  task.importance === "high" ? "bg-primary/10 text-primary" : "bg-muted/40 text-muted-foreground",
+                )}
+              >
+                {task.importance === "high" ? "I" : "NI"}
+              </span>
+              {/* Time of day */}
+              {task.time_of_day && (
+                <span className="text-[9px] text-muted-foreground">
+                  {task.time_of_day === "morning"
+                    ? "🌅"
+                    : task.time_of_day === "afternoon"
+                      ? "☀️"
+                      : task.time_of_day === "evening"
+                        ? "🌆"
+                        : "🌙"}
                 </span>
               )}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-1.5 mt-3">
-              {getUrgencyBadge(task.urgency)}
-              {getImportanceBadge(task.importance)}
-              {getTimeOfDayBadge(task.time_of_day)}
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 flex-shrink-0">
+          {/* Action buttons - smaller */}
+          <div className="flex items-center gap-0.5 flex-shrink-0">
             {!isCompleted && status !== "completed" && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 rounded-xl opacity-70 hover:opacity-100 hover:bg-gradient-to-br hover:from-primary/20 hover:to-chart-1/20 hover:text-primary transition-all"
+                className="h-6 w-6 rounded-lg opacity-60 hover:opacity-100 hover:bg-primary/20 hover:text-primary"
                 onClick={(e) => {
                   e.stopPropagation();
                   onStartTask(task);
                 }}
                 title="Start / Deep Focus"
               >
-                <Play className="h-4 w-4" />
+                <Play className="h-3 w-3" />
               </Button>
             )}
             <Button
               variant="ghost"
               size="icon"
               className={cn(
-                "h-8 w-8 rounded-xl opacity-70 hover:opacity-100 transition-all",
+                "h-6 w-6 rounded-lg opacity-60 hover:opacity-100",
                 isCompleted
                   ? "hover:bg-amber-500/20 hover:text-amber-500"
-                  : "hover:bg-gradient-to-br hover:from-emerald-500/20 hover:to-green-500/20 hover:text-emerald-500",
+                  : "hover:bg-emerald-500/20 hover:text-emerald-500",
               )}
               onClick={(e) => {
                 e.stopPropagation();
@@ -173,20 +193,20 @@ export function AllTasksList({
               }}
               title={isCompleted ? "Mark Incomplete" : "Mark Complete"}
             >
-              {isCompleted ? <RotateCcw className="h-4 w-4 text-amber-500" /> : <Check className="h-4 w-4" />}
+              {isCompleted ? <RotateCcw className="h-3 w-3 text-amber-500" /> : <Check className="h-3 w-3" />}
             </Button>
             {onDeleteTask && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 rounded-xl opacity-70 hover:opacity-100 hover:bg-gradient-to-br hover:from-rose-500/20 hover:to-red-500/20 hover:text-rose-500 transition-all"
+                className="h-6 w-6 rounded-lg opacity-60 hover:opacity-100 hover:bg-rose-500/20 hover:text-rose-500"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDeleteTask(task);
                 }}
                 title="Delete Task"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3 w-3" />
               </Button>
             )}
           </div>
