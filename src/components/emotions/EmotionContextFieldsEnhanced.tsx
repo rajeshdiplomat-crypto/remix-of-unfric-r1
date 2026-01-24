@@ -51,13 +51,13 @@ function PresetPills({
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-1">
         {options.map((o) => (
           <button
             key={o}
             onClick={() => onSelect(o === selected ? "" : o)}
             className={cn(
-              "px-2.5 py-1 rounded-full text-xs font-medium transition-all border",
+              "px-2 py-0.5 rounded-full text-xs font-medium transition-all border",
               selected === o
                 ? "bg-primary text-primary-foreground border-primary"
                 : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted",
@@ -122,19 +122,6 @@ export function EmotionContextFieldsEnhanced({
 
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="note" className="text-sm text-muted-foreground">
-          Add a note (optional)
-        </Label>
-        <Textarea
-          id="note"
-          placeholder="What's on your mind?"
-          value={note}
-          onChange={(e) => onNoteChange(e.target.value)}
-          className="min-h-[80px] resize-none"
-        />
-      </div>
-
       {(!hideTimeField || !hideJournalToggle) && (
         <div className="flex items-center justify-between gap-4 p-3 rounded-lg bg-muted/30">
           {!hideTimeField && (
@@ -160,6 +147,19 @@ export function EmotionContextFieldsEnhanced({
         </div>
       )}
 
+      <div className="space-y-2">
+        <Label htmlFor="note" className="text-sm text-muted-foreground">
+          Add a note (optional)
+        </Label>
+        <Textarea
+          id="note"
+          placeholder="What's on your mind?"
+          value={note}
+          onChange={(e) => onNoteChange(e.target.value)}
+          className="min-h-[80px] resize-none"
+        />
+      </div>
+
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger asChild>
           <Button variant="ghost" className="w-full justify-between px-3 py-2 h-auto">
@@ -168,7 +168,7 @@ export function EmotionContextFieldsEnhanced({
           </Button>
         </CollapsibleTrigger>
 
-        <CollapsibleContent className="space-y-4 pt-4">
+        <CollapsibleContent className="space-y-2 pt-2">
           <div className="space-y-2">
             <Label className="text-sm flex items-center gap-2 text-muted-foreground">
               <Users className="h-4 w-4" /> Who are you with?
