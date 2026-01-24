@@ -64,15 +64,36 @@ export function StrategiesPanelEnhanced({ currentQuadrant, currentEmotion }: Str
     setShowVisualization(true);
   };
 
+  // Pick a featured strategy for the hero image
+  const featuredStrategy = recommendedStrategies[0] || sortedStrategies[0];
+
   return (
     <div className="space-y-5">
+      {/* Hero Image Card */}
+      <div className="relative aspect-square w-full max-w-[180px] mx-auto rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-accent/10 border border-border/50">
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+          <div className={`p-4 rounded-2xl bg-gradient-to-br ${featuredStrategy ? typeGradients[featuredStrategy.type] : 'from-primary to-accent'} text-white mb-3 shadow-lg`}>
+            {featuredStrategy ? iconMap[featuredStrategy.icon] : <Sparkles className="h-6 w-6" />}
+          </div>
+          <p className="text-xs font-medium text-muted-foreground">
+            {featuredStrategy ? featuredStrategy.title : "Exercises"}
+          </p>
+          <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+            {featuredStrategy ? featuredStrategy.duration : "Regulation"}
+          </p>
+        </div>
+        {/* Decorative elements */}
+        <div className="absolute top-2 right-2 w-8 h-8 rounded-full bg-primary/10 blur-xl" />
+        <div className="absolute bottom-3 left-3 w-6 h-6 rounded-full bg-accent/20 blur-lg" />
+      </div>
+
       {/* Header */}
       <div>
-        <h2 className="text-lg font-semibold text-slate-800 dark:text-white flex items-center gap-2">
+        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-amber-500" />
           Regulation Strategies
         </h2>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           {currentQuadrant
             ? `Tools for ${currentEmotion?.toLowerCase() || quadrantInfo?.description.toLowerCase()}`
             : "Explore emotion regulation techniques"}
@@ -100,7 +121,7 @@ export function StrategiesPanelEnhanced({ currentQuadrant, currentEmotion }: Str
 
       {/* All Strategies */}
       <div className="space-y-3">
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">All Strategies</h3>
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">All Strategies</h3>
         <div className="space-y-2">
           {otherStrategies.map((strategy) => (
             <StrategyCard key={strategy.id} strategy={strategy} onStart={() => handleStartVisualization(strategy)} />
@@ -148,7 +169,7 @@ function StrategyCard({
       className={`group p-3 rounded-xl transition-all duration-200 hover:shadow-md ${
         isRecommended
           ? "bg-gradient-to-r from-rose-50 to-orange-50 dark:from-rose-900/20 dark:to-orange-900/20 border border-rose-200 dark:border-rose-800"
-          : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+          : "bg-card border border-border"
       }`}
     >
       <div className="flex items-center gap-3">
@@ -156,12 +177,12 @@ function StrategyCard({
           {iconMap[strategy.icon]}
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-sm text-slate-800 dark:text-white">{strategy.title}</h4>
+          <h4 className="font-medium text-sm text-foreground">{strategy.title}</h4>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs text-slate-500 flex items-center gap-1">
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Clock className="h-3 w-3" /> {strategy.duration}
             </span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
               {typeLabels[strategy.type]}
             </span>
           </div>
