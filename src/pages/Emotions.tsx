@@ -528,14 +528,14 @@ export default function Emotions() {
             <PatternsDashboardEnhanced entries={entries} onDateClick={handleDateClick} />
           </div>
 
-          {/* Right Column - Calendar (fixed) & Recent Entries (scrollable, fills remaining) */}
-          <div className="flex flex-col lg:h-[calc(100vh-280px)] gap-4">
+          {/* Right Column - Calendar (fixed) & Recent Entries (scrollable, aligned with Most Frequent Feelings) */}
+          <div className="flex flex-col gap-4" style={{ height: 'calc(800px + 420px + 24px)' }}>
             {/* Calendar - Non-scrollable */}
             <div className="shrink-0">
               <EmotionCalendarSidebar entries={entries} onDateClick={handleDateClick} />
             </div>
 
-            {/* Recent Entries - Fills remaining height, scrollable */}
+            {/* Recent Entries - Fills remaining height to align with Most Frequent Feelings, scrollable */}
             <div className="flex-1 min-h-0">
               <RecentEntriesList entries={entries} onEditEntry={startEditEntry} onDeleteEntry={setDeletingEntryId} />
             </div>
