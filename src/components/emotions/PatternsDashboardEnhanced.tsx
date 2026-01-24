@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { QuadrantType, QUADRANTS, EmotionEntry } from "./types";
-import { format, subDays, eachDayOfInterval } from "date-fns";
+import { format, subDays } from "date-fns";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import {
   Users,
@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { useTimezone } from "@/hooks/useTimezone";
 import { getTimePeriodInTimezone, getStartOfTodayInTimezone } from "@/lib/formatDate";
+
+type DateRange = 7 | 30 | 90;
 
 interface PatternsDashboardEnhancedProps {
   entries: EmotionEntry[];
@@ -37,12 +39,15 @@ const QUADRANT_COLORS: Record<QuadrantType, string> = {
 
 export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhancedProps) {
   const { timezone } = useTimezone();
+  const [dateRange, setDateRange] = useState<DateRange>(30);
+
+  const filteredEntries = useMemo(() => {
+    const today = getStartOfTodayInTimezone(timezone);
+    const cutoff = format(subDays(today, dateRange - 1), "yyyy-MM-dd");
+    return entries.filter((e) => e.entry_date >= cutoff);
+  }, [entries, dateRange, timezone]);
 
   const stats = useMemo(() => {
-    const today = getStartOfTodayInTimezone(timezone);
-    const cutoff = format(subDays(today, 29), "yyyy-MM-dd");
-    const filteredEntries = entries.filter((e) => e.entry_date >= cutoff);
-
     // Quadrant counts
     const quadrantCounts: Record<QuadrantType, number> = {
       "high-pleasant": 0,
@@ -77,9 +82,8 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
       total: filteredEntries.length,
       topEmotions,
       quadrantData,
-      filteredEntries,
     };
-  }, [entries, timezone]);
+  }, [filteredEntries]);
 
   if (entries.length === 0) {
     return (
@@ -93,6 +97,31 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
 
   return (
     <div className="space-y-5">
+      {/* Header with Date Range Filter */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" /> Your Patterns
+          </h2>
+          <p className="text-sm text-muted-foreground">Insights from your emotional check-ins</p>
+        </div>
+        <div className="flex gap-1 p-1 bg-muted rounded-xl">
+          {([7, 30, 90] as DateRange[]).map((d) => (
+            <button
+              key={d}
+              onClick={() => setDateRange(d)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                dateRange === d 
+                  ? "bg-card shadow-sm text-foreground" 
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {d}D
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Row 1: Mood Distribution + Most Frequent Feelings */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <MoodDistributionChart data={stats.quadrantData} />
@@ -100,13 +129,13 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
       </div>
 
       {/* Row 2: Mood by Time of Day */}
-      <MoodByTimeOfDay entries={stats.filteredEntries} timezone={timezone} />
+      <MoodByTimeOfDay entries={filteredEntries} timezone={timezone} />
 
       {/* Row 3: Context Insights */}
-      <ContextInsights entries={stats.filteredEntries} />
+      <ContextInsights entries={filteredEntries} />
 
       {/* Row 4: Pattern Insights */}
-      <PatternInsights entries={stats.filteredEntries} />
+      <PatternInsights entries={filteredEntries} />
     </div>
   );
 }
