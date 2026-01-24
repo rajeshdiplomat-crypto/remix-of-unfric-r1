@@ -307,6 +307,7 @@ export default function Tasks() {
         description: task.description || null,
         due_date: task.due_date || null,
         due_time: task.due_time || null,
+        end_time: task.end_time || null,
         priority: task.priority,
         urgency: task.urgency,
         importance: task.importance,
