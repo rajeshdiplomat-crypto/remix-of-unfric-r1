@@ -597,16 +597,7 @@ export default function Tasks() {
 
       <div className="w-full flex-1 min-h-0 px-6 lg:px-8 pt-6">
         <div className="w-full min-w-0 flex flex-col gap-6 min-h-0">
-          <TasksHeader
-            view={view}
-            onViewChange={setView}
-            quadrantMode={quadrantMode}
-            onQuadrantModeChange={setQuadrantMode}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            onNewTask={openNewTaskDrawer}
-          />
-
+          {/* Insights & Clock panels */}
           <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_260px] gap-4 items-start">
             <div className="flex flex-col gap-2 h-[260px]">
               <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
@@ -616,6 +607,17 @@ export default function Tasks() {
               <TasksClockWidget />
             </div>
           </div>
+
+          {/* View header bar - below insights/clock */}
+          <TasksHeader
+            view={view}
+            onViewChange={setView}
+            quadrantMode={quadrantMode}
+            onQuadrantModeChange={setQuadrantMode}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onNewTask={openNewTaskDrawer}
+          />
 
           <div className={`flex-1 grid grid-cols-1 ${gridCols} gap-8 min-h-0 min-w-0`}>
             {/* Left */}
