@@ -27,51 +27,49 @@ export function TasksHeader({
 }: TasksHeaderProps) {
   return (
     <div className="flex items-center gap-2 flex-wrap justify-between">
-      {/* Left: View mode + Planner/Quadrant */}
+      {/* Left: Combined View Selector */}
       <div className="flex items-center gap-2">
-        <span className="hidden sm:inline text-[12px] uppercase tracking-[0.16em] text-muted-foreground">
-          View mode
-        </span>
+        <span className="hidden sm:inline text-[12px] uppercase tracking-[0.16em] text-muted-foreground">View</span>
 
-        <Select value={quadrantMode} onValueChange={(v) => onQuadrantModeChange(v as QuadrantMode)}>
-          <SelectTrigger className={`w-[190px] ${controlBase}`}>
+        <Select
+          value={view === "board" ? "planner" : `quadrant-${quadrantMode}`}
+          onValueChange={(v) => {
+            if (v === "planner") {
+              onViewChange("board");
+            } else {
+              const mode = v.replace("quadrant-", "") as QuadrantMode;
+              onViewChange("quadrant");
+              onQuadrantModeChange(mode);
+            }
+          }}
+        >
+          <SelectTrigger className={`w-[240px] ${controlBase}`}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="urgent-important">📋 Urgent × Important</SelectItem>
-            <SelectItem value="status">📊 Status</SelectItem>
-            <SelectItem value="date">📅 Date</SelectItem>
-            <SelectItem value="time">🕐 Time of Day</SelectItem>
+            <SelectItem value="planner">
+              <span className="flex items-center gap-2">
+                📅 <span className="font-medium">Planner</span>
+                <span className="text-muted-foreground text-xs ml-1">(Board)</span>
+              </span>
+            </SelectItem>
+            <div className="px-2 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground border-t border-border/50 mt-1">
+              Quadrant Views
+            </div>
+            <SelectItem value="quadrant-urgent-important">
+              <span className="flex items-center gap-2">🎯 Urgent × Important</span>
+            </SelectItem>
+            <SelectItem value="quadrant-status">
+              <span className="flex items-center gap-2">📊 By Status</span>
+            </SelectItem>
+            <SelectItem value="quadrant-date">
+              <span className="flex items-center gap-2">📅 By Date</span>
+            </SelectItem>
+            <SelectItem value="quadrant-time">
+              <span className="flex items-center gap-2">🕐 By Time of Day</span>
+            </SelectItem>
           </SelectContent>
         </Select>
-
-        {/* Segmented control (Board / Quadrant) */}
-        <div className="flex items-center rounded-xl border border-primary/20 bg-gradient-to-r from-primary/5 to-chart-1/5 p-1 shadow-sm">
-          <button
-            type="button"
-            onClick={() => onViewChange("board")}
-            className={[
-              "h-8 px-3 rounded-lg text-[13px] font-medium transition-all duration-200",
-              view === "board" 
-                ? "bg-gradient-to-r from-primary to-chart-1 text-primary-foreground shadow-md" 
-                : "text-muted-foreground hover:text-foreground hover:bg-background/60",
-            ].join(" ")}
-          >
-            📅 Planner
-          </button>
-          <button
-            type="button"
-            onClick={() => onViewChange("quadrant")}
-            className={[
-              "h-8 px-3 rounded-lg text-[13px] font-medium transition-all duration-200",
-              view === "quadrant"
-                ? "bg-gradient-to-r from-primary to-chart-1 text-primary-foreground shadow-md"
-                : "text-muted-foreground hover:text-foreground hover:bg-background/60",
-            ].join(" ")}
-          >
-            Quadrant
-          </button>
-        </div>
       </div>
 
       {/* Right: Search + New Task */}
@@ -86,7 +84,10 @@ export function TasksHeader({
           />
         </div>
 
-        <Button onClick={onNewTask} className="h-10 rounded-xl px-4 shadow-md bg-gradient-to-r from-primary via-chart-1 to-primary hover:opacity-90 transition-opacity">
+        <Button
+          onClick={onNewTask}
+          className="h-10 rounded-xl px-4 shadow-md bg-gradient-to-r from-primary via-chart-1 to-primary hover:opacity-90 transition-opacity"
+        >
           <Plus className="h-4 w-4 mr-2" />
           New Task
         </Button>
