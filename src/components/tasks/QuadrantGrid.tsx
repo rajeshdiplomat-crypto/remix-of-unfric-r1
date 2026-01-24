@@ -139,7 +139,7 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
     return (
       <div
         className={cn(
-          "relative flex flex-col rounded-xl border-2 transition-all duration-300 overflow-hidden h-[280px]",
+          "relative flex flex-col rounded-xl border-2 transition-all duration-300 overflow-hidden min-h-[200px]",
           `bg-gradient-to-br ${gradients[position]}`,
           isTopLeft ? "border-primary/30 shadow-lg" : "border-border/30 shadow-sm",
           "hover:shadow-lg hover:border-border/50",
@@ -349,7 +349,7 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
         )}
 
         {/* 2x2 Grid */}
-        <div className="grid grid-cols-2 auto-rows-auto gap-2 pl-2">
+        <div className="grid grid-cols-2 grid-rows-2 gap-2 pl-2 h-full">
           <QuadrantCard quadrant={modeConfig.quadrants[0]} position={0} />
           <QuadrantCard quadrant={modeConfig.quadrants[1]} position={1} />
           <QuadrantCard quadrant={modeConfig.quadrants[2]} position={2} />
