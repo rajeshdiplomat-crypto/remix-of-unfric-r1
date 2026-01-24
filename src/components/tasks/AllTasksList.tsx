@@ -219,15 +219,20 @@ export function AllTasksList({
   }
 
   return (
-    <div className="flex flex-col h-full bg-card/50 rounded-2xl border border-border/50">
-      {/* Header */}
-      <div className="p-4 border-b border-border/30 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">All Tasks</h2>
+    <div className="flex flex-col h-full bg-gradient-to-br from-card via-card/95 to-primary/5 rounded-2xl border border-primary/10 shadow-lg backdrop-blur-sm">
+      {/* Header with gradient accent */}
+      <div className="p-5 pb-4 border-b border-primary/10 flex items-center justify-between bg-gradient-to-r from-transparent via-primary/5 to-transparent">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary via-chart-1 to-chart-2 flex items-center justify-center shadow-md">
+            <ListChecks className="h-4 w-4 text-white" />
+          </div>
+          <h2 className="text-base font-bold text-foreground tracking-tight">All Tasks</h2>
+        </div>
 
         <Button
           variant="ghost"
           size="icon"
-          className="h-9 w-9 rounded-xl"
+          className="h-9 w-9 rounded-xl hover:bg-primary/10"
           onClick={onToggleCollapse}
           title="Collapse All Tasks"
         >
@@ -241,77 +246,110 @@ export function AllTasksList({
         onValueChange={(v) => setActiveTab(v as FilterTab)}
         className="flex-1 flex flex-col min-h-0"
       >
-        <div className="px-3 pt-3">
-          <TabsList className="w-full grid grid-cols-5 h-8 bg-transparent gap-1">
-            <TabsTrigger value="all" className="text-xs px-1">
-              All ({counts.all})
-            </TabsTrigger>
-            <TabsTrigger value="upcoming" className="text-xs px-1">
-              Up ({counts.upcoming})
-            </TabsTrigger>
-            <TabsTrigger value="ongoing" className="text-xs px-1">
-              On ({counts.ongoing})
-            </TabsTrigger>
-            <TabsTrigger value="completed" className="text-xs px-1">
-              Done ({counts.completed})
-            </TabsTrigger>
-            <TabsTrigger value="overdue" className="text-xs px-1 text-destructive">
-              Due ({counts.overdue})
-            </TabsTrigger>
-          </TabsList>
+        <div className="px-4 pt-4 pb-2 space-y-4">
+          {/* Status Pills - Luxurious style */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {(
+              [
+                { value: "all", label: "All", count: counts.all, color: "from-slate-500 to-slate-600" },
+                { value: "upcoming", label: "Upcoming", count: counts.upcoming, color: "from-blue-500 to-indigo-500" },
+                { value: "ongoing", label: "Ongoing", count: counts.ongoing, color: "from-amber-500 to-orange-500" },
+                { value: "completed", label: "Done", count: counts.completed, color: "from-emerald-500 to-green-600" },
+                { value: "overdue", label: "Overdue", count: counts.overdue, color: "from-rose-500 to-red-600" },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => setActiveTab(tab.value)}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 flex items-center gap-1.5",
+                  activeTab === tab.value
+                    ? `bg-gradient-to-r ${tab.color} text-white shadow-md`
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                {tab.label}
+                <span
+                  className={cn(
+                    "px-1.5 py-0.5 rounded-full text-[10px] font-bold",
+                    activeTab === tab.value ? "bg-white/20" : "bg-background/80",
+                  )}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </div>
 
-          {/* Urgency & Importance Filters */}
-          <div className="flex items-center gap-2 mt-2">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] text-muted-foreground uppercase">Urgency:</span>
-              {(["all", "urgent", "not-urgent"] as UrgencyFilter[]).map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setUrgencyFilter(filter)}
-                  className={cn(
-                    "text-[10px] px-1.5 py-0.5 rounded transition-all",
-                    urgencyFilter === filter
-                      ? filter === "urgent"
-                        ? "bg-destructive/20 text-destructive font-medium"
-                        : "bg-primary/20 text-primary font-medium"
-                      : "text-muted-foreground hover:bg-muted",
-                  )}
-                >
-                  {filter === "all" ? "All" : filter === "urgent" ? "U" : "NU"}
-                </button>
-              ))}
+          {/* Urgency & Importance Filters - Premium design */}
+          <div className="flex items-center gap-4 p-3 rounded-xl bg-gradient-to-r from-muted/30 via-muted/20 to-muted/30 border border-border/30">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Urgency</span>
+              <div className="flex items-center gap-1 bg-background/60 rounded-lg p-1">
+                {[
+                  { value: "all" as UrgencyFilter, label: "All" },
+                  { value: "urgent" as UrgencyFilter, label: "🔥 Urgent" },
+                  { value: "not-urgent" as UrgencyFilter, label: "Later" },
+                ].map((filter) => (
+                  <button
+                    key={filter.value}
+                    onClick={() => setUrgencyFilter(filter.value)}
+                    className={cn(
+                      "text-[10px] px-2.5 py-1 rounded-md transition-all font-medium",
+                      urgencyFilter === filter.value
+                        ? filter.value === "urgent"
+                          ? "bg-gradient-to-r from-rose-500 to-red-500 text-white shadow-sm"
+                          : "bg-gradient-to-r from-primary to-chart-1 text-white shadow-sm"
+                        : "text-muted-foreground hover:bg-muted/80",
+                    )}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="w-px h-4 bg-border" />
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] text-muted-foreground uppercase">Imp:</span>
-              {(["all", "important", "not-important"] as ImportanceFilter[]).map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setImportanceFilter(filter)}
-                  className={cn(
-                    "text-[10px] px-1.5 py-0.5 rounded transition-all",
-                    importanceFilter === filter
-                      ? filter === "important"
-                        ? "bg-primary/20 text-primary font-medium"
-                        : "bg-muted text-foreground font-medium"
-                      : "text-muted-foreground hover:bg-muted",
-                  )}
-                >
-                  {filter === "all" ? "All" : filter === "important" ? "I" : "NI"}
-                </button>
-              ))}
+
+            <div className="w-px h-6 bg-border/50" />
+
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Priority</span>
+              <div className="flex items-center gap-1 bg-background/60 rounded-lg p-1">
+                {[
+                  { value: "all" as ImportanceFilter, label: "All" },
+                  { value: "important" as ImportanceFilter, label: "⭐ High" },
+                  { value: "not-important" as ImportanceFilter, label: "Low" },
+                ].map((filter) => (
+                  <button
+                    key={filter.value}
+                    onClick={() => setImportanceFilter(filter.value)}
+                    className={cn(
+                      "text-[10px] px-2.5 py-1 rounded-md transition-all font-medium",
+                      importanceFilter === filter.value
+                        ? filter.value === "important"
+                          ? "bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-sm"
+                          : "bg-gradient-to-r from-slate-500 to-slate-600 text-white shadow-sm"
+                        : "text-muted-foreground hover:bg-muted/80",
+                    )}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Task list with max height for exactly 12 entries */}
-        <ScrollArea className="flex-1 px-3 pb-3" style={{ maxHeight: "1400px" }}>
-          <div className="space-y-2 mt-3">
+        {/* Task list with improved spacing */}
+        <ScrollArea className="flex-1 px-4 pb-4" style={{ maxHeight: "1400px" }}>
+          <div className="space-y-3 mt-2">
             {filteredTasks.length > 0 ? (
               filteredTasks.map((task) => <TaskCard key={task.id} task={task} />)
             ) : (
-              <div className="flex items-center justify-center h-32 text-muted-foreground/60 text-sm italic">
-                No {activeTab === "all" ? "" : activeTab} tasks
+              <div className="flex flex-col items-center justify-center h-40 text-muted-foreground/60 gap-2">
+                <div className="h-12 w-12 rounded-full bg-muted/30 flex items-center justify-center">
+                  <ListChecks className="h-6 w-6" />
+                </div>
+                <p className="text-sm italic">No {activeTab === "all" ? "" : activeTab} tasks</p>
               </div>
             )}
           </div>
