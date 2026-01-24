@@ -31,6 +31,7 @@ import {
   createDefaultTask,
   suggestTimeOfDay,
   computeDateBucket,
+  getDefaultEndTime,
 } from "@/components/tasks/types";
 
 // Sample data
@@ -240,14 +241,18 @@ export default function Tasks() {
 
     if (!error && data) {
       const quadrantTasks: QuadrantTask[] = data.map((t: any) => {
-        const dueTime = t.due_time || null;
+        const rawDueTime = t.due_time || null;
+        const dueTime = rawDueTime ? rawDueTime.substring(0, 5) : null;
+        const rawEndTime = t.end_time || null;
+        const endTime = rawEndTime ? rawEndTime.substring(0, 5) : dueTime ? getDefaultEndTime(dueTime) : null;
+
         const task: QuadrantTask = {
           id: t.id,
           title: t.title,
           description: t.description,
           due_date: t.due_date,
           due_time: dueTime,
-          end_time: t.end_time || null,
+          end_time: endTime,
           priority: t.priority || "medium",
           is_completed: t.is_completed || false,
           completed_at: t.completed_at,

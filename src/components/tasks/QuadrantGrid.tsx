@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Play,
   Check,
@@ -208,8 +208,12 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
                     {task.due_date && (
                       <span>
                         {new Date(task.due_date).getDate()}/{new Date(task.due_date).getMonth() + 1}
-                        {task.due_time && ` ${task.due_time}`}
-                        {task.due_time && task.end_time && `-${task.end_time}`}
+                        {task.due_time && (
+                          <>
+                            {` ${task.due_time}`}
+                            {task.end_time && task.end_time !== task.due_time && `-${task.end_time}`}
+                          </>
+                        )}
                       </span>
                     )}
                     {status === "overdue" && (

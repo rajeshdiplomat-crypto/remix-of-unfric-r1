@@ -125,8 +125,12 @@ export function AllTasksList({
               {task.due_date && (
                 <span className="text-[9px] text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded">
                   {format(new Date(task.due_date), "d/M")}
-                  {task.due_time && ` ${task.due_time}`}
-                  {task.due_time && task.end_time && `-${task.end_time}`}
+                  {task.due_time && (
+                    <>
+                      {` ${task.due_time}`}
+                      {task.end_time && task.end_time !== task.due_time && `-${task.end_time}`}
+                    </>
+                  )}
                 </span>
               )}
               {/* Urgency & Importance combined */}
