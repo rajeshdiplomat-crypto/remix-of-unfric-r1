@@ -619,7 +619,7 @@ export default function Tasks() {
 
           <div className={`flex-1 grid grid-cols-1 ${gridCols} gap-8 min-h-0 min-w-0`}>
             {/* Left */}
-            <div className="min-h-0 min-w-0">
+            <div className="min-h-0 min-w-0 h-[600px]">
               <AllTasksList
                 tasks={filteredTasks}
                 onTaskClick={openTaskDetail}

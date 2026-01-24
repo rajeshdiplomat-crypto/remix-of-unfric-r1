@@ -329,7 +329,7 @@ export function AllTasksList({
         </div>
 
         {/* Task list with improved spacing */}
-        <ScrollArea className="flex-1 px-4 pb-3" style={{ maxHeight: "480px" }}>
+        <ScrollArea className="flex-1 px-4 pb-3">
           <div className="space-y-2 mt-2">
             {filteredTasks.length > 0 ? (
               filteredTasks.map((task) => <TaskCard key={task.id} task={task} />)
