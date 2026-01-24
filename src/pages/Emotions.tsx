@@ -27,7 +27,7 @@ import { RecentEntriesList } from "@/components/emotions/RecentEntriesList";
 import { PatternsDashboardEnhanced } from "@/components/emotions/PatternsDashboardEnhanced";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { useTimezone } from "@/hooks/useTimezone";
 import { getTodayInTimezone } from "@/lib/formatDate";
 
@@ -436,15 +436,15 @@ export default function Emotions() {
           <div className="space-y-6">
             {/* Top Row: Check-in + Strategies side by side */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-              {/* Check-in Card */}
-              <Card className="rounded-2xl border-border shadow-sm overflow-hidden">
-                <CardHeader className="pb-2 bg-gradient-to-r from-rose-50/50 to-amber-50/50 dark:from-rose-900/10 dark:to-amber-900/10">
+              {/* Check-in Card - Fixed Height */}
+              <Card className="rounded-2xl border-border shadow-sm overflow-hidden h-[420px] flex flex-col">
+                <CardHeader className="pb-2 bg-gradient-to-r from-rose-50/50 to-amber-50/50 dark:from-rose-900/10 dark:to-amber-900/10 shrink-0">
                   <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
                     <Heart className="h-4 w-4 text-rose-500" />
                     How are you feeling?
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-4">
+                <CardContent className="pt-4 flex-1 overflow-y-auto">
                   {step === "sliders" && (
                     <div className="space-y-4">
                       <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/30 text-sm text-muted-foreground">
@@ -516,9 +516,9 @@ export default function Emotions() {
                 </CardContent>
               </Card>
 
-              {/* Strategies Panel */}
-              <Card className="rounded-2xl border-border shadow-sm">
-                <CardContent className="p-5">
+              {/* Strategies Panel - Fixed Height */}
+              <Card className="rounded-2xl border-border shadow-sm h-[420px] flex flex-col">
+                <CardContent className="p-5 flex-1 overflow-y-auto">
                   <StrategiesPanelEnhanced currentQuadrant={currentQuadrant} currentEmotion={currentEmotion} />
                 </CardContent>
               </Card>
@@ -528,17 +528,17 @@ export default function Emotions() {
             <PatternsDashboardEnhanced entries={entries} onDateClick={handleDateClick} />
           </div>
 
-          {/* Right Column - Calendar & Recent (scrollable) */}
-          <div className="lg:h-[calc(100vh-280px)]">
-            <ScrollArea className="h-full pr-2">
-              <div className="space-y-4">
-                {/* Calendar */}
-                <EmotionCalendarSidebar entries={entries} onDateClick={handleDateClick} />
+          {/* Right Column - Calendar (fixed) & Recent Entries (scrollable, fills remaining) */}
+          <div className="flex flex-col lg:h-[calc(100vh-280px)] gap-4">
+            {/* Calendar - Non-scrollable */}
+            <div className="shrink-0">
+              <EmotionCalendarSidebar entries={entries} onDateClick={handleDateClick} />
+            </div>
 
-                {/* Recent Entries */}
-                <RecentEntriesList entries={entries} onEditEntry={startEditEntry} onDeleteEntry={setDeletingEntryId} />
-              </div>
-            </ScrollArea>
+            {/* Recent Entries - Fills remaining height, scrollable */}
+            <div className="flex-1 min-h-0">
+              <RecentEntriesList entries={entries} onEditEntry={startEditEntry} onDeleteEntry={setDeletingEntryId} />
+            </div>
           </div>
         </div>
       </div>
