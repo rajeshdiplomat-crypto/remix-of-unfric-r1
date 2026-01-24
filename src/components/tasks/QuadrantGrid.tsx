@@ -139,7 +139,7 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
     return (
       <div
         className={cn(
-          "relative flex flex-col rounded-xl border-2 transition-all duration-300 overflow-hidden h-[220px]",
+          "relative flex flex-col rounded-xl border-2 transition-all duration-300 overflow-hidden h-[280px]",
           `bg-gradient-to-br ${gradients[position]}`,
           isTopLeft ? "border-primary/30 shadow-lg" : "border-border/30 shadow-sm",
           "hover:shadow-lg hover:border-border/50",
