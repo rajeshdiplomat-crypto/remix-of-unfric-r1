@@ -334,9 +334,9 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
   }
   return (
     <Card className="rounded-xl border border-primary/20 bg-gradient-to-br from-card/80 via-card/60 to-chart-1/5 backdrop-blur-sm shadow-md flex-1 overflow-hidden">
-      <CardContent className="p-1.5 h-full px-[5px] py-[5px] rounded-sm">
-        {/* Main content: Time selector left, KPIs middle (2x3), Charts right */}
-        <div className="h-full flex gap-2">
+      <CardContent className="p-1 h-full px-1 py-1 rounded-sm">
+        {/* Main content: Time selector left, KPIs middle, Charts right */}
+        <div className="h-full flex gap-1.5">
           {/* Far Left: Time Period Selector - vertical slim buttons */}
           <div className="flex flex-col gap-1 shrink-0 justify-center">
             {(["today", "tomorrow", "week"] as TimePeriod[]).map((period) => (
@@ -360,8 +360,8 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
             ))}
           </div>
 
-          {/* Left: KPI Cards in 2x3 grid - stretch to full height */}
-          <div className="grid grid-cols-2 gap-1 w-[180px] shrink-0 auto-rows-fr">
+          {/* Left: KPI Cards in 2x2 grid */}
+          <div className="grid grid-cols-2 gap-0.5 w-[200px] shrink-0 auto-rows-fr">
             {/* Pending - Blue gradient */}
             <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 shadow-sm">
               <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shrink-0 shadow-sm">

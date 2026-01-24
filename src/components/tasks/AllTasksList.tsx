@@ -21,6 +21,8 @@ interface AllTasksListProps {
 }
 
 type FilterTab = "all" | "upcoming" | "ongoing" | "completed" | "overdue";
+type UrgencyFilter = "all" | "urgent" | "not-urgent";
+type ImportanceFilter = "all" | "important" | "not-important";
 
 export function AllTasksList({
   tasks,
@@ -32,8 +34,21 @@ export function AllTasksList({
   onToggleCollapse,
 }: AllTasksListProps) {
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
+  const [urgencyFilter, setUrgencyFilter] = useState<UrgencyFilter>("all");
+  const [importanceFilter, setImportanceFilter] = useState<ImportanceFilter>("all");
 
-  const filteredTasks = activeTab === "all" ? tasks : tasks.filter((t) => computeTaskStatus(t) === activeTab);
+  // Apply all filters
+  const filteredTasks = tasks.filter((t) => {
+    // Status filter
+    if (activeTab !== "all" && computeTaskStatus(t) !== activeTab) return false;
+    // Urgency filter
+    if (urgencyFilter === "urgent" && t.urgency !== "high") return false;
+    if (urgencyFilter === "not-urgent" && t.urgency !== "low") return false;
+    // Importance filter
+    if (importanceFilter === "important" && t.importance !== "high") return false;
+    if (importanceFilter === "not-important" && t.importance !== "low") return false;
+    return true;
+  });
 
   const counts = {
     all: tasks.length,
@@ -244,6 +259,49 @@ export function AllTasksList({
               Due ({counts.overdue})
             </TabsTrigger>
           </TabsList>
+
+          {/* Urgency & Importance Filters */}
+          <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-muted-foreground uppercase">Urgency:</span>
+              {(["all", "urgent", "not-urgent"] as UrgencyFilter[]).map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setUrgencyFilter(filter)}
+                  className={cn(
+                    "text-[10px] px-1.5 py-0.5 rounded transition-all",
+                    urgencyFilter === filter
+                      ? filter === "urgent"
+                        ? "bg-destructive/20 text-destructive font-medium"
+                        : "bg-primary/20 text-primary font-medium"
+                      : "text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  {filter === "all" ? "All" : filter === "urgent" ? "U" : "NU"}
+                </button>
+              ))}
+            </div>
+            <div className="w-px h-4 bg-border" />
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-muted-foreground uppercase">Imp:</span>
+              {(["all", "important", "not-important"] as ImportanceFilter[]).map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setImportanceFilter(filter)}
+                  className={cn(
+                    "text-[10px] px-1.5 py-0.5 rounded transition-all",
+                    importanceFilter === filter
+                      ? filter === "important"
+                        ? "bg-primary/20 text-primary font-medium"
+                        : "bg-muted text-foreground font-medium"
+                      : "text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  {filter === "all" ? "All" : filter === "important" ? "I" : "NI"}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Task list with max height for exactly 12 entries */}
