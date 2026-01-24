@@ -32,6 +32,7 @@ import { EmotionContextFieldsEnhanced } from "@/components/emotions/EmotionConte
 import { StrategiesPanelEnhanced } from "@/components/emotions/StrategiesPanelEnhanced";
 import { EmotionCalendarSidebar } from "@/components/emotions/EmotionCalendarSidebar";
 import { RecentEntriesList } from "@/components/emotions/RecentEntriesList";
+import { PatternsDashboardEnhanced } from "@/components/emotions/PatternsDashboardEnhanced";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -422,77 +423,83 @@ export default function Emotions() {
 
       {/* Main Content - Two Column Layout */}
       <div className="flex-1 px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 h-full">
-          {/* Left Column - Check-in & Strategies (wider) */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+          {/* Left Column - Check-in row + Dashboards below */}
           <div className="space-y-6">
-            {/* Check-in Card */}
-            <Card className="rounded-2xl border-border shadow-sm overflow-hidden">
-              <CardHeader className="pb-2 bg-gradient-to-r from-rose-50/50 to-amber-50/50 dark:from-rose-900/10 dark:to-amber-900/10">
-                <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-                  <Heart className="h-4 w-4 text-rose-500" />
-                  How are you feeling?
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4">
-                {step === "sliders" && <EmotionSliderPicker onSelect={handleSliderComplete} />}
+            {/* Top Row: Check-in + Strategies side by side */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+              {/* Check-in Card */}
+              <Card className="rounded-2xl border-border shadow-sm overflow-hidden">
+                <CardHeader className="pb-2 bg-gradient-to-r from-rose-50/50 to-amber-50/50 dark:from-rose-900/10 dark:to-amber-900/10">
+                  <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                    <Heart className="h-4 w-4 text-rose-500" />
+                    How are you feeling?
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  {step === "sliders" && <EmotionSliderPicker onSelect={handleSliderComplete} />}
 
-                {step === "details" && selectedQuadrant && selectedEmotion && (
-                  <div className="space-y-4">
-                    <div
-                      className="flex items-center gap-3 p-3 rounded-xl"
-                      style={{ backgroundColor: QUADRANTS[selectedQuadrant].bgColor }}
-                    >
+                  {step === "details" && selectedQuadrant && selectedEmotion && (
+                    <div className="space-y-4">
                       <div
-                        className="w-4 h-4 rounded-full"
-                        style={{ backgroundColor: QUADRANTS[selectedQuadrant].color }}
+                        className="flex items-center gap-3 p-3 rounded-xl"
+                        style={{ backgroundColor: QUADRANTS[selectedQuadrant].bgColor }}
+                      >
+                        <div
+                          className="w-4 h-4 rounded-full"
+                          style={{ backgroundColor: QUADRANTS[selectedQuadrant].color }}
+                        />
+                        <div>
+                          <p className="font-medium" style={{ color: QUADRANTS[selectedQuadrant].color }}>
+                            {selectedEmotion}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{QUADRANTS[selectedQuadrant].description}</p>
+                        </div>
+                      </div>
+
+                      <EmotionContextFieldsEnhanced
+                        note={note}
+                        onNoteChange={setNote}
+                        context={context}
+                        onContextChange={setContext}
+                        sendToJournal={sendToJournal}
+                        onSendToJournalChange={setSendToJournal}
+                        checkInTime={checkInTime}
+                        onCheckInTimeChange={setCheckInTime}
                       />
-                      <div>
-                        <p className="font-medium" style={{ color: QUADRANTS[selectedQuadrant].color }}>
-                          {selectedEmotion}
-                        </p>
-                        <p className="text-xs text-muted-foreground">{QUADRANTS[selectedQuadrant].description}</p>
+
+                      <div className="flex gap-3">
+                        <Button variant="outline" onClick={handleBack} className="flex-1 rounded-xl h-10">
+                          <ArrowLeft className="h-4 w-4 mr-2" /> Back
+                        </Button>
+                        <Button
+                          onClick={saveCheckIn}
+                          disabled={saving}
+                          className="flex-1 rounded-xl h-10 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white border-0"
+                        >
+                          {saving ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : (
+                            <Check className="h-4 w-4 mr-2" />
+                          )}
+                          Save
+                        </Button>
                       </div>
                     </div>
+                  )}
+                </CardContent>
+              </Card>
 
-                    <EmotionContextFieldsEnhanced
-                      note={note}
-                      onNoteChange={setNote}
-                      context={context}
-                      onContextChange={setContext}
-                      sendToJournal={sendToJournal}
-                      onSendToJournalChange={setSendToJournal}
-                      checkInTime={checkInTime}
-                      onCheckInTimeChange={setCheckInTime}
-                    />
+              {/* Strategies Panel */}
+              <Card className="rounded-2xl border-border shadow-sm">
+                <CardContent className="p-5">
+                  <StrategiesPanelEnhanced currentQuadrant={currentQuadrant} currentEmotion={currentEmotion} />
+                </CardContent>
+              </Card>
+            </div>
 
-                    <div className="flex gap-3">
-                      <Button variant="outline" onClick={handleBack} className="flex-1 rounded-xl h-10">
-                        <ArrowLeft className="h-4 w-4 mr-2" /> Back
-                      </Button>
-                      <Button
-                        onClick={saveCheckIn}
-                        disabled={saving}
-                        className="flex-1 rounded-xl h-10 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white border-0"
-                      >
-                        {saving ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        ) : (
-                          <Check className="h-4 w-4 mr-2" />
-                        )}
-                        Save
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Strategies Panel */}
-            <Card className="rounded-2xl border-border shadow-sm">
-              <CardContent className="p-5">
-                <StrategiesPanelEnhanced currentQuadrant={currentQuadrant} currentEmotion={currentEmotion} />
-              </CardContent>
-            </Card>
+            {/* Patterns Dashboard below */}
+            <PatternsDashboardEnhanced entries={entries} onDateClick={handleDateClick} />
           </div>
 
           {/* Right Column - Calendar & Recent (scrollable) */}
