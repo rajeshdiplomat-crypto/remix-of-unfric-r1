@@ -310,7 +310,7 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
         {/* Main content: Time selector left, KPIs middle (2x3), Charts right */}
         <div className="h-full flex gap-2">
           {/* Far Left: Time Period Selector - vertical slim buttons */}
-          <div className="flex flex-col gap-1 shrink-0">
+          <div className="flex flex-col gap-1 shrink-0 justify-center">
             {(["today", "tomorrow", "week"] as TimePeriod[]).map((period) => (
               <button
                 key={period}
@@ -375,28 +375,6 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
               <div>
                 <p className="text-base font-bold text-foreground leading-none">{totalFocusMinutes}m</p>
                 <p className="text-[8px] text-chart-2/80 uppercase font-medium">Focus</p>
-              </div>
-            </div>
-
-            {/* Ongoing - Amber/Yellow gradient */}
-            <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-gradient-to-br from-amber-500/20 to-amber-500/5 border border-amber-500/20 shadow-sm">
-              <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-amber-500 to-amber-500/70 flex items-center justify-center shrink-0 shadow-sm">
-                <Play className="h-3 w-3 text-primary-foreground" />
-              </div>
-              <div>
-                <p className="text-base font-bold text-foreground leading-none">{ongoingCount}</p>
-                <p className="text-[8px] text-amber-600/80 uppercase font-medium">Ongoing</p>
-              </div>
-            </div>
-
-            {/* Total - Gray/Slate gradient */}
-            <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-gradient-to-br from-slate-500/20 to-slate-500/5 border border-slate-500/20 shadow-sm">
-              <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-slate-500 to-slate-500/70 flex items-center justify-center shrink-0 shadow-sm">
-                <ListTodo className="h-3 w-3 text-primary-foreground" />
-              </div>
-              <div>
-                <p className="text-base font-bold text-foreground leading-none">{totalTasksCount}</p>
-                <p className="text-[8px] text-slate-500/80 uppercase font-medium">Total</p>
               </div>
             </div>
           </div>
