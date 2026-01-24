@@ -337,6 +337,15 @@ function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
         .slice(0, 4)
         .map(([label, data]) => {
           const total = data.count;
+          
+          // Calculate percentages for stacked bar
+          const percentages = {
+            "high-pleasant": (data.quadrants["high-pleasant"] / total) * 100,
+            "high-unpleasant": (data.quadrants["high-unpleasant"] / total) * 100,
+            "low-unpleasant": (data.quadrants["low-unpleasant"] / total) * 100,
+            "low-pleasant": (data.quadrants["low-pleasant"] / total) * 100,
+          };
+          
           const moodBreakdown = Object.entries(data.quadrants)
             .filter(([_, c]) => c > 0)
             .sort((a, b) => b[1] - a[1])
@@ -348,7 +357,7 @@ function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
           // Determine left border color based on dominant mood
           const dominantMood = moodBreakdown[0]?.quadrant || "low-pleasant";
           
-          return { label, count: total, moodBreakdown, dominantMood };
+          return { label, count: total, moodBreakdown, dominantMood, percentages };
         });
 
     return {
@@ -391,10 +400,27 @@ function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
                     className="p-3 rounded-lg bg-muted/30 border-l-4"
                     style={{ borderLeftColor: QUADRANT_COLORS[item.dominantMood] }}
                   >
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-foreground">{item.label}</span>
                       <span className="text-xs text-muted-foreground">{item.count}</span>
                     </div>
+                    
+                    {/* Stacked color bar */}
+                    <div className="h-2 rounded-full overflow-hidden flex mb-2">
+                      {item.percentages["high-pleasant"] > 0 && (
+                        <div style={{ width: `${item.percentages["high-pleasant"]}%`, backgroundColor: QUADRANT_COLORS["high-pleasant"] }} />
+                      )}
+                      {item.percentages["high-unpleasant"] > 0 && (
+                        <div style={{ width: `${item.percentages["high-unpleasant"]}%`, backgroundColor: QUADRANT_COLORS["high-unpleasant"] }} />
+                      )}
+                      {item.percentages["low-unpleasant"] > 0 && (
+                        <div style={{ width: `${item.percentages["low-unpleasant"]}%`, backgroundColor: QUADRANT_COLORS["low-unpleasant"] }} />
+                      )}
+                      {item.percentages["low-pleasant"] > 0 && (
+                        <div style={{ width: `${item.percentages["low-pleasant"]}%`, backgroundColor: QUADRANT_COLORS["low-pleasant"] }} />
+                      )}
+                    </div>
+                    
                     <div className="space-y-0.5">
                       {item.moodBreakdown.slice(0, 2).map((mood) => (
                         <p 
