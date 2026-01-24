@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
-import { Check, Loader2, ArrowLeft, Pencil, Trash2, Heart, Sparkles, Clock } from "lucide-react";
+import { Check, Loader2, ArrowLeft, Pencil, Trash2, Heart, Sparkles, Clock, Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -28,9 +28,12 @@ import { PatternsDashboardEnhanced } from "@/components/emotions/PatternsDashboa
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTimezone } from "@/hooks/useTimezone";
+import { getTodayInTimezone } from "@/lib/formatDate";
 
 export default function Emotions() {
   const { user } = useAuth();
+  const { timezone } = useTimezone();
   const [entries, setEntries] = useState<EmotionEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -174,8 +177,9 @@ export default function Emotions() {
         entryDate,
       );
 
-      if (sendToJournal && note) {
-        await saveToJournal(entryDate, note, selectedEmotion);
+      // Only save to journal if toggle is ON
+      if (sendToJournal) {
+        await saveToJournal(entryDate, note || "", selectedEmotion);
       }
 
       toast.success(`Logged: ${selectedEmotion}`);
@@ -254,7 +258,7 @@ export default function Emotions() {
         .eq("question_id", "feeling")
         .maybeSingle();
 
-      const emotionNote = `[${emotion}] ${noteText}`;
+      const emotionNote = noteText ? `[${emotion}] ${noteText}` : `[${emotion}]`;
 
       if (existingAnswer) {
         const updatedText = existingAnswer.answer_text
@@ -366,9 +370,10 @@ export default function Emotions() {
     }
   };
 
-  // Stats
+  // Stats - use timezone-aware today
+  const todayStr = getTodayInTimezone(timezone);
   const totalCheckins = entries.length;
-  const todayCount = entries.filter((e) => e.entry_date === format(new Date(), "yyyy-MM-dd")).length;
+  const todayCount = entries.filter((e) => e.entry_date === todayStr).length;
 
   if (loading) return <PageLoadingScreen module="emotions" />;
 
@@ -433,7 +438,17 @@ export default function Emotions() {
                     <div className="space-y-4">
                       <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/30 text-sm text-muted-foreground">
                         <Clock className="h-4 w-4" />
-                        <span>{format(checkInTime, "EEEE, d MMM • h:mm a")}</span>
+                        <span>
+                          {new Intl.DateTimeFormat("en-US", {
+                            timeZone: timezone,
+                            weekday: "long",
+                            day: "numeric",
+                            month: "short",
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: true,
+                          }).format(checkInTime)}
+                        </span>
                       </div>
                       <EmotionSliderPicker onSelect={handleSliderComplete} />
                     </div>

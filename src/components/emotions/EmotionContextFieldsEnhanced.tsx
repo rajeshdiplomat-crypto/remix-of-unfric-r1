@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, Users, Activity, Heart, Moon, Dumbbell, BookOpen, Clock } from "lucide-react";
+import { ChevronDown, Users, Activity, Heart, Moon, Dumbbell, BookOpen, Clock, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTimezone } from "@/hooks/useTimezone";
+import { format, parse } from "date-fns";
 
 const WHO_PRESETS = ["Alone", "Friend", "Partner", "Family", "Team", "Colleagues", "Strangers"];
 const WHAT_PRESETS = ["Work", "Eating", "Commuting", "Socializing", "Resting", "Exercise", "Creative", "Learning"];
@@ -104,6 +106,47 @@ function PresetPills({
   );
 }
 
+/**
+ * Get current date/time formatted for datetime-local input in user's timezone
+ */
+function getLocalDateTimeString(date: Date, timezone: string): string {
+  const options: Intl.DateTimeFormatOptions = {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  };
+  
+  const parts = new Intl.DateTimeFormat("en-CA", options).formatToParts(date);
+  const year = parts.find((p) => p.type === "year")?.value;
+  const month = parts.find((p) => p.type === "month")?.value;
+  const day = parts.find((p) => p.type === "day")?.value;
+  const hour = parts.find((p) => p.type === "hour")?.value;
+  const minute = parts.find((p) => p.type === "minute")?.value;
+  
+  return `${year}-${month}-${day}T${hour}:${minute}`;
+}
+
+/**
+ * Format date for display in user's timezone
+ */
+function formatDisplayDateTime(date: Date, timezone: string): string {
+  const options: Intl.DateTimeFormatOptions = {
+    timeZone: timezone,
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  };
+  
+  return new Intl.DateTimeFormat("en-US", options).format(date);
+}
+
 export function EmotionContextFieldsEnhanced({
   note,
   onNoteChange,
@@ -117,28 +160,46 @@ export function EmotionContextFieldsEnhanced({
   hideTimeField = false,
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
+  const { timezone } = useTimezone();
+  
   const updateContext = (field: keyof EnhancedContextData, value: string) =>
     onContextChange({ ...context, [field]: value });
+
+  // Format datetime-local value in user's timezone
+  const dateTimeValue = getLocalDateTimeString(checkInTime, timezone);
+  const displayDateTime = formatDisplayDateTime(checkInTime, timezone);
+
+  const handleDateTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value) {
+      // Parse the datetime-local value and create a new Date
+      const newDate = new Date(value);
+      if (!isNaN(newDate.getTime())) {
+        onCheckInTimeChange(newDate);
+      }
+    }
+  };
 
   return (
     <div className="space-y-4">
       {(!hideTimeField || !hideJournalToggle) && (
         <div className="flex items-center justify-between gap-4 p-3 rounded-lg bg-muted/30">
           {!hideTimeField && (
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-2 flex-1">
+              <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
               <input
                 type="datetime-local"
-                value={checkInTime.toISOString().slice(0, 16)}
-                onChange={(e) => onCheckInTimeChange(new Date(e.target.value))}
-                className="text-sm bg-transparent border-none focus:outline-none"
+                value={dateTimeValue}
+                onChange={handleDateTimeChange}
+                className="text-sm bg-transparent border-none focus:outline-none text-foreground w-auto"
               />
+              <Calendar className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
             </div>
           )}
           {!hideJournalToggle && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <BookOpen className="h-4 w-4 text-muted-foreground" />
-              <Label htmlFor="journal-sync" className="text-sm text-muted-foreground cursor-pointer">
+              <Label htmlFor="journal-sync" className="text-sm text-muted-foreground cursor-pointer whitespace-nowrap">
                 Send to Journal
               </Label>
               <Switch id="journal-sync" checked={sendToJournal} onCheckedChange={onSendToJournalChange} />
