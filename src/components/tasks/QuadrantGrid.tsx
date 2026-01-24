@@ -148,7 +148,7 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
         {/* Header */}
         <div
           className={cn(
-            "flex items-center justify-between px-4 py-3 border-b",
+            "flex items-center justify-between px-3 py-2 border-b",
             isTopLeft ? "border-primary/20 bg-primary/5" : "border-border/20",
           )}
         >
@@ -165,9 +165,9 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
                       : "bg-gradient-to-br from-slate-400 to-slate-500",
               )}
             >
-              <Icon className="h-3.5 w-3.5 text-white" />
+              <Icon className="h-3 w-3 text-white" />
             </div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">{quadrant.title}</h3>
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-foreground">{quadrant.title}</h3>
           </div>
           <div className="flex items-center gap-2">
             <Badge
@@ -186,8 +186,8 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
         </div>
 
         {/* Active Task List */}
-        <div className="flex-1 p-3 space-y-2 overflow-y-auto min-h-[120px]">
-          {activeTasks.slice(0, 5).map((task) => {
+        <div className="flex-1 p-2 space-y-1.5 overflow-y-auto min-h-[80px] max-h-[140px]">
+          {activeTasks.slice(0, 3).map((task) => {
             const status = computeTaskStatus(task);
             const isOngoing = status === "ongoing";
 
@@ -195,15 +195,15 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
               <div
                 key={task.id}
                 className={cn(
-                  "flex items-center justify-between p-2.5 rounded-xl transition-all cursor-pointer group",
+                  "flex items-center justify-between p-2 rounded-lg transition-all cursor-pointer group",
                   isOngoing
-                    ? "bg-gradient-to-r from-primary/10 to-chart-1/5 border-l-3 border-l-primary border border-primary/20"
+                    ? "bg-gradient-to-r from-primary/10 to-chart-1/5 border-l-2 border-l-primary border border-primary/20"
                     : "bg-background/60 border border-border/30",
-                  "hover:bg-background hover:border-border hover:shadow-sm",
+                  "hover:bg-background hover:border-border",
                 )}
               >
                 <div className="flex-1 min-w-0" onClick={() => onTaskClick(task)}>
-                  <p className="text-sm font-medium text-foreground truncate">{task.title}</p>
+                  <p className="text-xs font-medium text-foreground truncate">{task.title}</p>
                   <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
                     {task.due_date && (
                       <span>
@@ -254,8 +254,8 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
           })}
 
           {activeTasks.length === 0 && completedTasks.length === 0 && (
-            <div className="flex items-center justify-center h-20 text-muted-foreground/50 text-xs italic">
-              No tasks here yet
+            <div className="flex items-center justify-center h-12 text-muted-foreground/50 text-[10px] italic">
+              No tasks
             </div>
           )}
         </div>
@@ -265,7 +265,7 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
           <div className="border-t border-border/30 bg-muted/20">
             <button
               onClick={() => toggleCompleted(quadrant.id)}
-              className="w-full flex items-center justify-between px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="w-full flex items-center justify-between px-2 py-1.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
             >
               <div className="flex items-center gap-1.5">
                 <CheckCircle className="h-3 w-3 text-emerald-500" />
@@ -315,13 +315,13 @@ export function QuadrantGrid({ mode, tasks, onTaskClick, onStartTask, onComplete
         )}
 
         {/* Footer - View all */}
-        {activeTasks.length > 5 && (
-          <div className="px-3 py-2 border-t border-border/20">
+        {activeTasks.length > 3 && (
+          <div className="px-2 py-1.5 border-t border-border/20">
             <button
-              className="text-xs text-primary hover:underline font-medium"
+              className="text-[10px] text-primary hover:underline font-medium"
               onClick={() => handleViewAll(quadrant, quadrantTasks)}
             >
-              View all {quadrantTasks.length} tasks
+              +{activeTasks.length - 3} more tasks
             </button>
           </div>
         )}
