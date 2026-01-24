@@ -269,31 +269,56 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
   // Filter for pending tasks only (not completed)
   const pendingPeriodTasks = periodTasks.filter((t) => !t.is_completed && !t.completed_at);
 
+  // Get overdue tasks (due before the selected period start, not completed)
+  const getPeriodStart = () => {
+    switch (timePeriod) {
+      case "today":
+        return today;
+      case "tomorrow":
+        return tomorrow;
+      case "week":
+        return today;
+      default:
+        return today;
+    }
+  };
+  const periodStart = getPeriodStart();
+
+  const overdueTasks = tasks.filter((t) => {
+    if (!t.due_date) return false;
+    if (t.is_completed || t.completed_at) return false;
+    const dueDate = startOfDay(new Date(t.due_date));
+    return isBefore(dueDate, periodStart);
+  });
+
+  // Combine pending period tasks + overdue tasks for pie chart
+  const pieChartTasks = [...pendingPeriodTasks, ...overdueTasks];
+
   const quadrantData = useMemo(
     () =>
       [
         {
           name: "Urgent & Important",
-          value: pendingPeriodTasks.filter((t) => t.urgency === "high" && t.importance === "high").length,
+          value: pieChartTasks.filter((t) => t.urgency === "high" && t.importance === "high").length,
           color: "hsl(var(--destructive))",
         },
         {
           name: "Urgent & Not Important",
-          value: pendingPeriodTasks.filter((t) => t.urgency === "high" && t.importance === "low").length,
+          value: pieChartTasks.filter((t) => t.urgency === "high" && t.importance === "low").length,
           color: "hsl(var(--primary))",
         },
         {
           name: "Not Urgent & Important",
-          value: pendingPeriodTasks.filter((t) => t.urgency === "low" && t.importance === "high").length,
+          value: pieChartTasks.filter((t) => t.urgency === "low" && t.importance === "high").length,
           color: "hsl(var(--chart-1))",
         },
         {
           name: "Not Urgent & Not Important",
-          value: pendingPeriodTasks.filter((t) => t.urgency === "low" && t.importance === "low").length,
+          value: pieChartTasks.filter((t) => t.urgency === "low" && t.importance === "low").length,
           color: "hsl(var(--muted))",
         },
       ].filter((d) => d.value > 0),
-    [pendingPeriodTasks],
+    [pieChartTasks],
   );
   if (!expanded) {
     return (
