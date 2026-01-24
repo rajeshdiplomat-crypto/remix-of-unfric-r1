@@ -1,17 +1,7 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { QuadrantType, QUADRANTS, EmotionEntry } from "./types";
-import {
-  format,
-  subDays,
-  startOfDay,
-  eachDayOfInterval,
-  startOfMonth,
-  endOfMonth,
-  eachDayOfInterval as eachDay,
-  parseISO,
-  getHours,
-} from "date-fns";
+import { format, subDays, startOfDay, eachDayOfInterval, parseISO, getHours } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import {
   TrendingUp,
@@ -65,126 +55,16 @@ function StatCard({
   subValue?: string;
 }) {
   return (
-    <div className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-3`}>
-        <Icon className="h-5 w-5 text-white" />
-      </div>
-      <p className="text-xs text-slate-500 mb-1">{label}</p>
-      <p className="text-2xl font-bold text-slate-800 dark:text-white">{value}</p>
-      {subValue && <p className="text-xs text-slate-400 mt-0.5">{subValue}</p>}
-    </div>
-  );
-}
-
-function MonthlyCalendar({
-  entries,
-  onDateClick,
-}: {
-  entries: EmotionEntry[];
-  onDateClick?: (date: string, entries: EmotionEntry[]) => void;
-}) {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-
-  const { days, firstDayOfWeek, entriesByDate } = useMemo(() => {
-    const start = startOfMonth(currentMonth);
-    const end = endOfMonth(currentMonth);
-    const days = eachDay({ start, end });
-    const firstDayOfWeek = start.getDay();
-
-    const entriesByDate: Record<string, EmotionEntry[]> = {};
-    entries.forEach((entry) => {
-      if (!entriesByDate[entry.entry_date]) entriesByDate[entry.entry_date] = [];
-      entriesByDate[entry.entry_date].push(entry);
-    });
-
-    return { days, firstDayOfWeek, entriesByDate };
-  }, [currentMonth, entries]);
-
-  const getDominant = (dayEntries: EmotionEntry[]): QuadrantType | null => {
-    if (dayEntries.length === 0) return null;
-    const counts: Record<QuadrantType, number> = {
-      "high-pleasant": 0,
-      "high-unpleasant": 0,
-      "low-unpleasant": 0,
-      "low-pleasant": 0,
-    };
-    dayEntries.forEach((e) => e.quadrant && counts[e.quadrant]++);
-    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0] as QuadrantType;
-  };
-
-  const today = startOfDay(new Date());
-
-  return (
-    <div className="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-slate-800 dark:text-white">Monthly Overview</h3>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-lg"
-            onClick={() => setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1))}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm font-medium min-w-[80px] text-center">{format(currentMonth, "MMM yyyy")}</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-lg"
-            onClick={() => setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1))}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+    <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between h-full">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">{label}</p>
+        <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center opacity-80`}>
+          <Icon className="h-3.5 w-3.5 text-white" />
         </div>
       </div>
-
-      <div className="grid grid-cols-7 gap-1 mb-2">
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-          <div key={d} className="text-center text-[10px] font-medium text-slate-400 py-1">
-            {d}
-          </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-7 gap-1">
-        {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-          <div key={`e-${i}`} className="h-10" />
-        ))}
-        {days.map((day) => {
-          const dateStr = format(day, "yyyy-MM-dd");
-          const dayEntries = entriesByDate[dateStr] || [];
-          const dominant = getDominant(dayEntries);
-          const isToday = day.getTime() === today.getTime();
-          const isFuture = day > today;
-
-          return (
-            <div
-              key={dateStr}
-              onClick={() => dayEntries.length > 0 && onDateClick?.(dateStr, dayEntries)}
-              className={`h-10 rounded-lg flex flex-col items-center justify-center text-xs font-medium transition-all cursor-pointer ${
-                isToday ? "ring-2 ring-rose-500 ring-offset-2" : ""
-              } ${isFuture ? "opacity-30" : ""} ${dayEntries.length > 0 ? "hover:scale-110" : ""}`}
-              style={
-                dominant && !isFuture
-                  ? { backgroundColor: QUADRANTS[dominant].color, color: "white" }
-                  : { backgroundColor: "rgb(241 245 249)" }
-              }
-            >
-              {format(day, "d")}
-              {dayEntries.length > 1 && <span className="text-[8px] opacity-70">+{dayEntries.length - 1}</span>}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="flex flex-wrap items-center justify-center gap-3 mt-4 pt-3 border-t border-slate-100 dark:border-slate-700">
-        {Object.entries(QUADRANTS).map(([key, info]) => (
-          <div key={key} className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: info.color }} />
-            <span className="text-[10px] text-slate-500">{info.label}</span>
-          </div>
-        ))}
+      <div>
+        <p className="text-xl font-bold text-slate-800 dark:text-white leading-tight">{value}</p>
+        {subValue && <p className="text-[10px] text-slate-400 mt-0.5">{subValue}</p>}
       </div>
     </div>
   );
@@ -210,21 +90,27 @@ function DaytimeCard({ period, entries }: { period: keyof typeof TIME_INFO; entr
   }, [periodEntries, count]);
 
   return (
-    <div className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${info.gradient} flex items-center justify-center mb-3`}>
-        <Icon className="h-5 w-5 text-white" />
+    <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between h-full">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">{info.label}</p>
+        <div
+          className={`w-7 h-7 rounded-lg bg-gradient-to-br ${info.gradient} flex items-center justify-center opacity-80`}
+        >
+          <Icon className="h-3.5 w-3.5 text-white" />
+        </div>
       </div>
-      <p className="text-xs text-slate-500 mb-1">{info.label}</p>
-      {count > 0 && dominant ? (
-        <>
-          <p className="text-sm font-semibold" style={{ color: QUADRANTS[dominant].color }}>
-            {QUADRANTS[dominant].label}
-          </p>
-          <p className="text-xs text-slate-400 mt-1">{count} check-ins</p>
-        </>
-      ) : (
-        <p className="text-sm text-slate-400">—</p>
-      )}
+      <div>
+        {count > 0 && dominant ? (
+          <>
+            <p className="text-sm font-bold truncate" style={{ color: QUADRANTS[dominant].color }}>
+              {QUADRANTS[dominant].label}
+            </p>
+            <p className="text-[10px] text-slate-400 mt-0.5">{count} check-ins</p>
+          </>
+        ) : (
+          <p className="text-sm text-slate-400 font-medium">—</p>
+        )}
+      </div>
     </div>
   );
 }
@@ -462,9 +348,6 @@ export function PatternsDashboardEnhanced({ entries, onDateClick }: PatternsDash
           </div>
         </div>
       )}
-
-      {/* Monthly Calendar */}
-      <MonthlyCalendar entries={entries} onDateClick={onDateClick} />
     </div>
   );
 }
