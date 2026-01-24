@@ -536,7 +536,7 @@ export default function Emotions() {
             </div>
 
             {/* Recent Entries - Fills remaining height to align with Most Frequent Feelings, scrollable */}
-            <div className="flex-1 min-h-0">
+            <div className="flex-1 min-h-0 flex flex-col">
               <RecentEntriesList entries={entries} onEditEntry={startEditEntry} onDeleteEntry={setDeletingEntryId} />
             </div>
           </div>

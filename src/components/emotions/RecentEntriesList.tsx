@@ -27,9 +27,20 @@ export function RecentEntriesList({
 
   if (entries.length === 0) {
     return (
-      <div className="rounded-2xl bg-card border border-border shadow-sm p-6 text-center h-full flex flex-col items-center justify-center">
-        <Clock className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-        <p className="text-sm text-muted-foreground">No check-ins yet</p>
+      <div className="rounded-2xl bg-card border border-border shadow-sm overflow-hidden h-full flex flex-col">
+        {/* Header - same as when entries exist */}
+        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-900/20 dark:to-violet-900/20 border-b border-border shrink-0">
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-indigo-500" />
+            <span className="font-semibold text-sm text-foreground">Recent Check-ins</span>
+          </div>
+          <span className="text-xs text-muted-foreground">0 total</span>
+        </div>
+        {/* Empty state content */}
+        <div className="flex-1 flex flex-col items-center justify-center p-6">
+          <Clock className="h-8 w-8 text-muted-foreground/50 mb-2" />
+          <p className="text-sm text-muted-foreground">No check-ins yet</p>
+        </div>
       </div>
     );
   }
