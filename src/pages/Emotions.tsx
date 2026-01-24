@@ -5,15 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
-import {
-  Check,
-  Loader2,
-  ArrowLeft,
-  Pencil,
-  Trash2,
-  Heart,
-  Sparkles,
-} from "lucide-react";
+import { Check, Loader2, ArrowLeft, Pencil, Trash2, Heart, Sparkles, Clock } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -437,7 +429,15 @@ export default function Emotions() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-4">
-                  {step === "sliders" && <EmotionSliderPicker onSelect={handleSliderComplete} />}
+                  {step === "sliders" && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/30 text-sm text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        <span>{format(checkInTime, "EEEE, d MMM • h:mm a")}</span>
+                      </div>
+                      <EmotionSliderPicker onSelect={handleSliderComplete} />
+                    </div>
+                  )}
 
                   {step === "details" && selectedQuadrant && selectedEmotion && (
                     <div className="space-y-4">
@@ -510,11 +510,7 @@ export default function Emotions() {
                 <EmotionCalendarSidebar entries={entries} onDateClick={handleDateClick} />
 
                 {/* Recent Entries */}
-                <RecentEntriesList
-                  entries={entries}
-                  onEditEntry={startEditEntry}
-                  onDeleteEntry={setDeletingEntryId}
-                />
+                <RecentEntriesList entries={entries} onEditEntry={startEditEntry} onDeleteEntry={setDeletingEntryId} />
               </div>
             </ScrollArea>
           </div>
@@ -540,7 +536,9 @@ export default function Emotions() {
                     {entry.emotion}
                   </span>
                   <div className="flex items-center gap-1 ml-auto">
-                    <span className="text-xs text-muted-foreground">{format(new Date(entry.created_at), "h:mm a")}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(entry.created_at), "h:mm a")}
+                    </span>
                     <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => startEditEntry(entry)}>
                       <Pencil className="h-3 w-3" />
                     </Button>
