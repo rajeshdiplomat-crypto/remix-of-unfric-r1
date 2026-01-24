@@ -147,6 +147,7 @@ export interface EmotionEntry {
     sleepHours?: string;
     physicalActivity?: string;
   };
+  showInJournal?: boolean;
   entry_date: string;
   created_at: string;
 }
