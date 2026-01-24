@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Play, Check, Calendar, Clock, ChevronsLeft, ChevronsRight, ListChecks, Trash2 } from "lucide-react";
+import { Play, Check, Calendar, Clock, ChevronsLeft, ChevronsRight, ListChecks, Trash2, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -112,12 +112,10 @@ export function AllTasksList({
       >
         <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0" onClick={() => onTaskClick(task)}>
-            <p
-              className={cn(
-                "text-sm font-semibold text-foreground truncate",
-                isCompleted && "line-through text-muted-foreground",
-              )}
-            >
+            <p className={cn(
+              "text-sm font-semibold text-foreground truncate",
+              isCompleted && "line-through text-muted-foreground"
+            )}>
               {task.title}
             </p>
 
@@ -173,7 +171,11 @@ export function AllTasksList({
               }}
               title={isCompleted ? "Mark Incomplete" : "Mark Complete"}
             >
-              <Check className={cn("h-4 w-4", isCompleted && "text-emerald-500")} />
+              {isCompleted ? (
+                <RotateCcw className="h-4 w-4 text-amber-500" />
+              ) : (
+                <Check className="h-4 w-4" />
+              )}
             </Button>
             {onDeleteTask && (
               <Button
@@ -259,15 +261,13 @@ export function AllTasksList({
         <div className="px-4 pt-3 pb-2 space-y-2">
           {/* Status Pills - Slim style */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            {(
-              [
-                { value: "all", label: "All", count: counts.all, color: "from-slate-500 to-slate-600" },
-                { value: "upcoming", label: "Up", count: counts.upcoming, color: "from-blue-500 to-indigo-500" },
-                { value: "ongoing", label: "On", count: counts.ongoing, color: "from-amber-500 to-orange-500" },
-                { value: "completed", label: "Done", count: counts.completed, color: "from-emerald-500 to-green-600" },
-                { value: "overdue", label: "Due", count: counts.overdue, color: "from-rose-500 to-red-600" },
-              ] as const
-            ).map((tab) => (
+            {([
+              { value: "all", label: "All", count: counts.all, color: "from-slate-500 to-slate-600" },
+              { value: "upcoming", label: "Up", count: counts.upcoming, color: "from-blue-500 to-indigo-500" },
+              { value: "ongoing", label: "On", count: counts.ongoing, color: "from-amber-500 to-orange-500" },
+              { value: "completed", label: "Done", count: counts.completed, color: "from-emerald-500 to-green-600" },
+              { value: "overdue", label: "Due", count: counts.overdue, color: "from-rose-500 to-red-600" },
+            ] as const).map((tab) => (
               <button
                 key={tab.value}
                 onClick={() => setActiveTab(tab.value)}
@@ -275,11 +275,14 @@ export function AllTasksList({
                   "px-2 py-1 rounded-full text-[11px] font-medium transition-all duration-200 flex items-center gap-1",
                   activeTab === tab.value
                     ? `bg-gradient-to-r ${tab.color} text-white shadow-sm`
-                    : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground",
+                    : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
                 {tab.label}
-                <span className={cn("text-[9px] font-bold", activeTab === tab.value ? "opacity-80" : "opacity-60")}>
+                <span className={cn(
+                  "text-[9px] font-bold",
+                  activeTab === tab.value ? "opacity-80" : "opacity-60"
+                )}>
                   {tab.count}
                 </span>
               </button>
@@ -290,25 +293,13 @@ export function AllTasksList({
 
             {/* Quadrant Filters - All on same line */}
             <div className="flex items-center gap-1">
-              {[
+              {([
                 { value: "all" as QuadrantFilter, label: "All", color: "bg-primary" },
                 { value: "ui" as QuadrantFilter, label: "U&I", color: "bg-gradient-to-r from-rose-500 to-red-500" },
-                {
-                  value: "uni" as QuadrantFilter,
-                  label: "U&NI",
-                  color: "bg-gradient-to-r from-amber-500 to-orange-500",
-                },
-                {
-                  value: "nui" as QuadrantFilter,
-                  label: "NU&I",
-                  color: "bg-gradient-to-r from-blue-500 to-indigo-500",
-                },
-                {
-                  value: "nuni" as QuadrantFilter,
-                  label: "NU&NI",
-                  color: "bg-gradient-to-r from-slate-400 to-slate-500",
-                },
-              ].map((filter) => (
+                { value: "uni" as QuadrantFilter, label: "U&NI", color: "bg-gradient-to-r from-amber-500 to-orange-500" },
+                { value: "nui" as QuadrantFilter, label: "NU&I", color: "bg-gradient-to-r from-blue-500 to-indigo-500" },
+                { value: "nuni" as QuadrantFilter, label: "NU&NI", color: "bg-gradient-to-r from-slate-400 to-slate-500" },
+              ]).map((filter) => (
                 <button
                   key={filter.value}
                   onClick={() => setQuadrantFilter(filter.value)}
@@ -316,18 +307,14 @@ export function AllTasksList({
                     "px-1.5 py-0.5 rounded-full text-[10px] font-semibold transition-all whitespace-nowrap",
                     quadrantFilter === filter.value
                       ? `${filter.color} text-white shadow-sm`
-                      : "bg-muted/40 text-muted-foreground hover:bg-muted",
+                      : "bg-muted/40 text-muted-foreground hover:bg-muted"
                   )}
                   title={
-                    filter.value === "all"
-                      ? "All Priorities"
-                      : filter.value === "ui"
-                        ? "Urgent & Important"
-                        : filter.value === "uni"
-                          ? "Urgent & Not Important"
-                          : filter.value === "nui"
-                            ? "Not Urgent & Important"
-                            : "Not Urgent & Not Important"
+                    filter.value === "all" ? "All Priorities" :
+                      filter.value === "ui" ? "Urgent & Important" :
+                        filter.value === "uni" ? "Urgent & Not Important" :
+                          filter.value === "nui" ? "Not Urgent & Important" :
+                            "Not Urgent & Not Important"
                   }
                 >
                   {filter.label}
@@ -352,7 +339,3 @@ export function AllTasksList({
             )}
           </div>
         </ScrollArea>
-      </Tabs>
-    </div>
-  );
-}
