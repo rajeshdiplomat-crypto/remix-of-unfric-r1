@@ -101,61 +101,74 @@ export function AllTasksList({
     return (
       <div
         className={cn(
-          "group p-3 rounded-xl border transition-all",
-          "hover:shadow-md hover:border-border cursor-pointer",
-          isOngoing ? "bg-primary/5 border-l-2 border-l-primary border-border/50" : "bg-background border-border/50",
-          isCompleted && "opacity-60",
+          "group p-4 rounded-2xl border-2 transition-all duration-300",
+          "hover:shadow-lg hover:scale-[1.01] cursor-pointer",
+          isOngoing
+            ? "bg-gradient-to-br from-primary/10 via-chart-1/5 to-transparent border-l-4 border-l-primary border-primary/30"
+            : status === "overdue"
+              ? "bg-gradient-to-br from-rose-500/10 via-rose-500/5 to-transparent border-rose-500/30"
+              : status === "completed"
+                ? "bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border-emerald-500/30"
+                : "bg-gradient-to-br from-background via-background to-muted/20 border-border/40",
+          isCompleted && "opacity-70",
         )}
       >
-        <div className="flex items-start gap-2">
+        <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0" onClick={() => onTaskClick(task)}>
-            <p className={cn("text-sm font-medium text-foreground truncate", isCompleted && "line-through")}>
+            <p
+              className={cn(
+                "text-sm font-semibold text-foreground truncate",
+                isCompleted && "line-through text-muted-foreground",
+              )}
+            >
               {task.title}
             </p>
 
-            <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
+            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
               {task.due_date && (
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-muted/50">
                   <Calendar className="h-3 w-3" />
                   {format(new Date(task.due_date), "MMM d")}
                 </span>
               )}
               {task.due_time && (
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-muted/50">
                   <Clock className="h-3 w-3" />
                   {task.due_time}
                 </span>
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-1 mt-2">
+            <div className="flex flex-wrap items-center gap-1.5 mt-3">
               {getUrgencyBadge(task.urgency)}
               {getImportanceBadge(task.importance)}
               {getTimeOfDayBadge(task.time_of_day)}
             </div>
           </div>
 
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-1.5 flex-shrink-0">
             {!isCompleted && status !== "completed" && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 opacity-70 hover:opacity-100 hover:bg-primary/10 hover:text-primary"
+                className="h-8 w-8 rounded-xl opacity-70 hover:opacity-100 hover:bg-gradient-to-br hover:from-primary/20 hover:to-chart-1/20 hover:text-primary transition-all"
                 onClick={(e) => {
                   e.stopPropagation();
                   onStartTask(task);
                 }}
                 title="Start / Deep Focus"
               >
-                <Play className="h-3.5 w-3.5" />
+                <Play className="h-4 w-4" />
               </Button>
             )}
             <Button
               variant="ghost"
               size="icon"
               className={cn(
-                "h-7 w-7 opacity-70 hover:opacity-100",
-                isCompleted ? "hover:bg-amber-500/10 hover:text-amber-500" : "hover:bg-chart-1/10 hover:text-chart-1",
+                "h-8 w-8 rounded-xl opacity-70 hover:opacity-100 transition-all",
+                isCompleted
+                  ? "hover:bg-amber-500/20 hover:text-amber-500"
+                  : "hover:bg-gradient-to-br hover:from-emerald-500/20 hover:to-green-500/20 hover:text-emerald-500",
               )}
               onClick={(e) => {
                 e.stopPropagation();
@@ -163,20 +176,20 @@ export function AllTasksList({
               }}
               title={isCompleted ? "Mark Incomplete" : "Mark Complete"}
             >
-              <Check className={cn("h-3.5 w-3.5", isCompleted && "text-chart-1")} />
+              <Check className={cn("h-4 w-4", isCompleted && "text-emerald-500")} />
             </Button>
             {onDeleteTask && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 opacity-70 hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+                className="h-8 w-8 rounded-xl opacity-70 hover:opacity-100 hover:bg-gradient-to-br hover:from-rose-500/20 hover:to-red-500/20 hover:text-rose-500 transition-all"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDeleteTask(task);
                 }}
                 title="Delete Task"
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="h-4 w-4" />
               </Button>
             )}
           </div>
