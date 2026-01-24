@@ -352,6 +352,122 @@ export function PatternsDashboardEnhanced({ entries, onDateClick }: PatternsDash
           </div>
         </div>
       )}
+
+      {/* Context Patterns - Based on additional details */}
+      <ContextPatternsSection entries={filteredEntries} />
+    </div>
+  );
+}
+
+// Context Patterns Component - Shows analytics based on Who, What, Body, Sleep, Activity
+function ContextPatternsSection({ entries }: { entries: EmotionEntry[] }) {
+  const contextStats = useMemo(() => {
+    const whoStats: Record<string, { count: number; quadrants: Record<QuadrantType, number> }> = {};
+    const whatStats: Record<string, { count: number; quadrants: Record<QuadrantType, number> }> = {};
+    const bodyStats: Record<string, { count: number; quadrants: Record<QuadrantType, number> }> = {};
+    const sleepStats: Record<string, { count: number; quadrants: Record<QuadrantType, number> }> = {};
+    const activityStats: Record<string, { count: number; quadrants: Record<QuadrantType, number> }> = {};
+
+    entries.forEach((e) => {
+      const addToStats = (
+        stats: Record<string, { count: number; quadrants: Record<QuadrantType, number> }>,
+        value: string | undefined
+      ) => {
+        if (!value) return;
+        if (!stats[value]) {
+          stats[value] = {
+            count: 0,
+            quadrants: { "high-pleasant": 0, "high-unpleasant": 0, "low-unpleasant": 0, "low-pleasant": 0 },
+          };
+        }
+        stats[value].count++;
+        if (e.quadrant) stats[value].quadrants[e.quadrant]++;
+      };
+
+      addToStats(whoStats, e.context?.who);
+      addToStats(whatStats, e.context?.what);
+      addToStats(bodyStats, e.context?.body);
+      addToStats(sleepStats, e.context?.sleepHours);
+      addToStats(activityStats, e.context?.physicalActivity);
+    });
+
+    const getTopItems = (stats: Record<string, { count: number; quadrants: Record<QuadrantType, number> }>) =>
+      Object.entries(stats)
+        .sort((a, b) => b[1].count - a[1].count)
+        .slice(0, 4)
+        .map(([label, data]) => {
+          const dominantQuadrant = Object.entries(data.quadrants).sort((a, b) => b[1] - a[1])[0];
+          return {
+            label,
+            count: data.count,
+            dominantQuadrant: dominantQuadrant[1] > 0 ? (dominantQuadrant[0] as QuadrantType) : null,
+          };
+        });
+
+    return {
+      who: getTopItems(whoStats),
+      what: getTopItems(whatStats),
+      body: getTopItems(bodyStats),
+      sleep: getTopItems(sleepStats),
+      activity: getTopItems(activityStats),
+    };
+  }, [entries]);
+
+  const hasContextData =
+    contextStats.who.length > 0 ||
+    contextStats.what.length > 0 ||
+    contextStats.body.length > 0 ||
+    contextStats.sleep.length > 0 ||
+    contextStats.activity.length > 0;
+
+  if (!hasContextData) return null;
+
+  const sections = [
+    { key: "who", label: "Who You're With", icon: "👥", data: contextStats.who },
+    { key: "what", label: "What You're Doing", icon: "🎯", data: contextStats.what },
+    { key: "body", label: "Body Sensations", icon: "💓", data: contextStats.body },
+    { key: "sleep", label: "Sleep Patterns", icon: "🌙", data: contextStats.sleep },
+    { key: "activity", label: "Physical Activity", icon: "🏃", data: contextStats.activity },
+  ].filter((s) => s.data.length > 0);
+
+  return (
+    <div className="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+      <h3 className="font-semibold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+        <TrendingUp className="h-4 w-4 text-indigo-500" />
+        Context Patterns
+      </h3>
+      <p className="text-xs text-slate-500 mb-4">Insights from the additional details you've logged</p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {sections.map((section) => (
+          <div key={section.key} className="space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+              <span>{section.icon}</span>
+              <span>{section.label}</span>
+            </div>
+            <div className="space-y-1.5">
+              {section.data.map((item) => (
+                <div
+                  key={item.label}
+                  className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-700/50"
+                >
+                  <span className="text-sm text-slate-600 dark:text-slate-300">{item.label}</span>
+                  <div className="flex items-center gap-2">
+                    {item.dominantQuadrant && (
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: QUADRANTS[item.dominantQuadrant].color }}
+                        title={QUADRANTS[item.dominantQuadrant].label}
+                      />
+                    )}
+                    <span className="text-xs text-slate-400">{item.count}×</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
