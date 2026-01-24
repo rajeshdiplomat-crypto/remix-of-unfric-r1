@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 
 type WidgetMode = "digital" | "analog" | "stopwatch" | "timer" | "calendar";
 
+const STORAGE_KEY = 'unfric-clock-widget-mode';
+
 const TIMER_PRESETS = [
   { label: "5m", seconds: 5 * 60 },
   { label: "15m", seconds: 15 * 60 },
@@ -16,7 +18,20 @@ const TIMER_PRESETS = [
 ];
 
 export function TasksClockWidget() {
-  const [mode, setMode] = useState<WidgetMode>("digital");
+  const [mode, setMode] = useState<WidgetMode>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored && ['digital', 'analog', 'stopwatch', 'timer', 'calendar'].includes(stored)) {
+        return stored as WidgetMode;
+      }
+    }
+    return 'digital';
+  });
+
+  // Persist mode to localStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, mode);
+  }, [mode]);
   const [now, setNow] = useState(new Date());
   const { timezone } = useTimezone();
 
@@ -137,65 +152,87 @@ export function TasksClockWidget() {
         {/* Content Area */}
         <div className="flex-1 flex items-center justify-center">
           {mode === "digital" && (
-            <div className="text-center space-y-1">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.3em] text-primary/60">
+            <div className="text-center space-y-2">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.4em] text-primary/70">
                 {format(now, "EEEE")}
               </div>
               <div className="flex items-baseline justify-center gap-1">
-                <span className="text-4xl font-black tracking-tight text-foreground">
+                <span className="text-5xl font-black tracking-tight bg-gradient-to-br from-foreground via-foreground to-muted-foreground bg-clip-text text-transparent drop-shadow-sm">
                   {format(now, "h:mm")}
                 </span>
-                <span className="text-sm font-bold text-muted-foreground/50 ml-1">
-                  {format(now, "a")}
-                </span>
-                <span className="text-xs font-mono text-primary/40 ml-2 tabular-nums">
-                  {format(now, "ss")}
-                </span>
+                <div className="flex flex-col items-start ml-1">
+                  <span className="text-sm font-bold text-primary/60">
+                    {format(now, "a")}
+                  </span>
+                  <span className="text-xs font-mono text-muted-foreground/50 tabular-nums">
+                    {format(now, "ss")}
+                  </span>
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground/70">
+              <div className="text-xs font-medium text-muted-foreground/80 tracking-wide">
                 {format(now, "MMMM do, yyyy")}
               </div>
             </div>
           )}
 
           {mode === "analog" && (
-            <div className="relative w-24 h-24">
-              {/* Clock face */}
-              <div className="absolute inset-0 rounded-full border-2 border-border/50 bg-card/50" />
+            <div className="relative w-36 h-36">
+              {/* Outer luxury ring */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/20 via-muted/30 to-primary/10 shadow-lg" />
+              
+              {/* Inner clock face */}
+              <div className="absolute inset-1 rounded-full bg-gradient-to-br from-card via-card to-muted/20 border border-border/30 shadow-inner" />
+              
+              {/* Subtle inner shadow ring */}
+              <div className="absolute inset-2 rounded-full border border-muted-foreground/10" />
               
               {/* Hour markers */}
-              {[...Array(12)].map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute w-0.5 h-1.5 bg-muted-foreground/40 left-1/2 -translate-x-1/2"
-                  style={{
-                    top: '4px',
-                    transform: `translateX(-50%) rotate(${i * 30}deg)`,
-                    transformOrigin: '50% 44px',
-                  }}
-                />
-              ))}
+              {[...Array(12)].map((_, i) => {
+                const isCardinal = i % 3 === 0;
+                return (
+                  <div
+                    key={i}
+                    className={cn(
+                      "absolute left-1/2 -translate-x-1/2",
+                      isCardinal 
+                        ? "w-2 h-2 rounded-full bg-gradient-to-br from-primary to-primary/70 shadow-sm" 
+                        : "w-0.5 h-2 bg-muted-foreground/50 rounded-full"
+                    )}
+                    style={{
+                      top: isCardinal ? '8px' : '10px',
+                      transform: `translateX(-50%) rotate(${i * 30}deg)`,
+                      transformOrigin: isCardinal ? '50% 64px' : '50% 62px',
+                    }}
+                  />
+                );
+              })}
               
-              {/* Hour hand */}
+              {/* Hour hand - thick, elegant */}
               <div
-                className="absolute w-1 h-6 bg-foreground rounded-full left-1/2 bottom-1/2 origin-bottom"
+                className="absolute w-1.5 h-9 left-1/2 bottom-1/2 origin-bottom rounded-full bg-gradient-to-t from-foreground to-foreground/80 shadow-md"
                 style={{ transform: `translateX(-50%) rotate(${hourDeg}deg)` }}
               />
               
-              {/* Minute hand */}
+              {/* Minute hand - sleek */}
               <div
-                className="absolute w-0.5 h-8 bg-foreground/80 rounded-full left-1/2 bottom-1/2 origin-bottom"
+                className="absolute w-1 h-12 left-1/2 bottom-1/2 origin-bottom rounded-full bg-gradient-to-t from-foreground/90 to-foreground/60 shadow-sm"
                 style={{ transform: `translateX(-50%) rotate(${minuteDeg}deg)` }}
               />
               
-              {/* Second hand */}
+              {/* Second hand - accent color with tail */}
               <div
-                className="absolute w-[1px] h-9 bg-primary rounded-full left-1/2 bottom-1/2 origin-bottom"
+                className="absolute w-[2px] h-14 left-1/2 bottom-1/2 origin-[50%_85%] rounded-full"
                 style={{ transform: `translateX(-50%) rotate(${secondDeg}deg)` }}
-              />
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-primary via-primary to-primary/50 rounded-full" />
+                <div className="absolute bottom-0 w-full h-3 bg-primary/60 rounded-full" />
+              </div>
               
-              {/* Center dot */}
-              <div className="absolute w-2 h-2 bg-primary rounded-full left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
+              {/* Center dot - luxury with glow */}
+              <div className="absolute w-4 h-4 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary via-primary to-primary/80 shadow-lg" />
+                <div className="absolute inset-1 rounded-full bg-gradient-to-br from-primary-foreground/30 to-transparent" />
+              </div>
             </div>
           )}
 
