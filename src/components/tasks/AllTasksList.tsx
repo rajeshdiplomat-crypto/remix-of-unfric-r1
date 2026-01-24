@@ -286,44 +286,54 @@ export function AllTasksList({
             ))}
 
             {/* Divider */}
-            <div className="w-px h-4 bg-border/50 mx-1" />
+            <div className="w-px h-4 bg-border/50 mx-0.5" />
 
-            {/* Quadrant Filters - U&I, U&NI, NU&I, NU&NI */}
-            {[
-              { value: "all" as QuadrantFilter, label: "All", color: "bg-primary" },
-              { value: "ui" as QuadrantFilter, label: "U&I", color: "bg-gradient-to-r from-rose-500 to-red-500" },
-              { value: "uni" as QuadrantFilter, label: "U&NI", color: "bg-gradient-to-r from-amber-500 to-orange-500" },
-              { value: "nui" as QuadrantFilter, label: "NU&I", color: "bg-gradient-to-r from-blue-500 to-indigo-500" },
-              {
-                value: "nuni" as QuadrantFilter,
-                label: "NU&NI",
-                color: "bg-gradient-to-r from-slate-400 to-slate-500",
-              },
-            ].map((filter) => (
-              <button
-                key={filter.value}
-                onClick={() => setQuadrantFilter(filter.value)}
-                className={cn(
-                  "px-2 py-1 rounded-full text-[10px] font-semibold transition-all",
-                  quadrantFilter === filter.value
-                    ? `${filter.color} text-white shadow-sm`
-                    : "bg-muted/40 text-muted-foreground hover:bg-muted",
-                )}
-                title={
-                  filter.value === "all"
-                    ? "All Priorities"
-                    : filter.value === "ui"
-                      ? "Urgent & Important"
-                      : filter.value === "uni"
-                        ? "Urgent & Not Important"
-                        : filter.value === "nui"
-                          ? "Not Urgent & Important"
-                          : "Not Urgent & Not Important"
-                }
-              >
-                {filter.label}
-              </button>
-            ))}
+            {/* Quadrant Filters - All on same line */}
+            <div className="flex items-center gap-1">
+              {[
+                { value: "all" as QuadrantFilter, label: "All", color: "bg-primary" },
+                { value: "ui" as QuadrantFilter, label: "U&I", color: "bg-gradient-to-r from-rose-500 to-red-500" },
+                {
+                  value: "uni" as QuadrantFilter,
+                  label: "U&NI",
+                  color: "bg-gradient-to-r from-amber-500 to-orange-500",
+                },
+                {
+                  value: "nui" as QuadrantFilter,
+                  label: "NU&I",
+                  color: "bg-gradient-to-r from-blue-500 to-indigo-500",
+                },
+                {
+                  value: "nuni" as QuadrantFilter,
+                  label: "NU&NI",
+                  color: "bg-gradient-to-r from-slate-400 to-slate-500",
+                },
+              ].map((filter) => (
+                <button
+                  key={filter.value}
+                  onClick={() => setQuadrantFilter(filter.value)}
+                  className={cn(
+                    "px-1.5 py-0.5 rounded-full text-[10px] font-semibold transition-all whitespace-nowrap",
+                    quadrantFilter === filter.value
+                      ? `${filter.color} text-white shadow-sm`
+                      : "bg-muted/40 text-muted-foreground hover:bg-muted",
+                  )}
+                  title={
+                    filter.value === "all"
+                      ? "All Priorities"
+                      : filter.value === "ui"
+                        ? "Urgent & Important"
+                        : filter.value === "uni"
+                          ? "Urgent & Not Important"
+                          : filter.value === "nui"
+                            ? "Not Urgent & Important"
+                            : "Not Urgent & Not Important"
+                  }
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
