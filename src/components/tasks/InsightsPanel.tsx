@@ -490,18 +490,18 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
                 </div>
                 <span className="text-[9px] font-semibold text-chart-2 uppercase">Priority</span>
               </div>
-              <div className="flex-1 min-h-0 flex flex-col">
+              <div className="flex-1 min-h-0 flex items-center gap-1">
                 {quadrantData.length > 0 ? (
                   <>
-                    <div className="flex-1 min-h-0">
+                    <div className="w-[50px] h-full shrink-0">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
                             data={quadrantData}
                             cx="50%"
                             cy="50%"
-                            innerRadius={14}
-                            outerRadius={28}
+                            innerRadius={12}
+                            outerRadius={22}
                             paddingAngle={3}
                             dataKey="value"
                           >
@@ -512,18 +512,18 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
-                    <div className="flex flex-wrap gap-x-2 gap-y-0.5 justify-center mt-0.5">
+                    <div className="flex flex-col gap-0.5">
                       {quadrantData.map((entry, index) => (
                         <div key={index} className="flex items-center gap-0.5">
-                          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: entry.color }} />
-                          <span className="text-[6px] text-muted-foreground">
+                          <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
+                          <span className="text-[6px] text-muted-foreground leading-tight">
                             {entry.name === "Urgent & Important"
                               ? "U&I"
                               : entry.name === "Urgent & Not Important"
-                                ? "U"
+                                ? "Urg"
                                 : entry.name === "Not Urgent & Important"
-                                  ? "I"
-                                  : "Other"}
+                                  ? "Imp"
+                                  : "Low"}
                           </span>
                         </div>
                       ))}
