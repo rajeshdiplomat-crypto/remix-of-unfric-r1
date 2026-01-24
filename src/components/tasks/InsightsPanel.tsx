@@ -379,9 +379,8 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
             </div>
           </div>
 
-          {/* Right: Charts - 3 columns taking remaining space */}
-          {/* Right: Charts - 2 equal columns + 1 narrow pie chart column */}
-          <div className="flex-1 grid grid-cols-[1fr_1fr_100px] gap-2 min-h-0">
+          {/* Right: Charts - 2 equal columns + wider pie chart column */}
+          <div className="flex-1 grid grid-cols-[1fr_1fr_160px] gap-2 min-h-0">
             {/* Plan vs Actual */}
             <div className="rounded-lg bg-gradient-to-br from-primary/10 to-chart-1/5 border border-primary/10 p-2 flex flex-col min-h-0">
               <div className="flex items-center gap-1 mb-1 shrink-0">
@@ -490,18 +489,18 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
                 </div>
                 <span className="text-[9px] font-semibold text-chart-2 uppercase">Priority</span>
               </div>
-              <div className="flex-1 min-h-0 flex items-center gap-1">
+              <div className="flex-1 min-h-0 flex items-center gap-2">
                 {quadrantData.length > 0 ? (
                   <>
-                    <div className="w-[50px] h-full shrink-0">
+                    <div className="w-[70px] h-full shrink-0">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
                             data={quadrantData}
                             cx="50%"
                             cy="50%"
-                            innerRadius={12}
-                            outerRadius={22}
+                            innerRadius={18}
+                            outerRadius={32}
                             paddingAngle={3}
                             dataKey="value"
                           >
@@ -512,21 +511,21 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
-                    <div className="flex flex-col gap-0.5">
+                    <div className="flex flex-col gap-1">
                       {quadrantData.map((entry, index) => (
-                        <div key={index} className="flex items-center gap-0.5">
-                          <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
-                          <span className="text-[6px] text-muted-foreground leading-tight">
+                        <div key={index} className="flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
+                          <span className="text-[8px] text-muted-foreground leading-tight">
                             {entry.name === "Urgent & Important"
                               ? "U&I"
                               : entry.name === "Urgent & Not Important"
-                                ? "Urg"
+                                ? "Urgent"
                                 : entry.name === "Not Urgent & Important"
-                                  ? "Imp"
+                                  ? "Important"
                                   : "Low"}
                           </span>
                         </div>
-                      ))}
+                      ))}{" "}
                     </div>
                   </>
                 ) : (
