@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -386,6 +386,62 @@ export default function Emotions() {
   const totalCheckins = entries.length;
   const todayCount = entries.filter((e) => e.entry_date === todayStr).length;
 
+  // Calculate current streak
+  const currentStreak = useMemo(() => {
+    if (entries.length === 0) return 0;
+    const sortedDates = [...new Set(entries.map((e) => e.entry_date))].sort().reverse();
+    let streak = 0;
+    const today = new Date(todayStr);
+
+    for (let i = 0; i < sortedDates.length; i++) {
+      const checkDate = new Date(sortedDates[i]);
+      const expectedDate = new Date(today);
+      expectedDate.setDate(today.getDate() - i);
+
+      if (format(checkDate, "yyyy-MM-dd") === format(expectedDate, "yyyy-MM-dd")) {
+        streak++;
+      } else if (
+        i === 0 &&
+        format(checkDate, "yyyy-MM-dd") === format(new Date(today.getTime() - 86400000), "yyyy-MM-dd")
+      ) {
+        // Allow yesterday if no check-in today
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  }, [entries, todayStr]);
+
+  // Calculate most common zone
+  const mostCommonZone = useMemo(() => {
+    if (entries.length === 0) return null;
+    const zoneCounts: Record<QuadrantType, number> = {
+      "high-pleasant": 0,
+      "high-unpleasant": 0,
+      "low-unpleasant": 0,
+      "low-pleasant": 0,
+    };
+    entries.forEach((e) => {
+      if (e.quadrant) zoneCounts[e.quadrant]++;
+    });
+    const sorted = Object.entries(zoneCounts).sort((a, b) => b[1] - a[1]);
+    return sorted[0][1] > 0 ? (sorted[0][0] as QuadrantType) : null;
+  }, [entries]);
+
+  // Calculate top feeling
+  const topFeeling = useMemo(() => {
+    if (entries.length === 0) return null;
+    const emotionCounts: Record<string, number> = {};
+    entries.forEach((e) => {
+      if (e.emotion) {
+        emotionCounts[e.emotion] = (emotionCounts[e.emotion] || 0) + 1;
+      }
+    });
+    const sorted = Object.entries(emotionCounts).sort((a, b) => b[1] - a[1]);
+    return sorted.length > 0 ? sorted[0][0] : null;
+  }, [entries]);
+
   if (loading) return <PageLoadingScreen module="emotions" />;
 
   return (
@@ -401,28 +457,35 @@ export default function Emotions() {
 
       {/* Stats Strip */}
       <div className="px-6 lg:px-8 py-3 border-b border-border bg-card">
-        <div className="flex items-center gap-4 text-sm">
+        <div className="flex items-center gap-4 text-sm flex-wrap">
           <div className="flex items-center gap-2">
-            <Heart className="h-4 w-4 text-rose-500" />
-            <span className="font-medium text-foreground">{totalCheckins}</span>
-            <span className="text-muted-foreground">check-ins</span>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">Total Check-ins</span>
+            <span className="font-semibold text-foreground">{totalCheckins}</span>
           </div>
           <div className="w-px h-4 bg-border" />
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-amber-500" />
-            <span className="font-medium text-foreground">{todayCount}</span>
-            <span className="text-muted-foreground">today</span>
+            <span className="text-muted-foreground">Current Streak</span>
+            <span className="font-semibold text-foreground">{currentStreak} days</span>
           </div>
-          {latestEntry && (
+          {mostCommonZone && (
             <>
               <div className="w-px h-4 bg-border" />
               <div className="flex items-center gap-2">
-                <div
-                  className="w-2.5 h-2.5 rounded-full"
-                  style={{ backgroundColor: QUADRANTS[latestEntry.quadrant].color }}
-                />
-                <span className="text-muted-foreground">Last:</span>
-                <span className="font-medium text-foreground">{latestEntry.emotion}</span>
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: QUADRANTS[mostCommonZone].color }} />
+                <span className="text-muted-foreground">Most Common Zone</span>
+                <span className="font-semibold text-foreground">{QUADRANTS[mostCommonZone].label.split(",")[0]}</span>
+              </div>
+            </>
+          )}
+          {topFeeling && (
+            <>
+              <div className="w-px h-4 bg-border" />
+              <div className="flex items-center gap-2">
+                <Heart className="h-4 w-4 text-rose-500" />
+                <span className="text-muted-foreground">Top Feeling</span>
+                <span className="font-semibold text-foreground">{topFeeling}</span>
               </div>
             </>
           )}

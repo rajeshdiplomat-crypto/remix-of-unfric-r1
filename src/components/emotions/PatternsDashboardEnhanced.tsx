@@ -1,17 +1,8 @@
 import { useMemo, useState } from "react";
 import { QuadrantType, QUADRANTS, EmotionEntry } from "./types";
 import { format, subDays } from "date-fns";
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import {
-  Users,
-  Briefcase,
-  Moon,
-  Dumbbell,
-  Sun,
-  Sunrise,
-  Sunset,
-  Sparkles,
-} from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip } from "recharts";
+import { Users, Briefcase, Moon, Dumbbell, Sun, Sunrise, Sunset, Sparkles, Calendar } from "lucide-react";
 import { useTimezone } from "@/hooks/useTimezone";
 import { getTimePeriodInTimezone, getStartOfTodayInTimezone } from "@/lib/formatDate";
 
@@ -31,10 +22,10 @@ const TIME_INFO = {
 
 // Quadrant colors for consistency
 const QUADRANT_COLORS: Record<QuadrantType, string> = {
-  "high-pleasant": "hsl(45, 93%, 47%)",    // Yellow/Gold
-  "high-unpleasant": "hsl(0, 72%, 51%)",   // Red
-  "low-unpleasant": "hsl(215, 20%, 45%)",  // Gray-blue
-  "low-pleasant": "hsl(142, 52%, 45%)",    // Green
+  "high-pleasant": "hsl(45, 93%, 47%)", // Yellow/Gold
+  "high-unpleasant": "hsl(0, 72%, 51%)", // Red
+  "low-unpleasant": "hsl(215, 20%, 45%)", // Gray-blue
+  "low-pleasant": "hsl(142, 52%, 45%)", // Green
 };
 
 export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhancedProps) {
@@ -72,10 +63,30 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
       .slice(0, 5);
 
     const quadrantData = [
-      { name: "High Pleasant", value: quadrantCounts["high-pleasant"], color: QUADRANT_COLORS["high-pleasant"], id: "high-pleasant" },
-      { name: "High Unpleasant", value: quadrantCounts["high-unpleasant"], color: QUADRANT_COLORS["high-unpleasant"], id: "high-unpleasant" },
-      { name: "Low Unpleasant", value: quadrantCounts["low-unpleasant"], color: QUADRANT_COLORS["low-unpleasant"], id: "low-unpleasant" },
-      { name: "Low Pleasant", value: quadrantCounts["low-pleasant"], color: QUADRANT_COLORS["low-pleasant"], id: "low-pleasant" },
+      {
+        name: "High Pleasant",
+        value: quadrantCounts["high-pleasant"],
+        color: QUADRANT_COLORS["high-pleasant"],
+        id: "high-pleasant",
+      },
+      {
+        name: "High Unpleasant",
+        value: quadrantCounts["high-unpleasant"],
+        color: QUADRANT_COLORS["high-unpleasant"],
+        id: "high-unpleasant",
+      },
+      {
+        name: "Low Unpleasant",
+        value: quadrantCounts["low-unpleasant"],
+        color: QUADRANT_COLORS["low-unpleasant"],
+        id: "low-unpleasant",
+      },
+      {
+        name: "Low Pleasant",
+        value: quadrantCounts["low-pleasant"],
+        color: QUADRANT_COLORS["low-pleasant"],
+        id: "low-pleasant",
+      },
     ].filter((d) => d.value > 0);
 
     return {
@@ -110,11 +121,9 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
             <button
               key={d}
               onClick={() => setDateRange(d)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                dateRange === d 
-                  ? "bg-card shadow-sm text-foreground" 
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+              className={`px - 3 py - 1.5 text - xs font - medium rounded - lg transition - all ${
+                dateRange === d ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+              } `}
             >
               {d}D
             </button>
@@ -127,6 +136,9 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
         <MoodDistributionChart data={stats.quadrantData} />
         <MostFrequentFeelings emotions={stats.topEmotions} total={stats.total} />
       </div>
+
+      {/* Row 1.5: Last 7 Days Chart */}
+      <LastSevenDaysChart entries={entries} timezone={timezone} />
 
       {/* Row 2: Mood by Time of Day */}
       <MoodByTimeOfDay entries={filteredEntries} timezone={timezone} />
@@ -150,15 +162,7 @@ function MoodDistributionChart({ data }: { data: { name: string; value: number; 
       <div className="h-[180px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              innerRadius={50}
-              outerRadius={80}
-              paddingAngle={2}
-              dataKey="value"
-            >
+            <Pie data={data} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value">
               {data.map((entry, i) => (
                 <Cell key={i} fill={entry.color} />
               ))}
@@ -189,11 +193,11 @@ function MoodDistributionChart({ data }: { data: { name: string; value: number; 
 }
 
 // Most Frequent Feelings
-function MostFrequentFeelings({ 
-  emotions, 
-  total 
-}: { 
-  emotions: [string, { count: number; quadrant: QuadrantType }][]; 
+function MostFrequentFeelings({
+  emotions,
+  total,
+}: {
+  emotions: [string, { count: number; quadrant: QuadrantType }][];
   total: number;
 }) {
   if (emotions.length === 0) return null;
@@ -216,7 +220,7 @@ function MostFrequentFeelings({
               <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all"
-                  style={{ width: `${pct}%`, backgroundColor: color }}
+                  style={{ width: `${pct}% `, backgroundColor: color }}
                 />
               </div>
             </div>
@@ -231,30 +235,33 @@ function MostFrequentFeelings({
 function MoodByTimeOfDay({ entries, timezone }: { entries: EmotionEntry[]; timezone: string }) {
   const timeStats = useMemo(() => {
     const periods = ["morning", "afternoon", "evening", "night"] as const;
-    
+
     return periods.map((period) => {
       const periodEntries = entries.filter((e) => getTimePeriodInTimezone(e.created_at, timezone) === period);
       const count = periodEntries.length;
-      
+
       const quadrantCounts: Record<QuadrantType, number> = {
         "high-pleasant": 0,
         "high-unpleasant": 0,
         "low-unpleasant": 0,
         "low-pleasant": 0,
       };
-      
+
       periodEntries.forEach((e) => {
         if (e.quadrant) quadrantCounts[e.quadrant]++;
       });
-      
+
       // Calculate percentages for the stacked bar
-      const percentages = count > 0 ? {
-        "high-pleasant": (quadrantCounts["high-pleasant"] / count) * 100,
-        "high-unpleasant": (quadrantCounts["high-unpleasant"] / count) * 100,
-        "low-unpleasant": (quadrantCounts["low-unpleasant"] / count) * 100,
-        "low-pleasant": (quadrantCounts["low-pleasant"] / count) * 100,
-      } : null;
-      
+      const percentages =
+        count > 0
+          ? {
+              "high-pleasant": (quadrantCounts["high-pleasant"] / count) * 100,
+              "high-unpleasant": (quadrantCounts["high-unpleasant"] / count) * 100,
+              "low-unpleasant": (quadrantCounts["low-unpleasant"] / count) * 100,
+              "low-pleasant": (quadrantCounts["low-pleasant"] / count) * 100,
+            }
+          : null;
+
       // Get top 2 moods for display
       const sortedQuadrants = Object.entries(quadrantCounts)
         .filter(([_, c]) => c > 0)
@@ -264,7 +271,7 @@ function MoodByTimeOfDay({ entries, timezone }: { entries: EmotionEntry[]; timez
           quadrant: q as QuadrantType,
           percentage: Math.round((c / count) * 100),
         }));
-      
+
       return {
         period,
         count,
@@ -287,29 +294,53 @@ function MoodByTimeOfDay({ entries, timezone }: { entries: EmotionEntry[]; timez
                 <Icon className="h-4 w-4 text-amber-500" />
                 <span className="text-sm font-medium text-foreground">{info.label}</span>
               </div>
-              
+
               {count > 0 && percentages ? (
                 <>
                   {/* Stacked color bar */}
                   <div className="h-2 rounded-full overflow-hidden flex mb-2">
                     {percentages["high-pleasant"] > 0 && (
-                      <div style={{ width: `${percentages["high-pleasant"]}%`, backgroundColor: QUADRANT_COLORS["high-pleasant"] }} />
+                      <div
+                        style={{
+                          width: `${percentages["high-pleasant"]}% `,
+                          backgroundColor: QUADRANT_COLORS["high-pleasant"],
+                        }}
+                      />
                     )}
                     {percentages["high-unpleasant"] > 0 && (
-                      <div style={{ width: `${percentages["high-unpleasant"]}%`, backgroundColor: QUADRANT_COLORS["high-unpleasant"] }} />
+                      <div
+                        style={{
+                          width: `${percentages["high-unpleasant"]}% `,
+                          backgroundColor: QUADRANT_COLORS["high-unpleasant"],
+                        }}
+                      />
                     )}
                     {percentages["low-unpleasant"] > 0 && (
-                      <div style={{ width: `${percentages["low-unpleasant"]}%`, backgroundColor: QUADRANT_COLORS["low-unpleasant"] }} />
+                      <div
+                        style={{
+                          width: `${percentages["low-unpleasant"]}% `,
+                          backgroundColor: QUADRANT_COLORS["low-unpleasant"],
+                        }}
+                      />
                     )}
                     {percentages["low-pleasant"] > 0 && (
-                      <div style={{ width: `${percentages["low-pleasant"]}%`, backgroundColor: QUADRANT_COLORS["low-pleasant"] }} />
+                      <div
+                        style={{
+                          width: `${percentages["low-pleasant"]}% `,
+                          backgroundColor: QUADRANT_COLORS["low-pleasant"],
+                        }}
+                      />
                     )}
                   </div>
-                  
+
                   {/* Top moods */}
                   <div className="space-y-0.5">
                     {topMoods.map((mood) => (
-                      <p key={mood.quadrant} className="text-[10px] truncate" style={{ color: QUADRANT_COLORS[mood.quadrant] }}>
+                      <p
+                        key={mood.quadrant}
+                        className="text-[10px] truncate"
+                        style={{ color: QUADRANT_COLORS[mood.quadrant] }}
+                      >
                         {mood.percentage}% {QUADRANTS[mood.quadrant].label.split(",")[0]}...
                       </p>
                     ))}
@@ -335,7 +366,7 @@ function MoodByTimeOfDay({ entries, timezone }: { entries: EmotionEntry[]; timez
 function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
   const contextStats = useMemo(() => {
     type ContextStats = Record<string, { count: number; quadrants: Record<QuadrantType, number> }>;
-    
+
     const whoStats: ContextStats = {};
     const whatStats: ContextStats = {};
     const sleepStats: ContextStats = {};
@@ -366,7 +397,7 @@ function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
         .slice(0, 4)
         .map(([label, data]) => {
           const total = data.count;
-          
+
           // Calculate percentages for stacked bar
           const percentages = {
             "high-pleasant": (data.quadrants["high-pleasant"] / total) * 100,
@@ -374,7 +405,7 @@ function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
             "low-unpleasant": (data.quadrants["low-unpleasant"] / total) * 100,
             "low-pleasant": (data.quadrants["low-pleasant"] / total) * 100,
           };
-          
+
           const moodBreakdown = Object.entries(data.quadrants)
             .filter(([_, c]) => c > 0)
             .sort((a, b) => b[1] - a[1])
@@ -382,10 +413,10 @@ function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
               quadrant: q as QuadrantType,
               percentage: Math.round((c / total) * 100),
             }));
-          
+
           // Determine left border color based on dominant mood
           const dominantMood = moodBreakdown[0]?.quadrant || "low-pleasant";
-          
+
           return { label, count: total, moodBreakdown, dominantMood, percentages };
         });
 
@@ -397,8 +428,11 @@ function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
     };
   }, [entries]);
 
-  const hasData = contextStats.who.length > 0 || contextStats.what.length > 0 || 
-                  contextStats.sleep.length > 0 || contextStats.activity.length > 0;
+  const hasData =
+    contextStats.who.length > 0 ||
+    contextStats.what.length > 0 ||
+    contextStats.sleep.length > 0 ||
+    contextStats.activity.length > 0;
 
   if (!hasData) return null;
 
@@ -412,7 +446,7 @@ function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
   return (
     <div className="p-5 rounded-2xl bg-card border border-border shadow-sm">
       <h3 className="font-semibold text-foreground mb-5 uppercase text-xs tracking-wider">Context Insights</h3>
-      
+
       <div className="space-y-6">
         {sections.map((section) => {
           const Icon = section.icon;
@@ -433,27 +467,47 @@ function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
                       <span className="text-sm font-medium text-foreground">{item.label}</span>
                       <span className="text-xs text-muted-foreground">{item.count}</span>
                     </div>
-                    
+
                     {/* Stacked color bar */}
                     <div className="h-2 rounded-full overflow-hidden flex mb-2">
                       {item.percentages["high-pleasant"] > 0 && (
-                        <div style={{ width: `${item.percentages["high-pleasant"]}%`, backgroundColor: QUADRANT_COLORS["high-pleasant"] }} />
+                        <div
+                          style={{
+                            width: `${item.percentages["high-pleasant"]}% `,
+                            backgroundColor: QUADRANT_COLORS["high-pleasant"],
+                          }}
+                        />
                       )}
                       {item.percentages["high-unpleasant"] > 0 && (
-                        <div style={{ width: `${item.percentages["high-unpleasant"]}%`, backgroundColor: QUADRANT_COLORS["high-unpleasant"] }} />
+                        <div
+                          style={{
+                            width: `${item.percentages["high-unpleasant"]}% `,
+                            backgroundColor: QUADRANT_COLORS["high-unpleasant"],
+                          }}
+                        />
                       )}
                       {item.percentages["low-unpleasant"] > 0 && (
-                        <div style={{ width: `${item.percentages["low-unpleasant"]}%`, backgroundColor: QUADRANT_COLORS["low-unpleasant"] }} />
+                        <div
+                          style={{
+                            width: `${item.percentages["low-unpleasant"]}% `,
+                            backgroundColor: QUADRANT_COLORS["low-unpleasant"],
+                          }}
+                        />
                       )}
                       {item.percentages["low-pleasant"] > 0 && (
-                        <div style={{ width: `${item.percentages["low-pleasant"]}%`, backgroundColor: QUADRANT_COLORS["low-pleasant"] }} />
+                        <div
+                          style={{
+                            width: `${item.percentages["low-pleasant"]}% `,
+                            backgroundColor: QUADRANT_COLORS["low-pleasant"],
+                          }}
+                        />
                       )}
                     </div>
-                    
+
                     <div className="space-y-0.5">
                       {item.moodBreakdown.slice(0, 2).map((mood) => (
-                        <p 
-                          key={mood.quadrant} 
+                        <p
+                          key={mood.quadrant}
                           className="text-[11px]"
                           style={{ color: QUADRANT_COLORS[mood.quadrant] }}
                         >
@@ -476,7 +530,7 @@ function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
 function PatternInsights({ entries }: { entries: EmotionEntry[] }) {
   const insights = useMemo(() => {
     const results: { icon: typeof Moon; text: string; count: number }[] = [];
-    
+
     // Analyze sleep patterns
     const sleepMoods: Record<string, { pleasant: number; unpleasant: number; total: number }> = {};
     entries.forEach((e) => {
@@ -490,7 +544,7 @@ function PatternInsights({ entries }: { entries: EmotionEntry[] }) {
         sleepMoods[sleep].unpleasant++;
       }
     });
-    
+
     Object.entries(sleepMoods).forEach(([sleep, data]) => {
       if (data.total >= 2) {
         if (data.pleasant > data.unpleasant) {
@@ -514,12 +568,12 @@ function PatternInsights({ entries }: { entries: EmotionEntry[] }) {
         activityMoods[activity].energized++;
       }
     });
-    
+
     Object.entries(activityMoods).forEach(([activity, data]) => {
       if (data.total >= 2 && data.energized > 0) {
         results.push({
           icon: Dumbbell,
-          text: `Most energized after ${activity.toLowerCase()}`,
+          text: `Most energized after ${activity.toLowerCase()} `,
           count: data.total,
         });
       }
@@ -536,7 +590,7 @@ function PatternInsights({ entries }: { entries: EmotionEntry[] }) {
         whatMoods[what].good++;
       }
     });
-    
+
     Object.entries(whatMoods).forEach(([what, data]) => {
       if (data.total >= 2 && data.good / data.total >= 0.6) {
         results.push({
@@ -567,6 +621,79 @@ function PatternInsights({ entries }: { entries: EmotionEntry[] }) {
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+// Last 7 Days Chart
+function LastSevenDaysChart({ entries, timezone }: { entries: EmotionEntry[]; timezone: string }) {
+  const data = useMemo(() => {
+    const today = new Date();
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const d = subDays(today, 6 - i);
+      return {
+        date: format(d, "yyyy-MM-dd"),
+        dayName: format(d, "EEE"),
+        "high-pleasant": 0,
+        "high-unpleasant": 0,
+        "low-unpleasant": 0,
+        "low-pleasant": 0,
+        total: 0,
+      };
+    });
+
+    entries.forEach((e) => {
+      const entryDate = e.entry_date;
+      const dayStat = last7Days.find((d) => d.date === entryDate);
+      if (dayStat && e.quadrant) {
+        dayStat[e.quadrant]++;
+        dayStat.total++;
+      }
+    });
+
+    return last7Days;
+  }, [entries]);
+
+  // Check if empty
+  const isEmpty = data.every((d) => d.total === 0);
+
+  return (
+    <div className="p-5 rounded-2xl bg-card border border-border shadow-sm">
+      <h3 className="font-semibold text-foreground mb-6 uppercase text-xs tracking-wider">Last 7 Days</h3>
+
+      <div className="h-[200px] w-full">
+        {isEmpty ? (
+          <div className="h-full w-full flex flex-col items-center justify-center text-muted-foreground">
+            <div className="flex justify-between w-full px-4 mt-auto">
+              {data.map((d) => (
+                <span key={d.dayName} className="text-xs">
+                  {d.dayName}
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} barSize={32}>
+              <XAxis
+                dataKey="dayName"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+                dy={10}
+              />
+              <Tooltip
+                cursor={{ fill: "var(--muted)/0.2" }}
+                contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+              />
+              <Bar dataKey="high-pleasant" stackId="a" fill={QUADRANT_COLORS["high-pleasant"]} radius={[0, 0, 4, 4]} />
+              <Bar dataKey="high-unpleasant" stackId="a" fill={QUADRANT_COLORS["high-unpleasant"]} />
+              <Bar dataKey="low-unpleasant" stackId="a" fill={QUADRANT_COLORS["low-unpleasant"]} />
+              <Bar dataKey="low-pleasant" stackId="a" fill={QUADRANT_COLORS["low-pleasant"]} radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   );
