@@ -402,7 +402,7 @@ export default function Emotions() {
 
       {/* Main Content - Two Column Layout - Fixed Height */}
       <div className="flex-1 px-6 lg:px-8 py-6 overflow-hidden min-h-0">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 h-full min-h-0">
           {/* Left Column - Check-in row + Dashboards below */}
           <div className="flex flex-col gap-6 overflow-y-auto h-full">
             {/* Top Row: Check-in + Strategies side by side */}
