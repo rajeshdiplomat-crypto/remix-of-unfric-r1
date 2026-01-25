@@ -1,55 +1,87 @@
 
-
-## Make Right Sidebar Extend to Match Dashboard Bottom
+## Make Left and Right Panels Independently Scrollable
 
 ### Problem
-The right sidebar (Calendar + Recent Entries) has a fixed height calculation `height: "calc(620px + 420px + 24px)"` that doesn't dynamically match the actual height of the left column content. This creates a visual mismatch where the right panel may end before or after the dashboard on the left.
+Currently, the Emotions page uses a height-sync approach where the right column matches the left column's height. When content exceeds the viewport, the entire page scrolls. The user wants each column to scroll independently within a fixed viewport.
 
 ### Solution
-Change the layout approach to use CSS Flexbox/Grid alignment so the right sidebar naturally stretches to fill the available height within the main content grid, ensuring it always aligns with the bottom of the left column regardless of the dashboard's dynamic height.
+Convert the layout to a fixed-height container that fills the available screen space below the hero, with each column having its own scroll container. This creates a "side-by-side panels" experience similar to email clients or Slack.
+
+---
 
 ### Implementation
 
 **File: `src/pages/Emotions.tsx`**
 
-1. **Remove the fixed height calculation** from the right column container:
-   - Current: `style={{ height: "calc(620px + 420px + 24px)" }}`
-   - Change to: Use `h-full` or `min-h-full` with proper flex container
+#### 1. Remove Height Sync Logic
+- Delete the `leftColumnRef` and `rightColumnRef` refs
+- Delete the `syncColumnHeights` callback function
+- Delete the `useEffect` that syncs heights on resize
 
-2. **Update the grid layout** to ensure both columns stretch equally:
-   - Add `items-stretch` to the grid container so both columns have equal height
-   - The right column will use `flex flex-col h-full` to fill its grid cell
-
-3. **Make Recent Entries fill remaining space**:
-   - The Calendar remains `shrink-0` (fixed height based on content)
-   - RecentEntriesList wrapper uses `flex-1 min-h-0` to fill remaining height
-   - RecentEntriesList component already supports `h-full` with internal scrolling
-
-### Code Changes
+#### 2. Update Main Container to Fill Remaining Viewport
+Change the main content wrapper from flexible height to fixed viewport height:
 
 ```tsx
-// Line 434 - Update grid container to stretch items
-<div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-stretch">
-
-// Lines 531-542 - Update right column structure
-{/* Right Column - Calendar (fixed) & Recent Entries (fills to match left column bottom) */}
-<div className="flex flex-col gap-4 h-full">
-  {/* Calendar - Non-scrollable */}
-  <div className="shrink-0">
-    <EmotionCalendarSidebar entries={entries} onDateClick={handleDateClick} />
-  </div>
-
-  {/* Recent Entries - Fills remaining height, scrollable */}
-  <div className="flex-1 min-h-0">
-    <RecentEntriesList entries={entries} onEditEntry={startEditEntry} onDeleteEntry={setDeletingEntryId} />
-  </div>
-</div>
+{/* Main Content - Two Column Layout - Fixed Height */}
+<div className="flex-1 px-6 lg:px-8 py-6 overflow-hidden">
+  <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 h-full">
 ```
 
-### Technical Notes
-- Using `items-stretch` on the grid ensures both columns occupy the full grid row height
-- The right column uses `h-full` to fill its grid cell completely
-- `flex-1 min-h-0` on RecentEntriesList wrapper allows it to grow and shrink as needed
-- RecentEntriesList already has `h-full flex flex-col` with `overflow-y-auto` for internal scrolling
-- This approach is responsive and adapts to any height the PatternsDashboardEnhanced takes
+Key changes:
+- Add `overflow-hidden` to prevent outer scrolling
+- Add `h-full` to the grid so it fills the container
 
+#### 3. Make Left Column Independently Scrollable
+```tsx
+{/* Left Column - Check-in row + Dashboards below */}
+<div className="flex flex-col gap-6 overflow-y-auto">
+```
+
+- Remove `ref={leftColumnRef}`
+- Add `overflow-y-auto` for independent scrolling
+
+#### 4. Make Right Column Independently Scrollable
+```tsx
+{/* Right Column - Calendar & Recent Entries */}
+<div className="flex flex-col gap-4 overflow-y-auto">
+```
+
+- Remove `ref={rightColumnRef}`
+- Add `overflow-y-auto` for independent scrolling
+- Calendar remains `shrink-0` (fixed height)
+- RecentEntriesList wrapper can stay as `flex-1 min-h-0` since it's inside a scrollable container
+
+---
+
+### Visual Behavior After Changes
+
+```text
+┌─────────────────────────────────────────────────────────┐
+│                      Page Hero                           │
+├────────────────────────────────┬────────────────────────┤
+│  Left Column (scrollable)      │  Right Column (scroll) │
+│  ┌──────────┬──────────┐       │  ┌──────────────────┐  │
+│  │ Check-in │ Strateg. │       │  │    Calendar      │  │
+│  └──────────┴──────────┘       │  └──────────────────┘  │
+│  ┌────────────────────┐        │  ┌──────────────────┐  │
+│  │ Patterns Dashboard │        │  │  Recent Entries  │  │
+│  │    (tabs: O|M|C)   │        │  │   (scrollable    │  │
+│  │                    │  ↕     │  │    list)         │ ↕│
+│  │                    │        │  │                  │  │
+│  └────────────────────┘        │  └──────────────────┘  │
+└────────────────────────────────┴────────────────────────┘
+```
+
+Each column scrolls independently within its fixed container.
+
+---
+
+### Technical Details
+
+1. **Viewport Calculation**: The main content area uses `flex-1` within a `min-h-screen` parent, so it automatically fills remaining space below the hero
+
+2. **Import Cleanup**: Remove unused `useRef` and `useCallback` imports since height sync logic is deleted
+
+3. **RecentEntriesList**: Already has internal `overflow-y-auto` on its entries container, so it will work correctly within the scrollable right column
+
+4. **Mobile Responsiveness**: On mobile (`grid-cols-1`), both columns stack vertically and each maintains its own scroll - this may need future refinement if the user prefers full-page scroll on mobile
