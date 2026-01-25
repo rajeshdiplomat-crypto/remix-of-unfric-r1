@@ -21,6 +21,17 @@ const iconMap: Record<string, React.ReactNode> = {
   Sun: <Sun className="h-5 w-5" />,
 };
 
+const largeIconMap: Record<string, React.ReactNode> = {
+  Wind: <Wind className="h-8 w-8" />,
+  Hand: <Hand className="h-8 w-8" />,
+  User: <User className="h-8 w-8" />,
+  Lightbulb: <Lightbulb className="h-8 w-8" />,
+  Sparkles: <Sparkles className="h-8 w-8" />,
+  Heart: <Heart className="h-8 w-8" />,
+  Zap: <Zap className="h-8 w-8" />,
+  Sun: <Sun className="h-8 w-8" />,
+};
+
 const typeGradients: Record<string, string> = {
   breathing: "from-cyan-500 to-blue-500",
   grounding: "from-amber-500 to-orange-500",
@@ -69,22 +80,25 @@ export function StrategiesPanelEnhanced({ currentQuadrant, currentEmotion }: Str
 
   return (
     <div className="space-y-5">
-      {/* Hero Image Card */}
-      <div className="relative aspect-square w-full max-w-[180px] mx-auto rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-accent/10 border border-border/50">
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
-          <div className={`p-4 rounded-2xl bg-gradient-to-br ${featuredStrategy ? typeGradients[featuredStrategy.type] : 'from-primary to-accent'} text-white mb-3 shadow-lg`}>
-            {featuredStrategy ? iconMap[featuredStrategy.icon] : <Sparkles className="h-6 w-6" />}
-          </div>
-          <p className="text-xs font-medium text-muted-foreground">
-            {featuredStrategy ? featuredStrategy.title : "Exercises"}
-          </p>
-          <p className="text-[10px] text-muted-foreground/70 mt-0.5">
-            {featuredStrategy ? featuredStrategy.duration : "Regulation"}
-          </p>
+      {/* Hero Image - Full Width */}
+      <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-600">
+        {/* Decorative background elements */}
+        <div className="absolute inset-0">
+          <div className="absolute top-4 left-4 w-20 h-20 rounded-full bg-white/10 blur-2xl" />
+          <div className="absolute bottom-4 right-4 w-24 h-24 rounded-full bg-white/10 blur-2xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full bg-white/5 blur-3xl" />
         </div>
-        {/* Decorative elements */}
-        <div className="absolute top-2 right-2 w-8 h-8 rounded-full bg-primary/10 blur-xl" />
-        <div className="absolute bottom-3 left-3 w-6 h-6 rounded-full bg-accent/20 blur-lg" />
+
+        {/* Content */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+          <div className={`p-5 rounded-2xl bg-white/20 backdrop-blur-sm text-white mb-3 shadow-lg`}>
+            {featuredStrategy ? largeIconMap[featuredStrategy.icon] : <Sparkles className="h-8 w-8" />}
+          </div>
+          <p className="text-base font-semibold text-white">
+            {featuredStrategy ? featuredStrategy.title : "Regulation Exercises"}
+          </p>
+          <p className="text-sm text-white/80 mt-1">{featuredStrategy ? featuredStrategy.duration : "Take a moment"}</p>
+        </div>
       </div>
 
       {/* Header */}
@@ -100,15 +114,15 @@ export function StrategiesPanelEnhanced({ currentQuadrant, currentEmotion }: Str
         </p>
       </div>
 
-      {/* Recommended */}
+      {/* Recommended - Grid of Square Cards */}
       {recommendedStrategies.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-xs font-semibold text-rose-500 uppercase tracking-wider flex items-center gap-1">
             <Heart className="h-3 w-3" /> Recommended for you
           </h3>
-          <div className="space-y-2">
-            {recommendedStrategies.slice(0, 3).map((strategy) => (
-              <StrategyCard
+          <div className="grid grid-cols-2 gap-3">
+            {recommendedStrategies.slice(0, 4).map((strategy) => (
+              <StrategySquareCard
                 key={strategy.id}
                 strategy={strategy}
                 isRecommended
@@ -119,12 +133,16 @@ export function StrategiesPanelEnhanced({ currentQuadrant, currentEmotion }: Str
         </div>
       )}
 
-      {/* All Strategies */}
+      {/* All Strategies - Grid of Square Cards */}
       <div className="space-y-3">
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">All Strategies</h3>
-        <div className="space-y-2">
+        <div className="grid grid-cols-2 gap-3">
           {otherStrategies.map((strategy) => (
-            <StrategyCard key={strategy.id} strategy={strategy} onStart={() => handleStartVisualization(strategy)} />
+            <StrategySquareCard
+              key={strategy.id}
+              strategy={strategy}
+              onStart={() => handleStartVisualization(strategy)}
+            />
           ))}
         </div>
       </div>
@@ -155,7 +173,7 @@ export function StrategiesPanelEnhanced({ currentQuadrant, currentEmotion }: Str
   );
 }
 
-function StrategyCard({
+function StrategySquareCard({
   strategy,
   isRecommended = false,
   onStart,
@@ -166,35 +184,33 @@ function StrategyCard({
 }) {
   return (
     <div
-      className={`group p-3 rounded-xl transition-all duration-200 hover:shadow-md ${
+      onClick={onStart}
+      className={`group aspect-square p-4 rounded-2xl transition-all duration-200 hover:shadow-lg hover:scale-[1.02] cursor-pointer flex flex-col items-center justify-center text-center ${
         isRecommended
-          ? "bg-gradient-to-r from-rose-50 to-orange-50 dark:from-rose-900/20 dark:to-orange-900/20 border border-rose-200 dark:border-rose-800"
-          : "bg-card border border-border"
+          ? "bg-gradient-to-br from-rose-50 to-orange-50 dark:from-rose-900/20 dark:to-orange-900/20 border border-rose-200 dark:border-rose-800"
+          : "bg-card border border-border hover:border-primary/30"
       }`}
     >
-      <div className="flex items-center gap-3">
-        <div className={`p-2.5 rounded-xl bg-gradient-to-br ${typeGradients[strategy.type]} text-white shrink-0`}>
-          {iconMap[strategy.icon]}
-        </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-sm text-foreground">{strategy.title}</h4>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <Clock className="h-3 w-3" /> {strategy.duration}
-            </span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-              {typeLabels[strategy.type]}
-            </span>
-          </div>
-        </div>
-        <Button
-          size="sm"
-          onClick={onStart}
-          className={`shrink-0 h-9 px-4 rounded-xl bg-gradient-to-r ${typeGradients[strategy.type]} text-white border-0 opacity-0 group-hover:opacity-100 transition-opacity`}
-        >
-          <Play className="h-3.5 w-3.5 mr-1" /> Start
-        </Button>
+      {/* Icon */}
+      <div
+        className={`p-3 rounded-xl bg-gradient-to-br ${typeGradients[strategy.type]} text-white mb-3 shadow-md group-hover:shadow-lg transition-shadow`}
+      >
+        {iconMap[strategy.icon]}
       </div>
+
+      {/* Title */}
+      <h4 className="font-medium text-sm text-foreground leading-tight mb-1">{strategy.title}</h4>
+
+      {/* Duration & Type */}
+      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+        <Clock className="h-3 w-3" />
+        <span>{strategy.duration}</span>
+      </div>
+
+      {/* Type Badge */}
+      <span className="mt-2 text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+        {typeLabels[strategy.type]}
+      </span>
     </div>
   );
 }
