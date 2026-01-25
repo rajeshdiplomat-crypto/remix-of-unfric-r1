@@ -233,12 +233,6 @@ export function EmotionContextFieldsEnhanced({
         </div>
         <div className="space-y-1">
           <Label className="text-xs flex items-center gap-1.5 text-muted-foreground">
-            <Heart className="h-3.5 w-3.5" /> Body sensations?
-          </Label>
-          <PresetPills options={BODY_PRESETS} selected={context.body} onSelect={(v) => updateContext("body", v)} />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs flex items-center gap-1.5 text-muted-foreground">
             <Moon className="h-3.5 w-3.5" /> Sleep last night?
           </Label>
           <PresetPills
