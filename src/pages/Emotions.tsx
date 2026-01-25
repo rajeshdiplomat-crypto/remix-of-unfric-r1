@@ -388,23 +388,21 @@ export default function Emotions() {
   if (loading) return <PageLoadingScreen module="emotions" />;
 
   return (
-    <div className="flex flex-col w-full flex-1 bg-muted/30 h-full">
-      {/* Hero - Fixed, does not scroll */}
-      <div className="shrink-0">
-        <PageHero
-          storageKey="emotion_hero_src"
-          typeKey="emotion_hero_type"
-          badge={PAGE_HERO_TEXT.emotions.badge}
-          title={PAGE_HERO_TEXT.emotions.title}
-          subtitle={PAGE_HERO_TEXT.emotions.subtitle}
-        />
-      </div>
+    <div className="flex flex-col w-full flex-1 bg-muted/30 min-h-screen">
+      {/* Hero */}
+      <PageHero
+        storageKey="emotion_hero_src"
+        typeKey="emotion_hero_type"
+        badge={PAGE_HERO_TEXT.emotions.badge}
+        title={PAGE_HERO_TEXT.emotions.title}
+        subtitle={PAGE_HERO_TEXT.emotions.subtitle}
+      />
 
-      {/* Main Content - Two Column Layout */}
-      <div className="flex-1 px-6 lg:px-8 py-6 flex flex-col min-h-0">
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 min-h-0">
-          {/* Left Column - Check-in row + Dashboards below - SCROLLABLE */}
-          <div className="flex flex-col gap-6 overflow-y-auto min-h-0">
+      {/* Main Content - Two Column Layout - Fixed Height */}
+      <div className="flex-1 px-6 lg:px-8 py-6 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 h-full">
+          {/* Left Column - Check-in row + Dashboards below */}
+          <div className="flex flex-col gap-6 overflow-y-auto h-full">
             {/* Top Row: Check-in + Strategies side by side */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               {/* Check-in Card - Fixed Height */}
@@ -501,8 +499,8 @@ export default function Emotions() {
             </div>
           </div>
 
-          {/* Right Column - Calendar & Recent Entries - SCROLLABLE */}
-          <div className="flex flex-col gap-4 overflow-y-auto min-h-0">
+          {/* Right Column - Calendar & Recent Entries */}
+          <div className="flex flex-col gap-4 overflow-y-auto h-full">
             {/* Calendar - Non-scrollable */}
             <div className="shrink-0">
               <EmotionCalendarSidebar entries={entries} onDateClick={handleDateClick} />

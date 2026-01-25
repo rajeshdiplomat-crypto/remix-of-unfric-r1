@@ -267,7 +267,7 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
   // Default placeholder with Zara-style editorial aesthetic
   if (!mediaSrc) {
     return (
-      <div className="relative w-full h-48 bg-foreground/5 flex items-end justify-start overflow-hidden">
+      <div className="relative w-full h-[calc(50vh+3.5rem)] bg-foreground/5 flex items-end justify-start overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
         {textOverlay}
         {editDialog(false)}
@@ -277,7 +277,7 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
 
   return (
     <div
-      className="relative w-full h-48 overflow-hidden"
+      className="relative w-full h-[calc(50vh+3.5rem)] overflow-hidden"
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >

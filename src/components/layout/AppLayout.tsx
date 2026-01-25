@@ -10,7 +10,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
-    <div className="h-screen flex flex-col w-full bg-background overflow-hidden">
+    <div className="min-h-screen flex flex-col w-full bg-background overflow-x-hidden">
       {/* Fixed header */}
       <ZaraHeader onMenuClick={() => setDrawerOpen(true)} />
 
@@ -19,7 +19,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Main content with top padding for fixed header */}
       <main className="flex-1 flex flex-col w-full min-w-0 pt-14">
-        <div className="flex-1 flex flex-col overflow-hidden pb-4">
+        <div className="flex-1 flex flex-col overflow-auto pb-4">
           {children}
         </div>
       </main>
