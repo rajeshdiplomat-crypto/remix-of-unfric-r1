@@ -1,82 +1,115 @@
 
 
-## Fix Complete Layout Scroll Chain
+## Facebook-Style Layout: Fixed Hero + Independent Scrolling Columns
 
-### Problem Identified
-The current layout has `overflow-hidden` at **multiple levels** which completely blocks all scrolling:
-
+### Target Layout
 ```text
-AppLayout div.h-screen.overflow-hidden
-└── main.flex-1.pt-14
-    └── div.flex-1.overflow-hidden      ← Blocks scrolling
-        └── PageTransition.h-full
-            └── Emotions.h-full.overflow-hidden  ← Also blocks
-                └── PageHero h-[calc(50vh+3.5rem)]  ← Takes ~54% viewport
-                └── Content.flex-1.overflow-hidden ← No scroll possible
-                    └── Columns with overflow-y-auto ← Never triggers
+┌────────────────────────────────────────────────────┐
+│  Fixed Header (ZaraHeader - 56px)                  │  ← Already fixed
+├────────────────────────────────────────────────────┤
+│  Fixed PageHero (~200px) - DOES NOT SCROLL         │  ← Currently 50vh, too tall
+├───────────────────────┬────────────────────────────┤
+│   LEFT COLUMN         │      RIGHT COLUMN          │
+│   (scrolls ↕)         │      (scrolls ↕)           │
+│                       │                            │
+│ ┌───────────────────┐ │ ┌────────────────────────┐ │
+│ │  Check-in +       │ │ │  Calendar              │ │
+│ │  Strategies       │ │ │                        │ │
+│ └───────────────────┘ │ └────────────────────────┘ │
+│ ┌───────────────────┐ │ ┌────────────────────────┐ │
+│ │  Dashboard        │ │ │  Recent Entries        │ │
+│ │                   │ │ │                        │ │
+│ └───────────────────┘ │ └────────────────────────┘ │
+└───────────────────────┴────────────────────────────┘
 ```
 
-The `overflow-hidden` on line 22 of AppLayout was correct to **prevent document-level scroll**, but the Emotions page content area also has `overflow-hidden` which blocks the columns from scrolling.
+### Current Problem
+- PageHero height is `h-[calc(50vh+3.5rem)]` = ~54% of viewport
+- This leaves only ~46% for the columns, not enough room to scroll
+- The container structure doesn't properly constrain column heights
 
 ---
 
-### Solution: Enable Scroll at the Content Level
+### Solution
 
-**File 1: `src/components/layout/AppLayout.tsx`** (Line 22)
+#### Step 1: Reduce PageHero Height
 
-Keep `overflow-hidden` on this wrapper - this is correct. It prevents the whole-page scroll.
+**File: `src/components/common/PageHero.tsx`**
 
-**File 2: `src/pages/Emotions.tsx`** (Line 402)
+Change the hero from 50vh to a reasonable fixed height (~200px) so more space remains for the scrollable columns.
 
-Change the content area from `overflow-hidden` to allow the columns to scroll independently:
-
-| Line | Current | Fix |
-|------|---------|-----|
-| 402 | `overflow-hidden` | Remove `overflow-hidden` (keep other classes) |
+| Lines | Current | Change To |
+|-------|---------|-----------|
+| 270 | `h-[calc(50vh+3.5rem)]` | `h-48` (192px) |
+| 280 | `h-[calc(50vh+3.5rem)]` | `h-48` (192px) |
 
 ```tsx
-// Line 402 - Before
-<div className="flex-1 px-6 lg:px-8 py-6 overflow-hidden">
+// Line 270 (no media placeholder)
+<div className="relative w-full h-48 bg-foreground/5 flex items-end justify-start overflow-hidden">
 
-// Line 402 - After  
-<div className="flex-1 px-6 lg:px-8 py-6">
+// Line 280 (with media)
+<div className="relative w-full h-48 overflow-hidden" ...>
 ```
 
-The columns (lines 405 and 503) already have `overflow-y-auto h-full`, which will now work since the parent isn't blocking overflow.
+#### Step 2: Add `flex-shrink-0` to PageHero Container
+
+Ensure the PageHero doesn't shrink when flex layout calculates space.
+
+**File: `src/pages/Emotions.tsx`**
+
+Wrap PageHero to prevent shrinking:
+
+| Line | Current | Change To |
+|------|---------|-----------|
+| 392-399 | PageHero without wrapper | Add `shrink-0` class |
+
+```tsx
+// Lines 392-399
+<div className="shrink-0">
+  <PageHero
+    storageKey="emotion_hero_src"
+    typeKey="emotion_hero_type"
+    badge={PAGE_HERO_TEXT.emotions.badge}
+    title={PAGE_HERO_TEXT.emotions.title}
+    subtitle={PAGE_HERO_TEXT.emotions.subtitle}
+  />
+</div>
+```
+
+#### Step 3: Fix Content Container to Fill Remaining Height
+
+**File: `src/pages/Emotions.tsx`**
+
+The content wrapper needs `overflow-hidden` to contain the columns, and columns need proper height constraints.
+
+| Line | Current | Change To |
+|------|---------|-----------|
+| 402 | `flex-1 px-6 lg:px-8 py-6` | `flex-1 px-6 lg:px-8 py-6 overflow-hidden min-h-0` |
+
+```tsx
+// Line 402
+<div className="flex-1 px-6 lg:px-8 py-6 overflow-hidden min-h-0">
+```
+
+The `min-h-0` is critical - it allows flex children to shrink below their content size, enabling scroll.
 
 ---
+
+### Technical Summary
+
+| File | Line(s) | Change |
+|------|---------|--------|
+| `src/components/common/PageHero.tsx` | 270 | `h-[calc(50vh+3.5rem)]` → `h-48` |
+| `src/components/common/PageHero.tsx` | 280 | `h-[calc(50vh+3.5rem)]` → `h-48` |
+| `src/pages/Emotions.tsx` | 392-399 | Wrap PageHero in `<div className="shrink-0">` |
+| `src/pages/Emotions.tsx` | 402 | Add `overflow-hidden min-h-0` to content wrapper |
 
 ### Why This Works
 
-**Before (broken):**
-```text
-Content wrapper: overflow-hidden → Blocks child overflow
-└── Left column: overflow-y-auto → Ignored, parent blocks
-└── Right column: overflow-y-auto → Ignored, parent blocks
-```
+1. **Smaller fixed hero** → More viewport space for columns
+2. **`shrink-0` on hero** → Hero never shrinks, stays fixed height
+3. **`overflow-hidden min-h-0` on content** → Creates scroll container boundary
+4. **`overflow-y-auto h-full` on columns** → Each column scrolls independently
 
-**After (fixed):**
-```text  
-Content wrapper: (no overflow class) → Allows child overflow
-└── Left column: overflow-y-auto h-full → Scrolls independently ✓
-└── Right column: overflow-y-auto h-full → Scrolls independently ✓
-```
-
-The `h-full` on each column constrains them to available height, and `overflow-y-auto` enables their internal scrollbars.
-
----
-
-### Additional Fix: Ensure Grid Has Full Height
-
-The grid on line 403 should also pass height to children properly. Currently it has `h-full` which is correct.
-
----
-
-### Summary
-
-| File | Line | Change |
-|------|------|--------|
-| `src/pages/Emotions.tsx` | 402 | Remove `overflow-hidden` from the content wrapper |
-
-This is a **single-line change** that unblocks the scroll chain.
+The `min-h-0` is the key CSS trick - in flexbox, items have an implicit minimum height of their content. Setting `min-h-0` overrides this, allowing the flex item to shrink and trigger overflow scrolling.
 
