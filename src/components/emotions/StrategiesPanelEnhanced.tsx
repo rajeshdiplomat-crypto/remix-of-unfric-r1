@@ -22,7 +22,7 @@ const iconMap: Record<string, React.ReactNode> = {
 };
 
 const largeIconMap: Record<string, React.ReactNode> = {
-  Wind: <Wind className="h-8 w-8" />,
+  Wind: <Wind className="h-2 w-2" />,
   Hand: <Hand className="h-8 w-8" />,
   User: <User className="h-8 w-8" />,
   Lightbulb: <Lightbulb className="h-8 w-8" />,
