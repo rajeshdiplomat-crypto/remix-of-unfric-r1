@@ -10,7 +10,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col w-full bg-background overflow-x-hidden">
+    <div className="h-screen flex flex-col w-full bg-background overflow-hidden">
       {/* Fixed header */}
       <ZaraHeader onMenuClick={() => setDrawerOpen(true)} />
 
