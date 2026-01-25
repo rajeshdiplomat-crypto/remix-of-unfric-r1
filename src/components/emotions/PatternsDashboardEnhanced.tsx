@@ -639,24 +639,45 @@ function PatternInsights({ entries }: { entries: EmotionEntry[] }) {
     return results.slice(0, 3);
   }, [entries]);
 
-  if (insights.length === 0) return null;
-
   return (
     <div className="p-5 rounded-2xl bg-card border border-border shadow-sm">
       <h3 className="font-semibold text-foreground mb-4 uppercase text-xs tracking-wider">Pattern Insights</h3>
-      <div className="space-y-2">
-        {insights.map((insight, i) => {
-          const Icon = insight.icon;
-          return (
-            <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
-              <Icon className="h-4 w-4 text-primary shrink-0" />
-              <span className="text-sm text-foreground">
-                {insight.text} ({insight.count} entries)
-              </span>
+      
+      {insights.length === 0 ? (
+        <div className="p-4 rounded-xl bg-muted/30 border border-dashed border-border">
+          <p className="text-sm text-muted-foreground mb-3">
+            Log more check-ins with context to unlock personalized insights about your mood patterns.
+          </p>
+          <div className="space-y-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Moon className="h-3.5 w-3.5 text-primary" />
+              <span>Add <strong className="text-foreground">sleep hours</strong> to see how rest affects your mood</span>
             </div>
-          );
-        })}
-      </div>
+            <div className="flex items-center gap-2">
+              <Dumbbell className="h-3.5 w-3.5 text-primary" />
+              <span>Log <strong className="text-foreground">physical activity</strong> to discover energy patterns</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Briefcase className="h-3.5 w-3.5 text-primary" />
+              <span>Note <strong className="text-foreground">what you're doing</strong> to find feel-good activities</span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {insights.map((insight, i) => {
+            const Icon = insight.icon;
+            return (
+              <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
+                <Icon className="h-4 w-4 text-primary shrink-0" />
+                <span className="text-sm text-foreground">
+                  {insight.text} ({insight.count} entries)
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
