@@ -1,69 +1,72 @@
 
 
-## Make Left and Right Panels Scroll Independently
+## Fix Independent Panel Scrolling - Root Cause Found
 
-### Problem
-Looking at your screenshot, you want the two green-marked sections to scroll separately:
-- **Left Panel**: Check-in card + Strategies + Patterns Dashboard
-- **Right Panel**: Calendar + Recent Check-ins
+### The Real Problem
+I traced through the full layout hierarchy and found the issue is in `AppLayout.tsx`, not `Emotions.tsx`:
 
-Currently, although `overflow-y-auto` is applied to both columns, the columns don't have explicit height constraints, so the scroll doesn't activate properly - the whole page scrolls instead.
+```text
+AppLayout
+├── div (min-h-screen flex flex-col)
+│   └── main (flex-1 pt-14)
+│       └── div (flex-1 overflow-auto) ← THIS IS THE PROBLEM!
+│           └── Emotions page
+│               └── Columns with overflow-y-auto ← Never activates
+```
+
+The `overflow-auto` on AppLayout's inner wrapper (line 22) creates the whole-page scroll. No matter what we do in Emotions.tsx, the AppLayout will scroll first because it's higher in the DOM tree.
 
 ---
 
 ### Solution
 
-**File: `src/pages/Emotions.tsx`**
+**File: `src/components/layout/AppLayout.tsx`** (Line 22)
 
-Add `h-full` to both column containers so they respect the parent grid's height and enable independent scrolling:
+Change the content wrapper from `overflow-auto` to `overflow-hidden`:
 
-#### Left Column (line 405)
 ```tsx
 // Before
-<div className="flex flex-col gap-6 overflow-y-auto">
+<div className="flex-1 flex flex-col overflow-auto pb-4">
 
 // After
-<div className="flex flex-col gap-6 overflow-y-auto h-full">
+<div className="flex-1 flex flex-col overflow-hidden pb-4">
 ```
 
-#### Right Column (line 503)
-```tsx
-// Before
-<div className="flex flex-col gap-4 overflow-y-auto">
-
-// After
-<div className="flex flex-col gap-4 overflow-y-auto h-full">
-```
+This forces pages to handle their own scrolling, which is exactly what we want for the Emotions page's independent panels.
 
 ---
 
-### How It Works
+### Why This Works
 
+**Before (broken):**
 ```text
-┌──────────────────────────────────────────────────────────────┐
-│                        Page Hero                              │
-├─────────────────────────────────┬────────────────────────────┤
-│   Left Column (h-full + scroll) │  Right Column (h-full + ↕) │
-│  ┌──────────────┬──────────────┐│  ┌────────────────────────┐│
-│  │  Check-in    │  Strategies  ││  │      Calendar          ││
-│  └──────────────┴──────────────┘│  └────────────────────────┘│
-│  ┌─────────────────────────────┐│  ┌────────────────────────┐│
-│  │                             ││  │                        ││
-│  │   Patterns Dashboard        ││  │   Recent Check-ins     ││
-│  │                             ↕│  │                        ↕│
-│  │                             ││  │                        ││
-│  └─────────────────────────────┘│  └────────────────────────┘│
-└─────────────────────────────────┴────────────────────────────┘
+AppLayout wrapper: overflow-auto → Scrolls everything
+└── Emotions page: h-full → Means nothing, parent expands
+    └── Columns: overflow-y-auto → Never triggers
 ```
 
-Each column fills the available height and scrolls independently when content overflows.
+**After (fixed):**
+```text
+AppLayout wrapper: overflow-hidden → No scroll here
+└── Emotions page: h-full + overflow-hidden → Fills exactly
+    └── Columns: overflow-y-auto → NOW triggers! ✓
+```
 
 ---
 
-### Technical Details
+### Potential Side Effect
 
-- The parent grid already has `h-full` which fills the `flex-1` container
-- Adding `h-full` to each column ensures they respect this height constraint
-- `overflow-y-auto` activates scrollbars when content exceeds the column height
-- No JavaScript height syncing needed - pure CSS solution
+This change affects ALL pages wrapped by AppLayout. Other pages that rely on full-page scrolling may need their own `overflow-y-auto` container.
+
+If other pages break, we have two options:
+1. Add page-specific scroll containers to other pages (recommended)
+2. Create a variant layout for Emotions only
+
+---
+
+### Files to Change
+
+| File | Change |
+|------|--------|
+| `src/components/layout/AppLayout.tsx` | Line 22: `overflow-auto` → `overflow-hidden` |
 
