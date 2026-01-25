@@ -449,7 +449,7 @@ export default function Manifest() {
         {/* Content Area - 3-column layout: [Left: Entries] [Center: Greeting+Practice] [Right: Progress+Calendar] */}
         <div
           className={cn(
-            "flex-1 grid gap-3 w-full px-2 sm:px-4 py-2 transition-all duration-300",
+            "flex-1 grid gap-3 w-full px-2 sm:px-4 py-2 transition-all duration-300 overflow-hidden",
             rightPanelCollapsed
               ? "grid-cols-1 lg:grid-cols-[420px_1fr_64px]"
               : "grid-cols-1 lg:grid-cols-[420px_1fr_260px]",
@@ -587,7 +587,7 @@ export default function Manifest() {
           </div>
 
           {/* Center - Greeting + Practice Panel */}
-          <div className="flex flex-col min-w-0 min-h-0 gap-3">
+          <div className="flex flex-col min-w-0 min-h-0 gap-3 h-full overflow-y-auto">
             {/* Greeting Section - Top of center panel */}
             <div className="bg-gradient-to-r from-teal-50 via-cyan-50 to-emerald-50 dark:from-teal-900/20 dark:via-cyan-900/20 dark:to-emerald-900/20 rounded-xl p-3 border border-teal-100/50 dark:border-teal-800/50">
               <h2 className="text-base font-semibold text-slate-800 dark:text-white">{getGreeting()}</h2>

@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PenLine, Search, ChevronDown } from "lucide-react";
@@ -399,9 +398,9 @@ export default function Diary() {
       <DiaryHero />
 
       {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 w-full px-6 lg:px-8 pt-6">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 w-full px-6 lg:px-8 pt-6 overflow-hidden">
         {/* Main Feed */}
-        <div className="min-w-0 overflow-hidden">
+        <div className="min-w-0 h-full overflow-y-auto flex flex-col">
           {/* Search Bar */}
           <div className="mb-4">
             <div className="flex items-center gap-2 bg-card border border-border/40 rounded-xl px-3 py-1">
@@ -456,7 +455,7 @@ export default function Diary() {
               </p>
             </Card>
           ) : (
-            <ScrollArea className="flex-1 min-h-0">
+            <div className="flex-1 min-h-0">
               <div className="space-y-4 pr-2">
                 {sortedEvents.map((event) =>
                   event.type === "journal_question" ? (
@@ -503,7 +502,7 @@ export default function Diary() {
                   ),
                 )}
               </div>
-            </ScrollArea>
+            </div>
           )}
         </div>
 
