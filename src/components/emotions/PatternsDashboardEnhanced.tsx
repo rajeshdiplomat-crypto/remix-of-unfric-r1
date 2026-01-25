@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { QuadrantType, QUADRANTS, EmotionEntry } from "./types";
-import { format, subDays } from "date-fns";
+import { format, subDays, differenceInCalendarDays, parseISO } from "date-fns";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import {
   Users,
@@ -11,6 +11,10 @@ import {
   Sunrise,
   Sunset,
   Sparkles,
+  CalendarDays,
+  TrendingUp,
+  Target,
+  Activity,
 } from "lucide-react";
 import { useTimezone } from "@/hooks/useTimezone";
 import { getTimePeriodInTimezone, getStartOfTodayInTimezone } from "@/lib/formatDate";
@@ -122,20 +126,105 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
         </div>
       </div>
 
-      {/* Row 1: Mood Distribution + Most Frequent Feelings */}
+      {/* Row 1: Stats Strip */}
+      <StatsStrip entries={filteredEntries} topEmotion={stats.topEmotions[0]?.[0]} topQuadrant={stats.quadrantData[0]} />
+
+      {/* Row 2: Pattern Insights */}
+      <PatternInsights entries={filteredEntries} />
+
+      {/* Row 3: Mood Distribution + Most Frequent Feelings */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <MoodDistributionChart data={stats.quadrantData} />
         <MostFrequentFeelings emotions={stats.topEmotions} total={stats.total} />
       </div>
 
-      {/* Row 2: Mood by Time of Day */}
+      {/* Row 4: Mood by Time of Day */}
       <MoodByTimeOfDay entries={filteredEntries} timezone={timezone} />
 
-      {/* Row 3: Context Insights */}
+      {/* Row 5: Context Insights */}
       <ContextInsights entries={filteredEntries} />
+    </div>
+  );
+}
 
-      {/* Row 4: Pattern Insights */}
-      <PatternInsights entries={filteredEntries} />
+// Stats Strip - Summary cards at top
+function StatsStrip({ 
+  entries, 
+  topEmotion,
+  topQuadrant 
+}: { 
+  entries: EmotionEntry[]; 
+  topEmotion?: string;
+  topQuadrant?: { name: string; id: string };
+}) {
+  const stats = useMemo(() => {
+    // Total check-ins
+    const total = entries.length;
+    
+    // Current streak calculation
+    let streak = 0;
+    if (entries.length > 0) {
+      const sortedDates = [...new Set(entries.map(e => e.entry_date))].sort().reverse();
+      const today = format(new Date(), "yyyy-MM-dd");
+      const yesterday = format(subDays(new Date(), 1), "yyyy-MM-dd");
+      
+      // Check if streak is active (today or yesterday has entry)
+      if (sortedDates[0] === today || sortedDates[0] === yesterday) {
+        streak = 1;
+        for (let i = 1; i < sortedDates.length; i++) {
+          const prevDate = parseISO(sortedDates[i - 1]);
+          const currDate = parseISO(sortedDates[i]);
+          const diff = differenceInCalendarDays(prevDate, currDate);
+          if (diff === 1) {
+            streak++;
+          } else {
+            break;
+          }
+        }
+      }
+    }
+    
+    return { total, streak };
+  }, [entries]);
+
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="p-4 rounded-xl bg-card border border-border shadow-sm">
+        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+          <CalendarDays className="h-4 w-4" />
+          <span className="text-xs font-medium">Total Check-ins</span>
+        </div>
+        <p className="text-2xl font-bold text-foreground">{stats.total}</p>
+      </div>
+      
+      <div className="p-4 rounded-xl bg-card border border-border shadow-sm">
+        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+          <TrendingUp className="h-4 w-4" />
+          <span className="text-xs font-medium">Current Streak</span>
+        </div>
+        <p className="text-2xl font-bold text-foreground">{stats.streak} days</p>
+      </div>
+      
+      <div className="p-4 rounded-xl bg-card border border-border shadow-sm">
+        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+          <Target className="h-4 w-4" />
+          <span className="text-xs font-medium">Most Common Zone</span>
+        </div>
+        <p 
+          className="text-lg font-semibold"
+          style={{ color: topQuadrant ? QUADRANT_COLORS[topQuadrant.id as QuadrantType] : undefined }}
+        >
+          {topQuadrant?.name || "—"}
+        </p>
+      </div>
+      
+      <div className="p-4 rounded-xl bg-card border border-border shadow-sm">
+        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+          <Activity className="h-4 w-4" />
+          <span className="text-xs font-medium">Top Feeling</span>
+        </div>
+        <p className="text-lg font-semibold text-foreground">{topEmotion || "—"}</p>
+      </div>
     </div>
   );
 }
