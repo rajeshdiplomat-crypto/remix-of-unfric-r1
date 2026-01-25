@@ -422,6 +422,12 @@ function MoodByTimeOfDay({ entries, timezone }: { entries: EmotionEntry[]; timez
 
 // Context Insights - Cards showing context data with mood breakdowns
 function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+
+  const toggleSection = (key: string) => {
+    setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
   const contextStats = useMemo(() => {
     type ContextStats = Record<string, { count: number; quadrants: Record<QuadrantType, number> }>;
     
@@ -452,7 +458,6 @@ function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
     const processStats = (stats: ContextStats) =>
       Object.entries(stats)
         .sort((a, b) => b[1].count - a[1].count)
-        .slice(0, 4)
         .map(([label, data]) => {
           const total = data.count;
           
@@ -505,6 +510,11 @@ function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
       <div className="space-y-6">
         {sections.map((section) => {
           const Icon = section.icon;
+          const isExpanded = expandedSections[section.key];
+          const visibleData = isExpanded ? section.data : section.data.slice(0, 4);
+          const hasMore = section.data.length > 4;
+          const hiddenCount = section.data.length - 4;
+          
           return (
             <div key={section.key}>
               <div className="flex items-center gap-2 mb-3">
@@ -512,7 +522,7 @@ function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
                 <span className="text-sm font-medium text-foreground">{section.label}</span>
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                {section.data.map((item) => (
+                {visibleData.map((item) => (
                   <div
                     key={item.label}
                     className="p-3 rounded-lg bg-muted/30 border-l-4"
@@ -553,6 +563,19 @@ function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
                   </div>
                 ))}
               </div>
+              
+              {hasMore && (
+                <button
+                  onClick={() => toggleSection(section.key)}
+                  className="mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                >
+                  {isExpanded ? (
+                    <>Show less</>
+                  ) : (
+                    <>Show {hiddenCount} more</>
+                  )}
+                </button>
+              )}
             </div>
           );
         })}
