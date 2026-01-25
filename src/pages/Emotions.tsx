@@ -400,11 +400,11 @@ export default function Emotions() {
         />
       </div>
 
-      {/* Main Content - Two Column Layout - Fixed Height */}
-      <div className="flex-1 px-6 lg:px-8 py-6 overflow-hidden min-h-0">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 h-full min-h-0">
-          {/* Left Column - Check-in row + Dashboards below */}
-          <div className="flex flex-col gap-6 overflow-y-auto h-full">
+      {/* Main Content - Two Column Layout */}
+      <div className="flex-1 px-6 lg:px-8 py-6 flex flex-col min-h-0">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 min-h-0">
+          {/* Left Column - Check-in row + Dashboards below - SCROLLABLE */}
+          <div className="flex flex-col gap-6 overflow-y-auto min-h-0">
             {/* Top Row: Check-in + Strategies side by side */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               {/* Check-in Card - Fixed Height */}
@@ -501,8 +501,8 @@ export default function Emotions() {
             </div>
           </div>
 
-          {/* Right Column - Calendar & Recent Entries */}
-          <div className="flex flex-col gap-4 overflow-y-auto h-full">
+          {/* Right Column - Calendar & Recent Entries - SCROLLABLE */}
+          <div className="flex flex-col gap-4 overflow-y-auto min-h-0">
             {/* Calendar - Non-scrollable */}
             <div className="shrink-0">
               <EmotionCalendarSidebar entries={entries} onDateClick={handleDateClick} />
