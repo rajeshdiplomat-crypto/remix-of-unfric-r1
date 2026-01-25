@@ -437,7 +437,7 @@ export default function Emotions() {
             {/* Top Row: Check-in + Strategies side by side */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               {/* Check-in Card - Fixed Height */}
-              <Card className="rounded-2xl border-border shadow-sm overflow-hidden h-[800px] flex flex-col">
+              <Card className="rounded-2xl border-border shadow-sm overflow-hidden h-[620px] flex flex-col">
                 <CardHeader className="pb-2 bg-gradient-to-r from-rose-50/50 to-amber-50/50 dark:from-rose-900/10 dark:to-amber-900/10 shrink-0">
                   <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
                     <Heart className="h-4 w-4 text-rose-500" />
@@ -517,7 +517,7 @@ export default function Emotions() {
               </Card>
 
               {/* Strategies Panel - Fixed Height */}
-              <Card className="rounded-2xl border-border shadow-sm h-[800px] flex flex-col">
+              <Card className="rounded-2xl border-border shadow-sm h-[620px] flex flex-col">
                 <CardContent className="p-5 flex-1 overflow-y-auto">
                   <StrategiesPanelEnhanced currentQuadrant={currentQuadrant} currentEmotion={currentEmotion} />
                 </CardContent>
@@ -529,7 +529,7 @@ export default function Emotions() {
           </div>
 
           {/* Right Column - Calendar (fixed) & Recent Entries (scrollable, aligned with Most Frequent Feelings) */}
-          <div className="flex flex-col gap-4" style={{ height: 'calc(800px + 420px + 24px)' }}>
+          <div className="flex flex-col gap-4" style={{ height: "calc(620px + 420px + 24px)" }}>
             {/* Calendar - Non-scrollable */}
             <div className="shrink-0">
               <EmotionCalendarSidebar entries={entries} onDateClick={handleDateClick} />
