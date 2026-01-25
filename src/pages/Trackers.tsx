@@ -1142,9 +1142,9 @@ export default function Trackers() {
         />
 
         {/* Dashboard Content */}
-        <div className="px-4 py-4 space-y-4">
+        <div className="flex-1 px-4 py-4 flex flex-col overflow-y-auto">
           {/* Top Section: Month + Progress Rings */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 flex-shrink-0">
             <h2 className="text-xl font-semibold text-slate-800 dark:text-white">Habits Tracker</h2>
             <Button
               onClick={openCreateDialog}
@@ -1155,7 +1155,7 @@ export default function Trackers() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[160px_1fr_200px] gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-[160px_1fr_200px] gap-4 mb-4 flex-shrink-0">
             {/* Month Card - Slim Design, Clickable */}
             <Card
               className="p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-cyan-50 dark:from-emerald-950/30 dark:to-cyan-950/30 cursor-pointer hover:shadow-md transition-shadow"

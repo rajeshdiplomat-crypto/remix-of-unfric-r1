@@ -595,8 +595,8 @@ export default function Tasks() {
         subtitle={PAGE_HERO_TEXT.tasks.subtitle}
       />
 
-      <div className="w-full flex-1 min-h-0 px-6 lg:px-8 pt-6">
-        <div className="w-full min-w-0 flex flex-col gap-6 min-h-0">
+      <div className="w-full flex-1 min-h-0 px-6 lg:px-8 pt-6 overflow-hidden flex flex-col">
+        <div className="w-full min-w-0 flex flex-col gap-6 flex-1 min-h-0 overflow-hidden">
           {/* Insights & Clock panels */}
           <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_260px] gap-4 items-start">
             <div className="flex flex-col gap-2 h-[260px]">
@@ -619,9 +619,9 @@ export default function Tasks() {
             onNewTask={openNewTaskDrawer}
           />
 
-          <div className={`flex-1 grid grid-cols-1 ${gridCols} gap-8 min-h-0 min-w-0`}>
+          <div className={`flex-1 grid grid-cols-1 ${gridCols} gap-8 min-h-0 min-w-0 overflow-hidden`}>
             {/* Left */}
-            <div className="min-h-0 min-w-0 h-[600px]">
+            <div className="min-h-0 min-w-0 h-full overflow-y-auto">
               <AllTasksList
                 tasks={filteredTasks}
                 onTaskClick={openTaskDetail}
@@ -634,7 +634,7 @@ export default function Tasks() {
             </div>
 
             {/* Right */}
-            <div className="w-full min-w-0 h-[600px]">
+            <div className="w-full min-w-0 h-full overflow-y-auto">
               {view === "quadrant" && (
                 <QuadrantGrid
                   mode={quadrantMode}

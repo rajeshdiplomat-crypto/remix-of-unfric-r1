@@ -740,7 +740,7 @@ export default function Journal() {
       {/* Content Area */}
       <div
         className={cn(
-          "flex-1 grid gap-6 w-full px-4 sm:px-6 py-4 transition-all duration-300",
+          "flex-1 grid gap-6 w-full px-4 sm:px-6 py-4 transition-all duration-300 overflow-hidden",
           isFullscreen
             ? "grid-cols-1 max-w-4xl mx-auto"
             : leftPanelCollapsed
@@ -751,7 +751,7 @@ export default function Journal() {
         {/* Left Panel - Calendar */}
         {!isFullscreen && (
           <div
-            className={cn("hidden lg:flex flex-col transition-all duration-300 h-full", leftPanelCollapsed && "w-16")}
+            className={cn("hidden lg:flex flex-col transition-all duration-300 h-full overflow-y-auto", leftPanelCollapsed && "w-16")}
           >
             <JournalSidebarPanel
               selectedDate={selectedDate}
@@ -767,7 +767,7 @@ export default function Journal() {
           </div>
         )}
 
-        <div className="flex flex-col min-w-0">
+        <div className="flex flex-col min-w-0 h-full overflow-y-auto">
           {/* Greeting Section */}
           <div className="mb-4 px-1">
             <h2 className="text-xl font-semibold text-slate-800">
@@ -834,7 +834,7 @@ export default function Journal() {
 
         {/* Right Panel - Date Details */}
         {!isFullscreen && (
-          <div className="hidden lg:block h-full">
+          <div className="hidden lg:block h-full overflow-y-auto">
             <JournalDateDetailsPanel
               selectedDate={selectedDate}
               wordCount={wordCount}
