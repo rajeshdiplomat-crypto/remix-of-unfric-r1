@@ -388,7 +388,7 @@ export default function Emotions() {
   if (loading) return <PageLoadingScreen module="emotions" />;
 
   return (
-    <div className="flex flex-col w-full flex-1 bg-muted/30 min-h-screen">
+    <div className="flex flex-col w-full flex-1 bg-muted/30 h-full overflow-hidden">
       {/* Hero */}
       <PageHero
         storageKey="emotion_hero_src"
