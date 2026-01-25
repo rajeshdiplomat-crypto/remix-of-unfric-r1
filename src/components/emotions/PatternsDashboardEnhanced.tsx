@@ -44,6 +44,7 @@ const QUADRANT_COLORS: Record<QuadrantType, string> = {
 export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhancedProps) {
   const { timezone } = useTimezone();
   const [dateRange, setDateRange] = useState<DateRange>(30);
+  const [activeTab, setActiveTab] = useState<"overview" | "moods" | "context">("overview");
 
   const filteredEntries = useMemo(() => {
     const today = getStartOfTodayInTimezone(timezone);
@@ -99,6 +100,7 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
     );
   }
 
+
   return (
     <div className="space-y-5">
       {/* Header with Date Range Filter */}
@@ -126,23 +128,67 @@ export function PatternsDashboardEnhanced({ entries }: PatternsDashboardEnhanced
         </div>
       </div>
 
-      {/* Row 1: Stats Strip */}
-      <StatsStrip entries={filteredEntries} topEmotion={stats.topEmotions[0]?.[0]} topQuadrant={stats.quadrantData[0]} />
-
-      {/* Row 2: Pattern Insights */}
-      <PatternInsights entries={filteredEntries} />
-
-      {/* Row 3: Mood Distribution + Most Frequent Feelings */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <MoodDistributionChart data={stats.quadrantData} />
-        <MostFrequentFeelings emotions={stats.topEmotions} total={stats.total} />
+      {/* Tab Navigation */}
+      <div className="flex gap-1 p-1 bg-muted/50 rounded-xl">
+        <button
+          onClick={() => setActiveTab("overview")}
+          className={`flex-1 px-4 py-2 text-xs font-medium rounded-lg transition-all ${
+            activeTab === "overview"
+              ? "bg-card shadow-sm text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Overview
+        </button>
+        <button
+          onClick={() => setActiveTab("moods")}
+          className={`flex-1 px-4 py-2 text-xs font-medium rounded-lg transition-all ${
+            activeTab === "moods"
+              ? "bg-card shadow-sm text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Moods
+        </button>
+        <button
+          onClick={() => setActiveTab("context")}
+          className={`flex-1 px-4 py-2 text-xs font-medium rounded-lg transition-all ${
+            activeTab === "context"
+              ? "bg-card shadow-sm text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Context
+        </button>
       </div>
 
-      {/* Row 4: Mood by Time of Day */}
-      <MoodByTimeOfDay entries={filteredEntries} timezone={timezone} />
+      {/* Tab Content */}
+      {activeTab === "overview" && (
+        <div className="space-y-5">
+          {/* Stats Strip */}
+          <StatsStrip entries={filteredEntries} topEmotion={stats.topEmotions[0]?.[0]} topQuadrant={stats.quadrantData[0]} />
+          {/* Pattern Insights */}
+          <PatternInsights entries={filteredEntries} />
+        </div>
+      )}
 
-      {/* Row 5: Context Insights */}
-      <ContextInsights entries={filteredEntries} />
+      {activeTab === "moods" && (
+        <div className="space-y-5">
+          {/* Mood Distribution + Most Frequent Feelings */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <MoodDistributionChart data={stats.quadrantData} />
+            <MostFrequentFeelings emotions={stats.topEmotions} total={stats.total} />
+          </div>
+          {/* Mood by Time of Day */}
+          <MoodByTimeOfDay entries={filteredEntries} timezone={timezone} />
+        </div>
+      )}
+
+      {activeTab === "context" && (
+        <div className="space-y-5">
+          <ContextInsights entries={filteredEntries} />
+        </div>
+      )}
     </div>
   );
 }
