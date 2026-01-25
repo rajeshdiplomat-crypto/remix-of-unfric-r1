@@ -431,7 +431,7 @@ export default function Emotions() {
 
       {/* Main Content - Two Column Layout */}
       <div className="flex-1 px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-stretch">
           {/* Left Column - Check-in row + Dashboards below */}
           <div className="space-y-6">
             {/* Top Row: Check-in + Strategies side by side */}
@@ -528,15 +528,15 @@ export default function Emotions() {
             <PatternsDashboardEnhanced entries={entries} onDateClick={handleDateClick} />
           </div>
 
-          {/* Right Column - Calendar (fixed) & Recent Entries (scrollable, aligned with Most Frequent Feelings) */}
-          <div className="flex flex-col gap-4" style={{ height: "calc(620px + 420px + 24px)" }}>
+          {/* Right Column - Calendar (fixed) & Recent Entries (fills to match left column bottom) */}
+          <div className="flex flex-col gap-4 h-full">
             {/* Calendar - Non-scrollable */}
             <div className="shrink-0">
               <EmotionCalendarSidebar entries={entries} onDateClick={handleDateClick} />
             </div>
 
-            {/* Recent Entries - Fills remaining height to align with Most Frequent Feelings, scrollable */}
-            <div className="flex-1 min-h-0 flex flex-col">
+            {/* Recent Entries - Fills remaining height, scrollable */}
+            <div className="flex-1 min-h-0">
               <RecentEntriesList entries={entries} onEditEntry={startEditEntry} onDeleteEntry={setDeletingEntryId} />
             </div>
           </div>
