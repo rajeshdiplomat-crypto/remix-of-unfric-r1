@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -69,23 +69,6 @@ export default function Emotions() {
   const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Refs for syncing column heights
-  const leftColumnRef = useRef<HTMLDivElement>(null);
-  const rightColumnRef = useRef<HTMLDivElement>(null);
-
-  // Sync right column height to match left column
-  const syncColumnHeights = useCallback(() => {
-    if (leftColumnRef.current && rightColumnRef.current) {
-      const leftHeight = leftColumnRef.current.offsetHeight;
-      rightColumnRef.current.style.height = `${leftHeight}px`;
-    }
-  }, []);
-
-  useEffect(() => {
-    syncColumnHeights();
-    window.addEventListener('resize', syncColumnHeights);
-    return () => window.removeEventListener('resize', syncColumnHeights);
-  }, [syncColumnHeights, entries, step]);
 
   useEffect(() => {
     if (user) fetchEntries();
@@ -415,11 +398,11 @@ export default function Emotions() {
         subtitle={PAGE_HERO_TEXT.emotions.subtitle}
       />
 
-      {/* Main Content - Two Column Layout */}
-      <div className="flex-1 px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+      {/* Main Content - Two Column Layout - Fixed Height */}
+      <div className="flex-1 px-6 lg:px-8 py-6 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 h-full">
           {/* Left Column - Check-in row + Dashboards below */}
-          <div ref={leftColumnRef} className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6 overflow-y-auto">
             {/* Top Row: Check-in + Strategies side by side */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               {/* Check-in Card - Fixed Height */}
@@ -516,8 +499,8 @@ export default function Emotions() {
             </div>
           </div>
 
-          {/* Right Column - Calendar (fixed) & Recent Entries (matches left column height) */}
-          <div ref={rightColumnRef} className="flex flex-col gap-4 overflow-hidden">
+          {/* Right Column - Calendar & Recent Entries */}
+          <div className="flex flex-col gap-4 overflow-y-auto">
             {/* Calendar - Non-scrollable */}
             <div className="shrink-0">
               <EmotionCalendarSidebar entries={entries} onDateClick={handleDateClick} />
