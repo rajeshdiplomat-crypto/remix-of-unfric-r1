@@ -433,7 +433,7 @@ export default function Emotions() {
       <div className="flex-1 px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-stretch">
           {/* Left Column - Check-in row + Dashboards below */}
-          <div className="space-y-6">
+          <div className="flex flex-col gap-6 h-full">
             {/* Top Row: Check-in + Strategies side by side */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               {/* Check-in Card - Fixed Height */}
@@ -524,8 +524,10 @@ export default function Emotions() {
               </Card>
             </div>
 
-            {/* Patterns Dashboard below */}
-            <PatternsDashboardEnhanced entries={entries} onDateClick={handleDateClick} />
+            {/* Patterns Dashboard below - fills remaining space */}
+            <div className="flex-1 min-h-0">
+              <PatternsDashboardEnhanced entries={entries} onDateClick={handleDateClick} />
+            </div>
           </div>
 
           {/* Right Column - Calendar (fixed) & Recent Entries (fills to match left column bottom) */}
