@@ -1,44 +1,48 @@
 
-## Fix Independent Panel Scrolling - Complete Solution
 
-### Root Cause Analysis
-After tracing the full layout hierarchy, I found **TWO issues**:
+## Fix Complete Layout Scroll Chain
+
+### Problem Identified
+The current layout has `overflow-hidden` at **multiple levels** which completely blocks all scrolling:
 
 ```text
-AppLayout
-├── div.min-h-screen ← ISSUE #1: Allows expansion beyond viewport!
-│   └── main.flex-1.pt-14
-│       └── div.overflow-hidden ← We fixed this ✓
-│           └── PageTransition.h-full
-│               └── Emotions.h-full.overflow-hidden
-│                   └── PageHero h-[calc(50vh+3.5rem)] ← ~54vh fixed height
-│                   └── Content.flex-1 ← Can't scroll because parent expands
+AppLayout div.h-screen.overflow-hidden
+└── main.flex-1.pt-14
+    └── div.flex-1.overflow-hidden      ← Blocks scrolling
+        └── PageTransition.h-full
+            └── Emotions.h-full.overflow-hidden  ← Also blocks
+                └── PageHero h-[calc(50vh+3.5rem)]  ← Takes ~54% viewport
+                └── Content.flex-1.overflow-hidden ← No scroll possible
+                    └── Columns with overflow-y-auto ← Never triggers
 ```
 
-**Issue #1**: The outer `min-h-screen` in `AppLayout.tsx` (line 13) allows the container to expand beyond the viewport. When content exceeds viewport height, the browser scrolls the entire page.
-
-**Issue #2**: While `overflow-hidden` was added to the inner wrapper (line 22), the parent `min-h-screen` still allows document-level scrolling.
+The `overflow-hidden` on line 22 of AppLayout was correct to **prevent document-level scroll**, but the Emotions page content area also has `overflow-hidden` which blocks the columns from scrolling.
 
 ---
 
-### Solution
+### Solution: Enable Scroll at the Content Level
 
-**File: `src/components/layout/AppLayout.tsx`**
+**File 1: `src/components/layout/AppLayout.tsx`** (Line 22)
 
-Change the root container from `min-h-screen` to `h-screen overflow-hidden`:
+Keep `overflow-hidden` on this wrapper - this is correct. It prevents the whole-page scroll.
 
-| Line | Before | After |
-|------|--------|-------|
-| 13 | `min-h-screen flex flex-col w-full bg-background overflow-x-hidden` | `h-screen flex flex-col w-full bg-background overflow-hidden` |
+**File 2: `src/pages/Emotions.tsx`** (Line 402)
+
+Change the content area from `overflow-hidden` to allow the columns to scroll independently:
+
+| Line | Current | Fix |
+|------|---------|-----|
+| 402 | `overflow-hidden` | Remove `overflow-hidden` (keep other classes) |
 
 ```tsx
-// Line 13
-// Before
-<div className="min-h-screen flex flex-col w-full bg-background overflow-x-hidden">
+// Line 402 - Before
+<div className="flex-1 px-6 lg:px-8 py-6 overflow-hidden">
 
-// After
-<div className="h-screen flex flex-col w-full bg-background overflow-hidden">
+// Line 402 - After  
+<div className="flex-1 px-6 lg:px-8 py-6">
 ```
+
+The columns (lines 405 and 503) already have `overflow-y-auto h-full`, which will now work since the parent isn't blocking overflow.
 
 ---
 
@@ -46,33 +50,33 @@ Change the root container from `min-h-screen` to `h-screen overflow-hidden`:
 
 **Before (broken):**
 ```text
-div.min-h-screen → Minimum height = viewport, but CAN expand
-└── main.flex-1 → Expands with content
-    └── div.overflow-hidden → Hidden doesn't matter if parent expands
-        └── Page content → Causes parent to expand → Browser scrolls
+Content wrapper: overflow-hidden → Blocks child overflow
+└── Left column: overflow-y-auto → Ignored, parent blocks
+└── Right column: overflow-y-auto → Ignored, parent blocks
 ```
 
 **After (fixed):**
-```text
-div.h-screen.overflow-hidden → Fixed at exactly viewport height, NO expansion
-└── main.flex-1 → Fills available space (viewport - header)
-    └── div.overflow-hidden → Enforces containment
-        └── Page.h-full → Exactly fills available space
-            └── Columns.overflow-y-auto → NOW activates! ✓
+```text  
+Content wrapper: (no overflow class) → Allows child overflow
+└── Left column: overflow-y-auto h-full → Scrolls independently ✓
+└── Right column: overflow-y-auto h-full → Scrolls independently ✓
 ```
 
-The key insight: `min-h-screen` sets a **minimum** but allows growth. `h-screen` + `overflow-hidden` creates a **fixed** constraint that forces all overflow handling to child containers.
+The `h-full` on each column constrains them to available height, and `overflow-y-auto` enables their internal scrollbars.
 
 ---
 
-### Files to Change
+### Additional Fix: Ensure Grid Has Full Height
+
+The grid on line 403 should also pass height to children properly. Currently it has `h-full` which is correct.
+
+---
+
+### Summary
 
 | File | Line | Change |
 |------|------|--------|
-| `src/components/layout/AppLayout.tsx` | 13 | `min-h-screen` → `h-screen`, `overflow-x-hidden` → `overflow-hidden` |
+| `src/pages/Emotions.tsx` | 402 | Remove `overflow-hidden` from the content wrapper |
 
----
-
-### Side Effects
-This change affects all pages. Pages that rely on full-page scrolling will need their own scroll container. However, this is the correct pattern for a dashboard/app layout where different sections should scroll independently.
+This is a **single-line change** that unblocks the scroll chain.
 
