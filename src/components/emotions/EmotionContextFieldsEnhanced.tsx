@@ -1,14 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, Users, Activity, Heart, Moon, Dumbbell, BookOpen, Clock, Calendar } from "lucide-react";
+import { Users, Activity, Heart, Moon, Dumbbell, BookOpen, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTimezone } from "@/hooks/useTimezone";
-import { format, parse } from "date-fns";
 
 const WHO_PRESETS = ["Alone", "Friend", "Partner", "Family", "Team", "Colleagues", "Strangers"];
 const WHAT_PRESETS = ["Work", "Eating", "Commuting", "Socializing", "Resting", "Exercise", "Creative", "Learning"];
@@ -119,14 +117,14 @@ function getLocalDateTimeString(date: Date, timezone: string): string {
     minute: "2-digit",
     hour12: false,
   };
-  
+
   const parts = new Intl.DateTimeFormat("en-CA", options).formatToParts(date);
   const year = parts.find((p) => p.type === "year")?.value;
   const month = parts.find((p) => p.type === "month")?.value;
   const day = parts.find((p) => p.type === "day")?.value;
   const hour = parts.find((p) => p.type === "hour")?.value;
   const minute = parts.find((p) => p.type === "minute")?.value;
-  
+
   return `${year}-${month}-${day}T${hour}:${minute}`;
 }
 
@@ -143,7 +141,7 @@ function formatDisplayDateTime(date: Date, timezone: string): string {
     minute: "2-digit",
     hour12: true,
   };
-  
+
   return new Intl.DateTimeFormat("en-US", options).format(date);
 }
 
@@ -159,9 +157,8 @@ export function EmotionContextFieldsEnhanced({
   hideJournalToggle = false,
   hideTimeField = false,
 }: Props) {
-  const [isOpen, setIsOpen] = useState(false);
   const { timezone } = useTimezone();
-  
+
   const updateContext = (field: keyof EnhancedContextData, value: string) =>
     onContextChange({ ...context, [field]: value });
 
@@ -181,25 +178,24 @@ export function EmotionContextFieldsEnhanced({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {(!hideTimeField || !hideJournalToggle) && (
-        <div className="flex items-center justify-between gap-4 p-3 rounded-lg bg-muted/30">
+        <div className="flex items-center justify-between gap-4 p-2 rounded-lg bg-muted/30">
           {!hideTimeField && (
             <div className="flex items-center gap-2 flex-1">
-              <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+              <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <input
                 type="datetime-local"
                 value={dateTimeValue}
                 onChange={handleDateTimeChange}
-                className="text-sm bg-transparent border-none focus:outline-none text-foreground w-auto"
+                className="text-xs bg-transparent border-none focus:outline-none text-foreground w-auto"
               />
-              <Calendar className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
             </div>
           )}
           {!hideJournalToggle && (
             <div className="flex items-center gap-2 shrink-0">
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
-              <Label htmlFor="journal-sync" className="text-sm text-muted-foreground cursor-pointer whitespace-nowrap">
+              <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
+              <Label htmlFor="journal-sync" className="text-xs text-muted-foreground cursor-pointer whitespace-nowrap">
                 Send to Journal
               </Label>
               <Switch id="journal-sync" checked={sendToJournal} onCheckedChange={onSendToJournalChange} />
@@ -208,8 +204,8 @@ export function EmotionContextFieldsEnhanced({
         </div>
       )}
 
-      <div className="space-y-2">
-        <Label htmlFor="note" className="text-sm text-muted-foreground">
+      <div className="space-y-1">
+        <Label htmlFor="note" className="text-xs text-muted-foreground">
           Add a note (optional)
         </Label>
         <Textarea
@@ -217,61 +213,52 @@ export function EmotionContextFieldsEnhanced({
           placeholder="What's on your mind?"
           value={note}
           onChange={(e) => onNoteChange(e.target.value)}
-          className="min-h-[80px] resize-none"
+          className="min-h-[50px] h-[50px] resize-none text-sm"
         />
       </div>
 
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="w-full justify-between px-3 py-2 h-auto">
-            <span className="text-sm text-muted-foreground">Add more details</span>
-            <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", isOpen && "rotate-180")} />
-          </Button>
-        </CollapsibleTrigger>
-
-        <CollapsibleContent className="space-y-2 pt-2">
-          <div className="space-y-2">
-            <Label className="text-sm flex items-center gap-2 text-muted-foreground">
-              <Users className="h-4 w-4" /> Who are you with?
-            </Label>
-            <PresetPills options={WHO_PRESETS} selected={context.who} onSelect={(v) => updateContext("who", v)} />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-sm flex items-center gap-2 text-muted-foreground">
-              <Activity className="h-4 w-4" /> What are you doing?
-            </Label>
-            <PresetPills options={WHAT_PRESETS} selected={context.what} onSelect={(v) => updateContext("what", v)} />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-sm flex items-center gap-2 text-muted-foreground">
-              <Heart className="h-4 w-4" /> Body sensations?
-            </Label>
-            <PresetPills options={BODY_PRESETS} selected={context.body} onSelect={(v) => updateContext("body", v)} />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-sm flex items-center gap-2 text-muted-foreground">
-              <Moon className="h-4 w-4" /> Sleep last night?
-            </Label>
-            <PresetPills
-              options={SLEEP_PRESETS}
-              selected={context.sleepHours}
-              onSelect={(v) => updateContext("sleepHours", v)}
-              allowCustom={false}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-sm flex items-center gap-2 text-muted-foreground">
-              <Dumbbell className="h-4 w-4" /> Physical activity today?
-            </Label>
-            <PresetPills
-              options={ACTIVITY_PRESETS}
-              selected={context.physicalActivity}
-              onSelect={(v) => updateContext("physicalActivity", v)}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground/60 italic">These details help you spot patterns over time</p>
-        </CollapsibleContent>
-      </Collapsible>
+      {/* Context details - always visible */}
+      <div className="space-y-2 pt-1">
+        <div className="space-y-1">
+          <Label className="text-xs flex items-center gap-1.5 text-muted-foreground">
+            <Users className="h-3.5 w-3.5" /> Who are you with?
+          </Label>
+          <PresetPills options={WHO_PRESETS} selected={context.who} onSelect={(v) => updateContext("who", v)} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs flex items-center gap-1.5 text-muted-foreground">
+            <Activity className="h-3.5 w-3.5" /> What are you doing?
+          </Label>
+          <PresetPills options={WHAT_PRESETS} selected={context.what} onSelect={(v) => updateContext("what", v)} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs flex items-center gap-1.5 text-muted-foreground">
+            <Heart className="h-3.5 w-3.5" /> Body sensations?
+          </Label>
+          <PresetPills options={BODY_PRESETS} selected={context.body} onSelect={(v) => updateContext("body", v)} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs flex items-center gap-1.5 text-muted-foreground">
+            <Moon className="h-3.5 w-3.5" /> Sleep last night?
+          </Label>
+          <PresetPills
+            options={SLEEP_PRESETS}
+            selected={context.sleepHours}
+            onSelect={(v) => updateContext("sleepHours", v)}
+            allowCustom={false}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs flex items-center gap-1.5 text-muted-foreground">
+            <Dumbbell className="h-3.5 w-3.5" /> Physical activity today?
+          </Label>
+          <PresetPills
+            options={ACTIVITY_PRESETS}
+            selected={context.physicalActivity}
+            onSelect={(v) => updateContext("physicalActivity", v)}
+          />
+        </div>
+      </div>
     </div>
   );
 }
