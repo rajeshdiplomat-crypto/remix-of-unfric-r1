@@ -79,9 +79,9 @@ export function StrategiesPanelEnhanced({ currentQuadrant, currentEmotion }: Str
   const featuredStrategy = recommendedStrategies[0] || sortedStrategies[0];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Hero Image - Compact */}
-      <div className="relative w-full aspect-[3/1] rounded-xl overflow-hidden bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-600">
+      <div className="relative w-full h-16 rounded-lg overflow-hidden bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-600">
         {/* Decorative background elements */}
         <div className="absolute inset-0">
           <div className="absolute top-2 left-2 w-12 h-12 rounded-full bg-white/10 blur-xl" />
@@ -89,9 +89,9 @@ export function StrategiesPanelEnhanced({ currentQuadrant, currentEmotion }: Str
         </div>
 
         {/* Content */}
-        <div className="absolute inset-0 flex items-center justify-center gap-4 p-3">
-          <div className={`p-3 rounded-xl bg-white/20 backdrop-blur-sm text-white shadow-lg`}>
-            {featuredStrategy ? iconMap[featuredStrategy.icon] : <Sparkles className="h-5 w-5" />}
+        <div className="absolute inset-0 flex items-center justify-center gap-3 p-2">
+          <div className={`p-2 rounded-lg bg-white/20 backdrop-blur-sm text-white shadow-md`}>
+            {featuredStrategy ? iconMap[featuredStrategy.icon] : <Sparkles className="h-4 w-4" />}
           </div>
           <div className="text-left">
             <p className="text-sm font-semibold text-white">
@@ -104,24 +104,24 @@ export function StrategiesPanelEnhanced({ currentQuadrant, currentEmotion }: Str
 
       {/* Header */}
       <div>
-        <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-amber-500" />
+        <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+          <Sparkles className="h-3.5 w-3.5 text-amber-500" />
           Regulation Strategies
         </h2>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-[10px] text-muted-foreground">
           {currentQuadrant
             ? `Tools for ${currentEmotion?.toLowerCase() || quadrantInfo?.description.toLowerCase()}`
             : "Explore techniques"}
         </p>
       </div>
 
-      {/* Recommended - Grid of Square Cards */}
+      {/* Recommended - Grid of Cards */}
       {recommendedStrategies.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-[10px] font-semibold text-rose-500 uppercase tracking-wider flex items-center gap-1">
-            <Heart className="h-2.5 w-2.5" /> Recommended
+        <div className="space-y-1">
+          <h3 className="text-[9px] font-semibold text-rose-500 uppercase tracking-wider flex items-center gap-1">
+            <Heart className="h-2 w-2" /> Recommended
           </h3>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-1.5">
             {recommendedStrategies.slice(0, 4).map((strategy) => (
               <StrategySquareCard
                 key={strategy.id}
@@ -134,10 +134,10 @@ export function StrategiesPanelEnhanced({ currentQuadrant, currentEmotion }: Str
         </div>
       )}
 
-      {/* All Strategies - Grid of Square Cards */}
-      <div className="space-y-2">
-        <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">All Strategies</h3>
-        <div className="grid grid-cols-3 gap-2">
+      {/* All Strategies - Grid of Cards */}
+      <div className="space-y-1">
+        <h3 className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">All Strategies</h3>
+        <div className="grid grid-cols-3 gap-1.5">
           {otherStrategies.map((strategy) => (
             <StrategySquareCard
               key={strategy.id}
@@ -186,25 +186,23 @@ function StrategySquareCard({
   return (
     <div
       onClick={onStart}
-      className={`group p-2.5 rounded-xl transition-all duration-200 hover:shadow-md hover:scale-[1.02] cursor-pointer flex flex-col items-center justify-center text-center ${
+      className={`group p-2 rounded-lg transition-all duration-200 hover:shadow-sm hover:scale-[1.02] cursor-pointer flex flex-col items-center justify-center text-center ${
         isRecommended
           ? "bg-gradient-to-br from-rose-50 to-orange-50 dark:from-rose-900/20 dark:to-orange-900/20 border border-rose-200 dark:border-rose-800"
           : "bg-card border border-border hover:border-primary/30"
       }`}
     >
       {/* Icon */}
-      <div
-        className={`p-2 rounded-lg bg-gradient-to-br ${typeGradients[strategy.type]} text-white mb-1.5 shadow-sm group-hover:shadow-md transition-shadow`}
-      >
-        <div className="h-4 w-4">{iconMap[strategy.icon]}</div>
+      <div className={`p-1.5 rounded-md bg-gradient-to-br ${typeGradients[strategy.type]} text-white mb-1 shadow-sm`}>
+        <div className="h-3.5 w-3.5">{iconMap[strategy.icon]}</div>
       </div>
 
       {/* Title */}
-      <h4 className="font-medium text-[11px] text-foreground leading-tight line-clamp-2">{strategy.title}</h4>
+      <h4 className="font-medium text-[10px] text-foreground leading-tight line-clamp-2">{strategy.title}</h4>
 
       {/* Duration */}
-      <div className="flex items-center gap-0.5 text-[9px] text-muted-foreground mt-0.5">
-        <Clock className="h-2.5 w-2.5" />
+      <div className="flex items-center gap-0.5 text-[8px] text-muted-foreground">
+        <Clock className="h-2 w-2" />
         <span>{strategy.duration}</span>
       </div>
     </div>
