@@ -10,6 +10,7 @@ import { DiaryFeedCard } from "@/components/diary/DiaryFeedCard";
 import { DiarySidebar } from "@/components/diary/DiarySidebar";
 import { DiaryLeftSidebar } from "@/components/diary/DiaryLeftSidebar";
 import { DiaryCreatePost } from "@/components/diary/DiaryCreatePost";
+import { DiaryHero } from "@/components/diary/DiaryHero";
 import { JournalQuestionCard } from "@/components/diary/JournalQuestionCard";
 import { DiaryJournalModal } from "@/components/diary/DiaryJournalModal";
 import { useFeedEvents } from "@/components/diary/useFeedEvents";
@@ -402,6 +403,9 @@ export default function Diary() {
       {/* Center Feed - Scrollable */}
       <main className="flex-1 min-w-0 h-full overflow-y-auto bg-muted/20">
         <div className="max-w-[680px] mx-auto px-4 lg:px-6 py-4">
+          {/* Hero Section */}
+          <DiaryHero userName={userName} />
+
           {/* Create Post Box */}
           <DiaryCreatePost 
             userName={userName}
