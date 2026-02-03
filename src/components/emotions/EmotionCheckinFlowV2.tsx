@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,7 +18,8 @@ import {
   Dumbbell,
   BookOpen,
   Play,
-  Clock
+  Clock,
+  Zap
 } from "lucide-react";
 import { QuadrantType, QUADRANTS, STRATEGIES } from "./types";
 import { cn } from "@/lib/utils";
@@ -48,36 +49,16 @@ interface EmotionCheckinFlowV2Props {
 // Build emotion list with approximate positions
 const ALL_EMOTIONS: { emotion: string; quadrant: QuadrantType; energy: number; pleasantness: number }[] = [];
 QUADRANTS["high-pleasant"].emotions.forEach((e, i) =>
-  ALL_EMOTIONS.push({
-    emotion: e,
-    quadrant: "high-pleasant",
-    energy: 60 + (i % 5) * 8,
-    pleasantness: 60 + (i % 5) * 8,
-  }),
+  ALL_EMOTIONS.push({ emotion: e, quadrant: "high-pleasant", energy: 60 + (i % 5) * 8, pleasantness: 60 + (i % 5) * 8 }),
 );
 QUADRANTS["high-unpleasant"].emotions.forEach((e, i) =>
-  ALL_EMOTIONS.push({
-    emotion: e,
-    quadrant: "high-unpleasant",
-    energy: 60 + (i % 5) * 8,
-    pleasantness: 10 + (i % 5) * 8,
-  }),
+  ALL_EMOTIONS.push({ emotion: e, quadrant: "high-unpleasant", energy: 60 + (i % 5) * 8, pleasantness: 10 + (i % 5) * 8 }),
 );
 QUADRANTS["low-unpleasant"].emotions.forEach((e, i) =>
-  ALL_EMOTIONS.push({
-    emotion: e,
-    quadrant: "low-unpleasant",
-    energy: 10 + (i % 5) * 8,
-    pleasantness: 10 + (i % 5) * 8,
-  }),
+  ALL_EMOTIONS.push({ emotion: e, quadrant: "low-unpleasant", energy: 10 + (i % 5) * 8, pleasantness: 10 + (i % 5) * 8 }),
 );
 QUADRANTS["low-pleasant"].emotions.forEach((e, i) =>
-  ALL_EMOTIONS.push({
-    emotion: e,
-    quadrant: "low-pleasant",
-    energy: 10 + (i % 5) * 8,
-    pleasantness: 60 + (i % 5) * 8,
-  }),
+  ALL_EMOTIONS.push({ emotion: e, quadrant: "low-pleasant", energy: 10 + (i % 5) * 8, pleasantness: 60 + (i % 5) * 8 }),
 );
 
 const WHO_PRESETS = ["Alone", "Friend", "Partner", "Family", "Team", "Colleagues"];
@@ -100,39 +81,11 @@ const quadrantGradients: Record<QuadrantType, { from: string; to: string }> = {
 };
 
 export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: EmotionCheckinFlowV2Props) {
-  // Step: 1 = emotion selection, 2 = context, 3 = complete
   const [step, setStep] = useState(1);
-  
-  // Slider values with smooth animation
   const [energy, setEnergy] = useState(50);
   const [pleasantness, setPleasantness] = useState(50);
-  const [targetEnergy, setTargetEnergy] = useState(50);
-  const [targetPleasantness, setTargetPleasantness] = useState(50);
-  
-  // Animate sliders smoothly when bubble is clicked
-  useEffect(() => {
-    const animateSlider = () => {
-      const energyDiff = targetEnergy - energy;
-      const pleasantnessDiff = targetPleasantness - pleasantness;
-      
-      if (Math.abs(energyDiff) > 0.5 || Math.abs(pleasantnessDiff) > 0.5) {
-        setEnergy(prev => prev + energyDiff * 0.15);
-        setPleasantness(prev => prev + pleasantnessDiff * 0.15);
-        requestAnimationFrame(animateSlider);
-      } else {
-        setEnergy(targetEnergy);
-        setPleasantness(targetPleasantness);
-      }
-    };
-    
-    requestAnimationFrame(animateSlider);
-  }, [targetEnergy, targetPleasantness]);
-  
-  // Selected emotion
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  
-  // Context fields
   const [note, setNote] = useState("");
   const [context, setContext] = useState<{
     who?: string;
@@ -143,20 +96,16 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
   }>({});
   const [sendToJournal, setSendToJournal] = useState(false);
   const [checkInTime] = useState<Date>(new Date());
-
-  // Completed state
   const [savedQuadrant, setSavedQuadrant] = useState<QuadrantType | null>(null);
   const [savedEmotion, setSavedEmotion] = useState<string | null>(null);
 
-  // Search results
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
     return ALL_EMOTIONS.filter((e) => 
       e.emotion.toLowerCase().includes(searchQuery.toLowerCase())
-    ).slice(0, 8);
+    ).slice(0, 6);
   }, [searchQuery]);
 
-  // Calculate current quadrant from sliders
   const currentQuadrant: QuadrantType = useMemo(() => {
     if (energy >= 50 && pleasantness >= 50) return "high-pleasant";
     if (energy >= 50 && pleasantness < 50) return "high-unpleasant";
@@ -164,16 +113,14 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
     return "low-pleasant";
   }, [energy, pleasantness]);
 
-  // Suggested emotions based on slider position
   const suggestedEmotions = useMemo(() => {
     const distances = ALL_EMOTIONS.map((e) => ({
       ...e,
       distance: Math.sqrt(Math.pow(e.energy - energy, 2) + Math.pow(e.pleasantness - pleasantness, 2)),
     }));
-    return distances.sort((a, b) => a.distance - b.distance).slice(0, 8);
+    return distances.sort((a, b) => a.distance - b.distance).slice(0, 6);
   }, [energy, pleasantness]);
 
-  // Get recommended strategies for current quadrant
   const recommendedStrategies = useMemo(() => {
     const quadrant = savedQuadrant || currentQuadrant;
     return STRATEGIES.filter(s => s.targetQuadrants.includes(quadrant)).slice(0, 3);
@@ -182,42 +129,30 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
   const quadrantInfo = QUADRANTS[currentQuadrant];
   const bestMatch = suggestedEmotions[0];
   const gradientColors = quadrantGradients[currentQuadrant];
+  const finalEmotion = selectedEmotion || bestMatch?.emotion;
+  const finalQuadrant = selectedEmotion
+    ? suggestedEmotions.find((e) => e.emotion === selectedEmotion)?.quadrant || currentQuadrant
+    : bestMatch?.quadrant || currentQuadrant;
 
   const handleEmotionClick = useCallback((emotion: string, quadrant: QuadrantType) => {
     setSelectedEmotion(emotion);
     const emotionData = ALL_EMOTIONS.find((e) => e.emotion === emotion && e.quadrant === quadrant);
     if (emotionData) {
-      setTargetEnergy(Math.round(emotionData.energy));
-      setTargetPleasantness(Math.round(emotionData.pleasantness));
+      setEnergy(emotionData.energy);
+      setPleasantness(emotionData.pleasantness);
     }
     setSearchQuery("");
   }, []);
 
   const handleSliderChange = useCallback((type: 'energy' | 'pleasantness', value: number) => {
-    if (type === 'energy') {
-      setEnergy(value);
-      setTargetEnergy(value);
-    } else {
-      setPleasantness(value);
-      setTargetPleasantness(value);
-    }
+    if (type === 'energy') setEnergy(value);
+    else setPleasantness(value);
     setSelectedEmotion(null);
   }, []);
 
-  const handleBubbleClick = useCallback((quadrant: QuadrantType) => {
-    if (quadrant === "high-pleasant") {
-      setTargetEnergy(75);
-      setTargetPleasantness(75);
-    } else if (quadrant === "high-unpleasant") {
-      setTargetEnergy(75);
-      setTargetPleasantness(25);
-    } else if (quadrant === "low-unpleasant") {
-      setTargetEnergy(25);
-      setTargetPleasantness(25);
-    } else {
-      setTargetEnergy(25);
-      setTargetPleasantness(75);
-    }
+  const handleBubbleClick = useCallback((quadrant: QuadrantType, targetEnergy: number, targetPleasantness: number) => {
+    setEnergy(targetEnergy);
+    setPleasantness(targetPleasantness);
     setSelectedEmotion(null);
   }, []);
 
@@ -253,15 +188,13 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
       checkInTime,
     });
 
-    // Celebration confetti
     confetti({
-      particleCount: 100,
-      spread: 70,
+      particleCount: 80,
+      spread: 60,
       origin: { y: 0.6 },
       colors: [quadrantGradients[quadrant].from, quadrantGradients[quadrant].to, '#ffffff']
     });
 
-    // Move to completion step
     setSavedQuadrant(quadrant);
     setSavedEmotion(emotionToSave);
     setStep(3);
@@ -272,8 +205,6 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
     setStep(1);
     setEnergy(50);
     setPleasantness(50);
-    setTargetEnergy(50);
-    setTargetPleasantness(50);
     setSelectedEmotion(null);
     setSearchQuery("");
     setNote("");
@@ -283,55 +214,47 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
     setSavedEmotion(null);
   };
 
-  const finalEmotion = selectedEmotion || bestMatch?.emotion;
-  const finalQuadrant = selectedEmotion
-    ? suggestedEmotions.find((e) => e.emotion === selectedEmotion)?.quadrant || currentQuadrant
-    : bestMatch?.quadrant || currentQuadrant;
-
   return (
     <div 
-      className="w-full h-[calc(100vh-100px)] flex flex-col overflow-hidden transition-all duration-700"
+      className="w-full h-[calc(100vh-100px)] flex flex-col overflow-hidden transition-colors duration-500"
       style={{
-        background: `radial-gradient(ellipse at 50% 0%, ${gradientColors.from}08 0%, transparent 50%)`
+        background: `radial-gradient(ellipse at 50% 0%, ${gradientColors.from}06 0%, transparent 60%)`
       }}
     >
       {/* Step 1: Emotion Selection */}
       {step === 1 && (
-        <div className="flex-1 flex flex-col px-4 md:px-6 lg:px-8 py-3 animate-in fade-in duration-500">
-          {/* Header - Ultra Compact */}
-          <div className="text-center mb-3">
-            <h1 className="text-lg md:text-xl font-light tracking-tight text-foreground">
+        <div className="flex-1 flex flex-col p-3 md:p-4 animate-in fade-in duration-400 overflow-hidden">
+          {/* Compact Header */}
+          <div className="text-center mb-2">
+            <h1 className="text-lg font-light tracking-tight text-foreground">
               How are you feeling?
             </h1>
           </div>
 
-          {/* Main Content - Optimized Layout */}
-          <div className="flex-1 flex flex-col lg:flex-row gap-3 lg:gap-4 min-h-0">
-            {/* Left: Sliders + Zone */}
-            <div className="lg:w-56 xl:w-64 flex flex-col gap-2.5 shrink-0">
-              {/* Search Bar */}
+          {/* Main 3-Column Layout */}
+          <div className="flex-1 flex gap-3 min-h-0 overflow-hidden">
+            {/* LEFT: Sliders */}
+            <div className="w-52 shrink-0 flex flex-col gap-2">
+              {/* Search */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
                   type="text"
-                  placeholder="Search emotions..."
+                  placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 h-9 rounded-xl bg-background/80 backdrop-blur-sm border-border/50 text-sm"
+                  className="pl-8 h-8 text-sm rounded-lg bg-muted/50 border-border/40"
                 />
                 {searchResults.length > 0 && (
-                  <div className="absolute z-30 w-full mt-1 bg-card/95 backdrop-blur-lg border border-border rounded-xl shadow-2xl p-2 space-y-0.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="absolute z-40 w-full mt-1 bg-card border border-border rounded-lg shadow-xl p-1.5 space-y-0.5 animate-in fade-in duration-150">
                     {searchResults.map((item) => (
                       <button
                         key={item.emotion}
                         onClick={() => handleEmotionClick(item.emotion, item.quadrant)}
-                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted flex items-center gap-2 transition-all duration-200 group"
+                        className="w-full text-left px-2.5 py-1.5 rounded text-sm hover:bg-muted flex items-center gap-2"
                       >
-                        <div 
-                          className="w-2 h-2 rounded-full transition-transform group-hover:scale-125" 
-                          style={{ backgroundColor: QUADRANTS[item.quadrant].color }} 
-                        />
-                        <span className="font-medium text-sm">{item.emotion}</span>
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: QUADRANTS[item.quadrant].color }} />
+                        {item.emotion}
                       </button>
                     ))}
                   </div>
@@ -339,12 +262,12 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
               </div>
 
               {/* Energy Slider */}
-              <div className="p-3 rounded-xl bg-muted/30 border border-border/30 backdrop-blur-sm">
-                <div className="flex items-center justify-between text-[10px] uppercase tracking-wider mb-2">
+              <div className="p-2.5 rounded-lg bg-muted/40 border border-border/30">
+                <div className="flex items-center justify-between text-[9px] uppercase tracking-wider mb-1.5">
                   <span className="text-muted-foreground">Low</span>
                   <span className="font-semibold text-foreground flex items-center gap-1">
-                    <Activity className="h-3 w-3" />
-                    Energy {Math.round(energy)}%
+                    <Zap className="h-2.5 w-2.5" />
+                    Energy {energy}%
                   </span>
                   <span className="text-muted-foreground">High</span>
                 </div>
@@ -352,18 +275,17 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
                   value={[energy]} 
                   onValueChange={(v) => handleSliderChange('energy', v[0])} 
                   max={100} 
-                  step={1} 
-                  className="w-full"
+                  step={1}
                 />
               </div>
 
               {/* Pleasantness Slider */}
-              <div className="p-3 rounded-xl bg-muted/30 border border-border/30 backdrop-blur-sm">
-                <div className="flex items-center justify-between text-[10px] uppercase tracking-wider mb-2">
+              <div className="p-2.5 rounded-lg bg-muted/40 border border-border/30">
+                <div className="flex items-center justify-between text-[9px] uppercase tracking-wider mb-1.5">
                   <span className="text-muted-foreground">−</span>
                   <span className="font-semibold text-foreground flex items-center gap-1">
-                    <Sparkles className="h-3 w-3" />
-                    Pleasant {Math.round(pleasantness)}%
+                    <Sparkles className="h-2.5 w-2.5" />
+                    Pleasant {pleasantness}%
                   </span>
                   <span className="text-muted-foreground">+</span>
                 </div>
@@ -371,33 +293,32 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
                   value={[pleasantness]} 
                   onValueChange={(v) => handleSliderChange('pleasantness', v[0])} 
                   max={100} 
-                  step={1} 
-                  className="w-full"
+                  step={1}
                 />
               </div>
 
-              {/* Current Zone Display */}
+              {/* Zone Display */}
               <div
-                className="rounded-xl p-3 border-2 transition-all duration-500"
+                className="rounded-lg p-2.5 border-2 transition-all duration-300"
                 style={{ 
-                  background: `linear-gradient(135deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}20)`,
+                  background: `linear-gradient(135deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}15)`,
                   borderColor: quadrantInfo.borderColor 
                 }}
               >
-                <div className="flex items-center gap-2.5">
-                  <span className="text-2xl">{quadrantEmoji[currentQuadrant]}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{quadrantEmoji[currentQuadrant]}</span>
                   <div className="min-w-0">
-                    <p className="font-semibold text-sm truncate" style={{ color: quadrantInfo.color }}>
+                    <p className="font-semibold text-xs truncate" style={{ color: quadrantInfo.color }}>
                       {quadrantInfo.label}
                     </p>
-                    <p className="text-[10px] text-muted-foreground truncate">{quadrantInfo.description}</p>
+                    <p className="text-[9px] text-muted-foreground truncate">{quadrantInfo.description}</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Center: Bubble Visualization */}
-            <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
+            {/* CENTER: Bubble Visualization */}
+            <div className="flex-1 min-w-0 flex flex-col border border-border/30 rounded-xl bg-muted/20 overflow-hidden">
               <EmotionBubbleViz
                 energy={energy}
                 pleasantness={pleasantness}
@@ -407,37 +328,22 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
               />
             </div>
 
-            {/* Right: Preview + Continue */}
-            <div className="lg:w-48 xl:w-56 flex flex-col gap-3 shrink-0">
+            {/* RIGHT: Preview + Action */}
+            <div className="w-44 shrink-0 flex flex-col gap-2">
               {/* Preview Card */}
               <div 
-                className={cn(
-                  "flex-1 rounded-2xl p-4 flex flex-col items-center justify-center transition-all duration-500",
-                  "border-2 min-h-[100px] backdrop-blur-sm relative overflow-hidden"
-                )}
+                className="rounded-xl p-3 border-2 transition-all duration-300 text-center"
                 style={{ 
-                  background: `linear-gradient(145deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}15)`,
+                  background: `linear-gradient(145deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}10)`,
                   borderColor: quadrantInfo.borderColor 
                 }}
               >
-                {/* Animated glow background */}
-                {finalEmotion && (
-                  <div 
-                    className="absolute inset-0 opacity-20 animate-pulse"
-                    style={{
-                      background: `radial-gradient(circle at 50% 50%, ${quadrantInfo.color}, transparent 70%)`
-                    }}
-                  />
-                )}
-                
-                <span className="text-4xl mb-2 relative z-10">{quadrantEmoji[currentQuadrant]}</span>
-                <p className="text-base font-semibold text-center relative z-10" style={{ color: quadrantInfo.color }}>
+                <span className="text-3xl block mb-1">{quadrantEmoji[currentQuadrant]}</span>
+                <p className="text-sm font-semibold" style={{ color: quadrantInfo.color }}>
                   {finalEmotion || "Select..."}
                 </p>
                 {finalEmotion && (
-                  <p className="text-[10px] text-muted-foreground text-center mt-1 relative z-10">
-                    {quadrantInfo.label}
-                  </p>
+                  <p className="text-[9px] text-muted-foreground mt-0.5">{quadrantInfo.label}</p>
                 )}
               </div>
 
@@ -445,21 +351,35 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
               <Button
                 onClick={handleContinue}
                 disabled={!finalEmotion}
-                className="w-full h-10 rounded-xl text-sm gap-2 transition-all duration-300 relative overflow-hidden group"
+                className="h-9 rounded-lg text-sm gap-1.5 transition-all duration-300"
                 style={{
                   background: finalEmotion 
                     ? `linear-gradient(135deg, ${gradientColors.from}, ${gradientColors.to})`
                     : undefined
                 }}
               >
-                {finalEmotion && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                )}
-                <span className="relative z-10 flex items-center gap-2">
-                  Continue
-                  <ArrowRight className="h-4 w-4" />
-                </span>
+                Continue
+                <ArrowRight className="h-3.5 w-3.5" />
               </Button>
+
+              {/* Suggested matches */}
+              {suggestedEmotions.length > 0 && !selectedEmotion && (
+                <div className="flex-1 rounded-lg border border-border/30 bg-muted/30 p-2 overflow-y-auto">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground mb-1.5">Nearby feelings</p>
+                  <div className="space-y-1">
+                    {suggestedEmotions.slice(0, 4).map((em) => (
+                      <button
+                        key={em.emotion}
+                        onClick={() => handleEmotionClick(em.emotion, em.quadrant)}
+                        className="w-full text-left px-2 py-1 rounded text-xs hover:bg-muted transition-colors flex items-center gap-1.5"
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: QUADRANTS[em.quadrant].color }} />
+                        {em.emotion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -467,70 +387,63 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
 
       {/* Step 2: Context */}
       {step === 2 && (
-        <div className="flex-1 flex flex-col px-4 md:px-6 lg:px-10 py-4 animate-in fade-in slide-in-from-right-4 duration-500 overflow-y-auto">
+        <div className="flex-1 flex flex-col p-4 md:p-6 animate-in fade-in slide-in-from-right-4 duration-400 overflow-y-auto">
           {/* Header */}
-          <div className="text-center mb-5">
-            <div className="flex items-center justify-center gap-3 mb-2">
+          <div className="text-center mb-4">
+            <div className="inline-flex items-center gap-2 mb-1">
               <div 
-                className="w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg"
+                className="w-10 h-10 rounded-full flex items-center justify-center text-xl"
                 style={{ 
-                  background: `linear-gradient(135deg, ${QUADRANTS[finalQuadrant].color}30, ${QUADRANTS[finalQuadrant].color}10)`,
+                  background: `linear-gradient(135deg, ${QUADRANTS[finalQuadrant].color}25, ${QUADRANTS[finalQuadrant].color}10)`,
                   border: `2px solid ${QUADRANTS[finalQuadrant].color}40`
                 }}
               >
                 {quadrantEmoji[finalQuadrant]}
               </div>
-              <h1 
-                className="text-2xl md:text-3xl font-light tracking-tight"
-                style={{ color: QUADRANTS[finalQuadrant].color }}
-              >
+              <h1 className="text-xl font-light" style={{ color: QUADRANTS[finalQuadrant].color }}>
                 {finalEmotion}
               </h1>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Add some context (optional)
-            </p>
+            <p className="text-xs text-muted-foreground">Add context (optional)</p>
           </div>
 
-          {/* Context Fields - Grid */}
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-5xl mx-auto w-full">
+          {/* Context Fields */}
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 max-w-4xl mx-auto w-full">
             {/* Note */}
-            <div className="lg:col-span-2 animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: '0ms' }}>
-              <Label className="text-sm font-medium mb-2 flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-muted-foreground" />
+            <div className="md:col-span-2">
+              <Label className="text-xs font-medium mb-1.5 flex items-center gap-1.5">
+                <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
                 Notes
               </Label>
               <Textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="What's on your mind?"
-                className="min-h-[80px] rounded-xl resize-none bg-background/80 backdrop-blur-sm border-border/50 transition-all duration-200 focus:shadow-lg"
+                className="min-h-[70px] rounded-lg resize-none text-sm"
               />
             </div>
 
             {/* Who */}
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: '50ms' }}>
-              <Label className="text-sm font-medium mb-2 flex items-center gap-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
+            <div>
+              <Label className="text-xs font-medium mb-1.5 flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5 text-muted-foreground" />
                 Who are you with?
               </Label>
-              <div className="flex flex-wrap gap-2">
-                {WHO_PRESETS.map((preset, idx) => (
+              <div className="flex flex-wrap gap-1.5">
+                {WHO_PRESETS.map((preset) => (
                   <button
                     key={preset}
                     onClick={() => setContext(c => ({ ...c, who: c.who === preset ? undefined : preset }))}
                     className={cn(
-                      "px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-300 border",
-                      "hover:scale-105 active:scale-95",
+                      "px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border",
                       context.who === preset
-                        ? "text-white border-transparent shadow-lg"
-                        : "bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted hover:shadow-md"
+                        ? "text-white border-transparent"
+                        : "bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted"
                     )}
                     style={{
                       background: context.who === preset 
                         ? `linear-gradient(135deg, ${gradientColors.from}, ${gradientColors.to})`
-                        : undefined,
-                      animationDelay: `${idx * 30}ms`
+                        : undefined
                     }}
                   >
                     {preset}
@@ -540,22 +453,21 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
             </div>
 
             {/* What */}
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: '100ms' }}>
-              <Label className="text-sm font-medium mb-2 flex items-center gap-2">
-                <Activity className="h-4 w-4 text-muted-foreground" />
+            <div>
+              <Label className="text-xs font-medium mb-1.5 flex items-center gap-1.5">
+                <Activity className="h-3.5 w-3.5 text-muted-foreground" />
                 What are you doing?
               </Label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {WHAT_PRESETS.map((preset) => (
                   <button
                     key={preset}
                     onClick={() => setContext(c => ({ ...c, what: c.what === preset ? undefined : preset }))}
                     className={cn(
-                      "px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-300 border",
-                      "hover:scale-105 active:scale-95",
+                      "px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border",
                       context.what === preset
-                        ? "text-white border-transparent shadow-lg"
-                        : "bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted hover:shadow-md"
+                        ? "text-white border-transparent"
+                        : "bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted"
                     )}
                     style={{
                       background: context.what === preset 
@@ -570,22 +482,21 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
             </div>
 
             {/* Sleep */}
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: '150ms' }}>
-              <Label className="text-sm font-medium mb-2 flex items-center gap-2">
-                <Moon className="h-4 w-4 text-muted-foreground" />
+            <div>
+              <Label className="text-xs font-medium mb-1.5 flex items-center gap-1.5">
+                <Moon className="h-3.5 w-3.5 text-muted-foreground" />
                 Sleep last night
               </Label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {SLEEP_PRESETS.map((preset) => (
                   <button
                     key={preset}
                     onClick={() => setContext(c => ({ ...c, sleepHours: c.sleepHours === preset ? undefined : preset }))}
                     className={cn(
-                      "px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-300 border",
-                      "hover:scale-105 active:scale-95",
+                      "px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border",
                       context.sleepHours === preset
-                        ? "text-white border-transparent shadow-lg"
-                        : "bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted hover:shadow-md"
+                        ? "text-white border-transparent"
+                        : "bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted"
                     )}
                     style={{
                       background: context.sleepHours === preset 
@@ -600,22 +511,21 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
             </div>
 
             {/* Activity */}
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: '200ms' }}>
-              <Label className="text-sm font-medium mb-2 flex items-center gap-2">
-                <Dumbbell className="h-4 w-4 text-muted-foreground" />
-                Physical activity today
+            <div>
+              <Label className="text-xs font-medium mb-1.5 flex items-center gap-1.5">
+                <Dumbbell className="h-3.5 w-3.5 text-muted-foreground" />
+                Physical activity
               </Label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {ACTIVITY_PRESETS.map((preset) => (
                   <button
                     key={preset}
                     onClick={() => setContext(c => ({ ...c, physicalActivity: c.physicalActivity === preset ? undefined : preset }))}
                     className={cn(
-                      "px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-300 border",
-                      "hover:scale-105 active:scale-95",
+                      "px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border",
                       context.physicalActivity === preset
-                        ? "text-white border-transparent shadow-lg"
-                        : "bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted hover:shadow-md"
+                        ? "text-white border-transparent"
+                        : "bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted"
                     )}
                     style={{
                       background: context.physicalActivity === preset 
@@ -630,40 +540,29 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
             </div>
 
             {/* Journal Toggle */}
-            <div className="lg:col-span-2 flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border/30 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: '250ms' }}>
+            <div className="md:col-span-2 flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/30">
               <div>
-                <Label className="text-sm font-medium">Send to Journal</Label>
-                <p className="text-xs text-muted-foreground">Add this check-in to today's journal entry</p>
+                <Label className="text-xs font-medium">Send to Journal</Label>
+                <p className="text-[10px] text-muted-foreground">Add to today's entry</p>
               </div>
               <Switch checked={sendToJournal} onCheckedChange={setSendToJournal} />
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-4 max-w-5xl mx-auto w-full">
-            <Button
-              variant="outline"
-              onClick={handleBack}
-              className="flex-1 h-11 rounded-xl gap-2 hover:shadow-md transition-all duration-300"
-            >
+          {/* Actions */}
+          <div className="flex gap-3 pt-4 max-w-4xl mx-auto w-full">
+            <Button variant="outline" onClick={handleBack} className="flex-1 h-10 rounded-lg gap-1.5">
               <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="flex-[2] h-11 rounded-xl gap-2 transition-all duration-300 relative overflow-hidden group"
-              style={{
-                background: `linear-gradient(135deg, ${gradientColors.from}, ${gradientColors.to})`
-              }}
+              className="flex-[2] h-10 rounded-lg gap-1.5"
+              style={{ background: `linear-gradient(135deg, ${gradientColors.from}, ${gradientColors.to})` }}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-              {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin relative z-10" />
-              ) : (
-                <Check className="h-4 w-4 relative z-10" />
-              )}
-              <span className="relative z-10">Save Check-in</span>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              Save Check-in
             </Button>
           </div>
         </div>
@@ -671,92 +570,59 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
 
       {/* Step 3: Complete */}
       {step === 3 && savedQuadrant && savedEmotion && (
-        <div className="flex-1 flex flex-col px-4 md:px-6 lg:px-10 py-6 animate-in fade-in zoom-in-95 duration-700">
-          {/* Success Header */}
+        <div className="flex-1 flex flex-col p-4 md:p-6 animate-in fade-in zoom-in-95 duration-500">
+          {/* Success */}
           <div className="text-center mb-6">
-            {/* Animated Check Circle */}
-            <div className="relative inline-flex items-center justify-center mb-4">
-              <div 
-                className="w-20 h-20 rounded-full flex items-center justify-center shadow-2xl animate-in zoom-in duration-500"
-                style={{ 
-                  background: `linear-gradient(135deg, ${QUADRANTS[savedQuadrant].color}30, ${QUADRANTS[savedQuadrant].color}10)`,
-                  border: `3px solid ${QUADRANTS[savedQuadrant].color}`
-                }}
-              >
-                <Check 
-                  className="h-10 w-10 animate-in zoom-in duration-300" 
-                  style={{ color: QUADRANTS[savedQuadrant].color, animationDelay: '200ms' }} 
-                />
-              </div>
-              {/* Ripple rings */}
-              <div 
-                className="absolute inset-0 rounded-full animate-ping opacity-20"
-                style={{ backgroundColor: QUADRANTS[savedQuadrant].color }}
-              />
+            <div 
+              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 shadow-xl animate-in zoom-in duration-300"
+              style={{ 
+                background: `linear-gradient(135deg, ${QUADRANTS[savedQuadrant].color}30, ${QUADRANTS[savedQuadrant].color}10)`,
+                border: `3px solid ${QUADRANTS[savedQuadrant].color}`
+              }}
+            >
+              <Check className="h-8 w-8" style={{ color: QUADRANTS[savedQuadrant].color }} />
             </div>
-            
-            <h1 className="text-2xl md:text-3xl font-light tracking-tight text-foreground mb-1 animate-in fade-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: '100ms' }}>
-              Check-in saved!
-            </h1>
-            <p className="text-lg animate-in fade-in slide-in-from-bottom-2 duration-500" style={{ color: QUADRANTS[savedQuadrant].color, animationDelay: '200ms' }}>
+            <h1 className="text-xl font-light text-foreground mb-0.5">Check-in saved!</h1>
+            <p style={{ color: QUADRANTS[savedQuadrant].color }}>
               {quadrantEmoji[savedQuadrant]} {savedEmotion}
             </p>
           </div>
 
-          {/* Recommended Strategies */}
-          <div className="flex-1 max-w-4xl mx-auto w-full">
-            <div className="flex items-center gap-2 mb-4 animate-in fade-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: '300ms' }}>
-              <Sparkles className="h-5 w-5" style={{ color: QUADRANTS[savedQuadrant].color }} />
-              <h2 className="text-lg font-medium">Recommended for you</h2>
+          {/* Strategies */}
+          <div className="flex-1 max-w-3xl mx-auto w-full">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="h-4 w-4" style={{ color: QUADRANTS[savedQuadrant].color }} />
+              <h2 className="text-sm font-medium">Recommended for you</h2>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {recommendedStrategies.map((strategy, idx) => (
                 <div
                   key={strategy.id}
-                  className="group p-5 rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm 
-                             hover:shadow-xl transition-all duration-500 hover:-translate-y-1 cursor-pointer
-                             animate-in fade-in slide-in-from-bottom-4"
-                  style={{ 
-                    animationDelay: `${400 + idx * 100}ms`,
-                    animationFillMode: 'backwards'
-                  }}
+                  className="group p-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm 
+                             hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 cursor-pointer
+                             animate-in fade-in slide-in-from-bottom-2"
+                  style={{ animationDelay: `${idx * 80}ms`, animationFillMode: 'backwards' }}
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="text-3xl">{strategy.icon}</div>
-                    <div 
-                      className="w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300"
-                      style={{ backgroundColor: `${QUADRANTS[savedQuadrant].color}20` }}
-                    >
-                      <Play className="h-4 w-4" style={{ color: QUADRANTS[savedQuadrant].color }} />
-                    </div>
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="text-2xl">{strategy.icon}</div>
+                    <Play className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
-                  <h3 className="font-semibold text-base mb-1 group-hover:text-primary transition-colors">{strategy.title}</h3>
-                  <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{strategy.description}</p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span 
-                      className="px-2 py-0.5 rounded-full capitalize"
-                      style={{ backgroundColor: `${QUADRANTS[savedQuadrant].color}15`, color: QUADRANTS[savedQuadrant].color }}
-                    >
-                      {strategy.type}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {strategy.duration}
-                    </span>
+                  <h3 className="font-medium text-sm mb-0.5">{strategy.title}</h3>
+                  <p className="text-[10px] text-muted-foreground line-clamp-2 mb-2">{strategy.description}</p>
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                    <span className="px-1.5 py-0.5 rounded bg-muted capitalize">{strategy.type}</span>
+                    <Clock className="h-3 w-3" />
+                    <span>{strategy.duration}</span>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* New Check-in Button */}
-          <div className="pt-6 max-w-md mx-auto w-full animate-in fade-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: '700ms' }}>
-            <Button
-              onClick={resetFlow}
-              variant="outline"
-              className="w-full h-11 rounded-xl gap-2 hover:shadow-md transition-all duration-300"
-            >
+          {/* New Check-in */}
+          <div className="pt-4 max-w-sm mx-auto w-full">
+            <Button variant="outline" onClick={resetFlow} className="w-full h-10 rounded-lg gap-1.5">
               <ArrowRight className="h-4 w-4" />
               New Check-in
             </Button>
