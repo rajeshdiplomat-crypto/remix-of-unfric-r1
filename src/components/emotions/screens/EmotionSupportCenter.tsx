@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { QuadrantType, QUADRANTS, STRATEGIES, Strategy } from "../types";
-import { Wind, Hand, User, Lightbulb, Sparkles, Heart, Zap, Sun, Clock, ChevronDown, ArrowLeft, BookmarkPlus, Play } from "lucide-react";
+import { Wind, Hand, User, Lightbulb, Sparkles, Heart, Zap, Sun, Clock, ChevronDown, ArrowLeft, BookmarkPlus, Play, ChevronUp } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GuidedVisualization } from "../GuidedVisualization";
 import {
@@ -12,6 +12,12 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
+import { EmotionContextFieldsEnhanced, EnhancedContextData } from "../EmotionContextFieldsEnhanced";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface EmotionSupportCenterProps {
   quadrant: QuadrantType;
@@ -19,6 +25,16 @@ interface EmotionSupportCenterProps {
   onSkip: () => void;
   onSaveForLater: () => void;
   onStrategyStarted: (strategyId: string) => void;
+  // Context fields props
+  note: string;
+  onNoteChange: (note: string) => void;
+  context: EnhancedContextData;
+  onContextChange: (context: EnhancedContextData) => void;
+  sendToJournal: boolean;
+  onSendToJournalChange: (value: boolean) => void;
+  checkInTime: Date;
+  onCheckInTimeChange: (date: Date) => void;
+  saving?: boolean;
 }
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -44,6 +60,8 @@ const typeGradients: Record<string, string> = {
  * Screen 2: Regulation / Support Center
  * - Header: "Would you like support right now?"
  * - Single recommended activity card
+ * - Context fields (who, what, note, sleep, activity)
+ * - Time picker and "Send to Journal" toggle
  * - "See more strategies" drawer
  * - Skip / Save for later actions
  */
@@ -53,9 +71,19 @@ export function EmotionSupportCenter({
   onSkip,
   onSaveForLater,
   onStrategyStarted,
+  note,
+  onNoteChange,
+  context,
+  onContextChange,
+  sendToJournal,
+  onSendToJournalChange,
+  checkInTime,
+  onCheckInTimeChange,
+  saving = false,
 }: EmotionSupportCenterProps) {
   const [activeStrategy, setActiveStrategy] = useState<Strategy | null>(null);
   const [showVisualization, setShowVisualization] = useState(false);
+  const [contextExpanded, setContextExpanded] = useState(true);
 
   const quadrantInfo = QUADRANTS[quadrant];
 
@@ -82,7 +110,7 @@ export function EmotionSupportCenter({
   };
 
   return (
-    <div className="space-y-8 py-6">
+    <div className="space-y-6 py-6">
       {/* Header */}
       <div className="text-center space-y-2">
         <h1 className="text-2xl font-semibold text-foreground">
@@ -200,20 +228,64 @@ export function EmotionSupportCenter({
         </Drawer>
       </div>
 
+      {/* Context Fields Section */}
+      <div className="max-w-md mx-auto">
+        <Collapsible open={contextExpanded} onOpenChange={setContextExpanded}>
+          <CollapsibleTrigger asChild>
+            <button
+              className="flex items-center justify-between w-full py-3 px-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+              aria-label={contextExpanded ? "Collapse context details" : "Expand context details"}
+            >
+              <span className="text-sm font-medium text-foreground">Add context to your check-in</span>
+              {contextExpanded ? (
+                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              )}
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-4">
+            <div className="rounded-xl border border-border bg-card p-4">
+              <EmotionContextFieldsEnhanced
+                note={note}
+                onNoteChange={onNoteChange}
+                context={context}
+                onContextChange={onContextChange}
+                sendToJournal={sendToJournal}
+                onSendToJournalChange={onSendToJournalChange}
+                checkInTime={checkInTime}
+                onCheckInTimeChange={onCheckInTimeChange}
+              />
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
+
       {/* Secondary Actions */}
       <div className="flex gap-3 max-w-md mx-auto">
         <Button
           variant="outline"
           onClick={onSkip}
+          disabled={saving}
           className="flex-1 h-11 rounded-xl"
           aria-label="Skip support and save check-in"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Skip
+          {saving ? (
+            <>
+              <span className="animate-spin mr-2">⏳</span>
+              Saving...
+            </>
+          ) : (
+            <>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Save & Skip
+            </>
+          )}
         </Button>
         <Button
           variant="outline"
           onClick={onSaveForLater}
+          disabled={saving}
           className="flex-1 h-11 rounded-xl"
           aria-label="Save this strategy for later"
         >

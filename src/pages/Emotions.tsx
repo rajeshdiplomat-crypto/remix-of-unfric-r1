@@ -139,10 +139,19 @@ export default function Emotions() {
     }
   };
 
+  // ============ ANALYTICS EVENTS ============
+  const logAnalyticsEvent = (eventName: string, payload?: Record<string, unknown>) => {
+    // Analytics event logging - preserved for future integration
+    console.log(`[Analytics] ${eventName}:`, payload);
+  };
+
   // ============ CHECK-IN FLOW HANDLERS (MODIFIED for 3-zone) ============
   
   // Screen 1 → Screen 2: User selects emotion and clicks Continue
   const handleCheckInContinue = (quadrant: QuadrantType, emotion: string) => {
+    // Analytics: checkin_started
+    logAnalyticsEvent("checkin_started", { quadrant, emotion, timestamp: new Date().toISOString() });
+    
     setSelectedQuadrant(quadrant);
     setSelectedEmotion(emotion);
     setScreen("support");
@@ -160,12 +169,22 @@ export default function Emotions() {
   };
 
   const handleStrategyStarted = (strategyId: string) => {
-    // Analytics event: strategy_started (PRESERVED)
-    console.log("Strategy started:", strategyId);
+    // Analytics: strategy_started
+    logAnalyticsEvent("strategy_started", { 
+      strategyId, 
+      quadrant: selectedQuadrant, 
+      emotion: selectedEmotion,
+      timestamp: new Date().toISOString() 
+    });
   };
 
   // Navigate to Patterns screen
   const handleViewPatterns = () => {
+    // Analytics: view_patterns
+    logAnalyticsEvent("view_patterns", { 
+      source: screen === "checkin" ? "right_rail" : "header",
+      timestamp: new Date().toISOString() 
+    });
     setScreen("patterns");
   };
 
@@ -225,6 +244,16 @@ export default function Emotions() {
         await saveToJournal(entryDate, note || "", selectedEmotion);
       }
 
+      // Analytics: checkin_submitted
+      logAnalyticsEvent("checkin_submitted", {
+        quadrant: selectedQuadrant,
+        emotion: selectedEmotion,
+        hasNote: !!note,
+        hasContext: Object.keys(context).length > 0,
+        sendToJournal,
+        timestamp: new Date().toISOString()
+      });
+      
       toast.success(`Logged: ${selectedEmotion}`);
       resetCheckIn();
       await fetchEntries();
@@ -450,6 +479,15 @@ export default function Emotions() {
                 onSkip={handleSkipSupport}
                 onSaveForLater={handleSaveForLater}
                 onStrategyStarted={handleStrategyStarted}
+                note={note}
+                onNoteChange={setNote}
+                context={context}
+                onContextChange={setContext}
+                sendToJournal={sendToJournal}
+                onSendToJournalChange={setSendToJournal}
+                checkInTime={checkInTime}
+                onCheckInTimeChange={setCheckInTime}
+                saving={saving}
               />
             ) : (
               <EmotionPatternsView
