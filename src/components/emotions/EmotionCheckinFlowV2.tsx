@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,11 +16,14 @@ import {
   Activity,
   Moon,
   Dumbbell,
-  BookOpen
+  BookOpen,
+  Play,
+  Clock
 } from "lucide-react";
 import { QuadrantType, QUADRANTS, STRATEGIES } from "./types";
 import { cn } from "@/lib/utils";
 import { EmotionBubbleViz } from "./EmotionBubbleViz";
+import confetti from 'canvas-confetti';
 
 interface EmotionCheckinFlowV2Props {
   timezone: string;
@@ -89,20 +92,41 @@ const quadrantEmoji: Record<QuadrantType, string> = {
   "low-pleasant": "😌",
 };
 
-const quadrantGradients: Record<QuadrantType, string> = {
-  "high-pleasant": "from-amber-400 via-orange-400 to-rose-400",
-  "high-unpleasant": "from-rose-500 via-red-500 to-orange-500",
-  "low-unpleasant": "from-slate-400 via-blue-400 to-indigo-400",
-  "low-pleasant": "from-emerald-400 via-teal-400 to-cyan-400",
+const quadrantGradients: Record<QuadrantType, { from: string; to: string }> = {
+  "high-pleasant": { from: "#F59E0B", to: "#F97316" },
+  "high-unpleasant": { from: "#EF4444", to: "#F97316" },
+  "low-unpleasant": { from: "#6366F1", to: "#8B5CF6" },
+  "low-pleasant": { from: "#10B981", to: "#14B8A6" },
 };
 
 export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: EmotionCheckinFlowV2Props) {
   // Step: 1 = emotion selection, 2 = context, 3 = complete
   const [step, setStep] = useState(1);
   
-  // Slider values
+  // Slider values with smooth animation
   const [energy, setEnergy] = useState(50);
   const [pleasantness, setPleasantness] = useState(50);
+  const [targetEnergy, setTargetEnergy] = useState(50);
+  const [targetPleasantness, setTargetPleasantness] = useState(50);
+  
+  // Animate sliders smoothly when bubble is clicked
+  useEffect(() => {
+    const animateSlider = () => {
+      const energyDiff = targetEnergy - energy;
+      const pleasantnessDiff = targetPleasantness - pleasantness;
+      
+      if (Math.abs(energyDiff) > 0.5 || Math.abs(pleasantnessDiff) > 0.5) {
+        setEnergy(prev => prev + energyDiff * 0.15);
+        setPleasantness(prev => prev + pleasantnessDiff * 0.15);
+        requestAnimationFrame(animateSlider);
+      } else {
+        setEnergy(targetEnergy);
+        setPleasantness(targetPleasantness);
+      }
+    };
+    
+    requestAnimationFrame(animateSlider);
+  }, [targetEnergy, targetPleasantness]);
   
   // Selected emotion
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null);
@@ -157,15 +181,44 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
 
   const quadrantInfo = QUADRANTS[currentQuadrant];
   const bestMatch = suggestedEmotions[0];
+  const gradientColors = quadrantGradients[currentQuadrant];
 
   const handleEmotionClick = useCallback((emotion: string, quadrant: QuadrantType) => {
     setSelectedEmotion(emotion);
     const emotionData = ALL_EMOTIONS.find((e) => e.emotion === emotion && e.quadrant === quadrant);
     if (emotionData) {
-      setEnergy(Math.round(emotionData.energy));
-      setPleasantness(Math.round(emotionData.pleasantness));
+      setTargetEnergy(Math.round(emotionData.energy));
+      setTargetPleasantness(Math.round(emotionData.pleasantness));
     }
     setSearchQuery("");
+  }, []);
+
+  const handleSliderChange = useCallback((type: 'energy' | 'pleasantness', value: number) => {
+    if (type === 'energy') {
+      setEnergy(value);
+      setTargetEnergy(value);
+    } else {
+      setPleasantness(value);
+      setTargetPleasantness(value);
+    }
+    setSelectedEmotion(null);
+  }, []);
+
+  const handleBubbleClick = useCallback((quadrant: QuadrantType) => {
+    if (quadrant === "high-pleasant") {
+      setTargetEnergy(75);
+      setTargetPleasantness(75);
+    } else if (quadrant === "high-unpleasant") {
+      setTargetEnergy(75);
+      setTargetPleasantness(25);
+    } else if (quadrant === "low-unpleasant") {
+      setTargetEnergy(25);
+      setTargetPleasantness(25);
+    } else {
+      setTargetEnergy(25);
+      setTargetPleasantness(75);
+    }
+    setSelectedEmotion(null);
   }, []);
 
   const handleContinue = () => {
@@ -200,6 +253,14 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
       checkInTime,
     });
 
+    // Celebration confetti
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: [quadrantGradients[quadrant].from, quadrantGradients[quadrant].to, '#ffffff']
+    });
+
     // Move to completion step
     setSavedQuadrant(quadrant);
     setSavedEmotion(emotionToSave);
@@ -211,6 +272,8 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
     setStep(1);
     setEnergy(50);
     setPleasantness(50);
+    setTargetEnergy(50);
+    setTargetPleasantness(50);
     setSelectedEmotion(null);
     setSearchQuery("");
     setNote("");
@@ -226,21 +289,26 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
     : bestMatch?.quadrant || currentQuadrant;
 
   return (
-    <div className="w-full h-[calc(100vh-80px)] flex flex-col overflow-hidden">
-      {/* Step 1: Emotion Selection - Compact Single Screen */}
+    <div 
+      className="w-full h-[calc(100vh-100px)] flex flex-col overflow-hidden transition-all duration-700"
+      style={{
+        background: `radial-gradient(ellipse at 50% 0%, ${gradientColors.from}08 0%, transparent 50%)`
+      }}
+    >
+      {/* Step 1: Emotion Selection */}
       {step === 1 && (
-        <div className="flex-1 flex flex-col px-4 md:px-8 lg:px-12 py-4 animate-in fade-in duration-500">
-          {/* Header - Compact */}
-          <div className="text-center mb-4">
-            <h1 className="text-xl md:text-2xl font-light tracking-tight text-foreground">
+        <div className="flex-1 flex flex-col px-4 md:px-6 lg:px-8 py-3 animate-in fade-in duration-500">
+          {/* Header - Ultra Compact */}
+          <div className="text-center mb-3">
+            <h1 className="text-lg md:text-xl font-light tracking-tight text-foreground">
               How are you feeling?
             </h1>
           </div>
 
-          {/* Main Content - Horizontal Layout */}
-          <div className="flex-1 flex flex-col lg:flex-row gap-4 lg:gap-6 min-h-0">
-            {/* Left: Sliders + Zone Display */}
-            <div className="lg:w-64 flex flex-col gap-3 shrink-0">
+          {/* Main Content - Optimized Layout */}
+          <div className="flex-1 flex flex-col lg:flex-row gap-3 lg:gap-4 min-h-0">
+            {/* Left: Sliders + Zone */}
+            <div className="lg:w-56 xl:w-64 flex flex-col gap-2.5 shrink-0">
               {/* Search Bar */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -249,7 +317,7 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
                   placeholder="Search emotions..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-10 rounded-xl bg-background/80 backdrop-blur-sm border-border/50 text-sm"
+                  className="pl-9 h-9 rounded-xl bg-background/80 backdrop-blur-sm border-border/50 text-sm"
                 />
                 {searchResults.length > 0 && (
                   <div className="absolute z-30 w-full mt-1 bg-card/95 backdrop-blur-lg border border-border rounded-xl shadow-2xl p-2 space-y-0.5 animate-in fade-in slide-in-from-top-2 duration-200">
@@ -271,18 +339,18 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
               </div>
 
               {/* Energy Slider */}
-              <div className="space-y-2 p-3 rounded-xl bg-muted/30 border border-border/30">
-                <div className="flex items-center justify-between text-[10px] uppercase tracking-wider">
+              <div className="p-3 rounded-xl bg-muted/30 border border-border/30 backdrop-blur-sm">
+                <div className="flex items-center justify-between text-[10px] uppercase tracking-wider mb-2">
                   <span className="text-muted-foreground">Low</span>
-                  <span className="font-semibold text-foreground">Energy {energy}%</span>
+                  <span className="font-semibold text-foreground flex items-center gap-1">
+                    <Activity className="h-3 w-3" />
+                    Energy {Math.round(energy)}%
+                  </span>
                   <span className="text-muted-foreground">High</span>
                 </div>
                 <Slider 
                   value={[energy]} 
-                  onValueChange={(v) => {
-                    setEnergy(v[0]);
-                    setSelectedEmotion(null);
-                  }} 
+                  onValueChange={(v) => handleSliderChange('energy', v[0])} 
                   max={100} 
                   step={1} 
                   className="w-full"
@@ -290,18 +358,18 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
               </div>
 
               {/* Pleasantness Slider */}
-              <div className="space-y-2 p-3 rounded-xl bg-muted/30 border border-border/30">
-                <div className="flex items-center justify-between text-[10px] uppercase tracking-wider">
+              <div className="p-3 rounded-xl bg-muted/30 border border-border/30 backdrop-blur-sm">
+                <div className="flex items-center justify-between text-[10px] uppercase tracking-wider mb-2">
                   <span className="text-muted-foreground">−</span>
-                  <span className="font-semibold text-foreground">Pleasant {pleasantness}%</span>
+                  <span className="font-semibold text-foreground flex items-center gap-1">
+                    <Sparkles className="h-3 w-3" />
+                    Pleasant {Math.round(pleasantness)}%
+                  </span>
                   <span className="text-muted-foreground">+</span>
                 </div>
                 <Slider 
                   value={[pleasantness]} 
-                  onValueChange={(v) => {
-                    setPleasantness(v[0]);
-                    setSelectedEmotion(null);
-                  }} 
+                  onValueChange={(v) => handleSliderChange('pleasantness', v[0])} 
                   max={100} 
                   step={1} 
                   className="w-full"
@@ -311,9 +379,12 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
               {/* Current Zone Display */}
               <div
                 className="rounded-xl p-3 border-2 transition-all duration-500"
-                style={{ backgroundColor: quadrantInfo.bgColor, borderColor: quadrantInfo.borderColor }}
+                style={{ 
+                  background: `linear-gradient(135deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}20)`,
+                  borderColor: quadrantInfo.borderColor 
+                }}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <span className="text-2xl">{quadrantEmoji[currentQuadrant]}</span>
                   <div className="min-w-0">
                     <p className="font-semibold text-sm truncate" style={{ color: quadrantInfo.color }}>
@@ -325,51 +396,46 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
               </div>
             </div>
 
-            {/* Center: Bubble Visualization + Emotion Pills */}
-            <div className="flex-1 flex flex-col min-h-0 min-w-0">
+            {/* Center: Bubble Visualization */}
+            <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
               <EmotionBubbleViz
                 energy={energy}
                 pleasantness={pleasantness}
                 selectedEmotion={selectedEmotion}
                 onEmotionSelect={handleEmotionClick}
-                onBubbleClick={(quadrant) => {
-                  if (quadrant === "high-pleasant") {
-                    setEnergy(75);
-                    setPleasantness(75);
-                  } else if (quadrant === "high-unpleasant") {
-                    setEnergy(75);
-                    setPleasantness(25);
-                  } else if (quadrant === "low-unpleasant") {
-                    setEnergy(25);
-                    setPleasantness(25);
-                  } else {
-                    setEnergy(25);
-                    setPleasantness(75);
-                  }
-                  setSelectedEmotion(null);
-                }}
+                onBubbleClick={handleBubbleClick}
               />
             </div>
 
-            {/* Right: Selection Preview + Continue */}
-            <div className="lg:w-56 flex flex-col gap-3 shrink-0">
+            {/* Right: Preview + Continue */}
+            <div className="lg:w-48 xl:w-56 flex flex-col gap-3 shrink-0">
               {/* Preview Card */}
               <div 
                 className={cn(
                   "flex-1 rounded-2xl p-4 flex flex-col items-center justify-center transition-all duration-500",
-                  "border-2 min-h-[120px]"
+                  "border-2 min-h-[100px] backdrop-blur-sm relative overflow-hidden"
                 )}
                 style={{ 
-                  background: `linear-gradient(135deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}10)`,
+                  background: `linear-gradient(145deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}15)`,
                   borderColor: quadrantInfo.borderColor 
                 }}
               >
-                <span className="text-4xl mb-2">{quadrantEmoji[currentQuadrant]}</span>
-                <p className="text-lg font-semibold text-center" style={{ color: quadrantInfo.color }}>
+                {/* Animated glow background */}
+                {finalEmotion && (
+                  <div 
+                    className="absolute inset-0 opacity-20 animate-pulse"
+                    style={{
+                      background: `radial-gradient(circle at 50% 50%, ${quadrantInfo.color}, transparent 70%)`
+                    }}
+                  />
+                )}
+                
+                <span className="text-4xl mb-2 relative z-10">{quadrantEmoji[currentQuadrant]}</span>
+                <p className="text-base font-semibold text-center relative z-10" style={{ color: quadrantInfo.color }}>
                   {finalEmotion || "Select..."}
                 </p>
                 {finalEmotion && (
-                  <p className="text-xs text-muted-foreground text-center mt-1">
+                  <p className="text-[10px] text-muted-foreground text-center mt-1 relative z-10">
                     {quadrantInfo.label}
                   </p>
                 )}
@@ -379,10 +445,20 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
               <Button
                 onClick={handleContinue}
                 disabled={!finalEmotion}
-                className="w-full h-11 rounded-xl text-sm gap-2 transition-all duration-300"
+                className="w-full h-10 rounded-xl text-sm gap-2 transition-all duration-300 relative overflow-hidden group"
+                style={{
+                  background: finalEmotion 
+                    ? `linear-gradient(135deg, ${gradientColors.from}, ${gradientColors.to})`
+                    : undefined
+                }}
               >
-                Continue
-                <ArrowRight className="h-4 w-4" />
+                {finalEmotion && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                )}
+                <span className="relative z-10 flex items-center gap-2">
+                  Continue
+                  <ArrowRight className="h-4 w-4" />
+                </span>
               </Button>
             </div>
           </div>
@@ -391,12 +467,23 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
 
       {/* Step 2: Context */}
       {step === 2 && (
-        <div className="flex-1 flex flex-col px-6 lg:px-12 py-6 animate-in fade-in slide-in-from-right-4 duration-500">
+        <div className="flex-1 flex flex-col px-4 md:px-6 lg:px-10 py-4 animate-in fade-in slide-in-from-right-4 duration-500 overflow-y-auto">
           {/* Header */}
-          <div className="text-center mb-6">
+          <div className="text-center mb-5">
             <div className="flex items-center justify-center gap-3 mb-2">
-              <span className="text-4xl">{quadrantEmoji[finalQuadrant]}</span>
-              <h1 className="text-2xl md:text-3xl font-light tracking-tight" style={{ color: QUADRANTS[finalQuadrant].color }}>
+              <div 
+                className="w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg"
+                style={{ 
+                  background: `linear-gradient(135deg, ${QUADRANTS[finalQuadrant].color}30, ${QUADRANTS[finalQuadrant].color}10)`,
+                  border: `2px solid ${QUADRANTS[finalQuadrant].color}40`
+                }}
+              >
+                {quadrantEmoji[finalQuadrant]}
+              </div>
+              <h1 
+                className="text-2xl md:text-3xl font-light tracking-tight"
+                style={{ color: QUADRANTS[finalQuadrant].color }}
+              >
                 {finalEmotion}
               </h1>
             </div>
@@ -405,10 +492,10 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
             </p>
           </div>
 
-          {/* Context Fields - Wide Layout */}
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto w-full">
+          {/* Context Fields - Grid */}
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-5xl mx-auto w-full">
             {/* Note */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: '0ms' }}>
               <Label className="text-sm font-medium mb-2 flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-muted-foreground" />
                 Notes
@@ -417,27 +504,34 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="What's on your mind?"
-                className="min-h-[100px] rounded-2xl resize-none bg-background/80 backdrop-blur-sm"
+                className="min-h-[80px] rounded-xl resize-none bg-background/80 backdrop-blur-sm border-border/50 transition-all duration-200 focus:shadow-lg"
               />
             </div>
 
             {/* Who */}
-            <div>
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: '50ms' }}>
               <Label className="text-sm font-medium mb-2 flex items-center gap-2">
                 <Users className="h-4 w-4 text-muted-foreground" />
                 Who are you with?
               </Label>
               <div className="flex flex-wrap gap-2">
-                {WHO_PRESETS.map((preset) => (
+                {WHO_PRESETS.map((preset, idx) => (
                   <button
                     key={preset}
                     onClick={() => setContext(c => ({ ...c, who: c.who === preset ? undefined : preset }))}
                     className={cn(
-                      "px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 border",
+                      "px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-300 border",
+                      "hover:scale-105 active:scale-95",
                       context.who === preset
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted"
+                        ? "text-white border-transparent shadow-lg"
+                        : "bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted hover:shadow-md"
                     )}
+                    style={{
+                      background: context.who === preset 
+                        ? `linear-gradient(135deg, ${gradientColors.from}, ${gradientColors.to})`
+                        : undefined,
+                      animationDelay: `${idx * 30}ms`
+                    }}
                   >
                     {preset}
                   </button>
@@ -446,7 +540,7 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
             </div>
 
             {/* What */}
-            <div>
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: '100ms' }}>
               <Label className="text-sm font-medium mb-2 flex items-center gap-2">
                 <Activity className="h-4 w-4 text-muted-foreground" />
                 What are you doing?
@@ -457,11 +551,17 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
                     key={preset}
                     onClick={() => setContext(c => ({ ...c, what: c.what === preset ? undefined : preset }))}
                     className={cn(
-                      "px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 border",
+                      "px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-300 border",
+                      "hover:scale-105 active:scale-95",
                       context.what === preset
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted"
+                        ? "text-white border-transparent shadow-lg"
+                        : "bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted hover:shadow-md"
                     )}
+                    style={{
+                      background: context.what === preset 
+                        ? `linear-gradient(135deg, ${gradientColors.from}, ${gradientColors.to})`
+                        : undefined
+                    }}
                   >
                     {preset}
                   </button>
@@ -470,7 +570,7 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
             </div>
 
             {/* Sleep */}
-            <div>
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: '150ms' }}>
               <Label className="text-sm font-medium mb-2 flex items-center gap-2">
                 <Moon className="h-4 w-4 text-muted-foreground" />
                 Sleep last night
@@ -481,11 +581,17 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
                     key={preset}
                     onClick={() => setContext(c => ({ ...c, sleepHours: c.sleepHours === preset ? undefined : preset }))}
                     className={cn(
-                      "px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 border",
+                      "px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-300 border",
+                      "hover:scale-105 active:scale-95",
                       context.sleepHours === preset
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted"
+                        ? "text-white border-transparent shadow-lg"
+                        : "bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted hover:shadow-md"
                     )}
+                    style={{
+                      background: context.sleepHours === preset 
+                        ? `linear-gradient(135deg, ${gradientColors.from}, ${gradientColors.to})`
+                        : undefined
+                    }}
                   >
                     {preset}
                   </button>
@@ -494,7 +600,7 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
             </div>
 
             {/* Activity */}
-            <div>
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: '200ms' }}>
               <Label className="text-sm font-medium mb-2 flex items-center gap-2">
                 <Dumbbell className="h-4 w-4 text-muted-foreground" />
                 Physical activity today
@@ -505,11 +611,17 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
                     key={preset}
                     onClick={() => setContext(c => ({ ...c, physicalActivity: c.physicalActivity === preset ? undefined : preset }))}
                     className={cn(
-                      "px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 border",
+                      "px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-300 border",
+                      "hover:scale-105 active:scale-95",
                       context.physicalActivity === preset
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted"
+                        ? "text-white border-transparent shadow-lg"
+                        : "bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted hover:shadow-md"
                     )}
+                    style={{
+                      background: context.physicalActivity === preset 
+                        ? `linear-gradient(135deg, ${gradientColors.from}, ${gradientColors.to})`
+                        : undefined
+                    }}
                   >
                     {preset}
                   </button>
@@ -518,7 +630,7 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
             </div>
 
             {/* Journal Toggle */}
-            <div className="lg:col-span-2 flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/30">
+            <div className="lg:col-span-2 flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border/30 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: '250ms' }}>
               <div>
                 <Label className="text-sm font-medium">Send to Journal</Label>
                 <p className="text-xs text-muted-foreground">Add this check-in to today's journal entry</p>
@@ -528,26 +640,30 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-4 pt-6 max-w-5xl mx-auto w-full">
+          <div className="flex gap-3 pt-4 max-w-5xl mx-auto w-full">
             <Button
               variant="outline"
               onClick={handleBack}
-              className="flex-1 h-12 rounded-2xl gap-2"
+              className="flex-1 h-11 rounded-xl gap-2 hover:shadow-md transition-all duration-300"
             >
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="flex-[2] h-12 rounded-2xl gap-2"
+              className="flex-[2] h-11 rounded-xl gap-2 transition-all duration-300 relative overflow-hidden group"
+              style={{
+                background: `linear-gradient(135deg, ${gradientColors.from}, ${gradientColors.to})`
+              }}
             >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
               {saving ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin relative z-10" />
               ) : (
-                <Check className="h-5 w-5" />
+                <Check className="h-4 w-4 relative z-10" />
               )}
-              Save Check-in
+              <span className="relative z-10">Save Check-in</span>
             </Button>
           </div>
         </div>
@@ -555,43 +671,79 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
 
       {/* Step 3: Complete */}
       {step === 3 && savedQuadrant && savedEmotion && (
-        <div className="flex-1 flex flex-col px-6 lg:px-12 py-6 animate-in fade-in zoom-in-95 duration-700">
+        <div className="flex-1 flex flex-col px-4 md:px-6 lg:px-10 py-6 animate-in fade-in zoom-in-95 duration-700">
           {/* Success Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 bg-gradient-to-br shadow-2xl"
-              style={{ 
-                background: `linear-gradient(135deg, ${QUADRANTS[savedQuadrant].color}40, ${QUADRANTS[savedQuadrant].color}20)` 
-              }}
-            >
-              <Check className="h-10 w-10" style={{ color: QUADRANTS[savedQuadrant].color }} />
+          <div className="text-center mb-6">
+            {/* Animated Check Circle */}
+            <div className="relative inline-flex items-center justify-center mb-4">
+              <div 
+                className="w-20 h-20 rounded-full flex items-center justify-center shadow-2xl animate-in zoom-in duration-500"
+                style={{ 
+                  background: `linear-gradient(135deg, ${QUADRANTS[savedQuadrant].color}30, ${QUADRANTS[savedQuadrant].color}10)`,
+                  border: `3px solid ${QUADRANTS[savedQuadrant].color}`
+                }}
+              >
+                <Check 
+                  className="h-10 w-10 animate-in zoom-in duration-300" 
+                  style={{ color: QUADRANTS[savedQuadrant].color, animationDelay: '200ms' }} 
+                />
+              </div>
+              {/* Ripple rings */}
+              <div 
+                className="absolute inset-0 rounded-full animate-ping opacity-20"
+                style={{ backgroundColor: QUADRANTS[savedQuadrant].color }}
+              />
             </div>
-            <h1 className="text-2xl md:text-3xl font-light tracking-tight text-foreground mb-1">
+            
+            <h1 className="text-2xl md:text-3xl font-light tracking-tight text-foreground mb-1 animate-in fade-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: '100ms' }}>
               Check-in saved!
             </h1>
-            <p className="text-lg" style={{ color: QUADRANTS[savedQuadrant].color }}>
+            <p className="text-lg animate-in fade-in slide-in-from-bottom-2 duration-500" style={{ color: QUADRANTS[savedQuadrant].color, animationDelay: '200ms' }}>
               {quadrantEmoji[savedQuadrant]} {savedEmotion}
             </p>
           </div>
 
           {/* Recommended Strategies */}
           <div className="flex-1 max-w-4xl mx-auto w-full">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="h-5 w-5 text-primary" />
+            <div className="flex items-center gap-2 mb-4 animate-in fade-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: '300ms' }}>
+              <Sparkles className="h-5 w-5" style={{ color: QUADRANTS[savedQuadrant].color }} />
               <h2 className="text-lg font-medium">Recommended for you</h2>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {recommendedStrategies.map((strategy) => (
+              {recommendedStrategies.map((strategy, idx) => (
                 <div
                   key={strategy.id}
-                  className="p-5 rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+                  className="group p-5 rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm 
+                             hover:shadow-xl transition-all duration-500 hover:-translate-y-1 cursor-pointer
+                             animate-in fade-in slide-in-from-bottom-4"
+                  style={{ 
+                    animationDelay: `${400 + idx * 100}ms`,
+                    animationFillMode: 'backwards'
+                  }}
                 >
-                  <div className="text-3xl mb-3">{strategy.icon}</div>
-                  <h3 className="font-semibold text-base mb-1">{strategy.title}</h3>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="text-3xl">{strategy.icon}</div>
+                    <div 
+                      className="w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300"
+                      style={{ backgroundColor: `${QUADRANTS[savedQuadrant].color}20` }}
+                    >
+                      <Play className="h-4 w-4" style={{ color: QUADRANTS[savedQuadrant].color }} />
+                    </div>
+                  </div>
+                  <h3 className="font-semibold text-base mb-1 group-hover:text-primary transition-colors">{strategy.title}</h3>
                   <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{strategy.description}</p>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span className="px-2 py-0.5 bg-muted rounded-full capitalize">{strategy.type}</span>
-                    <span>{strategy.duration}</span>
+                    <span 
+                      className="px-2 py-0.5 rounded-full capitalize"
+                      style={{ backgroundColor: `${QUADRANTS[savedQuadrant].color}15`, color: QUADRANTS[savedQuadrant].color }}
+                    >
+                      {strategy.type}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {strategy.duration}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -599,13 +751,13 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
           </div>
 
           {/* New Check-in Button */}
-          <div className="pt-6 max-w-md mx-auto w-full">
+          <div className="pt-6 max-w-md mx-auto w-full animate-in fade-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: '700ms' }}>
             <Button
               onClick={resetFlow}
               variant="outline"
-              className="w-full h-12 rounded-2xl gap-2"
+              className="w-full h-11 rounded-xl gap-2 hover:shadow-md transition-all duration-300"
             >
-              <ArrowRight className="h-5 w-5" />
+              <ArrowRight className="h-4 w-4" />
               New Check-in
             </Button>
           </div>
