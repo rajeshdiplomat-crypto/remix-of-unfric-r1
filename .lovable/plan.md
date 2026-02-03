@@ -1,220 +1,276 @@
 
 
-# Implement Facebook-Style Scrolling Across All Multi-Column Pages
+# Complete Diary Page Redesign - Facebook-Style Feed Layout
 
 ## Overview
 
-This plan standardizes scrolling behavior across all pages with 2 or 3 column layouts, implementing a **Facebook-style structure** where:
-- The page hero/header stays at the top
-- Each column scrolls independently within a fixed container
-- The main page body does NOT scroll - only individual panels do
+Based on the Facebook screenshot provided, we'll completely redesign the Diary page to follow a true **3-column Facebook layout** with:
+- **Left Sidebar**: Fixed navigation/shortcuts (currently missing in the app)
+- **Center Feed**: Scrollable feed with post cards
+- **Right Sidebar**: Performance snapshot, quick actions, filters
 
-## Pages Requiring Changes
-
-| Page | Current Layout | Column Structure |
-|------|----------------|------------------|
-| **Manifest** | 3-column | Left (Realities) / Center (Practice) / Right (Progress+Calendar) |
-| **Emotions** | 2-column | Left (Check-in + Dashboard) / Right (Calendar + Entries) |
-| **Tasks** | 2-column | Left (All Tasks) / Right (Quadrant/Board) |
-| **Journal** | 3-column | Left (Calendar) / Center (Editor) / Right (Details) |
-| **Diary** | 2-column | Left (Feed) / Right (Sidebar) |
-| **Trackers** | 3-column | Left (Month Card) / Center (Table) / Right (Practice Panel) |
-| **Notes** | Single or Split | Overview or Editor split view |
+The current design has a hero + 2-column layout. We need to remove the hero and implement a proper Facebook-style structure.
 
 ---
 
-## Implementation Details
+## Key Design Elements from Facebook Reference
 
-### 1. **Manifest Page** (`src/pages/Manifest.tsx`)
+| Element | Facebook | New Diary Design |
+|---------|----------|------------------|
+| **Layout** | 3-column (nav / feed / widgets) | 3-column (shortcuts / feed / insights) |
+| **Left Sidebar** | Profile, shortcuts, menu items | Quick links to modules, saved items |
+| **Center Feed** | Scrollable post cards | Feed cards (journal, tasks, emotions, etc.) |
+| **Right Sidebar** | Sponsored, friend requests, contacts | Performance snapshot, quick actions, filters |
+| **Hero** | None | **Remove completely** |
+| **Post Cards** | Avatar, name, time, content, reactions | Same pattern with module-specific styling |
 
-**Current Structure:**
-```
-<div className="flex-1 grid gap-3 w-full px-2 sm:px-4 py-2 ...">
-  <div className="hidden lg:flex flex-col h-full min-h-0"> <!-- Left -->
-  <div className="flex flex-col min-w-0 min-h-0 gap-3"> <!-- Center -->
-  <div className="hidden lg:flex flex-col ... h-full"> <!-- Right -->
+---
+
+## Implementation Plan
+
+### 1. Remove DiaryHero Component
+
+**File: `src/pages/Diary.tsx`**
+- Remove the `<DiaryHero />` component entirely
+- Remove the import statement
+
+### 2. Create New Left Sidebar Component
+
+**New File: `src/components/diary/DiaryLeftSidebar.tsx`**
+
+Content:
+- User profile card (avatar, name)
+- Module shortcuts (Tasks, Journal, Notes, Trackers, Manifest, Emotions)
+- "Saved" quick link
+- Optional: Recent activity summary
+
+```tsx
+// Structure
+<div className="flex flex-col h-full">
+  {/* Profile */}
+  <div className="p-4 flex items-center gap-3">
+    <Avatar />
+    <span>User Name</span>
+  </div>
+  
+  {/* Navigation Links */}
+  <nav className="flex flex-col gap-1 p-2">
+    <NavItem icon={CheckSquare} label="Tasks" onClick={() => navigate('/tasks')} />
+    <NavItem icon={PenLine} label="Journal" onClick={() => navigate('/journal')} />
+    <NavItem icon={FileText} label="Notes" onClick={() => navigate('/notes')} />
+    <NavItem icon={BarChart3} label="Trackers" onClick={() => navigate('/trackers')} />
+    <NavItem icon={Sparkles} label="Manifest" onClick={() => navigate('/manifest')} />
+    <NavItem icon={Heart} label="Emotions" onClick={() => navigate('/emotions')} />
+    <Separator />
+    <NavItem icon={Bookmark} label="Saved" onClick={() => setFilter('saved')} />
+  </nav>
 </div>
 ```
 
-**Changes:**
-| Line | Component | Change |
-|------|-----------|--------|
-| ~451 | Grid container | Add `overflow-hidden` to prevent page scroll |
-| ~590 | Center panel | Add `h-full overflow-y-auto` for independent scroll |
+### 3. Restructure Main Page Layout
 
-The left and right panels already have `h-full` - adding `overflow-hidden` to parent enables their scrolling.
+**File: `src/pages/Diary.tsx`**
 
----
-
-### 2. **Emotions Page** (`src/pages/Emotions.tsx`)
-
-**Current Structure (after recent changes):**
+Change from:
 ```
-<div className="flex-1 px-6 lg:px-8 py-6 overflow-hidden">
-  <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 h-full">
-    <div className="flex flex-col gap-6 overflow-y-auto h-full"> <!-- Left -->
-    <div className="flex flex-col gap-4 overflow-y-auto h-full"> <!-- Right -->
+┌─────────────────────────────────────────────────────┐
+│                    DiaryHero                         │
+├────────────────────────────────┬────────────────────┤
+│   Feed (scrollable)            │   Sidebar (scroll) │
+└────────────────────────────────┴────────────────────┘
 ```
 
-**Status:** ✅ Already updated with `h-full` and `overflow-y-auto` on both columns.
-
----
-
-### 3. **Tasks Page** (`src/pages/Tasks.tsx`)
-
-**Current Structure:**
+To Facebook-style:
 ```
-<div className={`flex-1 grid grid-cols-1 ${gridCols} gap-8 min-h-0 min-w-0`}>
-  <div className="min-h-0 min-w-0 h-[600px]"> <!-- Left: AllTasksList -->
-  <div className="w-full min-w-0 h-[600px]"> <!-- Right: Quadrant/Board -->
+┌────────────┬───────────────────────────┬─────────────┐
+│  Left Nav  │      Center Feed          │  Right      │
+│  (fixed)   │    (scrollable)           │  Sidebar    │
+│            │                           │  (fixed)    │
+│  Profile   │  ┌─────────────────────┐  │  Insights   │
+│  ─────     │  │ Create Post Box     │  │  ─────      │
+│  Tasks     │  └─────────────────────┘  │  Stats      │
+│  Journal   │  ┌─────────────────────┐  │  Quick Act  │
+│  Notes     │  │ Feed Card 1         │  │  Filters    │
+│  Trackers  │  │ (journal entry)     │  │             │
+│  Manifest  │  └─────────────────────┘  │             │
+│  Emotions  │  ┌─────────────────────┐  │             │
+│  ─────     │  │ Feed Card 2         │  │             │
+│  Saved     │  │ (task completed)    │  │             │
+│            │  └─────────────────────┘  │             │
+│            │           ↕               │             │
+└────────────┴───────────────────────────┴─────────────┘
+```
+
+### 4. Add "Create Post" Box (Facebook's Post Composer)
+
+**New File: `src/components/diary/DiaryCreatePost.tsx`**
+
+A quick-action composer bar at the top of the feed:
+```tsx
+<Card className="mb-4">
+  <div className="p-4 flex items-center gap-3">
+    <Avatar />
+    <div 
+      className="flex-1 bg-muted rounded-full px-4 py-2 cursor-pointer"
+      onClick={() => setIsJournalModalOpen(true)}
+    >
+      What's on your mind?
+    </div>
+  </div>
+  <Separator />
+  <div className="flex items-center justify-around p-2">
+    <Button variant="ghost" onClick={() => navigate('/journal')}>
+      <PenLine /> Journal
+    </Button>
+    <Button variant="ghost" onClick={() => navigate('/tasks')}>
+      <CheckSquare /> Task
+    </Button>
+    <Button variant="ghost" onClick={() => navigate('/emotions')}>
+      <Heart /> Check-in
+    </Button>
+  </div>
+</Card>
+```
+
+### 5. Update Feed Card Styling
+
+**File: `src/components/diary/DiaryFeedCard.tsx`**
+
+Enhance to match Facebook's post card design:
+- Larger avatar (40px instead of 32px)
+- Module name as "author" with timestamp below
+- Cleaner action bar (React, Comment, Share)
+- Remove some visual clutter
+
+### 6. Simplify Right Sidebar
+
+**File: `src/components/diary/DiarySidebar.tsx`**
+
+Keep existing content but:
+- Make it sticky/fixed
+- Add subtle background distinction
+- Keep Performance Snapshot, Quick Actions, Filters
+
+### 7. Page Grid Structure
+
+**File: `src/pages/Diary.tsx`**
+
+New structure:
+```tsx
+<div className="flex w-full h-full overflow-hidden">
+  {/* Left Sidebar - Hidden on mobile, fixed on desktop */}
+  <aside className="hidden lg:flex flex-col w-[280px] shrink-0 h-full overflow-y-auto border-r border-border/20 bg-background">
+    <DiaryLeftSidebar 
+      user={user}
+      filter={filter}
+      onFilterChange={setFilter}
+      onQuickAction={handleQuickAction}
+    />
+  </aside>
+
+  {/* Center Feed - Scrollable */}
+  <main className="flex-1 min-w-0 h-full overflow-y-auto px-4 lg:px-8 py-4">
+    <div className="max-w-[680px] mx-auto">
+      {/* Create Post Box */}
+      <DiaryCreatePost 
+        user={user}
+        onOpenJournal={() => setIsJournalModalOpen(true)}
+        onQuickAction={handleQuickAction}
+      />
+      
+      {/* Feed Cards */}
+      <div className="space-y-4">
+        {sortedEvents.map(event => (
+          <DiaryFeedCard ... />
+        ))}
+      </div>
+    </div>
+  </main>
+
+  {/* Right Sidebar - Hidden on mobile/tablet, fixed on desktop */}
+  <aside className="hidden xl:flex flex-col w-[340px] shrink-0 h-full overflow-y-auto border-l border-border/20 bg-background/50">
+    <DiarySidebar ... />
+  </aside>
 </div>
 ```
 
-**Current Behavior:** Uses fixed `h-[600px]` for both panels instead of filling remaining viewport.
+---
 
-**Changes:**
-| Line | Component | Change |
-|------|-----------|--------|
-| ~428 | Main content wrapper | Change to `flex-1 overflow-hidden` |
-| ~429 | Grid container | Add `h-full` |
-| ~430 | Left panel | Change from `h-[600px]` to `h-full overflow-y-auto` |
-| ~437 | Right panel | Change from `h-[600px]` to `h-full overflow-y-auto` |
+## Files to Create
+
+| File | Purpose |
+|------|---------|
+| `src/components/diary/DiaryLeftSidebar.tsx` | Left navigation sidebar with module shortcuts |
+| `src/components/diary/DiaryCreatePost.tsx` | Facebook-style "What's on your mind?" composer |
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/pages/Diary.tsx` | Complete layout restructure, remove hero, add 3-column grid |
+| `src/components/diary/DiaryFeedCard.tsx` | Enhance card styling to match Facebook posts |
+| `src/components/diary/DiarySidebar.tsx` | Minor adjustments for new layout context |
+| `src/components/diary/DiaryHero.tsx` | Can be deleted (no longer used) |
 
 ---
 
-### 4. **Journal Page** (`src/pages/Journal.tsx`)
+## Responsive Behavior
 
-**Current Structure:**
-```
-<div className={cn("flex-1 grid gap-6 w-full px-4 sm:px-6 py-4 ...")}>
-  <div className="hidden lg:flex flex-col ... h-full"> <!-- Left: Calendar -->
-  <div className="flex flex-col min-w-0"> <!-- Center: Editor -->
-  <div className="hidden lg:block h-full"> <!-- Right: Details -->
-</div>
-```
-
-**Changes:**
-| Line | Component | Change |
-|------|-----------|--------|
-| ~741 | Grid container | Add `overflow-hidden h-full` |
-| ~770 | Center panel | Add `h-full overflow-y-auto` |
-| ~754 | Left panel | Add `overflow-y-auto` (already has `h-full`) |
-| ~837 | Right panel | Add `overflow-y-auto` (already has `h-full`) |
+| Breakpoint | Layout |
+|------------|--------|
+| Mobile (`< lg`) | Single column feed only, bottom nav for quick actions |
+| Tablet (`lg`) | 2-column: Feed + Right sidebar |
+| Desktop (`xl`) | 3-column: Left nav + Feed + Right sidebar |
 
 ---
 
-### 5. **Diary Page** (`src/pages/Diary.tsx`)
+## Technical Details
 
-**Current Structure:**
-```
-<div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 w-full px-6 lg:px-8 pt-6">
-  <div className="min-w-0 overflow-hidden"> <!-- Left: Feed -->
-    <ScrollArea className="flex-1 min-h-0">
-  <aside className="hidden lg:flex flex-col h-full overflow-y-auto"> <!-- Right: Sidebar -->
-</div>
-```
+### CSS Grid/Flex Structure
+```css
+/* Main container */
+.diary-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
 
-**Changes:**
-| Line | Component | Change |
-|------|-----------|--------|
-| ~402 | Grid container wrapper | Wrap with `flex-1 overflow-hidden`, add `h-full` to grid |
-| ~404 | Left panel | Add `h-full overflow-y-auto`, remove internal `ScrollArea` wrapper approach |
-| ~511 | Right panel | Already has `h-full overflow-y-auto` ✅ |
+/* Left sidebar */
+.left-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  height: 100%;
+  overflow-y: auto;
+  position: sticky;
+  top: 0;
+}
 
----
+/* Center feed */
+.center-feed {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow-y: auto;
+  max-width: 680px; /* Facebook's max width for posts */
+  margin: 0 auto;
+}
 
-### 6. **Trackers Page** (`src/pages/Trackers.tsx`)
-
-**Current Structure:**
-```
-<div className="px-4 py-4 space-y-4">
-  <!-- Dashboard Content with cards -->
-  <div className="grid grid-cols-1 lg:grid-cols-[160px_1fr_200px] gap-4">
-    <!-- Month Card | Habits Table | Practice Panel -->
-```
-
-**Current Behavior:** Uses `space-y-4` with normal page scrolling. This page has a unique layout with a large horizontal table that needs horizontal scrolling.
-
-**Changes:**
-| Line | Component | Change |
-|------|-----------|--------|
-| ~1145 | Content container | Change to `flex-1 px-4 py-4 overflow-hidden flex flex-col` |
-| ~1158 | Grid container | Add `flex-1 h-full overflow-hidden` |
-| Left panel (Month Card) | Keep as-is (small, fixed height) |
-| Center panel (Table) | Add `overflow-auto` for both horizontal and vertical scroll |
-| Right panel (Practice) | Add `h-full overflow-y-auto` |
-
----
-
-### 7. **Notes Page** (`src/pages/Notes.tsx`)
-
-**Current Structure (Overview Mode):**
-```
-<div className="flex flex-col flex-1 p-6 pb-8 space-y-8 relative z-10 overflow-y-auto">
-  <!-- Header, Stats, Groups -->
-</div>
+/* Right sidebar */
+.right-sidebar {
+  width: 340px;
+  flex-shrink: 0;
+  height: 100%;
+  overflow-y: auto;
+  position: sticky;
+  top: 0;
+}
 ```
 
-**Current Behavior:** Single-column overview with full-page scrolling. The Notes page uses a split view when editing which has its own scroll behavior.
-
-**Changes for Overview Mode:**
-The Notes overview is intentionally single-column and should scroll as one unit. No changes needed for Facebook-style since it doesn't have side-by-side panels in overview mode.
-
-**Editor Mode (NotesSplitView):** Already handles split view scrolling internally.
-
----
-
-## Summary of Changes by File
-
-| File | Key Changes |
-|------|-------------|
-| `src/pages/Manifest.tsx` | Add `overflow-hidden` to grid, `h-full overflow-y-auto` to center panel |
-| `src/pages/Emotions.tsx` | ✅ Already complete |
-| `src/pages/Tasks.tsx` | Remove fixed `h-[600px]`, add `h-full overflow-y-auto` to both columns |
-| `src/pages/Journal.tsx` | Add `overflow-hidden h-full` to grid, `overflow-y-auto` to all 3 columns |
-| `src/pages/Diary.tsx` | Add `overflow-hidden` to container, `h-full` to left panel |
-| `src/pages/Trackers.tsx` | Restructure to flex layout, add scroll containers to center/right panels |
-| `src/pages/Notes.tsx` | No changes needed (single column overview) |
-
----
-
-## Visual Result
-
-After implementation, all multi-column pages will have this behavior:
-
-```text
-┌────────────────────────────────────────────────────────────┐
-│                      Fixed Header                           │
-├────────────────────────────────────────────────────────────┤
-│                       Page Hero                             │
-├─────────────────────┬───────────────────┬──────────────────┤
-│   Left Panel        │   Center Panel    │   Right Panel    │
-│   (scrolls ↕)       │   (scrolls ↕)     │   (scrolls ↕)    │
-│   ┌─────────────┐   │   ┌───────────┐   │   ┌──────────┐   │
-│   │             │   │   │           │   │   │          │   │
-│   │  Content    │   │   │  Content  │   │   │ Content  │   │
-│   │             │ ↕ │   │           │ ↕ │   │          │ ↕ │
-│   │             │   │   │           │   │   │          │   │
-│   └─────────────┘   │   └───────────┘   │   └──────────┘   │
-└─────────────────────┴───────────────────┴──────────────────┘
-              ↕                ↕                  ↕
-         Independent      Independent        Independent
-           Scroll           Scroll             Scroll
-```
-
----
-
-## Technical Notes
-
-1. **Key CSS Pattern:**
-   - Parent container: `flex-1 overflow-hidden` (prevents page scroll)
-   - Grid: `h-full` (fills parent height)
-   - Each column: `h-full overflow-y-auto` (independent scrolling)
-
-2. **Mobile Behavior:**
-   - On mobile (`grid-cols-1`), columns stack and each maintains its own scroll
-   - May want to revisit for full-page scroll on mobile in future iteration
-
-3. **Import Cleanup:**
-   - Remove any unused `useRef`, `useCallback` imports related to height syncing logic
+### Key Differences from Current Design
+1. **No Hero** - Removed completely for Facebook-style layout
+2. **Left Navigation** - New sidebar with module shortcuts
+3. **Create Post Box** - Quick action composer at top of feed
+4. **Centered Feed** - Max-width constrained, centered in available space
+5. **Independent Scrolling** - Each column scrolls independently (Facebook-style already implemented)
 
