@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { ChevronLeft, ChevronRight, PanelLeftClose, PanelRightClose } from "lucide-react";
+import { useState, useEffect } from "react";
 import {
   Drawer,
   DrawerContent,
@@ -17,11 +17,30 @@ interface EmotionThreeZoneLayoutProps {
   centerExpanded?: boolean;
 }
 
+const TABLET_BREAKPOINT = 1024;
+
+function useIsTablet() {
+  const [isTablet, setIsTablet] = useState<boolean>(false);
+
+  useEffect(() => {
+    const checkTablet = () => {
+      const width = window.innerWidth;
+      setIsTablet(width >= 768 && width < TABLET_BREAKPOINT);
+    };
+    
+    checkTablet();
+    window.addEventListener("resize", checkTablet);
+    return () => window.removeEventListener("resize", checkTablet);
+  }, []);
+
+  return isTablet;
+}
+
 /**
  * 3-Zone Center-Dominant Layout
  * - Desktop: 3 columns with muted rails and dominant center
- * - Tablet: Collapsible rails with toggle buttons
- * - Mobile: Full-width center, rails in bottom drawers
+ * - Tablet (768-1023px): Collapsible rails with toggle buttons
+ * - Mobile (<768px): Full-width center, rails in bottom drawers
  */
 export function EmotionThreeZoneLayout({
   leftRail,
@@ -31,6 +50,7 @@ export function EmotionThreeZoneLayout({
   centerExpanded = false,
 }: EmotionThreeZoneLayoutProps) {
   const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
   const [leftRailOpen, setLeftRailOpen] = useState(true);
   const [rightRailOpen, setRightRailOpen] = useState(true);
 
@@ -89,7 +109,92 @@ export function EmotionThreeZoneLayout({
     );
   }
 
-  // Desktop/Tablet: 3-column grid
+  // Tablet (768-1023px): Collapsible rails with toggle buttons
+  if (isTablet) {
+    return (
+      <div className="flex h-full overflow-hidden relative">
+        {/* Left Rail Toggle */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setLeftRailOpen(!leftRailOpen)}
+          className={cn(
+            "absolute left-2 top-4 z-10 h-8 w-8 p-0 rounded-lg",
+            "bg-background/80 backdrop-blur-sm border border-border shadow-sm",
+            "hover:bg-muted"
+          )}
+          aria-label={leftRailOpen ? "Close left panel" : "Open left panel"}
+        >
+          {leftRailOpen ? (
+            <PanelLeftClose className="h-4 w-4" />
+          ) : (
+            <ChevronRight className="h-4 w-4" />
+          )}
+        </Button>
+
+        {/* Left Rail - Collapsible */}
+        <aside
+          className={cn(
+            "flex flex-col gap-4 h-full overflow-y-auto transition-all duration-300 ease-in-out",
+            railsDimmed ? "opacity-35" : "opacity-50",
+            leftRailOpen ? "w-[220px] min-w-[220px] px-4 py-4" : "w-0 min-w-0 px-0 overflow-hidden"
+          )}
+          aria-label="Context information"
+          aria-hidden={!leftRailOpen}
+        >
+          <div className="rounded-2xl bg-muted/30 p-4 space-y-4 mt-10">
+            {leftRail}
+          </div>
+        </aside>
+
+        {/* Center - Main Flow */}
+        <main 
+          className="flex-1 flex flex-col h-full overflow-y-auto px-4 py-4"
+          role="main"
+        >
+          <div className="max-w-[820px] w-full mx-auto">
+            {center}
+          </div>
+        </main>
+
+        {/* Right Rail - Collapsible */}
+        <aside
+          className={cn(
+            "flex flex-col gap-4 h-full overflow-y-auto transition-all duration-300 ease-in-out",
+            railsDimmed ? "opacity-35" : "opacity-45",
+            rightRailOpen ? "w-[220px] min-w-[220px] px-4 py-4" : "w-0 min-w-0 px-0 overflow-hidden"
+          )}
+          aria-label="Recent entries and calendar"
+          aria-hidden={!rightRailOpen}
+        >
+          <div className="mt-10">
+            {rightRail}
+          </div>
+        </aside>
+
+        {/* Right Rail Toggle */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setRightRailOpen(!rightRailOpen)}
+          className={cn(
+            "absolute right-2 top-4 z-10 h-8 w-8 p-0 rounded-lg",
+            "bg-background/80 backdrop-blur-sm border border-border shadow-sm",
+            "hover:bg-muted"
+          )}
+          aria-label={rightRailOpen ? "Close right panel" : "Open right panel"}
+        >
+          {rightRailOpen ? (
+            <PanelRightClose className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
+    );
+  }
+
+  // Desktop/Laptop (≥1024px): 3-column grid
   return (
     <div
       className={cn(
