@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
-import { Check, Loader2, Pencil, Trash2 } from "lucide-react";
+import { Check, Loader2, ArrowLeft, Pencil, Trash2, Heart, Clock, Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -21,36 +21,24 @@ import {
 import { QuadrantType, EmotionEntry, QUADRANTS } from "@/components/emotions/types";
 import { EmotionSliderPicker } from "@/components/emotions/EmotionSliderPicker";
 import { EmotionContextFieldsEnhanced } from "@/components/emotions/EmotionContextFieldsEnhanced";
+import { StrategiesPanelEnhanced } from "@/components/emotions/StrategiesPanelEnhanced";
+import { EmotionCalendarSidebar } from "@/components/emotions/EmotionCalendarSidebar";
+import { RecentEntriesList } from "@/components/emotions/RecentEntriesList";
+import { PatternsDashboardEnhanced } from "@/components/emotions/PatternsDashboardEnhanced";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
-
-// New 3-Zone Layout Components
-import { EmotionThreeZoneLayout } from "@/components/emotions/layout/EmotionThreeZoneLayout";
-import { EmotionLeftRail } from "@/components/emotions/layout/EmotionLeftRail";
-import { EmotionRightRail } from "@/components/emotions/layout/EmotionRightRail";
-import { EmotionCheckInCenter } from "@/components/emotions/screens/EmotionCheckInCenter";
-import { EmotionSupportCenter } from "@/components/emotions/screens/EmotionSupportCenter";
-import { EmotionPatternsView } from "@/components/emotions/screens/EmotionPatternsView";
 
 import { useTimezone } from "@/hooks/useTimezone";
 import { getTodayInTimezone } from "@/lib/formatDate";
 
-// Screen type for 3-zone navigation
-type EmotionScreen = "checkin" | "support" | "patterns";
-
 export default function Emotions() {
   const { user } = useAuth();
   const { timezone } = useTimezone();
-  const [searchParams] = useSearchParams();
   const [entries, setEntries] = useState<EmotionEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Screen navigation state - check URL for direct patterns access
-  const initialScreen = searchParams.get("view") === "patterns" ? "patterns" : "checkin";
-  const [screen, setScreen] = useState<EmotionScreen>(initialScreen);
-
-  // Check-in state (PRESERVED - business logic unchanged)
+  // Check-in state
   const [selectedQuadrant, setSelectedQuadrant] = useState<QuadrantType | null>(null);
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null);
   const [note, setNote] = useState("");
@@ -63,6 +51,7 @@ export default function Emotions() {
   }>({});
   const [sendToJournal, setSendToJournal] = useState(false);
   const [checkInTime, setCheckInTime] = useState<Date>(new Date());
+  const [step, setStep] = useState<"sliders" | "details">("sliders");
 
   // For viewing entries by date
   const [viewingDate, setViewingDate] = useState<string | null>(null);
@@ -80,7 +69,7 @@ export default function Emotions() {
   const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // ============ DATA FETCHING (PRESERVED) ============
+
   useEffect(() => {
     if (user) fetchEntries();
   }, [user]);
@@ -139,59 +128,13 @@ export default function Emotions() {
     }
   };
 
-  // ============ ANALYTICS EVENTS ============
-  const logAnalyticsEvent = (eventName: string, payload?: Record<string, unknown>) => {
-    // Analytics event logging - preserved for future integration
-    console.log(`[Analytics] ${eventName}:`, payload);
-  };
-
-  // ============ CHECK-IN FLOW HANDLERS (MODIFIED for 3-zone) ============
-  
-  // Screen 1 → Screen 2: User selects emotion and clicks Continue
-  const handleCheckInContinue = (quadrant: QuadrantType, emotion: string) => {
-    // Analytics: checkin_started
-    logAnalyticsEvent("checkin_started", { quadrant, emotion, timestamp: new Date().toISOString() });
-    
+  const handleSliderComplete = (quadrant: QuadrantType, emotion: string) => {
     setSelectedQuadrant(quadrant);
     setSelectedEmotion(emotion);
-    setScreen("support");
+    setStep("details");
   };
 
-  // Screen 2 → Save: User skips support or completes strategy
-  const handleSkipSupport = async () => {
-    await saveCheckIn();
-  };
-
-  const handleSaveForLater = async () => {
-    // Save the check-in, mark strategy as saved (future feature)
-    await saveCheckIn();
-    toast.info("Strategy saved for later");
-  };
-
-  const handleStrategyStarted = (strategyId: string) => {
-    // Analytics: strategy_started
-    logAnalyticsEvent("strategy_started", { 
-      strategyId, 
-      quadrant: selectedQuadrant, 
-      emotion: selectedEmotion,
-      timestamp: new Date().toISOString() 
-    });
-  };
-
-  // Navigate to Patterns screen
-  const handleViewPatterns = () => {
-    // Analytics: view_patterns
-    logAnalyticsEvent("view_patterns", { 
-      source: screen === "checkin" ? "right_rail" : "header",
-      timestamp: new Date().toISOString() 
-    });
-    setScreen("patterns");
-  };
-
-  // Back to check-in from patterns
-  const handleBackFromPatterns = () => {
-    setScreen("checkin");
-  };
+  const handleBack = () => setStep("sliders");
 
   const resetCheckIn = () => {
     setSelectedQuadrant(null);
@@ -200,14 +143,14 @@ export default function Emotions() {
     setContext({});
     setSendToJournal(false);
     setCheckInTime(new Date());
-    setScreen("checkin");
+    setStep("sliders");
   };
 
-  // ============ API CALLS (PRESERVED - no changes) ============
   const saveCheckIn = async () => {
     if (!user || !selectedQuadrant || !selectedEmotion) return;
     setSaving(true);
     try {
+      // Include showInJournal flag so JournalDateDetailsPanel knows whether to display it
       const emotionData = JSON.stringify({
         quadrant: selectedQuadrant,
         emotion: selectedEmotion,
@@ -240,20 +183,11 @@ export default function Emotions() {
         entryDate,
       );
 
+      // Only save to journal if toggle is ON
       if (sendToJournal) {
         await saveToJournal(entryDate, note || "", selectedEmotion);
       }
 
-      // Analytics: checkin_submitted
-      logAnalyticsEvent("checkin_submitted", {
-        quadrant: selectedQuadrant,
-        emotion: selectedEmotion,
-        hasNote: !!note,
-        hasContext: Object.keys(context).length > 0,
-        sendToJournal,
-        timestamp: new Date().toISOString()
-      });
-      
       toast.success(`Logged: ${selectedEmotion}`);
       resetCheckIn();
       await fetchEntries();
@@ -352,7 +286,10 @@ export default function Emotions() {
     }
   };
 
-  // ============ ENTRY MANAGEMENT (PRESERVED) ============
+  const latestEntry = entries[0];
+  const currentQuadrant = selectedQuadrant || latestEntry?.quadrant || null;
+  const currentEmotion = selectedEmotion || latestEntry?.emotion || null;
+
   const handleDateClick = (date: string, dayEntries: EmotionEntry[]) => {
     setViewingDate(date);
     setViewingEntries(dayEntries);
@@ -382,6 +319,7 @@ export default function Emotions() {
     const wasViewingDate = viewingDate;
 
     try {
+      // Preserve the original showInJournal flag when editing
       const emotionData = JSON.stringify({
         quadrant: editQuadrant,
         emotion: editEmotion,
@@ -444,9 +382,11 @@ export default function Emotions() {
     }
   };
 
+  // Stats - use timezone-aware today
+  const todayStr = getTodayInTimezone(timezone);
+
   if (loading) return <PageLoadingScreen module="emotions" />;
 
-  // ============ RENDER 3-ZONE LAYOUT ============
   return (
     <div className="flex flex-col w-full flex-1 bg-muted/30 min-h-screen">
       {/* Hero */}
@@ -458,51 +398,123 @@ export default function Emotions() {
         subtitle={PAGE_HERO_TEXT.emotions.subtitle}
       />
 
-      {/* 3-Zone Layout Content */}
-      <div className="flex-1 overflow-hidden">
-        <EmotionThreeZoneLayout
-          leftRail={<EmotionLeftRail currentQuadrant={selectedQuadrant} />}
-          rightRail={
-            <EmotionRightRail
-              entries={entries}
-              onViewPatterns={handleViewPatterns}
-              onDateClick={handleDateClick}
-            />
-          }
-          center={
-            screen === "checkin" ? (
-              <EmotionCheckInCenter onContinue={handleCheckInContinue} />
-            ) : screen === "support" && selectedQuadrant && selectedEmotion ? (
-              <EmotionSupportCenter
-                quadrant={selectedQuadrant}
-                emotion={selectedEmotion}
-                onSkip={handleSkipSupport}
-                onSaveForLater={handleSaveForLater}
-                onStrategyStarted={handleStrategyStarted}
-                note={note}
-                onNoteChange={setNote}
-                context={context}
-                onContextChange={setContext}
-                sendToJournal={sendToJournal}
-                onSendToJournalChange={setSendToJournal}
-                checkInTime={checkInTime}
-                onCheckInTimeChange={setCheckInTime}
-                saving={saving}
-              />
-            ) : (
-              <EmotionPatternsView
-                entries={entries}
-                onBack={handleBackFromPatterns}
-                onDateClick={handleDateClick}
-              />
-            )
-          }
-          railsDimmed={screen === "support"}
-          centerExpanded={screen === "patterns"}
-        />
+      {/* Main Content - Two Column Layout - Fixed Height */}
+      <div className="flex-1 px-6 lg:px-8 py-6 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 h-full">
+          {/* Left Column - Check-in row + Dashboards below */}
+          <div className="flex flex-col gap-6 overflow-y-auto h-full">
+            {/* Top Row: Check-in + Strategies side by side */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+              {/* Check-in Card - Fixed Height */}
+              <Card className="rounded-2xl border-border shadow-sm overflow-hidden h-[620px] flex flex-col">
+                <CardHeader className="pb-2 bg-gradient-to-r from-rose-50/50 to-amber-50/50 dark:from-rose-900/10 dark:to-amber-900/10 shrink-0">
+                  <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                    <Heart className="h-4 w-4 text-rose-500" />
+                    How are you feeling?
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4 flex-1 overflow-y-auto">
+                  {step === "sliders" && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/30 text-sm text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        <span>
+                          {new Intl.DateTimeFormat("en-US", {
+                            timeZone: timezone,
+                            weekday: "long",
+                            day: "numeric",
+                            month: "short",
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: true,
+                          }).format(checkInTime)}
+                        </span>
+                      </div>
+                      <EmotionSliderPicker onSelect={handleSliderComplete} />
+                    </div>
+                  )}
+
+                  {step === "details" && selectedQuadrant && selectedEmotion && (
+                    <div className="space-y-4">
+                      <div
+                        className="flex items-center gap-3 p-3 rounded-xl"
+                        style={{ backgroundColor: QUADRANTS[selectedQuadrant].bgColor }}
+                      >
+                        <div
+                          className="w-4 h-4 rounded-full"
+                          style={{ backgroundColor: QUADRANTS[selectedQuadrant].color }}
+                        />
+                        <div>
+                          <p className="font-medium" style={{ color: QUADRANTS[selectedQuadrant].color }}>
+                            {selectedEmotion}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{QUADRANTS[selectedQuadrant].description}</p>
+                        </div>
+                      </div>
+
+                      <EmotionContextFieldsEnhanced
+                        note={note}
+                        onNoteChange={setNote}
+                        context={context}
+                        onContextChange={setContext}
+                        sendToJournal={sendToJournal}
+                        onSendToJournalChange={setSendToJournal}
+                        checkInTime={checkInTime}
+                        onCheckInTimeChange={setCheckInTime}
+                      />
+
+                      <div className="flex gap-3">
+                        <Button variant="outline" onClick={handleBack} className="flex-1 rounded-xl h-10">
+                          <ArrowLeft className="h-4 w-4 mr-2" /> Back
+                        </Button>
+                        <Button
+                          onClick={saveCheckIn}
+                          disabled={saving}
+                          className="flex-1 rounded-xl h-10 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white border-0"
+                        >
+                          {saving ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : (
+                            <Check className="h-4 w-4 mr-2" />
+                          )}
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Strategies Panel - Fixed Height */}
+              <Card className="rounded-2xl border-border shadow-sm h-[620px] flex flex-col">
+                <CardContent className="p-5 flex-1 overflow-y-auto">
+                  <StrategiesPanelEnhanced currentQuadrant={currentQuadrant} currentEmotion={currentEmotion} />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Patterns Dashboard below - fills remaining space */}
+            <div className="flex-1 min-h-0">
+              <PatternsDashboardEnhanced entries={entries} onDateClick={handleDateClick} />
+            </div>
+          </div>
+
+          {/* Right Column - Calendar & Recent Entries */}
+          <div className="flex flex-col gap-4 overflow-y-auto h-full">
+            {/* Calendar - Non-scrollable */}
+            <div className="shrink-0">
+              <EmotionCalendarSidebar entries={entries} onDateClick={handleDateClick} />
+            </div>
+
+            {/* Recent Entries - Fills remaining height, scrollable */}
+            <div className="flex-1 min-h-0">
+              <RecentEntriesList entries={entries} onEditEntry={startEditEntry} onDeleteEntry={setDeletingEntryId} />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Dialog: View entries by date (PRESERVED) */}
+      {/* Dialog: View entries by date */}
       <Dialog open={!!viewingDate} onOpenChange={(open) => !open && setViewingDate(null)}>
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
@@ -552,7 +564,7 @@ export default function Emotions() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog: Edit Entry (PRESERVED) */}
+      {/* Dialog: Edit Entry */}
       <Dialog open={!!editingEntry} onOpenChange={(open) => !open && cancelEdit()}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader>
@@ -611,7 +623,7 @@ export default function Emotions() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation (PRESERVED) */}
+      {/* Delete Confirmation */}
       <AlertDialog open={!!deletingEntryId} onOpenChange={(open) => !open && setDeletingEntryId(null)}>
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
