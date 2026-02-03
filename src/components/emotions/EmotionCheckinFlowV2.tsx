@@ -5,7 +5,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import { 
   Search, 
   ArrowRight, 
@@ -17,12 +16,11 @@ import {
   Activity,
   Moon,
   Dumbbell,
-  BookOpen,
-  Wind
+  BookOpen
 } from "lucide-react";
-import { QuadrantType, QUADRANTS, EMOTION_DESCRIPTIONS, Strategy, STRATEGIES } from "./types";
+import { QuadrantType, QUADRANTS, STRATEGIES } from "./types";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { EmotionBubbleViz } from "./EmotionBubbleViz";
 
 interface EmotionCheckinFlowV2Props {
   timezone: string;
@@ -330,64 +328,34 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
               </div>
             </div>
 
-            {/* Center Column - Emotion Selection */}
+            {/* Center Column - Bubble Visualization */}
             <div className="flex flex-col min-h-0">
-              <p className="text-sm text-muted-foreground text-center mb-4">
-                Select how you're feeling:
-              </p>
-              
-              {/* Suggested Emotions Grid */}
-              <div className="flex-1 flex flex-wrap gap-3 justify-center content-start overflow-y-auto">
-                {suggestedEmotions.map((item, index) => {
-                  const isTopMatch = index === 0;
-                  const isSelected = selectedEmotion === item.emotion;
-                  const emotionQuadrant = QUADRANTS[item.quadrant];
-                  const description = EMOTION_DESCRIPTIONS[item.emotion];
-
-                  return (
-                    <HoverCard key={item.emotion} openDelay={200} closeDelay={100}>
-                      <HoverCardTrigger asChild>
-                        <button
-                          onClick={() => handleEmotionClick(item.emotion, item.quadrant)}
-                          className={cn(
-                            "px-5 py-3 rounded-2xl text-sm font-medium transition-all duration-300 border-2",
-                            "transform hover:scale-105 active:scale-95",
-                            isSelected || (isTopMatch && !selectedEmotion) 
-                              ? "scale-105 shadow-xl ring-2 ring-offset-2 ring-offset-background" 
-                              : "hover:shadow-lg",
-                          )}
-                          style={{
-                            backgroundColor: isSelected || (isTopMatch && !selectedEmotion) 
-                              ? emotionQuadrant.color 
-                              : "hsl(var(--background))",
-                            borderColor: emotionQuadrant.color,
-                            color: isSelected || (isTopMatch && !selectedEmotion) 
-                              ? "white" 
-                              : emotionQuadrant.color,
-                            "--tw-ring-color": emotionQuadrant.color,
-                          } as React.CSSProperties}
-                        >
-                          {item.emotion}
-                          {(isSelected || (isTopMatch && !selectedEmotion)) && (
-                            <Check className="inline-block h-3.5 w-3.5 ml-1.5" />
-                          )}
-                        </button>
-                      </HoverCardTrigger>
-                      {description && (
-                        <HoverCardContent side="top" className="w-64 p-4 rounded-2xl">
-                          <p className="font-medium mb-1" style={{ color: emotionQuadrant.color }}>
-                            {item.emotion}
-                          </p>
-                          <p className="text-sm text-muted-foreground">{description}</p>
-                        </HoverCardContent>
-                      )}
-                    </HoverCard>
-                  );
-                })}
-              </div>
+              <EmotionBubbleViz
+                energy={energy}
+                pleasantness={pleasantness}
+                selectedEmotion={selectedEmotion}
+                onEmotionSelect={handleEmotionClick}
+                onBubbleClick={(quadrant) => {
+                  // Update sliders when bubble is clicked
+                  if (quadrant === "high-pleasant") {
+                    setEnergy(75);
+                    setPleasantness(75);
+                  } else if (quadrant === "high-unpleasant") {
+                    setEnergy(75);
+                    setPleasantness(25);
+                  } else if (quadrant === "low-unpleasant") {
+                    setEnergy(25);
+                    setPleasantness(25);
+                  } else {
+                    setEnergy(25);
+                    setPleasantness(75);
+                  }
+                  setSelectedEmotion(null);
+                }}
+              />
 
               {/* Continue Button */}
-              <div className="pt-6">
+              <div className="pt-4">
                 <Button
                   onClick={handleContinue}
                   disabled={!finalEmotion}
