@@ -227,23 +227,20 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
 
   return (
     <div className="w-full h-[calc(100vh-80px)] flex flex-col overflow-hidden">
-      {/* Step 1: Emotion Selection - Full Screen Width */}
+      {/* Step 1: Emotion Selection - Compact Single Screen */}
       {step === 1 && (
-        <div className="flex-1 flex flex-col px-6 lg:px-12 py-6 animate-in fade-in slide-in-from-right-4 duration-500">
-          {/* Header */}
-          <div className="text-center mb-6">
-            <h1 className="text-2xl md:text-3xl font-light tracking-tight text-foreground mb-1">
+        <div className="flex-1 flex flex-col px-4 md:px-8 lg:px-12 py-4 animate-in fade-in duration-500">
+          {/* Header - Compact */}
+          <div className="text-center mb-4">
+            <h1 className="text-xl md:text-2xl font-light tracking-tight text-foreground">
               How are you feeling?
             </h1>
-            <p className="text-sm text-muted-foreground">
-              Use the sliders or search for your emotion
-            </p>
           </div>
 
-          {/* Main Content - 3 Column Layout */}
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_2fr_1fr] gap-6 lg:gap-8 min-h-0">
-            {/* Left Column - Sliders */}
-            <div className="flex flex-col gap-4 lg:gap-6">
+          {/* Main Content - Horizontal Layout */}
+          <div className="flex-1 flex flex-col lg:flex-row gap-4 lg:gap-6 min-h-0">
+            {/* Left: Sliders + Zone Display */}
+            <div className="lg:w-64 flex flex-col gap-3 shrink-0">
               {/* Search Bar */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -252,18 +249,18 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
                   placeholder="Search emotions..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-11 rounded-xl bg-background/80 backdrop-blur-sm border-border/50"
+                  className="pl-10 h-10 rounded-xl bg-background/80 backdrop-blur-sm border-border/50 text-sm"
                 />
                 {searchResults.length > 0 && (
-                  <div className="absolute z-20 w-full mt-2 bg-card/95 backdrop-blur-lg border border-border rounded-xl shadow-2xl p-2 space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="absolute z-30 w-full mt-1 bg-card/95 backdrop-blur-lg border border-border rounded-xl shadow-2xl p-2 space-y-0.5 animate-in fade-in slide-in-from-top-2 duration-200">
                     {searchResults.map((item) => (
                       <button
                         key={item.emotion}
                         onClick={() => handleEmotionClick(item.emotion, item.quadrant)}
-                        className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-muted flex items-center gap-3 transition-all duration-200 group"
+                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted flex items-center gap-2 transition-all duration-200 group"
                       >
                         <div 
-                          className="w-2.5 h-2.5 rounded-full transition-transform group-hover:scale-125" 
+                          className="w-2 h-2 rounded-full transition-transform group-hover:scale-125" 
                           style={{ backgroundColor: QUADRANTS[item.quadrant].color }} 
                         />
                         <span className="font-medium text-sm">{item.emotion}</span>
@@ -274,11 +271,11 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
               </div>
 
               {/* Energy Slider */}
-              <div className="space-y-3 p-4 rounded-2xl bg-muted/30 border border-border/30">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground uppercase tracking-wider">Low Energy</span>
-                  <span className="font-semibold text-foreground bg-background px-2 py-0.5 rounded-full">{energy}%</span>
-                  <span className="text-muted-foreground uppercase tracking-wider">High Energy</span>
+              <div className="space-y-2 p-3 rounded-xl bg-muted/30 border border-border/30">
+                <div className="flex items-center justify-between text-[10px] uppercase tracking-wider">
+                  <span className="text-muted-foreground">Low</span>
+                  <span className="font-semibold text-foreground">Energy {energy}%</span>
+                  <span className="text-muted-foreground">High</span>
                 </div>
                 <Slider 
                   value={[energy]} 
@@ -293,11 +290,11 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
               </div>
 
               {/* Pleasantness Slider */}
-              <div className="space-y-3 p-4 rounded-2xl bg-muted/30 border border-border/30">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground uppercase tracking-wider">Unpleasant</span>
-                  <span className="font-semibold text-foreground bg-background px-2 py-0.5 rounded-full">{pleasantness}%</span>
-                  <span className="text-muted-foreground uppercase tracking-wider">Pleasant</span>
+              <div className="space-y-2 p-3 rounded-xl bg-muted/30 border border-border/30">
+                <div className="flex items-center justify-between text-[10px] uppercase tracking-wider">
+                  <span className="text-muted-foreground">−</span>
+                  <span className="font-semibold text-foreground">Pleasant {pleasantness}%</span>
+                  <span className="text-muted-foreground">+</span>
                 </div>
                 <Slider 
                   value={[pleasantness]} 
@@ -313,30 +310,29 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
 
               {/* Current Zone Display */}
               <div
-                className="rounded-2xl p-4 border-2 transition-all duration-500"
+                className="rounded-xl p-3 border-2 transition-all duration-500"
                 style={{ backgroundColor: quadrantInfo.bgColor, borderColor: quadrantInfo.borderColor }}
               >
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl">{quadrantEmoji[currentQuadrant]}</span>
-                  <div>
-                    <p className="font-semibold text-base" style={{ color: quadrantInfo.color }}>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{quadrantEmoji[currentQuadrant]}</span>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm truncate" style={{ color: quadrantInfo.color }}>
                       {quadrantInfo.label}
                     </p>
-                    <p className="text-xs text-muted-foreground">{quadrantInfo.description}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{quadrantInfo.description}</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Center Column - Bubble Visualization */}
-            <div className="flex flex-col min-h-0">
+            {/* Center: Bubble Visualization + Emotion Pills */}
+            <div className="flex-1 flex flex-col min-h-0 min-w-0">
               <EmotionBubbleViz
                 energy={energy}
                 pleasantness={pleasantness}
                 selectedEmotion={selectedEmotion}
                 onEmotionSelect={handleEmotionClick}
                 onBubbleClick={(quadrant) => {
-                  // Update sliders when bubble is clicked
                   if (quadrant === "high-pleasant") {
                     setEnergy(75);
                     setPleasantness(75);
@@ -353,44 +349,41 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
                   setSelectedEmotion(null);
                 }}
               />
-
-              {/* Continue Button */}
-              <div className="pt-4">
-                <Button
-                  onClick={handleContinue}
-                  disabled={!finalEmotion}
-                  className="w-full h-12 rounded-2xl text-base gap-2 transition-all duration-300"
-                >
-                  Continue with "{finalEmotion}"
-                  <ArrowRight className="h-5 w-5" />
-                </Button>
-              </div>
             </div>
 
-            {/* Right Column - Preview */}
-            <div className="hidden lg:flex flex-col gap-4">
-              <div className="text-center text-sm text-muted-foreground mb-2">
-                Your selection
-              </div>
-              
+            {/* Right: Selection Preview + Continue */}
+            <div className="lg:w-56 flex flex-col gap-3 shrink-0">
+              {/* Preview Card */}
               <div 
                 className={cn(
-                  "flex-1 rounded-3xl p-6 flex flex-col items-center justify-center transition-all duration-500",
-                  "bg-gradient-to-br shadow-2xl"
+                  "flex-1 rounded-2xl p-4 flex flex-col items-center justify-center transition-all duration-500",
+                  "border-2 min-h-[120px]"
                 )}
                 style={{ 
-                  background: `linear-gradient(135deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}20)`,
+                  background: `linear-gradient(135deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}10)`,
                   borderColor: quadrantInfo.borderColor 
                 }}
               >
-                <span className="text-6xl mb-4">{quadrantEmoji[currentQuadrant]}</span>
-                <p className="text-2xl font-semibold mb-2" style={{ color: quadrantInfo.color }}>
+                <span className="text-4xl mb-2">{quadrantEmoji[currentQuadrant]}</span>
+                <p className="text-lg font-semibold text-center" style={{ color: quadrantInfo.color }}>
                   {finalEmotion || "Select..."}
                 </p>
-                <p className="text-sm text-muted-foreground text-center">
-                  {quadrantInfo.description}
-                </p>
+                {finalEmotion && (
+                  <p className="text-xs text-muted-foreground text-center mt-1">
+                    {quadrantInfo.label}
+                  </p>
+                )}
               </div>
+
+              {/* Continue Button */}
+              <Button
+                onClick={handleContinue}
+                disabled={!finalEmotion}
+                className="w-full h-11 rounded-xl text-sm gap-2 transition-all duration-300"
+              >
+                Continue
+                <ArrowRight className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>
