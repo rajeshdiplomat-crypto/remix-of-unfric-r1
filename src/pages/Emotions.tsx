@@ -19,10 +19,10 @@ import {
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { QuadrantType, EmotionEntry, QUADRANTS } from "@/components/emotions/types";
-import { EmotionCheckinFlow } from "@/components/emotions/EmotionCheckinFlow";
-import { EmotionsQuickActions } from "@/components/emotions/EmotionsQuickActions";
-import { EmotionsStrategiesPage } from "@/components/emotions/EmotionsStrategiesPage";
-import { EmotionsAnalyticsPage } from "@/components/emotions/EmotionsAnalyticsPage";
+import { EmotionCheckinFlowV2 } from "@/components/emotions/EmotionCheckinFlowV2";
+import { EmotionsQuickActionsV2 } from "@/components/emotions/EmotionsQuickActionsV2";
+import { EmotionsStrategiesPageV2 } from "@/components/emotions/EmotionsStrategiesPageV2";
+import { EmotionsAnalyticsPageV2 } from "@/components/emotions/EmotionsAnalyticsPageV2";
 import { EmotionCalendarSidebar } from "@/components/emotions/EmotionCalendarSidebar";
 import { RecentEntriesList } from "@/components/emotions/RecentEntriesList";
 import { EmotionSliderPicker } from "@/components/emotions/EmotionSliderPicker";
@@ -30,7 +30,6 @@ import { EmotionContextFieldsEnhanced } from "@/components/emotions/EmotionConte
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 
 import { useTimezone } from "@/hooks/useTimezone";
-import { getTodayInTimezone } from "@/lib/formatDate";
 import { cn } from "@/lib/utils";
 
 type ViewType = "checkin" | "analytics" | "strategies";
@@ -64,6 +63,10 @@ export default function Emotions() {
   // For delete confirmation
   const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Track latest quadrant/emotion for strategies
+  const [lastQuadrant, setLastQuadrant] = useState<QuadrantType | null>(null);
+  const [lastEmotion, setLastEmotion] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) fetchEntries();
@@ -114,6 +117,13 @@ export default function Emotions() {
       });
 
       setEntries(parsed);
+      
+      // Set latest quadrant/emotion
+      if (parsed.length > 0) {
+        setLastQuadrant(parsed[0].quadrant);
+        setLastEmotion(parsed[0].emotion);
+      }
+      
       return parsed;
     } catch (err) {
       console.error("Error fetching emotions:", err);
@@ -177,6 +187,8 @@ export default function Emotions() {
       }
 
       toast.success(`Logged: ${data.emotion}`);
+      setLastQuadrant(data.quadrant);
+      setLastEmotion(data.emotion);
       await fetchEntries();
     } catch (err) {
       console.error("Error saving emotion:", err);
@@ -272,10 +284,6 @@ export default function Emotions() {
       console.error("Error saving to journal:", err);
     }
   };
-
-  const latestEntry = entries[0];
-  const currentQuadrant = latestEntry?.quadrant || null;
-  const currentEmotion = latestEntry?.emotion || null;
 
   const handleDateClick = (date: string, dayEntries: EmotionEntry[]) => {
     setViewingDate(date);
@@ -374,63 +382,60 @@ export default function Emotions() {
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col w-full flex-1 bg-muted/30 min-h-screen">
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col">
-          {/* Quick Actions - Top Left */}
-          <div className="absolute top-20 left-6 z-10">
-            <EmotionsQuickActions
+      <div className="flex flex-col w-full h-full min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
+        {/* Navigation Bar - Fixed at Top */}
+        <div className="sticky top-0 z-20 px-4 py-3 bg-background/80 backdrop-blur-xl border-b border-border/50">
+          <div className="max-w-6xl mx-auto">
+            <EmotionsQuickActionsV2
               activeView={activeView}
               onViewChange={setActiveView}
               onOpenRecentEntries={() => setShowRecentEntries(true)}
               onOpenCalendar={() => setShowCalendar(true)}
             />
           </div>
+        </div>
 
-          {/* View Container */}
-          <div className="flex-1 flex items-center justify-center p-6 pt-20">
-            {/* Check-in View */}
-            {activeView === "checkin" && (
-              <div className="animate-fade-in">
-                <EmotionCheckinFlow
-                  timezone={timezone}
-                  onSave={handleSaveCheckIn}
-                  saving={saving}
-                />
-              </div>
-            )}
+        {/* Main Content Area - Full Screen */}
+        <div className="flex-1 overflow-y-auto">
+          {/* Check-in View */}
+          {activeView === "checkin" && (
+            <EmotionCheckinFlowV2
+              timezone={timezone}
+              onSave={handleSaveCheckIn}
+              saving={saving}
+              onComplete={(quadrant, emotion) => {
+                setLastQuadrant(quadrant);
+                setLastEmotion(emotion);
+              }}
+            />
+          )}
 
-            {/* Analytics View */}
-            {activeView === "analytics" && (
-              <div className="w-full h-full overflow-y-auto">
-                <EmotionsAnalyticsPage
-                  entries={entries}
-                  onBack={() => setActiveView("checkin")}
-                  onDateClick={handleDateClick}
-                />
-              </div>
-            )}
+          {/* Analytics View */}
+          {activeView === "analytics" && (
+            <EmotionsAnalyticsPageV2
+              entries={entries}
+              onBack={() => setActiveView("checkin")}
+              onDateClick={handleDateClick}
+            />
+          )}
 
-            {/* Strategies View */}
-            {activeView === "strategies" && (
-              <div className="w-full h-full overflow-y-auto">
-                <EmotionsStrategiesPage
-                  currentQuadrant={currentQuadrant}
-                  currentEmotion={currentEmotion}
-                  onBack={() => setActiveView("checkin")}
-                />
-              </div>
-            )}
-          </div>
+          {/* Strategies View */}
+          {activeView === "strategies" && (
+            <EmotionsStrategiesPageV2
+              currentQuadrant={lastQuadrant}
+              currentEmotion={lastEmotion}
+              onBack={() => setActiveView("checkin")}
+            />
+          )}
         </div>
 
         {/* Recent Entries Popup */}
         <Dialog open={showRecentEntries} onOpenChange={setShowRecentEntries}>
-          <DialogContent className="max-w-md max-h-[80vh] overflow-hidden rounded-2xl p-0">
-            <DialogHeader className="p-5 pb-0">
-              <DialogTitle>Recent Check-ins</DialogTitle>
+          <DialogContent className="max-w-md max-h-[80vh] overflow-hidden rounded-3xl p-0">
+            <DialogHeader className="p-6 pb-0">
+              <DialogTitle className="text-xl">Recent Check-ins</DialogTitle>
             </DialogHeader>
-            <div className="p-5 pt-3 overflow-y-auto max-h-[60vh]">
+            <div className="p-6 pt-4 overflow-y-auto max-h-[60vh]">
               <RecentEntriesList 
                 entries={entries} 
                 onEditEntry={startEditEntry} 
@@ -442,11 +447,11 @@ export default function Emotions() {
 
         {/* Calendar Popup */}
         <Dialog open={showCalendar} onOpenChange={setShowCalendar}>
-          <DialogContent className="max-w-sm rounded-2xl p-0">
-            <DialogHeader className="p-5 pb-0">
-              <DialogTitle>Emotion Calendar</DialogTitle>
+          <DialogContent className="max-w-sm rounded-3xl p-0">
+            <DialogHeader className="p-6 pb-0">
+              <DialogTitle className="text-xl">Emotion Calendar</DialogTitle>
             </DialogHeader>
-            <div className="p-5 pt-3">
+            <div className="p-6 pt-4">
               <EmotionCalendarSidebar entries={entries} onDateClick={handleDateClick} />
             </div>
           </DialogContent>
@@ -454,15 +459,17 @@ export default function Emotions() {
 
         {/* Dialog: View entries by date */}
         <Dialog open={!!viewingDate} onOpenChange={(open) => !open && setViewingDate(null)}>
-          <DialogContent className="max-w-md rounded-2xl">
+          <DialogContent className="max-w-md rounded-3xl">
             <DialogHeader>
-              <DialogTitle>{viewingDate ? format(new Date(viewingDate), "EEEE, MMMM d, yyyy") : ""}</DialogTitle>
+              <DialogTitle className="text-xl">
+                {viewingDate ? format(new Date(viewingDate), "EEEE, MMMM d, yyyy") : ""}
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-3 max-h-[60vh] overflow-y-auto">
               {viewingEntries.map((entry) => (
                 <div
                   key={entry.id}
-                  className="p-4 rounded-xl"
+                  className="p-4 rounded-2xl transition-all hover:shadow-md"
                   style={{ backgroundColor: QUADRANTS[entry.quadrant].bgColor }}
                 >
                   <div className="flex items-center gap-2 mb-2">
@@ -474,13 +481,13 @@ export default function Emotions() {
                       <span className="text-xs text-muted-foreground">
                         {format(new Date(entry.created_at), "h:mm a")}
                       </span>
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => startEditEntry(entry)}>
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => startEditEntry(entry)}>
                         <Pencil className="h-3 w-3" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 w-6 p-0 text-destructive"
+                        className="h-7 w-7 p-0 text-destructive"
                         onClick={() => setDeletingEntryId(entry.id)}
                       >
                         <Trash2 className="h-3 w-3" />
@@ -504,9 +511,9 @@ export default function Emotions() {
 
         {/* Dialog: Edit Entry */}
         <Dialog open={!!editingEntry} onOpenChange={(open) => !open && cancelEdit()}>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl">
             <DialogHeader>
-              <DialogTitle>Edit Check-in</DialogTitle>
+              <DialogTitle className="text-xl">Edit Check-in</DialogTitle>
             </DialogHeader>
             {editingEntry && editQuadrant && editEmotion && (
               <div className="space-y-4">
@@ -550,7 +557,7 @@ export default function Emotions() {
                   <Button
                     onClick={saveEditedEntry}
                     disabled={saving}
-                    className="flex-1 rounded-xl bg-gradient-to-r from-rose-500 to-orange-500 text-white border-0"
+                    className="flex-1 rounded-xl bg-primary hover:bg-primary/90"
                   >
                     {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
                     Save
@@ -563,7 +570,7 @@ export default function Emotions() {
 
         {/* Delete Confirmation */}
         <AlertDialog open={!!deletingEntryId} onOpenChange={(open) => !open && setDeletingEntryId(null)}>
-          <AlertDialogContent className="rounded-2xl">
+          <AlertDialogContent className="rounded-3xl">
             <AlertDialogHeader>
               <AlertDialogTitle>Delete check-in?</AlertDialogTitle>
               <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
