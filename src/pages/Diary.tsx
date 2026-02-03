@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,8 +8,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { DiaryFeedCard } from "@/components/diary/DiaryFeedCard";
 import { DiarySidebar } from "@/components/diary/DiarySidebar";
+import { DiaryLeftSidebar } from "@/components/diary/DiaryLeftSidebar";
+import { DiaryCreatePost } from "@/components/diary/DiaryCreatePost";
 import { JournalQuestionCard } from "@/components/diary/JournalQuestionCard";
-import { DiaryHero } from "@/components/diary/DiaryHero";
 import { DiaryJournalModal } from "@/components/diary/DiaryJournalModal";
 import { useFeedEvents } from "@/components/diary/useFeedEvents";
 import { useDiaryMetrics } from "@/components/diary/useDiaryMetrics";
@@ -216,11 +216,9 @@ export default function Diary() {
     emotionsRes.data?.forEach((emotion) => {
       let parsedEmotion = { quadrant: "", emotion: "", context: {} as any };
       try {
-        // Try to parse as JSON first (new format from EmotionSliderPicker)
         const parsed = JSON.parse(emotion.emotion);
         parsedEmotion = parsed;
       } catch {
-        // Fallback for old colon-separated format
         const emotionParts = emotion.emotion.split(":");
         parsedEmotion.emotion = emotionParts[0];
         parsedEmotion.quadrant = emotionParts[1] || "";
@@ -273,14 +271,12 @@ export default function Diary() {
     const channel = supabase
       .channel("diary-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "tasks", filter: `user_id=eq.${user.id}` }, () => {
-        // Re-seed feed when tasks change
         seedFeedEvents();
       })
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "habits", filter: `user_id=eq.${user.id}` },
         () => {
-          // Re-seed feed when habits change
           seedFeedEvents();
         },
       )
@@ -288,7 +284,6 @@ export default function Diary() {
         "postgres_changes",
         { event: "*", schema: "public", table: "habit_completions", filter: `user_id=eq.${user.id}` },
         () => {
-          // Re-seed feed when habit completions change
           seedFeedEvents();
         },
       )
@@ -374,6 +369,7 @@ export default function Diary() {
   );
 
   const [contentReady, setContentReady] = useState(false);
+  const userName = user?.email?.split("@")[0] || "User";
 
   useEffect(() => {
     if (!loading || events.length > 0) {
@@ -389,27 +385,38 @@ export default function Diary() {
   return (
     <div
       className={cn(
-        "flex flex-col w-full flex-1",
+        "flex w-full h-full overflow-hidden",
         "transition-all duration-500 ease-out",
         contentReady ? "opacity-100" : "opacity-0",
       )}
     >
-      {/* Full-bleed Hero */}
-      <DiaryHero />
+      {/* Left Sidebar - Hidden on mobile/tablet, visible on desktop */}
+      <aside className="hidden lg:flex flex-col w-[280px] shrink-0 h-full overflow-y-auto border-r border-border/20 bg-background">
+        <DiaryLeftSidebar 
+          userName={userName}
+          filter={filter}
+          onFilterChange={setFilter}
+        />
+      </aside>
 
-      {/* Content Grid */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 w-full px-6 lg:px-8 pt-6 overflow-hidden">
-        {/* Main Feed */}
-        <div className="min-w-0 h-full overflow-y-auto flex flex-col">
+      {/* Center Feed - Scrollable */}
+      <main className="flex-1 min-w-0 h-full overflow-y-auto bg-muted/20">
+        <div className="max-w-[680px] mx-auto px-4 lg:px-6 py-4">
+          {/* Create Post Box */}
+          <DiaryCreatePost 
+            userName={userName}
+            onOpenJournal={() => setIsJournalModalOpen(true)}
+          />
+
           {/* Search Bar */}
           <div className="mb-4">
             <div className="flex items-center gap-2 bg-card border border-border/40 rounded-xl px-3 py-1">
-              <Search className="h-2 w-4 text-muted-foreground" />
+              <Search className="h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search..."
+                placeholder="Search your feed..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="border-0 bg-transparent focus-visible:ring-0 px-0 h-8 text-sm placeholder:text-muted-foreground"
+                className="border-0 bg-transparent focus-visible:ring-0 px-0 h-9 text-sm placeholder:text-muted-foreground"
               />
             </div>
           </div>
@@ -422,10 +429,10 @@ export default function Diary() {
                 variant="ghost"
                 size="sm"
                 className={cn(
-                  "h-6 px-0 text-[10px] uppercase tracking-zara-wide font-light rounded-none whitespace-nowrap hover:bg-transparent",
+                  "h-7 px-3 text-xs font-medium rounded-full whitespace-nowrap",
                   filter === tab.value
-                    ? "text-foreground border-b border-foreground"
-                    : "text-muted-foreground hover:text-foreground border-b border-transparent",
+                    ? "bg-primary/10 text-primary hover:bg-primary/15"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
                 onClick={() => setFilter(tab.value as SourceModule | "all" | "saved")}
               >
@@ -434,7 +441,7 @@ export default function Diary() {
             ))}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 px-3 text-sm text-muted-foreground ml-auto">
+                <Button variant="ghost" size="sm" className="h-7 px-3 text-xs text-muted-foreground ml-auto">
                   Latest <ChevronDown className="h-3 w-3 ml-1" />
                 </Button>
               </DropdownMenuTrigger>
@@ -446,6 +453,7 @@ export default function Diary() {
             </DropdownMenu>
           </div>
 
+          {/* Feed Cards */}
           {sortedEvents.length === 0 ? (
             <Card className="p-12 text-center bg-card border-border/40">
               <PenLine className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -455,73 +463,71 @@ export default function Diary() {
               </p>
             </Card>
           ) : (
-            <div className="flex-1 min-h-0">
-              <div className="space-y-4 pr-2">
-                {sortedEvents.map((event) =>
-                  event.type === "journal_question" ? (
-                    <JournalQuestionCard
-                      key={event.id}
-                      eventId={event.id}
-                      questionLabel={(event.metadata as any)?.question_label || event.title}
-                      answerContent={(event.metadata as any)?.answer_content || event.content_preview || ""}
-                      contentHtml={(event.metadata as any)?.content_html}
-                      journalDate={(event.metadata as any)?.journal_date || event.created_at}
-                      entryDate={event.created_at}
-                      emotionTag={(event.metadata as any)?.tags?.[0]}
-                      authorName={user?.email?.split("@")[0] || "You"}
-                      isSaved={saves.has(event.id)}
-                      userReaction={reactions[event.id]?.find((r) => r.user_id === user?.id)?.emoji as any}
-                      reactionCounts={reactions[event.id]?.reduce(
-                        (acc, r) => {
-                          acc[r.emoji as any] = (acc[r.emoji as any] || 0) + 1;
-                          return acc;
-                        },
-                        {} as Record<string, number>,
-                      )}
-                      onToggleSave={() => toggleSave(event.id)}
-                      onEdit={() => handleNavigateToSource(event)}
-                      onNavigate={() => handleNavigateToSource(event)}
-                      onToggleReaction={(eventId, reaction) => toggleReaction(eventId, reaction || "")}
-                      onAddComment={(eventId, text) => addComment(eventId, text)}
-                    />
-                  ) : (
-                    <DiaryFeedCard
-                      key={event.id}
-                      event={event}
-                      reactions={reactions[event.id] || []}
-                      comments={comments[event.id] || []}
-                      isSaved={saves.has(event.id)}
-                      currentUserId={user?.id || ""}
-                      onToggleReaction={toggleReaction}
-                      onAddComment={addComment}
-                      onEditComment={editComment}
-                      onDeleteComment={deleteComment}
-                      onToggleSave={toggleSave}
-                      onNavigateToSource={handleNavigateToSource}
-                    />
-                  ),
-                )}
-              </div>
+            <div className="space-y-4 pb-8">
+              {sortedEvents.map((event) =>
+                event.type === "journal_question" ? (
+                  <JournalQuestionCard
+                    key={event.id}
+                    eventId={event.id}
+                    questionLabel={(event.metadata as any)?.question_label || event.title}
+                    answerContent={(event.metadata as any)?.answer_content || event.content_preview || ""}
+                    contentHtml={(event.metadata as any)?.content_html}
+                    journalDate={(event.metadata as any)?.journal_date || event.created_at}
+                    entryDate={event.created_at}
+                    emotionTag={(event.metadata as any)?.tags?.[0]}
+                    authorName={userName}
+                    isSaved={saves.has(event.id)}
+                    userReaction={reactions[event.id]?.find((r) => r.user_id === user?.id)?.emoji as any}
+                    reactionCounts={reactions[event.id]?.reduce(
+                      (acc, r) => {
+                        acc[r.emoji as any] = (acc[r.emoji as any] || 0) + 1;
+                        return acc;
+                      },
+                      {} as Record<string, number>,
+                    )}
+                    onToggleSave={() => toggleSave(event.id)}
+                    onEdit={() => handleNavigateToSource(event)}
+                    onNavigate={() => handleNavigateToSource(event)}
+                    onToggleReaction={(eventId, reaction) => toggleReaction(eventId, reaction || "")}
+                    onAddComment={(eventId, text) => addComment(eventId, text)}
+                  />
+                ) : (
+                  <DiaryFeedCard
+                    key={event.id}
+                    event={event}
+                    reactions={reactions[event.id] || []}
+                    comments={comments[event.id] || []}
+                    isSaved={saves.has(event.id)}
+                    currentUserId={user?.id || ""}
+                    onToggleReaction={toggleReaction}
+                    onAddComment={addComment}
+                    onEditComment={editComment}
+                    onDeleteComment={deleteComment}
+                    onToggleSave={toggleSave}
+                    onNavigateToSource={handleNavigateToSource}
+                  />
+                ),
+              )}
             </div>
           )}
         </div>
+      </main>
 
-        {/* Right Sidebar */}
-        <aside className="hidden lg:flex flex-col h-full overflow-y-auto">
-          <DiarySidebar
-            metrics={metrics}
-            chartData={chartData}
-            smartInsight={smartInsight}
-            timeRange={timeRange}
-            onTimeRangeChange={setTimeRange}
-            filter={filter}
-            onFilterChange={setFilter}
-            onQuickAction={handleQuickAction}
-          />
-        </aside>
-      </div>
+      {/* Right Sidebar - Hidden on mobile/tablet, visible on large desktop */}
+      <aside className="hidden xl:flex flex-col w-[340px] shrink-0 h-full overflow-y-auto border-l border-border/20 bg-background/50 p-4">
+        <DiarySidebar
+          metrics={metrics}
+          chartData={chartData}
+          smartInsight={smartInsight}
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          filter={filter}
+          onFilterChange={setFilter}
+          onQuickAction={handleQuickAction}
+        />
+      </aside>
 
-      {/* Journal Entry Modal */}
+      {/* Journal Modal */}
       <DiaryJournalModal
         open={isJournalModalOpen}
         onOpenChange={setIsJournalModalOpen}
