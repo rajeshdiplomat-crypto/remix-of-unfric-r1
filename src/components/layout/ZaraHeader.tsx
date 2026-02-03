@@ -14,6 +14,7 @@ interface ZaraHeaderProps {
 const modules = [
   { name: "DIARY", path: "/diary" },
   { name: "EMOTIONS", path: "/emotions" },
+  { name: "PATTERNS", path: "/emotions?view=patterns" },
   { name: "JOURNAL", path: "/journal" },
   { name: "MANIFEST", path: "/manifest" },
   { name: "HABITS", path: "/trackers" },
