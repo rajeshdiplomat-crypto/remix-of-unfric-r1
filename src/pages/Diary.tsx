@@ -10,7 +10,7 @@ import { DiaryFeedCard } from "@/components/diary/DiaryFeedCard";
 import { DiarySidebar } from "@/components/diary/DiarySidebar";
 import { DiaryLeftSidebar } from "@/components/diary/DiaryLeftSidebar";
 import { DiaryCreatePost } from "@/components/diary/DiaryCreatePost";
-import { DiaryHero } from "@/components/diary/DiaryHero";
+import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { JournalQuestionCard } from "@/components/diary/JournalQuestionCard";
 import { DiaryJournalModal } from "@/components/diary/DiaryJournalModal";
 import { useFeedEvents } from "@/components/diary/useFeedEvents";
@@ -386,31 +386,39 @@ export default function Diary() {
   return (
     <div
       className={cn(
-        "flex w-full h-full overflow-hidden",
+        "flex flex-col w-full h-full overflow-hidden",
         "transition-all duration-500 ease-out",
         contentReady ? "opacity-100" : "opacity-0",
       )}
     >
-      {/* Left Sidebar - Hidden on mobile/tablet, visible on desktop */}
-      <aside className="hidden lg:flex flex-col w-[280px] shrink-0 h-full overflow-y-auto border-r border-border/20 bg-background">
-        <DiaryLeftSidebar 
-          userName={userName}
-          filter={filter}
-          onFilterChange={setFilter}
-        />
-      </aside>
+      {/* Full-width Hero */}
+      <PageHero
+        storageKey="diary_hero_src"
+        typeKey="diary_hero_type"
+        badge={PAGE_HERO_TEXT.diary.badge}
+        title={PAGE_HERO_TEXT.diary.title}
+        subtitle={PAGE_HERO_TEXT.diary.subtitle}
+      />
 
-      {/* Center Feed - Scrollable */}
-      <main className="flex-1 min-w-0 h-full overflow-y-auto bg-muted/20">
-        <div className="max-w-[680px] mx-auto px-4 lg:px-6 py-4">
-          {/* Hero Section */}
-          <DiaryHero userName={userName} />
-
-          {/* Create Post Box */}
-          <DiaryCreatePost 
+      {/* 3-Column Layout Below Hero */}
+      <div className="flex flex-1 w-full overflow-hidden">
+        {/* Left Sidebar - Hidden on mobile/tablet, visible on desktop */}
+        <aside className="hidden lg:flex flex-col w-[280px] shrink-0 h-full overflow-y-auto border-r border-border/20 bg-background">
+          <DiaryLeftSidebar 
             userName={userName}
-            onOpenJournal={() => setIsJournalModalOpen(true)}
+            filter={filter}
+            onFilterChange={setFilter}
           />
+        </aside>
+
+        {/* Center Feed - Scrollable */}
+        <main className="flex-1 min-w-0 h-full overflow-y-auto bg-muted/20">
+          <div className="max-w-[680px] mx-auto px-4 lg:px-6 py-4">
+            {/* Create Post Box */}
+            <DiaryCreatePost 
+              userName={userName}
+              onOpenJournal={() => setIsJournalModalOpen(true)}
+            />
 
           {/* Search Bar */}
           <div className="mb-4">
@@ -530,6 +538,7 @@ export default function Diary() {
           onQuickAction={handleQuickAction}
         />
       </aside>
+      </div>
 
       {/* Journal Modal */}
       <DiaryJournalModal
