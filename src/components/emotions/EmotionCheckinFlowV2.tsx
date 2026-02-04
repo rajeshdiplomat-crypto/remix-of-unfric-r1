@@ -234,43 +234,86 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
         background: `radial-gradient(ellipse at 50% 0%, ${gradientColors.from}06 0%, transparent 60%)`,
       }}
     >
-      {/* Step 1: Emotion Selection - Premium Next-Gen Layout */}
+      {/* Step 1: Emotion Selection - Premium Animated Experience */}
       {step === 1 && (
-        <div className="flex-1 flex flex-col p-4 md:p-6 animate-in fade-in duration-500 overflow-hidden">
-          {/* Top Bar: Icons + Search - Glassmorphic */}
-          <div className="flex items-center justify-between gap-4 mb-4 animate-in slide-in-from-top-4 duration-500">
-            <div className="flex items-center gap-2">
-              <button className="w-10 h-10 rounded-xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:from-white/20 hover:to-white/10 transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-primary/20 group">
-                <BookOpen className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+        <div className="flex-1 flex flex-col overflow-hidden relative">
+          {/* Animated Gradient Mesh Background */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div
+              className="absolute w-[600px] h-[600px] rounded-full blur-3xl opacity-20 animate-pulse"
+              style={{
+                background: `radial-gradient(circle, ${gradientColors.from}40, transparent 70%)`,
+                top: "-10%",
+                left: "-10%",
+                animationDuration: "4s",
+              }}
+            />
+            <div
+              className="absolute w-[500px] h-[500px] rounded-full blur-3xl opacity-15 animate-pulse"
+              style={{
+                background: `radial-gradient(circle, ${gradientColors.to}30, transparent 70%)`,
+                bottom: "-15%",
+                right: "-10%",
+                animationDuration: "5s",
+                animationDelay: "1s",
+              }}
+            />
+            {/* Floating particles */}
+            {[...Array(6)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute w-2 h-2 rounded-full bg-primary/20 animate-bounce"
+                style={{
+                  left: `${15 + i * 15}%`,
+                  top: `${20 + (i % 3) * 25}%`,
+                  animationDelay: `${i * 0.3}s`,
+                  animationDuration: `${2 + i * 0.5}s`,
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Top Navigation Bar */}
+          <div className="relative z-10 px-6 py-4 flex items-center justify-between animate-in slide-in-from-top-4 duration-700">
+            <div className="flex items-center gap-3">
+              <button className="group relative w-11 h-11 rounded-2xl bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl border border-slate-700/50 flex items-center justify-center transition-all duration-500 hover:scale-110 hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/30 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <BookOpen className="h-4.5 w-4.5 text-slate-400 group-hover:text-primary transition-colors duration-300 relative z-10" />
               </button>
-              <button className="w-10 h-10 rounded-xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:from-white/20 hover:to-white/10 transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-primary/20 group">
-                <Clock className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+              <button className="group relative w-11 h-11 rounded-2xl bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl border border-slate-700/50 flex items-center justify-center transition-all duration-500 hover:scale-110 hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/30 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <Clock className="h-4.5 w-4.5 text-slate-400 group-hover:text-primary transition-colors duration-300 relative z-10" />
               </button>
             </div>
 
-            {/* Search - Pill Style */}
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            {/* Premium Search Bar */}
+            <div className="relative w-80 group animate-in fade-in slide-in-from-right-4 duration-700 delay-150">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-secondary/10 rounded-full blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within:text-primary transition-colors duration-300" />
               <Input
                 type="text"
                 placeholder="Search emotions..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-11 h-11 rounded-full bg-gradient-to-r from-slate-800/80 to-slate-900/80 backdrop-blur-xl border-slate-700/50 text-sm placeholder:text-slate-500 focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition-all duration-300 shadow-inner"
+                className="w-full pl-11 pr-4 h-12 rounded-full bg-slate-900/80 backdrop-blur-2xl border-slate-700/40 text-sm placeholder:text-slate-600 focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all duration-500 shadow-inner shadow-black/20"
               />
               {searchResults.length > 0 && (
-                <div className="absolute z-50 w-full mt-2 bg-slate-900/95 backdrop-blur-2xl border border-slate-700/50 rounded-2xl shadow-2xl shadow-black/40 p-2 space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
-                  {searchResults.map((item) => (
+                <div className="absolute z-50 w-full mt-3 bg-slate-900/98 backdrop-blur-3xl border border-slate-700/50 rounded-3xl shadow-2xl shadow-black/50 p-3 animate-in fade-in slide-in-from-top-2 zoom-in-95 duration-300">
+                  {searchResults.map((item, idx) => (
                     <button
                       key={item.emotion}
                       onClick={() => handleEmotionClick(item.emotion, item.quadrant)}
-                      className="w-full text-left px-4 py-3 rounded-xl text-sm hover:bg-white/10 flex items-center gap-3 transition-all duration-200 hover:translate-x-1 group"
+                      className="w-full text-left px-4 py-3.5 rounded-2xl text-sm hover:bg-white/5 flex items-center gap-4 transition-all duration-300 hover:translate-x-2 group/item animate-in fade-in slide-in-from-left-2"
+                      style={{ animationDelay: `${idx * 50}ms` }}
                     >
                       <div
-                        className="w-3 h-3 rounded-full ring-2 ring-white/20 group-hover:ring-white/40 transition-all"
-                        style={{ backgroundColor: QUADRANTS[item.quadrant].color }}
+                        className="w-4 h-4 rounded-full ring-2 ring-white/10 group-hover/item:ring-white/30 group-hover/item:scale-125 transition-all duration-300 shadow-lg"
+                        style={{
+                          backgroundColor: QUADRANTS[item.quadrant].color,
+                          boxShadow: `0 0 20px ${QUADRANTS[item.quadrant].color}50`,
+                        }}
                       />
-                      <span className="font-medium text-white">{item.emotion}</span>
+                      <span className="font-medium text-white/90 group-hover/item:text-white">{item.emotion}</span>
                     </button>
                   ))}
                 </div>
@@ -278,165 +321,245 @@ export function EmotionCheckinFlowV2({ timezone, onSave, saving, onComplete }: E
             </div>
           </div>
 
-          {/* Premium Dark Slider Panel with Glass Effect */}
-          <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-850 to-slate-900 p-5 mb-5 border border-slate-700/30 shadow-2xl shadow-black/30 animate-in slide-in-from-top-4 duration-500 delay-100 relative overflow-hidden">
-            {/* Animated gradient glow */}
-            <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 via-transparent to-emerald-500/5 animate-pulse" />
+          {/* Premium Slider Panel */}
+          <div className="relative z-10 mx-6 mb-6 rounded-3xl bg-gradient-to-br from-slate-900/95 via-slate-850/95 to-slate-900/95 backdrop-blur-2xl p-6 border border-slate-700/30 shadow-2xl shadow-black/40 animate-in slide-in-from-top-6 duration-700 delay-200 overflow-hidden">
+            {/* Animated glow effects */}
+            <div className="absolute top-0 left-1/4 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl animate-pulse" />
+            <div
+              className="absolute bottom-0 right-1/4 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl animate-pulse"
+              style={{ animationDelay: "1s" }}
+            />
 
-            <div className="grid grid-cols-2 gap-8 relative z-10">
+            <div className="grid grid-cols-2 gap-10 relative z-10">
               {/* Energy Slider */}
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">Low</span>
-                  <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30">
-                    <Zap className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
-                    <span className="text-xs font-bold text-amber-300 tracking-wide">Energy</span>
+                  <span className="text-[11px] text-slate-500 uppercase tracking-[0.2em] font-semibold">Low</span>
+                  <div className="flex items-center gap-2.5 px-5 py-2 rounded-full bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/25 shadow-lg shadow-amber-500/10">
+                    <Zap className="h-4 w-4 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]" />
+                    <span className="text-sm font-bold text-amber-200 tracking-wider">Energy</span>
                   </div>
-                  <span className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">High</span>
+                  <span className="text-[11px] text-slate-500 uppercase tracking-[0.2em] font-semibold">High</span>
                 </div>
-                <div className="relative h-4">
-                  <div className="absolute inset-0 rounded-full bg-slate-800/80 border border-slate-700/50" />
+                <div className="relative h-5 group/slider">
+                  <div className="absolute inset-0 rounded-full bg-slate-800/90 border border-slate-700/50 shadow-inner shadow-black/50" />
                   <div
-                    className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-orange-400 transition-all duration-300 shadow-lg shadow-orange-500/30"
-                    style={{ width: `${energy}%` }}
+                    className="absolute inset-y-0 left-0 rounded-full transition-all duration-500 ease-out"
+                    style={{
+                      width: `${energy}%`,
+                      background: "linear-gradient(90deg, #F59E0B, #F97316, #EA580C)",
+                      boxShadow: "0 0 30px rgba(249,115,22,0.4), inset 0 1px 1px rgba(255,255,255,0.2)",
+                    }}
                   />
                   <Slider
                     value={[energy]}
                     onValueChange={(v) => handleSliderChange("energy", v[0])}
                     max={100}
                     step={1}
-                    className="absolute inset-0 [&>span:first-child]:bg-transparent [&_[role=slider]]:h-6 [&_[role=slider]]:w-6 [&_[role=slider]]:bg-white [&_[role=slider]]:border-2 [&_[role=slider]]:border-orange-400 [&_[role=slider]]:shadow-xl [&_[role=slider]]:shadow-orange-500/40 [&_[role=slider]]:transition-transform [&_[role=slider]]:duration-200 [&_[role=slider]]:hover:scale-125 [&_[role=slider]]:cursor-grab [&_[role=slider]]:active:cursor-grabbing"
+                    className="absolute inset-0 [&>span:first-child]:bg-transparent [&_[role=slider]]:h-7 [&_[role=slider]]:w-7 [&_[role=slider]]:bg-white [&_[role=slider]]:border-3 [&_[role=slider]]:border-orange-400 [&_[role=slider]]:shadow-[0_0_20px_rgba(249,115,22,0.6)] [&_[role=slider]]:transition-all [&_[role=slider]]:duration-300 [&_[role=slider]]:hover:scale-125 [&_[role=slider]]:hover:shadow-[0_0_30px_rgba(249,115,22,0.8)] [&_[role=slider]]:cursor-grab [&_[role=slider]]:active:cursor-grabbing [&_[role=slider]]:active:scale-110"
                   />
                 </div>
               </div>
 
               {/* Pleasantness Slider */}
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-500 font-bold">−</span>
-                  <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/30">
-                    <Sparkles className="h-3.5 w-3.5 text-emerald-400 animate-pulse" />
-                    <span className="text-xs font-bold text-emerald-300 tracking-wide">Pleasant</span>
+                  <span className="text-base text-slate-500 font-bold">−</span>
+                  <div className="flex items-center gap-2.5 px-5 py-2 rounded-full bg-gradient-to-r from-emerald-500/15 to-teal-500/15 border border-emerald-500/25 shadow-lg shadow-emerald-500/10">
+                    <Sparkles className="h-4 w-4 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
+                    <span className="text-sm font-bold text-emerald-200 tracking-wider">Pleasant</span>
                   </div>
-                  <span className="text-sm text-slate-500 font-bold">+</span>
+                  <span className="text-base text-slate-500 font-bold">+</span>
                 </div>
-                <div className="relative h-4">
-                  <div className="absolute inset-0 rounded-full bg-slate-800/80 border border-slate-700/50" />
+                <div className="relative h-5 group/slider">
+                  <div className="absolute inset-0 rounded-full bg-slate-800/90 border border-slate-700/50 shadow-inner shadow-black/50" />
                   <div
-                    className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-teal-400 transition-all duration-300 shadow-lg shadow-emerald-500/30"
-                    style={{ width: `${pleasantness}%` }}
+                    className="absolute inset-y-0 left-0 rounded-full transition-all duration-500 ease-out"
+                    style={{
+                      width: `${pleasantness}%`,
+                      background: "linear-gradient(90deg, #10B981, #14B8A6, #06B6D4)",
+                      boxShadow: "0 0 30px rgba(20,184,166,0.4), inset 0 1px 1px rgba(255,255,255,0.2)",
+                    }}
                   />
                   <Slider
                     value={[pleasantness]}
                     onValueChange={(v) => handleSliderChange("pleasantness", v[0])}
                     max={100}
                     step={1}
-                    className="absolute inset-0 [&>span:first-child]:bg-transparent [&_[role=slider]]:h-6 [&_[role=slider]]:w-6 [&_[role=slider]]:bg-white [&_[role=slider]]:border-2 [&_[role=slider]]:border-emerald-400 [&_[role=slider]]:shadow-xl [&_[role=slider]]:shadow-emerald-500/40 [&_[role=slider]]:transition-transform [&_[role=slider]]:duration-200 [&_[role=slider]]:hover:scale-125 [&_[role=slider]]:cursor-grab [&_[role=slider]]:active:cursor-grabbing"
+                    className="absolute inset-0 [&>span:first-child]:bg-transparent [&_[role=slider]]:h-7 [&_[role=slider]]:w-7 [&_[role=slider]]:bg-white [&_[role=slider]]:border-3 [&_[role=slider]]:border-emerald-400 [&_[role=slider]]:shadow-[0_0_20px_rgba(20,184,166,0.6)] [&_[role=slider]]:transition-all [&_[role=slider]]:duration-300 [&_[role=slider]]:hover:scale-125 [&_[role=slider]]:hover:shadow-[0_0_30px_rgba(20,184,166,0.8)] [&_[role=slider]]:cursor-grab [&_[role=slider]]:active:cursor-grabbing [&_[role=slider]]:active:scale-110"
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* How are you feeling? Title with Gradient */}
-          <h1 className="text-center text-2xl md:text-3xl font-light tracking-tight mb-5 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-150">
-            <span className="bg-gradient-to-r from-foreground via-foreground/80 to-foreground bg-clip-text">
+          {/* How are you feeling? Title */}
+          <h1 className="relative z-10 text-center text-3xl md:text-4xl font-extralight tracking-tight mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+            <span className="bg-gradient-to-r from-foreground via-foreground/70 to-foreground bg-clip-text text-transparent">
               How are you feeling?
             </span>
           </h1>
 
-          {/* Main Content: Bubble Viz + Sidebar */}
-          <div className="flex-1 flex gap-4 min-h-0 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
-            {/* CENTER: Bubble Visualization - Main Focus */}
-            <div className="flex-1 min-w-0 rounded-2xl border border-border/20 bg-gradient-to-br from-muted/30 via-background to-muted/20 overflow-hidden shadow-inner relative">
-              {/* Subtle animated gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-primary/3 via-transparent to-secondary/3 pointer-events-none" />
-              <EmotionBubbleViz
-                energy={energy}
-                pleasantness={pleasantness}
-                selectedEmotion={selectedEmotion}
-                onEmotionSelect={handleEmotionClick}
-                onBubbleClick={handleBubbleClick}
+          {/* Main Content Area */}
+          <div className="relative z-10 flex-1 flex gap-6 px-6 pb-6 min-h-0 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-400">
+            {/* LEFT: Interactive Emotion Orbs */}
+            <div className="flex-1 rounded-3xl bg-gradient-to-br from-slate-900/50 via-background/30 to-slate-900/50 backdrop-blur-xl border border-slate-700/20 p-6 overflow-hidden relative">
+              {/* Ambient glow based on current quadrant */}
+              <div
+                className="absolute inset-0 opacity-30 transition-all duration-1000 pointer-events-none"
+                style={{
+                  background: `radial-gradient(ellipse at 50% 50%, ${quadrantInfo.color}15, transparent 70%)`,
+                }}
               />
+
+              {/* Floating Emotion Orbs Grid */}
+              <div className="relative h-full flex flex-wrap items-center justify-center gap-4 content-center">
+                {suggestedEmotions.slice(0, 8).map((em, idx) => (
+                  <button
+                    key={em.emotion}
+                    onClick={() => handleEmotionClick(em.emotion, em.quadrant)}
+                    className={cn(
+                      "group relative w-20 h-20 md:w-24 md:h-24 rounded-full transition-all duration-500 animate-in fade-in zoom-in-75",
+                      "hover:scale-115 hover:-translate-y-2",
+                      selectedEmotion === em.emotion ? "scale-110 -translate-y-2 z-20" : "hover:z-10",
+                    )}
+                    style={{
+                      animationDelay: `${idx * 80}ms`,
+                      animationFillMode: "backwards",
+                    }}
+                  >
+                    {/* Outer glow ring */}
+                    <div
+                      className={cn(
+                        "absolute inset-0 rounded-full transition-all duration-500",
+                        selectedEmotion === em.emotion
+                          ? "opacity-100 scale-125"
+                          : "opacity-0 group-hover:opacity-70 group-hover:scale-115",
+                      )}
+                      style={{
+                        background: `radial-gradient(circle, ${QUADRANTS[em.quadrant].color}40, transparent 70%)`,
+                        filter: "blur(12px)",
+                      }}
+                    />
+
+                    {/* Main orb */}
+                    <div
+                      className={cn(
+                        "absolute inset-0 rounded-full transition-all duration-500 border-2",
+                        selectedEmotion === em.emotion
+                          ? "border-white/50 shadow-2xl"
+                          : "border-white/10 group-hover:border-white/30",
+                      )}
+                      style={{
+                        background: `linear-gradient(145deg, ${QUADRANTS[em.quadrant].color}30, ${QUADRANTS[em.quadrant].color}10)`,
+                        boxShadow:
+                          selectedEmotion === em.emotion
+                            ? `0 0 40px ${QUADRANTS[em.quadrant].color}50, inset 0 0 30px ${QUADRANTS[em.quadrant].color}20`
+                            : `0 4px 20px rgba(0,0,0,0.3)`,
+                      }}
+                    />
+
+                    {/* Inner content */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-3xl md:text-4xl transition-transform duration-300 group-hover:scale-110 drop-shadow-lg">
+                        {quadrantEmoji[em.quadrant]}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-[10px] font-semibold mt-1 px-2 py-0.5 rounded-full transition-all duration-300 truncate max-w-full",
+                          selectedEmotion === em.emotion
+                            ? "opacity-100 bg-white/20 backdrop-blur-sm"
+                            : "opacity-0 group-hover:opacity-100",
+                        )}
+                        style={{ color: QUADRANTS[em.quadrant].color }}
+                      >
+                        {em.emotion}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* RIGHT: Preview + Suggestions Panel */}
-            <div className="w-48 shrink-0 flex flex-col gap-3">
-              {/* Preview Card - Glass Effect */}
+            {/* RIGHT: Selection Panel */}
+            <div className="w-56 shrink-0 flex flex-col gap-4">
+              {/* Selected Emotion Card */}
               <div
-                className="rounded-2xl p-4 border-2 transition-all duration-500 text-center backdrop-blur-sm relative overflow-hidden group hover:shadow-xl"
+                className="rounded-3xl p-5 border-2 transition-all duration-700 text-center backdrop-blur-xl relative overflow-hidden group animate-in fade-in slide-in-from-right-4"
                 style={{
-                  background: `linear-gradient(145deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}08)`,
-                  borderColor: quadrantInfo.borderColor,
+                  background: `linear-gradient(160deg, ${quadrantInfo.bgColor}95, ${quadrantInfo.borderColor}15)`,
+                  borderColor: `${quadrantInfo.borderColor}80`,
                 }}
               >
-                {/* Glow effect on hover */}
+                {/* Animated glow */}
                 <div
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"
-                  style={{ background: `radial-gradient(circle at center, ${quadrantInfo.color}20, transparent 70%)` }}
+                  className="absolute inset-0 opacity-30 group-hover:opacity-50 transition-opacity duration-700"
+                  style={{
+                    background: `radial-gradient(circle at 50% 30%, ${quadrantInfo.color}40, transparent 70%)`,
+                  }}
                 />
-                <span className="text-4xl block mb-2 relative z-10 transition-transform duration-300 group-hover:scale-110">
-                  {quadrantEmoji[currentQuadrant]}
-                </span>
-                <p
-                  className="text-base font-semibold relative z-10 transition-colors"
-                  style={{ color: quadrantInfo.color }}
-                >
-                  {finalEmotion || "Select..."}
-                </p>
-                {finalEmotion && (
-                  <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider relative z-10">
+
+                <div className="relative z-10">
+                  <div className="text-5xl mb-3 transition-transform duration-500 hover:scale-110 inline-block drop-shadow-lg">
+                    {quadrantEmoji[currentQuadrant]}
+                  </div>
+                  <p className="text-lg font-bold transition-colors duration-300" style={{ color: quadrantInfo.color }}>
+                    {finalEmotion || "Select..."}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-1.5 uppercase tracking-widest font-medium">
                     {quadrantInfo.label}
                   </p>
-                )}
+                </div>
               </div>
 
-              {/* Continue Button - Premium Gradient */}
+              {/* Continue Button */}
               <Button
                 onClick={handleContinue}
                 disabled={!finalEmotion}
-                className="h-11 rounded-xl text-sm gap-2 font-semibold transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 active:scale-95 shadow-lg hover:shadow-xl disabled:opacity-40 disabled:hover:scale-100 relative overflow-hidden group"
+                className="h-14 rounded-2xl text-base font-bold gap-2.5 transition-all duration-500 hover:scale-105 hover:-translate-y-1 active:scale-98 shadow-2xl disabled:opacity-30 relative overflow-hidden group animate-in fade-in slide-in-from-right-4"
                 style={{
                   background: finalEmotion
                     ? `linear-gradient(135deg, ${gradientColors.from}, ${gradientColors.to})`
                     : undefined,
+                  boxShadow: finalEmotion
+                    ? `0 10px 40px ${gradientColors.from}40, 0 4px 15px ${gradientColors.to}30`
+                    : undefined,
                 }}
               >
-                {/* Shine effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                <span className="relative z-10">Continue</span>
-                <ArrowRight className="h-4 w-4 relative z-10 transition-transform group-hover:translate-x-0.5" />
+                {/* Shine sweep effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+                <span className="relative z-10 uppercase tracking-wider">Continue</span>
+                <ArrowRight className="h-5 w-5 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
               </Button>
 
-              {/* Nearby Feelings - Compact List */}
-              {suggestedEmotions.length > 0 && (
-                <div className="flex-1 rounded-xl border border-border/30 bg-gradient-to-b from-muted/40 to-muted/20 backdrop-blur-sm p-3 overflow-y-auto">
-                  <p className="text-[9px] uppercase tracking-widest text-muted-foreground/70 mb-2 font-semibold">
-                    Nearby feelings
-                  </p>
-                  <div className="space-y-1">
-                    {suggestedEmotions.slice(0, 5).map((em, idx) => (
-                      <button
-                        key={em.emotion}
-                        onClick={() => handleEmotionClick(em.emotion, em.quadrant)}
-                        className={cn(
-                          "w-full text-left px-3 py-2 rounded-lg text-xs transition-all duration-300 flex items-center gap-2 group",
-                          selectedEmotion === em.emotion
-                            ? "bg-primary/15 text-primary"
-                            : "hover:bg-muted/80 text-foreground/80 hover:text-foreground",
-                        )}
-                        style={{ animationDelay: `${idx * 30}ms` }}
-                      >
-                        <div
-                          className="w-2 h-2 rounded-full transition-transform group-hover:scale-150"
-                          style={{ backgroundColor: QUADRANTS[em.quadrant].color }}
-                        />
-                        <span className="font-medium">{em.emotion}</span>
-                      </button>
-                    ))}
-                  </div>
+              {/* Nearby Feelings */}
+              <div className="flex-1 rounded-2xl border border-slate-700/30 bg-gradient-to-b from-slate-900/60 to-slate-900/40 backdrop-blur-xl p-4 overflow-y-auto animate-in fade-in slide-in-from-right-4">
+                <p className="text-[10px] uppercase tracking-[0.15em] text-slate-500 mb-3 font-bold">Nearby Feelings</p>
+                <div className="space-y-1.5">
+                  {suggestedEmotions.slice(0, 5).map((em, idx) => (
+                    <button
+                      key={em.emotion}
+                      onClick={() => handleEmotionClick(em.emotion, em.quadrant)}
+                      className={cn(
+                        "w-full text-left px-4 py-3 rounded-xl text-sm transition-all duration-300 flex items-center gap-3 group/item animate-in fade-in slide-in-from-right-2",
+                        selectedEmotion === em.emotion
+                          ? "bg-primary/15 text-primary shadow-lg"
+                          : "hover:bg-white/5 text-slate-300 hover:text-white",
+                      )}
+                      style={{ animationDelay: `${400 + idx * 60}ms`, animationFillMode: "backwards" }}
+                    >
+                      <div
+                        className="w-2.5 h-2.5 rounded-full transition-all duration-300 group-hover/item:scale-150 shadow-lg"
+                        style={{
+                          backgroundColor: QUADRANTS[em.quadrant].color,
+                          boxShadow: `0 0 10px ${QUADRANTS[em.quadrant].color}50`,
+                        }}
+                      />
+                      <span className="font-medium">{em.emotion}</span>
+                    </button>
+                  ))}
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
