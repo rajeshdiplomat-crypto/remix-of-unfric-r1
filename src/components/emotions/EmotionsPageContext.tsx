@@ -101,7 +101,7 @@ export function EmotionsPageContext({
   );
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-300px)] animate-in fade-in slide-in-from-right-4 duration-400 max-w-5xl mx-auto w-full">
+    <div className="flex flex-col min-h-[calc(100vh-300px)] animate-in fade-in slide-in-from-right-4 duration-400 mx-auto w-full">
       {/* Two-Column Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-14 flex-1">
         {/* Left: FormCards */}
