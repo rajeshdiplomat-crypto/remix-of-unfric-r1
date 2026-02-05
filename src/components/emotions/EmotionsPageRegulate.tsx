@@ -37,11 +37,11 @@ const typeGradients: Record<string, { from: string; to: string; bg: string }> = 
 };
 
 const typeIcons: Record<string, React.ReactNode> = {
-  breathing: <Wind className="h-3 w-3" />,
-  grounding: <Activity className="h-3 w-3" />,
-  cognitive: <Sparkles className="h-3 w-3" />,
-  movement: <Zap className="h-3 w-3" />,
-  mindfulness: <Heart className="h-3 w-3" />,
+  breathing: <Wind className="h-3.5 w-3.5" />,
+  grounding: <Activity className="h-3.5 w-3.5" />,
+  cognitive: <Sparkles className="h-3.5 w-3.5" />,
+  movement: <Zap className="h-3.5 w-3.5" />,
+  mindfulness: <Heart className="h-3.5 w-3.5" />,
 };
 
 const typeLabels: Record<string, string> = {
@@ -186,26 +186,45 @@ export function EmotionsPageRegulate({
             </div>
           )}
 
-          {/* All Strategies Inline */}
-          <div className="w-full max-w-md mb-4">
-            <p className="text-[10px] text-muted-foreground mb-2 text-center">
-              Try a strategy
-            </p>
-            <div className="grid grid-cols-4 gap-1.5">
-              {STRATEGIES.map((strategy) => {
-                const isRecommended = recommendedStrategies.some(s => s.id === strategy.id);
-                return (
+          {/* Recommended Strategies */}
+          {recommendedStrategies.length > 0 && (
+            <div className="w-full max-w-md mb-3">
+              <p className="text-[10px] text-muted-foreground mb-2 text-center flex items-center justify-center gap-1">
+                <Sparkles className="h-3 w-3 text-amber-500" />
+                Recommended for you
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {recommendedStrategies.map((strategy) => (
                   <MiniStrategyCard
                     key={strategy.id}
                     strategy={strategy}
-                    isRecommended={isRecommended}
+                    isRecommended
                     onStart={() => {
                       setActiveStrategy(strategy);
                       setShowVisualization(true);
                     }}
                   />
-                );
-              })}
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* All Strategies */}
+          <div className="w-full max-w-md mb-4">
+            <p className="text-[10px] text-muted-foreground mb-2 text-center">
+              All Strategies
+            </p>
+            <div className="grid grid-cols-4 gap-1.5">
+              {STRATEGIES.filter(s => !recommendedStrategies.some(r => r.id === s.id)).map((strategy) => (
+                <MiniStrategyCard
+                  key={strategy.id}
+                  strategy={strategy}
+                  onStart={() => {
+                    setActiveStrategy(strategy);
+                    setShowVisualization(true);
+                  }}
+                />
+              ))}
             </div>
           </div>
 
@@ -279,12 +298,12 @@ function MiniStrategyCard({
     <button
       onClick={onStart}
       className={cn(
-        "group p-2 rounded-lg border bg-card hover:border-primary/30 hover:shadow-md transition-all duration-200 text-center",
+        "group p-2.5 rounded-lg border bg-card hover:border-primary/30 hover:shadow-md transition-all duration-200 text-center",
         isRecommended ? "ring-1 ring-amber-400/50 border-amber-400/30" : "border-border"
       )}
     >
       <div 
-        className="w-6 h-6 mx-auto mb-1 rounded-md flex items-center justify-center text-white shadow-sm transition-transform duration-200 group-hover:scale-110"
+        className="w-7 h-7 mx-auto mb-1 rounded-md flex items-center justify-center text-white shadow-sm transition-transform duration-200 group-hover:scale-110"
         style={{
           background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`
         }}
@@ -292,7 +311,7 @@ function MiniStrategyCard({
         {typeIcons[strategy.type]}
       </div>
       <p className="text-[10px] font-medium text-foreground truncate leading-tight">
-        {strategy.title.split(' ')[0]}
+        {strategy.title.split(' ').slice(0, 2).join(' ')}
       </p>
       <p className="text-[8px] text-muted-foreground">
         {strategy.duration}
