@@ -27,14 +27,14 @@ const EMOTION_CONTENT = {
   badge: "Emotion Tracker",
   title: {
     line1: "Understand Your",
-    line2: "Emotional Patterns"
+    line2: "Emotional Patterns",
   },
   description: `Track your emotional state using the energy and pleasantness dimensions. This science-backed approach helps you recognize patterns, understand triggers, and develop greater emotional intelligence over time.`,
   features: [
     "Map emotions on a 2D spectrum",
     "Identify your emotional patterns",
-    "Get personalized regulation strategies"
-  ]
+    "Get personalized regulation strategies",
+  ],
 };
 
 export function EmotionsPageFeel({
@@ -62,9 +62,12 @@ export function EmotionsPageFeel({
     setSelectedCategory(category);
   }, []);
 
-  const handleEmotionClick = useCallback((emotion: string, quadrant: QuadrantType) => {
-    onEmotionSelect(emotion, quadrant);
-  }, [onEmotionSelect]);
+  const handleEmotionClick = useCallback(
+    (emotion: string, quadrant: QuadrantType) => {
+      onEmotionSelect(emotion, quadrant);
+    },
+    [onEmotionSelect],
+  );
 
   // Responsive wheel size
   const wheelSize = isMobile ? 340 : 520;
@@ -73,27 +76,23 @@ export function EmotionsPageFeel({
     <div className="flex flex-col min-h-[calc(100vh-300px)] animate-in fade-in duration-500">
       {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 flex-1">
-        
         {/* Left: Emotion Description Card */}
         <div className="flex flex-col justify-center order-2 lg:order-1">
-          <div className="space-y-6 max-w-md">
+          <div className="space-y-6 max-w-md text-left">
             {/* Badge */}
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
               <Sparkles className="h-4 w-4" />
               {EMOTION_CONTENT.badge}
             </span>
-            
+
             {/* Title */}
             <h2 className="text-3xl md:text-4xl font-light leading-tight">
-              {EMOTION_CONTENT.title.line1}{" "}
-              <span className="font-semibold">{EMOTION_CONTENT.title.line2}</span>
+              {EMOTION_CONTENT.title.line1} <span className="font-semibold">{EMOTION_CONTENT.title.line2}</span>
             </h2>
-            
+
             {/* Description */}
-            <p className="text-muted-foreground text-lg leading-relaxed">
-              {EMOTION_CONTENT.description}
-            </p>
-            
+            <p className="text-muted-foreground text-lg leading-relaxed">{EMOTION_CONTENT.description}</p>
+
             {/* Features */}
             <ul className="space-y-3">
               {EMOTION_CONTENT.features.map((feature, i) => (
@@ -106,7 +105,7 @@ export function EmotionsPageFeel({
 
             {/* Selected Emotion Preview (on desktop, shows here) */}
             {selectedEmotion && !isMobile && (
-              <div 
+              <div
                 className="px-5 py-3 rounded-xl border-2 transition-all animate-in fade-in zoom-in-95 duration-300 mt-6"
                 style={{
                   background: `linear-gradient(135deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}20)`,
@@ -126,7 +125,7 @@ export function EmotionsPageFeel({
             )}
           </div>
         </div>
-        
+
         {/* Right: Wheel */}
         <div className="flex flex-col items-center justify-center order-1 lg:order-2">
           <EmotionCircularPicker
@@ -143,7 +142,7 @@ export function EmotionsPageFeel({
 
           {/* Selected Emotion Preview (on mobile, shows below wheel) */}
           {selectedEmotion && isMobile && (
-            <div 
+            <div
               className="px-5 py-3 rounded-xl border-2 transition-all animate-in fade-in zoom-in-95 duration-300 mt-6"
               style={{
                 background: `linear-gradient(135deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}20)`,
@@ -169,8 +168,8 @@ export function EmotionsPageFeel({
             size="lg"
             className="h-12 px-8 rounded-xl text-base font-semibold gap-2 transition-all duration-300 hover:scale-105 active:scale-95 mt-6"
             style={{
-              background: selectedEmotion 
-                ? `linear-gradient(135deg, ${quadrantInfo.color}, ${quadrantInfo.color}DD)` 
+              background: selectedEmotion
+                ? `linear-gradient(135deg, ${quadrantInfo.color}, ${quadrantInfo.color}DD)`
                 : undefined,
             }}
           >

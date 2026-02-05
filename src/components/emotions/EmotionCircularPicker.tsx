@@ -14,6 +14,15 @@ interface EmotionCircularPickerProps {
   size?: number;
 }
 
+// Particle type for energy animation
+interface EnergyParticle {
+  id: number;
+  angle: number;
+  radius: number;
+  opacity: number;
+  scale: number;
+}
+
 // Emotion wheel structure - inner core emotions and outer specific emotions
 const WHEEL_SECTIONS = [
   // Top-right quadrant (high-pleasant) - 0° to 90°
@@ -99,69 +108,109 @@ export function EmotionCircularPicker({
   const [isDraggingEnergy, setIsDraggingEnergy] = useState(false);
   const [isDraggingPleasantness, setIsDraggingPleasantness] = useState(false);
   const [hoveredSection, setHoveredSection] = useState<number | null>(null);
+  const [energyParticles, setEnergyParticles] = useState<EnergyParticle[]>([]);
+  const [pleasantnessParticles, setPleasantnessParticles] = useState<EnergyParticle[]>([]);
+  const [prevQuadrant, setPrevQuadrant] = useState<QuadrantType | null>(null);
+  const particleIdRef = useRef(0);
 
   // Ring dimensions - scaled up ~25%
   const size = propSize || 520;
   const center = size / 2;
   const outerRadius = size * 0.47; // ~244 at 520 - wider sectors for text
-  const middleRadius = size * 0.30; // ~156 at 520
+  const middleRadius = size * 0.3; // ~156 at 520
   const innerRingRadius = size * 0.16; // ~83 at 520
-  const innerMostRadius = size * 0.10; // ~52 at 520
+  const innerMostRadius = size * 0.1; // ~52 at 520
   const strokeWidth = 16;
 
   // Convert value (0-100) to angle (radians) - starting from top (-π/2)
   const valueToAngle = useCallback((value: number): number => {
-    return ((value / 100) * 2 * Math.PI) - (Math.PI / 2);
+    return (value / 100) * 2 * Math.PI - Math.PI / 2;
   }, []);
 
   // Convert angle to value
   const angleToValue = useCallback((angle: number): number => {
-    let normalized = angle + (Math.PI / 2);
+    let normalized = angle + Math.PI / 2;
     if (normalized < 0) normalized += 2 * Math.PI;
     if (normalized > 2 * Math.PI) normalized -= 2 * Math.PI;
     return Math.round((normalized / (2 * Math.PI)) * 100);
   }, []);
 
   // Get thumb position on ring
-  const getThumbPosition = useCallback((value: number, radius: number) => {
-    const angle = valueToAngle(value);
-    return {
-      x: center + Math.cos(angle) * radius,
-      y: center + Math.sin(angle) * radius,
-    };
-  }, [valueToAngle, center]);
+  const getThumbPosition = useCallback(
+    (value: number, radius: number) => {
+      const angle = valueToAngle(value);
+      return {
+        x: center + Math.cos(angle) * radius,
+        y: center + Math.sin(angle) * radius,
+      };
+    },
+    [valueToAngle, center],
+  );
 
-  // Handle drag on ring
-  const handleDrag = useCallback((e: MouseEvent | TouchEvent, ring: 'energy' | 'pleasantness') => {
-    if (!containerRef.current) return;
-    
-    const rect = containerRef.current.getBoundingClientRect();
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    
-    const x = clientX - rect.left - center;
-    const y = clientY - rect.top - center;
-    
-    const angle = Math.atan2(y, x);
-    const value = angleToValue(angle);
-    
-    if (ring === 'energy') {
-      onEnergyChange(Math.max(0, Math.min(100, value)));
-    } else {
-      onPleasantnessChange(Math.max(0, Math.min(100, value)));
-    }
-  }, [angleToValue, onEnergyChange, onPleasantnessChange, center]);
+  // Spawn particles along filled ring
+  const spawnParticles = useCallback(
+    (value: number, ring: "energy" | "pleasantness") => {
+      const radius = ring === "energy" ? innerRingRadius : innerMostRadius;
+      const numParticles = Math.floor(value / 10) + 2;
+      const newParticles: EnergyParticle[] = [];
+
+      for (let i = 0; i < numParticles; i++) {
+        const particleAngle = (i / numParticles) * (value / 100) * 2 * Math.PI - Math.PI / 2;
+        newParticles.push({
+          id: particleIdRef.current++,
+          angle: particleAngle,
+          radius: radius + (Math.random() - 0.5) * 8,
+          opacity: 0.3 + Math.random() * 0.5,
+          scale: 0.5 + Math.random() * 0.5,
+        });
+      }
+
+      if (ring === "energy") {
+        setEnergyParticles(newParticles);
+      } else {
+        setPleasantnessParticles(newParticles);
+      }
+    },
+    [innerRingRadius, innerMostRadius],
+  );
+
+  // Handle drag on ring - improved with direct coordinate calculation
+  const handleDrag = useCallback(
+    (e: MouseEvent | TouchEvent, ring: "energy" | "pleasantness") => {
+      if (!containerRef.current) return;
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
+      const x = clientX - rect.left - center;
+      const y = clientY - rect.top - center;
+
+      const angle = Math.atan2(y, x);
+      const value = angleToValue(angle);
+      const clampedValue = Math.max(0, Math.min(100, value));
+
+      if (ring === "energy") {
+        onEnergyChange(clampedValue);
+        spawnParticles(clampedValue, "energy");
+      } else {
+        onPleasantnessChange(clampedValue);
+        spawnParticles(clampedValue, "pleasantness");
+      }
+    },
+    [angleToValue, onEnergyChange, onPleasantnessChange, center, spawnParticles],
+  );
 
   // Mouse/touch handlers
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (isDraggingEnergy) handleDrag(e, 'energy');
-      if (isDraggingPleasantness) handleDrag(e, 'pleasantness');
+      if (isDraggingEnergy) handleDrag(e, "energy");
+      if (isDraggingPleasantness) handleDrag(e, "pleasantness");
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (isDraggingEnergy) handleDrag(e, 'energy');
-      if (isDraggingPleasantness) handleDrag(e, 'pleasantness');
+      if (isDraggingEnergy) handleDrag(e, "energy");
+      if (isDraggingPleasantness) handleDrag(e, "pleasantness");
     };
 
     const handleEnd = () => {
@@ -170,21 +219,21 @@ export function EmotionCircularPicker({
     };
 
     if (isDraggingEnergy || isDraggingPleasantness) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleEnd);
-      window.addEventListener('touchmove', handleTouchMove);
-      window.addEventListener('touchend', handleEnd);
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleEnd);
+      window.addEventListener("touchmove", handleTouchMove);
+      window.addEventListener("touchend", handleEnd);
     }
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleEnd);
-      window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleEnd);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleEnd);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleEnd);
     };
   }, [isDraggingEnergy, isDraggingPleasantness, handleDrag]);
 
-  // Calculate current quadrant
+  // Calculate current quadrant with animation trigger
   const currentQuadrant: QuadrantType = useMemo(() => {
     if (energy >= 50 && pleasantness >= 50) return "high-pleasant";
     if (energy >= 50 && pleasantness < 50) return "high-unpleasant";
@@ -192,24 +241,54 @@ export function EmotionCircularPicker({
     return "low-pleasant";
   }, [energy, pleasantness]);
 
+  // Track quadrant changes for animation
+  useEffect(() => {
+    if (prevQuadrant !== null && prevQuadrant !== currentQuadrant) {
+      // Quadrant changed - trigger animation by spawning particles
+      spawnParticles(energy, "energy");
+      spawnParticles(pleasantness, "pleasantness");
+    }
+    setPrevQuadrant(currentQuadrant);
+  }, [currentQuadrant, prevQuadrant, energy, pleasantness, spawnParticles]);
+
+  // Clear particles after animation
+  useEffect(() => {
+    if (energyParticles.length > 0 || pleasantnessParticles.length > 0) {
+      const timeout = setTimeout(() => {
+        setEnergyParticles([]);
+        setPleasantnessParticles([]);
+      }, 800);
+      return () => clearTimeout(timeout);
+    }
+  }, [energyParticles, pleasantnessParticles]);
+
   // Check if section belongs to current quadrant
-  const isSectionActive = useCallback((section: typeof WHEEL_SECTIONS[0]) => {
-    return section.quadrant === currentQuadrant;
-  }, [currentQuadrant]);
+  const isSectionActive = useCallback(
+    (section: (typeof WHEEL_SECTIONS)[0]) => {
+      return section.quadrant === currentQuadrant;
+    },
+    [currentQuadrant],
+  );
 
   // Handle emotion click
-  const handleEmotionClick = useCallback((emotion: string, section: typeof WHEEL_SECTIONS[0]) => {
-    if (!isSectionActive(section)) return; // Only allow clicks on active sections
-    onCategorySelect(section.core, section.quadrant);
-    onEmotionSelect(emotion, section.quadrant);
-  }, [onCategorySelect, onEmotionSelect, isSectionActive]);
+  const handleEmotionClick = useCallback(
+    (emotion: string, section: (typeof WHEEL_SECTIONS)[0]) => {
+      if (!isSectionActive(section)) return; // Only allow clicks on active sections
+      onCategorySelect(section.core, section.quadrant);
+      onEmotionSelect(emotion, section.quadrant);
+    },
+    [onCategorySelect, onEmotionSelect, isSectionActive],
+  );
 
   // Handle core emotion click
-  const handleCoreClick = useCallback((section: typeof WHEEL_SECTIONS[0]) => {
-    if (!isSectionActive(section)) return; // Only allow clicks on active sections
-    onCategorySelect(section.core, section.quadrant);
-    onEmotionSelect(section.core, section.quadrant);
-  }, [onCategorySelect, onEmotionSelect, isSectionActive]);
+  const handleCoreClick = useCallback(
+    (section: (typeof WHEEL_SECTIONS)[0]) => {
+      if (!isSectionActive(section)) return; // Only allow clicks on active sections
+      onCategorySelect(section.core, section.quadrant);
+      onEmotionSelect(section.core, section.quadrant);
+    },
+    [onCategorySelect, onEmotionSelect, isSectionActive],
+  );
 
   const energyThumb = getThumbPosition(energy, innerRingRadius);
   const pleasantnessThumb = getThumbPosition(pleasantness, innerMostRadius);
@@ -218,7 +297,7 @@ export function EmotionCircularPicker({
   const createArcPath = (startAngle: number, endAngle: number, innerR: number, outerR: number) => {
     const startRad = (startAngle * Math.PI) / 180;
     const endRad = (endAngle * Math.PI) / 180;
-    
+
     const x1 = center + innerR * Math.cos(startRad);
     const y1 = center + innerR * Math.sin(startRad);
     const x2 = center + outerR * Math.cos(startRad);
@@ -227,9 +306,9 @@ export function EmotionCircularPicker({
     const y3 = center + outerR * Math.sin(endRad);
     const x4 = center + innerR * Math.cos(endRad);
     const y4 = center + innerR * Math.sin(endRad);
-    
+
     const largeArc = endAngle - startAngle > 180 ? 1 : 0;
-    
+
     return `M ${x1} ${y1} L ${x2} ${y2} A ${outerR} ${outerR} 0 ${largeArc} 1 ${x3} ${y3} L ${x4} ${y4} A ${innerR} ${innerR} 0 ${largeArc} 0 ${x1} ${y1}`;
   };
 
@@ -245,19 +324,15 @@ export function EmotionCircularPicker({
   return (
     <div className="flex flex-col items-center gap-6">
       {/* Emotion Wheel */}
-      <div 
-        ref={containerRef}
-        className="relative"
-        style={{ width: size, height: size }}
-      >
+      <div ref={containerRef} className="relative" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="absolute inset-0">
           {/* SVG Filters for glow effect */}
           <defs>
             <filter id="selectedGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+              <feGaussianBlur stdDeviation="4" result="coloredBlur" />
               <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
           </defs>
@@ -267,39 +342,27 @@ export function EmotionCircularPicker({
             const isActive = isSectionActive(section);
             const isHovered = hoveredSection === index && isActive;
             const isCoreSelected = selectedEmotion === section.core || selectedCategory === section.core;
-            const isAnyEmotionSelected = section.emotions.includes(selectedEmotion || '');
+            const isAnyEmotionSelected = section.emotions.includes(selectedEmotion || "");
             const isSelected = isCoreSelected || isAnyEmotionSelected;
-            
+
             return (
-              <g 
-                key={index}
-                className={cn(
-                  "transition-all duration-300",
-                  !isActive && "pointer-events-none"
-                )}
-              >
+              <g key={index} className={cn("transition-all duration-300", !isActive && "pointer-events-none")}>
                 {/* Outer section (specific emotions) */}
                 <path
                   d={createArcPath(section.startAngle, section.endAngle, middleRadius + 5, outerRadius)}
                   fill={section.color}
                   opacity={isActive ? (isHovered || isSelected ? 1 : 0.85) : 0.12}
-                  className={cn(
-                    "transition-opacity duration-300",
-                    isActive ? "cursor-pointer" : "cursor-default"
-                  )}
+                  className={cn("transition-opacity duration-300", isActive ? "cursor-pointer" : "cursor-default")}
                   onMouseEnter={() => isActive && setHoveredSection(index)}
                   onMouseLeave={() => setHoveredSection(null)}
                 />
-                
+
                 {/* Inner section (core emotion) */}
                 <path
                   d={createArcPath(section.startAngle, section.endAngle, innerRingRadius + 15, middleRadius)}
                   fill={section.color}
                   opacity={isActive ? (isHovered || isSelected ? 0.95 : 0.7) : 0.12}
-                  className={cn(
-                    "transition-opacity duration-300",
-                    isActive ? "cursor-pointer" : "cursor-default"
-                  )}
+                  className={cn("transition-opacity duration-300", isActive ? "cursor-pointer" : "cursor-default")}
                   onClick={() => handleCoreClick(section)}
                   onMouseEnter={() => isActive && setHoveredSection(index)}
                   onMouseLeave={() => setHoveredSection(null)}
@@ -340,7 +403,7 @@ export function EmotionCircularPicker({
             strokeWidth={strokeWidth}
             className="opacity-30"
           />
-          
+
           {/* Outer Ring Progress (Energy) */}
           <circle
             cx={center}
@@ -354,10 +417,10 @@ export function EmotionCircularPicker({
             transform={`rotate(-90 ${center} ${center})`}
             className="transition-all duration-150"
             style={{
-              filter: isDraggingEnergy ? 'drop-shadow(0 0 8px hsl(45, 93%, 55%))' : undefined
+              filter: isDraggingEnergy ? "drop-shadow(0 0 8px hsl(45, 93%, 55%))" : undefined,
             }}
           />
-          
+
           {/* Inner Ring Track (Pleasantness) */}
           <circle
             cx={center}
@@ -368,7 +431,7 @@ export function EmotionCircularPicker({
             strokeWidth={strokeWidth}
             className="opacity-30"
           />
-          
+
           {/* Inner Ring Progress (Pleasantness) */}
           <circle
             cx={center}
@@ -382,17 +445,40 @@ export function EmotionCircularPicker({
             transform={`rotate(-90 ${center} ${center})`}
             className="transition-all duration-150"
             style={{
-              filter: isDraggingPleasantness ? 'drop-shadow(0 0 8px hsl(142, 52%, 50%))' : undefined
+              filter: isDraggingPleasantness ? "drop-shadow(0 0 8px hsl(142, 52%, 50%))" : undefined,
             }}
           />
 
+          {/* Energy particles animation */}
+          {energyParticles.map((particle) => (
+            <circle
+              key={`energy-p-${particle.id}`}
+              cx={center + Math.cos(particle.angle) * particle.radius}
+              cy={center + Math.sin(particle.angle) * particle.radius}
+              r={4 * particle.scale}
+              fill="hsl(45, 93%, 55%)"
+              opacity={particle.opacity}
+              className="animate-ping"
+              style={{ animationDuration: "0.6s" }}
+            />
+          ))}
+
+          {/* Pleasantness particles animation */}
+          {pleasantnessParticles.map((particle) => (
+            <circle
+              key={`pleasant-p-${particle.id}`}
+              cx={center + Math.cos(particle.angle) * particle.radius}
+              cy={center + Math.sin(particle.angle) * particle.radius}
+              r={4 * particle.scale}
+              fill="hsl(142, 52%, 50%)"
+              opacity={particle.opacity}
+              className="animate-ping"
+              style={{ animationDuration: "0.6s" }}
+            />
+          ))}
+
           {/* Center fill */}
-          <circle
-            cx={center}
-            cy={center}
-            r={innerMostRadius - strokeWidth / 2 - 5}
-            fill="hsl(var(--background))"
-          />
+          <circle cx={center} cy={center} r={innerMostRadius - strokeWidth / 2 - 5} fill="hsl(var(--background))" />
         </svg>
 
         {/* Emotion labels on wheel */}
@@ -401,7 +487,7 @@ export function EmotionCircularPicker({
           const midAngle = (section.startAngle + section.endAngle) / 2;
           const corePos = getTextPosition(midAngle, middleRadius - 15);
           const isCoreSelected = selectedEmotion === section.core || selectedCategory === section.core;
-          
+
           return (
             <div key={`labels-${sectionIndex}`}>
               {/* Core emotion label */}
@@ -409,47 +495,54 @@ export function EmotionCircularPicker({
                 className={cn(
                   "absolute text-xs font-bold pointer-events-auto",
                   "transition-all duration-300",
-                  isActive 
-                    ? "text-white hover:scale-110 cursor-pointer" 
+                  isActive
+                    ? "text-white hover:scale-110 cursor-pointer"
                     : "text-white/20 cursor-default pointer-events-none",
-                  isCoreSelected && isActive && "scale-110"
+                  isCoreSelected && isActive && "scale-110",
                 )}
                 style={{
                   left: corePos.x,
                   top: corePos.y,
-                  transform: 'translate(-50%, -50%)',
-                  textShadow: isActive ? '0 1px 2px rgba(0,0,0,0.5)' : 'none',
+                  transform: "translate(-50%, -50%)",
+                  textShadow: isActive ? "0 1px 2px rgba(0,0,0,0.5)" : "none",
                 }}
                 onClick={() => handleCoreClick(section)}
                 disabled={!isActive}
               >
                 {section.core}
               </button>
-              
-              {/* Outer emotion labels */}
+
+              {/* Outer emotion labels - with overflow fix */}
               {section.emotions.map((emotion, emotionIndex) => {
-                const emotionAngle = section.startAngle + 
+                const emotionAngle =
+                  section.startAngle +
                   ((section.endAngle - section.startAngle) / (section.emotions.length + 1)) * (emotionIndex + 1);
-                const pos = getTextPosition(emotionAngle, outerRadius - 40);
-                const rotation = emotionAngle > 90 && emotionAngle < 270 ? emotionAngle + 180 : emotionAngle;
+                // Adjusted radius to keep text inside the wheel
+                const textRadius = outerRadius - 35;
+                const pos = getTextPosition(emotionAngle, textRadius);
+                // Improved rotation logic - keep text readable
+                const normalizedAngle = ((emotionAngle % 360) + 360) % 360;
+                const rotation = normalizedAngle > 90 && normalizedAngle < 270 ? emotionAngle + 180 : emotionAngle;
                 const isEmotionSelected = selectedEmotion === emotion;
-                
+
                 return (
                   <button
                     key={emotion}
                     className={cn(
-                      "absolute text-[10px] font-medium pointer-events-auto whitespace-nowrap",
-                      "transition-all duration-300",
-                      isActive 
-                        ? "text-white hover:scale-110 cursor-pointer" 
+                      "absolute text-[9px] font-medium pointer-events-auto",
+                      "transition-all duration-300 max-w-[60px] truncate",
+                      isActive
+                        ? "text-white hover:scale-110 cursor-pointer"
                         : "text-white/10 cursor-default pointer-events-none",
-                      isEmotionSelected && isActive && "scale-110 font-bold"
+                      isEmotionSelected &&
+                        isActive &&
+                        "scale-125 font-bold ring-2 ring-white/50 rounded-full px-1 bg-black/20",
                     )}
                     style={{
                       left: pos.x,
                       top: pos.y,
                       transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-                      textShadow: isActive ? '0 1px 2px rgba(0,0,0,0.5)' : 'none',
+                      textShadow: isActive ? "0 1px 3px rgba(0,0,0,0.7)" : "none",
                     }}
                     onClick={() => handleEmotionClick(emotion, section)}
                     disabled={!isActive}
@@ -467,14 +560,14 @@ export function EmotionCircularPicker({
           className={cn(
             "absolute w-8 h-8 rounded-full border-4 border-amber-500 bg-background shadow-lg cursor-grab z-10",
             "flex items-center justify-center transition-transform",
-            isDraggingEnergy && "cursor-grabbing scale-110"
+            isDraggingEnergy && "cursor-grabbing scale-110",
           )}
           style={{
             left: energyThumb.x - 16,
             top: energyThumb.y - 16,
-            boxShadow: isDraggingEnergy 
-              ? '0 0 20px hsl(45, 93%, 55%), 0 4px 12px rgba(0,0,0,0.2)' 
-              : '0 4px 12px rgba(0,0,0,0.15)'
+            boxShadow: isDraggingEnergy
+              ? "0 0 20px hsl(45, 93%, 55%), 0 4px 12px rgba(0,0,0,0.2)"
+              : "0 4px 12px rgba(0,0,0,0.15)",
           }}
           onMouseDown={() => setIsDraggingEnergy(true)}
           onTouchStart={() => setIsDraggingEnergy(true)}
@@ -487,14 +580,14 @@ export function EmotionCircularPicker({
           className={cn(
             "absolute w-8 h-8 rounded-full border-4 border-emerald-500 bg-background shadow-lg cursor-grab z-10",
             "flex items-center justify-center transition-transform",
-            isDraggingPleasantness && "cursor-grabbing scale-110"
+            isDraggingPleasantness && "cursor-grabbing scale-110",
           )}
           style={{
             left: pleasantnessThumb.x - 16,
             top: pleasantnessThumb.y - 16,
-            boxShadow: isDraggingPleasantness 
-              ? '0 0 20px hsl(142, 52%, 50%), 0 4px 12px rgba(0,0,0,0.2)' 
-              : '0 4px 12px rgba(0,0,0,0.15)'
+            boxShadow: isDraggingPleasantness
+              ? "0 0 20px hsl(142, 52%, 50%), 0 4px 12px rgba(0,0,0,0.2)"
+              : "0 4px 12px rgba(0,0,0,0.15)",
           }}
           onMouseDown={() => setIsDraggingPleasantness(true)}
           onTouchStart={() => setIsDraggingPleasantness(true)}
@@ -502,21 +595,33 @@ export function EmotionCircularPicker({
           <span className="text-[9px] font-bold text-emerald-600">{pleasantness}</span>
         </div>
 
-        {/* Center quadrant indicator */}
-        <div 
-          className="absolute inset-0 flex items-center justify-center pointer-events-none"
-        >
-          <div 
-            className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300"
+        {/* Center quadrant indicator with enhanced animation */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div
+            className={cn(
+              "w-14 h-14 rounded-full flex items-center justify-center",
+              "transition-all duration-500 ease-out",
+              (isDraggingEnergy || isDraggingPleasantness) && "scale-110",
+            )}
             style={{
               background: `linear-gradient(135deg, ${QUADRANTS[currentQuadrant].color}30, ${QUADRANTS[currentQuadrant].color}50)`,
-              border: `2px solid ${QUADRANTS[currentQuadrant].color}`,
+              border: `3px solid ${QUADRANTS[currentQuadrant].color}`,
+              boxShadow: `0 0 20px ${QUADRANTS[currentQuadrant].color}40, inset 0 0 15px ${QUADRANTS[currentQuadrant].color}20`,
             }}
           >
-            <span className="text-xl">
-              {currentQuadrant === 'high-pleasant' ? '😊' : 
-               currentQuadrant === 'high-unpleasant' ? '😰' :
-               currentQuadrant === 'low-unpleasant' ? '😔' : '😌'}
+            <span
+              className={cn(
+                "text-xl transition-transform duration-300",
+                (isDraggingEnergy || isDraggingPleasantness) && "animate-bounce",
+              )}
+            >
+              {currentQuadrant === "high-pleasant"
+                ? "😊"
+                : currentQuadrant === "high-unpleasant"
+                  ? "😰"
+                  : currentQuadrant === "low-unpleasant"
+                    ? "😔"
+                    : "😌"}
             </span>
           </div>
         </div>
@@ -526,11 +631,15 @@ export function EmotionCircularPicker({
       <div className="flex items-center justify-center gap-8 text-sm">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-amber-500" />
-          <span className="text-muted-foreground">Energy: <span className="font-semibold text-foreground">{energy}%</span></span>
+          <span className="text-muted-foreground">
+            Energy: <span className="font-semibold text-foreground">{energy}%</span>
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-emerald-500" />
-          <span className="text-muted-foreground">Pleasantness: <span className="font-semibold text-foreground">{pleasantness}%</span></span>
+          <span className="text-muted-foreground">
+            Pleasantness: <span className="font-semibold text-foreground">{pleasantness}%</span>
+          </span>
         </div>
       </div>
     </div>
