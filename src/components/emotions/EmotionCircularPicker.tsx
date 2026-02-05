@@ -341,6 +341,18 @@ export function EmotionCircularPicker({
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
+            {/* Circular path for energy text */}
+            <path
+              id="energyTextPath"
+              d={`M ${center} ${center - innerRingRadius} A ${innerRingRadius} ${innerRingRadius} 0 1 1 ${center - 0.001} ${center - innerRingRadius}`}
+              fill="none"
+            />
+            {/* Circular path for pleasant text */}
+            <path
+              id="pleasantTextPath"
+              d={`M ${center} ${center - innerMostRadius} A ${innerMostRadius} ${innerMostRadius} 0 1 1 ${center - 0.001} ${center - innerMostRadius}`}
+              fill="none"
+            />
           </defs>
 
           {/* Wheel sections */}
@@ -427,33 +439,20 @@ export function EmotionCircularPicker({
             }}
           />
 
-          {/* Energy text labels along filled arc */}
-          {energy > 15 &&
-            [0.15, 0.45, 0.75]
-              .filter((p) => p <= energy / 100)
-              .map((position, i) => {
-                const angle = position * 2 * Math.PI - Math.PI / 2;
-                const x = center + Math.cos(angle) * innerRingRadius;
-                const y = center + Math.sin(angle) * innerRingRadius;
-                const rotation = position * 360 - 90;
-                return (
-                  <text
-                    key={`energy-text-${i}`}
-                    x={x}
-                    y={y}
-                    fill="hsl(45, 93%, 35%)"
-                    fontSize="8"
-                    fontWeight="600"
-                    opacity={0.5}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    transform={`rotate(${rotation + 90} ${x} ${y})`}
-                    className="select-none pointer-events-none"
-                  >
-                    Energy
-                  </text>
-                );
-              })}
+          {/* Energy text labels along filled arc - curved */}
+          {energy > 20 && (
+            <text
+              fill="hsl(45, 93%, 25%)"
+              fontSize="9"
+              fontWeight="700"
+              opacity={0.4}
+              className="select-none pointer-events-none"
+            >
+              <textPath href="#energyTextPath" startOffset="5%">
+                Energy • Energy • Energy
+              </textPath>
+            </text>
+          )}
 
           {/* Inner Ring Track (Pleasantness) */}
           <circle
@@ -483,33 +482,20 @@ export function EmotionCircularPicker({
             }}
           />
 
-          {/* Pleasant text labels along filled arc */}
-          {pleasantness > 20 &&
-            [0.2, 0.5, 0.8]
-              .filter((p) => p <= pleasantness / 100)
-              .map((position, i) => {
-                const angle = position * 2 * Math.PI - Math.PI / 2;
-                const x = center + Math.cos(angle) * innerMostRadius;
-                const y = center + Math.sin(angle) * innerMostRadius;
-                const rotation = position * 360 - 90;
-                return (
-                  <text
-                    key={`pleasant-text-${i}`}
-                    x={x}
-                    y={y}
-                    fill="hsl(142, 52%, 30%)"
-                    fontSize="7"
-                    fontWeight="600"
-                    opacity={0.5}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    transform={`rotate(${rotation + 90} ${x} ${y})`}
-                    className="select-none pointer-events-none"
-                  >
-                    Pleasant
-                  </text>
-                );
-              })}
+          {/* Pleasant text labels along filled arc - curved */}
+          {pleasantness > 25 && (
+            <text
+              fill="hsl(142, 52%, 25%)"
+              fontSize="8"
+              fontWeight="700"
+              opacity={0.4}
+              className="select-none pointer-events-none"
+            >
+              <textPath href="#pleasantTextPath" startOffset="8%">
+                Pleasant • Pleasant
+              </textPath>
+            </text>
+          )}
 
           {/* Energy particles animation */}
           {energyParticles.map((particle) => (
