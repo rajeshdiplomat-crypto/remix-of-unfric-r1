@@ -37,11 +37,11 @@ const typeGradients: Record<string, { from: string; to: string; bg: string }> = 
 };
 
 const typeIcons: Record<string, React.ReactNode> = {
-  breathing: <Wind className="h-5 w-5" />,
-  grounding: <Activity className="h-5 w-5" />,
-  cognitive: <Sparkles className="h-5 w-5" />,
-  movement: <Zap className="h-5 w-5" />,
-  mindfulness: <Heart className="h-5 w-5" />,
+  breathing: <Wind className="h-3 w-3" />,
+  grounding: <Activity className="h-3 w-3" />,
+  cognitive: <Sparkles className="h-3 w-3" />,
+  movement: <Zap className="h-3 w-3" />,
+  mindfulness: <Heart className="h-3 w-3" />,
 };
 
 const typeLabels: Record<string, string> = {
@@ -186,27 +186,28 @@ export function EmotionsPageRegulate({
             </div>
           )}
 
-          {/* Inline Strategies */}
-          {recommendedStrategies.length > 0 && (
-            <div className="w-full max-w-sm mb-4">
-              <p className="text-[10px] text-muted-foreground mb-2 text-center flex items-center justify-center gap-1">
-                <Sparkles className="h-3 w-3 text-amber-500" />
-                Recommended for you
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                {recommendedStrategies.map((strategy) => (
+          {/* All Strategies Inline */}
+          <div className="w-full max-w-md mb-4">
+            <p className="text-[10px] text-muted-foreground mb-2 text-center">
+              Try a strategy
+            </p>
+            <div className="grid grid-cols-4 gap-1.5">
+              {STRATEGIES.map((strategy) => {
+                const isRecommended = recommendedStrategies.some(s => s.id === strategy.id);
+                return (
                   <MiniStrategyCard
                     key={strategy.id}
                     strategy={strategy}
+                    isRecommended={isRecommended}
                     onStart={() => {
                       setActiveStrategy(strategy);
                       setShowVisualization(true);
                     }}
                   />
-                ))}
-              </div>
+                );
+              })}
             </div>
-          )}
+          </div>
 
           {/* Compact Action Buttons */}
           <div className="flex gap-2 w-full max-w-sm">
@@ -265,9 +266,11 @@ export function EmotionsPageRegulate({
 // Compact inline strategy card for the Regulate page
 function MiniStrategyCard({
   strategy,
+  isRecommended = false,
   onStart,
 }: {
   strategy: Strategy;
+  isRecommended?: boolean;
   onStart: () => void;
 }) {
   const gradient = typeGradients[strategy.type];
@@ -275,21 +278,23 @@ function MiniStrategyCard({
   return (
     <button
       onClick={onStart}
-      className="group p-2.5 rounded-xl border border-border bg-card hover:border-primary/30 hover:shadow-md transition-all duration-200 text-center"
+      className={cn(
+        "group p-2 rounded-lg border bg-card hover:border-primary/30 hover:shadow-md transition-all duration-200 text-center",
+        isRecommended ? "ring-1 ring-amber-400/50 border-amber-400/30" : "border-border"
+      )}
     >
       <div 
-        className="w-8 h-8 mx-auto mb-1.5 rounded-lg flex items-center justify-center text-white shadow-sm transition-transform duration-200 group-hover:scale-110"
+        className="w-6 h-6 mx-auto mb-1 rounded-md flex items-center justify-center text-white shadow-sm transition-transform duration-200 group-hover:scale-110"
         style={{
           background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`
         }}
       >
         {typeIcons[strategy.type]}
       </div>
-      <p className="text-xs font-medium text-foreground truncate mb-0.5">
-        {strategy.title}
+      <p className="text-[10px] font-medium text-foreground truncate leading-tight">
+        {strategy.title.split(' ')[0]}
       </p>
-      <p className="text-[10px] text-muted-foreground flex items-center justify-center gap-1">
-        <Clock className="h-2.5 w-2.5" />
+      <p className="text-[8px] text-muted-foreground">
         {strategy.duration}
       </p>
     </button>
