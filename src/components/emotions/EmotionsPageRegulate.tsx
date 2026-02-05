@@ -55,6 +55,14 @@ const quadrantEmoji: Record<QuadrantType, string> = {
   "low-pleasant": "😌",
 };
 
+const REGULATE_CONTENT = {
+  badge: "Well Done",
+  title: { line1: "Time to", line2: "Regulate" },
+  description:
+    "Great job tracking your emotion! Now explore strategies designed for your current emotional state to help you feel balanced and grounded.",
+  features: ["Personalized recommendations", "Guided breathing exercises", "Quick mindfulness techniques"],
+};
+
 export function EmotionsPageRegulate({
   savedQuadrant,
   savedEmotion,
@@ -67,7 +75,6 @@ export function EmotionsPageRegulate({
   const quadrantInfo = savedQuadrant ? QUADRANTS[savedQuadrant] : null;
   const accentColor = quadrantInfo?.color || "#10B981";
 
-  // Trigger confetti on mount
   useEffect(() => {
     if (savedQuadrant) {
       confetti({
@@ -99,121 +106,106 @@ export function EmotionsPageRegulate({
   };
 
   return (
-    <div className="animate-in fade-in duration-500 space-y-6">
-      {/* Top Row: Check-in Complete + Recommended */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Check-in Complete Card */}
-        <div className="bg-card border rounded-2xl p-6 shadow-sm">
-          <div className="flex items-start gap-4 mb-6">
-            <div
-              className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 shadow-lg"
-              style={{ backgroundColor: accentColor }}
-            >
-              <Check className="h-7 w-7 text-white" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold">Check-in Complete</h2>
-              <p className="text-sm text-muted-foreground">Great job tracking!</p>
-            </div>
-          </div>
-
-          {/* Current Emotion Badge */}
-          {savedEmotion && savedQuadrant && quadrantInfo && (
-            <div
-              className="inline-flex items-center gap-3 px-4 py-2.5 rounded-full mb-6"
-              style={{
-                backgroundColor: `${quadrantInfo.color}15`,
-                border: `1px solid ${quadrantInfo.color}40`,
-              }}
-            >
-              <span className="text-2xl">{quadrantEmoji[savedQuadrant]}</span>
-              <div>
-                <p className="text-[10px] text-muted-foreground leading-none">You're feeling</p>
-                <p className="text-sm font-bold" style={{ color: quadrantInfo.color }}>
-                  {savedEmotion}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Stats Row */}
-          <div className="flex gap-6 mb-4">
-            <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-amber-500" />
-              <span className="text-xs text-muted-foreground">Energy Level</span>
-              <span className="font-semibold">68%</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Heart className="h-4 w-4 text-emerald-500" />
-              <span className="text-xs text-muted-foreground">Pleasantness</span>
-              <span className="font-semibold">72%</span>
-            </div>
-          </div>
-
-          {/* Logged Indicator */}
-          <div className="flex items-center gap-2 text-sm" style={{ color: accentColor }}>
-            <Check className="h-4 w-4" />
-            <span>Logged: {savedEmotion || "No emotion"}</span>
-          </div>
+    <div className="animate-in fade-in duration-500">
+      {/* Header Section with Title & Description */}
+      <div className="text-center max-w-2xl mx-auto mb-10">
+        <div
+          className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-4"
+          style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
+        >
+          <Sparkles className="h-3 w-3" />
+          {REGULATE_CONTENT.badge}
         </div>
 
-        {/* Recommended Strategies Card */}
-        <div className="bg-card border rounded-2xl p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="h-4 w-4 text-amber-500" />
-            <h3 className="font-medium">Recommended for you</h3>
-          </div>
+        <h1 className="text-3xl md:text-4xl font-light mb-4">
+          {REGULATE_CONTENT.title.line1}{" "}
+          <span className="font-bold" style={{ color: accentColor }}>
+            {REGULATE_CONTENT.title.line2}
+          </span>
+        </h1>
 
-          <div className="grid grid-cols-3 gap-3">
-            {recommendedStrategies.map((strategy) => (
-              <button
-                key={strategy.id}
-                onClick={() => handleStrategyClick(strategy)}
-                className="group p-4 rounded-xl border-2 border-amber-300/30 bg-amber-50/50 dark:bg-amber-900/10 hover:border-amber-400/50 hover:shadow-md transition-all duration-200"
-              >
-                <div
-                  className="w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform"
-                  style={{
-                    background: `linear-gradient(135deg, ${typeGradients[strategy.type].from}, ${typeGradients[strategy.type].to})`,
-                  }}
-                >
-                  {typeIcons[strategy.type]}
-                </div>
-                <p className="text-xs font-medium text-center truncate">{strategy.title}</p>
-                <p className="text-[10px] text-muted-foreground text-center mt-1">{strategy.duration}</p>
-              </button>
-            ))}
-          </div>
-        </div>
+        <p className="text-muted-foreground text-sm leading-relaxed max-w-lg mx-auto">{REGULATE_CONTENT.description}</p>
       </div>
 
-      {/* Second Row: All Strategies */}
-      <div className="bg-card border rounded-2xl p-6 shadow-sm">
-        <h3 className="font-medium mb-4">All Strategies</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+      {/* Strategy Cards - Pricing Style */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        {recommendedStrategies.map((strategy, index) => {
+          const isMiddle = index === 1;
+          const gradient = typeGradients[strategy.type];
+
+          return (
+            <div
+              key={strategy.id}
+              className={cn(
+                "rounded-2xl border-2 p-6 transition-all duration-300 hover:shadow-xl cursor-pointer",
+                isMiddle
+                  ? "border-primary bg-primary/5 scale-105 shadow-lg"
+                  : "border-border bg-card hover:border-primary/50",
+              )}
+              onClick={() => handleStrategyClick(strategy)}
+            >
+              {/* Strategy Type Badge */}
+              <div className="text-xs text-muted-foreground uppercase tracking-wider mb-3">{strategy.type}</div>
+
+              {/* Strategy Icon */}
+              <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg mb-4"
+                style={{ background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})` }}
+              >
+                {typeIcons[strategy.type]}
+              </div>
+
+              {/* Strategy Title */}
+              <h3 className="text-lg font-semibold mb-1">{strategy.title}</h3>
+
+              {/* Duration */}
+              <p className="text-sm text-muted-foreground mb-4">{strategy.duration}</p>
+
+              {/* Description / Features */}
+              <p className="text-xs text-muted-foreground mb-6 line-clamp-2">{strategy.description}</p>
+
+              {/* CTA Button */}
+              <Button
+                className={cn(
+                  "w-full rounded-lg",
+                  isMiddle ? "bg-primary text-primary-foreground" : "bg-muted text-foreground hover:bg-muted/80",
+                )}
+                style={isMiddle ? { backgroundColor: accentColor } : undefined}
+              >
+                Start Session
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* All Strategies Section */}
+      <div className="mb-10">
+        <h3 className="text-center text-sm font-medium text-muted-foreground mb-4">MORE STRATEGIES</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {allStrategies.map((strategy) => (
             <button
               key={strategy.id}
               onClick={() => handleStrategyClick(strategy)}
-              className="group p-4 rounded-xl border bg-muted/30 hover:bg-muted/50 hover:border-primary/30 hover:shadow-md transition-all duration-200"
+              className="group p-4 rounded-xl border-2 border-border bg-card hover:border-primary/40 hover:shadow-md transition-all duration-200 text-center"
             >
               <div
-                className="w-11 h-11 mx-auto mb-2.5 rounded-xl flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform"
+                className="w-10 h-10 mx-auto mb-2 rounded-xl flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform"
                 style={{
                   background: `linear-gradient(135deg, ${typeGradients[strategy.type].from}, ${typeGradients[strategy.type].to})`,
                 }}
               >
                 {typeIcons[strategy.type]}
               </div>
-              <p className="text-xs font-medium text-center truncate">{strategy.title}</p>
-              <p className="text-[10px] text-muted-foreground text-center mt-0.5">{strategy.duration}</p>
+              <p className="text-xs font-medium truncate">{strategy.title}</p>
+              <p className="text-[10px] text-muted-foreground">{strategy.duration}</p>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Third Row: Last 7 Entries */}
-      <div className="bg-card border rounded-2xl p-6 shadow-sm">
+      {/* Last 7 Entries */}
+      <div className="border-2 border-border rounded-2xl p-6 mb-8">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -234,23 +226,16 @@ export function EmotionsPageRegulate({
               <div
                 key={entry.id}
                 className={cn(
-                  "rounded-2xl p-4 transition-all duration-200 hover:scale-105 cursor-pointer text-center",
-                  isFirst && "ring-2 ring-offset-2",
+                  "rounded-xl p-3 transition-all duration-200 hover:scale-105 cursor-pointer text-center border-2",
+                  isFirst ? "border-primary shadow-md" : "border-transparent",
                 )}
-                style={{
-                  backgroundColor: `${entryQuadrant.color}12`,
-                  border: `1px solid ${entryQuadrant.color}30`,
-                  ...(isFirst && {
-                    ringColor: entryQuadrant.color,
-                    backgroundColor: `${entryQuadrant.color}20`,
-                  }),
-                }}
+                style={{ backgroundColor: `${entryQuadrant.color}15` }}
               >
-                <div className="text-3xl mb-2">{quadrantEmoji[entry.quadrant]}</div>
-                <p className="text-xs font-semibold truncate" style={{ color: entryQuadrant.color }}>
+                <div className="text-2xl mb-1">{quadrantEmoji[entry.quadrant]}</div>
+                <p className="text-[10px] font-semibold truncate" style={{ color: entryQuadrant.color }}>
                   {entry.emotion}
                 </p>
-                <p className="text-[10px] text-muted-foreground mt-1">{formatDate(entry.timestamp)}</p>
+                <p className="text-[9px] text-muted-foreground">{formatDate(entry.timestamp)}</p>
               </div>
             );
           })}
@@ -258,7 +243,7 @@ export function EmotionsPageRegulate({
       </div>
 
       {/* Action Buttons */}
-      <div className="flex justify-center gap-4 pt-2">
+      <div className="flex justify-center gap-4">
         <Button variant="outline" size="lg" onClick={onNewCheckin} className="h-12 px-8 rounded-xl">
           NEW CHECK-IN
         </Button>
