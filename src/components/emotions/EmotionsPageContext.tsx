@@ -283,7 +283,22 @@ export function EmotionsPageContext({
 
             <p className="text-lg text-muted-foreground leading-relaxed mb-6 max-w-md">{CONTEXT_CONTENT.description}</p>
 
-            {/* Enhanced Dark Currently Feeling Box */}
+            {/* Features List (NOW ABOVE THE BOX) */}
+            <ul className="space-y-4 mb-8">
+              {CONTEXT_CONTENT.features.map((feature, idx) => (
+                <li key={idx} className="flex items-center gap-3 text-sm font-medium text-foreground/80">
+                  <div
+                    className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: `${quadrantInfo.color}15` }}
+                  >
+                    <Check className="h-3.5 w-3.5" style={{ color: quadrantInfo.color }} />
+                  </div>
+                  {feature}
+                </li>
+              ))}
+            </ul>
+
+            {/* Enhanced Dark Currently Feeling Box (NOW AT THE BOTTOM) */}
             <div className="bg-slate-900/95 backdrop-blur-md rounded-2xl p-5 mb-8 text-white shadow-xl dark:bg-slate-950 border border-white/10 relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
               <div
                 className="absolute -top-10 -right-10 w-20 h-20 rounded-full blur-2xl opacity-20"
@@ -304,20 +319,6 @@ export function EmotionsPageContext({
                 </div>
               </div>
             </div>
-
-            <ul className="space-y-4">
-              {CONTEXT_CONTENT.features.map((feature, idx) => (
-                <li key={idx} className="flex items-center gap-3 text-sm font-medium text-foreground/80">
-                  <div
-                    className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: `${quadrantInfo.color}15` }}
-                  >
-                    <Check className="h-3.5 w-3.5" style={{ color: quadrantInfo.color }} />
-                  </div>
-                  {feature}
-                </li>
-              ))}
-            </ul>
           </div>
         </div>
       </div>
