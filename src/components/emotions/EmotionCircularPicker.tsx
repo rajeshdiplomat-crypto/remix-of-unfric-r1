@@ -350,18 +350,6 @@ export function EmotionCircularPicker({
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
-            {/* Circular path for energy text - centered on ring stroke */}
-            <path
-              id="energyTextPath"
-              d={`M ${center + innerRingRadius} ${center} A ${innerRingRadius} ${innerRingRadius} 0 1 1 ${center + innerRingRadius - 0.001} ${center}`}
-              fill="none"
-            />
-            {/* Circular path for pleasant text - centered on ring stroke */}
-            <path
-              id="pleasantTextPath"
-              d={`M ${center + innerMostRadius} ${center} A ${innerMostRadius} ${innerMostRadius} 0 1 1 ${center + innerMostRadius - 0.001} ${center}`}
-              fill="none"
-            />
           </defs>
 
           {/* Wheel sections */}
@@ -492,34 +480,6 @@ export function EmotionCircularPicker({
             }}
           />
 
-          {/* Energy text labels along filled arc - curved */}
-          {energy > 25 && (
-            <text
-              fill="hsl(45, 93%, 30%)"
-              fontSize="8"
-              fontWeight="600"
-              opacity={0.4}
-              letterSpacing="3"
-              className="select-none pointer-events-none"
-              dominantBaseline="middle"
-              textAnchor="start"
-            >
-              <textPath href="#energyTextPath" startOffset="3%">
-                ENERGY
-              </textPath>
-              {energy > 50 && (
-                <textPath href="#energyTextPath" startOffset="28%">
-                  ENERGY
-                </textPath>
-              )}
-              {energy > 75 && (
-                <textPath href="#energyTextPath" startOffset="53%">
-                  ENERGY
-                </textPath>
-              )}
-            </text>
-          )}
-
           {/* Inner Ring Track (Pleasantness) */}
           <circle
             cx={center}
@@ -547,29 +507,6 @@ export function EmotionCircularPicker({
               filter: isDraggingPleasantness ? "drop-shadow(0 0 8px hsl(142, 52%, 50%))" : undefined,
             }}
           />
-
-          {/* Pleasant text labels along filled arc - curved */}
-          {pleasantness > 30 && (
-            <text
-              fill="hsl(142, 52%, 30%)"
-              fontSize="7"
-              fontWeight="600"
-              opacity={0.4}
-              letterSpacing="2"
-              className="select-none pointer-events-none"
-              dominantBaseline="middle"
-              textAnchor="start"
-            >
-              <textPath href="#pleasantTextPath" startOffset="5%">
-                PLEASANT
-              </textPath>
-              {pleasantness > 60 && (
-                <textPath href="#pleasantTextPath" startOffset="40%">
-                  PLEASANT
-                </textPath>
-              )}
-            </text>
-          )}
 
           {/* Energy particles animation */}
           {energyParticles.map((particle) => (
