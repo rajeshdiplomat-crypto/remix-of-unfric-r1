@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, ArrowRight, Wind, Heart, Zap, Sparkles, Activity, Clock, Play, Filter } from "lucide-react";
+import { Check, ArrowRight, Wind, Heart, Zap, Sparkles, Activity, Clock, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { QuadrantType, QUADRANTS, STRATEGIES, Strategy } from "./types";
@@ -13,6 +13,20 @@ interface EmotionsPageRegulateProps {
   onNewCheckin: () => void;
   onViewInsights: () => void;
 }
+
+const REGULATE_CONTENT = {
+  badge: "Well Done",
+  title: {
+    line1: "Time to",
+    line2: "Regulate"
+  },
+  description: "Great job tracking your emotion! Now explore strategies designed for your current emotional state to help you feel balanced and grounded.",
+  features: [
+    "Personalized recommendations",
+    "Guided breathing exercises",
+    "Quick mindfulness techniques"
+  ]
+};
 
 const typeGradients: Record<string, { from: string; to: string; bg: string }> = {
   breathing: { from: "#06B6D4", to: "#3B82F6", bg: "from-cyan-500/20 to-blue-500/20" },
@@ -57,6 +71,7 @@ export function EmotionsPageRegulate({
   const [filterType, setFilterType] = useState<string | null>(null);
 
   const quadrantInfo = savedQuadrant ? QUADRANTS[savedQuadrant] : null;
+  const accentColor = quadrantInfo?.color || "#10B981";
 
   // Trigger confetti on mount
   useEffect(() => {
@@ -86,44 +101,119 @@ export function EmotionsPageRegulate({
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-300px)] animate-in fade-in duration-500">
-      {/* Success Header */}
-      <div className="text-center mb-16">
-        {/* Animated Checkmark */}
-        <div className="relative inline-flex items-center justify-center w-24 h-24 mb-6">
-          <div 
-            className={cn(
-              "absolute inset-0 rounded-full transition-all duration-700",
-              showCheckmark ? "scale-100 opacity-100" : "scale-110 opacity-0"
-            )}
-            style={{ backgroundColor: `${quadrantInfo?.color}20` }}
-          />
-          <div 
-            className={cn(
-              "relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500",
-              showCheckmark ? "scale-100" : "scale-90"
-            )}
-            style={{ backgroundColor: quadrantInfo?.color }}
-          >
-            <Check className="h-8 w-8 text-white" />
+      {/* Two-Column Hero Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-12">
+        {/* Left: Success Animation & Actions */}
+        <div className="flex flex-col items-center lg:items-start justify-center">
+          {/* Animated Checkmark */}
+          <div className="relative inline-flex items-center justify-center w-24 h-24 mb-6">
+            <div 
+              className={cn(
+                "absolute inset-0 rounded-full transition-all duration-700",
+                showCheckmark ? "scale-100 opacity-100" : "scale-110 opacity-0"
+              )}
+              style={{ backgroundColor: `${accentColor}20` }}
+            />
+            <div 
+              className={cn(
+                "relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500",
+                showCheckmark ? "scale-100" : "scale-90"
+              )}
+              style={{ backgroundColor: accentColor }}
+            >
+              <Check className="h-8 w-8 text-white" />
+            </div>
+          </div>
+
+          <h1 className="text-3xl md:text-4xl font-light mb-4 text-center lg:text-left">
+            Check-in Complete
+          </h1>
+          
+          {savedEmotion && savedQuadrant && quadrantInfo && (
+            <div 
+              className="inline-flex items-center gap-3 px-5 py-3 rounded-2xl border-2 mb-8"
+              style={{
+                background: `linear-gradient(135deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}20)`,
+                borderColor: quadrantInfo.borderColor,
+              }}
+            >
+              <span className="text-2xl">{quadrantEmoji[savedQuadrant]}</span>
+              <div>
+                <p className="text-xs text-muted-foreground">You're feeling</p>
+                <p className="font-medium text-lg" style={{ color: quadrantInfo.color }}>
+                  {savedEmotion}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={onNewCheckin}
+              className="h-12 px-6 rounded-2xl gap-2"
+            >
+              New Check-in
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={onViewInsights}
+              className="h-12 px-6 rounded-2xl gap-2"
+            >
+              View Insights
+              <ArrowRight className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
-        <h1 className="text-3xl md:text-4xl font-light mb-3">Check-in Complete</h1>
-        
-        {savedEmotion && savedQuadrant && (
+        {/* Right: Descriptive Text */}
+        <div className="flex flex-col justify-center lg:pl-8">
+          {/* Badge */}
           <div 
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl border-2"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-6 w-fit"
             style={{
-              background: `linear-gradient(135deg, ${quadrantInfo?.bgColor}, ${quadrantInfo?.borderColor}20)`,
-              borderColor: quadrantInfo?.borderColor,
+              background: `linear-gradient(135deg, ${accentColor}20, ${accentColor}10)`,
+              color: accentColor,
             }}
           >
-            <span className="text-2xl">{quadrantEmoji[savedQuadrant]}</span>
-            <span className="font-medium text-lg" style={{ color: quadrantInfo?.color }}>
-              {savedEmotion}
-            </span>
+            <Sparkles className="h-4 w-4" />
+            {REGULATE_CONTENT.badge}
           </div>
-        )}
+
+          {/* Title */}
+          <h2 className="text-4xl md:text-5xl font-light text-foreground mb-2">
+            {REGULATE_CONTENT.title.line1}
+          </h2>
+          <h2 
+            className="text-4xl md:text-5xl font-light mb-6"
+            style={{ color: accentColor }}
+          >
+            {REGULATE_CONTENT.title.line2}
+          </h2>
+
+          {/* Description */}
+          <p className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-md">
+            {REGULATE_CONTENT.description}
+          </p>
+
+          {/* Features */}
+          <ul className="space-y-3">
+            {REGULATE_CONTENT.features.map((feature, idx) => (
+              <li key={idx} className="flex items-center gap-3 text-muted-foreground">
+                <div 
+                  className="w-5 h-5 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: `${accentColor}20` }}
+                >
+                  <Check className="h-3 w-3" style={{ color: accentColor }} />
+                </div>
+                {feature}
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
 
       {/* Recommended Strategies */}
@@ -216,27 +306,6 @@ export function EmotionsPageRegulate({
             />
           ))}
         </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex justify-center gap-4 mt-12 pt-8 border-t border-border">
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={onNewCheckin}
-          className="h-12 px-8 rounded-2xl gap-2"
-        >
-          New Check-in
-        </Button>
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={onViewInsights}
-          className="h-12 px-8 rounded-2xl gap-2"
-        >
-          View Insights
-          <ArrowRight className="h-4 w-4" />
-        </Button>
       </div>
 
       {/* Guided Visualization Modal */}
