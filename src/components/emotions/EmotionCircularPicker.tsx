@@ -427,6 +427,34 @@ export function EmotionCircularPicker({
             }}
           />
 
+          {/* Energy text labels along filled arc */}
+          {energy > 15 &&
+            [0.15, 0.45, 0.75]
+              .filter((p) => p <= energy / 100)
+              .map((position, i) => {
+                const angle = position * 2 * Math.PI - Math.PI / 2;
+                const x = center + Math.cos(angle) * innerRingRadius;
+                const y = center + Math.sin(angle) * innerRingRadius;
+                const rotation = position * 360 - 90;
+                return (
+                  <text
+                    key={`energy-text-${i}`}
+                    x={x}
+                    y={y}
+                    fill="hsl(45, 93%, 35%)"
+                    fontSize="8"
+                    fontWeight="600"
+                    opacity={0.5}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    transform={`rotate(${rotation + 90} ${x} ${y})`}
+                    className="select-none pointer-events-none"
+                  >
+                    Energy
+                  </text>
+                );
+              })}
+
           {/* Inner Ring Track (Pleasantness) */}
           <circle
             cx={center}
@@ -454,6 +482,34 @@ export function EmotionCircularPicker({
               filter: isDraggingPleasantness ? "drop-shadow(0 0 8px hsl(142, 52%, 50%))" : undefined,
             }}
           />
+
+          {/* Pleasant text labels along filled arc */}
+          {pleasantness > 20 &&
+            [0.2, 0.5, 0.8]
+              .filter((p) => p <= pleasantness / 100)
+              .map((position, i) => {
+                const angle = position * 2 * Math.PI - Math.PI / 2;
+                const x = center + Math.cos(angle) * innerMostRadius;
+                const y = center + Math.sin(angle) * innerMostRadius;
+                const rotation = position * 360 - 90;
+                return (
+                  <text
+                    key={`pleasant-text-${i}`}
+                    x={x}
+                    y={y}
+                    fill="hsl(142, 52%, 30%)"
+                    fontSize="7"
+                    fontWeight="600"
+                    opacity={0.5}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    transform={`rotate(${rotation + 90} ${x} ${y})`}
+                    className="select-none pointer-events-none"
+                  >
+                    Pleasant
+                  </text>
+                );
+              })}
 
           {/* Energy particles animation */}
           {energyParticles.map((particle) => (
