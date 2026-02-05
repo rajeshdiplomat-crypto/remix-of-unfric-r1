@@ -115,6 +115,8 @@ export default function Emotions() {
       const parsed: EmotionEntry[] = (data || []).map((row) => {
         let quadrant: QuadrantType = "low-pleasant";
         let emotion = row.emotion;
+        let parsedContext: EmotionEntry["context"] = undefined;
+        let showInJournal: boolean | undefined = undefined;
         let strategy: string | undefined = undefined;
 
         try {
