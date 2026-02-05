@@ -576,24 +576,21 @@ export function EmotionCircularPicker({
 
           return (
             <div key={`labels-${sectionIndex}`}>
-              {/* Core emotion label */}
+              {/* Core emotion label - text only, arc is clickable */}
               <button
                 className={cn(
-                  "absolute text-xs font-bold pointer-events-auto select-none",
+                  "absolute text-sm font-bold pointer-events-auto select-none",
                   "transition-all duration-300",
                   isActive
                     ? "text-white hover:scale-110 cursor-pointer"
                     : "text-white/20 cursor-default pointer-events-none",
-                  isCoreSelected && isActive && "scale-110",
-                  expandedSectionIndex === sectionIndex &&
-                    isActive &&
-                    "ring-2 ring-white/50 rounded-full px-2 py-1 bg-white/20",
+                  isCoreSelected && isActive && "scale-110 font-extrabold",
                 )}
                 style={{
                   left: corePos.x,
                   top: corePos.y,
                   transform: "translate(-50%, -50%)",
-                  textShadow: isActive ? "0 1px 2px rgba(0,0,0,0.5)" : "none",
+                  textShadow: isActive ? "0 2px 4px rgba(0,0,0,0.5)" : "none",
                 }}
                 onClick={() => handleCoreClick(section, sectionIndex)}
                 disabled={!isActive}
