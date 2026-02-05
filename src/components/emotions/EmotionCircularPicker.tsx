@@ -517,9 +517,14 @@ export function EmotionCircularPicker({
           const corePos = getTextPosition(midAngle, coreRadius);
           const isCoreSelected = selectedEmotion === section.core || selectedCategory === section.core;
 
+          // Calculate rotation for curved text - rotate text perpendicular to radius
+          // Flip text on left side so it's readable
+          const normalizedMidAngle = ((midAngle % 360) + 360) % 360;
+          const textRotation = normalizedMidAngle > 90 && normalizedMidAngle < 270 ? midAngle + 180 : midAngle;
+
           return (
             <div key={`labels-${sectionIndex}`}>
-              {/* Core emotion label - text only, arc is clickable */}
+              {/* Core emotion label - curved along arc */}
               <button
                 className={cn(
                   "absolute text-sm font-bold pointer-events-auto select-none",
@@ -532,7 +537,7 @@ export function EmotionCircularPicker({
                 style={{
                   left: corePos.x,
                   top: corePos.y,
-                  transform: "translate(-50%, -50%)",
+                  transform: `translate(-50%, -50%) rotate(${textRotation}deg)`,
                   textShadow: isActive ? "0 2px 4px rgba(0,0,0,0.5)" : "none",
                 }}
                 onClick={() => handleCoreClick(section, sectionIndex)}
