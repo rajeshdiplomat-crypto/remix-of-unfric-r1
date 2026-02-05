@@ -6,6 +6,7 @@ import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { UnfricLogo } from "@/components/common/UnfricLogo";
+import { useHeaderScroll } from "@/contexts/HeaderScrollContext";
 
 interface ZaraHeaderProps {
   onMenuClick: () => void;
@@ -22,7 +23,7 @@ const modules = [
 ];
 
 export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
-  const [isScrolled, setIsScrolled] = useState(false);
+  const { isScrolled } = useHeaderScroll();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const location = useLocation();
   const { signOut } = useAuth();
@@ -49,25 +50,16 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      // Trigger after scrolling past ~200px (hero section)
-      setIsScrolled(window.scrollY > 200);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll(); // Check initial state
-
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   const isActive = (path: string) => location.pathname === path;
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ease-out ${
-        isScrolled ? "bg-background/80 backdrop-blur-md border-b border-border/50" : "bg-transparent"
-      }`}
+      className={cn(
+        "fixed top-0 left-0 right-0 z-40 transition-all duration-300 ease-out",
+        isScrolled 
+          ? "bg-background/95 backdrop-blur-md border-b border-border/50 shadow-sm" 
+          : "bg-transparent"
+      )}
     >
       <div className="flex items-center justify-between h-14 px-4 lg:px-8">
         {/* Left: Hamburger + Logo */}

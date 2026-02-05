@@ -17,6 +17,7 @@ import { useFeedEvents } from "@/components/diary/useFeedEvents";
 import { useDiaryMetrics } from "@/components/diary/useDiaryMetrics";
 import { cn } from "@/lib/utils";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
+import { useScrollReporter } from "@/contexts/HeaderScrollContext";
 import type { TimeRange, FeedEvent, SourceModule } from "@/components/diary/types";
 import {
   DropdownMenu,
@@ -43,6 +44,7 @@ export default function Diary() {
   const [timeRange, setTimeRange] = useState<TimeRange>("week");
   const [searchQuery, setSearchQuery] = useState("");
   const [isJournalModalOpen, setIsJournalModalOpen] = useState(false);
+  const { onScroll } = useScrollReporter(50);
 
   const {
     events,
@@ -412,7 +414,7 @@ export default function Diary() {
         </aside>
 
         {/* Center Feed - Scrollable */}
-        <main className="flex-1 min-w-0 h-full overflow-y-auto bg-muted/20">
+        <main className="flex-1 min-w-0 h-full overflow-y-auto bg-muted/20" onScroll={onScroll}>
           <div className="max-w-[680px] mx-auto px-4 lg:px-6 py-4">
             {/* Create Post Box */}
             <DiaryCreatePost 

@@ -15,6 +15,7 @@ import {
   getDay,
 } from "date-fns";
 import { computeEndDateForHabitDays } from "@/lib/dateUtils";
+import { useScrollReporter } from "@/contexts/HeaderScrollContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
@@ -303,6 +304,7 @@ function ProgressRing({
 export default function Trackers() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { onScroll } = useScrollReporter(50);
 
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1142,7 +1144,7 @@ export default function Trackers() {
         />
 
         {/* Dashboard Content */}
-        <div className="flex-1 px-4 py-4 flex flex-col overflow-y-auto">
+        <div className="flex-1 px-4 py-4 flex flex-col overflow-y-auto" onScroll={onScroll}>
           {/* Top Section: Month + Progress Rings */}
           <div className="flex items-center justify-between mb-4 flex-shrink-0">
             <h2 className="text-xl font-semibold text-slate-800 dark:text-white">Habits Tracker</h2>
