@@ -118,23 +118,30 @@ export function EmotionsPageContext({
           {/* Form Cards - Compact */}
           <div className="flex flex-col gap-2 flex-1">
             {/* Notes Card */}
-            <div className="p-3 rounded-xl border border-border bg-card/50">
+            <div
+              className="p-3 rounded-xl border border-border bg-card/50 border-l-4"
+              style={{ borderLeftColor: quadrantInfo.color }}
+            >
               <Label className="flex items-center gap-1.5 text-xs font-medium mb-2">
-                <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                <BookOpen className="h-3.5 w-3.5" style={{ color: quadrantInfo.color }} />
                 Notes
               </Label>
               <Textarea
                 value={note}
                 onChange={(e) => onNoteChange(e.target.value)}
                 placeholder="What's on your mind?"
-                className="min-h-[50px] rounded-lg resize-none text-sm bg-background/50"
+                className="min-h-[50px] rounded-lg resize-none text-sm bg-background/50 focus-visible:ring-1"
+                style={{ "--ring": quadrantInfo.color } as React.CSSProperties}
               />
             </div>
 
             {/* Who Card */}
-            <div className="p-3 rounded-xl border border-border bg-card/50">
+            <div
+              className="p-3 rounded-xl border border-border bg-card/50 border-l-4"
+              style={{ borderLeftColor: quadrantInfo.color }}
+            >
               <Label className="flex items-center gap-1.5 text-xs font-medium mb-2">
-                <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                <Users className="h-3.5 w-3.5" style={{ color: quadrantInfo.color }} />
                 Who are you with?
               </Label>
               <div className="flex flex-wrap gap-1.5">
@@ -150,9 +157,12 @@ export function EmotionsPageContext({
             </div>
 
             {/* What Card */}
-            <div className="p-3 rounded-xl border border-border bg-card/50">
+            <div
+              className="p-3 rounded-xl border border-border bg-card/50 border-l-4"
+              style={{ borderLeftColor: quadrantInfo.color }}
+            >
               <Label className="flex items-center gap-1.5 text-xs font-medium mb-2">
-                <Activity className="h-3.5 w-3.5 text-muted-foreground" />
+                <Activity className="h-3.5 w-3.5" style={{ color: quadrantInfo.color }} />
                 What are you doing?
               </Label>
               <div className="flex flex-wrap gap-1.5">
@@ -170,9 +180,12 @@ export function EmotionsPageContext({
             {/* Sleep & Activity Row */}
             <div className="grid grid-cols-2 gap-2">
               {/* Sleep Card */}
-              <div className="p-3 rounded-xl border border-border bg-card/50">
+              <div
+                className="p-3 rounded-xl border border-border bg-card/50 border-l-4"
+                style={{ borderLeftColor: quadrantInfo.color }}
+              >
                 <Label className="flex items-center gap-1.5 text-xs font-medium mb-2">
-                  <Moon className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Moon className="h-3.5 w-3.5" style={{ color: quadrantInfo.color }} />
                   Sleep
                 </Label>
                 <div className="flex flex-wrap gap-1">
@@ -188,9 +201,12 @@ export function EmotionsPageContext({
               </div>
 
               {/* Activity Card */}
-              <div className="p-3 rounded-xl border border-border bg-card/50">
+              <div
+                className="p-3 rounded-xl border border-border bg-card/50 border-l-4"
+                style={{ borderLeftColor: quadrantInfo.color }}
+              >
                 <Label className="flex items-center gap-1.5 text-xs font-medium mb-2">
-                  <Dumbbell className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Dumbbell className="h-3.5 w-3.5" style={{ color: quadrantInfo.color }} />
                   Activity
                 </Label>
                 <div className="flex flex-wrap gap-1">
@@ -222,16 +238,22 @@ export function EmotionsPageContext({
                 </Button>
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card/50 border border-border">
                   <Label className="text-xs text-muted-foreground">Journal</Label>
-                  <Switch checked={sendToJournal} onCheckedChange={onSendToJournalChange} className="scale-75" />
+                  <Switch
+                    checked={sendToJournal}
+                    onCheckedChange={onSendToJournalChange}
+                    className="scale-75 data-[state=checked]:bg-primary"
+                    style={{ "--primary": quadrantInfo.color } as React.CSSProperties}
+                  />
                 </div>
               </div>
 
               <Button
                 onClick={onSave}
                 disabled={saving}
-                className="h-10 px-6 rounded-xl text-sm font-semibold gap-2 transition-all duration-300 hover:scale-105 active:scale-95"
+                className="h-10 px-6 rounded-xl text-sm font-semibold gap-2 transition-all duration-300 hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
                 style={{
                   background: `linear-gradient(135deg, ${quadrantInfo.color}, ${quadrantInfo.color}DD)`,
+                  boxShadow: `0 4px 14px 0 ${quadrantInfo.color}40`,
                 }}
               >
                 {saving ? (
@@ -251,12 +273,19 @@ export function EmotionsPageContext({
         </div>
 
         {/* Right: Descriptive Text */}
-        <div className="flex flex-col justify-center order-1 lg:order-2 lg:pl-6">
+        <div className="flex flex-col justify-center order-1 lg:order-2 lg:pl-6 relative">
+          {/* Ambient Background Glow */}
+          <div
+            className="absolute -top-10 -right-10 w-96 h-96 rounded-full blur-3xl opacity-10 pointer-events-none -z-10"
+            style={{ backgroundColor: quadrantInfo.color }}
+          />
+
           {/* Badge */}
           <div
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-4 w-fit"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-4 w-fit border"
             style={{
-              background: `linear-gradient(135deg, ${quadrantInfo.color}20, ${quadrantInfo.color}10)`,
+              background: `linear-gradient(135deg, ${quadrantInfo.color}15, ${quadrantInfo.color}05)`,
+              borderColor: `${quadrantInfo.color}30`,
               color: quadrantInfo.color,
             }}
           >
@@ -266,22 +295,29 @@ export function EmotionsPageContext({
 
           {/* Title */}
           <h1 className="text-3xl md:text-4xl font-light text-foreground mb-1">{CONTEXT_CONTENT.title.line1}</h1>
-          <h1 className="text-3xl md:text-4xl font-light mb-4" style={{ color: quadrantInfo.color }}>
+          <h1
+            className="text-3xl md:text-4xl font-bold mb-4 tracking-tight"
+            style={{
+              background: `linear-gradient(135deg, ${quadrantInfo.color}, ${quadrantInfo.color}AA)`,
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
             {CONTEXT_CONTENT.title.line2}
           </h1>
 
           {/* Description */}
-          <p className="text-base text-muted-foreground leading-relaxed mb-5 max-w-sm">{CONTEXT_CONTENT.description}</p>
+          <p className="text-base text-muted-foreground leading-relaxed mb-6 max-w-sm">{CONTEXT_CONTENT.description}</p>
 
           {/* Features */}
-          <ul className="space-y-2 mb-5">
+          <ul className="space-y-3 mb-8">
             {CONTEXT_CONTENT.features.map((feature, idx) => (
-              <li key={idx} className="flex items-center gap-2 text-sm text-muted-foreground">
+              <li key={idx} className="flex items-center gap-3 text-sm text-foreground/80">
                 <div
-                  className="w-4 h-4 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: `${quadrantInfo.color}20` }}
+                  className="w-5 h-5 rounded-full flex items-center justify-center shadow-sm"
+                  style={{ backgroundColor: `${quadrantInfo.color}15` }}
                 >
-                  <Check className="h-2.5 w-2.5" style={{ color: quadrantInfo.color }} />
+                  <Check className="h-3 w-3" style={{ color: quadrantInfo.color }} />
                 </div>
                 {feature}
               </li>
@@ -290,16 +326,17 @@ export function EmotionsPageContext({
 
           {/* Selected Emotion Badge */}
           <div
-            className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border-2 w-fit"
+            className="inline-flex items-center gap-3 px-5 py-3 rounded-2xl border-2 w-fit bg-card/60 backdrop-blur-sm shadow-sm"
             style={{
-              background: `linear-gradient(135deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}20)`,
-              borderColor: quadrantInfo.borderColor,
+              borderColor: `${quadrantInfo.color}30`,
             }}
           >
-            <span className="text-xl">{quadrantEmoji[selectedQuadrant]}</span>
+            <span className="text-2xl drop-shadow-sm">{quadrantEmoji[selectedQuadrant]}</span>
             <div>
-              <p className="text-[10px] text-muted-foreground">Currently feeling</p>
-              <p className="text-sm font-medium" style={{ color: quadrantInfo.color }}>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/80">
+                Currently feeling
+              </p>
+              <p className="text-lg font-bold" style={{ color: quadrantInfo.color }}>
                 {selectedEmotion}
               </p>
             </div>
