@@ -105,7 +105,7 @@ export function EmotionsPageContext({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 flex-1">
         {/* Left: Form Cards */}
         <div className="flex flex-col order-2 lg:order-1">
-          {/* Header Area: Back Button & Journal Toggle */}
+          {/* Header Area: Back Button & Journal Toggle + Currently Feeling Text */}
           <div className="flex items-center justify-between mb-4">
             <Button
               variant="ghost"
@@ -117,17 +117,32 @@ export function EmotionsPageContext({
               Back
             </Button>
 
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border">
-              <Label htmlFor="journal-toggle" className="text-xs font-medium text-muted-foreground cursor-pointer">
-                Journal Entry
-              </Label>
-              <Switch
-                id="journal-toggle"
-                checked={sendToJournal}
-                onCheckedChange={onSendToJournalChange}
-                className="scale-75 data-[state=checked]:bg-primary"
-                style={{ "--primary": quadrantInfo.color } as React.CSSProperties}
-              />
+            <div className="flex items-center gap-4">
+              {/* Highlighted Currently Feeling Text */}
+              <div
+                className="px-3 py-1 rounded-full text-xs font-medium border bg-card/50"
+                style={{
+                  color: quadrantInfo.color,
+                  borderColor: `${quadrantInfo.color}30`,
+                  backgroundColor: `${quadrantInfo.color}10`,
+                }}
+              >
+                <span className="text-muted-foreground/80 mr-1.5">Currently Feeling:</span>
+                <span className="font-bold">{selectedEmotion}</span>
+              </div>
+
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border">
+                <Label htmlFor="journal-toggle" className="text-xs font-medium text-muted-foreground cursor-pointer">
+                  Journal Entry
+                </Label>
+                <Switch
+                  id="journal-toggle"
+                  checked={sendToJournal}
+                  onCheckedChange={onSendToJournalChange}
+                  className="scale-75 data-[state=checked]:bg-primary"
+                  style={{ "--primary": quadrantInfo.color } as React.CSSProperties}
+                />
+              </div>
             </div>
           </div>
 
@@ -259,25 +274,6 @@ export function EmotionsPageContext({
 
         {/* Right: Info & Context - Clean & Visible */}
         <div className="flex flex-col order-1 lg:order-2 lg:pl-8 pt-2">
-          {/* Currently Feeling - Moved to TOP of right column */}
-          <div
-            className="flex items-center gap-4 p-4 rounded-2xl border mb-8 bg-card/30 backdrop-blur-sm self-start"
-            style={{
-              borderColor: `${quadrantInfo.color}30`,
-              background: `linear-gradient(135deg, ${quadrantInfo.color}10, ${quadrantInfo.color}05)`,
-            }}
-          >
-            <div className="text-3xl filter drop-shadow-sm">{quadrantEmoji[selectedQuadrant]}</div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground/70 mb-0.5">
-                Currently feeling
-              </p>
-              <p className="text-xl font-bold" style={{ color: quadrantInfo.color }}>
-                {selectedEmotion}
-              </p>
-            </div>
-          </div>
-
           {/* Capture Content - Ensured Visibility */}
           <div className="animate-in slide-in-from-bottom-4 fade-in duration-700 delay-100">
             <div
