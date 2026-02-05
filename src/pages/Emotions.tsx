@@ -28,6 +28,7 @@ import { RecentEntriesList } from "@/components/emotions/RecentEntriesList";
 import { EmotionSliderPicker } from "@/components/emotions/EmotionSliderPicker";
 import { EmotionContextFieldsEnhanced } from "@/components/emotions/EmotionContextFieldsEnhanced";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
+import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 
 import { useTimezone } from "@/hooks/useTimezone";
 import { cn } from "@/lib/utils";
@@ -383,8 +384,17 @@ export default function Emotions() {
   return (
     <TooltipProvider>
       <div className="flex flex-col w-full h-full min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
-        {/* Navigation Bar - Fixed at Top */}
-        <div className="sticky top-0 z-20 px-4 py-3 bg-background/80 backdrop-blur-xl border-b border-border/50">
+        {/* Page Hero */}
+        <PageHero
+          storageKey="emotions-hero-src"
+          typeKey="emotions-hero-type"
+          badge={PAGE_HERO_TEXT.emotions.badge}
+          title={PAGE_HERO_TEXT.emotions.title}
+          subtitle={PAGE_HERO_TEXT.emotions.subtitle}
+        />
+
+        {/* Navigation Bar */}
+        <div className="sticky top-14 z-20 px-4 py-3 bg-background/80 backdrop-blur-xl border-b border-border/50">
           <div className="max-w-6xl mx-auto">
             <EmotionsQuickActionsV2
               activeView={activeView}
