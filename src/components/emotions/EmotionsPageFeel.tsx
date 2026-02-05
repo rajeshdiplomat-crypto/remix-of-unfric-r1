@@ -74,12 +74,12 @@ export function EmotionsPageFeel({
   return (
     <div className="flex flex-col min-h-[calc(100vh-300px)] animate-in fade-in duration-500">
       {/* Title */}
-      <h1 className="text-4xl md:text-5xl font-extralight text-center mb-12 tracking-tight">
+      <h1 className="text-4xl md:text-5xl font-extralight text-center mb-8 tracking-tight">
         How are you feeling?
       </h1>
 
       {/* Search Bar */}
-      <div className="max-w-md mx-auto w-full mb-12">
+      <div className="max-w-md mx-auto w-full mb-8">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
@@ -87,7 +87,7 @@ export function EmotionsPageFeel({
             placeholder="Search for an emotion..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 h-14 rounded-2xl text-base bg-muted/30 border-border/50 focus:border-primary/50"
+            className="w-full pl-12 pr-4 h-12 rounded-2xl text-base bg-muted/30 border-border/50 focus:border-primary/50"
           />
           {searchResults.length > 0 && (
             <div className="absolute z-50 w-full mt-2 bg-card/98 backdrop-blur-xl border border-border rounded-2xl shadow-2xl p-2 animate-in fade-in slide-in-from-top-2 duration-200">
@@ -109,7 +109,7 @@ export function EmotionsPageFeel({
         </div>
       </div>
 
-      {/* Circular Emotion Picker */}
+      {/* Emotion Wheel Picker */}
       <div className="flex-1 flex flex-col items-center justify-center">
         <EmotionCircularPicker
           energy={energy}
@@ -124,19 +124,19 @@ export function EmotionsPageFeel({
       </div>
 
       {/* Selected Emotion Preview & Continue */}
-      <div className="flex flex-col items-center gap-6 mt-8 pt-8">
+      <div className="flex flex-col items-center gap-4 mt-6 pt-6">
         {selectedEmotion && (
           <div 
-            className="px-6 py-4 rounded-2xl border-2 transition-all animate-in fade-in zoom-in-95 duration-300"
+            className="px-5 py-3 rounded-xl border-2 transition-all animate-in fade-in zoom-in-95 duration-300"
             style={{
               background: `linear-gradient(135deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}20)`,
               borderColor: quadrantInfo.borderColor,
             }}
           >
             <div className="flex items-center gap-3">
-              <span className="text-3xl">{quadrantEmoji[currentQuadrant]}</span>
+              <span className="text-2xl">{quadrantEmoji[currentQuadrant]}</span>
               <div>
-                <p className="font-semibold text-lg" style={{ color: quadrantInfo.color }}>
+                <p className="font-semibold" style={{ color: quadrantInfo.color }}>
                   {selectedEmotion}
                 </p>
                 <p className="text-xs text-muted-foreground">{quadrantInfo.label}</p>
@@ -149,7 +149,7 @@ export function EmotionsPageFeel({
           onClick={onContinue}
           disabled={!selectedEmotion}
           size="lg"
-          className="h-14 px-10 rounded-2xl text-base font-semibold gap-3 transition-all duration-300 hover:scale-105 active:scale-95"
+          className="h-12 px-8 rounded-xl text-base font-semibold gap-2 transition-all duration-300 hover:scale-105 active:scale-95"
           style={{
             background: selectedEmotion 
               ? `linear-gradient(135deg, ${quadrantInfo.color}, ${quadrantInfo.color}DD)` 
