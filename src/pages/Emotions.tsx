@@ -464,6 +464,7 @@ export default function Emotions() {
           entries={entries}
           onDateClick={handleDateClick}
           showCalendar={activeView === "feel" || activeView === "insights"}
+          onStartCheckin={() => setActiveView("feel")}
         >
           {/* Feel Page */}
           {activeView === "feel" && (
