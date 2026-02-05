@@ -84,14 +84,15 @@ export function EmotionsPageContext({
     <button
       onClick={onClick}
       className={cn(
-        "h-8 px-3 rounded-lg text-xs font-medium transition-all duration-200",
-        "border hover:scale-105 active:scale-95",
+        "h-8 px-4 rounded-lg text-xs font-medium transition-all duration-200 border",
         selected
-          ? "text-white border-transparent shadow-md"
-          : "bg-background text-muted-foreground border-border hover:border-primary/30 hover:text-foreground",
+          ? "border-transparent shadow-sm scale-105"
+          : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-foreground hover:bg-muted/30",
       )}
       style={{
-        background: selected ? `linear-gradient(135deg, ${quadrantInfo.color}, ${quadrantInfo.color}DD)` : undefined,
+        background: selected ? `linear-gradient(135deg, ${quadrantInfo.color}30, ${quadrantInfo.color}15)` : undefined,
+        color: selected ? quadrantInfo.color : undefined,
+        borderColor: selected ? quadrantInfo.color : undefined,
       }}
     >
       {label}
@@ -104,47 +105,56 @@ export function EmotionsPageContext({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 flex-1">
         {/* Left: Form Cards */}
         <div className="flex flex-col order-2 lg:order-1">
-          {/* Back Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onBack}
-            className="gap-1.5 text-muted-foreground hover:text-foreground self-start mb-3"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Back
-          </Button>
+          {/* Header Area: Back Button & Journal Toggle */}
+          <div className="flex items-center justify-between mb-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onBack}
+              className="gap-1.5 text-muted-foreground hover:text-foreground pl-0"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border">
+              <Label htmlFor="journal-toggle" className="text-xs font-medium text-muted-foreground cursor-pointer">
+                Journal Entry
+              </Label>
+              <Switch
+                id="journal-toggle"
+                checked={sendToJournal}
+                onCheckedChange={onSendToJournalChange}
+                className="scale-75 data-[state=checked]:bg-primary"
+                style={{ "--primary": quadrantInfo.color } as React.CSSProperties}
+              />
+            </div>
+          </div>
 
           {/* Form Cards - Compact */}
-          <div className="flex flex-col gap-2 flex-1">
+          <div className="flex flex-col gap-3 flex-1">
             {/* Notes Card */}
-            <div
-              className="p-3 rounded-xl border border-border bg-card/50 border-l-4"
-              style={{ borderLeftColor: quadrantInfo.color }}
-            >
-              <Label className="flex items-center gap-1.5 text-xs font-medium mb-2">
-                <BookOpen className="h-3.5 w-3.5" style={{ color: quadrantInfo.color }} />
+            <div className="p-4 rounded-2xl border border-border bg-card/50">
+              <Label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+                <BookOpen className="h-3.5 w-3.5" />
                 Notes
               </Label>
               <Textarea
                 value={note}
                 onChange={(e) => onNoteChange(e.target.value)}
                 placeholder="What's on your mind?"
-                className="min-h-[50px] rounded-lg resize-none text-sm bg-background/50 focus-visible:ring-1"
+                className="min-h-[80px] rounded-xl resize-none text-sm bg-background/50 focus-visible:ring-1"
                 style={{ "--ring": quadrantInfo.color } as React.CSSProperties}
               />
             </div>
 
             {/* Who Card */}
-            <div
-              className="p-3 rounded-xl border border-border bg-card/50 border-l-4"
-              style={{ borderLeftColor: quadrantInfo.color }}
-            >
-              <Label className="flex items-center gap-1.5 text-xs font-medium mb-2">
-                <Users className="h-3.5 w-3.5" style={{ color: quadrantInfo.color }} />
+            <div className="p-4 rounded-2xl border border-border bg-card/50">
+              <Label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+                <Users className="h-3.5 w-3.5" />
                 Who are you with?
               </Label>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {WHO_PRESETS.map((preset) => (
                   <PillButton
                     key={preset}
@@ -157,15 +167,12 @@ export function EmotionsPageContext({
             </div>
 
             {/* What Card */}
-            <div
-              className="p-3 rounded-xl border border-border bg-card/50 border-l-4"
-              style={{ borderLeftColor: quadrantInfo.color }}
-            >
-              <Label className="flex items-center gap-1.5 text-xs font-medium mb-2">
-                <Activity className="h-3.5 w-3.5" style={{ color: quadrantInfo.color }} />
+            <div className="p-4 rounded-2xl border border-border bg-card/50">
+              <Label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+                <Activity className="h-3.5 w-3.5" />
                 What are you doing?
               </Label>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {WHAT_PRESETS.map((preset) => (
                   <PillButton
                     key={preset}
@@ -178,17 +185,14 @@ export function EmotionsPageContext({
             </div>
 
             {/* Sleep & Activity Row */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-3">
               {/* Sleep Card */}
-              <div
-                className="p-3 rounded-xl border border-border bg-card/50 border-l-4"
-                style={{ borderLeftColor: quadrantInfo.color }}
-              >
-                <Label className="flex items-center gap-1.5 text-xs font-medium mb-2">
-                  <Moon className="h-3.5 w-3.5" style={{ color: quadrantInfo.color }} />
+              <div className="p-4 rounded-2xl border border-border bg-card/50">
+                <Label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+                  <Moon className="h-3.5 w-3.5" />
                   Sleep
                 </Label>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-2">
                   {SLEEP_PRESETS.map((preset) => (
                     <PillButton
                       key={preset}
@@ -201,15 +205,12 @@ export function EmotionsPageContext({
               </div>
 
               {/* Activity Card */}
-              <div
-                className="p-3 rounded-xl border border-border bg-card/50 border-l-4"
-                style={{ borderLeftColor: quadrantInfo.color }}
-              >
-                <Label className="flex items-center gap-1.5 text-xs font-medium mb-2">
-                  <Dumbbell className="h-3.5 w-3.5" style={{ color: quadrantInfo.color }} />
+              <div className="p-4 rounded-2xl border border-border bg-card/50">
+                <Label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+                  <Dumbbell className="h-3.5 w-3.5" />
                   Activity
                 </Label>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-2">
                   {ACTIVITY_PRESETS.map((preset) => (
                     <PillButton
                       key={preset}
@@ -224,47 +225,31 @@ export function EmotionsPageContext({
               </div>
             </div>
 
-            {/* Action Row with Journal Toggle */}
-            <div className="flex items-center justify-between pt-2 mt-auto">
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onSkip}
-                  className="gap-1.5 text-muted-foreground hover:text-foreground"
-                >
-                  Skip
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Button>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card/50 border border-border">
-                  <Label className="text-xs text-muted-foreground">Journal</Label>
-                  <Switch
-                    checked={sendToJournal}
-                    onCheckedChange={onSendToJournalChange}
-                    className="scale-75 data-[state=checked]:bg-primary"
-                    style={{ "--primary": quadrantInfo.color } as React.CSSProperties}
-                  />
-                </div>
-              </div>
+            {/* Footer Actions */}
+            <div className="flex items-center justify-between pt-4 mt-auto border-t border-border/50">
+              <Button variant="ghost" onClick={onSkip} className="text-muted-foreground hover:text-foreground">
+                Skip
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
 
               <Button
                 onClick={onSave}
                 disabled={saving}
-                className="h-10 px-6 rounded-xl text-sm font-semibold gap-2 transition-all duration-300 hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
+                className="px-8 rounded-xl font-semibold shadow-lg transition-all hover:scale-105 active:scale-95"
                 style={{
-                  background: `linear-gradient(135deg, ${quadrantInfo.color}, ${quadrantInfo.color}DD)`,
+                  background: `linear-gradient(135deg, ${quadrantInfo.color}, ${quadrantInfo.color}dd)`,
                   boxShadow: `0 4px 14px 0 ${quadrantInfo.color}40`,
                 }}
               >
                 {saving ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     Saving...
                   </>
                 ) : (
                   <>
                     Save Check-in
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight className="h-4 w-4 ml-2" />
                   </>
                 )}
               </Button>
@@ -272,74 +257,63 @@ export function EmotionsPageContext({
           </div>
         </div>
 
-        {/* Right: Descriptive Text */}
-        <div className="flex flex-col justify-center order-1 lg:order-2 lg:pl-6 relative">
-          {/* Ambient Background Glow */}
+        {/* Right: Info & Context - Clean & Visible */}
+        <div className="flex flex-col order-1 lg:order-2 lg:pl-8 pt-2">
+          {/* Currently Feeling - Moved to TOP of right column */}
           <div
-            className="absolute -top-10 -right-10 w-96 h-96 rounded-full blur-3xl opacity-10 pointer-events-none -z-10"
-            style={{ backgroundColor: quadrantInfo.color }}
-          />
-
-          {/* Badge */}
-          <div
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-4 w-fit border"
-            style={{
-              background: `linear-gradient(135deg, ${quadrantInfo.color}15, ${quadrantInfo.color}05)`,
-              borderColor: `${quadrantInfo.color}30`,
-              color: quadrantInfo.color,
-            }}
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            {CONTEXT_CONTENT.badge}
-          </div>
-
-          {/* Title */}
-          <h1 className="text-3xl md:text-4xl font-light text-foreground mb-1">{CONTEXT_CONTENT.title.line1}</h1>
-          <h1
-            className="text-3xl md:text-4xl font-bold mb-4 tracking-tight"
-            style={{
-              background: `linear-gradient(135deg, ${quadrantInfo.color}, ${quadrantInfo.color}AA)`,
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
-          >
-            {CONTEXT_CONTENT.title.line2}
-          </h1>
-
-          {/* Description */}
-          <p className="text-base text-muted-foreground leading-relaxed mb-6 max-w-sm">{CONTEXT_CONTENT.description}</p>
-
-          {/* Features */}
-          <ul className="space-y-3 mb-8">
-            {CONTEXT_CONTENT.features.map((feature, idx) => (
-              <li key={idx} className="flex items-center gap-3 text-sm text-foreground/80">
-                <div
-                  className="w-5 h-5 rounded-full flex items-center justify-center shadow-sm"
-                  style={{ backgroundColor: `${quadrantInfo.color}15` }}
-                >
-                  <Check className="h-3 w-3" style={{ color: quadrantInfo.color }} />
-                </div>
-                {feature}
-              </li>
-            ))}
-          </ul>
-
-          {/* Selected Emotion Badge */}
-          <div
-            className="inline-flex items-center gap-3 px-5 py-3 rounded-2xl border-2 w-fit bg-card/60 backdrop-blur-sm shadow-sm"
+            className="flex items-center gap-4 p-4 rounded-2xl border mb-8 bg-card/30 backdrop-blur-sm self-start"
             style={{
               borderColor: `${quadrantInfo.color}30`,
+              background: `linear-gradient(135deg, ${quadrantInfo.color}10, ${quadrantInfo.color}05)`,
             }}
           >
-            <span className="text-2xl drop-shadow-sm">{quadrantEmoji[selectedQuadrant]}</span>
+            <div className="text-3xl filter drop-shadow-sm">{quadrantEmoji[selectedQuadrant]}</div>
             <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/80">
+              <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground/70 mb-0.5">
                 Currently feeling
               </p>
-              <p className="text-lg font-bold" style={{ color: quadrantInfo.color }}>
+              <p className="text-xl font-bold" style={{ color: quadrantInfo.color }}>
                 {selectedEmotion}
               </p>
             </div>
+          </div>
+
+          {/* Capture Content - Ensured Visibility */}
+          <div className="animate-in slide-in-from-bottom-4 fade-in duration-700 delay-100">
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-6 w-fit border"
+              style={{
+                background: `linear-gradient(135deg, ${quadrantInfo.color}15, ${quadrantInfo.color}05)`,
+                borderColor: `${quadrantInfo.color}30`,
+                color: quadrantInfo.color,
+              }}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              {CONTEXT_CONTENT.badge}
+            </div>
+
+            <h1 className="text-4xl md:text-5xl font-light text-foreground mb-1 leading-tight">
+              {CONTEXT_CONTENT.title.line1}
+            </h1>
+            <h1 className="text-4xl md:text-5xl font-semibold mb-6 leading-tight" style={{ color: quadrantInfo.color }}>
+              {CONTEXT_CONTENT.title.line2}
+            </h1>
+
+            <p className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-md">{CONTEXT_CONTENT.description}</p>
+
+            <ul className="space-y-4">
+              {CONTEXT_CONTENT.features.map((feature, idx) => (
+                <li key={idx} className="flex items-center gap-3 text-sm font-medium text-foreground/80">
+                  <div
+                    className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: `${quadrantInfo.color}15` }}
+                  >
+                    <Check className="h-3.5 w-3.5" style={{ color: quadrantInfo.color }} />
+                  </div>
+                  {feature}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </div>
