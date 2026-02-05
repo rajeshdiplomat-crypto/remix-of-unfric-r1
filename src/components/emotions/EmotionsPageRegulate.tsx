@@ -68,7 +68,7 @@ export function EmotionsPageRegulate({
   const [showCheckmark, setShowCheckmark] = useState(true);
   const [activeStrategy, setActiveStrategy] = useState<Strategy | null>(null);
   const [showVisualization, setShowVisualization] = useState(false);
-  const [filterType, setFilterType] = useState<string | null>(null);
+  const [showStrategyPicker, setShowStrategyPicker] = useState(false);
 
   const quadrantInfo = savedQuadrant ? QUADRANTS[savedQuadrant] : null;
   const accentColor = quadrantInfo?.color || "#10B981";
@@ -93,20 +93,60 @@ export function EmotionsPageRegulate({
     ? STRATEGIES.filter((s) => s.targetQuadrants.includes(savedQuadrant)).slice(0, 3)
     : [];
 
-  const filteredStrategies = filterType
-    ? STRATEGIES.filter((s) => s.type === filterType)
-    : STRATEGIES;
-
-  const uniqueTypes = Array.from(new Set(STRATEGIES.map(s => s.type)));
-
   return (
     <div className="flex flex-col min-h-[calc(100vh-300px)] animate-in fade-in duration-500">
-      {/* Two-Column Hero Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-12">
-        {/* Left: Success Animation & Actions */}
-        <div className="flex flex-col items-center lg:items-start justify-center">
+      {/* Two-Column Layout - Matching Feel Page */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 flex-1">
+        
+        {/* Left: Descriptive Text */}
+        <div className="flex flex-col justify-center order-2 lg:order-1">
+          <div className="space-y-6 max-w-md">
+            {/* Badge */}
+            <div 
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium w-fit"
+              style={{
+                background: `linear-gradient(135deg, ${accentColor}20, ${accentColor}10)`,
+                color: accentColor,
+              }}
+            >
+              <Sparkles className="h-4 w-4" />
+              {REGULATE_CONTENT.badge}
+            </div>
+            
+            {/* Title */}
+            <h2 className="text-3xl md:text-4xl font-light leading-tight">
+              {REGULATE_CONTENT.title.line1}{" "}
+              <span className="font-semibold" style={{ color: accentColor }}>
+                {REGULATE_CONTENT.title.line2}
+              </span>
+            </h2>
+            
+            {/* Description */}
+            <p className="text-muted-foreground text-lg leading-relaxed">
+              {REGULATE_CONTENT.description}
+            </p>
+            
+            {/* Features */}
+            <ul className="space-y-3">
+              {REGULATE_CONTENT.features.map((feature, i) => (
+                <li key={i} className="flex items-center gap-3 text-muted-foreground">
+                  <div 
+                    className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: `${accentColor}20` }}
+                  >
+                    <Check className="h-3 w-3" style={{ color: accentColor }} />
+                  </div>
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        
+        {/* Right: Success Animation & Actions */}
+        <div className="flex flex-col items-center justify-center order-1 lg:order-2">
           {/* Animated Checkmark */}
-          <div className="relative inline-flex items-center justify-center w-24 h-24 mb-6">
+          <div className="relative inline-flex items-center justify-center w-28 h-28 mb-6">
             <div 
               className={cn(
                 "absolute inset-0 rounded-full transition-all duration-700",
@@ -116,16 +156,16 @@ export function EmotionsPageRegulate({
             />
             <div 
               className={cn(
-                "relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500",
+                "relative w-20 h-20 rounded-full flex items-center justify-center transition-all duration-500",
                 showCheckmark ? "scale-100" : "scale-90"
               )}
               style={{ backgroundColor: accentColor }}
             >
-              <Check className="h-8 w-8 text-white" />
+              <Check className="h-10 w-10 text-white" />
             </div>
           </div>
 
-          <h1 className="text-3xl md:text-4xl font-light mb-4 text-center lg:text-left">
+          <h1 className="text-2xl md:text-3xl font-light mb-4 text-center">
             Check-in Complete
           </h1>
           
@@ -148,165 +188,91 @@ export function EmotionsPageRegulate({
           )}
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col gap-3 w-full max-w-xs">
             <Button
-              variant="outline"
               size="lg"
-              onClick={onNewCheckin}
-              className="h-12 px-6 rounded-2xl gap-2"
-            >
-              New Check-in
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={onViewInsights}
-              className="h-12 px-6 rounded-2xl gap-2"
-            >
-              View Insights
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Right: Descriptive Text */}
-        <div className="flex flex-col justify-center lg:pl-8">
-          {/* Badge */}
-          <div 
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-6 w-fit"
-            style={{
-              background: `linear-gradient(135deg, ${accentColor}20, ${accentColor}10)`,
-              color: accentColor,
-            }}
-          >
-            <Sparkles className="h-4 w-4" />
-            {REGULATE_CONTENT.badge}
-          </div>
-
-          {/* Title */}
-          <h2 className="text-4xl md:text-5xl font-light text-foreground mb-2">
-            {REGULATE_CONTENT.title.line1}
-          </h2>
-          <h2 
-            className="text-4xl md:text-5xl font-light mb-6"
-            style={{ color: accentColor }}
-          >
-            {REGULATE_CONTENT.title.line2}
-          </h2>
-
-          {/* Description */}
-          <p className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-md">
-            {REGULATE_CONTENT.description}
-          </p>
-
-          {/* Features */}
-          <ul className="space-y-3">
-            {REGULATE_CONTENT.features.map((feature, idx) => (
-              <li key={idx} className="flex items-center gap-3 text-muted-foreground">
-                <div 
-                  className="w-5 h-5 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: `${accentColor}20` }}
-                >
-                  <Check className="h-3 w-3" style={{ color: accentColor }} />
-                </div>
-                {feature}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      {/* Recommended Strategies */}
-      {recommendedStrategies.length > 0 && (
-        <div className="mb-12">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="h-px flex-1 bg-border" />
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-amber-500" />
-              <span className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
-                Recommended for you
-              </span>
-            </div>
-            <div className="h-px flex-1 bg-border" />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {recommendedStrategies.map((strategy, idx) => (
-              <StrategyCard
-                key={strategy.id}
-                strategy={strategy}
-                isRecommended
-                onStart={() => {
-                  setActiveStrategy(strategy);
-                  setShowVisualization(true);
-                }}
-                index={idx}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* All Strategies Section */}
-      <div className="flex-1">
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <div className="h-px flex-1 bg-border" />
-          <span className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
-            All Strategies
-          </span>
-          <div className="h-px flex-1 bg-border" />
-        </div>
-
-        {/* Type Filters */}
-        <div className="flex flex-wrap justify-center gap-2 mb-6">
-          <Button
-            variant={filterType === null ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilterType(null)}
-            className="rounded-xl"
-          >
-            All
-          </Button>
-          {uniqueTypes.map((type) => {
-            const gradient = typeGradients[type];
-            return (
-              <Button
-                key={type}
-                variant={filterType === type ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilterType(type === filterType ? null : type)}
-                className={cn(
-                  "rounded-xl gap-2",
-                  filterType === type && "border-0 text-white"
-                )}
-                style={{
-                  background: filterType === type 
-                    ? `linear-gradient(135deg, ${gradient.from}, ${gradient.to})` 
-                    : undefined,
-                }}
-              >
-                {typeIcons[type]}
-                {typeLabels[type]}
-              </Button>
-            );
-          })}
-        </div>
-
-        {/* Strategy Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredStrategies.map((strategy, idx) => (
-            <StrategyCard
-              key={strategy.id}
-              strategy={strategy}
-              onStart={() => {
-                setActiveStrategy(strategy);
-                setShowVisualization(true);
+              onClick={() => setShowStrategyPicker(true)}
+              className="h-12 rounded-xl gap-2 text-white"
+              style={{
+                background: `linear-gradient(135deg, ${accentColor}, ${accentColor}DD)`,
               }}
-              index={idx}
-            />
-          ))}
+            >
+              <Sparkles className="h-5 w-5" />
+              Explore Strategies
+            </Button>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={onNewCheckin}
+                className="flex-1 h-11 rounded-xl"
+              >
+                New Check-in
+              </Button>
+              <Button
+                variant="outline"
+                onClick={onViewInsights}
+                className="flex-1 h-11 rounded-xl gap-2"
+              >
+                Insights
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Strategy Picker Modal */}
+      <Dialog open={showStrategyPicker} onOpenChange={setShowStrategyPicker}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Choose a Strategy</DialogTitle>
+          </DialogHeader>
+          
+          {recommendedStrategies.length > 0 && (
+            <div className="mb-6">
+              <p className="text-sm text-muted-foreground mb-3 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-amber-500" />
+                Recommended for you
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {recommendedStrategies.map((strategy, idx) => (
+                  <StrategyCard
+                    key={strategy.id}
+                    strategy={strategy}
+                    isRecommended
+                    onStart={() => {
+                      setActiveStrategy(strategy);
+                      setShowStrategyPicker(false);
+                      setShowVisualization(true);
+                    }}
+                    index={idx}
+                    compact
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+          
+          <div>
+            <p className="text-sm text-muted-foreground mb-3">All strategies</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {STRATEGIES.map((strategy, idx) => (
+                <StrategyCard
+                  key={strategy.id}
+                  strategy={strategy}
+                  onStart={() => {
+                    setActiveStrategy(strategy);
+                    setShowStrategyPicker(false);
+                    setShowVisualization(true);
+                  }}
+                  index={idx}
+                  compact
+                />
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Guided Visualization Modal */}
       <Dialog open={showVisualization} onOpenChange={setShowVisualization}>
@@ -344,11 +310,13 @@ function StrategyCard({
   isRecommended = false,
   onStart,
   index = 0,
+  compact = false,
 }: {
   strategy: Strategy;
   isRecommended?: boolean;
   onStart: () => void;
   index?: number;
+  compact?: boolean;
 }) {
   const gradient = typeGradients[strategy.type];
   
@@ -356,10 +324,11 @@ function StrategyCard({
     <button
       onClick={onStart}
       className={cn(
-        "group relative p-6 rounded-2xl transition-all duration-300 cursor-pointer text-left",
-        "border hover:border-primary/30 hover:shadow-xl backdrop-blur-sm",
-        "transform hover:scale-[1.02] hover:-translate-y-1 active:scale-[0.98]",
+        "group relative rounded-xl transition-all duration-300 cursor-pointer text-left",
+        "border hover:border-primary/30 hover:shadow-lg backdrop-blur-sm",
+        "transform hover:scale-[1.02] active:scale-[0.98]",
         "animate-in fade-in slide-in-from-bottom-4",
+        compact ? "p-4" : "p-6 rounded-2xl hover:-translate-y-1 hover:shadow-xl",
         isRecommended
           ? `bg-gradient-to-br ${gradient.bg} border-2`
           : "bg-card border-border"
@@ -370,7 +339,7 @@ function StrategyCard({
         animationFillMode: 'backwards'
       }}
     >
-      {isRecommended && (
+      {isRecommended && !compact && (
         <div 
           className="absolute -top-2 -right-2 px-2.5 py-1 rounded-full text-[10px] font-medium text-white shadow-lg"
           style={{ 
@@ -383,7 +352,10 @@ function StrategyCard({
 
       {/* Icon */}
       <div 
-        className="w-12 h-12 rounded-xl flex items-center justify-center text-white mb-4 shadow-lg transition-transform duration-300 group-hover:scale-110"
+        className={cn(
+          "rounded-xl flex items-center justify-center text-white shadow-lg transition-transform duration-300 group-hover:scale-110",
+          compact ? "w-10 h-10 mb-3" : "w-12 h-12 mb-4"
+        )}
         style={{
           background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`
         }}
@@ -392,10 +364,16 @@ function StrategyCard({
       </div>
 
       {/* Content */}
-      <h3 className="font-medium text-foreground text-base mb-2 group-hover:text-primary transition-colors">
+      <h3 className={cn(
+        "font-medium text-foreground group-hover:text-primary transition-colors",
+        compact ? "text-sm mb-1" : "text-base mb-2"
+      )}>
         {strategy.title}
       </h3>
-      <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+      <p className={cn(
+        "text-muted-foreground line-clamp-2",
+        compact ? "text-xs mb-2" : "text-sm mb-4"
+      )}>
         {strategy.description}
       </p>
 
@@ -406,12 +384,15 @@ function StrategyCard({
           <span>{strategy.duration}</span>
         </div>
         <div 
-          className="w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
+          className={cn(
+            "rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110",
+            compact ? "w-6 h-6" : "w-8 h-8"
+          )}
           style={{
             background: `linear-gradient(135deg, ${gradient.from}20, ${gradient.to}20)`,
           }}
         >
-          <Play className="h-3.5 w-3.5 ml-0.5" style={{ color: gradient.from }} />
+          <Play className={cn("ml-0.5", compact ? "h-3 w-3" : "h-3.5 w-3.5")} style={{ color: gradient.from }} />
         </div>
       </div>
     </button>
