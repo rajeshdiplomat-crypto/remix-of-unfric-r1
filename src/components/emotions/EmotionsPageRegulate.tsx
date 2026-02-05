@@ -55,6 +55,7 @@ export function EmotionsPageRegulate({
 }: EmotionsPageRegulateProps) {
   const [activeStrategy, setActiveStrategy] = useState<Strategy | null>(null);
   const [showVisualization, setShowVisualization] = useState(false);
+  const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
 
   const quadrantInfo = savedQuadrant ? QUADRANTS[savedQuadrant] : null;
   const accentColor = quadrantInfo?.color || "#10B981";
@@ -79,18 +80,24 @@ export function EmotionsPageRegulate({
 
   const allStrategies = STRATEGIES.filter((s) => !recommendedStrategies.some((r) => r.id === s.id));
 
-  const formatDate = (dateString: string) => {
+  const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
     const today = new Date();
     const diffDays = Math.floor((today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) return "Today";
-    if (diffDays === 1) return "Yesterday";
-    return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+    const timeStr = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+
+    if (diffDays === 0) return `Today, ${timeStr}`;
+    if (diffDays === 1) return `Yesterday, ${timeStr}`;
+    return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) + `, ${timeStr}`;
   };
 
   const handleStrategyClick = (strategy: Strategy) => {
     setActiveStrategy(strategy);
     setShowVisualization(true);
+  };
+
+  const toggleEntryExpand = (entryId: string) => {
+    setExpandedEntryId(expandedEntryId === entryId ? null : entryId);
   };
 
   return (
@@ -121,29 +128,87 @@ export function EmotionsPageRegulate({
         <div className="border-2 border-border rounded-2xl p-5 bg-card">
           <div className="text-xs text-muted-foreground uppercase tracking-wider mb-3">Recent Entries</div>
           <h3 className="text-lg font-semibold mb-1">Your Last 7</h3>
-          <p className="text-xs text-muted-foreground mb-4">Track your emotional journey</p>
+          <p className="text-xs text-muted-foreground mb-4">Click to view details</p>
 
           {recentEntries.length > 0 ? (
-            <div className="space-y-2 mb-4">
-              {recentEntries.slice(0, 5).map((entry, index) => {
+            <div className="space-y-2 mb-4 max-h-[320px] overflow-y-auto">
+              {recentEntries.map((entry, index) => {
                 const entryQuadrant = QUADRANTS[entry.quadrant];
+                const isExpanded = expandedEntryId === entry.id;
+                const hasContext =
+                  entry.context &&
+                  (entry.context.who ||
+                    entry.context.what ||
+                    entry.context.sleepHours ||
+                    entry.context.physicalActivity);
+
                 return (
                   <div
                     key={entry.id}
                     className={cn(
-                      "flex items-center gap-3 p-2 rounded-lg transition-colors cursor-pointer hover:bg-muted/50",
-                      index === 0 && "bg-muted/30",
+                      "rounded-lg transition-all duration-200 cursor-pointer border",
+                      index === 0 && !isExpanded && "bg-muted/30",
+                      isExpanded ? "border-primary/30 bg-muted/20" : "border-transparent hover:bg-muted/50",
                     )}
                   >
-                    <span className="text-lg">{quadrantEmoji[entry.quadrant]}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate" style={{ color: entryQuadrant.color }}>
-                        {entry.emotion}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {formatDate(entry.entry_date || entry.created_at)}
-                      </p>
+                    {/* Entry Header (always visible) */}
+                    <div className="flex items-center gap-3 p-2.5" onClick={() => toggleEntryExpand(entry.id)}>
+                      <span className="text-lg">{quadrantEmoji[entry.quadrant]}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate" style={{ color: entryQuadrant.color }}>
+                          {entry.emotion}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">{formatDateTime(entry.created_at)}</p>
+                      </div>
+                      <ChevronRight
+                        className={cn(
+                          "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                          isExpanded && "rotate-90",
+                        )}
+                      />
                     </div>
+
+                    {/* Expandable Details */}
+                    {isExpanded && (
+                      <div className="px-3 pb-3 pt-1 border-t border-border/50 animate-in slide-in-from-top-2 duration-200">
+                        {hasContext ? (
+                          <div className="space-y-2 text-xs">
+                            {entry.context?.who && (
+                              <div className="flex gap-2">
+                                <span className="text-muted-foreground shrink-0">With:</span>
+                                <span className="font-medium">{entry.context.who}</span>
+                              </div>
+                            )}
+                            {entry.context?.what && (
+                              <div className="flex gap-2">
+                                <span className="text-muted-foreground shrink-0">Doing:</span>
+                                <span className="font-medium">{entry.context.what}</span>
+                              </div>
+                            )}
+                            {entry.context?.sleepHours && (
+                              <div className="flex gap-2">
+                                <span className="text-muted-foreground shrink-0">Sleep:</span>
+                                <span className="font-medium">{entry.context.sleepHours} hours</span>
+                              </div>
+                            )}
+                            {entry.context?.physicalActivity && (
+                              <div className="flex gap-2">
+                                <span className="text-muted-foreground shrink-0">Activity:</span>
+                                <span className="font-medium">{entry.context.physicalActivity}</span>
+                              </div>
+                            )}
+                            {entry.note && (
+                              <div className="pt-1">
+                                <span className="text-muted-foreground">Note:</span>
+                                <p className="font-medium mt-0.5">{entry.note}</p>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground italic">No additional details recorded</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
