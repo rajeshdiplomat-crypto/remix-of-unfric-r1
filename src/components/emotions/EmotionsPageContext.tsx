@@ -1,4 +1,15 @@
-import { ArrowLeft, ArrowRight, Users, Activity, Moon, Dumbbell, BookOpen, Loader2, Check, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Users,
+  Activity,
+  Moon,
+  Dumbbell,
+  BookOpen,
+  Loader2,
+  Check,
+  Sparkles,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -35,14 +46,11 @@ const CONTEXT_CONTENT = {
   badge: "Add Context",
   title: {
     line1: "Capture the",
-    line2: "Moment"
+    line2: "Moment",
   },
-  description: "Understanding the context of your emotions helps identify patterns and triggers. This information builds your personal emotional intelligence over time.",
-  features: [
-    "Connect emotions to activities",
-    "Track sleep and energy patterns",
-    "Discover your emotional triggers"
-  ]
+  description:
+    "Understanding the context of your emotions helps identify patterns and triggers. This information builds your personal emotional intelligence over time.",
+  features: ["Connect emotions to activities", "Track sleep and energy patterns", "Discover your emotional triggers"],
 };
 
 const quadrantEmoji: Record<QuadrantType, string> = {
@@ -72,15 +80,7 @@ export function EmotionsPageContext({
     onContextChange({ ...context, [key]: value });
   };
 
-const PillButton = ({ 
-    label, 
-    selected, 
-    onClick 
-  }: { 
-    label: string; 
-    selected: boolean; 
-    onClick: () => void;
-  }) => (
+  const PillButton = ({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) => (
     <button
       onClick={onClick}
       className={cn(
@@ -88,12 +88,10 @@ const PillButton = ({
         "border hover:scale-105 active:scale-95",
         selected
           ? "text-white border-transparent shadow-md"
-          : "bg-background text-muted-foreground border-border hover:border-primary/30 hover:text-foreground"
+          : "bg-background text-muted-foreground border-border hover:border-primary/30 hover:text-foreground",
       )}
       style={{
-        background: selected 
-          ? `linear-gradient(135deg, ${quadrantInfo.color}, ${quadrantInfo.color}DD)` 
-          : undefined,
+        background: selected ? `linear-gradient(135deg, ${quadrantInfo.color}, ${quadrantInfo.color}DD)` : undefined,
       }}
     >
       {label}
@@ -107,8 +105,8 @@ const PillButton = ({
         {/* Left: Form Cards */}
         <div className="flex flex-col order-2 lg:order-1">
           {/* Back Button */}
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="sm"
             onClick={onBack}
             className="gap-1.5 text-muted-foreground hover:text-foreground self-start mb-3"
@@ -201,7 +199,9 @@ const PillButton = ({
                       key={preset}
                       label={preset}
                       selected={context.physicalActivity === preset}
-                      onClick={() => updateContext("physicalActivity", context.physicalActivity === preset ? undefined : preset)}
+                      onClick={() =>
+                        updateContext("physicalActivity", context.physicalActivity === preset ? undefined : preset)
+                      }
                     />
                   ))}
                 </div>
@@ -211,8 +211,8 @@ const PillButton = ({
             {/* Action Row with Journal Toggle */}
             <div className="flex items-center justify-between pt-2 mt-auto">
               <div className="flex items-center gap-3">
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="sm"
                   onClick={onSkip}
                   className="gap-1.5 text-muted-foreground hover:text-foreground"
@@ -222,11 +222,7 @@ const PillButton = ({
                 </Button>
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card/50 border border-border">
                   <Label className="text-xs text-muted-foreground">Journal</Label>
-                  <Switch 
-                    checked={sendToJournal} 
-                    onCheckedChange={onSendToJournalChange}
-                    className="scale-75"
-                  />
+                  <Switch checked={sendToJournal} onCheckedChange={onSendToJournalChange} className="scale-75" />
                 </div>
               </div>
 
@@ -257,7 +253,7 @@ const PillButton = ({
         {/* Right: Descriptive Text */}
         <div className="flex flex-col justify-center order-1 lg:order-2 lg:pl-6">
           {/* Badge */}
-          <div 
+          <div
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-4 w-fit"
             style={{
               background: `linear-gradient(135deg, ${quadrantInfo.color}20, ${quadrantInfo.color}10)`,
@@ -269,26 +265,19 @@ const PillButton = ({
           </div>
 
           {/* Title */}
-          <h1 className="text-3xl md:text-4xl font-light text-foreground mb-1">
-            {CONTEXT_CONTENT.title.line1}
-          </h1>
-          <h1 
-            className="text-3xl md:text-4xl font-light mb-4"
-            style={{ color: quadrantInfo.color }}
-          >
+          <h1 className="text-3xl md:text-4xl font-light text-foreground mb-1">{CONTEXT_CONTENT.title.line1}</h1>
+          <h1 className="text-3xl md:text-4xl font-light mb-4" style={{ color: quadrantInfo.color }}>
             {CONTEXT_CONTENT.title.line2}
           </h1>
 
           {/* Description */}
-          <p className="text-base text-muted-foreground leading-relaxed mb-5 max-w-sm">
-            {CONTEXT_CONTENT.description}
-          </p>
+          <p className="text-base text-muted-foreground leading-relaxed mb-5 max-w-sm">{CONTEXT_CONTENT.description}</p>
 
           {/* Features */}
           <ul className="space-y-2 mb-5">
             {CONTEXT_CONTENT.features.map((feature, idx) => (
               <li key={idx} className="flex items-center gap-2 text-sm text-muted-foreground">
-                <div 
+                <div
                   className="w-4 h-4 rounded-full flex items-center justify-center"
                   style={{ backgroundColor: `${quadrantInfo.color}20` }}
                 >
@@ -300,7 +289,7 @@ const PillButton = ({
           </ul>
 
           {/* Selected Emotion Badge */}
-          <div 
+          <div
             className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border-2 w-fit"
             style={{
               background: `linear-gradient(135deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}20)`,
