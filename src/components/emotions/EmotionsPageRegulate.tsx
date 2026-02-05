@@ -13,6 +13,7 @@ interface EmotionsPageRegulateProps {
   entries: EmotionEntry[];
   onNewCheckin: () => void;
   onViewInsights: () => void;
+  onStrategyComplete: (strategyTitle: string) => void;
 }
 
 const typeGradients: Record<string, { from: string; to: string }> = {
@@ -52,6 +53,7 @@ export function EmotionsPageRegulate({
   entries,
   onNewCheckin,
   onViewInsights,
+  onStrategyComplete,
 }: EmotionsPageRegulateProps) {
   const [activeStrategy, setActiveStrategy] = useState<Strategy | null>(null);
   const [showVisualization, setShowVisualization] = useState(false);
@@ -94,6 +96,7 @@ export function EmotionsPageRegulate({
   const handleStrategyClick = (strategy: Strategy) => {
     setActiveStrategy(strategy);
     setShowVisualization(true);
+    onStrategyComplete(strategy.title);
   };
 
   const toggleEntryExpand = (entryId: string) => {

@@ -12,12 +12,7 @@ interface RecentEntriesListProps {
   maxItems?: number;
 }
 
-export function RecentEntriesList({
-  entries,
-  onEditEntry,
-  onDeleteEntry,
-  maxItems = 20,
-}: RecentEntriesListProps) {
+export function RecentEntriesList({ entries, onEditEntry, onDeleteEntry, maxItems = 20 }: RecentEntriesListProps) {
   const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
   const { timezone } = useTimezone();
 
@@ -72,17 +67,12 @@ export function RecentEntriesList({
                 onClick={() => toggleExpand(entry.id)}
               >
                 {/* Color indicator */}
-                <div
-                  className="w-3 h-3 rounded-full shrink-0"
-                  style={{ backgroundColor: quadrant.color }}
-                />
+                <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: quadrant.color }} />
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm text-foreground truncate">
-                      {entry.emotion}
-                    </span>
+                    <span className="font-medium text-sm text-foreground truncate">{entry.emotion}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-[11px] text-muted-foreground">{timeAgo}</span>
@@ -111,9 +101,7 @@ export function RecentEntriesList({
                   </div>
 
                   {/* Note */}
-                  {entry.note && (
-                    <p className="text-sm text-muted-foreground">{entry.note}</p>
-                  )}
+                  {entry.note && <p className="text-sm text-muted-foreground">{entry.note}</p>}
 
                   {/* Context tags */}
                   {entry.context && (entry.context.who || entry.context.what) && (
@@ -128,6 +116,16 @@ export function RecentEntriesList({
                           {entry.context.what}
                         </span>
                       )}
+                    </div>
+                  )}
+
+                  {/* Strategy Used */}
+                  {entry.strategy && (
+                    <div className="flex gap-2">
+                      <span className="text-muted-foreground shrink-0 text-xs">Practiced:</span>
+                      <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                        {entry.strategy}
+                      </span>
                     </div>
                   )}
 

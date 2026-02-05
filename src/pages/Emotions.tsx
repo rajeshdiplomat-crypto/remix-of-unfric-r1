@@ -243,6 +243,56 @@ export default function Emotions() {
     }
   };
 
+  const updateEntryStrategy = async (strategyTitle: string) => {
+    if (!user || entries.length === 0) return;
+
+    // We assume the user is updating the most recent entry they just created or are looking at
+    const latestEntry = entries[0];
+
+    try {
+      // Parse existing emotion data to preserve other fields
+      let emotionData: any = {};
+      try {
+        emotionData = JSON.parse(latestEntry.emotion as unknown as string) || {};
+        // Or reconstruct if needed as before
+        if (!emotionData.quadrant) {
+          emotionData = {
+            quadrant: latestEntry.quadrant,
+            emotion: latestEntry.emotion,
+            context: latestEntry.context,
+            showInJournal: latestEntry.showInJournal,
+            strategy: strategyTitle, // Add strategy
+          };
+        } else {
+          emotionData.strategy = strategyTitle;
+        }
+      } catch (e) {
+        console.error("Error constructing emotion data", e);
+        emotionData = {
+          quadrant: latestEntry.quadrant,
+          emotion: latestEntry.emotion,
+          context: latestEntry.context,
+          showInJournal: latestEntry.showInJournal,
+          strategy: strategyTitle, // Add strategy
+        };
+      }
+
+      const { error } = await supabase
+        .from("emotions")
+        .update({
+          emotion: JSON.stringify(emotionData),
+        })
+        .eq("id", latestEntry.id);
+
+      if (error) throw error;
+
+      toast.success(`Strategy recorded: ${strategyTitle}`);
+      await fetchEntries(); // Refresh to show in history
+    } catch (err) {
+      console.error("Error updating strategy:", err);
+    }
+  };
+
   const createEmotionFeedEvent = async (
     emotionId: string,
     quadrant: QuadrantType,
@@ -510,6 +560,7 @@ export default function Emotions() {
               savedEmotion={savedEmotion}
               entries={entries}
               onNewCheckin={resetFlow}
+              onStrategyComplete={updateEntryStrategy}
               onViewInsights={() => {
                 setActiveView("insights");
                 setInternalView("insights");

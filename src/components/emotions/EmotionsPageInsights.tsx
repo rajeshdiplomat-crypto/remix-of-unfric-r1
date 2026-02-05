@@ -47,7 +47,7 @@ const TIME_INFO = {
 export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsPageInsightsProps) {
   const { timezone } = useTimezone();
   const [dateRange, setDateRange] = useState<DateRange>(30);
-  const [rightTab, setRightTab] = useState<"moods" | "context">("moods");
+  const [rightTab, setRightTab] = useState<"moods" | "context" | "strategies">("moods");
 
   const filteredEntries = useMemo(() => {
     const today = getStartOfTodayInTimezone(timezone);
@@ -285,6 +285,16 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
             >
               Context
             </button>
+            <button
+              onClick={() => setRightTab("strategies")}
+              className={`flex-1 px-4 py-2 text-xs font-medium rounded-lg transition-all ${
+                rightTab === "strategies"
+                  ? "bg-card shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Strategies
+            </button>
           </div>
 
           {/* Tab Content */}
@@ -299,6 +309,8 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
           )}
 
           {rightTab === "context" && <ContextInsights entries={filteredEntries} />}
+
+          {rightTab === "strategies" && <StrategiesInsights entries={filteredEntries} />}
         </div>
       </div>
     </div>
@@ -631,6 +643,51 @@ function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// Strategies Insights
+function StrategiesInsights({ entries }: { entries: EmotionEntry[] }) {
+  const strategyStats = useMemo(() => {
+    const counts: Record<string, number> = {};
+    entries.forEach((e) => {
+      if (e.strategy) {
+        counts[e.strategy] = (counts[e.strategy] || 0) + 1;
+      }
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({ name, count }));
+  }, [entries]);
+
+  if (strategyStats.length === 0) {
+    return (
+      <div className="p-6 text-center">
+        <Sparkles className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
+        <p className="text-sm text-muted-foreground">Complete recommended strategies to see them here</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <h4 className="font-medium text-foreground text-sm">Top Strategies</h4>
+      <div className="grid grid-cols-1 gap-2">
+        {strategyStats.map((item, i) => (
+          <div key={item.name} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold">
+                {i + 1}
+              </div>
+              <span className="text-sm font-medium">{item.name}</span>
+            </div>
+            <span className="text-xs font-medium bg-background px-2 py-1 rounded-md border border-border">
+              {item.count} sessions
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
