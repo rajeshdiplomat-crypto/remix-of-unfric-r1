@@ -1,4 +1,4 @@
-import { Heart, Target, BarChart3, Users, Calendar } from "lucide-react";
+import { Users, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -23,58 +23,47 @@ export function EmotionsNavigation({
   onOpenCalendar,
 }: EmotionsNavigationProps) {
   const navItems = [
-    { id: "feel" as const, label: "Feel", icon: Heart, enabled: true },
-    { id: "regulate" as const, label: "Regulate", icon: Target, enabled: canNavigate.regulate },
-    { id: "insights" as const, label: "Insights", icon: BarChart3, enabled: true },
+    { id: "feel" as const, label: "Feel", enabled: true },
+    { id: "regulate" as const, label: "Regulate", enabled: canNavigate.regulate },
+    { id: "insights" as const, label: "Insights", enabled: true },
   ];
 
   return (
-    <div className="flex items-center justify-between gap-4 w-full">
+    <div className="flex items-center justify-end gap-3 w-full">
       {/* Main Navigation Pills */}
-      <div className="flex items-center gap-1 p-1.5 bg-background/70 backdrop-blur-xl rounded-full border border-border/40 shadow-lg">
+      <div className="flex items-center gap-0.5 px-1.5 py-1 bg-foreground/20 backdrop-blur-md rounded-full">
         {navItems.map((item) => {
-          const Icon = item.icon;
           const isActive = activeView === item.id;
           
           return (
-            <Tooltip key={item.id}>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  onClick={() => item.enabled && onViewChange(item.id)}
-                  disabled={!item.enabled}
-                  className={cn(
-                    "h-9 px-4 sm:px-5 rounded-full transition-all duration-200 text-sm font-medium gap-2",
-                    isActive
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                    !item.enabled && "opacity-40 cursor-not-allowed"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="hidden sm:inline">{item.label}</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p>{item.label}</p>
-              </TooltipContent>
-            </Tooltip>
+            <button
+              key={item.id}
+              onClick={() => item.enabled && onViewChange(item.id)}
+              disabled={!item.enabled}
+              className={cn(
+                "h-8 px-4 rounded-full transition-all duration-200 text-sm font-medium",
+                isActive
+                  ? "bg-foreground/30 text-white"
+                  : "text-white/70 hover:text-white",
+                !item.enabled && "opacity-40 cursor-not-allowed"
+              )}
+            >
+              {item.label}
+            </button>
           );
         })}
       </div>
 
       {/* Quick Actions */}
-      <div className="flex items-center gap-1 p-1.5 bg-background/70 backdrop-blur-xl rounded-full border border-border/40 shadow-lg">
+      <div className="flex items-center gap-0.5 px-1.5 py-1 bg-foreground/20 backdrop-blur-md rounded-full">
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
+            <button
               onClick={onOpenRecentEntries}
-              className="h-8 w-8 rounded-full hover:bg-muted/50 transition-all duration-200"
+              className="h-8 w-8 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-colors"
             >
               <Users className="h-4 w-4" />
-            </Button>
+            </button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
             <p>Recent Entries</p>
@@ -83,14 +72,12 @@ export function EmotionsNavigation({
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
+            <button
               onClick={onOpenCalendar}
-              className="h-8 w-8 rounded-full hover:bg-muted/50 transition-all duration-200"
+              className="h-8 w-8 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-colors"
             >
               <Calendar className="h-4 w-4" />
-            </Button>
+            </button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
             <p>Calendar View</p>
