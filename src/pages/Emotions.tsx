@@ -165,15 +165,10 @@ export default function Emotions() {
     setSelectedQuadrant(quadrant);
   };
 
-  // Navigate from Feel to Context
-  const handleContinueToContext = () => {
+  // Navigate from Feel directly to save and regulate (context removed from UI)
+  const handleContinueToSave = async () => {
     if (!selectedEmotion) return;
     setSelectedQuadrant(currentQuadrant);
-    setActiveView("context");
-  };
-
-  // Skip context and save directly
-  const handleSkipContext = async () => {
     await handleSaveCheckIn();
   };
 
@@ -428,7 +423,6 @@ export default function Emotions() {
 
   // Navigation permissions
   const canNavigate = {
-    context: !!selectedEmotion,
     regulate: !!savedQuadrant && !!savedEmotion,
   };
 
@@ -437,25 +431,27 @@ export default function Emotions() {
   return (
     <TooltipProvider>
       <div className="flex flex-col w-full h-full min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
-        {/* Page Hero */}
-        <PageHero
-          storageKey="emotions-hero-src"
-          typeKey="emotions-hero-type"
-          badge={PAGE_HERO_TEXT.emotions.badge}
-          title={PAGE_HERO_TEXT.emotions.title}
-          subtitle={PAGE_HERO_TEXT.emotions.subtitle}
-        />
-
-        {/* Navigation Bar */}
-        <div className="sticky top-14 z-20 px-4 lg:px-8 py-3 bg-background/80 backdrop-blur-xl border-b border-border/50">
-          <div className="max-w-6xl mx-auto">
-            <EmotionsNavigation
-              activeView={activeView}
-              canNavigate={canNavigate}
-              onViewChange={setActiveView}
-              onOpenRecentEntries={() => setShowRecentEntries(true)}
-              onOpenCalendar={() => setShowCalendar(true)}
-            />
+        {/* Page Hero with Navigation at bottom */}
+        <div className="relative">
+          <PageHero
+            storageKey="emotions-hero-src"
+            typeKey="emotions-hero-type"
+            badge={PAGE_HERO_TEXT.emotions.badge}
+            title={PAGE_HERO_TEXT.emotions.title}
+            subtitle={PAGE_HERO_TEXT.emotions.subtitle}
+          />
+          
+          {/* Navigation overlay at bottom of hero */}
+          <div className="absolute bottom-4 left-0 right-0 z-20 px-4 lg:px-8">
+            <div className="max-w-4xl mx-auto">
+              <EmotionsNavigation
+                activeView={activeView}
+                canNavigate={canNavigate}
+                onViewChange={setActiveView}
+                onOpenRecentEntries={() => setShowRecentEntries(true)}
+                onOpenCalendar={() => setShowCalendar(true)}
+              />
+            </div>
           </div>
         </div>
 
@@ -470,25 +466,7 @@ export default function Emotions() {
               onEnergyChange={setEnergy}
               onPleasantnessChange={setPleasantness}
               onEmotionSelect={handleEmotionSelect}
-              onContinue={handleContinueToContext}
-            />
-          )}
-
-          {/* Context Page */}
-          {activeView === "context" && selectedEmotion && (
-            <EmotionsPageContext
-              selectedQuadrant={selectedQuadrant || currentQuadrant}
-              selectedEmotion={selectedEmotion}
-              note={note}
-              context={context}
-              sendToJournal={sendToJournal}
-              saving={saving}
-              onNoteChange={setNote}
-              onContextChange={setContext}
-              onSendToJournalChange={setSendToJournal}
-              onBack={() => setActiveView("feel")}
-              onSave={handleSaveCheckIn}
-              onSkip={handleSkipContext}
+              onContinue={handleContinueToSave}
             />
           )}
 
