@@ -589,13 +589,16 @@ export function EmotionCircularPicker({
 
               {/* Outer emotion labels - with proper box backgrounds */}
               {section.emotions.map((emotion, emotionIndex) => {
+                // Calculate angle - evenly distribute within the section
+                const sectionSpan = section.endAngle - section.startAngle;
                 const emotionAngle =
-                  section.startAngle +
-                  ((section.endAngle - section.startAngle) / (section.emotions.length + 1)) * (emotionIndex + 1);
-                // Adjusted radius to keep text inside the wheel
-                const textRadius = outerRadius - 35;
+                  section.startAngle + (sectionSpan / (section.emotions.length + 1)) * (emotionIndex + 1);
+
+                // Position text in the middle of the outer arc band
+                const textRadius = (middleRadius + outerRadius) / 2;
                 const pos = getTextPosition(emotionAngle, textRadius);
-                // Improved rotation logic - keep text readable
+
+                // Rotation to keep text readable - flip if on left side
                 const normalizedAngle = ((emotionAngle % 360) + 360) % 360;
                 const rotation = normalizedAngle > 90 && normalizedAngle < 270 ? emotionAngle + 180 : emotionAngle;
                 const isEmotionSelected = selectedEmotion === emotion;
@@ -606,7 +609,7 @@ export function EmotionCircularPicker({
                     className={cn(
                       "absolute text-[10px] font-semibold pointer-events-auto select-none",
                       "transition-all duration-300 rounded-full px-2.5 py-1",
-                      "backdrop-blur-sm",
+                      "backdrop-blur-sm whitespace-nowrap",
                       isActive
                         ? "text-white hover:scale-110 cursor-pointer bg-white/20 hover:bg-white/30"
                         : "text-white/20 cursor-default pointer-events-none bg-white/5",
