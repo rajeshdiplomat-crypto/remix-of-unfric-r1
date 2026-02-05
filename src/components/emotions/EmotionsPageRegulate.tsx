@@ -88,9 +88,9 @@ export function EmotionsPageRegulate({
 
   const recommendedStrategies = savedQuadrant
     ? STRATEGIES.filter((s) => s.targetQuadrants.includes(savedQuadrant)).slice(0, 3)
-    : [];
+    : STRATEGIES.slice(0, 3);
 
-  const allStrategies = STRATEGIES.filter((s) => !recommendedStrategies.some((r) => r.id === s.id)).slice(0, 5);
+  const allStrategies = STRATEGIES.filter((s) => !recommendedStrategies.some((r) => r.id === s.id));
 
   const formatDate = (date: Date) => {
     const today = new Date();
@@ -107,7 +107,7 @@ export function EmotionsPageRegulate({
 
   return (
     <div className="animate-in fade-in duration-500">
-      {/* Header Section with Title & Description */}
+      {/* Header Section */}
       <div className="text-center max-w-2xl mx-auto mb-10">
         <div
           className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-4"
@@ -127,118 +127,133 @@ export function EmotionsPageRegulate({
         <p className="text-muted-foreground text-sm leading-relaxed max-w-lg mx-auto">{REGULATE_CONTENT.description}</p>
       </div>
 
-      {/* Strategy Cards - Pricing Style */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        {recommendedStrategies.map((strategy, index) => {
-          const isMiddle = index === 1;
-          const gradient = typeGradients[strategy.type];
+      {/* 3-Column Layout: Recent Entries | Suggested Strategy | All Strategies */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+        {/* LEFT: Recent Entries */}
+        <div className="border-2 border-border rounded-2xl p-5 bg-card">
+          <div className="text-xs text-muted-foreground uppercase tracking-wider mb-3">Recent Entries</div>
+          <h3 className="text-lg font-semibold mb-1">Your Last 7</h3>
+          <p className="text-xs text-muted-foreground mb-4">Track your emotional journey</p>
 
-          return (
-            <div
-              key={strategy.id}
-              className={cn(
-                "rounded-2xl border-2 p-6 transition-all duration-300 hover:shadow-xl cursor-pointer",
-                isMiddle
-                  ? "border-primary bg-primary/5 scale-105 shadow-lg"
-                  : "border-border bg-card hover:border-primary/50",
-              )}
-              onClick={() => handleStrategyClick(strategy)}
-            >
-              {/* Strategy Type Badge */}
-              <div className="text-xs text-muted-foreground uppercase tracking-wider mb-3">{strategy.type}</div>
-
-              {/* Strategy Icon */}
-              <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg mb-4"
-                style={{ background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})` }}
-              >
-                {typeIcons[strategy.type]}
-              </div>
-
-              {/* Strategy Title */}
-              <h3 className="text-lg font-semibold mb-1">{strategy.title}</h3>
-
-              {/* Duration */}
-              <p className="text-sm text-muted-foreground mb-4">{strategy.duration}</p>
-
-              {/* Description / Features */}
-              <p className="text-xs text-muted-foreground mb-6 line-clamp-2">{strategy.description}</p>
-
-              {/* CTA Button */}
-              <Button
-                className={cn(
-                  "w-full rounded-lg",
-                  isMiddle ? "bg-primary text-primary-foreground" : "bg-muted text-foreground hover:bg-muted/80",
-                )}
-                style={isMiddle ? { backgroundColor: accentColor } : undefined}
-              >
-                Start Session
-              </Button>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* All Strategies Section */}
-      <div className="mb-10">
-        <h3 className="text-center text-sm font-medium text-muted-foreground mb-4">MORE STRATEGIES</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          {allStrategies.map((strategy) => (
-            <button
-              key={strategy.id}
-              onClick={() => handleStrategyClick(strategy)}
-              className="group p-4 rounded-xl border-2 border-border bg-card hover:border-primary/40 hover:shadow-md transition-all duration-200 text-center"
-            >
-              <div
-                className="w-10 h-10 mx-auto mb-2 rounded-xl flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform"
-                style={{
-                  background: `linear-gradient(135deg, ${typeGradients[strategy.type].from}, ${typeGradients[strategy.type].to})`,
-                }}
-              >
-                {typeIcons[strategy.type]}
-              </div>
-              <p className="text-xs font-medium truncate">{strategy.title}</p>
-              <p className="text-[10px] text-muted-foreground">{strategy.duration}</p>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Last 7 Entries */}
-      <div className="border-2 border-border rounded-2xl p-6 mb-8">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <h3 className="font-medium">Your Last 7 Entries</h3>
+          <div className="space-y-2 mb-4">
+            {MOCK_ENTRIES.slice(0, 5).map((entry, index) => {
+              const entryQuadrant = QUADRANTS[entry.quadrant];
+              return (
+                <div
+                  key={entry.id}
+                  className={cn(
+                    "flex items-center gap-3 p-2 rounded-lg transition-colors cursor-pointer hover:bg-muted/50",
+                    index === 0 && "bg-muted/30",
+                  )}
+                >
+                  <span className="text-lg">{quadrantEmoji[entry.quadrant]}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate" style={{ color: entryQuadrant.color }}>
+                      {entry.emotion}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">{formatDate(entry.timestamp)}</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <Button variant="ghost" size="sm" onClick={onViewInsights} className="text-xs gap-1 h-8">
-            VIEW ALL
-            <ChevronRight className="h-3 w-3" />
+
+          <Button variant="outline" size="sm" onClick={onViewInsights} className="w-full rounded-lg">
+            View All Entries
           </Button>
         </div>
 
-        <div className="grid grid-cols-7 gap-3">
-          {MOCK_ENTRIES.map((entry, index) => {
-            const entryQuadrant = QUADRANTS[entry.quadrant];
-            const isFirst = index === 0;
+        {/* CENTER: Suggested Strategy (Featured) */}
+        <div
+          className="border-2 rounded-2xl p-5 shadow-lg scale-105 relative"
+          style={{ borderColor: accentColor, backgroundColor: `${accentColor}08` }}
+        >
+          <div
+            className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-medium text-white"
+            style={{ backgroundColor: accentColor }}
+          >
+            Recommended
+          </div>
 
-            return (
+          <div className="text-xs text-muted-foreground uppercase tracking-wider mb-3 mt-2">Suggested Strategy</div>
+
+          {recommendedStrategies[0] && (
+            <>
               <div
-                key={entry.id}
-                className={cn(
-                  "rounded-xl p-3 transition-all duration-200 hover:scale-105 cursor-pointer text-center border-2",
-                  isFirst ? "border-primary shadow-md" : "border-transparent",
-                )}
-                style={{ backgroundColor: `${entryQuadrant.color}15` }}
+                className="w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-lg mb-4 mx-auto"
+                style={{
+                  background: `linear-gradient(135deg, ${typeGradients[recommendedStrategies[0].type].from}, ${typeGradients[recommendedStrategies[0].type].to})`,
+                }}
               >
-                <div className="text-2xl mb-1">{quadrantEmoji[entry.quadrant]}</div>
-                <p className="text-[10px] font-semibold truncate" style={{ color: entryQuadrant.color }}>
-                  {entry.emotion}
-                </p>
-                <p className="text-[9px] text-muted-foreground">{formatDate(entry.timestamp)}</p>
+                {typeIcons[recommendedStrategies[0].type]}
               </div>
-            );
-          })}
+
+              <h3 className="text-xl font-bold text-center mb-1">{recommendedStrategies[0].title}</h3>
+              <p className="text-sm text-muted-foreground text-center mb-2">{recommendedStrategies[0].duration}</p>
+              <p className="text-xs text-muted-foreground text-center mb-6 line-clamp-2">
+                {recommendedStrategies[0].description}
+              </p>
+
+              <Button
+                className="w-full rounded-lg text-white"
+                style={{ backgroundColor: accentColor }}
+                onClick={() => handleStrategyClick(recommendedStrategies[0])}
+              >
+                Start Session
+              </Button>
+
+              {/* Other recommended as small pills */}
+              {recommendedStrategies.length > 1 && (
+                <div className="flex gap-2 mt-4 justify-center flex-wrap">
+                  {recommendedStrategies.slice(1).map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => handleStrategyClick(s)}
+                      className="px-3 py-1.5 text-xs rounded-full border hover:bg-muted/50 transition-colors"
+                    >
+                      {s.title.split(" ").slice(0, 2).join(" ")}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* RIGHT: All Strategies */}
+        <div className="border-2 border-border rounded-2xl p-5 bg-card">
+          <div className="text-xs text-muted-foreground uppercase tracking-wider mb-3">All Strategies</div>
+          <h3 className="text-lg font-semibold mb-1">Explore More</h3>
+          <p className="text-xs text-muted-foreground mb-4">Find the perfect fit for you</p>
+
+          <div className="space-y-2 mb-4">
+            {allStrategies.slice(0, 5).map((strategy) => {
+              const gradient = typeGradients[strategy.type];
+              return (
+                <button
+                  key={strategy.id}
+                  onClick={() => handleStrategyClick(strategy)}
+                  className="flex items-center gap-3 p-2 rounded-lg w-full text-left hover:bg-muted/50 transition-colors"
+                >
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-white shrink-0"
+                    style={{ background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})` }}
+                  >
+                    {typeIcons[strategy.type]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{strategy.title}</p>
+                    <p className="text-[10px] text-muted-foreground">{strategy.duration}</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                </button>
+              );
+            })}
+          </div>
+
+          <Button variant="outline" size="sm" className="w-full rounded-lg">
+            View All Strategies
+          </Button>
         </div>
       </div>
 
