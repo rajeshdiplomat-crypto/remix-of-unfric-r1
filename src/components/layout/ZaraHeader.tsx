@@ -86,9 +86,10 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
           <NavLink to="/diary" className="flex items-center">
             <UnfricLogo
               size="md"
+              variant="compact"
               className={cn(
                 "transition-all duration-300",
-                isScrolled ? "" : "[text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]",
+                isScrolled ? "" : "drop-shadow-md",
               )}
             />
           </NavLink>

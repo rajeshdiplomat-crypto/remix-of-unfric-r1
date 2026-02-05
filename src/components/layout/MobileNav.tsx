@@ -51,7 +51,7 @@ export function MobileNav({ onNavigate }: MobileNavProps) {
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <UnfricLogo size="md" />
+          <UnfricLogo size="lg" variant="compact" />
         </div>
       </div>
 

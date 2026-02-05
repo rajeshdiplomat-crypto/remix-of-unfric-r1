@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import unfricLogo from "@/assets/unfric-logo.png";
 
 type ModuleType =
   | "diary"
@@ -84,24 +85,17 @@ const LOADING_QUOTES: Record<ModuleType, { text: string; author: string }[]> = {
   ],
 };
 
-const AnimatedUnfricLogo = () => {
-  const letters = "unfric".split("");
-
+const AnimatedLogo = () => {
   return (
-    <div className="flex items-center justify-center gap-0.5">
-      {letters.map((letter, index) => (
-        <span
-          key={index}
-          className="inline-block text-4xl md:text-5xl font-light tracking-[0.15em] lowercase text-foreground"
-          style={{
-            fontFamily: "'Inter', system-ui, sans-serif",
-            animation: `wave 1.5s ease-in-out infinite`,
-            animationDelay: `${index * 0.1}s`,
-          }}
-        >
-          {letter}
-        </span>
-      ))}
+    <div className="flex flex-col items-center justify-center gap-2">
+      <img
+        src={unfricLogo}
+        alt="unfric"
+        className="h-16 md:h-20 object-contain animate-pulse"
+        style={{
+          animation: `logoFloat 2s ease-in-out infinite`,
+        }}
+      />
     </div>
   );
 };
@@ -177,6 +171,11 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
   return (
     <>
       <style>{`
+        @keyframes logoFloat {
+          0%, 100% { transform: translateY(0) scale(1); }
+          50% { transform: translateY(-8px) scale(1.02); }
+        }
+        
         @keyframes wave {
           0%, 100% { transform: translateY(0); }
           25% { transform: translateY(-8px); }
@@ -235,7 +234,7 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
             )}
           >
-            <AnimatedUnfricLogo />
+            <AnimatedLogo />
           </div>
 
           {/* Animated line separator */}
