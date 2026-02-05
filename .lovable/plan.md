@@ -1,120 +1,171 @@
 
-# Restore Context Step in Flow (Not in Navigation)
 
-## Clarification
-You want:
-1. ✅ **Remove "Context" from navigation bar** - Already done
-2. ❌ **Keep Context step in the flow** - This was accidentally removed
+# Two-Column Split Layout for Context & Regulate Pages
 
-The Context page should appear **after clicking Continue on the Feel page**, before moving to Regulate.
+## Reference Analysis
 
----
+Based on the uploaded reference images, the layout should be:
+- **Left half**: Interactive content (form/cards)  
+- **Right half**: SaaS-style descriptive text (badge, title, description, features)
 
-## Current Flow (Broken)
-```text
-Feel → [Continue] → Save → Regulate
-```
-
-## Correct Flow (To Restore)
-```text
-Feel → [Continue] → Context → [Save] → Regulate
-```
+This matches the existing `EmotionsPageFeel` layout, but mirrored (Feel has text on left, wheel on right).
 
 ---
 
-## Changes Required
+## Changes to EmotionsPageContext.tsx
 
-### File: `src/pages/Emotions.tsx`
-
-**1. Add internal "context" view state** (not exposed in navigation)
-
-The `EmotionsView` type in navigation only has `"feel" | "regulate" | "insights"`, but we need an internal state to track when we're on the context page.
-
-Add a separate internal state:
-```typescript
-// Internal flow state (includes context which is not in nav)
-const [internalView, setInternalView] = useState<"feel" | "context" | "regulate" | "insights">("feel");
+### Current Layout
+```text
+[Full Width Header]
+[Full Width Title]
+[2-Column Form Grid spanning full width]
+[Center Save Button]
 ```
 
-**2. Update handleContinueToSave → handleContinueToContext**
+### New Layout
+```text
+┌─────────────────────────────────────────────────────┐
+│   Left Half (Form)      │   Right Half (Text)       │
+│                         │                           │
+│   Notes textarea        │   Badge: "Add Context"    │
+│   Who are you with?     │   Title: "Capture the     │
+│   What are you doing?   │          Moment"          │
+│   Sleep last night      │   Description: ...        │
+│   Physical activity     │   Features: ...           │
+│   Journal toggle        │   Selected emotion badge  │
+│                         │                           │
+│   [Back] [Save] [Skip]  │                           │
+└─────────────────────────────────────────────────────┘
+```
 
-Change the function to navigate to context instead of saving directly:
+### Implementation Details
+
+**1. Add descriptive content constant:**
 ```typescript
-// Navigate from Feel to Context (not saving yet)
-const handleContinueToContext = () => {
-  if (!selectedEmotion) return;
-  setSelectedQuadrant(currentQuadrant);
-  setInternalView("context");
+const CONTEXT_CONTENT = {
+  badge: "Add Context",
+  title: {
+    line1: "Capture the",
+    line2: "Moment"
+  },
+  description: "Understanding the context of your emotions helps identify patterns and triggers. This information builds your personal emotional intelligence over time.",
+  features: [
+    "Connect emotions to activities",
+    "Track sleep and energy patterns",
+    "Discover your emotional triggers"
+  ]
 };
 ```
 
-**3. Add Context page rendering**
-
-Add the Context page between Feel and Regulate:
+**2. Restructure JSX to two-column grid:**
 ```tsx
-{/* Context Page (between Feel and Regulate) */}
-{internalView === "context" && selectedQuadrant && selectedEmotion && (
-  <EmotionsPageContext
-    selectedQuadrant={selectedQuadrant}
-    selectedEmotion={selectedEmotion}
-    note={note}
-    context={context}
-    sendToJournal={sendToJournal}
-    saving={saving}
-    onNoteChange={setNote}
-    onContextChange={setContext}
-    onSendToJournalChange={setSendToJournal}
-    onBack={() => setInternalView("feel")}
-    onSave={handleSaveCheckIn}
-    onSkip={handleSkipContext}
-  />
-)}
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 flex-1">
+  {/* Left: Form Cards */}
+  <div className="flex flex-col order-2 lg:order-1">
+    {/* Notes, Who, What, Sleep, Activity, Journal Toggle */}
+    {/* Back/Skip/Save buttons */}
+  </div>
+  
+  {/* Right: Descriptive Text */}
+  <div className="flex flex-col justify-center order-1 lg:order-2">
+    {/* Badge, Title, Description, Features */}
+    {/* Selected Emotion Badge */}
+  </div>
+</div>
 ```
 
-**4. Add Skip handler**
+**3. Move header buttons into form section** (Back at top, Save/Skip at bottom)
 
+---
+
+## Changes to EmotionsPageRegulate.tsx
+
+### Current Layout
+```text
+[Centered Success Header with checkmark]
+[Centered Emotion Badge]
+[Recommended Strategies - 3 columns]
+[All Strategies - 3 columns]
+[Bottom Actions]
+```
+
+### New Layout
+```text
+┌─────────────────────────────────────────────────────┐
+│   Left Half (Success)   │   Right Half (Text)       │
+│                         │                           │
+│   Checkmark animation   │   Badge: "Well Done"      │
+│   "Check-in Complete"   │   Title: "Time to         │
+│   Emotion badge         │          Regulate"        │
+│                         │   Description: ...        │
+│   [New Check-in]        │   Features: ...           │
+│   [View Insights]       │                           │
+└─────────────────────────────────────────────────────┘
+[───────── Recommended Strategies (full width) ─────────]
+[───────── All Strategies Grid (full width) ───────────]
+```
+
+### Implementation Details
+
+**1. Add descriptive content constant:**
 ```typescript
-const handleSkipContext = async () => {
-  await handleSaveCheckIn();
+const REGULATE_CONTENT = {
+  badge: "Well Done",
+  title: {
+    line1: "Time to",
+    line2: "Regulate"
+  },
+  description: "Great job tracking your emotion! Now explore strategies designed for your current emotional state to help you feel balanced and grounded.",
+  features: [
+    "Personalized recommendations",
+    "Guided breathing exercises",
+    "Quick mindfulness techniques"
+  ]
 };
 ```
 
-**5. Sync navigation with internal view**
+**2. Split top section into two columns:**
+```tsx
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-12">
+  {/* Left: Success Animation & Emotion Badge */}
+  <div className="flex flex-col items-center lg:items-start justify-center">
+    {/* Checkmark, title, emotion badge, action buttons */}
+  </div>
+  
+  {/* Right: Descriptive Text */}
+  <div className="flex flex-col justify-center">
+    {/* Badge, Title, Description, Features */}
+  </div>
+</div>
 
-When user clicks navigation buttons:
-- "Feel" → set internalView to "feel"
-- "Regulate" → set internalView to "regulate" 
-- "Insights" → set internalView to "insights"
-
-When on context page, show it (not triggered by nav).
-
----
-
-## Implementation Summary
-
-| Change | Location | Description |
-|--------|----------|-------------|
-| Add internalView state | Line ~45 | Track context step separately |
-| Rename handleContinueToSave | Line ~169 | → handleContinueToContext, navigate to context |
-| Add Context page render | After Feel | Render EmotionsPageContext when internalView === "context" |
-| Update handleSaveCheckIn | Line ~176 | After save, set internalView to "regulate" |
-| Sync nav with internal | handleViewChange | Map nav views to internal views |
-
----
-
-## Visual Flow After Fix
-
-```text
-Navigation Bar:  [Feel] [Regulate] [Insights]
-                   ↑        ↑          ↑
-                   │        │          │
-                   ▼        ▼          ▼
-Internal View:  feel → context → regulate → insights
-                         ↑
-                   (not in nav,
-                    shown after
-                    Continue)
+{/* Full Width: Strategies Sections */}
+{/* Recommended Strategies */}
+{/* All Strategies */}
 ```
 
-User clicks "Continue" on Feel → sees Context page → clicks "Save" → goes to Regulate.
+---
+
+## Mobile Responsiveness
+
+Both pages will stack vertically on mobile (`lg:grid-cols-2` → `grid-cols-1`):
+- Mobile: Text card on top, form/content below
+- Desktop: Side-by-side split layout
+
+---
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/emotions/EmotionsPageContext.tsx` | Two-column layout with descriptive text on right |
+| `src/components/emotions/EmotionsPageRegulate.tsx` | Two-column hero section with descriptive text on right |
+
+---
+
+## Visual Consistency
+
+This creates visual consistency across all Emotions pages:
+- **Feel**: Text (left) + Wheel (right)
+- **Context**: Form (left) + Text (right)  
+- **Regulate**: Success (left) + Text (right) + Full-width strategies below
 
