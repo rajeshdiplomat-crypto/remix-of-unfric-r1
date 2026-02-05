@@ -560,7 +560,7 @@ export function EmotionCircularPicker({
                 {section.core}
               </button>
 
-              {/* Outer emotion labels - with overflow fix */}
+              {/* Outer emotion labels - with proper box backgrounds */}
               {section.emotions.map((emotion, emotionIndex) => {
                 const emotionAngle =
                   section.startAngle +
@@ -577,20 +577,19 @@ export function EmotionCircularPicker({
                   <button
                     key={emotion}
                     className={cn(
-                      "absolute text-[9px] font-medium pointer-events-auto select-none",
-                      "transition-all duration-300 max-w-[60px] truncate",
+                      "absolute text-[10px] font-semibold pointer-events-auto select-none",
+                      "transition-all duration-300 rounded-full px-2.5 py-1",
+                      "backdrop-blur-sm",
                       isActive
-                        ? "text-white hover:scale-110 cursor-pointer"
-                        : "text-white/10 cursor-default pointer-events-none",
-                      isEmotionSelected &&
-                        isActive &&
-                        "scale-125 font-bold ring-2 ring-white/60 rounded-xl px-3 py-1.5 bg-black/30",
+                        ? "text-white hover:scale-110 cursor-pointer bg-white/20 hover:bg-white/30"
+                        : "text-white/20 cursor-default pointer-events-none bg-white/5",
+                      isEmotionSelected && isActive && "scale-125 font-bold ring-2 ring-white bg-white/40 shadow-lg",
                     )}
                     style={{
                       left: pos.x,
                       top: pos.y,
                       transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-                      textShadow: isActive ? "0 1px 3px rgba(0,0,0,0.7)" : "none",
+                      textShadow: isActive ? "0 1px 2px rgba(0,0,0,0.5)" : "none",
                     }}
                     onClick={() => handleEmotionClick(emotion, section)}
                     disabled={!isActive}
