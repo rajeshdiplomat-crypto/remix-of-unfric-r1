@@ -111,6 +111,7 @@ export function EmotionCircularPicker({
   const [energyParticles, setEnergyParticles] = useState<EnergyParticle[]>([]);
   const [pleasantnessParticles, setPleasantnessParticles] = useState<EnergyParticle[]>([]);
   const [prevQuadrant, setPrevQuadrant] = useState<QuadrantType | null>(null);
+  const [expandedSectionIndex, setExpandedSectionIndex] = useState<number | null>(null);
   const particleIdRef = useRef(0);
 
   // Ring dimensions - scaled up ~25%
@@ -280,14 +281,22 @@ export function EmotionCircularPicker({
     [onCategorySelect, onEmotionSelect, isSectionActive],
   );
 
-  // Handle core emotion click
+  // Handle core emotion click - now also expands/collapses the section
   const handleCoreClick = useCallback(
-    (section: (typeof WHEEL_SECTIONS)[0]) => {
+    (section: (typeof WHEEL_SECTIONS)[0], sectionIndex: number) => {
       if (!isSectionActive(section)) return; // Only allow clicks on active sections
-      onCategorySelect(section.core, section.quadrant);
-      onEmotionSelect(section.core, section.quadrant);
+
+      // Toggle expansion - if already expanded, select the core emotion
+      if (expandedSectionIndex === sectionIndex) {
+        // Already expanded, select the core emotion
+        onCategorySelect(section.core, section.quadrant);
+        onEmotionSelect(section.core, section.quadrant);
+      } else {
+        // Expand this section to show outer emotions
+        setExpandedSectionIndex(sectionIndex);
+      }
     },
-    [onCategorySelect, onEmotionSelect, isSectionActive],
+    [onCategorySelect, onEmotionSelect, isSectionActive, expandedSectionIndex],
   );
 
   const energyThumb = getThumbPosition(energy, innerRingRadius);
@@ -381,7 +390,7 @@ export function EmotionCircularPicker({
                   fill={section.color}
                   opacity={isActive ? (isHovered || isSelected ? 0.95 : 0.7) : 0.12}
                   className={cn("transition-opacity duration-300", isActive ? "cursor-pointer" : "cursor-default")}
-                  onClick={() => handleCoreClick(section)}
+                  onClick={() => handleCoreClick(section, index)}
                   onMouseEnter={() => isActive && setHoveredSection(index)}
                   onMouseLeave={() => setHoveredSection(null)}
                 />
@@ -574,6 +583,9 @@ export function EmotionCircularPicker({
                     ? "text-white hover:scale-110 cursor-pointer"
                     : "text-white/20 cursor-default pointer-events-none",
                   isCoreSelected && isActive && "scale-110",
+                  expandedSectionIndex === sectionIndex &&
+                    isActive &&
+                    "ring-2 ring-white/50 rounded-full px-2 py-1 bg-white/20",
                 )}
                 style={{
                   left: corePos.x,
@@ -581,53 +593,55 @@ export function EmotionCircularPicker({
                   transform: "translate(-50%, -50%)",
                   textShadow: isActive ? "0 1px 2px rgba(0,0,0,0.5)" : "none",
                 }}
-                onClick={() => handleCoreClick(section)}
+                onClick={() => handleCoreClick(section, sectionIndex)}
                 disabled={!isActive}
               >
                 {section.core}
               </button>
 
-              {/* Outer emotion labels - with proper box backgrounds */}
-              {section.emotions.map((emotion, emotionIndex) => {
-                // Calculate angle - evenly distribute within the section
-                const sectionSpan = section.endAngle - section.startAngle;
-                const emotionAngle =
-                  section.startAngle + (sectionSpan / (section.emotions.length + 1)) * (emotionIndex + 1);
+              {/* Outer emotion labels - only show when section is expanded */}
+              {expandedSectionIndex === sectionIndex &&
+                isActive &&
+                section.emotions.map((emotion, emotionIndex) => {
+                  // Calculate angle - evenly distribute within the section
+                  const sectionSpan = section.endAngle - section.startAngle;
+                  const emotionAngle =
+                    section.startAngle + (sectionSpan / (section.emotions.length + 1)) * (emotionIndex + 1);
 
-                // Position text in the middle of the outer arc band
-                const textRadius = (middleRadius + outerRadius) / 2;
-                const pos = getTextPosition(emotionAngle, textRadius);
+                  // Position text in the middle of the outer arc band
+                  const textRadius = (middleRadius + outerRadius) / 2;
+                  const pos = getTextPosition(emotionAngle, textRadius);
 
-                // Rotation to keep text readable - flip if on left side
-                const normalizedAngle = ((emotionAngle % 360) + 360) % 360;
-                const rotation = normalizedAngle > 90 && normalizedAngle < 270 ? emotionAngle + 180 : emotionAngle;
-                const isEmotionSelected = selectedEmotion === emotion;
+                  // Rotation to keep text readable - flip if on left side
+                  const normalizedAngle = ((emotionAngle % 360) + 360) % 360;
+                  const rotation = normalizedAngle > 90 && normalizedAngle < 270 ? emotionAngle + 180 : emotionAngle;
+                  const isEmotionSelected = selectedEmotion === emotion;
 
-                return (
-                  <button
-                    key={emotion}
-                    className={cn(
-                      "absolute text-[10px] font-semibold pointer-events-auto select-none",
-                      "transition-all duration-300 rounded-full px-2.5 py-1",
-                      "backdrop-blur-sm whitespace-nowrap",
-                      isActive
-                        ? "text-white hover:scale-110 cursor-pointer bg-white/20 hover:bg-white/30"
-                        : "text-white/20 cursor-default pointer-events-none bg-white/5",
-                      isEmotionSelected && isActive && "scale-125 font-bold ring-2 ring-white bg-white/40 shadow-lg",
-                    )}
-                    style={{
-                      left: pos.x,
-                      top: pos.y,
-                      transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-                      textShadow: isActive ? "0 1px 2px rgba(0,0,0,0.5)" : "none",
-                    }}
-                    onClick={() => handleEmotionClick(emotion, section)}
-                    disabled={!isActive}
-                  >
-                    {emotion}
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      key={emotion}
+                      className={cn(
+                        "absolute text-[10px] font-semibold pointer-events-auto select-none",
+                        "transition-all duration-300 rounded-full px-2.5 py-1",
+                        "backdrop-blur-sm whitespace-nowrap",
+                        isActive
+                          ? "text-white hover:scale-110 cursor-pointer bg-white/20 hover:bg-white/30"
+                          : "text-white/20 cursor-default pointer-events-none bg-white/5",
+                        isEmotionSelected && isActive && "scale-125 font-bold ring-2 ring-white bg-white/40 shadow-lg",
+                      )}
+                      style={{
+                        left: pos.x,
+                        top: pos.y,
+                        transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+                        textShadow: isActive ? "0 1px 2px rgba(0,0,0,0.5)" : "none",
+                      }}
+                      onClick={() => handleEmotionClick(emotion, section)}
+                      disabled={!isActive}
+                    >
+                      {emotion}
+                    </button>
+                  );
+                })}
             </div>
           );
         })}
