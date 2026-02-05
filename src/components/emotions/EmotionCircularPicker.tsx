@@ -569,7 +569,9 @@ export function EmotionCircularPicker({
         {WHEEL_SECTIONS.map((section, sectionIndex) => {
           const isActive = isSectionActive(section);
           const midAngle = (section.startAngle + section.endAngle) / 2;
-          const corePos = getTextPosition(midAngle, middleRadius - 15);
+          // Position core labels in the center of the middle arc band (between innerRingRadius and middleRadius)
+          const coreRadius = (innerRingRadius + 15 + middleRadius) / 2;
+          const corePos = getTextPosition(midAngle, coreRadius);
           const isCoreSelected = selectedEmotion === section.core || selectedCategory === section.core;
 
           return (
