@@ -1,146 +1,118 @@
 
 
-# Compact Context & Restructure Regulate to Match Feel Layout
+# Show Strategies Inline on Regulate Page (No Scrolling)
 
-## Goal
-1. **Context page**: Fit all content on one screen without scrolling (same height as Feel)
-2. **Regulate page**: Mirror Feel layout exactly - text on left, interactive content on right, single page with no scrolling
+## Current State
+The Regulate page has strategies hidden behind an "Explore Strategies" button that opens a modal. You want strategies visible directly on the page, fitting on the right side without scrolling.
 
----
+## New Layout Structure
 
-## Changes to EmotionsPageContext.tsx
-
-### Problem
-The Context page has too many cards stacked vertically, causing overflow and requiring scrolling.
-
-### Solution
-Condense the form layout to fit within viewport:
-
-| Change | Details |
-|--------|---------|
-| Reduce card padding | `p-5` → `p-3` or `p-4` |
-| Smaller gaps | `gap-4` → `gap-2` or `gap-3` |
-| Combine Sleep + Activity | Already side-by-side, reduce size |
-| Smaller textarea | `min-h-[80px]` → `min-h-[60px]` |
-| Compact pill buttons | `h-10` → `h-8`, smaller padding |
-| Remove Journal toggle card | Or make it inline with buttons |
-| Tighten action buttons | Less padding/margins |
-
-### Updated Layout
 ```text
-┌────────────────────────────────────────────────────────┐
-│  Left (Form - compact)    │  Right (Text)              │
-│                           │                            │
-│  [Back]                   │  Badge: "Add Context"      │
-│  Notes (smaller)          │  Title                     │
-│  Who (inline pills)       │  Description               │
-│  What (inline pills)      │  Features                  │
-│  Sleep │ Activity (row)   │  Selected emotion badge    │
-│  [ ] Journal toggle       │                            │
-│  [Skip] [Save]            │                            │
-└────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│   Left (Text)              │   Right (Interactive + Strategies)     │
+│                            │                                        │
+│   Badge: "Well Done"       │   [Checkmark] Check-in Complete        │
+│   Title: "Time to          │   [Emotion Badge: "Valued"]            │
+│          Regulate"         │                                        │
+│   Description (compact)    │   ─── Recommended Strategies ───       │
+│   Features list            │   [Card 1] [Card 2] [Card 3]           │
+│                            │                                        │
+│                            │   [New Check-in] [Insights]            │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## Changes to EmotionsPageRegulate.tsx
 
-### Problem
-Currently has:
-- Two-column hero at top
-- Then full-width Recommended Strategies
-- Then full-width All Strategies with filters
-- Requires scrolling
+### 1. Restructure Right Column Layout
+Move strategies inline below the emotion badge, replacing the "Explore Strategies" button.
 
-### Solution
-Mirror the Feel page structure exactly:
-- **Left column**: Descriptive text (badge, title, description, features)
-- **Right column**: Interactive content (success animation, emotion badge, action buttons)
-- Remove or minimize strategies section to avoid scrolling
+### 2. Compact Success Section
+Reduce sizes to make room for strategies:
+- Smaller checkmark: `w-20 h-20` → `w-14 h-14`, inner `w-16 h-16` → `w-12 h-12`
+- Smaller title: `text-2xl` → `text-xl`
+- Smaller emotion badge: reduce padding and text size
+- Tighter margins: `mb-8` → `mb-4`, `mb-6` → `mb-3`
 
-### New Layout (matches Feel exactly)
-```text
-┌────────────────────────────────────────────────────────┐
-│  Left (Text)              │  Right (Interactive)       │
-│                           │                            │
-│  Badge: "Well Done"       │   [Checkmark Animation]    │
-│  Title: "Check-in         │   "Check-in Complete"      │
-│          Complete"        │   Emotion Badge            │
-│  Description              │                            │
-│  Features                 │   [New Check-in]           │
-│                           │   [View Insights]          │
-│                           │   [Try a Strategy]         │
-└────────────────────────────────────────────────────────┘
-```
+### 3. Add Inline Mini Strategy Cards
+Display 3 recommended strategies in a compact horizontal row:
+- Very compact cards: `p-2.5` padding
+- Smaller icons: `w-7 h-7`
+- Title only (no description to save space)
+- Duration badge inline
+- 3-column grid on desktop
 
-### Strategy Access
-Instead of showing all strategies on this page:
-- Add a "Try a Strategy" button in the right column
-- Opens a modal/drawer with strategy picker (already have Dialog component)
-- Keeps the page clean and scroll-free
+### 4. Compact Action Buttons
+- Smaller buttons: `h-11` → `h-9`, `h-12` → `h-10`
+- Horizontal layout for New Check-in and Insights
+
+### 5. Remove Strategy Picker Modal
+The "Explore Strategies" button is removed. Keep only the Guided Visualization modal that opens when clicking a strategy card.
 
 ---
 
-## Implementation Details
+## Detailed Implementation
 
-### EmotionsPageContext.tsx
-
-**1. Compact PillButton styling (lines 84-101)**
-```typescript
-// Smaller pills
-className="h-8 px-3 rounded-lg text-xs font-medium..."
-```
-
-**2. Reduce form card spacing (lines 120-260)**
-- Cards: `p-5` → `p-3`
-- Gap between cards: `gap-4` → `gap-2`
-- Textarea: `min-h-[80px]` → `min-h-[50px]`
-- Remove excessive margins
-
-**3. Inline Journal toggle with action buttons (lines 210-259)**
-- Move switch inline with Skip/Save buttons
-- Or remove the card wrapper entirely
-
----
-
-### EmotionsPageRegulate.tsx
-
-**1. Swap column order (lines 105-217)**
-- Move descriptive text to LEFT (order-1)
-- Move success content to RIGHT (order-2)
-
-**2. Remove strategies sections (lines 219-309)**
-- Delete "Recommended Strategies" section
-- Delete "All Strategies" section with filters
-- Replace with "Explore Strategies" button that opens modal
-
-**3. Add strategy modal trigger**
+### Right Column Structure (lines 146-221)
 ```tsx
-<Button onClick={() => setShowVisualization(true)}>
-  Explore Strategies
-  <Sparkles className="h-4 w-4" />
-</Button>
+<div className="flex flex-col items-center justify-center order-1 lg:order-2">
+  {/* Smaller Checkmark */}
+  <div className="relative w-16 h-16 mb-3">...</div>
+
+  {/* Compact Title */}
+  <h1 className="text-xl font-light mb-2">Check-in Complete</h1>
+  
+  {/* Compact Emotion Badge */}
+  <div className="px-4 py-2 mb-4">...</div>
+
+  {/* Inline Strategies - 3 mini cards */}
+  <div className="w-full max-w-sm mb-4">
+    <p className="text-xs text-muted-foreground mb-2">Recommended for you</p>
+    <div className="grid grid-cols-3 gap-2">
+      {recommendedStrategies.map(strategy => (
+        <MiniStrategyCard strategy={strategy} onStart={...} />
+      ))}
+    </div>
+  </div>
+
+  {/* Compact Action Buttons */}
+  <div className="flex gap-2 w-full max-w-sm">
+    <Button className="flex-1 h-9">New Check-in</Button>
+    <Button className="flex-1 h-9">Insights</Button>
+  </div>
+</div>
 ```
 
-**4. Enhance the modal to include strategy selection**
-- When no strategy selected, show strategy picker in modal
-- When strategy selected, show guided visualization
+### Mini Strategy Card Component
+New ultra-compact card for inline display:
+```tsx
+function MiniStrategyCard({ strategy, onStart }) {
+  return (
+    <button onClick={onStart} className="p-2 rounded-lg border text-center">
+      <div className="w-7 h-7 mx-auto mb-1 rounded-lg">{icon}</div>
+      <p className="text-xs font-medium truncate">{strategy.title}</p>
+      <p className="text-[10px] text-muted-foreground">{strategy.duration}</p>
+    </button>
+  );
+}
+```
 
 ---
 
-## Files to Modify
+## Summary of Changes
 
-| File | Changes |
-|------|---------|
-| `src/components/emotions/EmotionsPageContext.tsx` | Compact all form elements to fit viewport |
-| `src/components/emotions/EmotionsPageRegulate.tsx` | Swap columns, remove inline strategies, add modal trigger |
+| Element | Before | After |
+|---------|--------|-------|
+| Checkmark | 80px | 48px |
+| Title | text-2xl/3xl | text-xl |
+| Emotion badge | Large with padding | Compact inline |
+| Strategies | Hidden in modal | 3 mini cards inline |
+| Action buttons | Stacked with large button | Horizontal row, smaller |
+| "Explore Strategies" button | Present | Removed |
 
 ---
 
-## Visual Consistency After Changes
-
-All three screens will follow the same pattern:
-- **Feel**: Text (left) + Wheel (right) - single page
-- **Context**: Form (left) + Text (right) - single page
-- **Regulate**: Text (left) + Success (right) - single page
+## File to Modify
+`src/components/emotions/EmotionsPageRegulate.tsx`
 
