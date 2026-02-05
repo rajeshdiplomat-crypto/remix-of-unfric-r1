@@ -25,51 +25,75 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
   }).length;
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-300px)] animate-in fade-in slide-in-from-right-4 duration-500">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <Button 
-          variant="ghost" 
-          onClick={onBack}
-          className="gap-2 text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Check-in
-        </Button>
-
-        {/* Quick Stats */}
-        <div className="flex gap-3">
-          <StatBadge 
-            label="This Week" 
-            value={weekEntries.toString()} 
-            icon={<Zap className="h-3.5 w-3.5" />}
-          />
-          <StatBadge 
-            label="This Month" 
-            value={monthEntries.toString()} 
-            icon={<Calendar className="h-3.5 w-3.5" />}
-          />
+    <div className="flex flex-col animate-in fade-in duration-500">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+        
+        {/* Left: Dashboard */}
+        <div className="flex flex-col order-2 lg:order-1">
+          <PatternsDashboardEnhanced entries={entries} onDateClick={onDateClick} />
         </div>
-      </div>
-
-      {/* Title */}
-      <div className="text-center mb-12">
-        <div className="flex items-center justify-center gap-3 mb-3">
-          <div className="p-3 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10">
-            <BarChart3 className="h-7 w-7 text-primary" />
+        
+        {/* Right: Descriptive Text */}
+        <div className="flex flex-col justify-center order-1 lg:order-2">
+          <div className="space-y-4 max-w-md">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium w-fit bg-primary/10 text-primary">
+              <BarChart3 className="h-3 w-3" />
+              Your Patterns
+            </div>
+            
+            {/* Title */}
+            <h2 className="text-2xl md:text-3xl font-light leading-tight">
+              Insights &{" "}
+              <span className="font-semibold text-primary">Analytics</span>
+            </h2>
+            
+            {/* Description */}
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Discover patterns in your emotional journey based on {entries.length} check-in{entries.length !== 1 ? 's' : ''}.
+            </p>
+            
+            {/* Features */}
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li className="flex items-center gap-2">
+                <span className="h-1 w-1 rounded-full bg-primary" />
+                AI-powered pattern detection
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="h-1 w-1 rounded-full bg-primary" />
+                Mood distribution analysis
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="h-1 w-1 rounded-full bg-primary" />
+                Context-based insights
+              </li>
+            </ul>
+            
+            {/* Stats */}
+            <div className="flex gap-3 pt-2">
+              <StatBadge 
+                label="This Week" 
+                value={weekEntries.toString()} 
+                icon={<Zap className="h-3.5 w-3.5" />}
+              />
+              <StatBadge 
+                label="This Month" 
+                value={monthEntries.toString()} 
+                icon={<Calendar className="h-3.5 w-3.5" />}
+              />
+            </div>
+            
+            {/* Back Button */}
+            <Button 
+              variant="ghost" 
+              onClick={onBack}
+              className="gap-2 text-muted-foreground hover:text-foreground mt-4"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Check-in
+            </Button>
           </div>
-          <h1 className="text-3xl md:text-4xl font-light">
-            Your Patterns
-          </h1>
         </div>
-        <p className="text-muted-foreground">
-          Insights from {entries.length} check-in{entries.length !== 1 ? 's' : ''}
-        </p>
-      </div>
-
-      {/* Dashboard */}
-      <div className="flex-1">
-        <PatternsDashboardEnhanced entries={entries} onDateClick={onDateClick} />
       </div>
     </div>
   );
