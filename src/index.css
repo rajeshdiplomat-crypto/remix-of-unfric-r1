@@ -30,10 +30,10 @@
 
     /* Subtle grays */
     --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 20%;
+    --secondary-foreground: 0 0% 35%;
 
     --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted-foreground: 0 0% 60%;
 
     --accent: 0 0% 94%;
     --accent-foreground: 0 0% 8%;
