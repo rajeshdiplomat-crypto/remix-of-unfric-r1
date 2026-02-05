@@ -19,10 +19,12 @@ import {
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { QuadrantType, EmotionEntry, QUADRANTS } from "@/components/emotions/types";
-import { EmotionCheckinFlowV2 } from "@/components/emotions/EmotionCheckinFlowV2";
-import { EmotionsQuickActionsV2 } from "@/components/emotions/EmotionsQuickActionsV2";
-import { EmotionsStrategiesPageV2 } from "@/components/emotions/EmotionsStrategiesPageV2";
-import { EmotionsAnalyticsPageV2 } from "@/components/emotions/EmotionsAnalyticsPageV2";
+import { EmotionsPageLayout } from "@/components/emotions/EmotionsPageLayout";
+import { EmotionsPageFeel } from "@/components/emotions/EmotionsPageFeel";
+import { EmotionsPageContext } from "@/components/emotions/EmotionsPageContext";
+import { EmotionsPageRegulate } from "@/components/emotions/EmotionsPageRegulate";
+import { EmotionsPageInsights } from "@/components/emotions/EmotionsPageInsights";
+import { EmotionsNavigation, EmotionsView } from "@/components/emotions/EmotionsNavigation";
 import { EmotionCalendarSidebar } from "@/components/emotions/EmotionCalendarSidebar";
 import { RecentEntriesList } from "@/components/emotions/RecentEntriesList";
 import { EmotionSliderPicker } from "@/components/emotions/EmotionSliderPicker";
@@ -31,9 +33,6 @@ import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 
 import { useTimezone } from "@/hooks/useTimezone";
-import { cn } from "@/lib/utils";
-
-type ViewType = "checkin" | "analytics" | "strategies";
 
 export default function Emotions() {
   const { user } = useAuth();
@@ -42,8 +41,28 @@ export default function Emotions() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Current view state
-  const [activeView, setActiveView] = useState<ViewType>("checkin");
+  // 4-page navigation state
+  const [activeView, setActiveView] = useState<EmotionsView>("feel");
+
+  // Emotion selection state (persisted across pages)
+  const [energy, setEnergy] = useState(50);
+  const [pleasantness, setPleasantness] = useState(50);
+  const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null);
+  const [selectedQuadrant, setSelectedQuadrant] = useState<QuadrantType | null>(null);
+
+  // Context state
+  const [note, setNote] = useState("");
+  const [context, setContext] = useState<{
+    who?: string;
+    what?: string;
+    sleepHours?: string;
+    physicalActivity?: string;
+  }>({});
+  const [sendToJournal, setSendToJournal] = useState(false);
+
+  // Saved state (after successful save)
+  const [savedQuadrant, setSavedQuadrant] = useState<QuadrantType | null>(null);
+  const [savedEmotion, setSavedEmotion] = useState<string | null>(null);
 
   // Popup states
   const [showRecentEntries, setShowRecentEntries] = useState(false);
@@ -65,9 +84,15 @@ export default function Emotions() {
   const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Track latest quadrant/emotion for strategies
-  const [lastQuadrant, setLastQuadrant] = useState<QuadrantType | null>(null);
-  const [lastEmotion, setLastEmotion] = useState<string | null>(null);
+  // Compute current quadrant from sliders
+  const currentQuadrant: QuadrantType =
+    energy >= 50 && pleasantness >= 50
+      ? "high-pleasant"
+      : energy >= 50 && pleasantness < 50
+      ? "high-unpleasant"
+      : energy < 50 && pleasantness < 50
+      ? "low-unpleasant"
+      : "low-pleasant";
 
   useEffect(() => {
     if (user) fetchEntries();
@@ -118,13 +143,13 @@ export default function Emotions() {
       });
 
       setEntries(parsed);
-      
-      // Set latest quadrant/emotion
+
+      // Set latest quadrant/emotion for strategies
       if (parsed.length > 0) {
-        setLastQuadrant(parsed[0].quadrant);
-        setLastEmotion(parsed[0].emotion);
+        setSavedQuadrant(parsed[0].quadrant);
+        setSavedEmotion(parsed[0].emotion);
       }
-      
+
       return parsed;
     } catch (err) {
       console.error("Error fetching emotions:", err);
@@ -134,38 +159,47 @@ export default function Emotions() {
     }
   };
 
-  const handleSaveCheckIn = async (data: {
-    quadrant: QuadrantType;
-    emotion: string;
-    note: string;
-    context: {
-      who?: string;
-      what?: string;
-      body?: string;
-      sleepHours?: string;
-      physicalActivity?: string;
-    };
-    sendToJournal: boolean;
-    checkInTime: Date;
-  }) => {
-    if (!user) return;
+  // Handle emotion selection from Feel page
+  const handleEmotionSelect = (emotion: string, quadrant: QuadrantType) => {
+    setSelectedEmotion(emotion);
+    setSelectedQuadrant(quadrant);
+  };
+
+  // Navigate from Feel to Context
+  const handleContinueToContext = () => {
+    if (!selectedEmotion) return;
+    setSelectedQuadrant(currentQuadrant);
+    setActiveView("context");
+  };
+
+  // Skip context and save directly
+  const handleSkipContext = async () => {
+    await handleSaveCheckIn();
+  };
+
+  // Save check-in
+  const handleSaveCheckIn = async () => {
+    if (!user || !selectedEmotion) return;
     setSaving(true);
+
+    const quadrant = selectedQuadrant || currentQuadrant;
+
     try {
       const emotionData = JSON.stringify({
-        quadrant: data.quadrant,
-        emotion: data.emotion,
-        context: data.context,
-        showInJournal: data.sendToJournal,
+        quadrant,
+        emotion: selectedEmotion,
+        context,
+        showInJournal: sendToJournal,
       });
 
-      const entryDate = format(data.checkInTime, "yyyy-MM-dd");
+      const entryDate = format(new Date(), "yyyy-MM-dd");
 
       const { data: insertedEmotion, error } = await supabase
         .from("emotions")
         .insert({
           user_id: user.id,
           emotion: emotionData,
-          notes: data.note || null,
+          notes: note || null,
           tags: null,
           entry_date: entryDate,
         })
@@ -176,20 +210,21 @@ export default function Emotions() {
 
       await createEmotionFeedEvent(
         insertedEmotion.id,
-        data.quadrant,
-        data.emotion,
-        data.note || undefined,
-        data.context,
-        entryDate,
+        quadrant,
+        selectedEmotion,
+        note || undefined,
+        context,
+        entryDate
       );
 
-      if (data.sendToJournal) {
-        await saveToJournal(entryDate, data.note || "", data.emotion);
+      if (sendToJournal) {
+        await saveToJournal(entryDate, note || "", selectedEmotion);
       }
 
-      toast.success(`Logged: ${data.emotion}`);
-      setLastQuadrant(data.quadrant);
-      setLastEmotion(data.emotion);
+      toast.success(`Logged: ${selectedEmotion}`);
+      setSavedQuadrant(quadrant);
+      setSavedEmotion(selectedEmotion);
+      setActiveView("regulate");
       await fetchEntries();
     } catch (err) {
       console.error("Error saving emotion:", err);
@@ -204,8 +239,8 @@ export default function Emotions() {
     quadrant: QuadrantType,
     emotion: string,
     noteText?: string,
-    ctx?: { who?: string; what?: string; body?: string; sleepHours?: string; physicalActivity?: string },
-    entryDate?: string,
+    ctx?: typeof context,
+    entryDate?: string
   ) => {
     if (!user) return;
 
@@ -284,6 +319,18 @@ export default function Emotions() {
     } catch (err) {
       console.error("Error saving to journal:", err);
     }
+  };
+
+  // Reset flow for new check-in
+  const resetFlow = () => {
+    setEnergy(50);
+    setPleasantness(50);
+    setSelectedEmotion(null);
+    setSelectedQuadrant(null);
+    setNote("");
+    setContext({});
+    setSendToJournal(false);
+    setActiveView("feel");
   };
 
   const handleDateClick = (date: string, dayEntries: EmotionEntry[]) => {
@@ -379,6 +426,12 @@ export default function Emotions() {
     }
   };
 
+  // Navigation permissions
+  const canNavigate = {
+    context: !!selectedEmotion,
+    regulate: !!savedQuadrant && !!savedEmotion,
+  };
+
   if (loading) return <PageLoadingScreen module="emotions" />;
 
   return (
@@ -394,10 +447,11 @@ export default function Emotions() {
         />
 
         {/* Navigation Bar */}
-        <div className="sticky top-14 z-20 px-4 py-3 bg-background/80 backdrop-blur-xl border-b border-border/50">
+        <div className="sticky top-14 z-20 px-4 lg:px-8 py-3 bg-background/80 backdrop-blur-xl border-b border-border/50">
           <div className="max-w-6xl mx-auto">
-            <EmotionsQuickActionsV2
+            <EmotionsNavigation
               activeView={activeView}
+              canNavigate={canNavigate}
               onViewChange={setActiveView}
               onOpenRecentEntries={() => setShowRecentEntries(true)}
               onOpenCalendar={() => setShowCalendar(true)}
@@ -405,39 +459,62 @@ export default function Emotions() {
           </div>
         </div>
 
-        {/* Main Content Area - Full Screen */}
-        <div className="flex-1 overflow-y-auto">
-          {/* Check-in View */}
-          {activeView === "checkin" && (
-            <EmotionCheckinFlowV2
-              timezone={timezone}
-              onSave={handleSaveCheckIn}
-              saving={saving}
-              onComplete={(quadrant, emotion) => {
-                setLastQuadrant(quadrant);
-                setLastEmotion(emotion);
-              }}
+        {/* Main Content with Calendar Sidebar */}
+        <EmotionsPageLayout
+          entries={entries}
+          onDateClick={handleDateClick}
+          showCalendar={activeView === "feel" || activeView === "insights"}
+        >
+          {/* Feel Page */}
+          {activeView === "feel" && (
+            <EmotionsPageFeel
+              energy={energy}
+              pleasantness={pleasantness}
+              selectedEmotion={selectedEmotion}
+              onEnergyChange={setEnergy}
+              onPleasantnessChange={setPleasantness}
+              onEmotionSelect={handleEmotionSelect}
+              onContinue={handleContinueToContext}
             />
           )}
 
-          {/* Analytics View */}
-          {activeView === "analytics" && (
-            <EmotionsAnalyticsPageV2
+          {/* Context Page */}
+          {activeView === "context" && selectedEmotion && (
+            <EmotionsPageContext
+              selectedQuadrant={selectedQuadrant || currentQuadrant}
+              selectedEmotion={selectedEmotion}
+              note={note}
+              context={context}
+              sendToJournal={sendToJournal}
+              saving={saving}
+              onNoteChange={setNote}
+              onContextChange={setContext}
+              onSendToJournalChange={setSendToJournal}
+              onBack={() => setActiveView("feel")}
+              onSave={handleSaveCheckIn}
+              onSkip={handleSkipContext}
+            />
+          )}
+
+          {/* Regulate Page */}
+          {activeView === "regulate" && (
+            <EmotionsPageRegulate
+              savedQuadrant={savedQuadrant}
+              savedEmotion={savedEmotion}
+              onNewCheckin={resetFlow}
+              onViewInsights={() => setActiveView("insights")}
+            />
+          )}
+
+          {/* Insights Page */}
+          {activeView === "insights" && (
+            <EmotionsPageInsights
               entries={entries}
-              onBack={() => setActiveView("checkin")}
+              onBack={() => setActiveView("feel")}
               onDateClick={handleDateClick}
             />
           )}
-
-          {/* Strategies View */}
-          {activeView === "strategies" && (
-            <EmotionsStrategiesPageV2
-              currentQuadrant={lastQuadrant}
-              currentEmotion={lastEmotion}
-              onBack={() => setActiveView("checkin")}
-            />
-          )}
-        </div>
+        </EmotionsPageLayout>
 
         {/* Recent Entries Popup */}
         <Dialog open={showRecentEntries} onOpenChange={setShowRecentEntries}>
@@ -446,10 +523,10 @@ export default function Emotions() {
               <DialogTitle className="text-xl">Recent Check-ins</DialogTitle>
             </DialogHeader>
             <div className="p-6 pt-4 overflow-y-auto max-h-[60vh]">
-              <RecentEntriesList 
-                entries={entries} 
-                onEditEntry={startEditEntry} 
-                onDeleteEntry={setDeletingEntryId} 
+              <RecentEntriesList
+                entries={entries}
+                onEditEntry={startEditEntry}
+                onDeleteEntry={setDeletingEntryId}
               />
             </div>
           </DialogContent>
