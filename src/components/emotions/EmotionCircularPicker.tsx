@@ -11,6 +11,7 @@ interface EmotionCircularPickerProps {
   onPleasantnessChange: (value: number) => void;
   onCategorySelect: (category: string, quadrant: QuadrantType) => void;
   onEmotionSelect: (emotion: string, quadrant: QuadrantType) => void;
+  size?: number;
 }
 
 // Emotion wheel structure - inner core emotions and outer specific emotions
@@ -33,22 +34,22 @@ const WHEEL_SECTIONS = [
     color: "#FF8C42",
   },
   {
-    quadrant: "high-pleasant" as QuadrantType,
+    quadrant: "low-pleasant" as QuadrantType,
     core: "Confident",
     emotions: ["Brave", "Hopeful"],
     startAngle: 0,
     endAngle: 45,
-    color: "#FF6B6B",
+    color: "#7DD3FC",
   },
   {
-    quadrant: "high-pleasant" as QuadrantType,
+    quadrant: "low-pleasant" as QuadrantType,
     core: "Playful",
     emotions: ["Powerful", "Creative", "Curious"],
     startAngle: 45,
     endAngle: 90,
-    color: "#EE5A9B",
+    color: "#38BDF8",
   },
-  // Bottom-right quadrant (low-pleasant) - mapped differently
+  // Bottom-right quadrant (low-unpleasant) - mapped differently
   {
     quadrant: "low-unpleasant" as QuadrantType,
     core: "Embarrassed",
@@ -92,20 +93,21 @@ export function EmotionCircularPicker({
   onPleasantnessChange,
   onCategorySelect,
   onEmotionSelect,
+  size: propSize,
 }: EmotionCircularPickerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDraggingEnergy, setIsDraggingEnergy] = useState(false);
   const [isDraggingPleasantness, setIsDraggingPleasantness] = useState(false);
   const [hoveredSection, setHoveredSection] = useState<number | null>(null);
 
-  // Ring dimensions
-  const size = 420;
+  // Ring dimensions - scaled up ~25%
+  const size = propSize || 520;
   const center = size / 2;
-  const outerRadius = 190; // Outer emotion words
-  const middleRadius = 140; // Core emotions
-  const innerRingRadius = 85; // Energy ring
-  const innerMostRadius = 55; // Pleasantness ring
-  const strokeWidth = 14;
+  const outerRadius = size * 0.45; // ~235 at 520
+  const middleRadius = size * 0.34; // ~175 at 520
+  const innerRingRadius = size * 0.20; // ~105 at 520
+  const innerMostRadius = size * 0.135; // ~70 at 520
+  const strokeWidth = 16;
 
   // Convert value (0-100) to angle (radians) - starting from top (-π/2)
   const valueToAngle = useCallback((value: number): number => {
@@ -190,17 +192,24 @@ export function EmotionCircularPicker({
     return "low-pleasant";
   }, [energy, pleasantness]);
 
+  // Check if section belongs to current quadrant
+  const isSectionActive = useCallback((section: typeof WHEEL_SECTIONS[0]) => {
+    return section.quadrant === currentQuadrant;
+  }, [currentQuadrant]);
+
   // Handle emotion click
   const handleEmotionClick = useCallback((emotion: string, section: typeof WHEEL_SECTIONS[0]) => {
+    if (!isSectionActive(section)) return; // Only allow clicks on active sections
     onCategorySelect(section.core, section.quadrant);
     onEmotionSelect(emotion, section.quadrant);
-  }, [onCategorySelect, onEmotionSelect]);
+  }, [onCategorySelect, onEmotionSelect, isSectionActive]);
 
   // Handle core emotion click
   const handleCoreClick = useCallback((section: typeof WHEEL_SECTIONS[0]) => {
+    if (!isSectionActive(section)) return; // Only allow clicks on active sections
     onCategorySelect(section.core, section.quadrant);
     onEmotionSelect(section.core, section.quadrant);
-  }, [onCategorySelect, onEmotionSelect]);
+  }, [onCategorySelect, onEmotionSelect, isSectionActive]);
 
   const energyThumb = getThumbPosition(energy, innerRingRadius);
   const pleasantnessThumb = getThumbPosition(pleasantness, innerMostRadius);
@@ -242,20 +251,43 @@ export function EmotionCircularPicker({
         style={{ width: size, height: size }}
       >
         <svg width={size} height={size} className="absolute inset-0">
+          {/* SVG Filters for glow effect */}
+          <defs>
+            <filter id="selectedGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+
           {/* Wheel sections */}
           {WHEEL_SECTIONS.map((section, index) => {
-            const isHovered = hoveredSection === index;
-            const isSelected = selectedCategory === section.core;
+            const isActive = isSectionActive(section);
+            const isHovered = hoveredSection === index && isActive;
+            const isCoreSelected = selectedEmotion === section.core || selectedCategory === section.core;
+            const isAnyEmotionSelected = section.emotions.includes(selectedEmotion || '');
+            const isSelected = isCoreSelected || isAnyEmotionSelected;
             
             return (
-              <g key={index}>
+              <g 
+                key={index}
+                className={cn(
+                  "transition-all duration-300",
+                  !isActive && "pointer-events-none"
+                )}
+              >
                 {/* Outer section (specific emotions) */}
                 <path
                   d={createArcPath(section.startAngle, section.endAngle, middleRadius + 5, outerRadius)}
                   fill={section.color}
-                  opacity={isHovered || isSelected ? 1 : 0.85}
-                  className="cursor-pointer transition-opacity duration-200"
-                  onMouseEnter={() => setHoveredSection(index)}
+                  opacity={isActive ? (isHovered || isSelected ? 1 : 0.85) : 0.12}
+                  className={cn(
+                    "transition-opacity duration-300",
+                    isActive ? "cursor-pointer" : "cursor-default"
+                  )}
+                  onMouseEnter={() => isActive && setHoveredSection(index)}
                   onMouseLeave={() => setHoveredSection(null)}
                 />
                 
@@ -263,12 +295,28 @@ export function EmotionCircularPicker({
                 <path
                   d={createArcPath(section.startAngle, section.endAngle, innerRingRadius + 20, middleRadius)}
                   fill={section.color}
-                  opacity={isHovered || isSelected ? 0.95 : 0.7}
-                  className="cursor-pointer transition-opacity duration-200"
+                  opacity={isActive ? (isHovered || isSelected ? 0.95 : 0.7) : 0.12}
+                  className={cn(
+                    "transition-opacity duration-300",
+                    isActive ? "cursor-pointer" : "cursor-default"
+                  )}
                   onClick={() => handleCoreClick(section)}
-                  onMouseEnter={() => setHoveredSection(index)}
+                  onMouseEnter={() => isActive && setHoveredSection(index)}
                   onMouseLeave={() => setHoveredSection(null)}
                 />
+
+                {/* Selection highlight ring */}
+                {isSelected && isActive && (
+                  <path
+                    d={createArcPath(section.startAngle, section.endAngle, innerRingRadius + 18, outerRadius + 2)}
+                    fill="none"
+                    stroke="white"
+                    strokeWidth={3}
+                    className="animate-pulse"
+                    filter="url(#selectedGlow)"
+                    style={{ opacity: 0.9 }}
+                  />
+                )}
               </g>
             );
           })}
@@ -349,26 +397,31 @@ export function EmotionCircularPicker({
 
         {/* Emotion labels on wheel */}
         {WHEEL_SECTIONS.map((section, sectionIndex) => {
+          const isActive = isSectionActive(section);
           const midAngle = (section.startAngle + section.endAngle) / 2;
           const corePos = getTextPosition(midAngle, middleRadius - 20);
-          const isSelected = selectedEmotion === section.core || selectedCategory === section.core;
+          const isCoreSelected = selectedEmotion === section.core || selectedCategory === section.core;
           
           return (
             <div key={`labels-${sectionIndex}`}>
               {/* Core emotion label */}
               <button
                 className={cn(
-                  "absolute text-xs font-bold text-white pointer-events-auto",
-                  "transition-all duration-200 hover:scale-110",
-                  isSelected && "scale-110"
+                  "absolute text-xs font-bold pointer-events-auto",
+                  "transition-all duration-300",
+                  isActive 
+                    ? "text-white hover:scale-110 cursor-pointer" 
+                    : "text-white/20 cursor-default pointer-events-none",
+                  isCoreSelected && isActive && "scale-110"
                 )}
                 style={{
                   left: corePos.x,
                   top: corePos.y,
                   transform: 'translate(-50%, -50%)',
-                  textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                  textShadow: isActive ? '0 1px 2px rgba(0,0,0,0.5)' : 'none',
                 }}
                 onClick={() => handleCoreClick(section)}
+                disabled={!isActive}
               >
                 {section.core}
               </button>
@@ -385,17 +438,21 @@ export function EmotionCircularPicker({
                   <button
                     key={emotion}
                     className={cn(
-                      "absolute text-[10px] font-medium text-white pointer-events-auto whitespace-nowrap",
-                      "transition-all duration-200 hover:scale-110",
-                      isEmotionSelected && "scale-110 font-bold"
+                      "absolute text-[10px] font-medium pointer-events-auto whitespace-nowrap",
+                      "transition-all duration-300",
+                      isActive 
+                        ? "text-white hover:scale-110 cursor-pointer" 
+                        : "text-white/10 cursor-default pointer-events-none",
+                      isEmotionSelected && isActive && "scale-110 font-bold"
                     )}
                     style={{
                       left: pos.x,
                       top: pos.y,
                       transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-                      textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                      textShadow: isActive ? '0 1px 2px rgba(0,0,0,0.5)' : 'none',
                     }}
                     onClick={() => handleEmotionClick(emotion, section)}
+                    disabled={!isActive}
                   >
                     {emotion}
                   </button>
@@ -408,13 +465,13 @@ export function EmotionCircularPicker({
         {/* Energy Thumb */}
         <div
           className={cn(
-            "absolute w-7 h-7 rounded-full border-4 border-amber-500 bg-background shadow-lg cursor-grab z-10",
+            "absolute w-8 h-8 rounded-full border-4 border-amber-500 bg-background shadow-lg cursor-grab z-10",
             "flex items-center justify-center transition-transform",
             isDraggingEnergy && "cursor-grabbing scale-110"
           )}
           style={{
-            left: energyThumb.x - 14,
-            top: energyThumb.y - 14,
+            left: energyThumb.x - 16,
+            top: energyThumb.y - 16,
             boxShadow: isDraggingEnergy 
               ? '0 0 20px hsl(45, 93%, 55%), 0 4px 12px rgba(0,0,0,0.2)' 
               : '0 4px 12px rgba(0,0,0,0.15)'
@@ -428,13 +485,13 @@ export function EmotionCircularPicker({
         {/* Pleasantness Thumb */}
         <div
           className={cn(
-            "absolute w-7 h-7 rounded-full border-4 border-emerald-500 bg-background shadow-lg cursor-grab z-10",
+            "absolute w-8 h-8 rounded-full border-4 border-emerald-500 bg-background shadow-lg cursor-grab z-10",
             "flex items-center justify-center transition-transform",
             isDraggingPleasantness && "cursor-grabbing scale-110"
           )}
           style={{
-            left: pleasantnessThumb.x - 14,
-            top: pleasantnessThumb.y - 14,
+            left: pleasantnessThumb.x - 16,
+            top: pleasantnessThumb.y - 16,
             boxShadow: isDraggingPleasantness 
               ? '0 0 20px hsl(142, 52%, 50%), 0 4px 12px rgba(0,0,0,0.2)' 
               : '0 4px 12px rgba(0,0,0,0.15)'
@@ -450,13 +507,13 @@ export function EmotionCircularPicker({
           className="absolute inset-0 flex items-center justify-center pointer-events-none"
         >
           <div 
-            className="w-12 h-12 rounded-full flex items-center justify-center"
+            className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300"
             style={{
               background: `linear-gradient(135deg, ${QUADRANTS[currentQuadrant].color}30, ${QUADRANTS[currentQuadrant].color}50)`,
               border: `2px solid ${QUADRANTS[currentQuadrant].color}`,
             }}
           >
-            <span className="text-lg">
+            <span className="text-xl">
               {currentQuadrant === 'high-pleasant' ? '😊' : 
                currentQuadrant === 'high-unpleasant' ? '😰' :
                currentQuadrant === 'low-unpleasant' ? '😔' : '😌'}

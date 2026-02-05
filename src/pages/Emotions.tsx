@@ -459,13 +459,8 @@ export default function Emotions() {
           </div>
         </div>
 
-        {/* Main Content with Calendar Sidebar */}
-        <EmotionsPageLayout
-          entries={entries}
-          onDateClick={handleDateClick}
-          showCalendar={activeView === "feel" || activeView === "insights"}
-          onStartCheckin={() => setActiveView("feel")}
-        >
+        {/* Main Content */}
+        <EmotionsPageLayout>
           {/* Feel Page */}
           {activeView === "feel" && (
             <EmotionsPageFeel
