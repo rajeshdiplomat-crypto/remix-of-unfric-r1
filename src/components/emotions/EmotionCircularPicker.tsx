@@ -542,7 +542,7 @@ export function EmotionCircularPicker({
                         : "text-white/10 cursor-default pointer-events-none",
                       isEmotionSelected &&
                         isActive &&
-                        "scale-125 font-bold ring-2 ring-white/50 rounded-full px-1 bg-black/20",
+                        "scale-125 font-bold ring-2 ring-white/60 rounded-xl px-3 py-1.5 bg-black/30",
                     )}
                     style={{
                       left: pos.x,
