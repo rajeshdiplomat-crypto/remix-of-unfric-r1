@@ -386,16 +386,28 @@ export function EmotionCircularPicker({
 
                   return (
                     <g key={emotion}>
+                      {/* Selected emotion glow effect - behind the main segment */}
+                      {isEmotionSelected && isActive && (
+                        <path
+                          d={createArcPath(emotionStartAngle, emotionEndAngle, middleRadius + 3, outerRadius + 8)}
+                          fill={section.color}
+                          opacity={0.5}
+                          filter="url(#selectedGlow)"
+                          className="animate-pulse"
+                        />
+                      )}
                       <path
-                        d={createArcPath(emotionStartAngle, emotionEndAngle, middleRadius + 5, outerRadius)}
+                        d={createArcPath(
+                          emotionStartAngle,
+                          emotionEndAngle,
+                          middleRadius + 5,
+                          isEmotionSelected && isActive ? outerRadius + 10 : outerRadius,
+                        )}
                         fill={section.color}
                         opacity={isActive ? (isEmotionSelected ? 1 : isHovered ? 0.9 : 0.75) : 0.12}
-                        stroke="rgba(255,255,255,0.3)"
-                        strokeWidth={1}
-                        className={cn(
-                          "transition-opacity duration-300",
-                          isActive ? "cursor-pointer" : "cursor-default",
-                        )}
+                        stroke={isEmotionSelected ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.3)"}
+                        strokeWidth={isEmotionSelected ? 2 : 1}
+                        className={cn("transition-all duration-300", isActive ? "cursor-pointer" : "cursor-default")}
                         onClick={() => handleEmotionClick(emotion, section)}
                         onMouseEnter={() => isActive && setHoveredSection(index)}
                         onMouseLeave={() => setHoveredSection(null)}
@@ -634,10 +646,10 @@ export function EmotionCircularPicker({
               {expandedSectionIndex === sectionIndex &&
                 isActive &&
                 section.emotions.map((emotion, emotionIndex) => {
-                  // Calculate angle - evenly distribute within the section
+                  // Calculate angle - position in center of each emotion segment
                   const sectionSpan = section.endAngle - section.startAngle;
-                  const emotionAngle =
-                    section.startAngle + (sectionSpan / (section.emotions.length + 1)) * (emotionIndex + 1);
+                  const emotionCount = section.emotions.length;
+                  const emotionAngle = section.startAngle + (sectionSpan / emotionCount) * (emotionIndex + 0.5);
 
                   // Position text in the middle of the outer arc band
                   const textRadius = (middleRadius + outerRadius) / 2;
@@ -649,28 +661,25 @@ export function EmotionCircularPicker({
                   const isEmotionSelected = selectedEmotion === emotion;
 
                   return (
-                    <button
+                    <span
                       key={emotion}
                       className={cn(
-                        "absolute text-[10px] font-semibold pointer-events-auto select-none",
-                        "transition-all duration-300 rounded-full px-2.5 py-1",
-                        "backdrop-blur-sm whitespace-nowrap",
-                        isActive
-                          ? "text-white hover:scale-110 cursor-pointer bg-white/20 hover:bg-white/30"
-                          : "text-white/20 cursor-default pointer-events-none bg-white/5",
-                        isEmotionSelected && isActive && "scale-125 font-bold ring-2 ring-white bg-white/40 shadow-lg",
+                        "absolute text-[11px] font-semibold pointer-events-none select-none",
+                        "transition-all duration-300 whitespace-nowrap",
+                        "text-white",
+                        isEmotionSelected && "font-bold text-[13px]",
                       )}
                       style={{
                         left: pos.x,
                         top: pos.y,
                         transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-                        textShadow: isActive ? "0 1px 2px rgba(0,0,0,0.5)" : "none",
+                        textShadow: isEmotionSelected
+                          ? "0 0 10px rgba(255,255,255,0.9), 0 0 20px rgba(255,255,255,0.6), 0 2px 4px rgba(0,0,0,0.5)"
+                          : "0 1px 3px rgba(0,0,0,0.6)",
                       }}
-                      onClick={() => handleEmotionClick(emotion, section)}
-                      disabled={!isActive}
                     >
                       {emotion}
-                    </button>
+                    </span>
                   );
                 })}
             </div>
