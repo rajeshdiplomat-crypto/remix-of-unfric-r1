@@ -1,125 +1,118 @@
 
-# Show Recommended Strategies Section + All Strategies
+# Insights Page Layout Redesign
 
 ## Goal
-Display a clear "Recommended for you" section with 3 strategies, followed by an "All Strategies" section below, with slightly larger cards for better readability.
+Restructure the Insights page to use a two-column layout matching the other pages - dashboard content on the left, descriptive text on the right, with better vertical space usage.
 
 ---
 
-## Changes to EmotionsPageRegulate.tsx
-
-### New Layout for Right Column
+## New Layout
 
 ```text
-┌─────────────────────────────────────────────┐
-│   [Checkmark] Check-in Complete             │
-│   [Emotion Badge: "Valued"]                 │
-│                                             │
-│   ─── Recommended for you ───               │
-│   [Card 1] [Card 2] [Card 3]  (3 cols)      │
-│                                             │
-│   ─── All Strategies ───                    │
-│   [Card] [Card] [Card] [Card]  (4 cols)     │
-│   [Card] [Card] [Card] [Card]               │
-│                                             │
-│   [New Check-in] [Insights]                 │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│   Left (Dashboard)             │   Right (Descriptive Text)        │
+│                                │                                   │
+│   [PatternsDashboardEnhanced]  │   Badge: "Your Patterns"          │
+│                                │   Title: "Insights & Analytics"   │
+│   (Full patterns dashboard     │   Description text                │
+│    with tabs: Overview,        │   • AI-powered pattern detection  │
+│    Moods, Context)             │   • Mood distribution analysis    │
+│                                │   • Context-based insights        │
+│                                │                                   │
+│                                │   [This Week: X] [This Month: Y]  │
+│                                │                                   │
+│                                │   [← Back to Check-in]            │
+└─────────────────────────────────────────────────────────────────────┘
 ```
-
-### Implementation Details
-
-**1. Split strategies into two sections:**
-- "Recommended for you" - 3 cards in a 3-column grid
-- "All Strategies" - remaining strategies in a 4-column grid
-
-**2. Make cards slightly larger:**
-- Icon: `w-6 h-6` → `w-7 h-7`
-- Icon inner: `h-3 w-3` → `h-3.5 w-3.5`
-- Padding: `p-2` → `p-2.5`
-- Show first two words of title instead of one
-
-**3. Add section headers:**
-- "Recommended for you" with amber sparkle icon
-- "All Strategies" label
-
-**4. Adjust spacing:**
-- Use `mb-3` between sections
-- Use `gap-2` for strategy grids
 
 ---
 
-## Code Changes
+## Changes to EmotionsPageInsights.tsx
 
-### Lines 189-210 - Replace single grid with two sections:
+### 1. Two-Column Grid Layout
+- **Left column (order-1)**: PatternsDashboardEnhanced
+- **Right column (order-2)**: Descriptive text, stats, navigation
+
+### 2. Remove Centered Title Section
+- Move the title content into the right descriptive column
+- Match the format used in Feel/Regulate pages (badge, title, description, features list)
+
+### 3. Move Stats to Right Column
+- Move StatBadge components into the descriptive section
+- Position below the features list
+
+### 4. Add Back Button to Right Column
+- Move navigation button to bottom of right column
+
+---
+
+## Code Structure
+
 ```tsx
-{/* Recommended Strategies */}
-{recommendedStrategies.length > 0 && (
-  <div className="w-full max-w-md mb-3">
-    <p className="text-[10px] text-muted-foreground mb-2 text-center flex items-center justify-center gap-1">
-      <Sparkles className="h-3 w-3 text-amber-500" />
-      Recommended for you
-    </p>
-    <div className="grid grid-cols-3 gap-2">
-      {recommendedStrategies.map((strategy) => (
-        <MiniStrategyCard key={strategy.id} strategy={strategy} isRecommended onStart={...} />
-      ))}
+<div className="flex flex-col animate-in fade-in duration-500">
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+    
+    {/* Left: Dashboard */}
+    <div className="flex flex-col order-2 lg:order-1">
+      <PatternsDashboardEnhanced entries={entries} onDateClick={onDateClick} />
+    </div>
+    
+    {/* Right: Descriptive Text */}
+    <div className="flex flex-col justify-center order-1 lg:order-2">
+      <div className="space-y-4 max-w-md">
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium w-fit bg-primary/10 text-primary">
+          <BarChart3 className="h-3 w-3" />
+          Your Patterns
+        </div>
+        
+        {/* Title */}
+        <h2 className="text-2xl md:text-3xl font-light leading-tight">
+          Insights &{" "}
+          <span className="font-semibold text-primary">Analytics</span>
+        </h2>
+        
+        {/* Description */}
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          Discover patterns in your emotional journey based on {entries.length} check-ins.
+        </p>
+        
+        {/* Features */}
+        <ul className="space-y-2">
+          <li>• AI-powered pattern detection</li>
+          <li>• Mood distribution analysis</li>
+          <li>• Context-based insights</li>
+        </ul>
+        
+        {/* Stats */}
+        <div className="flex gap-3 pt-2">
+          <StatBadge label="This Week" value={weekEntries} />
+          <StatBadge label="This Month" value={monthEntries} />
+        </div>
+        
+        {/* Back Button */}
+        <Button variant="ghost" onClick={onBack}>
+          <ArrowLeft /> Back to Check-in
+        </Button>
+      </div>
     </div>
   </div>
-)}
-
-{/* All Strategies */}
-<div className="w-full max-w-md mb-4">
-  <p className="text-[10px] text-muted-foreground mb-2 text-center">
-    All Strategies
-  </p>
-  <div className="grid grid-cols-4 gap-1.5">
-    {STRATEGIES.filter(s => !recommendedStrategies.some(r => r.id === s.id)).map((strategy) => (
-      <MiniStrategyCard key={strategy.id} strategy={strategy} onStart={...} />
-    ))}
-  </div>
 </div>
-```
-
-### Lines 39-45 - Slightly larger icons:
-```tsx
-const typeIcons: Record<string, React.ReactNode> = {
-  breathing: <Wind className="h-3.5 w-3.5" />,
-  grounding: <Activity className="h-3.5 w-3.5" />,
-  cognitive: <Sparkles className="h-3.5 w-3.5" />,
-  movement: <Zap className="h-3.5 w-3.5" />,
-  mindfulness: <Heart className="h-3.5 w-3.5" />,
-};
-```
-
-### Lines 278-300 - Slightly larger MiniStrategyCard:
-```tsx
-<button className={cn(
-  "group p-2.5 rounded-lg border bg-card hover:border-primary/30 hover:shadow-md transition-all duration-200 text-center",
-  isRecommended ? "ring-1 ring-amber-400/50 border-amber-400/30" : "border-border"
-)}>
-  <div className="w-7 h-7 mx-auto mb-1 rounded-md flex items-center justify-center text-white shadow-sm">
-    {typeIcons[strategy.type]}
-  </div>
-  <p className="text-[10px] font-medium text-foreground truncate leading-tight">
-    {strategy.title.split(' ').slice(0, 2).join(' ')}
-  </p>
-  <p className="text-[8px] text-muted-foreground">
-    {strategy.duration}
-  </p>
-</button>
 ```
 
 ---
 
 ## Summary
 
-| Section | Layout | Styling |
-|---------|--------|---------|
-| Recommended | 3 columns | Amber ring highlight, larger cards |
-| All Strategies | 4 columns | Standard styling, remaining strategies |
-| Cards | Slightly larger | `p-2.5`, `w-7` icons, 2-word titles |
+| Element | Before | After |
+|---------|--------|-------|
+| Layout | Centered, single column | Two-column grid |
+| Dashboard | Below title | Left column |
+| Title/Description | Centered at top | Right column |
+| Stats badges | Top-right header | Right column, below features |
+| Back button | Top-left header | Right column, bottom |
 
 ---
 
 ## File to Modify
-`src/components/emotions/EmotionsPageRegulate.tsx`
+`src/components/emotions/EmotionsPageInsights.tsx`
