@@ -41,8 +41,10 @@ export default function Emotions() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // 4-page navigation state
+  // Navigation state (for nav bar)
   const [activeView, setActiveView] = useState<EmotionsView>("feel");
+  // Internal flow state (includes context which is not in nav)
+  const [internalView, setInternalView] = useState<"feel" | "context" | "regulate" | "insights">("feel");
 
   // Emotion selection state (persisted across pages)
   const [energy, setEnergy] = useState(50);
@@ -165,11 +167,22 @@ export default function Emotions() {
     setSelectedQuadrant(quadrant);
   };
 
-  // Navigate from Feel directly to save and regulate (context removed from UI)
-  const handleContinueToSave = async () => {
+  // Navigate from Feel to Context page
+  const handleContinueToContext = () => {
     if (!selectedEmotion) return;
     setSelectedQuadrant(currentQuadrant);
+    setInternalView("context");
+  };
+
+  // Skip context and save directly
+  const handleSkipContext = async () => {
     await handleSaveCheckIn();
+  };
+
+  // Sync navigation bar with internal view
+  const handleViewChange = (view: EmotionsView) => {
+    setActiveView(view);
+    setInternalView(view);
   };
 
   // Save check-in
@@ -220,6 +233,7 @@ export default function Emotions() {
       setSavedQuadrant(quadrant);
       setSavedEmotion(selectedEmotion);
       setActiveView("regulate");
+      setInternalView("regulate");
       await fetchEntries();
     } catch (err) {
       console.error("Error saving emotion:", err);
@@ -326,6 +340,7 @@ export default function Emotions() {
     setContext({});
     setSendToJournal(false);
     setActiveView("feel");
+    setInternalView("feel");
   };
 
   const handleDateClick = (date: string, dayEntries: EmotionEntry[]) => {
@@ -447,7 +462,7 @@ export default function Emotions() {
               <EmotionsNavigation
                 activeView={activeView}
                 canNavigate={canNavigate}
-                onViewChange={setActiveView}
+                onViewChange={handleViewChange}
                 onOpenRecentEntries={() => setShowRecentEntries(true)}
                 onOpenCalendar={() => setShowCalendar(true)}
               />
@@ -458,7 +473,7 @@ export default function Emotions() {
         {/* Main Content */}
         <EmotionsPageLayout>
           {/* Feel Page */}
-          {activeView === "feel" && (
+          {internalView === "feel" && (
             <EmotionsPageFeel
               energy={energy}
               pleasantness={pleasantness}
@@ -466,25 +481,49 @@ export default function Emotions() {
               onEnergyChange={setEnergy}
               onPleasantnessChange={setPleasantness}
               onEmotionSelect={handleEmotionSelect}
-              onContinue={handleContinueToSave}
+              onContinue={handleContinueToContext}
+            />
+          )}
+
+          {/* Context Page (between Feel and Regulate) */}
+          {internalView === "context" && selectedQuadrant && selectedEmotion && (
+            <EmotionsPageContext
+              selectedQuadrant={selectedQuadrant}
+              selectedEmotion={selectedEmotion}
+              note={note}
+              context={context}
+              sendToJournal={sendToJournal}
+              saving={saving}
+              onNoteChange={setNote}
+              onContextChange={setContext}
+              onSendToJournalChange={setSendToJournal}
+              onBack={() => setInternalView("feel")}
+              onSave={handleSaveCheckIn}
+              onSkip={handleSkipContext}
             />
           )}
 
           {/* Regulate Page */}
-          {activeView === "regulate" && (
+          {internalView === "regulate" && (
             <EmotionsPageRegulate
               savedQuadrant={savedQuadrant}
               savedEmotion={savedEmotion}
               onNewCheckin={resetFlow}
-              onViewInsights={() => setActiveView("insights")}
+              onViewInsights={() => {
+                setActiveView("insights");
+                setInternalView("insights");
+              }}
             />
           )}
 
           {/* Insights Page */}
-          {activeView === "insights" && (
+          {internalView === "insights" && (
             <EmotionsPageInsights
               entries={entries}
-              onBack={() => setActiveView("feel")}
+              onBack={() => {
+                setActiveView("feel");
+                setInternalView("feel");
+              }}
               onDateClick={handleDateClick}
             />
           )}
