@@ -445,12 +445,28 @@ export function EmotionCircularPicker({
               fill="hsl(45, 93%, 25%)"
               fontSize="9"
               fontWeight="700"
-              opacity={0.4}
+              opacity={0.35}
+              letterSpacing="8"
               className="select-none pointer-events-none"
             >
-              <textPath href="#energyTextPath" startOffset="5%">
-                Energy • Energy • Energy
+              <textPath href="#energyTextPath" startOffset="2%">
+                ENERGY
               </textPath>
+              {energy > 40 && (
+                <textPath href="#energyTextPath" startOffset="28%">
+                  ENERGY
+                </textPath>
+              )}
+              {energy > 65 && (
+                <textPath href="#energyTextPath" startOffset="54%">
+                  ENERGY
+                </textPath>
+              )}
+              {energy > 85 && (
+                <textPath href="#energyTextPath" startOffset="78%">
+                  ENERGY
+                </textPath>
+              )}
             </text>
           )}
 
@@ -486,14 +502,25 @@ export function EmotionCircularPicker({
           {pleasantness > 25 && (
             <text
               fill="hsl(142, 52%, 25%)"
-              fontSize="8"
+              fontSize="7"
               fontWeight="700"
-              opacity={0.4}
+              opacity={0.35}
+              letterSpacing="5"
               className="select-none pointer-events-none"
             >
-              <textPath href="#pleasantTextPath" startOffset="8%">
-                Pleasant • Pleasant
+              <textPath href="#pleasantTextPath" startOffset="5%">
+                PLEASANT
               </textPath>
+              {pleasantness > 50 && (
+                <textPath href="#pleasantTextPath" startOffset="38%">
+                  PLEASANT
+                </textPath>
+              )}
+              {pleasantness > 75 && (
+                <textPath href="#pleasantTextPath" startOffset="70%">
+                  PLEASANT
+                </textPath>
+              )}
             </text>
           )}
 
