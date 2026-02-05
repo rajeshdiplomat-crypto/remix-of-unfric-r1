@@ -372,27 +372,59 @@ export function EmotionCircularPicker({
             const isAnyEmotionSelected = section.emotions.includes(selectedEmotion || "");
             const isSelected = isCoreSelected || isAnyEmotionSelected;
 
+            // Calculate individual emotion segment angles
+            const sectionSpan = section.endAngle - section.startAngle;
+            const emotionCount = section.emotions.length;
+
             return (
               <g key={index} className={cn("transition-all duration-300", !isActive && "pointer-events-none")}>
-                {/* Outer section (specific emotions) */}
-                <path
-                  d={createArcPath(section.startAngle, section.endAngle, middleRadius + 5, outerRadius)}
-                  fill={section.color}
-                  opacity={isActive ? (isHovered || isSelected ? 1 : 0.85) : 0.12}
-                  className={cn("transition-opacity duration-300", isActive ? "cursor-pointer" : "cursor-default")}
-                  onMouseEnter={() => isActive && setHoveredSection(index)}
-                  onMouseLeave={() => setHoveredSection(null)}
-                />
+                {/* Individual emotion segments in outer ring */}
+                {section.emotions.map((emotion, emotionIdx) => {
+                  const emotionStartAngle = section.startAngle + (sectionSpan / emotionCount) * emotionIdx;
+                  const emotionEndAngle = section.startAngle + (sectionSpan / emotionCount) * (emotionIdx + 1);
+                  const isEmotionSelected = selectedEmotion === emotion;
 
-                {/* Inner section (core emotion) */}
+                  return (
+                    <g key={emotion}>
+                      <path
+                        d={createArcPath(emotionStartAngle, emotionEndAngle, middleRadius + 5, outerRadius)}
+                        fill={section.color}
+                        opacity={isActive ? (isEmotionSelected ? 1 : isHovered ? 0.9 : 0.75) : 0.12}
+                        stroke="rgba(255,255,255,0.3)"
+                        strokeWidth={1}
+                        className={cn(
+                          "transition-opacity duration-300",
+                          isActive ? "cursor-pointer" : "cursor-default",
+                        )}
+                        onClick={() => handleEmotionClick(emotion, section)}
+                        onMouseEnter={() => isActive && setHoveredSection(index)}
+                        onMouseLeave={() => setHoveredSection(null)}
+                      />
+                    </g>
+                  );
+                })}
+
+                {/* Inner section (core emotion) - single block */}
                 <path
                   d={createArcPath(section.startAngle, section.endAngle, innerRingRadius + 15, middleRadius)}
                   fill={section.color}
                   opacity={isActive ? (isHovered || isSelected ? 0.95 : 0.7) : 0.12}
+                  stroke="rgba(255,255,255,0.4)"
+                  strokeWidth={1.5}
                   className={cn("transition-opacity duration-300", isActive ? "cursor-pointer" : "cursor-default")}
                   onClick={() => handleCoreClick(section, index)}
                   onMouseEnter={() => isActive && setHoveredSection(index)}
                   onMouseLeave={() => setHoveredSection(null)}
+                />
+
+                {/* Section divider lines */}
+                <line
+                  x1={center + Math.cos((section.startAngle * Math.PI) / 180) * (innerRingRadius + 15)}
+                  y1={center + Math.sin((section.startAngle * Math.PI) / 180) * (innerRingRadius + 15)}
+                  x2={center + Math.cos((section.startAngle * Math.PI) / 180) * outerRadius}
+                  y2={center + Math.sin((section.startAngle * Math.PI) / 180) * outerRadius}
+                  stroke="rgba(255,255,255,0.5)"
+                  strokeWidth={2}
                 />
 
                 {/* Selection highlight ring */}
