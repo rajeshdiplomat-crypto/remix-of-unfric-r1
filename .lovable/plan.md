@@ -1,304 +1,399 @@
 
 
-# Emotions Module Redesign: Circular Sliders & Enhanced Layout
+# Emotions Wheel Enhancement: Quadrant-Based Highlighting & New Layout
 
 ## Overview
-This plan addresses three key areas based on the user's requirements:
-1. **Circular emotion picker sliders** (replacing horizontal sliders) with layered emotion word selection
-2. **Enhanced left sidebar** with emotional context/description content (like the SaaS platform reference)
-3. **Classy, well-aligned navigation buttons** at the top
+
+This plan addresses three key requirements:
+1. **Quadrant-based emotion highlighting** - Only show emotions valid for the current slider position, fade/hide others
+2. **Bigger wheel shifted right** - Increase wheel size and position it on the right side
+3. **Remove calendar, add emotion description on left** - Replace sidebar with SaaS-style content card
 
 ---
 
-## 1. Circular Emotion Picker Design
+## 1. Quadrant-Based Emotion Highlighting
 
-### Concept
-Replace the current horizontal Energy and Pleasantness sliders with **two concentric circular sliders**:
+### Current Behavior
+All emotions on the wheel are always visible with similar opacity (0.7-1.0), regardless of slider position.
 
-```text
-         +------------------------+
-         |                        |
-         |    +----------------+  |
-         |    |   INNER RING   |  |
-         |    |  (Pleasantness)|  |
-         |    |                |  |
-         |    +---OUTER RING---+  |
-         |      (Energy)          |
-         |                        |
-         |   EMOTION WORDS LAYER  |
-         |  (appears above rings) |
-         |                        |
-         +------------------------+
-```
+### New Behavior
 
-### Technical Implementation
+**Logic:**
+- Calculate current quadrant from energy + pleasantness values
+- Only emotions belonging to the current quadrant are **fully visible and clickable**
+- Emotions in other quadrants are **faded (opacity ~0.15)** and **not interactive**
+- When an emotion is selected, it gets a **highlight ring/glow effect**
 
-**New Component: `EmotionCircularPicker.tsx`**
-- Two SVG-based circular sliders (concentric rings)
-- Outer ring: Energy (0-100)
-- Inner ring: Pleasantness (0-100)
-- Draggable thumb handles on each ring
-- Color gradients based on position (amber for energy, emerald for pleasantness)
+**Visual States:**
+| State | Opacity | Interactivity | Visual |
+|-------|---------|---------------|--------|
+| Valid quadrant (not selected) | 1.0 | Clickable | Normal color |
+| Valid quadrant (selected) | 1.0 | Clickable | Glow ring + scale up |
+| Invalid quadrant | 0.15 | Not clickable | Faded, barely visible |
 
-**Layer System (3 layers):**
-1. **Layer 1 - Circular Sliders**: Two concentric rings with draggable thumbs
-2. **Layer 2 - Emotion Categories**: 6 category bubbles appear ABOVE the rings based on slider position (Joy, Peace, Tension, Sadness, Energy, Fear)
-3. **Layer 3 - Specific Emotions**: When category is selected, specific emotion words appear in a circular/arc pattern above
+**Implementation in `EmotionCircularPicker.tsx`:**
 
-**Slider-to-Emotion Sync Logic:**
 ```typescript
-// Calculate quadrant from ring positions
-const getQuadrant = (energy: number, pleasantness: number): QuadrantType => {
-  if (energy >= 50 && pleasantness >= 50) return "high-pleasant";
-  if (energy >= 50 && pleasantness < 50) return "high-unpleasant";
-  if (energy < 50 && pleasantness < 50) return "low-unpleasant";
-  return "low-pleasant";
+// Check if section belongs to current quadrant
+const isSectionActive = (section) => section.quadrant === currentQuadrant;
+
+// For wheel sections (SVG paths):
+<path
+  opacity={isSectionActive(section) ? (isSelected ? 1 : 0.85) : 0.12}
+  className={cn(
+    "transition-opacity duration-300",
+    isSectionActive(section) ? "cursor-pointer" : "cursor-default pointer-events-none"
+  )}
+/>
+
+// For text labels:
+<button
+  className={cn(
+    isSectionActive(section) 
+      ? "opacity-100 pointer-events-auto" 
+      : "opacity-10 pointer-events-none"
+  )}
+/>
+```
+
+**Selected Emotion Highlight:**
+When an emotion is selected, add a glowing border/ring around that wheel section:
+
+```typescript
+// Add glow filter for selected sections
+{isSelected && (
+  <path
+    d={createArcPath(...)}
+    fill="none"
+    stroke="white"
+    strokeWidth={3}
+    className="animate-pulse"
+    style={{ filter: 'drop-shadow(0 0 8px white)' }}
+  />
+)}
+```
+
+---
+
+## 2. Bigger Wheel & Right-Positioned Layout
+
+### New Layout Structure
+
+Replace the current centered layout with a **two-column split**:
+
+```text
++------------------------------------------------------------------+
+|                                                                   |
+| +---------------------------+   +-------------------------------+ |
+| |                           |   |                               | |
+| |   EMOTION DESCRIPTION     |   |        EMOTION WHEEL          | |
+| |   (SaaS-style card)       |   |        (Bigger: 520px)        | |
+| |                           |   |                               | |
+| |   • Title                 |   |     [Wheel with sliders]      | |
+| |   • Description           |   |                               | |
+| |   • Features list         |   |                               | |
+| |   • CTA button            |   |                               | |
+| |                           |   |                               | |
+| +---------------------------+   +-------------------------------+ |
+|                                                                   |
++------------------------------------------------------------------+
+```
+
+### Wheel Size Changes
+
+Current dimensions:
+```typescript
+const size = 420;
+const outerRadius = 190;
+const middleRadius = 140;
+const innerRingRadius = 85;
+const innerMostRadius = 55;
+```
+
+New dimensions (scaled up ~25%):
+```typescript
+const size = 520;
+const outerRadius = 235;
+const middleRadius = 175;
+const innerRingRadius = 105;
+const innerMostRadius = 70;
+```
+
+---
+
+## 3. Left Side Content Card (Replacing Calendar)
+
+### Design Reference
+Based on the SaaS platform screenshot showing "Real-Time Analytics" style card.
+
+### New Component Structure
+
+**Left Content Card Layout:**
+```text
++----------------------------------------+
+|                                        |
+|  [Pill Badge: Emotion Tracker]         |
+|                                        |
+|  "Understand Your                      |
+|   Emotional Patterns"                  |
+|   (Large title, part bold)             |
+|                                        |
+|  Detailed description text explaining  |
+|  the 2D emotion model and benefits     |
+|  of tracking emotional patterns.       |
+|                                        |
+|  • Energy axis: High to Low            |
+|  • Pleasantness: Pleasant to Unpleasant|
+|  • Quadrant insights                   |
+|                                        |
+|  [ Learn More → ]                      |
+|                                        |
++----------------------------------------+
+|                                        |
+|  [Optional: Mini stats or tips]        |
+|                                        |
++----------------------------------------+
+```
+
+### Content Copy:
+
+```typescript
+const EMOTION_CONTENT = {
+  badge: "Emotion Tracker",
+  title: {
+    line1: "Understand Your",
+    line2: "Emotional Patterns"  // Bold this part
+  },
+  description: `Track your emotional state using the energy and pleasantness 
+dimensions. This science-backed approach helps you recognize patterns, 
+understand triggers, and develop greater emotional intelligence over time.`,
+  features: [
+    "Map emotions on a 2D spectrum",
+    "Identify your emotional patterns",
+    "Get personalized regulation strategies"
+  ],
+  cta: "Learn More"
 };
-
-// Category bubbles highlight based on proximity to slider values
-// When category selected → expand emotion word pills in arc above rings
-```
-
-**Animation Flow:**
-1. User drags outer ring → Energy value changes → Nearby category bubbles scale up
-2. User drags inner ring → Pleasantness value changes → Quadrant shifts → Bubble highlights change
-3. User taps category bubble → Sliders animate to category center → Emotion words appear in circular arc above
-4. User selects emotion word → Word highlights → Continue button activates
-
----
-
-## 2. Left Sidebar Enhancement
-
-### Current State
-The left sidebar shows only a calendar with mood legend. User wants descriptive content similar to the "Real-Time Analytics" section in the reference image.
-
-### New Design
-
-Replace/enhance the left sidebar with an **Emotion Information Card**:
-
-```text
-+-----------------------------------+
-|  [Icon]  Emotion Check-in         |
-|  ─────────────────────────────    |
-|                                   |
-|  "Understanding your emotions     |
-|   helps you navigate life with    |
-|   greater clarity and intention." |
-|                                   |
-|  Track how you feel across the    |
-|  energy and pleasantness spectrum.|
-|  Your patterns reveal insights    |
-|  about what influences your mood. |
-|                                   |
-|  [ Start Check-in ]               |
-|                                   |
-+-----------------------------------+
-|                                   |
-|  📅 February 2026                 |
-|  [Calendar grid...]               |
-|                                   |
-|  MOOD LEGEND                      |
-|  ● High Energy, Pleasant          |
-|  ● High Energy, Unpleasant        |
-|  ● Low Energy, Unpleasant         |
-|  ● Low Energy, Pleasant           |
-+-----------------------------------+
-```
-
-### Content Sections
-1. **Header**: Icon + "Emotion Check-in" title
-2. **Inspirational Quote**: Rotating quotes about emotional awareness
-3. **Description**: Brief explanation of the 2D emotion model
-4. **CTA Button**: "Start Check-in" (scrolls to/focuses picker)
-5. **Calendar**: Existing calendar (below the info card)
-
----
-
-## 3. Navigation Bar Enhancement
-
-### Current Issues
-- Buttons are cramped and not well-aligned
-- Gap between left nav pills and right quick actions
-- Not spanning full width elegantly
-
-### New Design
-
-```text
-+---------------------------------------------------------------------------------+
-|  ❤️ FEEL      ✨ CONTEXT      🎯 REGULATE      📊 INSIGHTS    |    👥    📅    |
-+---------------------------------------------------------------------------------+
-```
-
-**Styling Changes:**
-- **Full-width container** with `justify-between` for main groups
-- **Larger pill buttons** with more padding (h-12, px-6)
-- **Gradient background** for active state (not flat primary color)
-- **Equal spacing** between navigation items using `flex-1` or `space-x-4`
-- **Icons always visible** (not hidden on mobile)
-- **Subtle separator line** between main nav and quick actions
-- **Labels in ALL CAPS** with letter-spacing for luxury feel
-
-**Enhanced Styling:**
-```css
-/* Active state */
-.nav-pill-active {
-  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.8));
-  box-shadow: 0 4px 12px hsl(var(--primary)/0.3);
-}
-
-/* Hover state */
-.nav-pill:hover {
-  background: hsl(var(--muted)/0.8);
-  transform: translateY(-1px);
-}
 ```
 
 ---
 
 ## Files to Modify
 
-### New Files
-| File | Purpose |
-|------|---------|
-| `src/components/emotions/EmotionCircularPicker.tsx` | Dual concentric ring slider with 3-layer emotion selection |
+### 1. `EmotionCircularPicker.tsx`
 
-### Files to Update
-| File | Changes |
-|------|---------|
-| `src/components/emotions/EmotionsPageFeel.tsx` | Replace horizontal sliders with `EmotionCircularPicker`, update layout |
-| `src/components/emotions/EmotionsPageLayout.tsx` | Add emotion info card to left sidebar above calendar |
-| `src/components/emotions/EmotionsNavigation.tsx` | Restyle navigation pills for full-width, classy alignment |
+**Changes:**
+- Add prop for wheel size (configurable)
+- Implement quadrant-based opacity/visibility logic
+- Add selected emotion highlight glow
+- Scale up default dimensions
+
+**Key Code Changes:**
+```typescript
+interface EmotionCircularPickerProps {
+  // ... existing props
+  size?: number; // Allow configurable size
+}
+
+// Inside component:
+const isSectionActive = useMemo(() => {
+  return (section: typeof WHEEL_SECTIONS[0]) => 
+    section.quadrant === currentQuadrant;
+}, [currentQuadrant]);
+
+// For each wheel section:
+const sectionOpacity = isSectionActive(section) 
+  ? (isSelected ? 1 : 0.85) 
+  : 0.12;
+
+const sectionInteractive = isSectionActive(section);
+```
+
+### 2. `EmotionsPageLayout.tsx`
+
+**Changes:**
+- Remove calendar sidebar completely
+- Remove `showCalendar` prop
+- Keep layout simple (just pass through children)
+
+### 3. `EmotionsPageFeel.tsx`
+
+**Changes:**
+- Restructure to two-column layout (left: content, right: wheel)
+- Add emotion description card on left side
+- Pass larger size to circular picker
+- Remove/relocate search bar
+
+**New Layout Structure:**
+```tsx
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-[calc(100vh-300px)]">
+  {/* Left: Emotion Description */}
+  <div className="flex flex-col justify-center">
+    <EmotionDescriptionCard />
+  </div>
+  
+  {/* Right: Wheel */}
+  <div className="flex flex-col items-center justify-center">
+    <EmotionCircularPicker size={520} ... />
+    {/* Continue button below */}
+  </div>
+</div>
+```
 
 ---
 
-## Technical Details
+## Technical Implementation Details
 
-### EmotionCircularPicker Component
+### Quadrant Detection Logic
 
-**Props:**
 ```typescript
-interface EmotionCircularPickerProps {
-  energy: number;
-  pleasantness: number;
-  selectedCategory: string | null;
-  selectedEmotion: string | null;
-  onEnergyChange: (value: number) => void;
-  onPleasantnessChange: (value: number) => void;
-  onCategorySelect: (category: string, quadrant: QuadrantType) => void;
-  onEmotionSelect: (emotion: string, quadrant: QuadrantType) => void;
+// Already exists - maps energy/pleasantness to quadrant
+const currentQuadrant: QuadrantType = useMemo(() => {
+  if (energy >= 50 && pleasantness >= 50) return "high-pleasant";
+  if (energy >= 50 && pleasantness < 50) return "high-unpleasant";
+  if (energy < 50 && pleasantness < 50) return "low-unpleasant";
+  return "low-pleasant";
+}, [energy, pleasantness]);
+```
+
+### Wheel Section Visibility
+
+```typescript
+// For each WHEEL_SECTION, check if it matches current quadrant
+WHEEL_SECTIONS.map((section) => {
+  const isActive = section.quadrant === currentQuadrant;
+  const isSelected = selectedEmotion && 
+    (section.core === selectedEmotion || 
+     section.emotions.includes(selectedEmotion));
+  
+  return (
+    <g 
+      key={section.core}
+      className={cn(
+        "transition-all duration-300",
+        !isActive && "pointer-events-none"
+      )}
+    >
+      {/* SVG paths with conditional opacity */}
+      <path opacity={isActive ? 0.85 : 0.1} ... />
+      
+      {/* Highlight ring when selected */}
+      {isSelected && isActive && (
+        <path 
+          stroke="white" 
+          strokeWidth={2}
+          style={{ filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.8))' }}
+        />
+      )}
+    </g>
+  );
+});
+```
+
+### Selected Emotion Highlight Effect
+
+```typescript
+// Add a glowing outline for selected section
+{isEmotionSelected && (
+  <div
+    className="absolute rounded-full animate-pulse"
+    style={{
+      left: pos.x - 30,
+      top: pos.y - 15,
+      width: 60,
+      height: 30,
+      background: 'transparent',
+      border: `2px solid ${section.color}`,
+      boxShadow: `0 0 15px ${section.color}, 0 0 30px ${section.color}50`,
+    }}
+  />
+)}
+```
+
+### Left Content Card Component
+
+```tsx
+function EmotionDescriptionCard() {
+  return (
+    <div className="space-y-6">
+      {/* Badge */}
+      <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
+        <Sparkles className="h-4 w-4" />
+        Emotion Tracker
+      </span>
+      
+      {/* Title */}
+      <h2 className="text-3xl md:text-4xl font-light leading-tight">
+        Understand Your{" "}
+        <span className="font-semibold">Emotional Patterns</span>
+      </h2>
+      
+      {/* Description */}
+      <p className="text-muted-foreground text-lg leading-relaxed max-w-md">
+        Track your emotional state using the energy and pleasantness dimensions. 
+        This science-backed approach helps you recognize patterns, understand triggers, 
+        and develop greater emotional intelligence.
+      </p>
+      
+      {/* Features */}
+      <ul className="space-y-3">
+        {features.map((feature, i) => (
+          <li key={i} className="flex items-center gap-3 text-muted-foreground">
+            <Check className="h-5 w-5 text-primary" />
+            {feature}
+          </li>
+        ))}
+      </ul>
+      
+      {/* CTA */}
+      <Button variant="outline" className="gap-2">
+        Learn More
+        <ArrowRight className="h-4 w-4" />
+      </Button>
+    </div>
+  );
 }
 ```
 
-**Implementation:**
-- SVG-based circular rings with `stroke-dasharray` for track styling
-- Touch/mouse drag handlers for thumb movement
-- `Math.atan2` calculations for angle-to-value conversion
-- CSS `transform: rotate()` for thumb positioning
-- Category bubbles positioned using CSS `transform: translate()` with polar coordinates
+---
 
-**Circular Slider Math:**
-```typescript
-// Convert angle to value (0-100)
-const angleToValue = (angle: number): number => {
-  // Normalize angle from -PI to PI → 0 to 100
-  const normalized = ((angle + Math.PI) / (2 * Math.PI)) * 100;
-  return Math.round(normalized);
-};
+## Responsive Behavior
 
-// Convert value to angle for thumb position
-const valueToAngle = (value: number): number => {
-  return ((value / 100) * 2 * Math.PI) - Math.PI;
-};
+### Desktop (>1024px)
+- Two-column layout: Left content (40%) | Right wheel (60%)
+- Wheel size: 520px
 
-// Get position on ring
-const getThumbPosition = (value: number, radius: number) => {
-  const angle = valueToAngle(value);
-  return {
-    x: Math.cos(angle) * radius,
-    y: Math.sin(angle) * radius
-  };
-};
-```
+### Tablet (768-1024px)
+- Stacked layout: Content on top, wheel below
+- Wheel size: 420px
 
-### Left Sidebar Info Card
+### Mobile (<768px)
+- Single column stacked
+- Wheel size: 340px
+- Content card simplified
 
-**Content Configuration:**
-```typescript
-const EMOTION_INFO = {
-  title: "Emotion Check-in",
-  tagline: "Clarity Through Awareness",
-  quote: "Understanding your emotions helps you navigate life with greater intention.",
-  description: "Track how you feel across the energy and pleasantness spectrum. Your patterns reveal insights about what influences your mood.",
-  ctaText: "Start Check-in"
-};
-```
+---
 
-### Navigation Styling
+## Animation Enhancements
 
-**Layout Structure:**
-```tsx
-<nav className="flex items-center justify-between w-full px-6 py-3">
-  {/* Main Nav Pills - Stretched */}
-  <div className="flex items-center gap-2 flex-1 max-w-2xl">
-    {navItems.map(item => (
-      <Button className="flex-1 h-12 uppercase tracking-wider text-xs font-semibold">
-        <Icon /> {item.label}
-      </Button>
-    ))}
-  </div>
-  
-  {/* Separator */}
-  <div className="w-px h-8 bg-border/50 mx-4" />
-  
-  {/* Quick Actions */}
-  <div className="flex items-center gap-2">
-    <Button size="icon" className="h-10 w-10" />
-    <Button size="icon" className="h-10 w-10" />
-  </div>
-</nav>
-```
+### Quadrant Transition
+When sliders move and quadrant changes:
+- Fade out inactive sections (300ms ease-out)
+- Fade in active sections (300ms ease-in)
+- Smooth color transition
+
+### Selection Highlight
+When emotion is selected:
+- Scale up selected section slightly (1.02)
+- Add pulsing glow effect
+- Bounce animation on the selected label
 
 ---
 
 ## Implementation Order
 
-1. **Phase 1**: Create `EmotionCircularPicker.tsx` with dual ring sliders
-2. **Phase 2**: Add layer system for category bubbles and emotion words
-3. **Phase 3**: Integrate circular picker into `EmotionsPageFeel.tsx`
-4. **Phase 4**: Enhance left sidebar in `EmotionsPageLayout.tsx` with info card
-5. **Phase 5**: Restyle `EmotionsNavigation.tsx` for full-width classy alignment
-6. **Phase 6**: Polish animations and transitions
-
----
-
-## Expected Visual Result
-
-```text
-+-----------------------------------------------------------------------------------+
-|  ❤️ FEEL         ✨ CONTEXT         🎯 REGULATE         📊 INSIGHTS  |  👥   📅  |
-+-----------------------------------------------------------------------------------+
-|                                                                                   |
-| +------------------+   +-----------------------------------------------+          |
-| | Emotion Check-in |   |                                               |          |
-| | "Clarity Through |   |              +-----------+                    |          |
-| | Awareness"       |   |          +---|  JOY  |---+                    |          |
-| |                  |   |      PEACE   +-----------+  TENSION           |          |
-| | Track how you    |   |          +-------( )-------+                  |          |
-| | feel across the  |   |          |   +---------+   |                  |          |
-| | energy spectrum. |   |          |   | Inner   |   |  ← Pleasantness  |          |
-| |                  |   |          |   | Ring    |   |                  |          |
-| | [Start Check-in] |   |          |   +---------+   |                  |          |
-| +------------------+   |          +-------( )-------+  ← Energy        |          |
-| |                  |   |      SADNESS +---+---+ FEAR                   |          |
-| | 📅 February 2026 |   |              |ENERGY|                         |          |
-| | [Calendar grid]  |   |              +-------+                        |          |
-| |                  |   |                                               |          |
-| | MOOD LEGEND      |   |     [Excited] [Joyful] [Inspired] [Thrilled]  |          |
-| | ● High Pleasant  |   |              ↑ Emotion words layer            |          |
-| | ● High Unpleasant|   |                                               |          |
-| | ● Low Unpleasant |   |                      [ Continue → ]           |          |
-| | ● Low Pleasant   |   +-----------------------------------------------+          |
-+------------------+                                                                |
-+-----------------------------------------------------------------------------------+
-```
+1. **Phase 1**: Update `EmotionsPageLayout.tsx` - Remove calendar, simplify layout
+2. **Phase 2**: Update `EmotionCircularPicker.tsx` - Add quadrant visibility logic, size prop, selection highlight
+3. **Phase 3**: Update `EmotionsPageFeel.tsx` - Two-column layout with content card on left, wheel on right
+4. **Phase 4**: Polish animations and responsive behavior
 
