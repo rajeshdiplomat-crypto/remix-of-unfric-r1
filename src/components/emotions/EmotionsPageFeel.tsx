@@ -118,34 +118,57 @@ export function EmotionsPageFeel({
             onEmotionSelect={handleEmotionClick}
             size={wheelSize}
           />
-
-          {/* Continue Section - Clean and Creative */}
-          <div className="flex flex-col items-center gap-4 mt-8 w-full max-w-sm">
-            {/* Selected Emotion Display - Minimal */}
-            {selectedEmotion && (
-              <div className="flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <span className="text-2xl">{quadrantEmoji[currentQuadrant]}</span>
-                <span className="text-lg font-semibold" style={{ color: quadrantInfo.color }}>
-                  {selectedEmotion}
-                </span>
-              </div>
-            )}
-
-            {/* Continue Button - Prominent */}
-            <Button
+          {/* Creative Continue Button */}
+          <div className="mt-8 w-full max-w-sm">
+            <button
               onClick={onContinue}
               disabled={!selectedEmotion}
-              size="lg"
-              className="w-full h-14 rounded-2xl text-lg font-bold gap-3 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl"
+              className={`
+                relative w-full overflow-hidden rounded-2xl p-[2px] transition-all duration-500
+                ${
+                  selectedEmotion
+                    ? "bg-gradient-to-r from-primary via-white/50 to-primary animate-pulse hover:animate-none hover:scale-[1.02] active:scale-[0.98]"
+                    : "bg-muted/50 cursor-not-allowed"
+                }
+              `}
               style={{
                 background: selectedEmotion
-                  ? `linear-gradient(135deg, ${quadrantInfo.color}, ${quadrantInfo.color}CC)`
+                  ? `linear-gradient(90deg, ${quadrantInfo.color}, white, ${quadrantInfo.color})`
                   : undefined,
+                backgroundSize: "200% 100%",
+                animation: selectedEmotion ? "shimmer 2s infinite linear" : "none",
               }}
             >
-              Continue
-              <ArrowRight className="h-5 w-5" />
-            </Button>
+              <div
+                className={`
+                  flex items-center justify-center gap-4 px-6 py-4 rounded-[14px] backdrop-blur-sm
+                  transition-all duration-300
+                  ${selectedEmotion ? "bg-background/90 hover:bg-background/80" : "bg-muted"}
+                `}
+              >
+                {selectedEmotion ? (
+                  <>
+                    <span className="text-2xl animate-bounce">{quadrantEmoji[currentQuadrant]}</span>
+                    <div className="flex flex-col items-start">
+                      <span className="text-xs text-muted-foreground uppercase tracking-wider">Feeling</span>
+                      <span className="text-lg font-bold" style={{ color: quadrantInfo.color }}>
+                        {selectedEmotion}
+                      </span>
+                    </div>
+                    <div className="flex-1" />
+                    <div
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-white font-semibold transition-all"
+                      style={{ background: quadrantInfo.color }}
+                    >
+                      Continue
+                      <ArrowRight className="h-4 w-4" />
+                    </div>
+                  </>
+                ) : (
+                  <span className="text-muted-foreground font-medium">Select an emotion to continue</span>
+                )}
+              </div>
+            </button>
           </div>
         </div>
       </div>
