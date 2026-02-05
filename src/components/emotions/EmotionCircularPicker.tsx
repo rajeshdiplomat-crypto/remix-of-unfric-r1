@@ -324,7 +324,7 @@ export function EmotionCircularPicker({
   return (
     <div className="flex flex-col items-center gap-6">
       {/* Emotion Wheel */}
-      <div ref={containerRef} className="relative" style={{ width: size, height: size }}>
+      <div ref={containerRef} className="relative select-none" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="absolute inset-0">
           {/* SVG Filters for glow effect */}
           <defs>
