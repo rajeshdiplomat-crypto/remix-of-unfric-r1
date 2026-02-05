@@ -314,6 +314,27 @@ export function EmotionCircularPicker({
               d={`M ${center} ${center - innerMostRadius} A ${innerMostRadius} ${innerMostRadius} 0 1 1 ${center - 0.01} ${center - innerMostRadius}`}
               fill="none"
             />
+            {/* Arc paths for each section's core label */}
+            {WHEEL_SECTIONS.map((section, idx) => {
+              // Create arc path in the middle of the core emotion band
+              const labelRadius = (innerRingRadius + 15 + middleRadius) / 2;
+              const startRad = (section.startAngle * Math.PI) / 180;
+              const endRad = (section.endAngle * Math.PI) / 180;
+              const startX = center + Math.cos(startRad) * labelRadius;
+              const startY = center + Math.sin(startRad) * labelRadius;
+              const endX = center + Math.cos(endRad) * labelRadius;
+              const endY = center + Math.sin(endRad) * labelRadius;
+              const largeArc = section.endAngle - section.startAngle > 180 ? 1 : 0;
+
+              return (
+                <path
+                  key={`corePath-${idx}`}
+                  id={`corePath-${idx}`}
+                  d={`M ${startX} ${startY} A ${labelRadius} ${labelRadius} 0 ${largeArc} 1 ${endX} ${endY}`}
+                  fill="none"
+                />
+              );
+            })}
           </defs>
 
           {/* Wheel sections */}
@@ -390,6 +411,26 @@ export function EmotionCircularPicker({
                   stroke="rgba(255,255,255,0.5)"
                   strokeWidth={2}
                 />
+
+                {/* Core emotion curved text label */}
+                <text
+                  fill="white"
+                  fontSize="13"
+                  fontWeight={isCoreSelected ? "800" : "600"}
+                  opacity={isActive ? 1 : 0.2}
+                  className={cn(
+                    "select-none transition-all duration-300",
+                    isActive ? "cursor-pointer" : "pointer-events-none",
+                  )}
+                  style={{
+                    textShadow: isActive ? "0 2px 4px rgba(0,0,0,0.5)" : "none",
+                  }}
+                  onClick={() => isActive && handleCoreClick(section, index)}
+                >
+                  <textPath href={`#corePath-${index}`} startOffset="50%" textAnchor="middle" dominantBaseline="middle">
+                    {section.core}
+                  </textPath>
+                </text>
 
                 {/* Selection highlight ring */}
                 {isSelected && isActive && (
@@ -508,44 +549,12 @@ export function EmotionCircularPicker({
           <circle cx={center} cy={center} r={innerMostRadius - strokeWidth / 2 - 5} fill="hsl(var(--background))" />
         </svg>
 
-        {/* Emotion labels on wheel */}
+        {/* Outer Emotion labels on wheel - overlay for expanded sections */}
         {WHEEL_SECTIONS.map((section, sectionIndex) => {
           const isActive = isSectionActive(section);
-          const midAngle = (section.startAngle + section.endAngle) / 2;
-          // Position core labels in the center of the middle arc band (between innerRingRadius and middleRadius)
-          const coreRadius = (innerRingRadius + 15 + middleRadius) / 2;
-          const corePos = getTextPosition(midAngle, coreRadius);
-          const isCoreSelected = selectedEmotion === section.core || selectedCategory === section.core;
-
-          // Calculate rotation for curved text - rotate text perpendicular to radius
-          // Flip text on left side so it's readable
-          const normalizedMidAngle = ((midAngle % 360) + 360) % 360;
-          const textRotation = normalizedMidAngle > 90 && normalizedMidAngle < 270 ? midAngle + 180 : midAngle;
 
           return (
             <div key={`labels-${sectionIndex}`}>
-              {/* Core emotion label - curved along arc */}
-              <button
-                className={cn(
-                  "absolute text-sm font-bold pointer-events-auto select-none",
-                  "transition-all duration-300",
-                  isActive
-                    ? "text-white hover:scale-110 cursor-pointer"
-                    : "text-white/20 cursor-default pointer-events-none",
-                  isCoreSelected && isActive && "scale-110 font-extrabold",
-                )}
-                style={{
-                  left: corePos.x,
-                  top: corePos.y,
-                  transform: `translate(-50%, -50%) rotate(${textRotation}deg)`,
-                  textShadow: isActive ? "0 2px 4px rgba(0,0,0,0.5)" : "none",
-                }}
-                onClick={() => handleCoreClick(section, sectionIndex)}
-                disabled={!isActive}
-              >
-                {section.core}
-              </button>
-
               {/* Outer emotion labels - only show when section is expanded */}
               {expandedSectionIndex === sectionIndex &&
                 isActive &&
