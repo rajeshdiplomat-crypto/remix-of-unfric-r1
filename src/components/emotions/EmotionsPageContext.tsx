@@ -1,3 +1,4 @@
+import React from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -100,9 +101,9 @@ export function EmotionsPageContext({
   );
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-300px)] animate-in fade-in slide-in-from-right-4 duration-400">
+    <div className="flex flex-col min-h-[calc(100vh-300px)] animate-in fade-in slide-in-from-right-4 duration-400 max-w-5xl mx-auto w-full">
       {/* Two-Column Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 flex-1">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-14 flex-1">
         {/* Left: Form Cards */}
         <div className="flex flex-col order-2 lg:order-1">
           {/* Header Area: Back Button & Journal Toggle + Currently Feeling Text */}
