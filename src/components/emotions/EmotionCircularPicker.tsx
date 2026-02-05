@@ -103,10 +103,10 @@ export function EmotionCircularPicker({
   // Ring dimensions - scaled up ~25%
   const size = propSize || 520;
   const center = size / 2;
-  const outerRadius = size * 0.45; // ~235 at 520
-  const middleRadius = size * 0.34; // ~175 at 520
-  const innerRingRadius = size * 0.20; // ~105 at 520
-  const innerMostRadius = size * 0.135; // ~70 at 520
+  const outerRadius = size * 0.47; // ~244 at 520 - wider sectors for text
+  const middleRadius = size * 0.30; // ~156 at 520
+  const innerRingRadius = size * 0.16; // ~83 at 520
+  const innerMostRadius = size * 0.10; // ~52 at 520
   const strokeWidth = 16;
 
   // Convert value (0-100) to angle (radians) - starting from top (-π/2)
@@ -293,7 +293,7 @@ export function EmotionCircularPicker({
                 
                 {/* Inner section (core emotion) */}
                 <path
-                  d={createArcPath(section.startAngle, section.endAngle, innerRingRadius + 20, middleRadius)}
+                  d={createArcPath(section.startAngle, section.endAngle, innerRingRadius + 15, middleRadius)}
                   fill={section.color}
                   opacity={isActive ? (isHovered || isSelected ? 0.95 : 0.7) : 0.12}
                   className={cn(
@@ -308,7 +308,7 @@ export function EmotionCircularPicker({
                 {/* Selection highlight ring */}
                 {isSelected && isActive && (
                   <path
-                    d={createArcPath(section.startAngle, section.endAngle, innerRingRadius + 18, outerRadius + 2)}
+                    d={createArcPath(section.startAngle, section.endAngle, innerRingRadius + 13, outerRadius + 2)}
                     fill="none"
                     stroke="white"
                     strokeWidth={3}
@@ -325,7 +325,7 @@ export function EmotionCircularPicker({
           <circle
             cx={center}
             cy={center}
-            r={innerRingRadius + 15}
+            r={innerRingRadius + 12}
             fill="hsl(var(--background))"
             className="drop-shadow-lg"
           />
@@ -399,7 +399,7 @@ export function EmotionCircularPicker({
         {WHEEL_SECTIONS.map((section, sectionIndex) => {
           const isActive = isSectionActive(section);
           const midAngle = (section.startAngle + section.endAngle) / 2;
-          const corePos = getTextPosition(midAngle, middleRadius - 20);
+          const corePos = getTextPosition(midAngle, middleRadius - 15);
           const isCoreSelected = selectedEmotion === section.core || selectedCategory === section.core;
           
           return (
@@ -430,7 +430,7 @@ export function EmotionCircularPicker({
               {section.emotions.map((emotion, emotionIndex) => {
                 const emotionAngle = section.startAngle + 
                   ((section.endAngle - section.startAngle) / (section.emotions.length + 1)) * (emotionIndex + 1);
-                const pos = getTextPosition(emotionAngle, outerRadius - 25);
+                const pos = getTextPosition(emotionAngle, outerRadius - 40);
                 const rotation = emotionAngle > 90 && emotionAngle < 270 ? emotionAngle + 180 : emotionAngle;
                 const isEmotionSelected = selectedEmotion === emotion;
                 
