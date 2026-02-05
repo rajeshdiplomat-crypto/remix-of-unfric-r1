@@ -104,9 +104,9 @@ export function EmotionsPageContext({
     <div className="flex flex-col min-h-[calc(100vh-300px)] animate-in fade-in slide-in-from-right-4 duration-400 max-w-5xl mx-auto w-full">
       {/* Two-Column Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-14 flex-1">
-        {/* Left: Form Cards */}
+        {/* Left: FormCards */}
         <div className="flex flex-col order-2 lg:order-1">
-          {/* Header Area: Back Button & Journal Toggle + Currently Feeling Text */}
+          {/* Header Area: Back Button & Journal Toggle */}
           <div className="flex items-center justify-between mb-4">
             <Button
               variant="ghost"
@@ -118,32 +118,17 @@ export function EmotionsPageContext({
               Back
             </Button>
 
-            <div className="flex items-center gap-4">
-              {/* Highlighted Currently Feeling Text */}
-              <div
-                className="px-3 py-1 rounded-full text-xs font-medium border bg-card/50"
-                style={{
-                  color: quadrantInfo.color,
-                  borderColor: `${quadrantInfo.color}30`,
-                  backgroundColor: `${quadrantInfo.color}10`,
-                }}
-              >
-                <span className="text-muted-foreground/80 mr-1.5">Currently Feeling:</span>
-                <span className="font-bold">{selectedEmotion}</span>
-              </div>
-
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border">
-                <Label htmlFor="journal-toggle" className="text-xs font-medium text-muted-foreground cursor-pointer">
-                  Journal Entry
-                </Label>
-                <Switch
-                  id="journal-toggle"
-                  checked={sendToJournal}
-                  onCheckedChange={onSendToJournalChange}
-                  className="scale-75 data-[state=checked]:bg-primary"
-                  style={{ "--primary": quadrantInfo.color } as React.CSSProperties}
-                />
-              </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border">
+              <Label htmlFor="journal-toggle" className="text-xs font-medium text-muted-foreground cursor-pointer">
+                Journal Entry
+              </Label>
+              <Switch
+                id="journal-toggle"
+                checked={sendToJournal}
+                onCheckedChange={onSendToJournalChange}
+                className="scale-75 data-[state=checked]:bg-primary"
+                style={{ "--primary": quadrantInfo.color } as React.CSSProperties}
+              />
             </div>
           </div>
 
@@ -296,7 +281,29 @@ export function EmotionsPageContext({
               {CONTEXT_CONTENT.title.line2}
             </h1>
 
-            <p className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-md">{CONTEXT_CONTENT.description}</p>
+            <p className="text-lg text-muted-foreground leading-relaxed mb-6 max-w-md">{CONTEXT_CONTENT.description}</p>
+
+            {/* Enhanced Dark Currently Feeling Box */}
+            <div className="bg-slate-900/95 backdrop-blur-md rounded-2xl p-5 mb-8 text-white shadow-xl dark:bg-slate-950 border border-white/10 relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
+              <div
+                className="absolute -top-10 -right-10 w-20 h-20 rounded-full blur-2xl opacity-20"
+                style={{ backgroundColor: quadrantInfo.color }}
+              />
+              <div className="flex items-center gap-5 relative z-10">
+                <div className="text-4xl filter drop-shadow-md pb-1">{quadrantEmoji[selectedQuadrant]}</div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider font-bold text-white/50 mb-0.5">
+                    Currently feeling
+                  </p>
+                  <p
+                    className="text-2xl font-bold text-white tracking-wide"
+                    style={{ textShadow: `0 0 15px ${quadrantInfo.color}40` }}
+                  >
+                    {selectedEmotion}
+                  </p>
+                </div>
+              </div>
+            </div>
 
             <ul className="space-y-4">
               {CONTEXT_CONTENT.features.map((feature, idx) => (
