@@ -341,7 +341,7 @@ export function EmotionCircularPicker({
         onTouchStart={(e) => e.preventDefault()}
       >
         <svg width={size} height={size} className="absolute inset-0">
-          {/* SVG Filters for glow effect */}
+          {/* SVG Filters and Text Paths */}
           <defs>
             <filter id="selectedGlow" x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation="4" result="coloredBlur" />
@@ -350,6 +350,18 @@ export function EmotionCircularPicker({
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
+            {/* Arc path for energy text - starts at top, goes clockwise */}
+            <path
+              id="energyArcPath"
+              d={`M ${center} ${center - innerRingRadius} A ${innerRingRadius} ${innerRingRadius} 0 1 1 ${center - 0.01} ${center - innerRingRadius}`}
+              fill="none"
+            />
+            {/* Arc path for pleasant text - starts at top, goes clockwise */}
+            <path
+              id="pleasantArcPath"
+              d={`M ${center} ${center - innerMostRadius} A ${innerMostRadius} ${innerMostRadius} 0 1 1 ${center - 0.01} ${center - innerMostRadius}`}
+              fill="none"
+            />
           </defs>
 
           {/* Wheel sections */}
@@ -480,6 +492,22 @@ export function EmotionCircularPicker({
             }}
           />
 
+          {/* Energy text along arc using textPath */}
+          {energy > 20 && (
+            <text
+              fill="hsl(45, 93%, 25%)"
+              fontSize="8"
+              fontWeight="600"
+              opacity={0.45}
+              letterSpacing="4"
+              className="select-none pointer-events-none"
+            >
+              <textPath href="#energyArcPath" startOffset="2%">
+                E N E R G Y
+              </textPath>
+            </text>
+          )}
+
           {/* Inner Ring Track (Pleasantness) */}
           <circle
             cx={center}
@@ -507,6 +535,22 @@ export function EmotionCircularPicker({
               filter: isDraggingPleasantness ? "drop-shadow(0 0 8px hsl(142, 52%, 50%))" : undefined,
             }}
           />
+
+          {/* Pleasant text along arc using textPath */}
+          {pleasantness > 25 && (
+            <text
+              fill="hsl(142, 52%, 20%)"
+              fontSize="6"
+              fontWeight="600"
+              opacity={0.45}
+              letterSpacing="3"
+              className="select-none pointer-events-none"
+            >
+              <textPath href="#pleasantArcPath" startOffset="3%">
+                P L E A S A N T
+              </textPath>
+            </text>
+          )}
 
           {/* Energy particles animation */}
           {energyParticles.map((particle) => (
