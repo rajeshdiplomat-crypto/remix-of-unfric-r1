@@ -37,11 +37,11 @@ const typeGradients: Record<string, { from: string; to: string; bg: string }> = 
 };
 
 const typeIcons: Record<string, React.ReactNode> = {
-  breathing: <Wind className="h-3.5 w-3.5" />,
-  grounding: <Activity className="h-3.5 w-3.5" />,
-  cognitive: <Sparkles className="h-3.5 w-3.5" />,
-  movement: <Zap className="h-3.5 w-3.5" />,
-  mindfulness: <Heart className="h-3.5 w-3.5" />,
+  breathing: <Wind className="h-4 w-4" />,
+  grounding: <Activity className="h-4 w-4" />,
+  cognitive: <Sparkles className="h-4 w-4" />,
+  movement: <Zap className="h-4 w-4" />,
+  mindfulness: <Heart className="h-4 w-4" />,
 };
 
 const typeLabels: Record<string, string> = {
@@ -145,7 +145,7 @@ export function EmotionsPageRegulate({
         {/* Right: Success Animation, Strategies & Actions */}
         <div className="flex flex-col items-center justify-center order-1 lg:order-2">
           {/* Compact Checkmark */}
-          <div className="relative inline-flex items-center justify-center w-16 h-16 mb-3">
+          <div className="relative inline-flex items-center justify-center w-14 h-14 mb-2">
             <div 
               className={cn(
                 "absolute inset-0 rounded-full transition-all duration-700",
@@ -155,31 +155,31 @@ export function EmotionsPageRegulate({
             />
             <div 
               className={cn(
-                "relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500",
+                "relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500",
                 showCheckmark ? "scale-100" : "scale-90"
               )}
               style={{ backgroundColor: accentColor }}
             >
-              <Check className="h-6 w-6 text-white" />
+              <Check className="h-5 w-5 text-white" />
             </div>
           </div>
 
-          <h1 className="text-xl font-light mb-2 text-center">
+          <h1 className="text-lg font-light mb-1.5 text-center">
             Check-in Complete
           </h1>
           
           {savedEmotion && savedQuadrant && quadrantInfo && (
             <div 
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border mb-4"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border mb-3"
               style={{
                 background: `linear-gradient(135deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}20)`,
                 borderColor: quadrantInfo.borderColor,
               }}
             >
-              <span className="text-lg">{quadrantEmoji[savedQuadrant]}</span>
+              <span className="text-base">{quadrantEmoji[savedQuadrant]}</span>
               <div>
-                <p className="text-[10px] text-muted-foreground leading-none">You're feeling</p>
-                <p className="font-medium text-sm" style={{ color: quadrantInfo.color }}>
+                <p className="text-[9px] text-muted-foreground leading-none">You're feeling</p>
+                <p className="font-medium text-xs" style={{ color: quadrantInfo.color }}>
                   {savedEmotion}
                 </p>
               </div>
@@ -188,8 +188,8 @@ export function EmotionsPageRegulate({
 
           {/* Recommended Strategies */}
           {recommendedStrategies.length > 0 && (
-            <div className="w-full max-w-md mb-3">
-              <p className="text-[10px] text-muted-foreground mb-2 text-center flex items-center justify-center gap-1">
+            <div className="w-full max-w-lg mb-2.5">
+              <p className="text-[10px] text-muted-foreground mb-1.5 text-center flex items-center justify-center gap-1">
                 <Sparkles className="h-3 w-3 text-amber-500" />
                 Recommended for you
               </p>
@@ -210,11 +210,11 @@ export function EmotionsPageRegulate({
           )}
 
           {/* All Strategies */}
-          <div className="w-full max-w-md mb-4">
-            <p className="text-[10px] text-muted-foreground mb-2 text-center">
+          <div className="w-full max-w-lg mb-4">
+            <p className="text-[10px] text-muted-foreground mb-1.5 text-center">
               All Strategies
             </p>
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-4 gap-2">
               {STRATEGIES.filter(s => !recommendedStrategies.some(r => r.id === s.id)).map((strategy) => (
                 <MiniStrategyCard
                   key={strategy.id}
@@ -228,24 +228,34 @@ export function EmotionsPageRegulate({
             </div>
           </div>
 
-          {/* Compact Action Buttons */}
-          <div className="flex gap-2 w-full max-w-sm">
+          {/* Action Buttons */}
+          <div className="flex flex-col gap-2 w-full max-w-md">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onNewCheckin}
+                className="flex-1 h-10 rounded-lg text-xs"
+              >
+                New Check-in
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onViewInsights}
+                className="flex-1 h-10 rounded-lg text-xs gap-1"
+              >
+                Insights
+                <ArrowRight className="h-3 w-3" />
+              </Button>
+            </div>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={onNewCheckin}
-              className="flex-1 h-9 rounded-lg text-xs"
+              className="h-8 rounded-lg text-xs text-muted-foreground hover:text-foreground"
             >
-              New Check-in
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onViewInsights}
-              className="flex-1 h-9 rounded-lg text-xs gap-1"
-            >
-              Insights
-              <ArrowRight className="h-3 w-3" />
+              ← Back to Context
             </Button>
           </div>
         </div>
@@ -298,22 +308,22 @@ function MiniStrategyCard({
     <button
       onClick={onStart}
       className={cn(
-        "group p-2.5 rounded-lg border bg-card hover:border-primary/30 hover:shadow-md transition-all duration-200 text-center",
+        "group p-3 rounded-xl border bg-card hover:border-primary/30 hover:shadow-md transition-all duration-200 text-center",
         isRecommended ? "ring-1 ring-amber-400/50 border-amber-400/30" : "border-border"
       )}
     >
       <div 
-        className="w-7 h-7 mx-auto mb-1 rounded-md flex items-center justify-center text-white shadow-sm transition-transform duration-200 group-hover:scale-110"
+        className="w-9 h-9 mx-auto mb-1.5 rounded-lg flex items-center justify-center text-white shadow-sm transition-transform duration-200 group-hover:scale-110"
         style={{
           background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`
         }}
       >
         {typeIcons[strategy.type]}
       </div>
-      <p className="text-[10px] font-medium text-foreground truncate leading-tight">
+      <p className="text-[11px] font-medium text-foreground truncate leading-tight">
         {strategy.title.split(' ').slice(0, 2).join(' ')}
       </p>
-      <p className="text-[8px] text-muted-foreground">
+      <p className="text-[9px] text-muted-foreground mt-0.5">
         {strategy.duration}
       </p>
     </button>
