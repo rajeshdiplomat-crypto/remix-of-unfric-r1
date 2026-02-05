@@ -167,36 +167,11 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
       </div>
 
       {/* 2-Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-5 items-stretch">
-        {/* LEFT: Why + Overview (Narrow) */}
-        <div className="flex flex-col gap-4">
-          {/* Why Track - Plain Text */}
-          <div className="px-1">
-            <h3 className="font-semibold text-foreground mb-2 text-sm">Why Track Your Moods?</h3>
-            <ul className="space-y-1.5">
-              <li className="flex items-start gap-2 text-xs text-muted-foreground">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                <span>
-                  Identify <strong className="text-foreground">triggers</strong> that affect your mood
-                </span>
-              </li>
-              <li className="flex items-start gap-2 text-xs text-muted-foreground">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                <span>
-                  Improve <strong className="text-foreground">wellbeing</strong> with data-driven insights
-                </span>
-              </li>
-              <li className="flex items-start gap-2 text-xs text-muted-foreground">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                <span>
-                  Build <strong className="text-foreground">self-awareness</strong> over time
-                </span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Overview Box - Stretches to match right */}
-          <div className="p-5 rounded-2xl bg-card border border-border flex-1 flex flex-col">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-5">
+        {/* LEFT: Overview + Why (Narrow) */}
+        <div className="space-y-4">
+          {/* Overview Box */}
+          <div className="p-5 rounded-2xl bg-card border border-border">
             <h3 className="font-semibold text-foreground mb-4 uppercase text-xs tracking-wider">Overview</h3>
 
             {/* Stats Grid */}
@@ -236,10 +211,53 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
               </div>
             </div>
 
-            {/* Pattern Insights */}
-            <div className="mt-auto">
-              <PatternInsightsCompact entries={filteredEntries} />
+            {/* Recent Emotions Mini List */}
+            <div className="border-t border-border pt-4 mb-4">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                Recent Check-ins
+              </p>
+              <div className="space-y-1.5">
+                {filteredEntries.slice(0, 4).map((entry, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs">
+                    <span className="font-medium" style={{ color: QUADRANT_COLORS[entry.quadrant] }}>
+                      {entry.emotion}
+                    </span>
+                    <span className="text-muted-foreground text-[10px]">
+                      {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </span>
+                  </div>
+                ))}
+                {filteredEntries.length === 0 && <p className="text-xs text-muted-foreground">No recent entries</p>}
+              </div>
             </div>
+
+            {/* Pattern Insights */}
+            <PatternInsightsCompact entries={filteredEntries} />
+          </div>
+
+          {/* Why Track - Plain Text */}
+          <div className="px-1">
+            <h3 className="font-semibold text-foreground mb-2 text-sm">Why Track Your Moods?</h3>
+            <ul className="space-y-1.5">
+              <li className="flex items-start gap-2 text-xs text-muted-foreground">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                <span>
+                  Identify <strong className="text-foreground">triggers</strong> that affect your mood
+                </span>
+              </li>
+              <li className="flex items-start gap-2 text-xs text-muted-foreground">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                <span>
+                  Improve <strong className="text-foreground">wellbeing</strong> with data-driven insights
+                </span>
+              </li>
+              <li className="flex items-start gap-2 text-xs text-muted-foreground">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                <span>
+                  Build <strong className="text-foreground">self-awareness</strong> over time
+                </span>
+              </li>
+            </ul>
           </div>
         </div>
 
