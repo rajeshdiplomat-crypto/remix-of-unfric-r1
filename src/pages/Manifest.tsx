@@ -6,7 +6,6 @@ import { Sparkles, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { subDays, parseISO, isSameDay, format } from "date-fns";
-import { useScrollReporter } from "@/contexts/HeaderScrollContext";
 
 import { ManifestCard } from "@/components/manifest/ManifestCard";
 import { ManifestCreateModal } from "@/components/manifest/ManifestCreateModal";
@@ -80,7 +79,6 @@ function loadAllPractices(): Record<string, ManifestDailyPractice> {
 
 export default function Manifest() {
   const { user } = useAuth();
-  const { onScroll } = useScrollReporter(50);
 
   const [goals, setGoals] = useState<ManifestGoal[]>([]);
   const [proofs, setProofs] = useState<ManifestProof[]>([]);
@@ -589,7 +587,7 @@ export default function Manifest() {
           </div>
 
           {/* Center - Greeting + Practice Panel */}
-          <div className="flex flex-col min-w-0 min-h-0 gap-3 h-full overflow-y-auto" onScroll={onScroll}>
+          <div className="flex flex-col min-w-0 min-h-0 gap-3 h-full overflow-y-auto">
             {/* Greeting Section - Top of center panel */}
             <div className="bg-gradient-to-r from-teal-50 via-cyan-50 to-emerald-50 dark:from-teal-900/20 dark:via-cyan-900/20 dark:to-emerald-900/20 rounded-xl p-3 border border-teal-100/50 dark:border-teal-800/50">
               <h2 className="text-base font-semibold text-slate-800 dark:text-white">{getGreeting()}</h2>

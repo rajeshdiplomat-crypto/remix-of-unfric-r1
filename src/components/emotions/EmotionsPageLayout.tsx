@@ -5,7 +5,6 @@ import { EmotionEntry, QUADRANTS } from "./types";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useScrollReporter } from "@/contexts/HeaderScrollContext";
 
 interface EmotionsPageLayoutProps {
   children: React.ReactNode;
@@ -32,7 +31,6 @@ export function EmotionsPageLayout({
 }: EmotionsPageLayoutProps) {
   const [calendarExpanded, setCalendarExpanded] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
-  const { onScroll } = useScrollReporter(50);
 
   // Get a random quote (changes on mount)
   const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
@@ -220,7 +218,7 @@ export function EmotionsPageLayout({
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto" onScroll={onScroll}>
+      <div className="flex-1 overflow-y-auto">
         <div className="max-w-[900px] mx-auto px-6 lg:px-8 py-8">
           {children}
         </div>

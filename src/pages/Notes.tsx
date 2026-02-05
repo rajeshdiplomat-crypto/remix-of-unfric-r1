@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { useScrollReporter } from "@/contexts/HeaderScrollContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -289,7 +288,6 @@ export default function Notes() {
   const { toast } = useToast();
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
-  const { onScroll } = useScrollReporter(50);
 
   const [notes, setNotes] = useState<Note[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_NOTES);

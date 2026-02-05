@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { useScrollReporter } from "@/contexts/HeaderScrollContext";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -190,7 +189,6 @@ export default function Tasks() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { onScroll } = useScrollReporter(50);
 
   const [view, setView] = useState<"board" | "quadrant">("board");
   const [quadrantMode, setQuadrantMode] = useState<QuadrantMode>("urgent-important");
@@ -623,7 +621,7 @@ export default function Tasks() {
 
           <div className={`flex-1 grid grid-cols-1 ${gridCols} gap-8 min-h-0 min-w-0 overflow-hidden`}>
             {/* Left */}
-            <div className="min-h-0 min-w-0 h-full overflow-y-auto" onScroll={onScroll}>
+            <div className="min-h-0 min-w-0 h-full overflow-y-auto">
               <AllTasksList
                 tasks={filteredTasks}
                 onTaskClick={openTaskDetail}

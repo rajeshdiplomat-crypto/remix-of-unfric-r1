@@ -37,7 +37,6 @@ import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { JournalEntry, JournalTemplate, JOURNAL_SKINS, DEFAULT_TEMPLATE } from "@/components/journal/types";
 import { cn } from "@/lib/utils";
-import { useScrollReporter } from "@/contexts/HeaderScrollContext";
 
 interface JournalAnswer {
   id: string;
@@ -139,7 +138,6 @@ export default function Journal() {
   const lastSavedContentRef = useRef<string>("");
   const currentDateRef = useRef<string>(format(new Date(), "yyyy-MM-dd"));
   const isSavingRef = useRef(false);
-  const { onScroll } = useScrollReporter(50);
 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -769,7 +767,7 @@ export default function Journal() {
           </div>
         )}
 
-        <div className="flex flex-col min-w-0 h-full overflow-y-auto" onScroll={onScroll}>
+        <div className="flex flex-col min-w-0 h-full overflow-y-auto">
           {/* Greeting Section */}
           <div className="mb-4 px-1">
             <h2 className="text-xl font-semibold text-slate-800">
