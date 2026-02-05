@@ -102,27 +102,6 @@ export function EmotionsPageFeel({
                 </li>
               ))}
             </ul>
-
-            {/* Selected Emotion Preview (on desktop, shows here) */}
-            {selectedEmotion && !isMobile && (
-              <div
-                className="px-5 py-3 rounded-xl border-2 transition-all animate-in fade-in zoom-in-95 duration-300 mt-6"
-                style={{
-                  background: `linear-gradient(135deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}20)`,
-                  borderColor: quadrantInfo.borderColor,
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{quadrantEmoji[currentQuadrant]}</span>
-                  <div>
-                    <p className="font-semibold" style={{ color: quadrantInfo.color }}>
-                      {selectedEmotion}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{quadrantInfo.label}</p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -140,42 +119,34 @@ export function EmotionsPageFeel({
             size={wheelSize}
           />
 
-          {/* Selected Emotion Preview (on mobile, shows below wheel) */}
-          {selectedEmotion && isMobile && (
-            <div
-              className="px-5 py-3 rounded-xl border-2 transition-all animate-in fade-in zoom-in-95 duration-300 mt-6"
+          {/* Continue Section - Clean and Creative */}
+          <div className="flex flex-col items-center gap-4 mt-8 w-full max-w-sm">
+            {/* Selected Emotion Display - Minimal */}
+            {selectedEmotion && (
+              <div className="flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <span className="text-2xl">{quadrantEmoji[currentQuadrant]}</span>
+                <span className="text-lg font-semibold" style={{ color: quadrantInfo.color }}>
+                  {selectedEmotion}
+                </span>
+              </div>
+            )}
+
+            {/* Continue Button - Prominent */}
+            <Button
+              onClick={onContinue}
+              disabled={!selectedEmotion}
+              size="lg"
+              className="w-full h-14 rounded-2xl text-lg font-bold gap-3 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl"
               style={{
-                background: `linear-gradient(135deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}20)`,
-                borderColor: quadrantInfo.borderColor,
+                background: selectedEmotion
+                  ? `linear-gradient(135deg, ${quadrantInfo.color}, ${quadrantInfo.color}CC)`
+                  : undefined,
               }}
             >
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{quadrantEmoji[currentQuadrant]}</span>
-                <div>
-                  <p className="font-semibold" style={{ color: quadrantInfo.color }}>
-                    {selectedEmotion}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{quadrantInfo.label}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Continue Button */}
-          <Button
-            onClick={onContinue}
-            disabled={!selectedEmotion}
-            size="lg"
-            className="h-12 px-8 rounded-xl text-base font-semibold gap-2 transition-all duration-300 hover:scale-105 active:scale-95 mt-6"
-            style={{
-              background: selectedEmotion
-                ? `linear-gradient(135deg, ${quadrantInfo.color}, ${quadrantInfo.color}DD)`
-                : undefined,
-            }}
-          >
-            Continue
-            <ArrowRight className="h-5 w-5" />
-          </Button>
+              Continue
+              <ArrowRight className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>
