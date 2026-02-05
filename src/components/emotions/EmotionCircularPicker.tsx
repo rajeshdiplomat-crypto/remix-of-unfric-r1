@@ -322,9 +322,15 @@ export function EmotionCircularPicker({
   };
 
   return (
-    <div className="flex flex-col items-center gap-6">
+    <div className="flex flex-col items-center gap-6 select-none">
       {/* Emotion Wheel */}
-      <div ref={containerRef} className="relative select-none" style={{ width: size, height: size }}>
+      <div
+        ref={containerRef}
+        className="relative select-none"
+        style={{ width: size, height: size }}
+        onMouseDown={(e) => e.preventDefault()}
+        onTouchStart={(e) => e.preventDefault()}
+      >
         <svg width={size} height={size} className="absolute inset-0">
           {/* SVG Filters for glow effect */}
           <defs>
@@ -569,8 +575,14 @@ export function EmotionCircularPicker({
               ? "0 0 20px hsl(45, 93%, 55%), 0 4px 12px rgba(0,0,0,0.2)"
               : "0 4px 12px rgba(0,0,0,0.15)",
           }}
-          onMouseDown={() => setIsDraggingEnergy(true)}
-          onTouchStart={() => setIsDraggingEnergy(true)}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setIsDraggingEnergy(true);
+          }}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            setIsDraggingEnergy(true);
+          }}
         >
           <span className="text-[9px] font-bold text-amber-600">{energy}</span>
         </div>
@@ -589,8 +601,14 @@ export function EmotionCircularPicker({
               ? "0 0 20px hsl(142, 52%, 50%), 0 4px 12px rgba(0,0,0,0.2)"
               : "0 4px 12px rgba(0,0,0,0.15)",
           }}
-          onMouseDown={() => setIsDraggingPleasantness(true)}
-          onTouchStart={() => setIsDraggingPleasantness(true)}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setIsDraggingPleasantness(true);
+          }}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            setIsDraggingPleasantness(true);
+          }}
         >
           <span className="text-[9px] font-bold text-emerald-600">{pleasantness}</span>
         </div>
