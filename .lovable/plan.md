@@ -1,84 +1,114 @@
 
+# Increase Emotion Sector Radial Width
 
-# Navigation Buttons Styling Update
+## Problem
+The emotion text labels are flowing outside their radial sector boundaries because the sectors are too narrow (~52px radial width).
 
-## Reference Analysis
+## Current Dimensions (at size=520)
+| Element | Current Value | Calculated |
+|---------|---------------|------------|
+| outerRadius | `size * 0.45` | ~234px |
+| middleRadius | `size * 0.34` | ~177px |
+| innerRingRadius | `size * 0.20` | ~104px |
+| innerMostRadius | `size * 0.135` | ~70px |
 
-Based on the reference images, the navigation buttons should have:
-1. **Rectangular shape with slight rounded corners** (`rounded-lg` ~8px instead of `rounded-full`)
-2. **Active button has solid darker background** (grayish/darker shade)
-3. **Positioned at extreme right** of the hero area
-4. **Clear gap between the two button groups** (nav pills vs icon buttons)
-5. **Container has subtle rounded corners** (not pill-shaped)
+**Current sector radial widths:**
+- Outer ring (specific emotions): 52px
+- Inner ring (core emotions): 53px
+
+## Solution
+Increase the radial width by adjusting the multipliers to create more space for text:
+
+### New Dimensions
+| Element | New Value | Calculated | Change |
+|---------|-----------|------------|--------|
+| outerRadius | `size * 0.47` | ~244px | +10px |
+| middleRadius | `size * 0.30` | ~156px | -21px |
+| innerRingRadius | `size * 0.16` | ~83px | -21px |
+| innerMostRadius | `size * 0.10` | ~52px | -18px |
+
+**New sector radial widths:**
+- Outer ring (specific emotions): ~83px (was 52px) → **+60% more space**
+- Inner ring (core emotions): ~68px (was 53px) → **+28% more space**
+
+### Additional Adjustments
+
+1. **Text positioning** - Update label positions to center within new wider sectors:
+   - Core emotions: `middleRadius - 15` (was -20)
+   - Outer emotions: `outerRadius - 40` (was -25)
+
+2. **Arc path adjustments** - Update the offset values in `createArcPath` calls:
+   - Outer section: `middleRadius + 5` stays as is
+   - Inner section: `innerRingRadius + 15` (was +20) to match new proportions
+
+3. **Center background circle** - Adjust to match new `innerRingRadius`:
+   - Change from `innerRingRadius + 15` to `innerRingRadius + 12`
+
+4. **Selection highlight ring** - Update to match new dimensions
 
 ---
 
-## Changes to EmotionsNavigation.tsx
+## File to Modify
+`src/components/emotions/EmotionCircularPicker.tsx`
 
-### Current vs New Styling
-
-| Element | Current | New (Reference Match) |
-|---------|---------|----------------------|
-| Container shape | `rounded-full` | `rounded-lg` |
-| Button shape | `rounded-full` | `rounded-md` |
-| Gap between groups | `gap-3` | `gap-4` or `gap-6` (more space) |
-| Container padding | `px-1.5 py-1` | `px-1 py-1` |
-| Button inner gap | `gap-0.5` | `gap-0` (buttons touching) |
-
-### Button Styling Changes
-
-**Main Navigation Container:**
+### Changes at Lines 103-110 (Ring dimensions)
 ```typescript
 // Before
-"flex items-center gap-0.5 px-1.5 py-1 bg-foreground/20 backdrop-blur-md rounded-full"
+const outerRadius = size * 0.45;
+const middleRadius = size * 0.34;
+const innerRingRadius = size * 0.20;
+const innerMostRadius = size * 0.135;
+
+// After - Wider sectors for text
+const outerRadius = size * 0.47;
+const middleRadius = size * 0.30;
+const innerRingRadius = size * 0.16;
+const innerMostRadius = size * 0.10;
+```
+
+### Changes at Line 296 (Inner section path)
+```typescript
+// Before
+d={createArcPath(section.startAngle, section.endAngle, innerRingRadius + 20, middleRadius)}
 
 // After
-"flex items-center gap-0 p-1 bg-foreground/25 backdrop-blur-md rounded-lg"
+d={createArcPath(section.startAngle, section.endAngle, innerRingRadius + 15, middleRadius)}
 ```
 
-**Individual Buttons:**
+### Changes at Line 311 (Selection highlight)
 ```typescript
 // Before
-"h-8 px-4 rounded-full transition-all duration-200 text-sm font-medium"
-
-// After - Rectangular with slight rounding
-"h-8 px-5 rounded-md transition-all duration-200 text-sm font-medium"
-```
-
-**Active State:**
-```typescript
-// Before
-"bg-foreground/30 text-white"
-
-// After - More prominent active state
-"bg-foreground/40 text-white"
-```
-
-### Quick Actions Container
-
-**Change from pill to rounded rectangle:**
-```typescript
-// Before
-"flex items-center gap-0.5 px-1.5 py-1 bg-foreground/20 backdrop-blur-md rounded-full"
+d={createArcPath(section.startAngle, section.endAngle, innerRingRadius + 18, outerRadius + 2)}
 
 // After
-"flex items-center gap-0 p-1 bg-foreground/25 backdrop-blur-md rounded-lg"
+d={createArcPath(section.startAngle, section.endAngle, innerRingRadius + 13, outerRadius + 2)}
 ```
 
-**Icon buttons - slight rounding:**
+### Changes at Line 328 (Center background)
 ```typescript
 // Before
-"h-8 w-8 rounded-full ..."
+r={innerRingRadius + 15}
 
 // After
-"h-8 w-8 rounded-md ..."
+r={innerRingRadius + 12}
 ```
 
-### Gap Between Button Groups
-
+### Changes at Line 402 (Core emotion label position)
 ```typescript
-// Increase gap for clear separation
-<div className="flex items-center justify-end gap-6 w-full">
+// Before
+const corePos = getTextPosition(midAngle, middleRadius - 20);
+
+// After - Center in wider sector
+const corePos = getTextPosition(midAngle, middleRadius - 15);
+```
+
+### Changes at Line 433 (Outer emotion label position)
+```typescript
+// Before
+const pos = getTextPosition(emotionAngle, outerRadius - 25);
+
+// After - Better centered in wider sector
+const pos = getTextPosition(emotionAngle, outerRadius - 40);
 ```
 
 ---
@@ -86,24 +116,17 @@ Based on the reference images, the navigation buttons should have:
 ## Visual Result
 
 ```text
-                                  [Feel][Regulate][Insights]  gap  [📧][👤]
-                                   \_______rectangular______/       \_rect_/
+BEFORE:                          AFTER:
+┌─────────────┐                 ┌─────────────────┐
+│   52px      │                 │      83px       │
+│  Outer Ring │                 │   Outer Ring    │
+├─────────────┤                 │  (more space)   │
+│   53px      │                 ├─────────────────┤
+│ Inner Ring  │                 │      68px       │
+├─────────────┤                 │   Inner Ring    │
+│  Sliders    │                 ├─────────────────┤
+└─────────────┘                 │    Sliders      │
+                                └─────────────────┘
 ```
 
-- Buttons are rectangular with `rounded-md` (~6px corners)
-- Container has `rounded-lg` (~8px corners)  
-- Clear gap (`gap-6`) between navigation and action buttons
-- Both groups positioned at extreme right with `justify-end`
-
----
-
-## Implementation Summary
-
-**File:** `src/components/emotions/EmotionsNavigation.tsx`
-
-1. Change outer container gap from `gap-3` to `gap-6`
-2. Change nav container from `rounded-full` to `rounded-lg`, adjust padding
-3. Change button shape from `rounded-full` to `rounded-md`
-4. Change button gap from `gap-0.5` to `gap-0`
-5. Apply same rectangular styling to quick actions container and icon buttons
-
+Text labels will now have ~60% more radial space, preventing overflow outside sector boundaries.
