@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Check, ArrowRight, Wind, Heart, Zap, Sparkles, Activity, Calendar, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { QuadrantType, QUADRANTS, STRATEGIES, Strategy } from "./types";
+import { QuadrantType, QUADRANTS, STRATEGIES, Strategy, EmotionEntry } from "./types";
 import { GuidedVisualization } from "./GuidedVisualization";
 import { cn } from "@/lib/utils";
 import confetti from "canvas-confetti";
@@ -10,27 +10,10 @@ import confetti from "canvas-confetti";
 interface EmotionsPageRegulateProps {
   savedQuadrant: QuadrantType | null;
   savedEmotion: string | null;
+  entries: EmotionEntry[];
   onNewCheckin: () => void;
   onViewInsights: () => void;
 }
-
-// Mock last 7 emotion entries
-interface EmotionEntry {
-  id: string;
-  emotion: string;
-  quadrant: QuadrantType;
-  timestamp: Date;
-}
-
-const MOCK_ENTRIES: EmotionEntry[] = [
-  { id: "1", emotion: "Excited", quadrant: "high-pleasant", timestamp: new Date() },
-  { id: "2", emotion: "Anxious", quadrant: "high-unpleasant", timestamp: new Date(Date.now() - 86400000) },
-  { id: "3", emotion: "Calm", quadrant: "low-pleasant", timestamp: new Date(Date.now() - 86400000 * 2) },
-  { id: "4", emotion: "Sad", quadrant: "low-unpleasant", timestamp: new Date(Date.now() - 86400000 * 3) },
-  { id: "5", emotion: "Happy", quadrant: "high-pleasant", timestamp: new Date(Date.now() - 86400000 * 4) },
-  { id: "6", emotion: "Stressed", quadrant: "high-unpleasant", timestamp: new Date(Date.now() - 86400000 * 5) },
-  { id: "7", emotion: "Peaceful", quadrant: "low-pleasant", timestamp: new Date(Date.now() - 86400000 * 6) },
-];
 
 const typeGradients: Record<string, { from: string; to: string }> = {
   breathing: { from: "#06B6D4", to: "#3B82F6" },
@@ -66,6 +49,7 @@ const REGULATE_CONTENT = {
 export function EmotionsPageRegulate({
   savedQuadrant,
   savedEmotion,
+  entries,
   onNewCheckin,
   onViewInsights,
 }: EmotionsPageRegulateProps) {
@@ -74,6 +58,9 @@ export function EmotionsPageRegulate({
 
   const quadrantInfo = savedQuadrant ? QUADRANTS[savedQuadrant] : null;
   const accentColor = quadrantInfo?.color || "#10B981";
+
+  // Get last 7 entries
+  const recentEntries = entries.slice(0, 7);
 
   useEffect(() => {
     if (savedQuadrant) {
@@ -92,7 +79,8 @@ export function EmotionsPageRegulate({
 
   const allStrategies = STRATEGIES.filter((s) => !recommendedStrategies.some((r) => r.id === s.id));
 
-  const formatDate = (date: Date) => {
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
     const today = new Date();
     const diffDays = Math.floor((today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDays === 0) return "Today";
@@ -135,28 +123,37 @@ export function EmotionsPageRegulate({
           <h3 className="text-lg font-semibold mb-1">Your Last 7</h3>
           <p className="text-xs text-muted-foreground mb-4">Track your emotional journey</p>
 
-          <div className="space-y-2 mb-4">
-            {MOCK_ENTRIES.slice(0, 5).map((entry, index) => {
-              const entryQuadrant = QUADRANTS[entry.quadrant];
-              return (
-                <div
-                  key={entry.id}
-                  className={cn(
-                    "flex items-center gap-3 p-2 rounded-lg transition-colors cursor-pointer hover:bg-muted/50",
-                    index === 0 && "bg-muted/30",
-                  )}
-                >
-                  <span className="text-lg">{quadrantEmoji[entry.quadrant]}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate" style={{ color: entryQuadrant.color }}>
-                      {entry.emotion}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">{formatDate(entry.timestamp)}</p>
+          {recentEntries.length > 0 ? (
+            <div className="space-y-2 mb-4">
+              {recentEntries.slice(0, 5).map((entry, index) => {
+                const entryQuadrant = QUADRANTS[entry.quadrant];
+                return (
+                  <div
+                    key={entry.id}
+                    className={cn(
+                      "flex items-center gap-3 p-2 rounded-lg transition-colors cursor-pointer hover:bg-muted/50",
+                      index === 0 && "bg-muted/30",
+                    )}
+                  >
+                    <span className="text-lg">{quadrantEmoji[entry.quadrant]}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate" style={{ color: entryQuadrant.color }}>
+                        {entry.emotion}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {formatDate(entry.entry_date || entry.created_at)}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="py-8 text-center text-muted-foreground text-sm">
+              <p>No entries yet</p>
+              <p className="text-xs mt-1">Start tracking to see your history</p>
+            </div>
+          )}
 
           <Button variant="outline" size="sm" onClick={onViewInsights} className="w-full rounded-lg">
             View All Entries

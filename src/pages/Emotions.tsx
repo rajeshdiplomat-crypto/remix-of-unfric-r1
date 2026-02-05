@@ -91,10 +91,10 @@ export default function Emotions() {
     energy >= 50 && pleasantness >= 50
       ? "high-pleasant"
       : energy >= 50 && pleasantness < 50
-      ? "high-unpleasant"
-      : energy < 50 && pleasantness < 50
-      ? "low-unpleasant"
-      : "low-pleasant";
+        ? "high-unpleasant"
+        : energy < 50 && pleasantness < 50
+          ? "low-unpleasant"
+          : "low-pleasant";
 
   useEffect(() => {
     if (user) fetchEntries();
@@ -222,7 +222,7 @@ export default function Emotions() {
         selectedEmotion,
         note || undefined,
         context,
-        entryDate
+        entryDate,
       );
 
       if (sendToJournal) {
@@ -249,7 +249,7 @@ export default function Emotions() {
     emotion: string,
     noteText?: string,
     ctx?: typeof context,
-    entryDate?: string
+    entryDate?: string,
   ) => {
     if (!user) return;
 
@@ -455,7 +455,7 @@ export default function Emotions() {
             title={PAGE_HERO_TEXT.emotions.title}
             subtitle={PAGE_HERO_TEXT.emotions.subtitle}
           />
-          
+
           {/* Navigation overlay at bottom of hero */}
           <div className="absolute bottom-4 left-0 right-0 z-20 px-4 lg:px-8">
             <div className="max-w-4xl mx-auto">
@@ -508,6 +508,7 @@ export default function Emotions() {
             <EmotionsPageRegulate
               savedQuadrant={savedQuadrant}
               savedEmotion={savedEmotion}
+              entries={entries}
               onNewCheckin={resetFlow}
               onViewInsights={() => {
                 setActiveView("insights");
@@ -536,11 +537,7 @@ export default function Emotions() {
               <DialogTitle className="text-xl">Recent Check-ins</DialogTitle>
             </DialogHeader>
             <div className="p-6 pt-4 overflow-y-auto max-h-[60vh]">
-              <RecentEntriesList
-                entries={entries}
-                onEditEntry={startEditEntry}
-                onDeleteEntry={setDeletingEntryId}
-              />
+              <RecentEntriesList entries={entries} onEditEntry={startEditEntry} onDeleteEntry={setDeletingEntryId} />
             </div>
           </DialogContent>
         </Dialog>
@@ -573,7 +570,10 @@ export default function Emotions() {
                   style={{ backgroundColor: QUADRANTS[entry.quadrant].bgColor }}
                 >
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: QUADRANTS[entry.quadrant].color }} />
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: QUADRANTS[entry.quadrant].color }}
+                    />
                     <span className="font-medium" style={{ color: QUADRANTS[entry.quadrant].color }}>
                       {entry.emotion}
                     </span>
@@ -597,7 +597,9 @@ export default function Emotions() {
                   {entry.note && <p className="text-sm text-muted-foreground mb-2">{entry.note}</p>}
                   <div className="flex flex-wrap gap-1.5">
                     {entry.context?.who && (
-                      <span className="text-xs px-2 py-0.5 bg-background/50 rounded-full">With: {entry.context.who}</span>
+                      <span className="text-xs px-2 py-0.5 bg-background/50 rounded-full">
+                        With: {entry.context.who}
+                      </span>
                     )}
                     {entry.context?.what && (
                       <span className="text-xs px-2 py-0.5 bg-background/50 rounded-full">{entry.context.what}</span>
