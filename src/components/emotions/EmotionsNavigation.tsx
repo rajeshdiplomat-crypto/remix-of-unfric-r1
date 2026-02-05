@@ -29,9 +29,9 @@ export function EmotionsNavigation({
   ];
 
   return (
-    <div className="flex items-center justify-end gap-3 w-full">
+    <div className="flex items-center justify-end gap-6 w-full">
       {/* Main Navigation Pills */}
-      <div className="flex items-center gap-0.5 px-1.5 py-1 bg-foreground/20 backdrop-blur-md rounded-full">
+      <div className="flex items-center gap-0 p-1 bg-foreground/25 backdrop-blur-md rounded-lg">
         {navItems.map((item) => {
           const isActive = activeView === item.id;
           
@@ -41,9 +41,9 @@ export function EmotionsNavigation({
               onClick={() => item.enabled && onViewChange(item.id)}
               disabled={!item.enabled}
               className={cn(
-                "h-8 px-4 rounded-full transition-all duration-200 text-sm font-medium",
+                "h-8 px-5 rounded-md transition-all duration-200 text-sm font-medium",
                 isActive
-                  ? "bg-foreground/30 text-white"
+                  ? "bg-foreground/40 text-white"
                   : "text-white/70 hover:text-white",
                 !item.enabled && "opacity-40 cursor-not-allowed"
               )}
@@ -55,12 +55,12 @@ export function EmotionsNavigation({
       </div>
 
       {/* Quick Actions */}
-      <div className="flex items-center gap-0.5 px-1.5 py-1 bg-foreground/20 backdrop-blur-md rounded-full">
+      <div className="flex items-center gap-0 p-1 bg-foreground/25 backdrop-blur-md rounded-lg">
         <Tooltip>
           <TooltipTrigger asChild>
             <button
               onClick={onOpenRecentEntries}
-              className="h-8 w-8 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-colors"
+              className="h-8 w-8 rounded-md flex items-center justify-center text-white/70 hover:text-white transition-colors"
             >
               <Users className="h-4 w-4" />
             </button>
@@ -74,7 +74,7 @@ export function EmotionsNavigation({
           <TooltipTrigger asChild>
             <button
               onClick={onOpenCalendar}
-              className="h-8 w-8 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-colors"
+              className="h-8 w-8 rounded-md flex items-center justify-center text-white/70 hover:text-white transition-colors"
             >
               <Calendar className="h-4 w-4" />
             </button>
