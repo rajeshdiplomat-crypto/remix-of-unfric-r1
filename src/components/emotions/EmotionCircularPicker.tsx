@@ -108,11 +108,8 @@ export function EmotionCircularPicker({
   const [isDraggingEnergy, setIsDraggingEnergy] = useState(false);
   const [isDraggingPleasantness, setIsDraggingPleasantness] = useState(false);
   const [hoveredSection, setHoveredSection] = useState<number | null>(null);
-  const [energyParticles, setEnergyParticles] = useState<EnergyParticle[]>([]);
-  const [pleasantnessParticles, setPleasantnessParticles] = useState<EnergyParticle[]>([]);
   const [prevQuadrant, setPrevQuadrant] = useState<QuadrantType | null>(null);
   const [expandedSectionIndex, setExpandedSectionIndex] = useState<number | null>(null);
-  const particleIdRef = useRef(0);
 
   // Ring dimensions - scaled up ~25%
   const size = propSize || 520;
@@ -148,33 +145,6 @@ export function EmotionCircularPicker({
     [valueToAngle, center],
   );
 
-  // Spawn particles along filled ring
-  const spawnParticles = useCallback(
-    (value: number, ring: "energy" | "pleasantness") => {
-      const radius = ring === "energy" ? innerRingRadius : innerMostRadius;
-      const numParticles = Math.floor(value / 10) + 2;
-      const newParticles: EnergyParticle[] = [];
-
-      for (let i = 0; i < numParticles; i++) {
-        const particleAngle = (i / numParticles) * (value / 100) * 2 * Math.PI - Math.PI / 2;
-        newParticles.push({
-          id: particleIdRef.current++,
-          angle: particleAngle,
-          radius: radius + (Math.random() - 0.5) * 8,
-          opacity: 0.3 + Math.random() * 0.5,
-          scale: 0.5 + Math.random() * 0.5,
-        });
-      }
-
-      if (ring === "energy") {
-        setEnergyParticles(newParticles);
-      } else {
-        setPleasantnessParticles(newParticles);
-      }
-    },
-    [innerRingRadius, innerMostRadius],
-  );
-
   // Handle drag on ring - improved with direct coordinate calculation
   const handleDrag = useCallback(
     (e: MouseEvent | TouchEvent, ring: "energy" | "pleasantness") => {
@@ -193,13 +163,11 @@ export function EmotionCircularPicker({
 
       if (ring === "energy") {
         onEnergyChange(clampedValue);
-        spawnParticles(clampedValue, "energy");
       } else {
         onPleasantnessChange(clampedValue);
-        spawnParticles(clampedValue, "pleasantness");
       }
     },
-    [angleToValue, onEnergyChange, onPleasantnessChange, center, spawnParticles],
+    [angleToValue, onEnergyChange, onPleasantnessChange, center],
   );
 
   // Mouse/touch handlers
@@ -242,26 +210,10 @@ export function EmotionCircularPicker({
     return "low-pleasant";
   }, [energy, pleasantness]);
 
-  // Track quadrant changes for animation
+  // Track quadrant changes
   useEffect(() => {
-    if (prevQuadrant !== null && prevQuadrant !== currentQuadrant) {
-      // Quadrant changed - trigger animation by spawning particles
-      spawnParticles(energy, "energy");
-      spawnParticles(pleasantness, "pleasantness");
-    }
     setPrevQuadrant(currentQuadrant);
-  }, [currentQuadrant, prevQuadrant, energy, pleasantness, spawnParticles]);
-
-  // Clear particles after animation
-  useEffect(() => {
-    if (energyParticles.length > 0 || pleasantnessParticles.length > 0) {
-      const timeout = setTimeout(() => {
-        setEnergyParticles([]);
-        setPleasantnessParticles([]);
-      }, 800);
-      return () => clearTimeout(timeout);
-    }
-  }, [energyParticles, pleasantnessParticles]);
+  }, [currentQuadrant]);
 
   // Check if section belongs to current quadrant
   const isSectionActive = useCallback(
@@ -551,34 +503,6 @@ export function EmotionCircularPicker({
               </textPath>
             </text>
           )}
-
-          {/* Energy particles animation */}
-          {energyParticles.map((particle) => (
-            <circle
-              key={`energy-p-${particle.id}`}
-              cx={center + Math.cos(particle.angle) * particle.radius}
-              cy={center + Math.sin(particle.angle) * particle.radius}
-              r={4 * particle.scale}
-              fill="hsl(45, 93%, 55%)"
-              opacity={particle.opacity}
-              className="animate-ping"
-              style={{ animationDuration: "0.6s" }}
-            />
-          ))}
-
-          {/* Pleasantness particles animation */}
-          {pleasantnessParticles.map((particle) => (
-            <circle
-              key={`pleasant-p-${particle.id}`}
-              cx={center + Math.cos(particle.angle) * particle.radius}
-              cy={center + Math.sin(particle.angle) * particle.radius}
-              r={4 * particle.scale}
-              fill="hsl(142, 52%, 50%)"
-              opacity={particle.opacity}
-              className="animate-ping"
-              style={{ animationDuration: "0.6s" }}
-            />
-          ))}
 
           {/* Center fill */}
           <circle cx={center} cy={center} r={innerMostRadius - strokeWidth / 2 - 5} fill="hsl(var(--background))" />
