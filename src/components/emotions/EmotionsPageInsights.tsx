@@ -167,13 +167,13 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
       </div>
 
       {/* 2-Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-5 items-stretch">
         {/* LEFT: Why + Overview (Narrow) */}
-        <div className="space-y-4">
-          {/* Why Track Box */}
-          <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
-            <h3 className="font-semibold text-foreground mb-3 text-sm">Why Track Your Moods?</h3>
-            <ul className="space-y-2">
+        <div className="flex flex-col gap-4">
+          {/* Why Track - Plain Text */}
+          <div className="px-1">
+            <h3 className="font-semibold text-foreground mb-2 text-sm">Why Track Your Moods?</h3>
+            <ul className="space-y-1.5">
               <li className="flex items-start gap-2 text-xs text-muted-foreground">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
                 <span>
@@ -195,8 +195,8 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
             </ul>
           </div>
 
-          {/* Overview Box */}
-          <div className="p-5 rounded-2xl bg-card border border-border">
+          {/* Overview Box - Stretches to match right */}
+          <div className="p-5 rounded-2xl bg-card border border-border flex-1 flex flex-col">
             <h3 className="font-semibold text-foreground mb-4 uppercase text-xs tracking-wider">Overview</h3>
 
             {/* Stats Grid */}
@@ -237,7 +237,9 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
             </div>
 
             {/* Pattern Insights */}
-            <PatternInsightsCompact entries={filteredEntries} />
+            <div className="mt-auto">
+              <PatternInsightsCompact entries={filteredEntries} />
+            </div>
           </div>
         </div>
 
