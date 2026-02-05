@@ -247,49 +247,54 @@ export default function Emotions() {
     if (!user || entries.length === 0) return;
 
     // We assume the user is updating the most recent entry they just created or are looking at
-    const latestEntry = entries[0];
+    const latestEntryId = entries[0].id;
 
     try {
-      // Parse existing emotion data to preserve other fields
-      let emotionData: any = {};
-      try {
-        emotionData = JSON.parse(latestEntry.emotion as unknown as string) || {};
-        // Or reconstruct if needed as before
-        if (!emotionData.quadrant) {
-          emotionData = {
-            quadrant: latestEntry.quadrant,
-            emotion: latestEntry.emotion,
-            context: latestEntry.context,
-            showInJournal: latestEntry.showInJournal,
-            strategy: strategyTitle, // Add strategy
-          };
-        } else {
-          emotionData.strategy = strategyTitle;
+      // 1. Fetch the raw existing data from DB to ensure we have the full JSON object
+      // (The local state 'entries' has flattened/parsed data which might miss fields or be in wrong format for full update)
+      const { data: currentData, error: fetchError } = await supabase
+        .from("emotions")
+        .select("emotion")
+        .eq("id", latestEntryId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // 2. Parse the current JSON
+      let emotionJson: any = {};
+      if (typeof currentData.emotion === "string") {
+        try {
+          emotionJson = JSON.parse(currentData.emotion);
+        } catch (e) {
+          console.error("Error parsing current emotion JSON", e);
+          emotionJson = {};
         }
-      } catch (e) {
-        console.error("Error constructing emotion data", e);
-        emotionData = {
-          quadrant: latestEntry.quadrant,
-          emotion: latestEntry.emotion,
-          context: latestEntry.context,
-          showInJournal: latestEntry.showInJournal,
-          strategy: strategyTitle, // Add strategy
-        };
+      } else {
+        emotionJson = currentData.emotion || {}; // Handle if it's already an object (Supabase client sometimes auto-parses)
       }
 
-      const { error } = await supabase
+      // 3. Add/Update strategy data
+      const updatedJson = {
+        ...emotionJson,
+        strategy: strategyTitle,
+        strategy_completed_at: new Date().toISOString(),
+      };
+
+      // 4. Save back
+      const { error: updateError } = await supabase
         .from("emotions")
         .update({
-          emotion: JSON.stringify(emotionData),
+          emotion: JSON.stringify(updatedJson),
         })
-        .eq("id", latestEntry.id);
+        .eq("id", latestEntryId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
       toast.success(`Strategy recorded: ${strategyTitle}`);
       await fetchEntries(); // Refresh to show in history
     } catch (err) {
-      console.error("Error updating strategy:", err);
+      console.error("Error updating strategy conversation:", err);
+      toast.error("Failed to record strategy");
     }
   };
 

@@ -96,7 +96,7 @@ export function EmotionsPageRegulate({
   const handleStrategyClick = (strategy: Strategy) => {
     setActiveStrategy(strategy);
     setShowVisualization(true);
-    onStrategyComplete(strategy.title);
+    // Don't auto-complete on start anymore
   };
 
   const toggleEntryExpand = (entryId: string) => {
@@ -209,6 +209,16 @@ export function EmotionsPageRegulate({
                           </div>
                         ) : (
                           <p className="text-xs text-muted-foreground italic">No additional details recorded</p>
+                        )}
+
+                        {/* Strategy Display in Expanded - Redundant if handled in RecentEntriesList, but nice to have in Regulate view too */}
+                        {entry.strategy && (
+                          <div className="mt-2 pt-2 border-t border-border/50 flex gap-2 items-center">
+                            <Check className="h-3 w-3 text-green-500" />
+                            <span className="text-xs text-muted-foreground">
+                              Completed: <span className="text-foreground font-medium">{entry.strategy}</span>
+                            </span>
+                          </div>
                         )}
                       </div>
                     )}
@@ -358,7 +368,10 @@ export function EmotionsPageRegulate({
               </DialogHeader>
               <GuidedVisualization
                 strategy={activeStrategy}
-                onComplete={() => setShowVisualization(false)}
+                onComplete={() => {
+                  onStrategyComplete(activeStrategy.title);
+                  setShowVisualization(false);
+                }}
                 onSkip={() => setShowVisualization(false)}
               />
             </>
