@@ -499,7 +499,7 @@ export function EmotionCircularPicker({
               {/* Core emotion label */}
               <button
                 className={cn(
-                  "absolute text-xs font-bold pointer-events-auto",
+                  "absolute text-xs font-bold pointer-events-auto select-none",
                   "transition-all duration-300",
                   isActive
                     ? "text-white hover:scale-110 cursor-pointer"
@@ -535,7 +535,7 @@ export function EmotionCircularPicker({
                   <button
                     key={emotion}
                     className={cn(
-                      "absolute text-[9px] font-medium pointer-events-auto",
+                      "absolute text-[9px] font-medium pointer-events-auto select-none",
                       "transition-all duration-300 max-w-[60px] truncate",
                       isActive
                         ? "text-white hover:scale-110 cursor-pointer"
