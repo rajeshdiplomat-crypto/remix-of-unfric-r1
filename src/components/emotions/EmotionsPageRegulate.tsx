@@ -1,5 +1,17 @@
 import { useEffect, useState } from "react";
-import { Check, ArrowRight, Wind, Heart, Zap, Sparkles, Activity, Clock } from "lucide-react";
+import {
+  Check,
+  ArrowRight,
+  Wind,
+  Heart,
+  Zap,
+  Sparkles,
+  Activity,
+  Clock,
+  TrendingUp,
+  Calendar,
+  ChevronRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { QuadrantType, QUADRANTS, STRATEGIES, Strategy } from "./types";
@@ -14,18 +26,35 @@ interface EmotionsPageRegulateProps {
   onViewInsights: () => void;
 }
 
-const REGULATE_CONTENT = {
-  badge: "Well Done",
-  title: {
-    line1: "Time to",
-    line2: "Regulate"
-  },
-  description: "Great job tracking your emotion! Now explore strategies designed for your current emotional state to help you feel balanced and grounded.",
-  features: [
-    "Personalized recommendations",
-    "Guided breathing exercises",
-    "Quick mindfulness techniques"
-  ]
+// Mock last 7 emotion entries for display
+interface EmotionEntry {
+  id: string;
+  emotion: string;
+  quadrant: QuadrantType;
+  timestamp: Date;
+  energy: number;
+  pleasantness: number;
+}
+
+const generateMockEntries = (): EmotionEntry[] => {
+  const emotions: { name: string; quadrant: QuadrantType }[] = [
+    { name: "Excited", quadrant: "high-pleasant" },
+    { name: "Anxious", quadrant: "high-unpleasant" },
+    { name: "Calm", quadrant: "low-pleasant" },
+    { name: "Sad", quadrant: "low-unpleasant" },
+    { name: "Happy", quadrant: "high-pleasant" },
+    { name: "Stressed", quadrant: "high-unpleasant" },
+    { name: "Peaceful", quadrant: "low-pleasant" },
+  ];
+
+  return emotions.map((e, i) => ({
+    id: `entry-${i}`,
+    emotion: e.name,
+    quadrant: e.quadrant,
+    timestamp: new Date(Date.now() - i * 24 * 60 * 60 * 1000), // Each day back
+    energy: Math.floor(Math.random() * 40) + 30,
+    pleasantness: Math.floor(Math.random() * 40) + 30,
+  }));
 };
 
 const typeGradients: Record<string, { from: string; to: string; bg: string }> = {
@@ -44,14 +73,6 @@ const typeIcons: Record<string, React.ReactNode> = {
   mindfulness: <Heart className="h-4 w-4" />,
 };
 
-const typeLabels: Record<string, string> = {
-  breathing: "Breathing",
-  grounding: "Grounding",
-  cognitive: "Cognitive",
-  movement: "Movement",
-  mindfulness: "Mindfulness",
-};
-
 const quadrantEmoji: Record<QuadrantType, string> = {
   "high-pleasant": "😊",
   "high-unpleasant": "😰",
@@ -68,6 +89,7 @@ export function EmotionsPageRegulate({
   const [showCheckmark, setShowCheckmark] = useState(true);
   const [activeStrategy, setActiveStrategy] = useState<Strategy | null>(null);
   const [showVisualization, setShowVisualization] = useState(false);
+  const [recentEntries] = useState<EmotionEntry[]>(generateMockEntries);
 
   const quadrantInfo = savedQuadrant ? QUADRANTS[savedQuadrant] : null;
   const accentColor = quadrantInfo?.color || "#10B981";
@@ -92,110 +114,109 @@ export function EmotionsPageRegulate({
     ? STRATEGIES.filter((s) => s.targetQuadrants.includes(savedQuadrant)).slice(0, 3)
     : [];
 
+  const formatDate = (date: Date) => {
+    const today = new Date();
+    const diffDays = Math.floor((today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Yesterday";
+    return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  };
+
   return (
     <div className="flex flex-col min-h-[calc(100vh-300px)] animate-in fade-in duration-500">
-      {/* Two-Column Layout - Matching Feel Page */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 flex-1">
-        
-        {/* Left: Descriptive Text */}
-        <div className="flex flex-col justify-center order-2 lg:order-1">
-          <div className="space-y-4 max-w-md">
-            {/* Badge */}
-            <div 
-              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium w-fit"
-              style={{
-                background: `linear-gradient(135deg, ${accentColor}20, ${accentColor}10)`,
-                color: accentColor,
-              }}
-            >
-              <Sparkles className="h-3 w-3" />
-              {REGULATE_CONTENT.badge}
-            </div>
-            
-            {/* Title */}
-            <h2 className="text-2xl md:text-3xl font-light leading-tight">
-              {REGULATE_CONTENT.title.line1}{" "}
-              <span className="font-semibold" style={{ color: accentColor }}>
-                {REGULATE_CONTENT.title.line2}
-              </span>
-            </h2>
-            
-            {/* Description */}
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              {REGULATE_CONTENT.description}
-            </p>
-            
-            {/* Features */}
-            <ul className="space-y-2">
-              {REGULATE_CONTENT.features.map((feature, i) => (
-                <li key={i} className="flex items-center gap-2 text-muted-foreground text-sm">
-                  <div 
-                    className="w-4 h-4 rounded-full flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: `${accentColor}20` }}
-                  >
-                    <Check className="h-2.5 w-2.5" style={{ color: accentColor }} />
-                  </div>
-                  {feature}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-        
-        {/* Right: Success Animation, Strategies & Actions */}
-        <div className="flex flex-col items-center justify-center order-1 lg:order-2">
-          {/* Compact Checkmark */}
-          <div className="relative inline-flex items-center justify-center w-14 h-14 mb-2">
-            <div 
-              className={cn(
-                "absolute inset-0 rounded-full transition-all duration-700",
-                showCheckmark ? "scale-100 opacity-100" : "scale-110 opacity-0"
-              )}
-              style={{ backgroundColor: `${accentColor}20` }}
-            />
-            <div 
-              className={cn(
-                "relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500",
-                showCheckmark ? "scale-100" : "scale-90"
-              )}
-              style={{ backgroundColor: accentColor }}
-            >
-              <Check className="h-5 w-5 text-white" />
-            </div>
-          </div>
+      {/* Bento Grid Layout */}
+      <div className="grid grid-cols-12 gap-4 flex-1">
+        {/* Current Check-in Card - Large Feature Card */}
+        <div
+          className="col-span-12 lg:col-span-5 rounded-3xl p-6 relative overflow-hidden"
+          style={{
+            background: `linear-gradient(135deg, ${accentColor}15, ${accentColor}05)`,
+            border: `1px solid ${accentColor}30`,
+          }}
+        >
+          {/* Background pattern */}
+          <div
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage: `radial-gradient(circle at 30% 20%, ${accentColor}40 0%, transparent 50%), radial-gradient(circle at 70% 80%, ${accentColor}30 0%, transparent 40%)`,
+            }}
+          />
 
-          <h1 className="text-lg font-light mb-1.5 text-center">
-            Check-in Complete
-          </h1>
-          
-          {savedEmotion && savedQuadrant && quadrantInfo && (
-            <div 
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border mb-3"
-              style={{
-                background: `linear-gradient(135deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}20)`,
-                borderColor: quadrantInfo.borderColor,
-              }}
-            >
-              <span className="text-base">{quadrantEmoji[savedQuadrant]}</span>
+          <div className="relative z-10">
+            {/* Checkmark */}
+            <div className="flex items-center gap-3 mb-4">
+              <div
+                className={cn(
+                  "w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500",
+                  showCheckmark ? "scale-100" : "scale-90",
+                )}
+                style={{ backgroundColor: accentColor }}
+              >
+                <Check className="h-6 w-6 text-white" />
+              </div>
               <div>
-                <p className="text-[9px] text-muted-foreground leading-none">You're feeling</p>
-                <p className="font-medium text-xs" style={{ color: quadrantInfo.color }}>
-                  {savedEmotion}
-                </p>
+                <h2 className="text-xl font-semibold">Check-in Complete</h2>
+                <p className="text-sm text-muted-foreground">Great job tracking!</p>
               </div>
             </div>
-          )}
 
-          {/* Recommended Strategies */}
+            {/* Current Emotion */}
+            {savedEmotion && savedQuadrant && quadrantInfo && (
+              <div
+                className="inline-flex items-center gap-3 px-4 py-3 rounded-2xl mb-4"
+                style={{
+                  background: `linear-gradient(135deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}30)`,
+                  border: `1px solid ${quadrantInfo.borderColor}`,
+                }}
+              >
+                <span className="text-3xl">{quadrantEmoji[savedQuadrant]}</span>
+                <div>
+                  <p className="text-xs text-muted-foreground">You're feeling</p>
+                  <p className="text-lg font-bold" style={{ color: quadrantInfo.color }}>
+                    {savedEmotion}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              <div className="bg-background/50 backdrop-blur rounded-xl p-3">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+                  <TrendingUp className="h-3 w-3" />
+                  Energy Level
+                </div>
+                <p className="text-lg font-semibold">68%</p>
+              </div>
+              <div className="bg-background/50 backdrop-blur rounded-xl p-3">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+                  <Heart className="h-3 w-3" />
+                  Pleasantness
+                </div>
+                <p className="text-lg font-semibold">72%</p>
+              </div>
+            </div>
+
+            {/* Logged indicator */}
+            <div className="mt-4 flex items-center gap-2 text-sm" style={{ color: accentColor }}>
+              <Check className="h-4 w-4" />
+              <span>Logged: {savedEmotion || "No emotion"}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Strategies Grid */}
+        <div className="col-span-12 lg:col-span-7 space-y-4">
+          {/* Recommended Strategies - Top row */}
           {recommendedStrategies.length > 0 && (
-            <div className="w-full max-w-lg mb-2.5">
-              <p className="text-[10px] text-muted-foreground mb-1.5 text-center flex items-center justify-center gap-1">
-                <Sparkles className="h-3 w-3 text-amber-500" />
-                Recommended for you
-              </p>
-              <div className="grid grid-cols-3 gap-2">
+            <div className="bg-card border rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="h-4 w-4 text-amber-500" />
+                <h3 className="text-sm font-medium">Recommended for you</h3>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
                 {recommendedStrategies.map((strategy) => (
-                  <MiniStrategyCard
+                  <StrategyCard
                     key={strategy.id}
                     strategy={strategy}
                     isRecommended
@@ -209,55 +230,82 @@ export function EmotionsPageRegulate({
             </div>
           )}
 
-          {/* All Strategies */}
-          <div className="w-full max-w-lg mb-4">
-            <p className="text-[10px] text-muted-foreground mb-1.5 text-center">
-              All Strategies
-            </p>
+          {/* All Strategies - Grid */}
+          <div className="bg-card border rounded-2xl p-4">
+            <h3 className="text-sm font-medium mb-3">All Strategies</h3>
             <div className="grid grid-cols-4 gap-2">
-              {STRATEGIES.filter(s => !recommendedStrategies.some(r => r.id === s.id)).map((strategy) => (
-                <MiniStrategyCard
-                  key={strategy.id}
-                  strategy={strategy}
-                  onStart={() => {
-                    setActiveStrategy(strategy);
-                    setShowVisualization(true);
-                  }}
-                />
-              ))}
+              {STRATEGIES.filter((s) => !recommendedStrategies.some((r) => r.id === s.id))
+                .slice(0, 8)
+                .map((strategy) => (
+                  <StrategyCard
+                    key={strategy.id}
+                    strategy={strategy}
+                    compact
+                    onStart={() => {
+                      setActiveStrategy(strategy);
+                      setShowVisualization(true);
+                    }}
+                  />
+                ))}
             </div>
           </div>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col gap-2 w-full max-w-md">
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onNewCheckin}
-                className="flex-1 h-10 rounded-lg text-xs"
-              >
-                New Check-in
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onViewInsights}
-                className="flex-1 h-10 rounded-lg text-xs gap-1"
-              >
-                Insights
-                <ArrowRight className="h-3 w-3" />
-              </Button>
+        {/* Last 7 Entries Card - Wide bottom card */}
+        <div className="col-span-12 bg-card border rounded-2xl p-4 lg:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-sm font-medium">Your Last 7 Entries</h3>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onNewCheckin}
-              className="h-8 rounded-lg text-xs text-muted-foreground hover:text-foreground"
-            >
-              ← Back to Context
+            <Button variant="ghost" size="sm" onClick={onViewInsights} className="text-xs gap-1">
+              View All
+              <ChevronRight className="h-3 w-3" />
             </Button>
           </div>
+
+          {/* Entries Timeline */}
+          <div className="grid grid-cols-7 gap-2">
+            {recentEntries.map((entry, index) => {
+              const entryQuadrant = QUADRANTS[entry.quadrant];
+              return (
+                <div
+                  key={entry.id}
+                  className={cn(
+                    "group rounded-xl p-3 transition-all duration-200 hover:scale-105 cursor-pointer",
+                    index === 0 && "ring-2 ring-offset-2",
+                  )}
+                  style={{
+                    backgroundColor: `${entryQuadrant.color}15`,
+                    borderColor: entryQuadrant.borderColor,
+                    border: `1px solid ${entryQuadrant.borderColor}50`,
+                    ...(index === 0 && { ringColor: entryQuadrant.color }),
+                  }}
+                >
+                  <div className="text-2xl mb-1 text-center">{quadrantEmoji[entry.quadrant]}</div>
+                  <p className="text-xs font-medium text-center truncate" style={{ color: entryQuadrant.color }}>
+                    {entry.emotion}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground text-center mt-1">{formatDate(entry.timestamp)}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Action Buttons - Bottom row */}
+        <div className="col-span-12 flex gap-3 justify-center">
+          <Button variant="outline" onClick={onNewCheckin} className="h-12 px-6 rounded-xl text-sm">
+            New Check-in
+          </Button>
+          <Button
+            onClick={onViewInsights}
+            className="h-12 px-6 rounded-xl text-sm gap-2"
+            style={{ backgroundColor: accentColor }}
+          >
+            View Insights
+            <ArrowRight className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
@@ -268,10 +316,10 @@ export function EmotionsPageRegulate({
             <>
               <DialogHeader className="p-6 pb-0">
                 <DialogTitle className="flex items-center gap-3 text-xl">
-                  <span 
+                  <span
                     className="p-3 rounded-xl text-white shadow-lg"
                     style={{
-                      background: `linear-gradient(135deg, ${typeGradients[activeStrategy.type].from}, ${typeGradients[activeStrategy.type].to})`
+                      background: `linear-gradient(135deg, ${typeGradients[activeStrategy.type].from}, ${typeGradients[activeStrategy.type].to})`,
                     }}
                   >
                     {typeIcons[activeStrategy.type]}
@@ -292,38 +340,49 @@ export function EmotionsPageRegulate({
   );
 }
 
-// Compact inline strategy card for the Regulate page
-function MiniStrategyCard({
+// Strategy Card Component
+function StrategyCard({
   strategy,
   isRecommended = false,
+  compact = false,
   onStart,
 }: {
   strategy: Strategy;
   isRecommended?: boolean;
+  compact?: boolean;
   onStart: () => void;
 }) {
   const gradient = typeGradients[strategy.type];
-  
+
   return (
     <button
       onClick={onStart}
       className={cn(
-        "group p-3 rounded-xl border bg-card hover:border-primary/30 hover:shadow-md transition-all duration-200 text-center",
-        isRecommended ? "ring-1 ring-amber-400/50 border-amber-400/30" : "border-border"
+        "group rounded-xl border bg-card hover:border-primary/30 hover:shadow-md transition-all duration-200 text-left",
+        isRecommended ? "ring-1 ring-amber-400/50 border-amber-400/30 p-4" : "p-3",
+        compact && "p-2.5",
       )}
     >
-      <div 
-        className="w-9 h-9 mx-auto mb-1.5 rounded-lg flex items-center justify-center text-white shadow-sm transition-transform duration-200 group-hover:scale-110"
+      <div
+        className={cn(
+          "rounded-lg flex items-center justify-center text-white shadow-sm transition-transform duration-200 group-hover:scale-110 mx-auto mb-2",
+          compact ? "w-8 h-8" : "w-10 h-10",
+        )}
         style={{
-          background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`
+          background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`,
         }}
       >
         {typeIcons[strategy.type]}
       </div>
-      <p className="text-[11px] font-medium text-foreground truncate leading-tight">
-        {strategy.title.split(' ').slice(0, 2).join(' ')}
+      <p
+        className={cn(
+          "font-medium text-foreground text-center truncate leading-tight",
+          compact ? "text-[10px]" : "text-xs",
+        )}
+      >
+        {strategy.title.split(" ").slice(0, 2).join(" ")}
       </p>
-      <p className="text-[9px] text-muted-foreground mt-0.5">
+      <p className={cn("text-muted-foreground text-center mt-0.5", compact ? "text-[9px]" : "text-[10px]")}>
         {strategy.duration}
       </p>
     </button>
