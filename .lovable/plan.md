@@ -1,155 +1,130 @@
 
 
-# Two-Column Split Layout for Context & Regulate Pages
+# Compact Context & Restructure Regulate to Match Feel Layout
 
-## Reference Analysis
-
-Based on the uploaded reference images, the layout should be:
-- **Left half**: Interactive content (form/cards)  
-- **Right half**: SaaS-style descriptive text (badge, title, description, features)
-
-This matches the existing `EmotionsPageFeel` layout, but mirrored (Feel has text on left, wheel on right).
+## Goal
+1. **Context page**: Fit all content on one screen without scrolling (same height as Feel)
+2. **Regulate page**: Mirror Feel layout exactly - text on left, interactive content on right, single page with no scrolling
 
 ---
 
 ## Changes to EmotionsPageContext.tsx
 
-### Current Layout
+### Problem
+The Context page has too many cards stacked vertically, causing overflow and requiring scrolling.
+
+### Solution
+Condense the form layout to fit within viewport:
+
+| Change | Details |
+|--------|---------|
+| Reduce card padding | `p-5` → `p-3` or `p-4` |
+| Smaller gaps | `gap-4` → `gap-2` or `gap-3` |
+| Combine Sleep + Activity | Already side-by-side, reduce size |
+| Smaller textarea | `min-h-[80px]` → `min-h-[60px]` |
+| Compact pill buttons | `h-10` → `h-8`, smaller padding |
+| Remove Journal toggle card | Or make it inline with buttons |
+| Tighten action buttons | Less padding/margins |
+
+### Updated Layout
 ```text
-[Full Width Header]
-[Full Width Title]
-[2-Column Form Grid spanning full width]
-[Center Save Button]
+┌────────────────────────────────────────────────────────┐
+│  Left (Form - compact)    │  Right (Text)              │
+│                           │                            │
+│  [Back]                   │  Badge: "Add Context"      │
+│  Notes (smaller)          │  Title                     │
+│  Who (inline pills)       │  Description               │
+│  What (inline pills)      │  Features                  │
+│  Sleep │ Activity (row)   │  Selected emotion badge    │
+│  [ ] Journal toggle       │                            │
+│  [Skip] [Save]            │                            │
+└────────────────────────────────────────────────────────┘
 ```
-
-### New Layout
-```text
-┌─────────────────────────────────────────────────────┐
-│   Left Half (Form)      │   Right Half (Text)       │
-│                         │                           │
-│   Notes textarea        │   Badge: "Add Context"    │
-│   Who are you with?     │   Title: "Capture the     │
-│   What are you doing?   │          Moment"          │
-│   Sleep last night      │   Description: ...        │
-│   Physical activity     │   Features: ...           │
-│   Journal toggle        │   Selected emotion badge  │
-│                         │                           │
-│   [Back] [Save] [Skip]  │                           │
-└─────────────────────────────────────────────────────┘
-```
-
-### Implementation Details
-
-**1. Add descriptive content constant:**
-```typescript
-const CONTEXT_CONTENT = {
-  badge: "Add Context",
-  title: {
-    line1: "Capture the",
-    line2: "Moment"
-  },
-  description: "Understanding the context of your emotions helps identify patterns and triggers. This information builds your personal emotional intelligence over time.",
-  features: [
-    "Connect emotions to activities",
-    "Track sleep and energy patterns",
-    "Discover your emotional triggers"
-  ]
-};
-```
-
-**2. Restructure JSX to two-column grid:**
-```tsx
-<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 flex-1">
-  {/* Left: Form Cards */}
-  <div className="flex flex-col order-2 lg:order-1">
-    {/* Notes, Who, What, Sleep, Activity, Journal Toggle */}
-    {/* Back/Skip/Save buttons */}
-  </div>
-  
-  {/* Right: Descriptive Text */}
-  <div className="flex flex-col justify-center order-1 lg:order-2">
-    {/* Badge, Title, Description, Features */}
-    {/* Selected Emotion Badge */}
-  </div>
-</div>
-```
-
-**3. Move header buttons into form section** (Back at top, Save/Skip at bottom)
 
 ---
 
 ## Changes to EmotionsPageRegulate.tsx
 
-### Current Layout
+### Problem
+Currently has:
+- Two-column hero at top
+- Then full-width Recommended Strategies
+- Then full-width All Strategies with filters
+- Requires scrolling
+
+### Solution
+Mirror the Feel page structure exactly:
+- **Left column**: Descriptive text (badge, title, description, features)
+- **Right column**: Interactive content (success animation, emotion badge, action buttons)
+- Remove or minimize strategies section to avoid scrolling
+
+### New Layout (matches Feel exactly)
 ```text
-[Centered Success Header with checkmark]
-[Centered Emotion Badge]
-[Recommended Strategies - 3 columns]
-[All Strategies - 3 columns]
-[Bottom Actions]
+┌────────────────────────────────────────────────────────┐
+│  Left (Text)              │  Right (Interactive)       │
+│                           │                            │
+│  Badge: "Well Done"       │   [Checkmark Animation]    │
+│  Title: "Check-in         │   "Check-in Complete"      │
+│          Complete"        │   Emotion Badge            │
+│  Description              │                            │
+│  Features                 │   [New Check-in]           │
+│                           │   [View Insights]          │
+│                           │   [Try a Strategy]         │
+└────────────────────────────────────────────────────────┘
 ```
 
-### New Layout
-```text
-┌─────────────────────────────────────────────────────┐
-│   Left Half (Success)   │   Right Half (Text)       │
-│                         │                           │
-│   Checkmark animation   │   Badge: "Well Done"      │
-│   "Check-in Complete"   │   Title: "Time to         │
-│   Emotion badge         │          Regulate"        │
-│                         │   Description: ...        │
-│   [New Check-in]        │   Features: ...           │
-│   [View Insights]       │                           │
-└─────────────────────────────────────────────────────┘
-[───────── Recommended Strategies (full width) ─────────]
-[───────── All Strategies Grid (full width) ───────────]
-```
-
-### Implementation Details
-
-**1. Add descriptive content constant:**
-```typescript
-const REGULATE_CONTENT = {
-  badge: "Well Done",
-  title: {
-    line1: "Time to",
-    line2: "Regulate"
-  },
-  description: "Great job tracking your emotion! Now explore strategies designed for your current emotional state to help you feel balanced and grounded.",
-  features: [
-    "Personalized recommendations",
-    "Guided breathing exercises",
-    "Quick mindfulness techniques"
-  ]
-};
-```
-
-**2. Split top section into two columns:**
-```tsx
-<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-12">
-  {/* Left: Success Animation & Emotion Badge */}
-  <div className="flex flex-col items-center lg:items-start justify-center">
-    {/* Checkmark, title, emotion badge, action buttons */}
-  </div>
-  
-  {/* Right: Descriptive Text */}
-  <div className="flex flex-col justify-center">
-    {/* Badge, Title, Description, Features */}
-  </div>
-</div>
-
-{/* Full Width: Strategies Sections */}
-{/* Recommended Strategies */}
-{/* All Strategies */}
-```
+### Strategy Access
+Instead of showing all strategies on this page:
+- Add a "Try a Strategy" button in the right column
+- Opens a modal/drawer with strategy picker (already have Dialog component)
+- Keeps the page clean and scroll-free
 
 ---
 
-## Mobile Responsiveness
+## Implementation Details
 
-Both pages will stack vertically on mobile (`lg:grid-cols-2` → `grid-cols-1`):
-- Mobile: Text card on top, form/content below
-- Desktop: Side-by-side split layout
+### EmotionsPageContext.tsx
+
+**1. Compact PillButton styling (lines 84-101)**
+```typescript
+// Smaller pills
+className="h-8 px-3 rounded-lg text-xs font-medium..."
+```
+
+**2. Reduce form card spacing (lines 120-260)**
+- Cards: `p-5` → `p-3`
+- Gap between cards: `gap-4` → `gap-2`
+- Textarea: `min-h-[80px]` → `min-h-[50px]`
+- Remove excessive margins
+
+**3. Inline Journal toggle with action buttons (lines 210-259)**
+- Move switch inline with Skip/Save buttons
+- Or remove the card wrapper entirely
+
+---
+
+### EmotionsPageRegulate.tsx
+
+**1. Swap column order (lines 105-217)**
+- Move descriptive text to LEFT (order-1)
+- Move success content to RIGHT (order-2)
+
+**2. Remove strategies sections (lines 219-309)**
+- Delete "Recommended Strategies" section
+- Delete "All Strategies" section with filters
+- Replace with "Explore Strategies" button that opens modal
+
+**3. Add strategy modal trigger**
+```tsx
+<Button onClick={() => setShowVisualization(true)}>
+  Explore Strategies
+  <Sparkles className="h-4 w-4" />
+</Button>
+```
+
+**4. Enhance the modal to include strategy selection**
+- When no strategy selected, show strategy picker in modal
+- When strategy selected, show guided visualization
 
 ---
 
@@ -157,15 +132,15 @@ Both pages will stack vertically on mobile (`lg:grid-cols-2` → `grid-cols-1`):
 
 | File | Changes |
 |------|---------|
-| `src/components/emotions/EmotionsPageContext.tsx` | Two-column layout with descriptive text on right |
-| `src/components/emotions/EmotionsPageRegulate.tsx` | Two-column hero section with descriptive text on right |
+| `src/components/emotions/EmotionsPageContext.tsx` | Compact all form elements to fit viewport |
+| `src/components/emotions/EmotionsPageRegulate.tsx` | Swap columns, remove inline strategies, add modal trigger |
 
 ---
 
-## Visual Consistency
+## Visual Consistency After Changes
 
-This creates visual consistency across all Emotions pages:
-- **Feel**: Text (left) + Wheel (right)
-- **Context**: Form (left) + Text (right)  
-- **Regulate**: Success (left) + Text (right) + Full-width strategies below
+All three screens will follow the same pattern:
+- **Feel**: Text (left) + Wheel (right) - single page
+- **Context**: Form (left) + Text (right) - single page
+- **Regulate**: Text (left) + Success (right) - single page
 
