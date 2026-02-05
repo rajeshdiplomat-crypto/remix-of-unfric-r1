@@ -72,7 +72,7 @@ export function EmotionsPageContext({
     onContextChange({ ...context, [key]: value });
   };
 
-  const PillButton = ({ 
+const PillButton = ({ 
     label, 
     selected, 
     onClick 
@@ -84,10 +84,10 @@ export function EmotionsPageContext({
     <button
       onClick={onClick}
       className={cn(
-        "h-10 px-4 rounded-xl text-sm font-medium transition-all duration-200",
-        "border-2 hover:scale-105 active:scale-95",
+        "h-8 px-3 rounded-lg text-xs font-medium transition-all duration-200",
+        "border hover:scale-105 active:scale-95",
         selected
-          ? "text-white border-transparent shadow-lg"
+          ? "text-white border-transparent shadow-md"
           : "bg-background text-muted-foreground border-border hover:border-primary/30 hover:text-foreground"
       )}
       style={{
@@ -103,42 +103,43 @@ export function EmotionsPageContext({
   return (
     <div className="flex flex-col min-h-[calc(100vh-300px)] animate-in fade-in slide-in-from-right-4 duration-400">
       {/* Two-Column Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 flex-1">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 flex-1">
         {/* Left: Form Cards */}
         <div className="flex flex-col order-2 lg:order-1">
           {/* Back Button */}
           <Button 
             variant="ghost" 
+            size="sm"
             onClick={onBack}
-            className="gap-2 text-muted-foreground hover:text-foreground self-start mb-6"
+            className="gap-1.5 text-muted-foreground hover:text-foreground self-start mb-3"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-3.5 w-3.5" />
             Back
           </Button>
 
-          {/* Form Cards */}
-          <div className="flex flex-col gap-4 flex-1">
+          {/* Form Cards - Compact */}
+          <div className="flex flex-col gap-2 flex-1">
             {/* Notes Card */}
-            <div className="p-5 rounded-2xl border border-border bg-card/50">
-              <Label className="flex items-center gap-2 text-sm font-medium mb-3">
-                <BookOpen className="h-4 w-4 text-muted-foreground" />
+            <div className="p-3 rounded-xl border border-border bg-card/50">
+              <Label className="flex items-center gap-1.5 text-xs font-medium mb-2">
+                <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
                 Notes
               </Label>
               <Textarea
                 value={note}
                 onChange={(e) => onNoteChange(e.target.value)}
                 placeholder="What's on your mind?"
-                className="min-h-[80px] rounded-xl resize-none text-base bg-background/50"
+                className="min-h-[50px] rounded-lg resize-none text-sm bg-background/50"
               />
             </div>
 
             {/* Who Card */}
-            <div className="p-5 rounded-2xl border border-border bg-card/50">
-              <Label className="flex items-center gap-2 text-sm font-medium mb-3">
-                <Users className="h-4 w-4 text-muted-foreground" />
+            <div className="p-3 rounded-xl border border-border bg-card/50">
+              <Label className="flex items-center gap-1.5 text-xs font-medium mb-2">
+                <Users className="h-3.5 w-3.5 text-muted-foreground" />
                 Who are you with?
               </Label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {WHO_PRESETS.map((preset) => (
                   <PillButton
                     key={preset}
@@ -151,12 +152,12 @@ export function EmotionsPageContext({
             </div>
 
             {/* What Card */}
-            <div className="p-5 rounded-2xl border border-border bg-card/50">
-              <Label className="flex items-center gap-2 text-sm font-medium mb-3">
-                <Activity className="h-4 w-4 text-muted-foreground" />
+            <div className="p-3 rounded-xl border border-border bg-card/50">
+              <Label className="flex items-center gap-1.5 text-xs font-medium mb-2">
+                <Activity className="h-3.5 w-3.5 text-muted-foreground" />
                 What are you doing?
               </Label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {WHAT_PRESETS.map((preset) => (
                   <PillButton
                     key={preset}
@@ -169,14 +170,14 @@ export function EmotionsPageContext({
             </div>
 
             {/* Sleep & Activity Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               {/* Sleep Card */}
-              <div className="p-5 rounded-2xl border border-border bg-card/50">
-                <Label className="flex items-center gap-2 text-sm font-medium mb-3">
-                  <Moon className="h-4 w-4 text-muted-foreground" />
-                  Sleep last night
+              <div className="p-3 rounded-xl border border-border bg-card/50">
+                <Label className="flex items-center gap-1.5 text-xs font-medium mb-2">
+                  <Moon className="h-3.5 w-3.5 text-muted-foreground" />
+                  Sleep
                 </Label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1">
                   {SLEEP_PRESETS.map((preset) => (
                     <PillButton
                       key={preset}
@@ -189,12 +190,12 @@ export function EmotionsPageContext({
               </div>
 
               {/* Activity Card */}
-              <div className="p-5 rounded-2xl border border-border bg-card/50">
-                <Label className="flex items-center gap-2 text-sm font-medium mb-3">
-                  <Dumbbell className="h-4 w-4 text-muted-foreground" />
-                  Physical activity
+              <div className="p-3 rounded-xl border border-border bg-card/50">
+                <Label className="flex items-center gap-1.5 text-xs font-medium mb-2">
+                  <Dumbbell className="h-3.5 w-3.5 text-muted-foreground" />
+                  Activity
                 </Label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1">
                   {ACTIVITY_PRESETS.map((preset) => (
                     <PillButton
                       key={preset}
@@ -207,52 +208,45 @@ export function EmotionsPageContext({
               </div>
             </div>
 
-            {/* Journal Toggle Card */}
-            <div className="p-5 rounded-2xl border border-border bg-card/50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="flex items-center gap-2 text-sm font-medium">
-                    <BookOpen className="h-4 w-4 text-muted-foreground" />
-                    Send to Journal
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-1">Add this check-in to today's journal entry</p>
+            {/* Action Row with Journal Toggle */}
+            <div className="flex items-center justify-between pt-2 mt-auto">
+              <div className="flex items-center gap-3">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={onSkip}
+                  className="gap-1.5 text-muted-foreground hover:text-foreground"
+                >
+                  Skip
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card/50 border border-border">
+                  <Label className="text-xs text-muted-foreground">Journal</Label>
+                  <Switch 
+                    checked={sendToJournal} 
+                    onCheckedChange={onSendToJournalChange}
+                    className="scale-75"
+                  />
                 </div>
-                <Switch 
-                  checked={sendToJournal} 
-                  onCheckedChange={onSendToJournalChange}
-                />
               </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center justify-between pt-4 mt-auto">
-              <Button 
-                variant="ghost" 
-                onClick={onSkip}
-                className="gap-2 text-muted-foreground hover:text-foreground"
-              >
-                Skip
-                <ArrowRight className="h-4 w-4" />
-              </Button>
 
               <Button
                 onClick={onSave}
                 disabled={saving}
-                size="lg"
-                className="h-12 px-8 rounded-2xl text-base font-semibold gap-2 transition-all duration-300 hover:scale-105 active:scale-95"
+                className="h-10 px-6 rounded-xl text-sm font-semibold gap-2 transition-all duration-300 hover:scale-105 active:scale-95"
                 style={{
                   background: `linear-gradient(135deg, ${quadrantInfo.color}, ${quadrantInfo.color}DD)`,
                 }}
               >
                 {saving ? (
                   <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     Saving...
                   </>
                 ) : (
                   <>
                     Save Check-in
-                    <ArrowRight className="h-5 w-5" />
+                    <ArrowRight className="h-4 w-4" />
                   </>
                 )}
               </Button>
@@ -261,44 +255,44 @@ export function EmotionsPageContext({
         </div>
 
         {/* Right: Descriptive Text */}
-        <div className="flex flex-col justify-center order-1 lg:order-2 lg:pl-8">
+        <div className="flex flex-col justify-center order-1 lg:order-2 lg:pl-6">
           {/* Badge */}
           <div 
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-6 w-fit"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-4 w-fit"
             style={{
               background: `linear-gradient(135deg, ${quadrantInfo.color}20, ${quadrantInfo.color}10)`,
               color: quadrantInfo.color,
             }}
           >
-            <Sparkles className="h-4 w-4" />
+            <Sparkles className="h-3.5 w-3.5" />
             {CONTEXT_CONTENT.badge}
           </div>
 
           {/* Title */}
-          <h1 className="text-4xl md:text-5xl font-light text-foreground mb-2">
+          <h1 className="text-3xl md:text-4xl font-light text-foreground mb-1">
             {CONTEXT_CONTENT.title.line1}
           </h1>
           <h1 
-            className="text-4xl md:text-5xl font-light mb-6"
+            className="text-3xl md:text-4xl font-light mb-4"
             style={{ color: quadrantInfo.color }}
           >
             {CONTEXT_CONTENT.title.line2}
           </h1>
 
           {/* Description */}
-          <p className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-md">
+          <p className="text-base text-muted-foreground leading-relaxed mb-5 max-w-sm">
             {CONTEXT_CONTENT.description}
           </p>
 
           {/* Features */}
-          <ul className="space-y-3 mb-8">
+          <ul className="space-y-2 mb-5">
             {CONTEXT_CONTENT.features.map((feature, idx) => (
-              <li key={idx} className="flex items-center gap-3 text-muted-foreground">
+              <li key={idx} className="flex items-center gap-2 text-sm text-muted-foreground">
                 <div 
-                  className="w-5 h-5 rounded-full flex items-center justify-center"
+                  className="w-4 h-4 rounded-full flex items-center justify-center"
                   style={{ backgroundColor: `${quadrantInfo.color}20` }}
                 >
-                  <Check className="h-3 w-3" style={{ color: quadrantInfo.color }} />
+                  <Check className="h-2.5 w-2.5" style={{ color: quadrantInfo.color }} />
                 </div>
                 {feature}
               </li>
@@ -307,16 +301,16 @@ export function EmotionsPageContext({
 
           {/* Selected Emotion Badge */}
           <div 
-            className="inline-flex items-center gap-3 px-5 py-3 rounded-2xl border-2 w-fit"
+            className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border-2 w-fit"
             style={{
               background: `linear-gradient(135deg, ${quadrantInfo.bgColor}, ${quadrantInfo.borderColor}20)`,
               borderColor: quadrantInfo.borderColor,
             }}
           >
-            <span className="text-2xl">{quadrantEmoji[selectedQuadrant]}</span>
+            <span className="text-xl">{quadrantEmoji[selectedQuadrant]}</span>
             <div>
-              <p className="text-xs text-muted-foreground">Currently feeling</p>
-              <p className="font-medium" style={{ color: quadrantInfo.color }}>
+              <p className="text-[10px] text-muted-foreground">Currently feeling</p>
+              <p className="text-sm font-medium" style={{ color: quadrantInfo.color }}>
                 {selectedEmotion}
               </p>
             </div>
