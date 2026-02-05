@@ -79,7 +79,7 @@ export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
         <div className="flex flex-col h-full pt-12 pb-6 px-6 overflow-y-auto">
           {/* Logo */}
           <NavLink to="/diary" onClick={onClose} className="mb-6">
-            <UnfricLogo size="xl" variant="full" />
+            <UnfricLogo size="lg" />
           </NavLink>
 
           {/* Main navigation */}

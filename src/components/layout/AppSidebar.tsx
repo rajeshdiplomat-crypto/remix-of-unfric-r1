@@ -48,7 +48,7 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-3">
-            {collapsed ? <UnfricLogo size="sm" variant="icon" /> : <UnfricLogo size="sm" variant="compact" />}
+            {collapsed ? <span className="text-lg font-light text-foreground">u</span> : <UnfricLogo size="sm" />}
           </div>
           <div className="flex items-center gap-1">
             <ThemeToggle collapsed={collapsed} />
