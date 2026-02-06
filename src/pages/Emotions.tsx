@@ -117,7 +117,6 @@ export default function Emotions() {
         let emotion = row.emotion;
         let parsedContext: EmotionEntry["context"] = undefined;
         let showInJournal: boolean | undefined = undefined;
-        let strategy: string | undefined = undefined;
 
         try {
           const parsedData = JSON.parse(row.emotion);
@@ -125,7 +124,6 @@ export default function Emotions() {
           if (parsedData.emotion) emotion = parsedData.emotion;
           if (parsedData.context) parsedContext = parsedData.context;
           if (parsedData.showInJournal !== undefined) showInJournal = parsedData.showInJournal;
-          if (parsedData.strategy) strategy = parsedData.strategy;
         } catch {
           emotion = row.emotion;
         }
@@ -141,7 +139,6 @@ export default function Emotions() {
           note: row.notes || undefined,
           context: parsedContext,
           showInJournal,
-          strategy,
           entry_date: row.entry_date,
           created_at: row.created_at,
         };
