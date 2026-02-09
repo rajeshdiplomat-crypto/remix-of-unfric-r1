@@ -1,56 +1,65 @@
 
+# Tasks Page Layout Adjustments
 
-# Replace Kanban Columns with Quadrant Board Views
+## Changes Overview
 
-## What You Want (My Understanding)
+### 1. Reorder: Move Top Focus Bar below View Tabs
+Currently the order is: TopFocusBar -> TasksHeader -> ViewTabs. Per the screenshot, it should be: TasksHeader -> ViewTabs -> TopFocusBar.
 
-Instead of the current 4 fixed Kanban columns (To Do, In Progress, In Review, Done), the **Board view** should show **4 selectable board modes** as sub-views:
+**File:** `src/pages/Tasks.tsx` (lines 626-645)
 
-1. **Urgent x Important** -- 4 columns: Urgent+Important, Urgent+Not Important, Not Urgent+Important, Not Urgent+Not Important
-2. **Status** -- 4 columns: Overdue, Ongoing, Upcoming, Completed
-3. **Date** -- 4 columns: Yesterday, Today, Tomorrow, This Week
-4. **Time of Day** -- 4 columns: Morning, Afternoon, Evening, Night
+### 2. Show Top Focus Bar and Insights on ALL views (Lists, Timeline, Board)
+Currently the InsightsPanel only renders inside KanbanBoardView (Board tab). The TopFocusBar is already shared. Need to:
+- Remove InsightsPanel from inside KanbanBoardView
+- Render InsightsPanel directly in Tasks.tsx, below TopFocusBar, for Lists, Board, and Timeline tabs (not Files)
 
-A mode selector (tabs or dropdown) lets the user switch between these 4 board layouts. Each mode shows 4 columns with full task cards (drag-drop, quick-add, etc.) -- the same card style currently used in the Kanban view.
+**File:** `src/pages/Tasks.tsx` -- add InsightsPanel above tab content
+**File:** `src/components/tasks/KanbanBoardView.tsx` -- remove the InsightsPanel line (line 151)
 
-## Changes
+### 3. Merge Status filter options into the Filter button
+Currently there are TWO separate filter controls in the toolbar:
+- A standalone "All Status" Select dropdown (lines 65-77 in TasksHeader)
+- A "Filter" dropdown button with Priority and Date options
 
-### 1. KanbanBoardView.tsx (rewrite main columns section)
+Per the screenshot, the status options (All Status, To Do, In Progress, Done, Overdue) should be moved INTO the Filter dropdown alongside Priority and Date options. Remove the standalone Status Select.
 
-- Remove the hardcoded `KANBAN_COLUMNS` (To Do, In Progress, In Review, Done) and the `mapTaskToColumn` function
-- Add a `boardMode` state defaulting to `"urgent-important"`
-- Add a mode selector row (4 tab-like buttons: Urgent x Important, Status, Date, Time of Day) above the columns
-- Dynamically render 4 columns based on the selected mode using `QUADRANT_MODES[boardMode].quadrants`
-- Each column filters tasks using the existing logic (urgency/importance, computeTaskStatus, computeDateBucket, time_of_day)
-- Each column keeps the full KanbanCard rendering, drag-drop, and quick-add functionality
-- Keep the InsightsPanel + mini-boards summary row at the top (or remove the mini-boards since the main columns now ARE the boards)
-- Remove the 2x2 mini quadrant grid (it's redundant now since the main view IS the quadrant board)
-
-### 2. Task filtering on drop
-
-- Update `handleDrop` to map column IDs to the correct task field updates based on the active board mode (e.g., dropping into "morning" column sets `time_of_day`, dropping into "overdue" sets status, etc.)
-- Update `submitQuickAdd` similarly
-
-### 3. No changes needed to
-
-- `TasksViewTabs.tsx` -- stays the same (Lists, Board, Timeline, Files)
-- `TasksHeader.tsx` -- stays the same
-- `types.ts` -- already has all the quadrant mode definitions
+**File:** `src/components/tasks/TasksHeader.tsx`
+- Remove the standalone `<Select>` for status filter (lines 65-77)
+- Add a "Status" section inside the existing Filter `<DropdownMenu>` with checkbox items for All Status, To Do, In Progress, Done, Overdue
 
 ## Technical Details
 
-**Board mode selector** will be a row of 4 small buttons/tabs inside the Board view:
-- `[Urgent x Important] [Status] [Date] [Time of Day]`
-
-**Column rendering logic** (pseudo-code):
+### Tasks.tsx layout change (reorder + shared insights)
 ```text
-activeQuadrants = QUADRANT_MODES[boardMode].quadrants  // 4 items
-For each quadrant:
-  - Filter tasks matching that quadrant's criteria
-  - Render column with header (color dot + title + count)
-  - Render KanbanCard for each task
-  - Render quick-add at bottom
+<PageHero />
+<div>
+  <TasksHeader />          // toolbar first
+  <TasksViewTabs />        // tabs second
+  <TopFocusBar />          // focus bar third (below tabs)
+  <InsightsPanel />        // insights shared across views
+  <grid>
+    <tab-content />        // Lists / Board / Timeline / Files
+    <TasksRightSidebar />
+  </grid>
+</div>
 ```
 
-**Files modified:**
-- `src/components/tasks/KanbanBoardView.tsx` -- replace fixed Kanban columns with dynamic quadrant-based columns, add board mode selector, remove mini-boards grid
+### TasksHeader.tsx filter consolidation
+Remove the standalone Status `<Select>` and add a Status section to the Filter `<DropdownMenu>`:
+```text
+Filter dropdown:
+  -- Status --
+  All Status / To Do / In Progress / Done / Overdue
+  -- Priority --
+  All / High / Medium / Low
+  -- Date --
+  All / Today / This Week / Overdue
+```
+
+### KanbanBoardView.tsx cleanup
+Remove line 151: `<InsightsPanel tasks={tasks} compactMode={true} />` since it will now be rendered by the parent.
+
+## Files Modified
+- `src/pages/Tasks.tsx` -- reorder components, add shared InsightsPanel import and render
+- `src/components/tasks/TasksHeader.tsx` -- remove Status Select, add Status section to Filter dropdown
+- `src/components/tasks/KanbanBoardView.tsx` -- remove InsightsPanel render
