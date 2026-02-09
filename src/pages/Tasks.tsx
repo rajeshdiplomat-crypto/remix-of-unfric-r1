@@ -13,6 +13,7 @@ import { AllTasksList } from "@/components/tasks/AllTasksList";
 import { BoardView } from "@/components/tasks/BoardView";
 import { KanbanBoardView } from "@/components/tasks/KanbanBoardView";
 import { TasksRightSidebar } from "@/components/tasks/TasksRightSidebar";
+import { InsightsPanel } from "@/components/tasks/InsightsPanel";
 import { UnifiedTaskDrawer } from "@/components/tasks/UnifiedTaskDrawer";
 import { DeepFocusPrompt } from "@/components/tasks/DeepFocusPromptModal";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
@@ -623,9 +624,6 @@ export default function Tasks() {
 
       <div className="w-full flex-1 min-h-0 px-6 lg:px-8 pt-6 overflow-hidden flex flex-col">
         <div className="w-full min-w-0 flex flex-col gap-4 flex-1 min-h-0 overflow-hidden">
-          {/* Top Focus Bar */}
-          <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
-
           {/* Toolbar */}
           <TasksHeader
             searchQuery={searchQuery}
@@ -643,6 +641,16 @@ export default function Tasks() {
 
           {/* View Tabs */}
           <TasksViewTabs activeTab={activeTab} onTabChange={setActiveTab} />
+
+          {/* Top Focus Bar (below tabs, shared across views) */}
+          {activeTab !== "files" && (
+            <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
+          )}
+
+          {/* Insights (shared across Lists, Board, Timeline) */}
+          {activeTab !== "files" && (
+            <InsightsPanel tasks={filteredTasks} compactMode={true} />
+          )}
 
           {/* Main content area */}
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6 min-h-0 overflow-hidden">
