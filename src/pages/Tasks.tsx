@@ -7,13 +7,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
 import { TasksHeader } from "@/components/tasks/TasksHeader";
-import { SummaryStrip } from "@/components/tasks/SummaryStrip";
+import { TasksViewTabs, type TasksViewTab } from "@/components/tasks/TasksViewTabs";
 import { InsightsPanel } from "@/components/tasks/InsightsPanel";
 import { TopFocusBar } from "@/components/tasks/TopFocusBar";
 import { AllTasksList } from "@/components/tasks/AllTasksList";
 import { QuadrantGrid } from "@/components/tasks/QuadrantGrid";
 import { BoardView } from "@/components/tasks/BoardView";
-import { TasksClockWidget } from "@/components/tasks/TasksClockWidget";
+import { KanbanBoardView } from "@/components/tasks/KanbanBoardView";
+import { TasksRightSidebar } from "@/components/tasks/TasksRightSidebar";
 import { UnifiedTaskDrawer } from "@/components/tasks/UnifiedTaskDrawer";
 import { DeepFocusPrompt } from "@/components/tasks/DeepFocusPromptModal";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
@@ -190,9 +191,11 @@ export default function Tasks() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const [view, setView] = useState<"board" | "quadrant">("board");
+  const [activeTab, setActiveTab] = useState<TasksViewTab>("board");
   const [quadrantMode, setQuadrantMode] = useState<QuadrantMode>("urgent-important");
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
 
   const [tasks, setTasks] = useState<QuadrantTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -203,9 +206,6 @@ export default function Tasks() {
 
   const [focusPromptOpen, setFocusPromptOpen] = useState(false);
   const [focusPromptTask, setFocusPromptTask] = useState<QuadrantTask | null>(null);
-
-  // ✅ NEW: collapse left panel
-  const [allTasksCollapsed, setAllTasksCollapsed] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -274,7 +274,6 @@ export default function Tasks() {
         return task;
       });
 
-      // Don't use sample data for logged-in users - show empty state
       setTasks(quadrantTasks);
     }
 
@@ -296,14 +295,12 @@ export default function Tasks() {
   const handleSaveTask = async (task: QuadrantTask) => {
     task.status = computeTaskStatus(task);
 
-    // Update local state immediately for responsiveness
     if (isNewTask) {
       setTasks((prev) => [task, ...prev]);
     } else {
       setTasks((prev) => prev.map((t) => (t.id === task.id ? task : t)));
     }
 
-    // Sync to Supabase if user is logged in
     if (user) {
       const { error } = await supabase.from("tasks").upsert({
         id: task.id,
@@ -361,7 +358,6 @@ export default function Tasks() {
     setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
     setSelectedTask(updated);
 
-    // Sync started status to Supabase
     if (user) {
       await supabase
         .from("tasks")
@@ -384,7 +380,6 @@ export default function Tasks() {
     const isCurrentlyCompleted = task.is_completed || !!task.completed_at;
 
     if (isCurrentlyCompleted) {
-      // UNCOMPLETE the task
       const updated: QuadrantTask = {
         ...task,
         is_completed: false,
@@ -395,21 +390,16 @@ export default function Tasks() {
       setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
       setDrawerOpen(false);
 
-      // Sync to Supabase
       if (user) {
         await supabase
           .from("tasks")
-          .update({
-            is_completed: false,
-            completed_at: null,
-          })
+          .update({ is_completed: false, completed_at: null })
           .eq("id", task.id)
           .eq("user_id", user.id);
       }
 
       toast({ title: "Reopened!", description: "Task marked as incomplete" });
     } else {
-      // COMPLETE the task
       const completedAt = new Date().toISOString();
       const updated: QuadrantTask = {
         ...task,
@@ -421,20 +411,14 @@ export default function Tasks() {
       setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
       setDrawerOpen(false);
 
-      // Sync completion to Supabase
       if (user) {
         await supabase
           .from("tasks")
-          .update({
-            is_completed: true,
-            completed_at: completedAt,
-          })
+          .update({ is_completed: true, completed_at: completedAt })
           .eq("id", task.id)
           .eq("user_id", user.id);
 
-        // SYNC: If this is a habit-linked task, also mark the habit as complete
         if (task.tags?.includes("Habit") && task.due_date) {
-          // Find the habit by matching the task title
           const { data: habits } = await supabase
             .from("habits")
             .select("id, name")
@@ -443,16 +427,14 @@ export default function Tasks() {
 
           if (habits && habits.length > 0) {
             const habitId = habits[0].id;
-            const completedDate = task.due_date.split("T")[0]; // Format: yyyy-MM-dd
+            const completedDate = task.due_date.split("T")[0];
 
-            // Check if already marked complete
             const { data: existing } = await supabase
               .from("habit_completions")
               .select("id")
               .eq("habit_id", habitId)
               .eq("completed_date", completedDate);
 
-            // Only insert if not already complete
             if (!existing || existing.length === 0) {
               await supabase.from("habit_completions").insert({
                 habit_id: habitId,
@@ -495,7 +477,6 @@ export default function Tasks() {
 
     setTasks((prev) => [newTask, ...prev]);
 
-    // Sync to Supabase
     if (user) {
       await supabase.from("tasks").insert({
         id: newTask.id,
@@ -538,7 +519,6 @@ export default function Tasks() {
     updated.status = computeTaskStatus(updated);
     setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
 
-    // Sync to Supabase
     if (user) {
       await supabase
         .from("tasks")
@@ -555,16 +535,47 @@ export default function Tasks() {
   };
 
   const filteredTasks = useMemo(() => {
+    let result = tasks;
+
+    // Search filter
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return tasks;
-    return tasks.filter((t) => t.title.toLowerCase().includes(q));
-  }, [tasks, searchQuery]);
+    if (q) {
+      result = result.filter((t) => t.title.toLowerCase().includes(q));
+    }
+
+    // Status filter
+    if (statusFilter !== "all") {
+      result = result.filter((t) => {
+        const s = computeTaskStatus(t);
+        return s === statusFilter;
+      });
+    }
+
+    // Sort
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "oldest":
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case "priority": {
+          const p = { high: 0, medium: 1, low: 2 };
+          return (p[a.priority as keyof typeof p] ?? 1) - (p[b.priority as keyof typeof p] ?? 1);
+        }
+        case "due_date":
+          if (!a.due_date) return 1;
+          if (!b.due_date) return -1;
+          return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+        default: // newest
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+    });
+
+    return result;
+  }, [tasks, searchQuery, statusFilter, sortBy]);
 
   const [contentReady, setContentReady] = useState(false);
 
   useEffect(() => {
     if (!loading) {
-      // Slight delay for smooth transition from loading screen
       const timer = setTimeout(() => setContentReady(true), 100);
       return () => clearTimeout(timer);
     }
@@ -573,10 +584,6 @@ export default function Tasks() {
   if (loading) {
     return <PageLoadingScreen module="tasks" />;
   }
-
-  const gridCols = allTasksCollapsed
-    ? "xl:grid-cols-[72px_minmax(0,1fr)]"
-    : "xl:grid-cols-[minmax(300px,340px)_minmax(0,1fr)]";
 
   return (
     <div
@@ -596,56 +603,56 @@ export default function Tasks() {
       />
 
       <div className="w-full flex-1 min-h-0 px-6 lg:px-8 pt-6 overflow-hidden flex flex-col">
-        <div className="w-full min-w-0 flex flex-col gap-6 flex-1 min-h-0 overflow-hidden">
-          {/* Insights & Clock panels */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_260px] gap-4 items-start">
-            <div className="flex flex-col gap-2 h-[260px]">
-              <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
-              <InsightsPanel tasks={filteredTasks} compactMode />
-            </div>
-            <div className="h-[260px]">
-              <TasksClockWidget />
-            </div>
-          </div>
+        <div className="w-full min-w-0 flex flex-col gap-4 flex-1 min-h-0 overflow-hidden">
+          {/* Top Focus Bar */}
+          <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
 
-          {/* View header bar - below insights/clock */}
+          {/* Toolbar */}
           <TasksHeader
-            view={view}
-            onViewChange={setView}
-            quadrantMode={quadrantMode}
-            onQuadrantModeChange={setQuadrantMode}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onNewTask={openNewTaskDrawer}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
           />
 
-          <div className={`flex-1 grid grid-cols-1 ${gridCols} gap-8 min-h-0 min-w-0 overflow-hidden`}>
-            {/* Left */}
-            <div className="min-h-0 min-w-0 h-full overflow-y-auto">
-              <AllTasksList
-                tasks={filteredTasks}
-                onTaskClick={openTaskDetail}
-                onStartTask={handleStartTask}
-                onCompleteTask={handleCompleteTask}
-                onDeleteTask={(task) => handleDeleteTask(task.id)}
-                collapsed={allTasksCollapsed}
-                onToggleCollapse={() => setAllTasksCollapsed((v) => !v)}
-              />
-            </div>
+          {/* View Tabs */}
+          <TasksViewTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-            {/* Right */}
-            <div className="w-full min-w-0 h-full overflow-y-auto">
-              {view === "quadrant" && (
-                <QuadrantGrid
-                  mode={quadrantMode}
+          {/* Main content area */}
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6 min-h-0 overflow-hidden">
+            {/* Left: Tab Content */}
+            <div className="min-h-0 h-full overflow-y-auto">
+              {activeTab === "overview" && (
+                <InsightsPanel tasks={filteredTasks} compactMode={false} />
+              )}
+
+              {activeTab === "lists" && (
+                <AllTasksList
                   tasks={filteredTasks}
                   onTaskClick={openTaskDetail}
+                  onStartTask={handleStartTask}
+                  onCompleteTask={handleCompleteTask}
+                  onDeleteTask={(task) => handleDeleteTask(task.id)}
+                  collapsed={false}
+                  onToggleCollapse={() => {}}
+                />
+              )}
+
+              {activeTab === "board" && (
+                <KanbanBoardView
+                  tasks={filteredTasks}
+                  onTaskClick={openTaskDetail}
+                  onQuickAdd={handleBoardQuickAdd}
+                  onDrop={handleBoardDrop}
                   onStartTask={handleStartTask}
                   onCompleteTask={handleCompleteTask}
                 />
               )}
 
-              {view === "board" && (
+              {activeTab === "timeline" && (
                 <BoardView
                   mode="status"
                   tasks={filteredTasks}
@@ -657,6 +664,17 @@ export default function Tasks() {
                   onCompleteTask={handleCompleteTask}
                 />
               )}
+
+              {activeTab === "files" && (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                  Files coming soon
+                </div>
+              )}
+            </div>
+
+            {/* Right: Sidebar */}
+            <div className="hidden lg:block min-h-0 h-full overflow-hidden">
+              <TasksRightSidebar />
             </div>
           </div>
 
