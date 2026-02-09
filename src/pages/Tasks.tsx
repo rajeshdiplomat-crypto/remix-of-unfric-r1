@@ -8,10 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 
 import { TasksHeader } from "@/components/tasks/TasksHeader";
 import { TasksViewTabs, type TasksViewTab } from "@/components/tasks/TasksViewTabs";
-import { InsightsPanel } from "@/components/tasks/InsightsPanel";
 import { TopFocusBar } from "@/components/tasks/TopFocusBar";
 import { AllTasksList } from "@/components/tasks/AllTasksList";
-import { QuadrantGrid } from "@/components/tasks/QuadrantGrid";
 import { BoardView } from "@/components/tasks/BoardView";
 import { KanbanBoardView } from "@/components/tasks/KanbanBoardView";
 import { TasksRightSidebar } from "@/components/tasks/TasksRightSidebar";
@@ -22,7 +20,6 @@ import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 
 import {
   QuadrantTask,
-  QuadrantMode,
   Urgency,
   Importance,
   Status,
@@ -192,9 +189,10 @@ export default function Tasks() {
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<TasksViewTab>("board");
-  const [quadrantMode, setQuadrantMode] = useState<QuadrantMode>("urgent-important");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [tagFilter, setTagFilter] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
 
   const [tasks, setTasks] = useState<QuadrantTask[]>([]);
@@ -551,6 +549,27 @@ export default function Tasks() {
       });
     }
 
+    // Priority filter
+    if (priorityFilter !== "all") {
+      result = result.filter((t) => t.priority === priorityFilter);
+    }
+
+    // Date/tag filter
+    if (tagFilter === "today") {
+      const today = new Date().toISOString().split("T")[0];
+      result = result.filter((t) => t.due_date && t.due_date.startsWith(today));
+    } else if (tagFilter === "week") {
+      const now = new Date();
+      const weekEnd = new Date(now.getTime() + 7 * 86400000);
+      result = result.filter((t) => {
+        if (!t.due_date) return false;
+        const d = new Date(t.due_date);
+        return d >= now && d <= weekEnd;
+      });
+    } else if (tagFilter === "overdue") {
+      result = result.filter((t) => computeTaskStatus(t) === "overdue");
+    }
+
     // Sort
     result = [...result].sort((a, b) => {
       switch (sortBy) {
@@ -570,7 +589,7 @@ export default function Tasks() {
     });
 
     return result;
-  }, [tasks, searchQuery, statusFilter, sortBy]);
+  }, [tasks, searchQuery, statusFilter, priorityFilter, tagFilter, sortBy]);
 
   const [contentReady, setContentReady] = useState(false);
 
@@ -616,6 +635,10 @@ export default function Tasks() {
             onStatusFilterChange={setStatusFilter}
             sortBy={sortBy}
             onSortChange={setSortBy}
+            priorityFilter={priorityFilter}
+            onPriorityFilterChange={setPriorityFilter}
+            tagFilter={tagFilter}
+            onTagFilterChange={setTagFilter}
           />
 
           {/* View Tabs */}
@@ -625,9 +648,6 @@ export default function Tasks() {
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6 min-h-0 overflow-hidden">
             {/* Left: Tab Content */}
             <div className="min-h-0 h-full overflow-y-auto">
-              {activeTab === "overview" && (
-                <InsightsPanel tasks={filteredTasks} compactMode={false} />
-              )}
 
               {activeTab === "lists" && (
                 <AllTasksList

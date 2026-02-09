@@ -1,7 +1,7 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutGrid, List, Columns3, Clock, FileText } from "lucide-react";
 
-export type TasksViewTab = "overview" | "lists" | "board" | "timeline" | "files";
+export type TasksViewTab = "lists" | "board" | "timeline" | "files";
 
 interface TasksViewTabsProps {
   activeTab: TasksViewTab;
@@ -9,7 +9,6 @@ interface TasksViewTabsProps {
 }
 
 const tabs: { id: TasksViewTab; label: string; icon: React.ElementType }[] = [
-  { id: "overview", label: "Overview", icon: LayoutGrid },
   { id: "lists", label: "Lists", icon: List },
   { id: "board", label: "Board", icon: Columns3 },
   { id: "timeline", label: "Timeline", icon: Clock },
