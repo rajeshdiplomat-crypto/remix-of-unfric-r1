@@ -1,5 +1,5 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutGrid, List, Columns3, Clock, FileText } from "lucide-react";
+import { List, Columns3, Clock, FileText } from "lucide-react";
 
 export type TasksViewTab = "lists" | "board" | "timeline" | "files";
 

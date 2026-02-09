@@ -647,6 +647,7 @@ export type Database = {
           description: string | null
           due_date: string | null
           due_time: string | null
+          end_time: string | null
           id: string
           importance: string | null
           is_completed: boolean | null
@@ -668,6 +669,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           due_time?: string | null
+          end_time?: string | null
           id?: string
           importance?: string | null
           is_completed?: boolean | null
@@ -689,6 +691,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           due_time?: string | null
+          end_time?: string | null
           id?: string
           importance?: string | null
           is_completed?: boolean | null
