@@ -1,80 +1,34 @@
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Sparkles, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { QuadrantMode } from "./types";
 
 interface TasksHeaderProps {
-  view: "board" | "quadrant";
-  onViewChange: (view: "board" | "quadrant") => void;
-  quadrantMode: QuadrantMode;
-  onQuadrantModeChange: (mode: QuadrantMode) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onNewTask: () => void;
+  statusFilter: string;
+  onStatusFilterChange: (status: string) => void;
+  sortBy: string;
+  onSortChange: (sort: string) => void;
 }
 
-const controlBase = "h-10 rounded-xl bg-background/70 border-border/40 shadow-sm";
+const controlBase = "h-9 rounded-xl bg-background/70 border-border/40 shadow-sm";
 
 export function TasksHeader({
-  view,
-  onViewChange,
-  quadrantMode,
-  onQuadrantModeChange,
   searchQuery,
   onSearchChange,
   onNewTask,
+  statusFilter,
+  onStatusFilterChange,
+  sortBy,
+  onSortChange,
 }: TasksHeaderProps) {
   return (
     <div className="flex items-center gap-2 flex-wrap justify-between">
-      {/* Left: Combined View Selector */}
+      {/* Left: Search */}
       <div className="flex items-center gap-2">
-        <span className="hidden sm:inline text-[12px] uppercase tracking-[0.16em] text-muted-foreground">View</span>
-
-        <Select
-          value={view === "board" ? "planner" : `quadrant-${quadrantMode}`}
-          onValueChange={(v) => {
-            if (v === "planner") {
-              onViewChange("board");
-            } else {
-              const mode = v.replace("quadrant-", "") as QuadrantMode;
-              onViewChange("quadrant");
-              onQuadrantModeChange(mode);
-            }
-          }}
-        >
-          <SelectTrigger className={`w-[240px] ${controlBase}`}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="planner">
-              <span className="flex items-center gap-2">
-                📅 <span className="font-medium">Planner</span>
-                <span className="text-muted-foreground text-xs ml-1">(Board)</span>
-              </span>
-            </SelectItem>
-            <div className="px-2 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground border-t border-border/50 mt-1">
-              Quadrant Views
-            </div>
-            <SelectItem value="quadrant-urgent-important">
-              <span className="flex items-center gap-2">🎯 Urgent × Important</span>
-            </SelectItem>
-            <SelectItem value="quadrant-status">
-              <span className="flex items-center gap-2">📊 By Status</span>
-            </SelectItem>
-            <SelectItem value="quadrant-date">
-              <span className="flex items-center gap-2">📅 By Date</span>
-            </SelectItem>
-            <SelectItem value="quadrant-time">
-              <span className="flex items-center gap-2">🕐 By Time of Day</span>
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Right: Search + New Task */}
-      <div className="flex items-center gap-2">
-        <div className="relative w-[220px]">
+        <div className="relative w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             value={searchQuery}
@@ -84,11 +38,46 @@ export function TasksHeader({
           />
         </div>
 
+        <Button variant="outline" size="sm" className={`${controlBase} px-3 gap-1.5`}>
+          <Sparkles className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline text-[11px]">AI</span>
+        </Button>
+      </div>
+
+      {/* Right: Filters + New Task */}
+      <div className="flex items-center gap-2">
+        <Select value={statusFilter} onValueChange={onStatusFilterChange}>
+          <SelectTrigger className={`w-[130px] ${controlBase} text-[11px]`}>
+            <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" />
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="upcoming">To Do</SelectItem>
+            <SelectItem value="ongoing">In Progress</SelectItem>
+            <SelectItem value="completed">Done</SelectItem>
+            <SelectItem value="overdue">Overdue</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={sortBy} onValueChange={onSortChange}>
+          <SelectTrigger className={`w-[120px] ${controlBase} text-[11px]`}>
+            <ArrowUpDown className="h-3.5 w-3.5 mr-1.5" />
+            <SelectValue placeholder="Sort" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest">Newest</SelectItem>
+            <SelectItem value="oldest">Oldest</SelectItem>
+            <SelectItem value="priority">Priority</SelectItem>
+            <SelectItem value="due_date">Due Date</SelectItem>
+          </SelectContent>
+        </Select>
+
         <Button
           onClick={onNewTask}
-          className="h-10 rounded-xl px-4 shadow-md bg-gradient-to-r from-primary via-chart-1 to-primary hover:opacity-90 transition-opacity"
+          className="h-9 rounded-xl px-4 shadow-md"
         >
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 mr-1.5" />
           New Task
         </Button>
       </div>
