@@ -1,14 +1,12 @@
 import { useMemo, useState } from "react";
-import { Plus, Calendar, Tag } from "lucide-react";
+import { Plus, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { QuadrantTask, QuadrantMode, computeTaskStatus } from "./types";
+import { QuadrantTask, QuadrantMode, QUADRANT_MODES, computeTaskStatus, computeDateBucket } from "./types";
 import { InsightsPanel } from "./InsightsPanel";
-import { QuadrantGrid } from "./QuadrantGrid";
-import { QuadrantToolbar } from "./QuadrantToolbar";
 import { format } from "date-fns";
 
 interface KanbanColumn {
@@ -106,8 +104,6 @@ export function KanbanBoardView({
 }: KanbanBoardViewProps) {
   const [quickAddCol, setQuickAddCol] = useState<string | null>(null);
   const [quickAddTitle, setQuickAddTitle] = useState("");
-  const [quadrantMode, setQuadrantMode] = useState<QuadrantMode>("urgent-important");
-  const [quadrantSearch, setQuadrantSearch] = useState("");
 
   const columnTasks = useMemo(() => {
     const map: Record<string, QuadrantTask[]> = {};
@@ -117,6 +113,42 @@ export function KanbanBoardView({
       if (map[colId]) map[colId].push(t);
     });
     return map;
+  }, [tasks]);
+
+  // Build 4 quadrant-mode mini-boards
+  const quadrantBoards = useMemo(() => {
+    const modes: { mode: QuadrantMode; label: string; icon: string }[] = [
+      { mode: "urgent-important", label: "Urgent × Important", icon: "📋" },
+      { mode: "status", label: "Status", icon: "📊" },
+      { mode: "date", label: "Date", icon: "📅" },
+      { mode: "time", label: "Time of Day", icon: "🕐" },
+    ];
+
+    return modes.map(({ mode, label, icon }) => {
+      const config = QUADRANT_MODES[mode];
+      const quadrantData = config.quadrants.map((q) => {
+        const qTasks = tasks.filter((task) => {
+          switch (mode) {
+            case "urgent-important":
+              if (q.id === "urgent-important") return task.urgency === "high" && task.importance === "high";
+              if (q.id === "urgent-not-important") return task.urgency === "high" && task.importance === "low";
+              if (q.id === "not-urgent-important") return task.urgency === "low" && task.importance === "high";
+              if (q.id === "not-urgent-not-important") return task.urgency === "low" && task.importance === "low";
+              return false;
+            case "status":
+              return computeTaskStatus(task) === q.id;
+            case "date":
+              return computeDateBucket(task.due_date) === q.id;
+            case "time":
+              return task.time_of_day === q.id;
+            default:
+              return false;
+          }
+        });
+        return { ...q, tasks: qTasks };
+      });
+      return { mode, label, icon, quadrants: quadrantData };
+    });
   }, [tasks]);
 
   const handleDrop = (columnId: string, e: React.DragEvent) => {
@@ -150,25 +182,60 @@ export function KanbanBoardView({
 
   return (
     <div className="space-y-4">
-      {/* Insights + Quadrant Views Row */}
+      {/* Insights + 4 Quadrant Boards Row */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-4">
         <InsightsPanel tasks={tasks} compactMode={true} />
-        <div className="min-h-[220px]">
-          <QuadrantToolbar
-            mode={quadrantMode}
-            onModeChange={setQuadrantMode}
-            searchQuery={quadrantSearch}
-            onSearchChange={setQuadrantSearch}
-          />
-          <div className="mt-2 h-[200px]">
-            <QuadrantGrid
-              mode={quadrantMode}
-              tasks={tasks}
-              onTaskClick={onTaskClick}
-              onStartTask={onStartTask}
-              onCompleteTask={onCompleteTask}
-            />
-          </div>
+
+        {/* 4 Quadrant Mini-Boards in a 2x2 grid */}
+        <div className="grid grid-cols-2 gap-3">
+          {quadrantBoards.map((board) => (
+            <Card key={board.mode} className="p-3 rounded-xl border border-border/30">
+              <div className="flex items-center gap-1.5 mb-2">
+                <span className="text-sm">{board.icon}</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground">
+                  {board.label}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {board.quadrants.map((q) => (
+                  <div
+                    key={q.id}
+                    className="rounded-lg p-2 bg-muted/30 border border-border/20 min-h-[60px]"
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-1">
+                        <div className="h-1.5 w-1.5 rounded-full" style={{ background: q.color }} />
+                        <span className="text-[8px] font-semibold uppercase tracking-wider text-muted-foreground truncate max-w-[70px]">
+                          {q.title}
+                        </span>
+                      </div>
+                      <Badge variant="secondary" className="text-[8px] px-1 py-0 min-w-[16px] justify-center h-4">
+                        {q.tasks.length}
+                      </Badge>
+                    </div>
+                    {q.tasks.length > 0 ? (
+                      <div className="space-y-0.5">
+                        {q.tasks.slice(0, 2).map((t) => (
+                          <p
+                            key={t.id}
+                            className="text-[9px] text-foreground truncate cursor-pointer hover:text-primary"
+                            onClick={() => onTaskClick(t)}
+                          >
+                            {t.title}
+                          </p>
+                        ))}
+                        {q.tasks.length > 2 && (
+                          <p className="text-[8px] text-muted-foreground">+{q.tasks.length - 2} more</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-[8px] text-muted-foreground/50 italic">No tasks</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          ))}
         </div>
       </div>
 
