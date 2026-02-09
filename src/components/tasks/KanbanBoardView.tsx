@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { QuadrantTask, QuadrantMode, QUADRANT_MODES, computeTaskStatus, computeDateBucket, suggestTimeOfDay } from "./types";
-import { InsightsPanel } from "./InsightsPanel";
 import { format } from "date-fns";
 
 interface KanbanBoardViewProps {
@@ -147,9 +146,6 @@ export function KanbanBoardView({
 
   return (
     <div className="space-y-4">
-      {/* Insights */}
-      <InsightsPanel tasks={tasks} compactMode={true} />
-
       {/* Board Mode Selector */}
       <div className="flex items-center gap-1 border-b border-border/30 pb-2">
         {MODE_LABELS.map(({ mode, label }) => (

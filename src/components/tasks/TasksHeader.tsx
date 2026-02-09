@@ -1,4 +1,4 @@
-import { Plus, Search, Sparkles, SlidersHorizontal, ArrowUpDown, Filter } from "lucide-react";
+import { Plus, Search, Sparkles, ArrowUpDown, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -62,21 +62,7 @@ export function TasksHeader({
 
       {/* Right: Filters + New Task */}
       <div className="flex items-center gap-2">
-        <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-          <SelectTrigger className={`w-[130px] ${controlBase} text-[11px]`}>
-            <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" />
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="upcoming">To Do</SelectItem>
-            <SelectItem value="ongoing">In Progress</SelectItem>
-            <SelectItem value="completed">Done</SelectItem>
-            <SelectItem value="overdue">Overdue</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {/* Filter dropdown (priority, tags, date range) */}
+        {/* Unified Filter dropdown (status, priority, date) */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className={`${controlBase} px-3 gap-1.5`}>
@@ -85,6 +71,43 @@ export function TasksHeader({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48 bg-popover z-50">
+            <DropdownMenuLabel className="text-[11px]">Status</DropdownMenuLabel>
+            <DropdownMenuCheckboxItem
+              checked={statusFilter === "all"}
+              onCheckedChange={() => onStatusFilterChange("all")}
+              className="text-[11px]"
+            >
+              All Status
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={statusFilter === "upcoming"}
+              onCheckedChange={() => onStatusFilterChange("upcoming")}
+              className="text-[11px]"
+            >
+              To Do
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={statusFilter === "ongoing"}
+              onCheckedChange={() => onStatusFilterChange("ongoing")}
+              className="text-[11px]"
+            >
+              In Progress
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={statusFilter === "completed"}
+              onCheckedChange={() => onStatusFilterChange("completed")}
+              className="text-[11px]"
+            >
+              Done
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={statusFilter === "overdue"}
+              onCheckedChange={() => onStatusFilterChange("overdue")}
+              className="text-[11px]"
+            >
+              Overdue
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-[11px]">Priority</DropdownMenuLabel>
             <DropdownMenuCheckboxItem
               checked={priorityFilter === "all"}
