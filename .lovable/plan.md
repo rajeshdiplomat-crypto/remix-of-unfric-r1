@@ -1,121 +1,56 @@
 
 
-# Tasks Page Redesign
+# Replace Kanban Columns with Quadrant Board Views
 
-## Reference Image Analysis
+## What You Want (My Understanding)
 
-The uploaded screenshot shows a project management interface with:
-- A **hero banner** at the top with a scenic image and "Your Tasks" text
-- A **"Top Focus" strip** below the hero
-- A **toolbar row** with Search, AI button, Status filter, Sort, and a "New Task" button
-- **View tabs**: Overview, Lists, Board, Timeline, Files
-- A **4-column Kanban board** (To Do, In Progress, In Review, Done) with task cards
-- A **right sidebar** with a clock and "Emotional Patterns" section
+Instead of the current 4 fixed Kanban columns (To Do, In Progress, In Review, Done), the **Board view** should show **4 selectable board modes** as sub-views:
 
-## Current Layout vs Target
+1. **Urgent x Important** -- 4 columns: Urgent+Important, Urgent+Not Important, Not Urgent+Important, Not Urgent+Not Important
+2. **Status** -- 4 columns: Overdue, Ongoing, Upcoming, Completed
+3. **Date** -- 4 columns: Yesterday, Today, Tomorrow, This Week
+4. **Time of Day** -- 4 columns: Morning, Afternoon, Evening, Night
 
-| Area | Current | Target |
-|------|---------|--------|
-| Hero | Exists (PageHero) | Keep as-is |
-| Top Focus Bar | Exists | Keep as-is |
-| Insights Panel + Clock | 2-column panel (260px height) | Remove from main view; move clock to right sidebar |
-| Header/Toolbar | View mode dropdown + search + New Task | Toolbar with Search, AI, Status, Sort + New Task |
-| View Tabs | None (dropdown selector) | Tab bar: Overview, Lists, Board, Timeline, Files |
-| Main Content | 2-column: AllTasksList (left) + Board/Quadrant (right) | Kanban board (full width) + optional right sidebar |
-| Right Sidebar | None | Clock + Emotional Patterns panel |
+A mode selector (tabs or dropdown) lets the user switch between these 4 board layouts. Each mode shows 4 columns with full task cards (drag-drop, quick-add, etc.) -- the same card style currently used in the Kanban view.
 
-## Implementation Plan
+## Changes
 
-### 1. Add View Tabs Component
-Create a new `TasksViewTabs` component with horizontal tab bar:
-- **Overview** - shows the current Insights + summary (existing InsightsPanel)
-- **Lists** - shows AllTasksList full width
-- **Board** - shows Kanban-style board (default view)
-- **Timeline** - shows the current day planner BoardView
-- **Files** - placeholder/future feature
+### 1. KanbanBoardView.tsx (rewrite main columns section)
 
-File: `src/components/tasks/TasksViewTabs.tsx` (new)
+- Remove the hardcoded `KANBAN_COLUMNS` (To Do, In Progress, In Review, Done) and the `mapTaskToColumn` function
+- Add a `boardMode` state defaulting to `"urgent-important"`
+- Add a mode selector row (4 tab-like buttons: Urgent x Important, Status, Date, Time of Day) above the columns
+- Dynamically render 4 columns based on the selected mode using `QUADRANT_MODES[boardMode].quadrants`
+- Each column filters tasks using the existing logic (urgency/importance, computeTaskStatus, computeDateBucket, time_of_day)
+- Each column keeps the full KanbanCard rendering, drag-drop, and quick-add functionality
+- Keep the InsightsPanel + mini-boards summary row at the top (or remove the mini-boards since the main columns now ARE the boards)
+- Remove the 2x2 mini quadrant grid (it's redundant now since the main view IS the quadrant board)
 
-### 2. Redesign the Toolbar
-Update `TasksHeader.tsx` to match the reference:
-- Left side: Search input with icon
-- Center/Right: AI button, Status dropdown filter, Sort dropdown
-- Far right: "New Task" button with plus icon
-- Remove the view mode dropdown (replaced by tabs)
+### 2. Task filtering on drop
 
-File: `src/components/tasks/TasksHeader.tsx` (modify)
+- Update `handleDrop` to map column IDs to the correct task field updates based on the active board mode (e.g., dropping into "morning" column sets `time_of_day`, dropping into "overdue" sets status, etc.)
+- Update `submitQuickAdd` similarly
 
-### 3. Create Kanban Board View
-Create a new `KanbanBoardView` component with 4 columns:
-- **To Do** (maps to "upcoming" status)
-- **In Progress** (maps to "ongoing" status) 
-- **In Review** (new status concept, or map from existing)
-- **Done** (maps to "completed" status)
+### 3. No changes needed to
 
-Each column has:
-- Column header with count badge
-- Task cards showing: title, due date, priority indicator, assignee avatar placeholder
-- Quick-add at bottom of each column
-- Drag and drop support
-
-File: `src/components/tasks/KanbanBoardView.tsx` (new)
-
-### 4. Add Right Sidebar
-Create a `TasksRightSidebar` component containing:
-- Clock widget (reuse existing `TasksClockWidget`)
-- Emotional Patterns section (compact stats/chart)
-
-File: `src/components/tasks/TasksRightSidebar.tsx` (new)
-
-### 5. Restructure Tasks Page Layout
-Update `src/pages/Tasks.tsx`:
-- Keep PageHero at top
-- Keep TopFocusBar below hero
-- New toolbar row (redesigned TasksHeader)
-- View tabs row
-- Main content area: active tab content + right sidebar
-
-New layout structure:
-```text
-+----------------------------------------------------------+
-| PageHero                                                  |
-+----------------------------------------------------------+
-| TopFocusBar                                               |
-+----------------------------------------------------------+
-| [Search] [AI] [Status] [Sort]              [+ New Task]  |
-+----------------------------------------------------------+
-| Overview | Lists | Board | Timeline | Files               |
-+----------------------------------------------------------+
-| Active Tab Content                    | Right Sidebar     |
-| (Board = Kanban columns)             | - Clock           |
-|                                       | - Patterns        |
-+----------------------------------------------------------+
-```
-
-File: `src/pages/Tasks.tsx` (modify)
-
-### 6. Update Task Types
-Add "in_review" to the Status type if needed, or map existing statuses to Kanban columns.
-
-File: `src/components/tasks/types.ts` (minor update)
-
-## Files to Create
-- `src/components/tasks/TasksViewTabs.tsx`
-- `src/components/tasks/KanbanBoardView.tsx`
-- `src/components/tasks/TasksRightSidebar.tsx`
-
-## Files to Modify
-- `src/pages/Tasks.tsx` - main layout restructure
-- `src/components/tasks/TasksHeader.tsx` - toolbar redesign
-- `src/components/tasks/types.ts` - add status if needed
+- `TasksViewTabs.tsx` -- stays the same (Lists, Board, Timeline, Files)
+- `TasksHeader.tsx` -- stays the same
+- `types.ts` -- already has all the quadrant mode definitions
 
 ## Technical Details
 
-- The existing `BoardView.tsx` (day planner/timeline) will be preserved and shown under the "Timeline" tab
-- The existing `AllTasksList.tsx` will be shown under the "Lists" tab
-- The existing `InsightsPanel.tsx` will be shown under the "Overview" tab
-- The new Kanban board will be the default "Board" tab
-- The right sidebar will be visible across all tabs
-- All existing functionality (CRUD, drag-drop, focus mode, Supabase sync) remains intact
-- The independent scrolling architecture will be maintained (sidebar scrolls independently)
+**Board mode selector** will be a row of 4 small buttons/tabs inside the Board view:
+- `[Urgent x Important] [Status] [Date] [Time of Day]`
 
+**Column rendering logic** (pseudo-code):
+```text
+activeQuadrants = QUADRANT_MODES[boardMode].quadrants  // 4 items
+For each quadrant:
+  - Filter tasks matching that quadrant's criteria
+  - Render column with header (color dot + title + count)
+  - Render KanbanCard for each task
+  - Render quick-add at bottom
+```
+
+**Files modified:**
+- `src/components/tasks/KanbanBoardView.tsx` -- replace fixed Kanban columns with dynamic quadrant-based columns, add board mode selector, remove mini-boards grid
