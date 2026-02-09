@@ -1,7 +1,15 @@
-import { Plus, Search, Sparkles, SlidersHorizontal, ArrowUpDown } from "lucide-react";
+import { Plus, Search, Sparkles, SlidersHorizontal, ArrowUpDown, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface TasksHeaderProps {
   searchQuery: string;
@@ -11,6 +19,10 @@ interface TasksHeaderProps {
   onStatusFilterChange: (status: string) => void;
   sortBy: string;
   onSortChange: (sort: string) => void;
+  priorityFilter?: string;
+  onPriorityFilterChange?: (priority: string) => void;
+  tagFilter?: string;
+  onTagFilterChange?: (tag: string) => void;
 }
 
 const controlBase = "h-9 rounded-xl bg-background/70 border-border/40 shadow-sm";
@@ -23,6 +35,10 @@ export function TasksHeader({
   onStatusFilterChange,
   sortBy,
   onSortChange,
+  priorityFilter = "all",
+  onPriorityFilterChange,
+  tagFilter = "all",
+  onTagFilterChange,
 }: TasksHeaderProps) {
   return (
     <div className="flex items-center gap-2 flex-wrap justify-between">
@@ -59,6 +75,77 @@ export function TasksHeader({
             <SelectItem value="overdue">Overdue</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* Filter dropdown (priority, tags, date range) */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className={`${controlBase} px-3 gap-1.5`}>
+              <Filter className="h-3.5 w-3.5" />
+              <span className="text-[11px]">Filter</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48 bg-popover z-50">
+            <DropdownMenuLabel className="text-[11px]">Priority</DropdownMenuLabel>
+            <DropdownMenuCheckboxItem
+              checked={priorityFilter === "all"}
+              onCheckedChange={() => onPriorityFilterChange?.("all")}
+              className="text-[11px]"
+            >
+              All Priorities
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={priorityFilter === "high"}
+              onCheckedChange={() => onPriorityFilterChange?.("high")}
+              className="text-[11px]"
+            >
+              High Priority
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={priorityFilter === "medium"}
+              onCheckedChange={() => onPriorityFilterChange?.("medium")}
+              className="text-[11px]"
+            >
+              Medium Priority
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={priorityFilter === "low"}
+              onCheckedChange={() => onPriorityFilterChange?.("low")}
+              className="text-[11px]"
+            >
+              Low Priority
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-[11px]">Date</DropdownMenuLabel>
+            <DropdownMenuCheckboxItem
+              checked={tagFilter === "all"}
+              onCheckedChange={() => onTagFilterChange?.("all")}
+              className="text-[11px]"
+            >
+              All Dates
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={tagFilter === "today"}
+              onCheckedChange={() => onTagFilterChange?.("today")}
+              className="text-[11px]"
+            >
+              Today
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={tagFilter === "week"}
+              onCheckedChange={() => onTagFilterChange?.("week")}
+              className="text-[11px]"
+            >
+              This Week
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={tagFilter === "overdue"}
+              onCheckedChange={() => onTagFilterChange?.("overdue")}
+              className="text-[11px]"
+            >
+              Overdue Only
+            </DropdownMenuCheckboxItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <Select value={sortBy} onValueChange={onSortChange}>
           <SelectTrigger className={`w-[120px] ${controlBase} text-[11px]`}>

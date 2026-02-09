@@ -5,7 +5,10 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { QuadrantTask, computeTaskStatus } from "./types";
+import { QuadrantTask, QuadrantMode, computeTaskStatus } from "./types";
+import { InsightsPanel } from "./InsightsPanel";
+import { QuadrantGrid } from "./QuadrantGrid";
+import { QuadrantToolbar } from "./QuadrantToolbar";
 import { format } from "date-fns";
 
 interface KanbanColumn {
@@ -25,7 +28,7 @@ function mapTaskToColumn(task: QuadrantTask): string {
   const status = computeTaskStatus(task);
   if (status === "completed") return "done";
   if (status === "ongoing") return "in_progress";
-  if (status === "overdue") return "todo"; // overdue shows in To Do
+  if (status === "overdue") return "todo";
   return "todo";
 }
 
@@ -55,14 +58,33 @@ function KanbanCard({ task, onClick }: { task: QuadrantTask; onClick: () => void
         priorityColor,
       )}
     >
-      <p className="text-sm font-medium text-foreground leading-snug mb-2">{task.title}</p>
+      <p className="text-sm font-medium text-foreground leading-snug mb-1">{task.title}</p>
+
+      {task.description && (
+        <p className="text-[10px] text-muted-foreground mb-2 line-clamp-2">{task.description}</p>
+      )}
 
       <div className="flex items-center gap-2 flex-wrap">
         {task.due_date && (
           <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
             <Calendar className="h-3 w-3" />
             {format(new Date(task.due_date), "MMM d")}
+            {task.due_time && ` ${task.due_time}`}
+            {task.end_time && task.end_time !== task.due_time && `-${task.end_time}`}
           </span>
+        )}
+        {task.priority && (
+          <Badge
+            variant="outline"
+            className={cn(
+              "text-[9px] px-1.5 py-0",
+              task.priority === "high" && "border-destructive/40 text-destructive",
+              task.priority === "medium" && "border-chart-1/40 text-chart-1",
+              task.priority === "low" && "border-muted-foreground/40 text-muted-foreground",
+            )}
+          >
+            {task.priority}
+          </Badge>
         )}
         {task.tags?.slice(0, 2).map((tag) => (
           <Badge key={tag} variant="secondary" className="text-[9px] px-1.5 py-0">
@@ -79,9 +101,13 @@ export function KanbanBoardView({
   onTaskClick,
   onQuickAdd,
   onDrop,
+  onStartTask,
+  onCompleteTask,
 }: KanbanBoardViewProps) {
   const [quickAddCol, setQuickAddCol] = useState<string | null>(null);
   const [quickAddTitle, setQuickAddTitle] = useState("");
+  const [quadrantMode, setQuadrantMode] = useState<QuadrantMode>("urgent-important");
+  const [quadrantSearch, setQuadrantSearch] = useState("");
 
   const columnTasks = useMemo(() => {
     const map: Record<string, QuadrantTask[]> = {};
@@ -98,7 +124,6 @@ export function KanbanBoardView({
     const taskId = e.dataTransfer.getData("task-id");
     const task = tasks.find((t) => t.id === taskId);
     if (task) {
-      // Map kanban column to status for the existing handler
       const statusMap: Record<string, string> = {
         todo: "upcoming",
         in_progress: "ongoing",
@@ -124,7 +149,31 @@ export function KanbanBoardView({
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 h-full">
+    <div className="space-y-4">
+      {/* Insights + Quadrant Views Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-4">
+        <InsightsPanel tasks={tasks} compactMode={true} />
+        <div className="min-h-[220px]">
+          <QuadrantToolbar
+            mode={quadrantMode}
+            onModeChange={setQuadrantMode}
+            searchQuery={quadrantSearch}
+            onSearchChange={setQuadrantSearch}
+          />
+          <div className="mt-2 h-[200px]">
+            <QuadrantGrid
+              mode={quadrantMode}
+              tasks={tasks}
+              onTaskClick={onTaskClick}
+              onStartTask={onStartTask}
+              onCompleteTask={onCompleteTask}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Kanban Columns */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 min-h-[300px]">
       {KANBAN_COLUMNS.map((col) => (
         <div
           key={col.id}
@@ -188,6 +237,7 @@ export function KanbanBoardView({
           )}
         </div>
       ))}
+      </div>
     </div>
   );
 }
