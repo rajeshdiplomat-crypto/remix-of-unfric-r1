@@ -1,118 +1,121 @@
 
-# Insights Page Layout Redesign
 
-## Goal
-Restructure the Insights page to use a two-column layout matching the other pages - dashboard content on the left, descriptive text on the right, with better vertical space usage.
+# Tasks Page Redesign
 
----
+## Reference Image Analysis
 
-## New Layout
+The uploaded screenshot shows a project management interface with:
+- A **hero banner** at the top with a scenic image and "Your Tasks" text
+- A **"Top Focus" strip** below the hero
+- A **toolbar row** with Search, AI button, Status filter, Sort, and a "New Task" button
+- **View tabs**: Overview, Lists, Board, Timeline, Files
+- A **4-column Kanban board** (To Do, In Progress, In Review, Done) with task cards
+- A **right sidebar** with a clock and "Emotional Patterns" section
 
+## Current Layout vs Target
+
+| Area | Current | Target |
+|------|---------|--------|
+| Hero | Exists (PageHero) | Keep as-is |
+| Top Focus Bar | Exists | Keep as-is |
+| Insights Panel + Clock | 2-column panel (260px height) | Remove from main view; move clock to right sidebar |
+| Header/Toolbar | View mode dropdown + search + New Task | Toolbar with Search, AI, Status, Sort + New Task |
+| View Tabs | None (dropdown selector) | Tab bar: Overview, Lists, Board, Timeline, Files |
+| Main Content | 2-column: AllTasksList (left) + Board/Quadrant (right) | Kanban board (full width) + optional right sidebar |
+| Right Sidebar | None | Clock + Emotional Patterns panel |
+
+## Implementation Plan
+
+### 1. Add View Tabs Component
+Create a new `TasksViewTabs` component with horizontal tab bar:
+- **Overview** - shows the current Insights + summary (existing InsightsPanel)
+- **Lists** - shows AllTasksList full width
+- **Board** - shows Kanban-style board (default view)
+- **Timeline** - shows the current day planner BoardView
+- **Files** - placeholder/future feature
+
+File: `src/components/tasks/TasksViewTabs.tsx` (new)
+
+### 2. Redesign the Toolbar
+Update `TasksHeader.tsx` to match the reference:
+- Left side: Search input with icon
+- Center/Right: AI button, Status dropdown filter, Sort dropdown
+- Far right: "New Task" button with plus icon
+- Remove the view mode dropdown (replaced by tabs)
+
+File: `src/components/tasks/TasksHeader.tsx` (modify)
+
+### 3. Create Kanban Board View
+Create a new `KanbanBoardView` component with 4 columns:
+- **To Do** (maps to "upcoming" status)
+- **In Progress** (maps to "ongoing" status) 
+- **In Review** (new status concept, or map from existing)
+- **Done** (maps to "completed" status)
+
+Each column has:
+- Column header with count badge
+- Task cards showing: title, due date, priority indicator, assignee avatar placeholder
+- Quick-add at bottom of each column
+- Drag and drop support
+
+File: `src/components/tasks/KanbanBoardView.tsx` (new)
+
+### 4. Add Right Sidebar
+Create a `TasksRightSidebar` component containing:
+- Clock widget (reuse existing `TasksClockWidget`)
+- Emotional Patterns section (compact stats/chart)
+
+File: `src/components/tasks/TasksRightSidebar.tsx` (new)
+
+### 5. Restructure Tasks Page Layout
+Update `src/pages/Tasks.tsx`:
+- Keep PageHero at top
+- Keep TopFocusBar below hero
+- New toolbar row (redesigned TasksHeader)
+- View tabs row
+- Main content area: active tab content + right sidebar
+
+New layout structure:
 ```text
-┌─────────────────────────────────────────────────────────────────────┐
-│   Left (Dashboard)             │   Right (Descriptive Text)        │
-│                                │                                   │
-│   [PatternsDashboardEnhanced]  │   Badge: "Your Patterns"          │
-│                                │   Title: "Insights & Analytics"   │
-│   (Full patterns dashboard     │   Description text                │
-│    with tabs: Overview,        │   • AI-powered pattern detection  │
-│    Moods, Context)             │   • Mood distribution analysis    │
-│                                │   • Context-based insights        │
-│                                │                                   │
-│                                │   [This Week: X] [This Month: Y]  │
-│                                │                                   │
-│                                │   [← Back to Check-in]            │
-└─────────────────────────────────────────────────────────────────────┘
++----------------------------------------------------------+
+| PageHero                                                  |
++----------------------------------------------------------+
+| TopFocusBar                                               |
++----------------------------------------------------------+
+| [Search] [AI] [Status] [Sort]              [+ New Task]  |
++----------------------------------------------------------+
+| Overview | Lists | Board | Timeline | Files               |
++----------------------------------------------------------+
+| Active Tab Content                    | Right Sidebar     |
+| (Board = Kanban columns)             | - Clock           |
+|                                       | - Patterns        |
++----------------------------------------------------------+
 ```
 
----
+File: `src/pages/Tasks.tsx` (modify)
 
-## Changes to EmotionsPageInsights.tsx
+### 6. Update Task Types
+Add "in_review" to the Status type if needed, or map existing statuses to Kanban columns.
 
-### 1. Two-Column Grid Layout
-- **Left column (order-1)**: PatternsDashboardEnhanced
-- **Right column (order-2)**: Descriptive text, stats, navigation
+File: `src/components/tasks/types.ts` (minor update)
 
-### 2. Remove Centered Title Section
-- Move the title content into the right descriptive column
-- Match the format used in Feel/Regulate pages (badge, title, description, features list)
+## Files to Create
+- `src/components/tasks/TasksViewTabs.tsx`
+- `src/components/tasks/KanbanBoardView.tsx`
+- `src/components/tasks/TasksRightSidebar.tsx`
 
-### 3. Move Stats to Right Column
-- Move StatBadge components into the descriptive section
-- Position below the features list
+## Files to Modify
+- `src/pages/Tasks.tsx` - main layout restructure
+- `src/components/tasks/TasksHeader.tsx` - toolbar redesign
+- `src/components/tasks/types.ts` - add status if needed
 
-### 4. Add Back Button to Right Column
-- Move navigation button to bottom of right column
+## Technical Details
 
----
+- The existing `BoardView.tsx` (day planner/timeline) will be preserved and shown under the "Timeline" tab
+- The existing `AllTasksList.tsx` will be shown under the "Lists" tab
+- The existing `InsightsPanel.tsx` will be shown under the "Overview" tab
+- The new Kanban board will be the default "Board" tab
+- The right sidebar will be visible across all tabs
+- All existing functionality (CRUD, drag-drop, focus mode, Supabase sync) remains intact
+- The independent scrolling architecture will be maintained (sidebar scrolls independently)
 
-## Code Structure
-
-```tsx
-<div className="flex flex-col animate-in fade-in duration-500">
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-    
-    {/* Left: Dashboard */}
-    <div className="flex flex-col order-2 lg:order-1">
-      <PatternsDashboardEnhanced entries={entries} onDateClick={onDateClick} />
-    </div>
-    
-    {/* Right: Descriptive Text */}
-    <div className="flex flex-col justify-center order-1 lg:order-2">
-      <div className="space-y-4 max-w-md">
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium w-fit bg-primary/10 text-primary">
-          <BarChart3 className="h-3 w-3" />
-          Your Patterns
-        </div>
-        
-        {/* Title */}
-        <h2 className="text-2xl md:text-3xl font-light leading-tight">
-          Insights &{" "}
-          <span className="font-semibold text-primary">Analytics</span>
-        </h2>
-        
-        {/* Description */}
-        <p className="text-muted-foreground text-sm leading-relaxed">
-          Discover patterns in your emotional journey based on {entries.length} check-ins.
-        </p>
-        
-        {/* Features */}
-        <ul className="space-y-2">
-          <li>• AI-powered pattern detection</li>
-          <li>• Mood distribution analysis</li>
-          <li>• Context-based insights</li>
-        </ul>
-        
-        {/* Stats */}
-        <div className="flex gap-3 pt-2">
-          <StatBadge label="This Week" value={weekEntries} />
-          <StatBadge label="This Month" value={monthEntries} />
-        </div>
-        
-        {/* Back Button */}
-        <Button variant="ghost" onClick={onBack}>
-          <ArrowLeft /> Back to Check-in
-        </Button>
-      </div>
-    </div>
-  </div>
-</div>
-```
-
----
-
-## Summary
-
-| Element | Before | After |
-|---------|--------|-------|
-| Layout | Centered, single column | Two-column grid |
-| Dashboard | Below title | Left column |
-| Title/Description | Centered at top | Right column |
-| Stats badges | Top-right header | Right column, below features |
-| Back button | Top-left header | Right column, bottom |
-
----
-
-## File to Modify
-`src/components/emotions/EmotionsPageInsights.tsx`
