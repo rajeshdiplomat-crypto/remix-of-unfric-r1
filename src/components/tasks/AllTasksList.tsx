@@ -104,20 +104,35 @@ export function AllTasksList({
     { id: "NU&NI", label: "NU&NI" },
   ];
 
-  // Format time display
-  const formatTimeRange = (task: QuadrantTask) => {
+  // Format date display
+  const formatDate = (task: QuadrantTask) => {
     if (!task.due_date) return "";
     const date = new Date(task.due_date);
     const day = date.getDate();
     const month = date.getMonth() + 1;
-    let result = `${day}/${month}`;
-    if (task.due_time) {
-      result += ` ${task.due_time}`;
-      if (task.end_time && task.end_time !== task.due_time) {
-        result += `-${task.end_time}`;
-      }
-    }
-    return result;
+    return `${day}/${month}`;
+  };
+
+  // Calculate duration between start and end time
+  const getDuration = (task: QuadrantTask) => {
+    if (!task.due_time || !task.end_time) return "";
+    const [sh, sm] = task.due_time.split(":").map(Number);
+    const [eh, em] = task.end_time.split(":").map(Number);
+    const diff = (eh * 60 + em) - (sh * 60 + sm);
+    if (diff <= 0) return "";
+    const h = Math.floor(diff / 60);
+    const m = diff % 60;
+    return h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
+  };
+
+  // Get quadrant label
+  const getQuadrantLabel = (task: QuadrantTask) => {
+    const u = task.urgency === "high";
+    const i = task.importance === "high";
+    if (u && i) return "U&I";
+    if (u && !i) return "U&NI";
+    if (!u && i) return "NU&I";
+    return "NU&NI";
   };
 
   // Collapsed state - just show toggle button
@@ -227,21 +242,24 @@ export function AllTasksList({
                       {task.title}
                     </p>
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                      {formatTimeRange(task) && (
+                      {formatDate(task) && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                          {formatTimeRange(task)}
+                          {formatDate(task)}
                         </span>
                       )}
-                      {task.urgency === "high" && (
-                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-orange-300 text-orange-600 bg-orange-50 dark:bg-orange-900/20">
-                          U
-                        </Badge>
+                      {task.due_time && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                          {task.due_time}{task.end_time ? ` - ${task.end_time}` : ""}
+                        </span>
                       )}
-                      {task.importance === "high" && (
-                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-blue-300 text-blue-600 bg-blue-50 dark:bg-blue-900/20">
-                          I
-                        </Badge>
+                      {getDuration(task) && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                          {getDuration(task)}
+                        </span>
                       )}
+                      <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-primary/30 text-primary">
+                        {getQuadrantLabel(task)}
+                      </Badge>
                       {task.tags?.slice(0, 1).map((tag) => (
                         <Badge key={tag} variant="secondary" className="text-[10px] px-1 py-0 h-4">
                           {tag}
