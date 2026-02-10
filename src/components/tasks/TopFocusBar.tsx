@@ -229,50 +229,53 @@ export function TopFocusBar({ tasks, onStartFocus }: TopFocusBarProps) {
 
   return (
     <>
-      <Card className="rounded-lg border border-primary/30 bg-gradient-to-r from-primary/10 via-chart-1/10 to-chart-2/10 backdrop-blur-xl shadow-none overflow-hidden">
-        <CardContent className="flex items-center gap-1.5 py-0 px-1.5 relative">
-          {/* Subtle animated gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent opacity-50" />
-          
-          {/* Left icon */}
-          <div className="h-6 w-6 rounded-md flex items-center justify-center shrink-0 bg-gradient-to-br from-primary to-chart-1 shadow-sm relative z-10">
-            <Play className="h-3 w-3 text-primary-foreground" />
-          </div>
+      <div className="flex items-center gap-3 px-4 py-2 rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm">
+        {/* Status dot */}
+        <div className="relative shrink-0">
+          <div className="h-2 w-2 rounded-full bg-primary" />
+          <div className="absolute inset-0 h-2 w-2 rounded-full bg-primary animate-ping opacity-30" />
+        </div>
 
-          {/* Main content */}
-          <div className="min-w-0 flex-1 flex items-center gap-2 relative z-10">
-            <span className="text-[8px] font-bold uppercase tracking-[0.15em] text-primary shrink-0">
-              Top focus
-            </span>
-            <p className="text-[11px] font-semibold min-w-0 truncate text-foreground">{topTask.title}</p>
-            {!!dueLabel && (
-              <Badge variant="outline" className="h-4 px-1.5 text-[8px] rounded-full bg-chart-2/20 border-chart-2/40 text-chart-2 shrink-0">
-                <Clock3 className="h-2 w-2 mr-0.5" />
-                {dueLabel}
-              </Badge>
-            )}
-          </div>
+        {/* Label */}
+        <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-primary shrink-0">
+          Focus
+        </span>
 
-          {/* Right actions */}
-          <div className="flex items-center gap-1 shrink-0 relative z-10">
-            <Button
-              variant="outline"
-              onClick={() => setShowStats(true)}
-              className="rounded-full border-chart-1/40 bg-chart-1/10 hover:bg-chart-1/20 text-chart-1 h-6 px-2 text-[9px]"
-            >
-              <BarChart3 className="h-2.5 w-2.5 mr-0.5" />
-              Stats
-            </Button>
-            <Button 
-              variant="default" 
-              onClick={() => onStartFocus(topTask)} 
-              className="rounded-full h-6 px-2.5 text-[9px] bg-gradient-to-r from-primary to-chart-1 hover:opacity-90 shadow-sm"
-            >
-              Focus
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        {/* Divider */}
+        <div className="h-3.5 w-px bg-border/60" />
+
+        {/* Task title */}
+        <p className="text-xs font-medium min-w-0 truncate text-foreground flex-1">{topTask.title}</p>
+
+        {/* Due info */}
+        {!!dueLabel && (
+          <span className="text-[10px] text-muted-foreground shrink-0">
+            {dueLabel}
+          </span>
+        )}
+
+        {/* Actions */}
+        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowStats(true)}
+            className="h-7 px-2.5 text-[10px] text-muted-foreground hover:text-foreground rounded-lg"
+          >
+            <BarChart3 className="h-3 w-3 mr-1" />
+            Stats
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => onStartFocus(topTask)}
+            className="h-7 px-3.5 text-[10px] rounded-lg shadow-sm"
+          >
+            <Play className="h-3 w-3 mr-1" />
+            Focus
+          </Button>
+        </div>
+      </div>
 
       {/* Render modal via portal */}
       {showStats && <FocusStatsModal onClose={() => setShowStats(false)} />}

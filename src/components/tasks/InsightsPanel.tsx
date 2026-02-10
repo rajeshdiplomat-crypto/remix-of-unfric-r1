@@ -322,248 +322,224 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
   );
   if (!expanded) {
     return (
-      <Button
-        variant="ghost"
-        size="sm"
+      <button
         onClick={() => setExpanded(true)}
-        className="text-muted-foreground hover:text-foreground px-0"
+        className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors group"
       >
-        Show insights
-      </Button>
+        <ChevronUp className="h-3.5 w-3.5 rotate-180 group-hover:translate-y-0.5 transition-transform" />
+        Show Insights
+      </button>
     );
   }
   return (
-    <Card className="rounded-xl border border-primary/20 bg-gradient-to-br from-card/80 via-card/60 to-chart-1/5 backdrop-blur-sm shadow-md flex-1 overflow-hidden">
-      <CardContent className="p-2 h-full px-2 py-2 rounded-sm min-h-[160px]">
-        {/* Main content: Time selector left, KPIs middle, Charts right */}
-        <div className="h-full flex gap-1.5">
-          {/* Far Left: Time Period Selector - vertical slim buttons */}
-          <div className="flex flex-col gap-1 shrink-0 justify-center">
+    <div className="rounded-xl border border-border/40 bg-card/40 backdrop-blur-sm overflow-hidden">
+      <div className="px-4 py-3">
+        {/* Top row: Time selector + KPIs inline */}
+        <div className="flex items-center gap-3 mb-3">
+          {/* Time Period Selector - horizontal pills */}
+          <div className="flex items-center gap-1 bg-muted/40 rounded-lg p-0.5 shrink-0">
             {(["today", "tomorrow", "week"] as TimePeriod[]).map((period) => (
               <button
                 key={period}
                 onClick={() => setTimePeriod(period)}
                 className={cn(
-                  "flex items-center justify-center gap-1 px-1.5 py-1.5 rounded-md text-[7px] font-medium uppercase tracking-wide transition-all w-[52px]",
+                  "px-2.5 py-1 rounded-md text-[10px] font-medium transition-all",
                   timePeriod === period
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                {period === "today" && <Sun className="h-2.5 w-2.5" />}
-                {period === "tomorrow" && <Sunrise className="h-2.5 w-2.5" />}
-                {period === "week" && <CalendarDays className="h-2.5 w-2.5" />}
-                <span className="hidden sm:inline">
-                  {period === "today" ? "Today" : period === "tomorrow" ? "Tmrw" : "Week"}
-                </span>
+                {period === "today" ? "Today" : period === "tomorrow" ? "Tomorrow" : "Week"}
               </button>
             ))}
           </div>
 
-          {/* Left: KPI Cards in 2x2 grid */}
-          <div className="grid grid-cols-2 gap-0.5 w-[200px] shrink-0 auto-rows-fr">
-            {/* Pending - Blue gradient */}
-            <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 shadow-sm">
-              <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shrink-0 shadow-sm">
-                <Calendar className="h-3 w-3 text-primary-foreground" />
+          {/* Divider */}
+          <div className="h-6 w-px bg-border/40" />
+
+          {/* KPIs - inline horizontal */}
+          <div className="flex items-center gap-4 flex-1 min-w-0">
+            {/* Pending */}
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Calendar className="h-3.5 w-3.5 text-primary" />
               </div>
               <div>
-                <p className="text-base font-bold text-foreground leading-none">{pendingCount}</p>
-                <p className="text-[8px] text-primary/80 uppercase font-medium">Pending</p>
+                <p className="text-lg font-semibold text-foreground leading-none">{pendingCount}</p>
+                <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Planned</p>
               </div>
             </div>
 
-            {/* Done - Green gradient */}
-            <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-gradient-to-br from-chart-1/20 to-chart-1/5 border border-chart-1/20 shadow-sm">
-              <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-chart-1 to-chart-1/70 flex items-center justify-center shrink-0 shadow-sm">
-                <CheckCircle className="h-3 w-3 text-primary-foreground" />
+            {/* Done */}
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-chart-1/10 flex items-center justify-center shrink-0">
+                <CheckCircle className="h-3.5 w-3.5 text-chart-1" />
               </div>
               <div>
-                <p className="text-base font-bold text-foreground leading-none">{completedCount}</p>
-                <p className="text-[8px] text-chart-1/80 uppercase font-medium">Done</p>
+                <p className="text-lg font-semibold text-foreground leading-none">{completedCount}</p>
+                <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Done</p>
               </div>
             </div>
 
-            {/* Overdue - Red/Orange gradient */}
-            <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-gradient-to-br from-destructive/20 to-destructive/5 border border-destructive/20 shadow-sm">
-              <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-destructive to-destructive/70 flex items-center justify-center shrink-0 shadow-sm">
-                <AlertTriangle className="h-3 w-3 text-destructive-foreground" />
+            {/* Overdue */}
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
+                <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
               </div>
               <div>
-                <p className="text-base font-bold text-foreground leading-none">{overdueCount}</p>
-                <p className="text-[8px] text-destructive/80 uppercase font-medium">Overdue</p>
+                <p className="text-lg font-semibold text-foreground leading-none">{overdueCount}</p>
+                <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Overdue</p>
               </div>
             </div>
 
-            {/* Focus - Purple/Violet gradient */}
-            <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-gradient-to-br from-chart-2/20 to-chart-2/5 border border-chart-2/20 shadow-sm">
-              <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-chart-2 to-chart-2/70 flex items-center justify-center shrink-0 shadow-sm">
-                <ClockIcon className="h-3 w-3 text-primary-foreground" />
+            {/* Focus */}
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-chart-2/10 flex items-center justify-center shrink-0">
+                <ClockIcon className="h-3.5 w-3.5 text-chart-2" />
               </div>
               <div>
-                <p className="text-base font-bold text-foreground leading-none">{totalFocusMinutes}m</p>
-                <p className="text-[8px] text-chart-2/80 uppercase font-medium">Focus</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Charts - 2 equal columns + wider pie chart column */}
-          <div className="flex-1 grid grid-cols-[1fr_1fr_160px] gap-2 min-h-0">
-            {/* Plan vs Actual */}
-            <div className="rounded-lg bg-gradient-to-br from-primary/10 to-chart-1/5 border border-primary/10 p-2 flex flex-col min-h-0">
-              <div className="flex items-center gap-1 mb-1 shrink-0">
-                <div className="h-4 w-4 rounded bg-primary/20 flex items-center justify-center">
-                  <TrendingUp className="h-2.5 w-2.5 text-primary" />
-                </div>
-                <span className="text-[8px] font-semibold text-primary uppercase">Plan vs Actual</span>
-              </div>
-              <div className="flex-1 min-h-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={past7DaysData}>
-                    <defs>
-                      <linearGradient id="planGradient2" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis
-                      dataKey="date"
-                      tick={{
-                        fontSize: 8,
-                        fill: "hsl(var(--muted-foreground))",
-                      }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{
-                        fontSize: 8,
-                        fill: "hsl(var(--muted-foreground))",
-                      }}
-                      axisLine={false}
-                      tickLine={false}
-                      width={14}
-                      allowDecimals={false}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="plan"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                      fill="url(#planGradient2)"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="actual"
-                      stroke="hsl(var(--chart-1))"
-                      strokeWidth={2}
-                      dot={{
-                        r: 3,
-                        fill: "hsl(var(--chart-1))",
-                      }}
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Upcoming */}
-            <div className="rounded-lg bg-gradient-to-br from-chart-1/10 to-chart-2/5 border border-chart-1/10 p-2 flex flex-col min-h-0">
-              <div className="flex items-center gap-1 mb-1 shrink-0">
-                <div className="h-4 w-4 rounded bg-chart-1/20 flex items-center justify-center">
-                  <Calendar className="h-2.5 w-2.5 text-chart-1" />
-                </div>
-                <span className="text-[8px] font-semibold text-chart-1 uppercase">Upcoming</span>
-              </div>
-              <div className="flex-1 min-h-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={future7DaysData}>
-                    <defs>
-                      <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="hsl(var(--chart-1))" stopOpacity={1} />
-                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis
-                      dataKey="date"
-                      tick={{
-                        fontSize: 8,
-                        fill: "hsl(var(--muted-foreground))",
-                      }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{
-                        fontSize: 8,
-                        fill: "hsl(var(--muted-foreground))",
-                      }}
-                      axisLine={false}
-                      tickLine={false}
-                      width={14}
-                      allowDecimals={false}
-                    />
-                    <Bar dataKey="tasks" fill="url(#barGradient)" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* By Quadrant */}
-            <div className="rounded-lg bg-gradient-to-br from-chart-2/10 to-destructive/5 border border-chart-2/10 p-2 flex flex-col min-h-0">
-              <div className="flex items-center gap-1 mb-1 shrink-0">
-                <div className="h-4 w-4 rounded bg-chart-2/20 flex items-center justify-center">
-                  <ClockIcon className="h-2.5 w-2.5 text-chart-2" />
-                </div>
-                <span className="text-[9px] font-semibold text-chart-2 uppercase">Priority</span>
-              </div>
-              <div className="flex-1 min-h-0 flex items-center gap-2">
-                {quadrantData.length > 0 ? (
-                  <>
-                    <div className="w-[70px] h-full shrink-0">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={quadrantData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={18}
-                            outerRadius={32}
-                            paddingAngle={3}
-                            dataKey="value"
-                          >
-                            {quadrantData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                            ))}
-                          </Pie>
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      {quadrantData.map((entry, index) => (
-                        <div key={index} className="flex items-center gap-1">
-                          <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
-                          <span className="text-[8px] text-muted-foreground leading-tight">
-                            {entry.name === "Urgent & Important"
-                              ? "U&I"
-                              : entry.name === "Urgent & Not Important"
-                                ? "U&NI"
-                                : entry.name === "Not Urgent & Important"
-                                  ? "NU&I"
-                                  : "NU&NI"}
-                          </span>
-                        </div>
-                      ))}{" "}
-                    </div>
-                  </>
-                ) : (
-                  <p className="text-[8px] text-muted-foreground">No data</p>
-                )}
+                <p className="text-lg font-semibold text-foreground leading-none">{totalFocusMinutes}<span className="text-xs font-normal text-muted-foreground">m</span></p>
+                <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Focus</p>
               </div>
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+
+        {/* Charts row - 3 equal columns */}
+        <div className="grid grid-cols-3 gap-3 h-[120px]">
+          {/* Plan vs Actual */}
+          <div className="rounded-lg bg-muted/20 border border-border/30 p-2.5 flex flex-col min-h-0">
+            <div className="flex items-center gap-1.5 mb-1 shrink-0">
+              <TrendingUp className="h-3 w-3 text-primary" />
+              <span className="text-[9px] font-medium text-foreground/70 uppercase tracking-wider">Plan vs Actual</span>
+            </div>
+            <div className="flex-1 min-h-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={past7DaysData}>
+                  <defs>
+                    <linearGradient id="planGradient2" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={14}
+                    allowDecimals={false}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="plan"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={1.5}
+                    fill="url(#planGradient2)"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="actual"
+                    stroke="hsl(var(--chart-1))"
+                    strokeWidth={1.5}
+                    dot={{ r: 2.5, fill: "hsl(var(--chart-1))" }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Upcoming */}
+          <div className="rounded-lg bg-muted/20 border border-border/30 p-2.5 flex flex-col min-h-0">
+            <div className="flex items-center gap-1.5 mb-1 shrink-0">
+              <Calendar className="h-3 w-3 text-chart-1" />
+              <span className="text-[9px] font-medium text-foreground/70 uppercase tracking-wider">Upcoming</span>
+            </div>
+            <div className="flex-1 min-h-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={future7DaysData}>
+                  <defs>
+                    <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8} />
+                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.5} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={14}
+                    allowDecimals={false}
+                  />
+                  <Bar dataKey="tasks" fill="url(#barGradient)" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Priority Pie */}
+          <div className="rounded-lg bg-muted/20 border border-border/30 p-2.5 flex flex-col min-h-0">
+            <div className="flex items-center gap-1.5 mb-1 shrink-0">
+              <ClockIcon className="h-3 w-3 text-chart-2" />
+              <span className="text-[9px] font-medium text-foreground/70 uppercase tracking-wider">Priority</span>
+            </div>
+            <div className="flex-1 min-h-0 flex items-center gap-2">
+              {quadrantData.length > 0 ? (
+                <>
+                  <div className="w-[60px] h-full shrink-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={quadrantData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={16}
+                          outerRadius={28}
+                          paddingAngle={3}
+                          dataKey="value"
+                        >
+                          {quadrantData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    {quadrantData.map((entry, index) => (
+                      <div key={index} className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
+                        <span className="text-[9px] text-muted-foreground leading-tight">
+                          {entry.name === "Urgent & Important"
+                            ? "U&I"
+                            : entry.name === "Urgent & Not Important"
+                              ? "U&NI"
+                              : entry.name === "Not Urgent & Important"
+                                ? "NU&I"
+                                : "NU&NI"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="text-[9px] text-muted-foreground">No data</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
