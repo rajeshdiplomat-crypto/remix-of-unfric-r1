@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, Calendar } from "lucide-react";
+import { Plus, Calendar, Check, Play, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,56 +17,113 @@ interface KanbanBoardViewProps {
   onCompleteTask: (task: QuadrantTask) => void;
 }
 
-function KanbanCard({ task, onClick }: { task: QuadrantTask; onClick: () => void }) {
-  const priorityColor = task.priority === "high"
-    ? "border-destructive/30"
-    : task.priority === "medium"
-    ? "border-chart-1/30"
-    : "border-border/40";
+function getQuadrantLabel(task: QuadrantTask) {
+  const u = task.urgency === "high";
+  const i = task.importance === "high";
+  if (u && i) return "U&I";
+  if (u && !i) return "U&NI";
+  if (!u && i) return "NU&I";
+  return "NU&NI";
+}
 
+function getDuration(task: QuadrantTask) {
+  if (!task.due_time || !task.end_time) return "";
+  const [sh, sm] = task.due_time.split(":").map(Number);
+  const [eh, em] = task.end_time.split(":").map(Number);
+  const diff = (eh * 60 + em) - (sh * 60 + sm);
+  if (diff <= 0) return "";
+  const h = Math.floor(diff / 60);
+  const m = diff % 60;
+  return h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
+}
+
+function KanbanCard({
+  task,
+  onClick,
+  onStartTask,
+  onCompleteTask,
+}: {
+  task: QuadrantTask;
+  onClick: () => void;
+  onStartTask: (task: QuadrantTask) => void;
+  onCompleteTask: (task: QuadrantTask) => void;
+}) {
   return (
     <Card
       draggable
       onDragStart={(e) => e.dataTransfer.setData("task-id", task.id)}
       onClick={onClick}
       className={cn(
-        "p-3 cursor-pointer hover:shadow-md transition-shadow border-l-2",
-        priorityColor,
+        "group p-3 cursor-pointer hover:shadow-md transition-shadow",
+        task.is_completed
+          ? "bg-muted/30 border-border/30"
+          : task.status === "overdue"
+            ? "bg-destructive/5 border-destructive/20"
+            : "bg-background border-border/50",
       )}
     >
-      <p className="text-sm font-medium text-foreground leading-snug mb-1">{task.title}</p>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <p className={cn(
+            "text-sm font-medium text-foreground leading-snug mb-1 truncate",
+            task.is_completed && "line-through text-muted-foreground"
+          )}>{task.title}</p>
 
-      {task.description && (
-        <p className="text-[10px] text-muted-foreground mb-2 line-clamp-2">{task.description}</p>
-      )}
-
-      <div className="flex items-center gap-2 flex-wrap">
-        {task.due_date && (
-          <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-            <Calendar className="h-3 w-3" />
-            {format(new Date(task.due_date), "MMM d")}
-            {task.due_time && ` ${task.due_time}`}
-            {task.end_time && task.end_time !== task.due_time && `-${task.end_time}`}
-          </span>
-        )}
-        {task.priority && (
-          <Badge
-            variant="outline"
-            className={cn(
-              "text-[9px] px-1.5 py-0",
-              task.priority === "high" && "border-destructive/40 text-destructive",
-              task.priority === "medium" && "border-chart-1/40 text-chart-1",
-              task.priority === "low" && "border-muted-foreground/40 text-muted-foreground",
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {task.due_date && (
+              <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                {format(new Date(task.due_date), "d/M")}
+              </span>
             )}
+            {task.due_time && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                {task.due_time}{task.end_time ? ` - ${task.end_time}` : ""}
+              </span>
+            )}
+            {getDuration(task) && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                {getDuration(task)}
+              </span>
+            )}
+            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-primary/30 text-primary">
+              {getQuadrantLabel(task)}
+            </Badge>
+            {task.tags?.slice(0, 1).map((tag) => (
+              <Badge key={tag} variant="secondary" className="text-[9px] px-1.5 py-0">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-1 shrink-0">
+          {!task.is_completed && task.status !== "ongoing" && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onStartTask(task); }}
+              className="h-6 w-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+              title="Start task"
+            >
+              <Play className="h-3 w-3" />
+            </button>
+          )}
+          {task.status === "ongoing" && !task.is_completed && (
+            <Loader2 className="h-4 w-4 text-primary animate-spin" />
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); onCompleteTask(task); }}
+            className={cn(
+              "h-6 w-6 rounded-full flex items-center justify-center transition-colors",
+              task.is_completed
+                ? "text-emerald-500 bg-emerald-100 dark:bg-emerald-900/30"
+                : "text-muted-foreground hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+            )}
+            title={task.is_completed ? "Mark incomplete" : "Mark complete"}
           >
-            {task.priority}
-          </Badge>
-        )}
-        {task.tags?.slice(0, 2).map((tag) => (
-          <Badge key={tag} variant="secondary" className="text-[9px] px-1.5 py-0">
-            {tag}
-          </Badge>
-        ))}
+            <Check className="h-3 w-3" />
+          </button>
+        </div>
       </div>
     </Card>
   );
@@ -186,7 +243,7 @@ export function KanbanBoardView({
             {/* Cards */}
             <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
               {columnTasks[col.id]?.map((task) => (
-                <KanbanCard key={task.id} task={task} onClick={() => onTaskClick(task)} />
+                <KanbanCard key={task.id} task={task} onClick={() => onTaskClick(task)} onStartTask={onStartTask} onCompleteTask={onCompleteTask} />
               ))}
             </div>
 
