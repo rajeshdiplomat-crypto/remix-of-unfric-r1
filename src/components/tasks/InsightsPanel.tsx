@@ -334,7 +334,7 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
   }
   return (
     <Card className="rounded-xl border border-primary/20 bg-gradient-to-br from-card/80 via-card/60 to-chart-1/5 backdrop-blur-sm shadow-md flex-1 overflow-hidden">
-      <CardContent className="p-1 h-full px-1 py-1 rounded-sm">
+      <CardContent className="p-2 h-full px-2 py-2 rounded-sm min-h-[160px]">
         {/* Main content: Time selector left, KPIs middle, Charts right */}
         <div className="h-full flex gap-1.5">
           {/* Far Left: Time Period Selector - vertical slim buttons */}
