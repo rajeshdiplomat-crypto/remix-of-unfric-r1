@@ -643,93 +643,94 @@ export default function Tasks() {
           {/* View Tabs */}
           <TasksViewTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-          {/* Top Focus Bar + Insights + Clock sidebar */}
-          {activeTab !== "files" && (
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6">
-              <div className="space-y-3">
-                <div className="overflow-hidden transition-all duration-300">
-                  <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
-                </div>
-                <div>
-                  <div className="flex items-center justify-end mb-1">
-                    <button
-                      onClick={() => setInsightsCollapsed(prev => !prev)}
-                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                    >
-                      {insightsCollapsed ? "Show Insights" : "Hide Insights"}
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className={`transition-transform duration-200 ${insightsCollapsed ? "rotate-180" : ""}`}
-                      >
-                        <polyline points="18 15 12 9 6 15" />
-                      </svg>
-                    </button>
+          {/* Unified grid: task content left, clock sidebar right */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6 flex-1 min-h-0">
+            {/* Left column: Focus bar + Insights + Tab content */}
+            <div className="flex flex-col gap-3 min-h-0">
+              {activeTab !== "files" && (
+                <>
+                  <div className="overflow-hidden transition-all duration-300">
+                    <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
                   </div>
-                  {!insightsCollapsed && (
-                    <InsightsPanel tasks={filteredTasks} compactMode={true} />
-                  )}
-                </div>
-              </div>
-              {/* Right: Clock sidebar aligned with focus bar + insights */}
-              <div className="hidden lg:block">
-                <TasksRightSidebar />
+                  <div>
+                    <div className="flex items-center justify-end mb-1">
+                      <button
+                        onClick={() => setInsightsCollapsed(prev => !prev)}
+                        className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                      >
+                        {insightsCollapsed ? "Show Insights" : "Hide Insights"}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className={`transition-transform duration-200 ${insightsCollapsed ? "rotate-180" : ""}`}
+                        >
+                          <polyline points="18 15 12 9 6 15" />
+                        </svg>
+                      </button>
+                    </div>
+                    {!insightsCollapsed && (
+                      <InsightsPanel tasks={filteredTasks} compactMode={true} />
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* Main tab content */}
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                {activeTab === "lists" && (
+                  <AllTasksList
+                    tasks={filteredTasks}
+                    onTaskClick={openTaskDetail}
+                    onStartTask={handleStartTask}
+                    onCompleteTask={handleCompleteTask}
+                    onDeleteTask={(task) => handleDeleteTask(task.id)}
+                    collapsed={false}
+                    onToggleCollapse={() => {}}
+                  />
+                )}
+
+                {activeTab === "board" && (
+                  <KanbanBoardView
+                    tasks={filteredTasks}
+                    onTaskClick={openTaskDetail}
+                    onQuickAdd={handleBoardQuickAdd}
+                    onDrop={handleBoardDrop}
+                    onStartTask={handleStartTask}
+                    onCompleteTask={handleCompleteTask}
+                  />
+                )}
+
+                {activeTab === "timeline" && (
+                  <BoardView
+                    mode="status"
+                    tasks={filteredTasks}
+                    onTaskClick={openTaskDetail}
+                    onDragStart={() => {}}
+                    onDrop={handleBoardDrop}
+                    onQuickAdd={handleBoardQuickAdd}
+                    onStartTask={handleStartTask}
+                    onCompleteTask={handleCompleteTask}
+                  />
+                )}
+
+                {activeTab === "files" && (
+                  <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                    Files coming soon
+                  </div>
+                )}
               </div>
             </div>
-          )}
 
-          {/* Main content area */}
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <div className="min-h-0 h-full overflow-y-auto">
-
-              {activeTab === "lists" && (
-                <AllTasksList
-                  tasks={filteredTasks}
-                  onTaskClick={openTaskDetail}
-                  onStartTask={handleStartTask}
-                  onCompleteTask={handleCompleteTask}
-                  onDeleteTask={(task) => handleDeleteTask(task.id)}
-                  collapsed={false}
-                  onToggleCollapse={() => {}}
-                />
-              )}
-
-              {activeTab === "board" && (
-                <KanbanBoardView
-                  tasks={filteredTasks}
-                  onTaskClick={openTaskDetail}
-                  onQuickAdd={handleBoardQuickAdd}
-                  onDrop={handleBoardDrop}
-                  onStartTask={handleStartTask}
-                  onCompleteTask={handleCompleteTask}
-                />
-              )}
-
-              {activeTab === "timeline" && (
-                <BoardView
-                  mode="status"
-                  tasks={filteredTasks}
-                  onTaskClick={openTaskDetail}
-                  onDragStart={() => {}}
-                  onDrop={handleBoardDrop}
-                  onQuickAdd={handleBoardQuickAdd}
-                  onStartTask={handleStartTask}
-                  onCompleteTask={handleCompleteTask}
-                />
-              )}
-
-              {activeTab === "files" && (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                  Files coming soon
-                </div>
-              )}
+            {/* Right column: Clock sidebar spanning full height */}
+            <div className="hidden lg:block">
+              <TasksRightSidebar />
             </div>
           </div>
 
