@@ -229,8 +229,8 @@ export function TopFocusBar({ tasks, onStartFocus }: TopFocusBarProps) {
 
   return (
     <>
-      <Card className="rounded-lg border border-primary/30 bg-gradient-to-r from-primary/10 via-chart-1/10 to-chart-2/10 backdrop-blur-xl shadow-md overflow-hidden">
-        <CardContent className="flex items-center gap-2 py-0.5 px-1.5 relative">
+      <Card className="rounded-lg border border-primary/30 bg-gradient-to-r from-primary/10 via-chart-1/10 to-chart-2/10 backdrop-blur-xl shadow-none overflow-hidden">
+        <CardContent className="flex items-center gap-1.5 py-0 px-1.5 relative">
           {/* Subtle animated gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent opacity-50" />
           

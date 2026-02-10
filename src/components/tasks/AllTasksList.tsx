@@ -173,42 +173,6 @@ export function AllTasksList({
         )}
       </div>
 
-      {/* Filter tabs - Status */}
-      <div className="flex items-center gap-1 px-3 py-2 border-b border-border/30 overflow-x-auto">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "px-2 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all",
-              activeTab === tab.id
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted/50 text-muted-foreground hover:bg-muted"
-            )}
-          >
-            {tab.label} {tab.count}
-          </button>
-        ))}
-      </div>
-
-      {/* Filter tabs - Urgency/Importance */}
-      <div className="flex items-center gap-1 px-3 py-2 border-b border-border/30 overflow-x-auto">
-        {urgencyTabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setUrgencyFilter(tab.id)}
-            className={cn(
-              "px-2 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all",
-              urgencyFilter === tab.id
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "bg-muted/50 text-muted-foreground hover:bg-muted"
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
       {/* Task list */}
       <ScrollArea className="flex-1">
         <div className="p-3 space-y-2">
