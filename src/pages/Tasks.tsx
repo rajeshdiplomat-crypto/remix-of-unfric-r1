@@ -646,23 +646,23 @@ export default function Tasks() {
           {/* Unified grid: task content left, clock sidebar right */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6 flex-1 min-h-0">
             {/* Left column: Focus bar + Insights + Tab content */}
-            <div className="flex flex-col gap-3 min-h-0">
+            <div className="flex flex-col gap-2.5 min-h-0">
               {activeTab !== "files" && (
                 <>
-                  <div className="overflow-hidden transition-all duration-300">
-                    <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-end mb-1">
+                  <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
+
+                  {/* Insights toggle + panel */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-end">
                       <button
                         onClick={() => setInsightsCollapsed(prev => !prev)}
-                        className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                        className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
                       >
                         {insightsCollapsed ? "Show Insights" : "Hide Insights"}
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          width="14"
-                          height="14"
+                          width="12"
+                          height="12"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
