@@ -77,21 +77,21 @@ export function TasksHeader({
               onCheckedChange={() => onStatusFilterChange("all")}
               className="text-[11px]"
             >
-              All Status
+              All
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               checked={statusFilter === "upcoming"}
               onCheckedChange={() => onStatusFilterChange("upcoming")}
               className="text-[11px]"
             >
-              To Do
+              Upcoming
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               checked={statusFilter === "ongoing"}
               onCheckedChange={() => onStatusFilterChange("ongoing")}
               className="text-[11px]"
             >
-              In Progress
+              Ongoing
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               checked={statusFilter === "completed"}
@@ -105,7 +105,7 @@ export function TasksHeader({
               onCheckedChange={() => onStatusFilterChange("overdue")}
               className="text-[11px]"
             >
-              Overdue
+              Due
             </DropdownMenuCheckboxItem>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-[11px]">Priority</DropdownMenuLabel>
@@ -117,55 +117,32 @@ export function TasksHeader({
               All Priorities
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
-              checked={priorityFilter === "high"}
-              onCheckedChange={() => onPriorityFilterChange?.("high")}
+              checked={priorityFilter === "urgent-important"}
+              onCheckedChange={() => onPriorityFilterChange?.("urgent-important")}
               className="text-[11px]"
             >
-              High Priority
+              Urgent & Important
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
-              checked={priorityFilter === "medium"}
-              onCheckedChange={() => onPriorityFilterChange?.("medium")}
+              checked={priorityFilter === "urgent-not-important"}
+              onCheckedChange={() => onPriorityFilterChange?.("urgent-not-important")}
               className="text-[11px]"
             >
-              Medium Priority
+              Urgent & Not Important
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
-              checked={priorityFilter === "low"}
-              onCheckedChange={() => onPriorityFilterChange?.("low")}
+              checked={priorityFilter === "not-urgent-important"}
+              onCheckedChange={() => onPriorityFilterChange?.("not-urgent-important")}
               className="text-[11px]"
             >
-              Low Priority
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-[11px]">Date</DropdownMenuLabel>
-            <DropdownMenuCheckboxItem
-              checked={tagFilter === "all"}
-              onCheckedChange={() => onTagFilterChange?.("all")}
-              className="text-[11px]"
-            >
-              All Dates
+              Not Urgent & Important
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
-              checked={tagFilter === "today"}
-              onCheckedChange={() => onTagFilterChange?.("today")}
+              checked={priorityFilter === "not-urgent-not-important"}
+              onCheckedChange={() => onPriorityFilterChange?.("not-urgent-not-important")}
               className="text-[11px]"
             >
-              Today
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem
-              checked={tagFilter === "week"}
-              onCheckedChange={() => onTagFilterChange?.("week")}
-              className="text-[11px]"
-            >
-              This Week
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem
-              checked={tagFilter === "overdue"}
-              onCheckedChange={() => onTagFilterChange?.("overdue")}
-              className="text-[11px]"
-            >
-              Overdue Only
+              Not Urgent & Not Important
             </DropdownMenuCheckboxItem>
           </DropdownMenuContent>
         </DropdownMenu>
