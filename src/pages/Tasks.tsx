@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -205,6 +205,7 @@ export default function Tasks() {
 
   const [focusPromptOpen, setFocusPromptOpen] = useState(false);
   const [focusPromptTask, setFocusPromptTask] = useState<QuadrantTask | null>(null);
+  const [insightsCollapsed, setInsightsCollapsed] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -642,14 +643,40 @@ export default function Tasks() {
           {/* View Tabs */}
           <TasksViewTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-          {/* Top Focus Bar (below tabs, shared across views) */}
+          {/* Top Focus Bar + Insights (collapsible, shared across views) */}
           {activeTab !== "files" && (
-            <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
-          )}
-
-          {/* Insights (shared across Lists, Board, Timeline) */}
-          {activeTab !== "files" && (
-            <InsightsPanel tasks={filteredTasks} compactMode={true} />
+            <div className="space-y-3">
+              <div className="overflow-hidden transition-all duration-300">
+                <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
+              </div>
+              <div>
+                <div className="flex items-center justify-end mb-1">
+                  <button
+                    onClick={() => setInsightsCollapsed(prev => !prev)}
+                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                  >
+                    {insightsCollapsed ? "Show Insights" : "Hide Insights"}
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={`transition-transform duration-200 ${insightsCollapsed ? "rotate-180" : ""}`}
+                    >
+                      <polyline points="18 15 12 9 6 15" />
+                    </svg>
+                  </button>
+                </div>
+                {!insightsCollapsed && (
+                  <InsightsPanel tasks={filteredTasks} compactMode={true} />
+                )}
+              </div>
+            </div>
           )}
 
           {/* Main content area */}
