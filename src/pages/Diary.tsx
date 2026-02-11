@@ -18,6 +18,7 @@ import { useDiaryMetrics } from "@/components/diary/useDiaryMetrics";
 import { cn } from "@/lib/utils";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import type { TimeRange, FeedEvent, SourceModule } from "@/components/diary/types";
+import { extractImagesFromHTML } from "@/lib/editorUtils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -111,10 +112,34 @@ export default function Diary() {
     // Journal Answers - each answer is a separate feed event
     const answersData = journalAnswersRes.data?.filter((a: any) => a.journal_entries?.user_id === user.id) || [];
 
+    // Build a map of journal entry images (from images_data column)
+    const journalImageMap = new Map<string, string[]>();
+    journalRes.data?.forEach((entry) => {
+      const images: string[] = [];
+      if (entry.images_data) {
+        try {
+          const parsed = typeof entry.images_data === 'string' ? JSON.parse(entry.images_data as string) : entry.images_data;
+          if (Array.isArray(parsed)) {
+            parsed.forEach((img: any) => {
+              const url = typeof img === 'string' ? img : img?.url || img?.src;
+              if (url && typeof url === 'string' && url.startsWith('http')) images.push(url);
+            });
+          }
+        } catch {}
+      }
+      journalImageMap.set(entry.id, images);
+    });
+
     answersData.forEach((answer: any) => {
       const question = DEFAULT_QUESTIONS.find((q) => q.id === answer.question_id);
       const questionLabel = question?.text || answer.question_id;
       const journalEntry = answer.journal_entries;
+
+      // Extract images from answer HTML content
+      const answerImages = extractImagesFromHTML(answer.answer_text || "");
+      // Also get entry-level images
+      const entryImages = journalImageMap.get(answer.journal_entry_id) || [];
+      const media = [...new Set([...entryImages, ...answerImages])];
 
       feedEvents.push({
         user_id: user.id,
@@ -124,6 +149,7 @@ export default function Diary() {
         title: questionLabel,
         summary: answer.answer_text || "",
         content_preview: answer.answer_text || "",
+        media,
         metadata: {
           journal_date: journalEntry?.entry_date,
           entry_id: answer.journal_entry_id,
@@ -178,6 +204,7 @@ export default function Diary() {
         title: note.title,
         summary: "Created a note",
         content_preview: note.content?.substring(0, 200),
+        media: note.cover_image_url ? [note.cover_image_url] : [],
         metadata: { category: note.category, tags: note.tags },
         created_at: note.created_at,
       });
@@ -193,6 +220,7 @@ export default function Diary() {
         title: habit.name,
         summary: "Created a habit tracker",
         content_preview: habit.description,
+        media: habit.cover_image_url ? [habit.cover_image_url] : [],
         metadata: { frequency: habit.frequency },
         created_at: habit.created_at,
       });
@@ -208,6 +236,7 @@ export default function Diary() {
         title: goal.title,
         summary: goal.is_completed ? "Achieved a goal!" : "Set a new manifestation goal",
         content_preview: goal.description,
+        media: goal.cover_image_url ? [goal.cover_image_url] : [],
         metadata: { affirmations: goal.affirmations, feeling: goal.feeling_when_achieved },
         created_at: goal.created_at,
       });
