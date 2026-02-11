@@ -115,8 +115,7 @@ export function DiaryFeedCard({
   const IconComponent = config.icon;
   const userReaction = reactions.find((r) => r.user_id === currentUserId)?.emoji;
 
-  // Check if this is a journal entry (gets Facebook-style layout with optional image)
-  const isJournalEntry = event.source_module === 'journal';
+  // Check if user actually attached media (not preset images)
   // Check if user actually attached media (not preset images)
   const hasUserAttachedMedia = event.media && event.media.length > 0;
 
@@ -361,30 +360,56 @@ export function DiaryFeedCard({
           </div>
         )}
 
-        {/* Media grid - only for journal entries with user-attached images */}
-        {isJournalEntry && hasUserAttachedMedia && (
-          <div
-            className={cn(
-              "mt-3",
-              event.media!.length === 1 && "w-full",
-              event.media!.length > 1 && "grid gap-2",
-              event.media!.length === 2 && "grid-cols-2",
-              event.media!.length >= 3 && "grid-cols-3",
-            )}
-          >
-            {event.media!.slice(0, 4).map((url, i) => (
-              <img 
-                key={i} 
-                src={url} 
-                alt="" 
-                className={cn(
-                  "rounded-lg object-cover",
-                  event.media!.length === 1 ? "w-full max-h-80" : "w-full h-32"
-                )} 
-              />
-            ))}
-          </div>
-        )}
+        {/* Facebook-style media grid - for any module with attached images */}
+        {hasUserAttachedMedia && (() => {
+          const images = event.media!;
+          const count = images.length;
+          
+          if (count === 1) {
+            return (
+              <div className="mt-3">
+                <img src={images[0]} alt="" className="w-full max-h-[320px] object-cover rounded-lg" />
+              </div>
+            );
+          }
+          
+          if (count === 2) {
+            return (
+              <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg overflow-hidden">
+                {images.map((url, i) => (
+                  <img key={i} src={url} alt="" className="w-full h-48 object-cover" />
+                ))}
+              </div>
+            );
+          }
+          
+          if (count === 3) {
+            return (
+              <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg overflow-hidden" style={{ height: 280 }}>
+                <img src={images[0]} alt="" className="w-full h-full object-cover row-span-2" style={{ gridRow: '1 / 3' }} />
+                <img src={images[1]} alt="" className="w-full object-cover" style={{ height: 139 }} />
+                <img src={images[2]} alt="" className="w-full object-cover" style={{ height: 139 }} />
+              </div>
+            );
+          }
+          
+          // 4+ images: 2x2 grid with "+N" overlay
+          const extra = count - 4;
+          return (
+            <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg overflow-hidden">
+              {images.slice(0, 4).map((url, i) => (
+                <div key={i} className="relative">
+                  <img src={url} alt="" className="w-full h-40 object-cover" />
+                  {i === 3 && extra > 0 && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <span className="text-2xl font-semibold text-white">+{extra}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Reaction summary */}
         {totalReactions > 0 && (
