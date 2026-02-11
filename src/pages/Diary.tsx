@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import type { TimeRange, FeedEvent, SourceModule } from "@/components/diary/types";
 import { extractImagesFromHTML } from "@/lib/editorUtils";
+import { loadAllActivityImages } from "@/components/trackers/ActivityImageUpload";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -210,8 +211,11 @@ export default function Diary() {
       });
     });
 
-    // Trackers (Habits)
+    // Trackers (Habits) - check localStorage for images too
+    const activityImages = loadAllActivityImages();
     habitsRes.data?.forEach((habit) => {
+      const localImage = activityImages[habit.id];
+      const imageUrl = habit.cover_image_url || (localImage && !localImage.startsWith("data:") ? localImage : null);
       feedEvents.push({
         user_id: user.id,
         type: "create",
@@ -220,14 +224,25 @@ export default function Diary() {
         title: habit.name,
         summary: "Created a habit tracker",
         content_preview: habit.description,
-        media: habit.cover_image_url ? [habit.cover_image_url] : [],
+        media: imageUrl ? [imageUrl] : [],
         metadata: { frequency: habit.frequency },
         created_at: habit.created_at,
       });
     });
 
-    // Manifest Goals
+    // Manifest Goals - also check localStorage extras for vision images
+    const manifestExtras = JSON.parse(localStorage.getItem("manifest_goal_extras") || "{}");
     goalsRes.data?.forEach((goal) => {
+      const extras = manifestExtras[goal.id] || {};
+      const visionUrl = goal.cover_image_url || extras.vision_image_url;
+      // Collect all valid image URLs (exclude base64)
+      const media: string[] = [];
+      if (visionUrl && typeof visionUrl === "string" && visionUrl.startsWith("http")) media.push(visionUrl);
+      if (extras.vision_images?.length) {
+        extras.vision_images.forEach((img: string) => {
+          if (typeof img === "string" && img.startsWith("http") && !media.includes(img)) media.push(img);
+        });
+      }
       feedEvents.push({
         user_id: user.id,
         type: goal.is_completed ? "complete" : "create",
@@ -236,7 +251,7 @@ export default function Diary() {
         title: goal.title,
         summary: goal.is_completed ? "Achieved a goal!" : "Set a new manifestation goal",
         content_preview: goal.description,
-        media: goal.cover_image_url ? [goal.cover_image_url] : [],
+        media,
         metadata: { affirmations: goal.affirmations, feeling: goal.feeling_when_achieved },
         created_at: goal.created_at,
       });
@@ -382,8 +397,38 @@ export default function Diary() {
     seedFeedEvents();
   };
 
+  // Enrich events with localStorage images (Trackers store images as base64 in localStorage)
+  const enrichedEvents = useMemo(() => {
+    const activityImages = loadAllActivityImages();
+    const manifestExtras = JSON.parse(localStorage.getItem("manifest_goal_extras") || "{}");
+
+    return events.map((event) => {
+      // If event already has media, keep it
+      if (event.media && event.media.length > 0) return event;
+
+      if (event.source_module === "trackers" && event.source_id) {
+        const localImg = activityImages[event.source_id];
+        if (localImg) return { ...event, media: [localImg] };
+      }
+
+      if (event.source_module === "manifest" && event.source_id) {
+        const extras = manifestExtras[event.source_id] || {};
+        const images: string[] = [];
+        if (extras.vision_image_url) images.push(extras.vision_image_url);
+        if (extras.vision_images?.length) {
+          extras.vision_images.forEach((img: string) => {
+            if (typeof img === "string" && !images.includes(img)) images.push(img);
+          });
+        }
+        if (images.length > 0) return { ...event, media: images };
+      }
+
+      return event;
+    });
+  }, [events]);
+
   // Filter events based on search
-  const filteredEvents = events.filter((event) => {
+  const filteredEvents = enrichedEvents.filter((event) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
