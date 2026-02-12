@@ -25,7 +25,7 @@ const mainNavItems = [
   },
   {
     title: "Habits",
-    url: "/trackers",
+    url: "/habits",
   },
 ];
 const productivityItems = [

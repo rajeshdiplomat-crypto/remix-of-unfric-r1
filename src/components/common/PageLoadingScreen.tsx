@@ -8,7 +8,7 @@ type ModuleType =
   | "tasks"
   | "emotions"
   | "manifest"
-  | "trackers"
+  | "habits"
   | "settings"
   | "clarity";
 
@@ -61,7 +61,7 @@ const LOADING_QUOTES: Record<ModuleType, { text: string; author: string }[]> = {
     { text: "You are the creator of your own destiny.", author: "Swami Vivekananda" },
     { text: "Dream it. Believe it. Build it.", author: "Unknown" },
   ],
-  trackers: [
+  habits: [
     { text: "We are what we repeatedly do.", author: "Aristotle" },
     { text: "Small daily improvements lead to stunning results.", author: "Robin Sharma" },
     { text: "Success is the sum of small efforts repeated daily.", author: "Robert Collier" },

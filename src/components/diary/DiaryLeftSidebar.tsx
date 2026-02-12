@@ -11,7 +11,7 @@ const MODULE_INFO = [
   { icon: BookOpen, name: "Journal", desc: "Daily reflections & gratitude" },
   { icon: CheckSquare, name: "Tasks", desc: "Track what you accomplish" },
   { icon: StickyNote, name: "Notes", desc: "Capture ideas & thoughts" },
-  { icon: Activity, name: "Trackers", desc: "Build consistent habits" },
+  { icon: Activity, name: "Habits", desc: "Build consistent habits" },
   { icon: Sparkles, name: "Manifest", desc: "Visualize your goals" },
   { icon: Heart, name: "Emotions", desc: "Understand how you feel" },
 ];

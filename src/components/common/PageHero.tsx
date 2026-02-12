@@ -48,7 +48,7 @@ function getPageTypeFromStorageKey(storageKey: string): string {
   if (storageKey.includes("manifest")) return "manifest";
   if (storageKey.includes("notes")) return "notes";
   if (storageKey.includes("tasks")) return "tasks";
-  if (storageKey.includes("tracker")) return "trackers";
+  if (storageKey.includes("tracker") || storageKey.includes("habit")) return "trackers";
   return "diary";
 }
 
