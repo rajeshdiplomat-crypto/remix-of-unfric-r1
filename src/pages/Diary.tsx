@@ -18,7 +18,7 @@ import { useDiaryMetrics } from "@/components/diary/useDiaryMetrics";
 import { cn } from "@/lib/utils";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import type { TimeRange, FeedEvent, SourceModule } from "@/components/diary/types";
-import { extractImagesFromHTML } from "@/lib/editorUtils";
+import { extractImagesFromHTML, extractImagesFromTiptapJSON } from "@/lib/editorUtils";
 
 import {
   DropdownMenu,
@@ -113,10 +113,11 @@ export default function Diary() {
     // Journal Answers - each answer is a separate feed event
     const answersData = journalAnswersRes.data?.filter((a: any) => a.journal_entries?.user_id === user.id) || [];
 
-    // Build a map of journal entry images (from images_data column)
+    // Build a map of journal entry images from images_data AND text_formatting (TipTap JSON)
     const journalImageMap = new Map<string, string[]>();
     journalRes.data?.forEach((entry) => {
       const images: string[] = [];
+      // 1. Extract from images_data column
       if (entry.images_data) {
         try {
           const parsed = typeof entry.images_data === 'string' ? JSON.parse(entry.images_data as string) : entry.images_data;
@@ -127,6 +128,13 @@ export default function Diary() {
             });
           }
         } catch {}
+      }
+      // 2. Extract from text_formatting (TipTap JSON content) - this is where inline images live
+      if (entry.text_formatting) {
+        const tiptapImages = extractImagesFromTiptapJSON(entry.text_formatting as string);
+        tiptapImages.forEach(url => {
+          if (!images.includes(url)) images.push(url);
+        });
       }
       journalImageMap.set(entry.id, images);
     });
@@ -195,8 +203,20 @@ export default function Diary() {
       });
     }
 
-    // Notes
+    // Notes - extract images from cover_image_url, inline HTML, or TipTap JSON content
     notesRes.data?.forEach((note) => {
+      const noteMedia: string[] = [];
+      if (note.cover_image_url) noteMedia.push(note.cover_image_url);
+      if (noteMedia.length === 0 && note.content) {
+        // Try HTML extraction
+        const htmlImages = extractImagesFromHTML(note.content);
+        htmlImages.forEach(url => { if (!noteMedia.includes(url)) noteMedia.push(url); });
+        // Try TipTap JSON extraction
+        if (noteMedia.length === 0) {
+          const jsonImages = extractImagesFromTiptapJSON(note.content);
+          jsonImages.forEach(url => { if (!noteMedia.includes(url)) noteMedia.push(url); });
+        }
+      }
       feedEvents.push({
         user_id: user.id,
         type: "create",
@@ -205,7 +225,7 @@ export default function Diary() {
         title: note.title,
         summary: "Created a note",
         content_preview: note.content?.substring(0, 200),
-        media: note.cover_image_url ? [note.cover_image_url] : [],
+        media: noteMedia,
         metadata: { category: note.category, tags: note.tags },
         created_at: note.created_at,
       });

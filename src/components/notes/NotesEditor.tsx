@@ -13,6 +13,7 @@ import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import FontFamily from "@tiptap/extension-font-family";
 import { Extension } from "@tiptap/core";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -334,18 +335,43 @@ export function NotesEditor({ note, groups, onSave, onBack, lastSaved }: NotesEd
     setImageUrl("");
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editor) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      editor
-        .chain()
-        .focus()
-        .setImage({ src: ev.target?.result as string })
-        .run();
-    };
-    reader.readAsDataURL(file);
+
+    // Upload to Supabase Storage instead of using base64
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
+      if (userId) {
+        const fileExt = file.name.split(".").pop() || "jpg";
+        const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+        const { error } = await supabase.storage.from("entry-covers").upload(fileName, file);
+        if (!error) {
+          const { data: { publicUrl } } = supabase.storage.from("entry-covers").getPublicUrl(fileName);
+          editor.chain().focus().setImage({ src: publicUrl }).run();
+          setImageDialogOpen(false);
+          return;
+        }
+        console.error("Upload error, falling back to base64:", error);
+      }
+
+      // Fallback to base64 if not authenticated or upload fails
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        editor.chain().focus().setImage({ src: ev.target?.result as string }).run();
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error("Image upload error:", err);
+      // Fallback to base64
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        editor.chain().focus().setImage({ src: ev.target?.result as string }).run();
+      };
+      reader.readAsDataURL(file);
+    }
     setImageDialogOpen(false);
   };
 

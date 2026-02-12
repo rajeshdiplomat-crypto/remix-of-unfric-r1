@@ -390,12 +390,31 @@ export default function Notes() {
     const category: "thoughts" | "creative" | "private" =
       note.groupId === "personal" ? "private" : note.groupId === "hobby" ? "creative" : "thoughts";
 
+    // Extract first image from rich content for cover_image_url
+    let coverImageUrl: string | null = null;
+    if (note.contentRich) {
+      // Try extracting from HTML img tags
+      const imgMatch = note.contentRich.match(/<img[^>]+src=["']([^"']+)["']/i);
+      if (imgMatch?.[1] && imgMatch[1].startsWith('http')) {
+        coverImageUrl = imgMatch[1];
+      }
+      // Also try TipTap JSON image nodes
+      if (!coverImageUrl) {
+        try {
+          const { extractImagesFromTiptapJSON } = await import("@/lib/editorUtils");
+          const jsonImages = extractImagesFromTiptapJSON(note.contentRich);
+          if (jsonImages.length > 0) coverImageUrl = jsonImages[0];
+        } catch {}
+      }
+    }
+
     try {
       const { error } = await supabase.from("notes").upsert({
         id: note.id,
         user_id: user.id,
         title: note.title || "Untitled",
-        content: note.plainText || note.contentRich,
+        content: note.contentRich || note.plainText, // Save rich content to preserve inline images
+        cover_image_url: coverImageUrl,
         category,
         tags: note.tags,
         created_at: note.createdAt,

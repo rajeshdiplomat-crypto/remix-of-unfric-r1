@@ -14,6 +14,37 @@ export function extractImagesFromHTML(html: string): string[] {
 }
 
 /**
+ * Extract image URLs from TipTap JSON content
+ * Recursively walks the JSON doc to find all image nodes with http URLs
+ */
+export function extractImagesFromTiptapJSON(content: string | object | null | undefined): string[] {
+  if (!content) return [];
+  
+  try {
+    const parsed = typeof content === 'string' ? JSON.parse(content) : content;
+    const images: string[] = [];
+    
+    const walk = (node: any) => {
+      if (!node) return;
+      if (node.type === 'image' && node.attrs?.src) {
+        const src = node.attrs.src;
+        if (typeof src === 'string' && src.startsWith('http')) {
+          images.push(src);
+        }
+      }
+      if (Array.isArray(node.content)) {
+        node.content.forEach(walk);
+      }
+    };
+    
+    walk(parsed);
+    return images;
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Check if content is JSON (Tiptap JSON format) or HTML
  */
 export function isJSONContent(content: string): boolean {
