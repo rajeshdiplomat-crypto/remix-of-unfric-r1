@@ -55,7 +55,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { ActivityImageUpload, loadActivityImage, saveActivityImage } from "@/components/trackers/ActivityImageUpload";
+import { ActivityImageUpload, loadActivityImage, loadAllActivityImages, saveActivityImage, saveActivityImageToDb } from "@/components/trackers/ActivityImageUpload";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
@@ -357,6 +357,31 @@ export default function Trackers() {
       return;
     }
     fetchHabits();
+  }, [user]);
+
+  // One-time migration: upload base64 localStorage images to storage
+  useEffect(() => {
+    if (!user) return;
+    const migrateBase64Images = async () => {
+      const allImages = loadAllActivityImages();
+      for (const [habitId, imgData] of Object.entries(allImages)) {
+        if (!imgData.startsWith("data:")) continue; // already a URL
+        try {
+          const res = await fetch(imgData);
+          const blob = await res.blob();
+          const ext = blob.type.split("/")[1] || "jpg";
+          const fileName = `${user.id}/${Date.now()}-${habitId}.${ext}`;
+          const { error } = await supabase.storage.from("entry-covers").upload(fileName, blob);
+          if (error) { console.error("Migration upload error:", error); continue; }
+          const { data: { publicUrl } } = supabase.storage.from("entry-covers").getPublicUrl(fileName);
+          saveActivityImage(habitId, publicUrl);
+          await saveActivityImageToDb(habitId, publicUrl);
+        } catch (err) {
+          console.error("Migration error for habit", habitId, err);
+        }
+      }
+    };
+    migrateBase64Images();
   }, [user]);
 
   const fetchHabits = async () => {

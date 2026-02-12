@@ -4,7 +4,7 @@ import { Check, Flame, Play, Tag, Pencil, Trash2, CheckCircle, RotateCcw } from 
 import { format, subDays, parseISO, differenceInDays, formatDistanceToNow, isAfter, isBefore, addDays } from "date-fns";
 import { useMemo } from "react";
 import { EntryImageUpload } from "@/components/common/EntryImageUpload";
-import { loadActivityImage, saveActivityImage } from "./ActivityImageUpload";
+import { loadActivityImage, saveActivityImage, saveActivityImageToDb } from "./ActivityImageUpload";
 import { computeEndDateForHabitDays } from "@/lib/dateUtils";
 
 interface ActivityItem {
@@ -124,6 +124,7 @@ export function TrackerCard({
 
   const handleImageChange = async (url: string) => {
     saveActivityImage(activity.id, url);
+    saveActivityImageToDb(activity.id, url);
     if (onImageUpdate) {
       onImageUpdate();
     }

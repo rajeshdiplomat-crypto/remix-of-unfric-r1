@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import type { TimeRange, FeedEvent, SourceModule } from "@/components/diary/types";
 import { extractImagesFromHTML } from "@/lib/editorUtils";
-import { loadAllActivityImages } from "@/components/trackers/ActivityImageUpload";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -211,11 +211,8 @@ export default function Diary() {
       });
     });
 
-    // Trackers (Habits) - check localStorage for images too
-    const activityImages = loadAllActivityImages();
+    // Trackers (Habits) - use cover_image_url from database
     habitsRes.data?.forEach((habit) => {
-      const localImage = activityImages[habit.id];
-      const imageUrl = habit.cover_image_url || (localImage && !localImage.startsWith("data:") ? localImage : null);
       feedEvents.push({
         user_id: user.id,
         type: "create",
@@ -224,7 +221,7 @@ export default function Diary() {
         title: habit.name,
         summary: "Created a habit tracker",
         content_preview: habit.description,
-        media: imageUrl ? [imageUrl] : [],
+        media: habit.cover_image_url ? [habit.cover_image_url] : [],
         metadata: { frequency: habit.frequency },
         created_at: habit.created_at,
       });
@@ -397,38 +394,8 @@ export default function Diary() {
     seedFeedEvents();
   };
 
-  // Enrich events with localStorage images (Trackers store images as base64 in localStorage)
-  const enrichedEvents = useMemo(() => {
-    const activityImages = loadAllActivityImages();
-    const manifestExtras = JSON.parse(localStorage.getItem("manifest_goal_extras") || "{}");
-
-    return events.map((event) => {
-      // If event already has media, keep it
-      if (event.media && event.media.length > 0) return event;
-
-      if (event.source_module === "trackers" && event.source_id) {
-        const localImg = activityImages[event.source_id];
-        if (localImg) return { ...event, media: [localImg] };
-      }
-
-      if (event.source_module === "manifest" && event.source_id) {
-        const extras = manifestExtras[event.source_id] || {};
-        const images: string[] = [];
-        if (extras.vision_image_url) images.push(extras.vision_image_url);
-        if (extras.vision_images?.length) {
-          extras.vision_images.forEach((img: string) => {
-            if (typeof img === "string" && !images.includes(img)) images.push(img);
-          });
-        }
-        if (images.length > 0) return { ...event, media: images };
-      }
-
-      return event;
-    });
-  }, [events]);
-
   // Filter events based on search
-  const filteredEvents = enrichedEvents.filter((event) => {
+  const filteredEvents = events.filter((event) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
