@@ -67,6 +67,7 @@ interface JournalQuestionCardProps {
   emotionTag?: string;
   authorName?: string;
   authorAvatarUrl?: string;
+  media?: string[];
   isSaved: boolean;
   userReaction?: ReactionType | null;
   reactionCounts?: Record<ReactionType, number>;
@@ -87,6 +88,7 @@ export function JournalQuestionCard({
   emotionTag,
   authorName = "You",
   authorAvatarUrl,
+  media,
   isSaved,
   userReaction: initialUserReaction,
   reactionCounts: initialReactionCounts,
@@ -303,7 +305,34 @@ export function JournalQuestionCard({
           </>
         )}
 
-        {/* Emotion tag */}
+        {/* Media images */}
+        {media && media.length > 0 && (
+          <div className={cn(
+            "mt-3 grid gap-1 rounded-lg overflow-hidden",
+            media.length === 1 && "grid-cols-1",
+            media.length === 2 && "grid-cols-2",
+            media.length >= 3 && "grid-cols-2"
+          )}>
+            {media.slice(0, 4).map((url, idx) => (
+              <div 
+                key={idx} 
+                className={cn(
+                  "relative overflow-hidden bg-muted",
+                  media.length === 1 ? "max-h-72" : "aspect-square",
+                  media.length === 3 && idx === 0 && "row-span-2"
+                )}
+              >
+                <img 
+                  src={url} 
+                  alt="" 
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
         {emotionTag && (
           <div className="flex items-center gap-2 mt-3">
             <PenLine className="h-3.5 w-3.5 text-muted-foreground" />

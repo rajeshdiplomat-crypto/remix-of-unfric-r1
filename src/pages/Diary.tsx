@@ -537,6 +537,7 @@ export default function Diary() {
                     journalDate={(event.metadata as any)?.journal_date || event.created_at}
                     entryDate={event.created_at}
                     emotionTag={(event.metadata as any)?.tags?.[0]}
+                    media={event.media}
                     authorName={userName}
                     isSaved={saves.has(event.id)}
                     userReaction={reactions[event.id]?.find((r) => r.user_id === user?.id)?.emoji as any}
