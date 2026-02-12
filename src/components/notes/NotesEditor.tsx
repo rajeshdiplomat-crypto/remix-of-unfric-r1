@@ -357,20 +357,14 @@ export function NotesEditor({ note, groups, onSave, onBack, lastSaved }: NotesEd
         console.error("Upload error, falling back to base64:", error);
       }
 
-      // Fallback to base64 if not authenticated or upload fails
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        editor.chain().focus().setImage({ src: ev.target?.result as string }).run();
-      };
-      reader.readAsDataURL(file);
+      // Show error if upload fails — do NOT fall back to base64 (causes localStorage bloat & data loss)
+      console.error("Image upload failed — user not authenticated");
+      const { toast: showToast } = await import("@/hooks/use-toast").then(m => ({ toast: m.toast }));
+      showToast({ title: "Please log in to upload images", variant: "destructive" });
     } catch (err) {
       console.error("Image upload error:", err);
-      // Fallback to base64
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        editor.chain().focus().setImage({ src: ev.target?.result as string }).run();
-      };
-      reader.readAsDataURL(file);
+      const { toast: showToast } = await import("@/hooks/use-toast").then(m => ({ toast: m.toast }));
+      showToast({ title: "Image upload failed", description: "Please try again.", variant: "destructive" });
     }
     setImageDialogOpen(false);
   };
