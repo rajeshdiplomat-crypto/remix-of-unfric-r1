@@ -327,38 +327,49 @@ export default function Journal() {
           // Helper to ensure proper content structure with H1 Title
           const existingTitle = extractTitle(contentJSON);
 
+          // Always use the original contentJSON (text_formatting) as the source of truth.
+          // It preserves images, formatting, and all rich content.
+          // Only reconstruct from answers if there's NO existing content.
           let finalContent = contentJSON;
 
-          if (answersData?.length) {
-            finalContent = JSON.stringify({
-              type: "doc",
-              content: [
-                {
-                  type: "heading",
-                  attrs: { level: 1, textAlign: "left" },
-                  content: existingTitle ? [{ type: "text", text: existingTitle }] : [],
-                },
-                ...template.questions.flatMap((q) => {
-                  const answer = answersData.find((a) => a.question_id === q.id);
-                  return [
-                    {
-                      type: "heading",
-                      attrs: { level: 2, textAlign: "left" },
-                      content: [{ type: "text", text: q.text }],
-                    },
-                    {
-                      type: "paragraph",
-                      attrs: { textAlign: "left" },
-                      content: answer?.answer_text ? [{ type: "text", text: answer.answer_text }] : [],
-                    },
-                  ];
-                }),
-              ],
+          try {
+            const parsed = JSON.parse(contentJSON);
+            const hasRealContent = parsed?.content?.some((node: any) => {
+              if (node.type === "heading" && node.attrs?.level === 1) return false; // skip title
+              if (node.type === "heading" && node.attrs?.level === 2) return false; // skip question headers
+              if (node.type === "paragraph" && (!node.content || node.content.length === 0)) return false; // empty paragraph
+              return true; // has real content (text, images, etc.)
             });
-          } else {
-            // If using existing contentJSON, ensure it starts with H1
-            try {
-              const parsed = JSON.parse(contentJSON);
+
+            if (!hasRealContent && answersData?.length) {
+              // Content is empty/skeleton — reconstruct from answers
+              finalContent = JSON.stringify({
+                type: "doc",
+                content: [
+                  {
+                    type: "heading",
+                    attrs: { level: 1, textAlign: "left" },
+                    content: existingTitle ? [{ type: "text", text: existingTitle }] : [],
+                  },
+                  ...template.questions.flatMap((q) => {
+                    const answer = answersData.find((a) => a.question_id === q.id);
+                    return [
+                      {
+                        type: "heading",
+                        attrs: { level: 2, textAlign: "left" },
+                        content: [{ type: "text", text: q.text }],
+                      },
+                      {
+                        type: "paragraph",
+                        attrs: { textAlign: "left" },
+                        content: answer?.answer_text ? [{ type: "text", text: answer.answer_text }] : [],
+                      },
+                    ];
+                  }),
+                ],
+              });
+            } else {
+              // Ensure content starts with H1
               const firstNode = parsed.content?.[0];
               if (!firstNode || !(firstNode.type === "heading" && firstNode.attrs?.level === 1)) {
                 parsed.content = [
@@ -371,9 +382,9 @@ export default function Journal() {
                 ];
                 finalContent = JSON.stringify(parsed);
               }
-            } catch (e) {
-              console.error("Error patching contentJSON", e);
             }
+          } catch (e) {
+            console.error("Error processing contentJSON", e);
           }
 
           setContent(finalContent);
