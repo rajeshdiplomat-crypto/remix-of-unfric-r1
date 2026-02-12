@@ -71,7 +71,7 @@ const MODULE_CONFIG: Record<SourceModule | "emotions", ModuleConfig> = {
   mindmap: { icon: Target, label: "Mind Map", color: "text-violet-600", bgColor: "bg-violet-50" },
   trackers: { icon: BarChart3, label: "Habits", color: "text-teal-600", bgColor: "bg-teal-50" },
   manifest: { icon: Sparkles, label: "Manifest", color: "text-purple-600", bgColor: "bg-purple-50" },
-  focus: { icon: Target, label: "Focus", color: "text-rose-500", bgColor: "bg-rose-50" },
+  
   emotions: { icon: Heart, label: "Emotions", color: "text-pink-500", bgColor: "bg-pink-50" },
 };
 

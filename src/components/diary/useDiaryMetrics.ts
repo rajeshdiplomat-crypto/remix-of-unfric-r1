@@ -135,10 +135,6 @@ export function useDiaryMetrics(userId: string | undefined, timeRange: TimeRange
         entriesWritten: journalInRange.length,
         streak,
       },
-      focus: {
-        focusMinutes: 180,
-        sessionsCompleted: 6,
-      },
       manifest: {
         checkInsDone: manifestInRange.length,
         goalsActive: activeGoals,
@@ -162,7 +158,6 @@ export function useDiaryMetrics(userId: string | undefined, timeRange: TimeRange
       { module: "Tasks", completion: taskCompletion, label: `${taskCompletion}%` },
       { module: "Trackers", completion: metrics.trackers.completionPercent, label: `${metrics.trackers.completionPercent}%` },
       { module: "Journal", completion: Math.min(100, metrics.journal.entriesWritten * 14), label: `${metrics.journal.entriesWritten} entries` },
-      { module: "Focus", completion: Math.min(100, Math.round(metrics.focus.focusMinutes / 3)), label: `${metrics.focus.focusMinutes}m` },
       { module: "Manifest", completion: Math.min(100, metrics.manifest.checkInsDone * 20), label: `${metrics.manifest.checkInsDone} check-ins` },
     ];
   }, [metrics]);
