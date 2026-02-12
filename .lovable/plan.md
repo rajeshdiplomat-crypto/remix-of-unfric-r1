@@ -1,59 +1,76 @@
 
 
-# Save Images to Storage and Feed from Database
+# Dead Code Cleanup
 
-## Problem
-Tracker (habit) images are stored as base64 in localStorage, which means the Diary feed can't reliably access them. The feed currently uses a complex client-side enrichment workaround.
+## Summary
+After scanning every component file against all imports in the codebase, I found **16 completely unused files** that can be safely deleted. These fall into three categories: superseded V2/Enhanced versions, abandoned features, and unused utilities.
 
-## Solution
-Upload Tracker images to the existing `entry-covers` storage bucket and save the public URL to the `habits.cover_image_url` database column. Then simplify the Diary feed to read images purely from the database.
+## Files to Delete
 
-## Changes
+### Emotions Module (7 files)
+| File | Reason |
+|---|---|
+| `EmotionContextFields.tsx` | Replaced by `EmotionContextFieldsEnhanced.tsx` |
+| `EmotionCheckinFlow.tsx` | Replaced by `EmotionCheckinFlowV2.tsx` |
+| `EmotionsAnalyticsPage.tsx` | Replaced by `EmotionsAnalyticsPageV2.tsx` |
+| `EmotionsStrategiesPage.tsx` | Replaced by `EmotionsStrategiesPageV2.tsx` |
+| `EmotionsQuickActions.tsx` | Replaced by `EmotionsQuickActionsV2.tsx` |
+| `PatternsDashboard.tsx` | Replaced by `PatternsDashboardEnhanced.tsx` |
+| `EmotionLabelSelector.tsx` | Not imported anywhere |
+| `CheckinReminders.tsx` | Not imported anywhere |
+| `EmotionQuadrantPicker.tsx` | Not imported anywhere |
 
-### 1. Update ActivityImageUpload to upload to storage (`src/components/trackers/ActivityImageUpload.tsx`)
-- Replace the `FileReader.readAsDataURL` approach with Supabase Storage upload (using the existing `entry-covers` bucket)
-- After uploading, save the public URL to `habits.cover_image_url` via a database update
-- Keep localStorage as a fast cache but store a URL (not base64)
-- The `saveActivityImage` helper will also update the database column
+### Tasks Module (6 files)
+| File | Reason |
+|---|---|
+| `TasksClockCard.tsx` | Not imported anywhere |
+| `LargeClockWidget.tsx` | Not imported anywhere |
+| `LuxuryClock.tsx` | Not imported anywhere |
+| `AmbientClock.tsx` | Not imported anywhere |
+| `CompactTimerClock.tsx` | Not imported anywhere |
+| `CompactTimerWidget.tsx` | Not imported anywhere |
+| `TasksInsights.tsx` | Not imported anywhere |
+| `TimeToolsPanel.tsx` | Not imported anywhere |
+| `SummaryStrip.tsx` | Not imported anywhere |
+| `QuadrantToolbar.tsx` | Not imported anywhere |
 
-### 2. Update TrackerCard image handler (`src/components/trackers/TrackerCard.tsx`)
-- When `handleImageChange` is called, ensure the URL is persisted to `habits.cover_image_url` in the database
+### Notes Module (2 files)
+| File | Reason |
+|---|---|
+| `NotesFilterPanel.tsx` | Not imported anywhere |
+| `NotesNewNoteDialog.tsx` | Not imported anywhere |
 
-### 3. Update ActivityDetailPanel (`src/components/trackers/ActivityDetailPanel.tsx`)
-- Replace the `FileReader.readAsDataURL` inline upload with Supabase Storage upload to `entry-covers`
-- Save the resulting public URL to both localStorage and the database
+### Manifest Module (1 file)
+| File | Reason |
+|---|---|
+| `ManifestWeeklyPanel.tsx` | Not imported anywhere |
 
-### 4. Simplify Diary feed seeding (`src/pages/Diary.tsx`)
-- Remove the localStorage enrichment logic (`enrichedEvents` useMemo block)
-- The seeding function already reads `cover_image_url` from the database for all modules -- this will now have proper URLs for Trackers too
-- Remove the `loadAllActivityImages` import since it's no longer needed for the feed
+### Trackers Module (1 file)
+| File | Reason |
+|---|---|
+| `ActivityDetailPanel.tsx` | Not imported anywhere |
 
-### 5. Migrate existing localStorage base64 images (one-time)
-- Add a migration effect in `Trackers.tsx` that checks localStorage for base64 images, uploads them to storage, updates `habits.cover_image_url`, and clears the localStorage entry
+### Common/Editor (2 files)
+| File | Reason |
+|---|---|
+| `SkeletonCard.tsx` | Not imported anywhere |
+| `ContentTransition.tsx` | Not imported anywhere |
+| `ImageControlsOverlay.tsx` | Not imported anywhere |
 
----
+### Other (1 file)
+| File | Reason |
+|---|---|
+| `StrategiesPanel.tsx` | Not imported anywhere (replaced by `StrategiesPanelEnhanced.tsx`) |
+
+### Pages (1 file)
+| File | Reason |
+|---|---|
+| `Index.tsx` | Not imported anywhere; the `/` route redirects to `/diary` |
+
+## Total: ~24 unused files to delete
 
 ## Technical Details
-
-**Storage bucket**: `entry-covers` (already exists, public)
-
-**Upload pattern** (reusing the same pattern from `EntryImageUpload.tsx`):
-```typescript
-const fileExt = file.name.split(".").pop();
-const fileName = `${userId}/${Date.now()}.${fileExt}`;
-await supabase.storage.from("entry-covers").upload(fileName, file);
-const { data: { publicUrl } } = supabase.storage.from("entry-covers").getPublicUrl(fileName);
-```
-
-**Database update**:
-```typescript
-await supabase.from("habits").update({ cover_image_url: publicUrl }).eq("id", habitId);
-```
-
-**Files modified**:
-- `src/components/trackers/ActivityImageUpload.tsx` -- upload to storage instead of base64
-- `src/components/trackers/TrackerCard.tsx` -- persist URL to database
-- `src/components/trackers/ActivityDetailPanel.tsx` -- upload to storage instead of base64
-- `src/pages/Diary.tsx` -- remove localStorage enrichment, use DB data directly
-- `src/pages/Trackers.tsx` -- add one-time migration of existing base64 images
+- No code modifications needed in any remaining files -- these are purely orphaned files with zero imports
+- The V2/Enhanced versions are already fully wired into the app; the originals are just leftover copies
+- Deletion is safe and will reduce bundle size and codebase noise
 
