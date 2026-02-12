@@ -82,29 +82,27 @@ export function DiarySidebar({
   return (
     <div className="space-y-4 h-full overflow-y-auto">
       <Card className="bg-card border-border/40">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Performance
-            </CardTitle>
-            <div className="flex items-center gap-1">
-              {(['today', 'week', 'month'] as TimeRange[]).map(range => (
-                <Button
-                  key={range}
-                  variant={timeRange === range ? "default" : "ghost"}
-                  size="sm"
-                  className={cn(
-                    "h-7 text-xs px-2.5 rounded-full",
-                    timeRange === range
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-muted"
-                  )}
-                  onClick={() => onTimeRangeChange(range)}
-                >
-                  {timeRangeLabels[range]}
-                </Button>
-              ))}
-            </div>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Performance
+          </CardTitle>
+          <div className="flex items-center gap-1 pt-1">
+            {(['today', 'week', 'month'] as TimeRange[]).map(range => (
+              <Button
+                key={range}
+                variant={timeRange === range ? "default" : "ghost"}
+                size="sm"
+                className={cn(
+                  "h-5 text-[10px] px-2 rounded-full",
+                  timeRange === range
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted"
+                )}
+                onClick={() => onTimeRangeChange(range)}
+              >
+                {timeRangeLabels[range]}
+              </Button>
+            ))}
           </div>
         </CardHeader>
         <CardContent className="space-y-5 pt-0">
