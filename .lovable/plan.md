@@ -1,71 +1,29 @@
 
 
-# Redesign Diary Right Sidebar — Clean Per-Module Performance
+# Fix: Independent Column Scrolling on Diary Page
 
-## What Changes
+## Problem
+The three columns (left sidebar, center feed, right sidebar) are not scrolling independently. Instead, the entire page scrolls as one unit. This happens because the 3-column container (`flex flex-1`) doesn't establish a fixed height — `flex-1` in a flex-column parent only sets `flex-grow: 1` but doesn't constrain height. So the children's `h-full` and `overflow-y-auto` have no bounded height to work with.
 
-Replace the current cluttered right sidebar (`DiarySidebar.tsx`) with a clean, vertically stacked module performance panel. Each module gets its own compact row with a label, a thin progress bar, and a key metric -- no charts, no Quick Actions card, no Filters card.
+## Fix
 
-## New Layout (top to bottom)
+**File: `src/pages/Diary.tsx`** — One class change on the 3-column wrapper (line 465):
 
-```text
-+----------------------------------+
-|  PERFORMANCE         Today | 7d  |
-+----------------------------------+
-|                                  |
-|  Tasks           3/8 completed   |
-|  [======-------]          38%    |
-|                                  |
-|  Trackers        9/10 sessions   |
-|  [==============-]        75%    |
-|                                  |
-|  Journal         2 entries       |
-|  [========------]   5-day streak |
-|                                  |
-|  Manifest        4 check-ins     |
-|  [==========----]   3 goals      |
-|                                  |
-|  Notes           6 created       |
-|  [============--]   2 updated    |
-|                                  |
-|  Emotions        3 check-ins     |
-|  [======--------]                |
-|                                  |
-+----------------------------------+
-|  AI Insight (1-line tip)         |
-+----------------------------------+
+Change:
+```
+<div className="flex flex-1 w-full overflow-hidden">
+```
+To:
+```
+<div className="flex flex-1 w-full overflow-hidden min-h-0">
 ```
 
-Each module row:
-- Module name (left) + key stat (right) on line 1
-- Thin progress bar spanning the full width on line 2
-- Optional secondary stat in muted text below the bar
+Adding `min-h-0` overrides the default `min-height: auto` on flex children, which prevents them from shrinking below their content size. With `min-h-0`, the container respects the bounded height from `flex-1` and each column's `overflow-y-auto` will kick in correctly.
 
-## What Gets Removed
-- The bar chart (Recharts) and stacked color bars
-- The "Quick Actions" card (already duplicated by the Create Post composer and left sidebar)
-- The "Filters / Smart Views" card (already duplicated by filter tabs in the center feed)
-- The time-range dropdown with "Custom Range"
+This is the same pattern used across the other modules (Tasks, Manifest, Emotions, Journal) per the global scrolling architecture.
 
-## What Gets Kept
-- Time range toggle (Today / 7d / Month) -- simplified to pill buttons
-- Smart insight text at the bottom
-- All metrics data from `useDiaryMetrics`
-
-## Files Changed
-
-| File | Change |
-|---|---|
-| `src/components/diary/DiarySidebar.tsx` | Full rewrite -- remove Recharts, Quick Actions, Filters; replace with clean vertical module rows using the Progress component |
-| `src/components/diary/useDiaryMetrics.ts` | Add `emotions` metrics (count of check-ins in range) to the existing hook so the sidebar can display it |
-| `src/components/diary/types.ts` | Add `emotions` field to `MetricsSnapshot` if missing |
-| `src/pages/Diary.tsx` | Simplify the DiarySidebar props (remove `onQuickAction`, `filter`, `onFilterChange`) |
-
-## Technical Details
-
-- Each module row uses the existing `Progress` component (`src/components/ui/progress.tsx`) with `h-1.5` height and themed colors via `className`
-- Emotions data will be fetched via the existing `supabase.from("emotions")` query added to `useDiaryMetrics`
-- No new dependencies -- Recharts import is removed from `DiarySidebar.tsx`, reducing bundle size
-- The sidebar remains independently scrollable (`overflow-y-auto`) per the global scrolling architecture
-- Colors per module use CSS variables (e.g., `bg-emerald-500` for Tasks, `bg-teal-500` for Trackers, `bg-amber-500` for Journal, `bg-sky-500` for Focus, `bg-purple-500` for Manifest, `bg-rose-400` for Emotions)
+## Scope
+- 1 file changed
+- 1 class added (`min-h-0`)
+- No other changes needed
 
