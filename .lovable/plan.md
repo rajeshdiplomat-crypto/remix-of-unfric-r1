@@ -1,55 +1,59 @@
 
 
-# Facebook-Style Image Feed for Diary
+# Save Images to Storage and Feed from Database
 
-## What Changes
-Feed cards from **Journal, Notes, and Manifest** will display attached images in a Facebook-style photo grid, just like how Facebook shows photos in posts.
+## Problem
+Tracker (habit) images are stored as base64 in localStorage, which means the Diary feed can't reliably access them. The feed currently uses a complex client-side enrichment workaround.
 
-## How It Works
+## Solution
+Upload Tracker images to the existing `entry-covers` storage bucket and save the public URL to the `habits.cover_image_url` database column. Then simplify the Diary feed to read images purely from the database.
 
-Currently, the feed seeding logic in `Diary.tsx` doesn't populate the `media` field for any module, and `DiaryFeedCard.tsx` only renders images for journal entries. We'll fix both sides:
+## Changes
 
-### 1. Seed images into feed events (`src/pages/Diary.tsx`)
+### 1. Update ActivityImageUpload to upload to storage (`src/components/trackers/ActivityImageUpload.tsx`)
+- Replace the `FileReader.readAsDataURL` approach with Supabase Storage upload (using the existing `entry-covers` bucket)
+- After uploading, save the public URL to `habits.cover_image_url` via a database update
+- Keep localStorage as a fast cache but store a URL (not base64)
+- The `saveActivityImage` helper will also update the database column
 
-During the `seedFeedEvents` function, pull image URLs from each module's data:
+### 2. Update TrackerCard image handler (`src/components/trackers/TrackerCard.tsx`)
+- When `handleImageChange` is called, ensure the URL is persisted to `habits.cover_image_url` in the database
 
-- **Journal entries**: Extract URLs from `images_data` (jsonb array) and also parse embedded `<img>` tags from journal answer content (TipTap HTML)
-- **Notes**: Use `cover_image_url` if present
-- **Manifest goals**: Use `cover_image_url` if present
-- **Trackers/Habits**: Use `cover_image_url` if present
+### 3. Update ActivityDetailPanel (`src/components/trackers/ActivityDetailPanel.tsx`)
+- Replace the `FileReader.readAsDataURL` inline upload with Supabase Storage upload to `entry-covers`
+- Save the resulting public URL to both localStorage and the database
 
-Each feed event's `media` array will be populated with these URLs.
+### 4. Simplify Diary feed seeding (`src/pages/Diary.tsx`)
+- Remove the localStorage enrichment logic (`enrichedEvents` useMemo block)
+- The seeding function already reads `cover_image_url` from the database for all modules -- this will now have proper URLs for Trackers too
+- Remove the `loadAllActivityImages` import since it's no longer needed for the feed
 
-### 2. Show images for all modules (`src/components/diary/DiaryFeedCard.tsx`)
-
-- Remove the `isJournalEntry` guard on the media grid section
-- Show the Facebook-style image grid for **any** feed card that has `media` with valid URLs
-- Enhance the grid layout:
-  - 1 image: full-width, rounded, max height ~320px
-  - 2 images: side-by-side grid
-  - 3 images: one large + two small
-  - 4+ images: 2x2 grid with a "+N more" overlay on the last tile
-
-### 3. Extract images from rich text content
-
-Add a utility to extract `<img src="...">` URLs from HTML content (journal answers may contain inline images from the TipTap editor). This reuses the existing `extractImagesFromHTML` function from `src/lib/editorUtils.ts`.
+### 5. Migrate existing localStorage base64 images (one-time)
+- Add a migration effect in `Trackers.tsx` that checks localStorage for base64 images, uploads them to storage, updates `habits.cover_image_url`, and clears the localStorage entry
 
 ---
 
 ## Technical Details
 
-**File: `src/pages/Diary.tsx`**
-- In the Journal seeding section, after creating the feed event, add `media` by combining `entry.images_data` (parsed as array) with any images extracted from answer HTML content
-- In the Notes section, add `media: note.cover_image_url ? [note.cover_image_url] : []`
-- In the Manifest section, add `media: goal.cover_image_url ? [goal.cover_image_url] : []`
-- In the Trackers section, add `media: habit.cover_image_url ? [habit.cover_image_url] : []`
+**Storage bucket**: `entry-covers` (already exists, public)
 
-**File: `src/components/diary/DiaryFeedCard.tsx`**
-- Change the media rendering condition from `isJournalEntry && hasUserAttachedMedia` to just `hasUserAttachedMedia` (any module with media)
-- Upgrade the grid to a Facebook-style layout:
-  - 1 image: full width
-  - 2 images: two equal columns
-  - 3 images: large left + two stacked right
-  - 4+ images: 2x2 with overlay counter
-- Add click-to-expand lightbox behavior (optional, can be a follow-up)
+**Upload pattern** (reusing the same pattern from `EntryImageUpload.tsx`):
+```typescript
+const fileExt = file.name.split(".").pop();
+const fileName = `${userId}/${Date.now()}.${fileExt}`;
+await supabase.storage.from("entry-covers").upload(fileName, file);
+const { data: { publicUrl } } = supabase.storage.from("entry-covers").getPublicUrl(fileName);
+```
+
+**Database update**:
+```typescript
+await supabase.from("habits").update({ cover_image_url: publicUrl }).eq("id", habitId);
+```
+
+**Files modified**:
+- `src/components/trackers/ActivityImageUpload.tsx` -- upload to storage instead of base64
+- `src/components/trackers/TrackerCard.tsx` -- persist URL to database
+- `src/components/trackers/ActivityDetailPanel.tsx` -- upload to storage instead of base64
+- `src/pages/Diary.tsx` -- remove localStorage enrichment, use DB data directly
+- `src/pages/Trackers.tsx` -- add one-time migration of existing base64 images
 
