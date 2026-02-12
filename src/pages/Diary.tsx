@@ -224,7 +224,7 @@ export default function Diary() {
         source_id: note.id,
         title: note.title,
         summary: "Created a note",
-        content_preview: note.content?.substring(0, 200),
+        content_preview: note.content ? note.content.replace(/<[^>]*>/g, '').substring(0, 200) : undefined,
         media: noteMedia,
         metadata: { category: note.category, tags: note.tags },
         created_at: note.created_at,
