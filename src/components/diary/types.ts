@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 
 export type FeedEventType = 'create' | 'update' | 'publish' | 'complete' | 'checkin' | 'focus_end' | 'streak_milestone' | 'journal_question';
-export type SourceModule = 'tasks' | 'journal' | 'notes' | 'mindmap' | 'trackers' | 'manifest' | 'focus' | 'emotions';
+export type SourceModule = 'tasks' | 'journal' | 'notes' | 'mindmap' | 'trackers' | 'manifest' | 'emotions';
 
 export interface FeedEvent {
   id: string;
@@ -66,10 +66,6 @@ export interface MetricsSnapshot {
   journal: {
     entriesWritten: number;
     streak: number;
-  };
-  focus: {
-    focusMinutes: number;
-    sessionsCompleted: number;
   };
   manifest: {
     checkInsDone: number;
