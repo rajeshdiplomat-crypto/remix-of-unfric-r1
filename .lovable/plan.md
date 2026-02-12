@@ -1,37 +1,27 @@
 
 
-# Further Codebase Optimization
+# Fix: Journal Images Not Appearing in Diary Feed
 
-## Summary
-A second-pass scan found **7 more orphaned files** plus **1 orphaned directory** that can be safely deleted, along with a naming cleanup opportunity.
+## Root Cause
+The image extraction utility `extractImagesFromTiptapJSON` in `src/lib/editorUtils.ts` only looks for TipTap nodes with `type === "image"`. However, the Journal editor uses the `tiptap-extension-resize-image` package, which creates nodes with `type === "imageResize"`. This means all inline journal images are silently skipped during extraction.
 
-## Round 2: Files to Delete
+This single bug causes two failures:
+1. The `images_data` column on `journal_entries` is never populated (it stays `[]`) because the Journal save logic uses the same broken extractor.
+2. The Diary feed seeder also uses this extractor to build the `media` array for journal feed cards -- so no images show up.
 
-### Editor Module (entire directory is dead)
-The `src/components/editor/` directory is not imported anywhere in the codebase. `EditorToolbar.tsx` and `EvernoteToolbarEditor.tsx` have zero imports, and `types.ts` and `extensions/FontSize.ts` are only consumed by `EditorToolbar.tsx` itself.
+## Fix (1 file, ~2 lines)
 
-| File | Reason |
-|---|---|
-| `src/components/editor/EditorToolbar.tsx` | Not imported anywhere |
-| `src/components/editor/EvernoteToolbarEditor.tsx` | Not imported anywhere |
-| `src/components/editor/types.ts` | Only used by dead `EditorToolbar.tsx` |
-| `src/components/editor/extensions/FontSize.ts` | Not imported anywhere |
+**File: `src/lib/editorUtils.ts`** -- Update the `walk` function inside `extractImagesFromTiptapJSON` to also match `imageResize` nodes:
 
-### Tasks Module
-| File | Reason |
-|---|---|
-| `src/components/tasks/ViewSwitcher.tsx` | Not imported anywhere (replaced by `TasksViewTabs.tsx`) |
+```typescript
+// Before
+if (node.type === 'image' && node.attrs?.src) {
 
-### Lib Utilities
-| File | Reason |
-|---|---|
-| `src/lib/journalImageUpload.ts` | Not imported anywhere |
+// After
+if ((node.type === 'image' || node.type === 'imageResize') && node.attrs?.src) {
+```
 
-## Total: 6 files + 1 directory to remove
+Do the same in the `tiptapJSONToHTML` switch-case so HTML conversion also handles `imageResize`.
 
-## Technical Details
-- The entire `src/components/editor/` folder can be deleted as a unit -- none of its exports are consumed
-- `journalImageUpload.ts` appears to be a leftover utility superseded by the current image upload flow in `EntryImageUpload.tsx`
-- `ViewSwitcher.tsx` in tasks was replaced by `TasksViewTabs.tsx` which is the one actually imported in `Tasks.tsx`
-- No modifications to any remaining files are needed; these are purely orphaned with zero imports
+That is the entire fix. No other files need changing -- the Diary seeder and Journal save logic already call this function, so once it correctly finds `imageResize` nodes, everything flows through automatically.
 
