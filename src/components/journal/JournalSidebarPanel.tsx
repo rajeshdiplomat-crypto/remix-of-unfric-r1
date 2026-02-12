@@ -85,9 +85,8 @@ export const JournalSidebarPanel = memo(
       setDailyPrompt(DAILY_PROMPTS[Math.floor(Math.random() * DAILY_PROMPTS.length)]);
     }, []);
 
-    // Left panel shows both calendar and recent entries
+    // Left panel shows calendar only
     const showCalendar = showSection === "calendar" || showSection === "all";
-    const showRecent = showSection === "calendar" || showSection === "all"; // Recent entries now shown with calendar
 
     // Collapsed state - show only toggle button
     if (isCollapsed) {
@@ -241,76 +240,6 @@ export const JournalSidebarPanel = memo(
           </div>
         )}
 
-        {/* Recent Entries Card */}
-        {showRecent && (
-          <div
-            className="rounded-2xl shadow-sm border overflow-hidden"
-            style={{
-              backgroundColor: skin?.cardBg || "white",
-              borderColor: skin?.border || "#f1f5f9",
-            }}
-          >
-            <div
-              className="flex items-center gap-2 px-4 py-3 border-b"
-              style={{ borderColor: `${skin?.border}50` || "#f8fafc" }}
-            >
-              <div className="p-1.5 rounded-lg" style={{ backgroundColor: "#ecfdf5" }}>
-                <BookOpen className="h-4 w-4 text-emerald-600" />
-              </div>
-              <span className="text-sm font-semibold" style={{ color: skin?.text || "#1e293b" }}>
-                Recent Entries
-              </span>
-            </div>
-            <div className="p-2">
-              {recentEntries.length === 0 ? (
-                <p className="text-xs text-slate-400 text-center py-4">No entries yet. Start writing!</p>
-              ) : (
-                <div className="space-y-1">
-                  {recentEntries.map((entry) => (
-                    <button
-                      key={entry.id}
-                      onClick={() => onDateSelect(new Date(entry.entryDate))}
-                      className={cn(
-                        "w-full text-left p-2.5 rounded-xl hover:bg-slate-50 transition-colors group",
-                        isSameDay(new Date(entry.entryDate), selectedDate) && "bg-violet-50",
-                      )}
-                    >
-                      {/* Header: date, time, mood */}
-                      <div className="flex items-center gap-2 mb-1">
-                        <div
-                          className={cn(
-                            "w-2 h-2 rounded-full flex-shrink-0",
-                            entry.mood === "great"
-                              ? "bg-emerald-400"
-                              : entry.mood === "good"
-                                ? "bg-blue-400"
-                                : entry.mood === "okay"
-                                  ? "bg-amber-400"
-                                  : entry.mood === "low"
-                                    ? "bg-rose-400"
-                                    : "bg-slate-300",
-                          )}
-                        />
-                        <span className="text-[10px] text-slate-500 flex-1">
-                          {format(new Date(entry.entryDate), "MMM d")} • {format(new Date(entry.updatedAt), "h:mm a")}
-                        </span>
-                      </div>
-                      {/* Title & Preview */}
-                      <div className="space-y-0.5">
-                        {entry.title && (
-                          <h4 className="text-xs font-bold text-slate-800 leading-snug">{entry.title}</h4>
-                        )}
-                        <p className="text-[11px] text-slate-500 line-clamp-3 leading-relaxed">
-                          {entry.preview || "No content yet..."}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     );
   },
