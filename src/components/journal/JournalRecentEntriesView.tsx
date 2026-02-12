@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { format, parseISO } from "date-fns";
-import { ArrowLeft, FileText, Grid3X3, LayoutGrid, List } from "lucide-react";
+import { ArrowLeft, FileText, Grid3X3, LayoutGrid, List, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { extractImagesFromTiptapJSON } from "@/lib/editorUtils";
 import { JournalEntry } from "./types";
@@ -29,6 +29,18 @@ const VIEW_OPTIONS: { mode: ViewMode; icon: typeof LayoutGrid; label: string }[]
 
 export function JournalRecentEntriesView({ entries, onSelectEntry, onClose }: JournalRecentEntriesViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("large");
+  const [search, setSearch] = useState("");
+
+  const filteredEntries = useMemo(() => {
+    if (!search.trim()) return entries;
+    const q = search.toLowerCase();
+    return entries.filter(
+      (e) =>
+        (e.title && e.title.toLowerCase().includes(q)) ||
+        (e.preview && e.preview.toLowerCase().includes(q)) ||
+        (e.entryDate && e.entryDate.includes(q))
+    );
+  }, [entries, search]);
 
   return (
     <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm animate-in fade-in-0 duration-200 overflow-y-auto">
@@ -58,20 +70,43 @@ export function JournalRecentEntriesView({ entries, onSelectEntry, onClose }: Jo
           ))}
         </div>
 
-        <span className="text-xs text-muted-foreground">{entries.length} entries</span>
+        <span className="text-xs text-muted-foreground">{filteredEntries.length} entries</span>
+      </div>
+
+      {/* Search bar */}
+      <div className="px-4 sm:px-6 py-2 border-b border-border bg-background/60">
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search entries by title, content, or date..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-8 py-2 text-sm bg-muted/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground placeholder:text-muted-foreground"
+            autoFocus
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 hover:bg-muted rounded transition-colors"
+            >
+              <X className="h-3.5 w-3.5 text-muted-foreground" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Content */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
-        {entries.length === 0 ? (
+        {filteredEntries.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
             <FileText className="h-12 w-12 mb-4 opacity-40" />
-            <p className="text-sm">No journal entries yet</p>
+            <p className="text-sm">{search ? "No matching entries" : "No journal entries yet"}</p>
           </div>
         ) : viewMode === "list" ? (
           /* ── List View ── */
           <div className="flex flex-col gap-1">
-            {entries.map((entry) => {
+            {filteredEntries.map((entry) => {
               const images = extractImagesFromTiptapJSON(entry.contentJSON);
               const firstImage = images[0];
               const date = parseISO(entry.entryDate);
@@ -127,7 +162,7 @@ export function JournalRecentEntriesView({ entries, onSelectEntry, onClose }: Jo
                 : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
             )}
           >
-            {entries.map((entry) => {
+            {filteredEntries.map((entry) => {
               const images = extractImagesFromTiptapJSON(entry.contentJSON);
               const firstImage = images[0];
               const date = parseISO(entry.entryDate);
