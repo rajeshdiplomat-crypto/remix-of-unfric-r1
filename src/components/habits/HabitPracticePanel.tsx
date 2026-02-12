@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EntryImageUpload } from "@/components/common/EntryImageUpload";
-import { loadActivityImage, saveActivityImage } from "@/components/habits/ActivityImageUpload";
+import { loadActivityImage, saveActivityImage, saveActivityImageToDb } from "@/components/habits/ActivityImageUpload";
 import { computeEndDateForHabitDays } from "@/lib/dateUtils";
 
 interface ActivityItem {
@@ -34,6 +34,7 @@ interface ActivityItem {
   startDate: string;
   completions: Record<string, boolean>;
   createdAt: string;
+  coverImageUrl?: string | null;
   notes?: Record<string, string>;
   skipped?: Record<string, boolean>;
   time?: string;
@@ -75,7 +76,7 @@ export function HabitPracticePanel({
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
   useEffect(() => {
-    if (activity) setImageUrl(loadActivityImage(activity.id));
+    if (activity) setImageUrl(activity.coverImageUrl || loadActivityImage(activity.id));
     else setImageUrl(null);
   }, [activity?.id]);
 
@@ -194,6 +195,7 @@ export function HabitPracticePanel({
   const handleImageUpload = (url: string | null) => {
     if (!activity) return;
     saveActivityImage(activity.id, url);
+    saveActivityImageToDb(activity.id, url);
     setImageUrl(url);
     onImageChange(activity.id, url);
   };

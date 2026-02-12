@@ -18,6 +18,7 @@ interface ActivityItem {
   startDate: string;
   completions: Record<string, boolean>;
   createdAt: string;
+  coverImageUrl?: string | null;
   notes?: Record<string, string>;
   skipped?: Record<string, boolean>;
 }
@@ -181,7 +182,7 @@ export function HabitCard({
         {/* Image Section - Left side */}
         <div className="relative w-[132px] h-full flex-shrink-0" onClick={(e) => e.stopPropagation()}>
           <EntryImageUpload
-            currentImageUrl={loadActivityImage(activity.id)}
+            currentImageUrl={activity.coverImageUrl || loadActivityImage(activity.id)}
             presetType="trackers"
             category={activity.category || "health"}
             onImageChange={handleImageChange}
