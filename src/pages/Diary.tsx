@@ -495,18 +495,12 @@ export default function Diary() {
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex items-center gap-4 mb-4 overflow-x-auto pb-1">
+          <div className="flex items-center gap-1 mb-4 overflow-x-auto border-b border-border/40">
             {FILTER_TABS.map((tab) => (
               <Button
                 key={tab.value}
-                variant="ghost"
-                size="sm"
-                className={cn(
-                  "h-7 px-3 text-xs font-medium rounded-full whitespace-nowrap",
-                  filter === tab.value
-                    ? "bg-primary/10 text-primary hover:bg-primary/15"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                )}
+                variant={filter === tab.value ? "chipActive" : "chip"}
+                size="chip"
                 onClick={() => setFilter(tab.value as SourceModule | "all" | "saved")}
               >
                 {tab.label}
@@ -514,7 +508,7 @@ export default function Diary() {
             ))}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-7 px-3 text-xs text-muted-foreground ml-auto">
+                <Button variant="chip" size="chip" className="ml-auto">
                   Latest <ChevronDown className="h-3 w-3 ml-1" />
                 </Button>
               </DropdownMenuTrigger>
