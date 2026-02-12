@@ -79,6 +79,9 @@ export interface MetricsSnapshot {
     created: number;
     updated: number;
   };
+  emotions: {
+    checkIns: number;
+  };
 }
 
 export const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "🙏", "🔥", "💯"];
