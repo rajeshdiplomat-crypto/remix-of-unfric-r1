@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { format, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay } from "date-fns";
+import { format, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay, parseISO } from "date-fns";
 import { extractImagesFromTiptapJSON } from "@/lib/editorUtils";
 import {
   Settings,
   Save,
   ChevronLeft,
   ChevronRight,
+  BookOpen,
   Maximize2,
   Minimize2,
   Loader2,
@@ -37,6 +38,7 @@ import { JournalSettingsModal } from "@/components/journal/JournalSettingsModal"
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { JournalEntry, JournalTemplate, JOURNAL_SKINS, DEFAULT_TEMPLATE } from "@/components/journal/types";
+import { JournalRecentEntriesView } from "@/components/journal/JournalRecentEntriesView";
 import { cn } from "@/lib/utils";
 
 interface JournalAnswer {
@@ -152,6 +154,7 @@ export default function Journal() {
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showRecentEntries, setShowRecentEntries] = useState(false);
 
   const [template, setTemplate] = useState<JournalTemplate>(() => {
     const saved = localStorage.getItem("journal_template");
@@ -683,6 +686,16 @@ export default function Journal() {
             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={goToNextDay}>
               <ChevronRight className="h-4 w-4" />
             </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-lg"
+              onClick={() => setShowRecentEntries(true)}
+              title="Recent Entries"
+            >
+              <BookOpen className="h-4 w-4" />
+            </Button>
           </div>
 
           {/* Center - Search Bar */}
@@ -872,6 +885,17 @@ export default function Journal() {
           localStorage.setItem("journal_template", JSON.stringify(t));
         }}
       />
+
+      {showRecentEntries && (
+        <JournalRecentEntriesView
+          entries={entries}
+          onSelectEntry={(dateStr) => {
+            switchDate(parseISO(dateStr));
+            setShowRecentEntries(false);
+          }}
+          onClose={() => setShowRecentEntries(false)}
+        />
+      )}
     </div>
   );
 }
