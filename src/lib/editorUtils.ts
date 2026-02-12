@@ -26,7 +26,7 @@ export function extractImagesFromTiptapJSON(content: string | object | null | un
     
     const walk = (node: any) => {
       if (!node) return;
-      if (node.type === 'image' && node.attrs?.src) {
+      if ((node.type === 'image' || node.type === 'imageResize') && node.attrs?.src) {
         const src = node.attrs.src;
         if (typeof src === 'string' && src.startsWith('http')) {
           images.push(src);
@@ -103,6 +103,7 @@ export function tiptapJSONToHTML(json: string): string {
           const checked = node.attrs?.checked ? 'checked' : '';
           return `<li data-type="taskItem" data-checked="${checked}">${children}</li>`;
         case 'image':
+        case 'imageResize':
           return `<img src="${node.attrs?.src || ''}" alt="${node.attrs?.alt || ''}" />`;
         case 'hardBreak':
           return '<br>';
