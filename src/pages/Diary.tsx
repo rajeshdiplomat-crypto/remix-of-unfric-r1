@@ -113,30 +113,41 @@ export default function Diary() {
     // Journal Answers - each answer is a separate feed event
     const answersData = journalAnswersRes.data?.filter((a: any) => a.journal_entries?.user_id === user.id) || [];
 
-    // Build a map of journal entry images from images_data AND text_formatting (TipTap JSON)
-    const journalImageMap = new Map<string, string[]>();
+    // Build a per-question image map from TipTap JSON by splitting on H2 headings
+    const journalQuestionImageMap = new Map<string, Map<string, string[]>>();
     journalRes.data?.forEach((entry) => {
-      const images: string[] = [];
-      // 1. Extract from images_data column
-      if (entry.images_data) {
+      const questionImages = new Map<string, string[]>();
+      if (entry.text_formatting) {
         try {
-          const parsed = typeof entry.images_data === 'string' ? JSON.parse(entry.images_data as string) : entry.images_data;
-          if (Array.isArray(parsed)) {
-            parsed.forEach((img: any) => {
-              const url = typeof img === 'string' ? img : img?.url || img?.src;
-              if (url && typeof url === 'string' && url.startsWith('http')) images.push(url);
-            });
+          const parsed = typeof entry.text_formatting === 'string' 
+            ? JSON.parse(entry.text_formatting as string) 
+            : entry.text_formatting;
+          if (parsed?.content && Array.isArray(parsed.content)) {
+            let currentQuestion: string | null = null;
+            for (const node of parsed.content) {
+              if (node.type === 'heading' && node.attrs?.level === 2 && node.content?.[0]?.text) {
+                const headingText = node.content[0].text;
+                const matchedQ = DEFAULT_QUESTIONS.find(q => q.text === headingText);
+                currentQuestion = matchedQ?.id || headingText;
+                if (!questionImages.has(currentQuestion)) questionImages.set(currentQuestion, []);
+              } else if (currentQuestion) {
+                const walkNode = (n: any) => {
+                  if (!n) return;
+                  if ((n.type === 'image' || n.type === 'imageResize') && n.attrs?.src) {
+                    const src = n.attrs.src;
+                    if (typeof src === 'string' && src.startsWith('http')) {
+                      questionImages.get(currentQuestion!)?.push(src);
+                    }
+                  }
+                  if (Array.isArray(n.content)) n.content.forEach(walkNode);
+                };
+                walkNode(node);
+              }
+            }
           }
         } catch {}
       }
-      // 2. Extract from text_formatting (TipTap JSON content) - this is where inline images live
-      if (entry.text_formatting) {
-        const tiptapImages = extractImagesFromTiptapJSON(entry.text_formatting as string);
-        tiptapImages.forEach(url => {
-          if (!images.includes(url)) images.push(url);
-        });
-      }
-      journalImageMap.set(entry.id, images);
+      journalQuestionImageMap.set(entry.id, questionImages);
     });
 
     answersData.forEach((answer: any) => {
@@ -144,11 +155,11 @@ export default function Diary() {
       const questionLabel = question?.text || answer.question_id;
       const journalEntry = answer.journal_entries;
 
-      // Extract images from answer HTML content
+      // Extract images from answer HTML + per-question TipTap images
       const answerImages = extractImagesFromHTML(answer.answer_text || "");
-      // Also get entry-level images
-      const entryImages = journalImageMap.get(answer.journal_entry_id) || [];
-      const media = [...new Set([...entryImages, ...answerImages])];
+      const entryQuestionMap = journalQuestionImageMap.get(answer.journal_entry_id);
+      const tiptapImages = entryQuestionMap?.get(answer.question_id) || [];
+      const media = [...new Set([...answerImages, ...tiptapImages])];
 
       feedEvents.push({
         user_id: user.id,
