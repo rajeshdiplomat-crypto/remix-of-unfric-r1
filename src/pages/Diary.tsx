@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { PenLine, Search, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { loadActivityImage } from "@/components/habits/ActivityImageUpload";
 import { DiaryFeedCard } from "@/components/diary/DiaryFeedCard";
 import { DiarySidebar } from "@/components/diary/DiarySidebar";
 import { DiaryLeftSidebar } from "@/components/diary/DiaryLeftSidebar";
@@ -232,6 +233,7 @@ export default function Diary() {
 
     // Trackers (Habits) - use cover_image_url from database
     habitsRes.data?.forEach((habit) => {
+      const habitImage = habit.cover_image_url || loadActivityImage(habit.id);
       feedEvents.push({
         user_id: user.id,
         type: "create",
@@ -240,7 +242,7 @@ export default function Diary() {
         title: habit.name,
         summary: "Created a habit tracker",
         content_preview: habit.description,
-        media: habit.cover_image_url ? [habit.cover_image_url] : [],
+        media: habitImage ? [habitImage] : [],
         metadata: { frequency: habit.frequency },
         created_at: habit.created_at,
       });
