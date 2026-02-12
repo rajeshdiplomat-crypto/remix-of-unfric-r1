@@ -338,6 +338,60 @@ export default function Notes() {
     }
   }, [folders]);
 
+  // Sync notes FROM Supabase on mount — Supabase is the source of truth for content (especially images)
+  useEffect(() => {
+    if (!user?.id) return;
+    const syncFromSupabase = async () => {
+      const { data: dbNotes, error } = await supabase
+        .from("notes")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false });
+
+      if (error || !dbNotes?.length) return;
+
+      setNotes((prev) => {
+        const merged = [...prev];
+        for (const dbNote of dbNotes) {
+          const idx = merged.findIndex((n) => n.id === dbNote.id);
+          const localNote: Note = {
+            id: dbNote.id,
+            groupId: dbNote.category === "private" ? "personal" : dbNote.category === "creative" ? "hobby" : "inbox",
+            folderId: null,
+            title: dbNote.title || "Untitled",
+            contentRich: dbNote.content || "",
+            plainText: dbNote.content?.replace(/<[^>]*>/g, "").substring(0, 500) || "",
+            tags: dbNote.tags || [],
+            createdAt: dbNote.created_at,
+            updatedAt: dbNote.updated_at,
+            isPinned: false,
+            isArchived: false,
+          };
+          if (idx >= 0) {
+            // Supabase wins if it has newer data (preserves images even if localStorage lost them)
+            const localUpdated = new Date(merged[idx].updatedAt).getTime();
+            const dbUpdated = new Date(dbNote.updated_at).getTime();
+            if (dbUpdated >= localUpdated) {
+              // Preserve local-only fields (groupId, folderId, isPinned, etc.) but take content from DB
+              merged[idx] = {
+                ...merged[idx],
+                contentRich: dbNote.content || merged[idx].contentRich,
+                plainText: localNote.plainText || merged[idx].plainText,
+                tags: dbNote.tags || merged[idx].tags,
+                updatedAt: dbNote.updated_at,
+              };
+            }
+          } else {
+            // Note exists in Supabase but not localStorage — add it
+            merged.push(localNote);
+          }
+        }
+        return merged;
+      });
+    };
+    syncFromSupabase();
+  }, [user?.id]);
+
   const sortedGroups = useMemo(() => [...groups].sort((a, b) => a.sortOrder - b.sortOrder), [groups]);
 
   const filteredNotes = useMemo(() => {
