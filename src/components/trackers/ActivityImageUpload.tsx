@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Upload, X, Image as ImageIcon, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ActivityImageUploadProps {
   imageUrl: string | null;
@@ -11,19 +12,45 @@ interface ActivityImageUploadProps {
 
 const STORAGE_KEY = "activity-images";
 
+async function uploadToStorage(file: File, userId: string): Promise<string | null> {
+  const fileExt = file.name.split(".").pop() || "jpg";
+  const fileName = `${userId}/${Date.now()}.${fileExt}`;
+  const { error } = await supabase.storage.from("entry-covers").upload(fileName, file);
+  if (error) {
+    console.error("Upload error:", error);
+    return null;
+  }
+  const { data: { publicUrl } } = supabase.storage.from("entry-covers").getPublicUrl(fileName);
+  return publicUrl;
+}
+
 export function ActivityImageUpload({ imageUrl, onImageChange, compact = false }: ActivityImageUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = (file: File) => {
+  const handleFile = async (file: File) => {
     if (!file.type.startsWith("image/")) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      onImageChange(dataUrl);
-    };
-    reader.readAsDataURL(file);
+    setIsUploading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) {
+        // Fallback to base64 for unauthenticated users
+        const reader = new FileReader();
+        reader.onload = (e) => onImageChange(e.target?.result as string);
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      const publicUrl = await uploadToStorage(file, userId);
+      if (publicUrl) {
+        onImageChange(publicUrl);
+      }
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,7 +66,6 @@ export function ActivityImageUpload({ imageUrl, onImageChange, compact = false }
   };
 
   if (imageUrl) {
-    // In compact mode, don't show the landscape preview - just show controls
     if (compact) {
       return (
         <div className="flex items-center gap-2">
@@ -50,9 +76,10 @@ export function ActivityImageUpload({ imageUrl, onImageChange, compact = false }
             size="sm"
             className="h-7 px-2 text-xs"
             onClick={() => inputRef.current?.click()}
+            disabled={isUploading}
           >
             <RefreshCcw className="h-3 w-3 mr-1" />
-            Change
+            {isUploading ? "Uploading…" : "Change"}
           </Button>
           <Button
             type="button"
@@ -80,9 +107,7 @@ export function ActivityImageUpload({ imageUrl, onImageChange, compact = false }
         className={cn("relative overflow-hidden rounded-xl border border-border/60 bg-card", compact ? "h-20" : "h-32")}
       >
         <img src={imageUrl} alt="Activity cover" className="h-full w-full object-cover" />
-
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent" />
-
         <div className="absolute top-2 right-2 flex items-center gap-1.5">
           <Button
             type="button"
@@ -90,6 +115,7 @@ export function ActivityImageUpload({ imageUrl, onImageChange, compact = false }
             size="icon"
             className="h-7 w-7 rounded-lg bg-black/35 text-white hover:bg-black/50"
             onClick={() => inputRef.current?.click()}
+            disabled={isUploading}
           >
             <RefreshCcw className="h-3.5 w-3.5" />
           </Button>
@@ -103,7 +129,6 @@ export function ActivityImageUpload({ imageUrl, onImageChange, compact = false }
             <X className="h-3.5 w-3.5" />
           </Button>
         </div>
-
         <input
           ref={inputRef}
           type="file"
@@ -122,6 +147,7 @@ export function ActivityImageUpload({ imageUrl, onImageChange, compact = false }
         "hover:bg-card",
         isDragging && "ring-2 ring-primary/30",
         compact ? "p-3" : "p-4",
+        isUploading && "opacity-60 pointer-events-none",
       )}
       onDragOver={(e) => {
         e.preventDefault();
@@ -140,19 +166,18 @@ export function ActivityImageUpload({ imageUrl, onImageChange, compact = false }
         >
           <ImageIcon className="h-4 w-4 text-muted-foreground" />
         </div>
-
         <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground leading-tight">Add cover image</p>
+          <p className="text-sm font-medium text-foreground leading-tight">
+            {isUploading ? "Uploading…" : "Add cover image"}
+          </p>
           <p className="text-xs text-muted-foreground">
             Drag & drop or <span className="text-foreground">browse</span>
           </p>
         </div>
-
         <div className="ml-auto flex items-center gap-2">
           <Upload className="h-4 w-4 text-muted-foreground" />
         </div>
       </div>
-
       <input
         ref={inputRef}
         type="file"
@@ -164,7 +189,7 @@ export function ActivityImageUpload({ imageUrl, onImageChange, compact = false }
   );
 }
 
-// Helpers: save/load images from localStorage by activity ID
+// Helpers: save/load images from localStorage by activity ID (now stores URLs, not base64)
 export function saveActivityImage(activityId: string, imageUrl: string | null) {
   const stored = localStorage.getItem(STORAGE_KEY);
   const images: Record<string, string> = stored ? JSON.parse(stored) : {};
@@ -173,6 +198,10 @@ export function saveActivityImage(activityId: string, imageUrl: string | null) {
   else delete images[activityId];
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
+}
+
+export async function saveActivityImageToDb(habitId: string, imageUrl: string | null) {
+  await supabase.from("habits").update({ cover_image_url: imageUrl }).eq("id", habitId);
 }
 
 export function loadActivityImage(activityId: string): string | null {

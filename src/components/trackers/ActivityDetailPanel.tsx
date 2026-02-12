@@ -22,7 +22,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { BarChart, Bar, XAxis, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import { cn } from "@/lib/utils";
 import { computeEndDateForHabitDays } from "@/lib/dateUtils";
-import { loadActivityImage, saveActivityImage } from "./ActivityImageUpload";
+import { loadActivityImage, saveActivityImage, saveActivityImageToDb } from "./ActivityImageUpload";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ActivityItem {
   id: string;
@@ -262,16 +263,22 @@ export function ActivityDetailPanel({
     });
   };
 
-  const handleImageUpload = (file: File) => {
+  const handleImageUpload = async (file: File) => {
     if (!activity) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const url = e.target?.result as string;
-      saveActivityImage(activity.id, url);
-      setImageUrl(url);
-      onImageChange(activity.id, url);
-    };
-    reader.readAsDataURL(file);
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+    if (!userId) return;
+
+    const fileExt = file.name.split(".").pop() || "jpg";
+    const fileName = `${userId}/${Date.now()}.${fileExt}`;
+    const { error } = await supabase.storage.from("entry-covers").upload(fileName, file);
+    if (error) { console.error("Upload error:", error); return; }
+    const { data: { publicUrl } } = supabase.storage.from("entry-covers").getPublicUrl(fileName);
+
+    saveActivityImage(activity.id, publicUrl);
+    saveActivityImageToDb(activity.id, publicUrl);
+    setImageUrl(publicUrl);
+    onImageChange(activity.id, publicUrl);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -284,6 +291,7 @@ export function ActivityDetailPanel({
   const handleRemoveImage = () => {
     if (!activity) return;
     saveActivityImage(activity.id, null);
+    saveActivityImageToDb(activity.id, null);
     setImageUrl(null);
     onImageChange(activity.id, null);
   };
