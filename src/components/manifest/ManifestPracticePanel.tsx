@@ -153,7 +153,7 @@ export function ManifestPracticePanel({
       setGratitudes([]);
       setIsLocked(false);
       setExpandedSection("viz");
-      setCurrentImageUrl(goal.vision_image_url || goal.cover_image_url || null);
+      setCurrentImageUrl(goal.cover_image_url || goal.vision_image_url || null);
 
       const saved = loadPractice(dateStr);
       if (saved.visualizations) setVisualizations(saved.visualizations);
