@@ -30,12 +30,12 @@ import { DEFAULT_QUESTIONS } from "@/components/journal/types";
 
 const FILTER_TABS = [
   { value: "all", label: "All" },
-  { value: "journal", label: "Journal" },
-  { value: "tasks", label: "Tasks" },
-  { value: "notes", label: "Notes" },
-  { value: "trackers", label: "Habits" },
-  { value: "manifest", label: "Manifest" },
   { value: "emotions", label: "Emotions" },
+  { value: "journal", label: "Journal" },
+  { value: "manifest", label: "Manifest" },
+  { value: "trackers", label: "Habits" },
+  { value: "notes", label: "Notes" },
+  { value: "tasks", label: "Tasks" },
 ];
 
 export default function Diary() {
