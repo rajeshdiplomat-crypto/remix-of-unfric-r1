@@ -13,6 +13,7 @@ import Highlight from "@tiptap/extension-highlight";
 import FontFamily from "@tiptap/extension-font-family";
 import { Extension } from "@tiptap/core";
 import ImageResize from "tiptap-extension-resize-image";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -617,29 +618,46 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
     setImageUrl("");
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editor) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const result = ev.target?.result as string;
-      if (result) {
-        try {
-          if ((editor.commands as any).setResizableImage) {
-            (editor.commands as any).setResizableImage({ src: result });
-          } else if ((editor.commands as any).setImage) {
-            (editor.commands as any).setImage({ src: result });
-          } else {
-            editor.chain().focus().insertContent(`<img src="${result}" />`).run();
-          }
-        } catch (err) {
-          console.error("Image upload error:", err);
-          editor.chain().focus().insertContent(`<img src="${result}" />`).run();
-        }
-        setImageDialogOpen(false);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
+      if (!userId) {
+        console.error("User not authenticated");
+        return;
       }
-    };
-    reader.readAsDataURL(file);
+
+      const fileExt = file.name.split(".").pop() || "jpg";
+      const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+      const { error } = await supabase.storage.from("entry-covers").upload(fileName, file);
+
+      if (error) {
+        console.error("Upload error:", error);
+        return;
+      }
+
+      const { data: { publicUrl } } = supabase.storage.from("entry-covers").getPublicUrl(fileName);
+
+      try {
+        if ((editor.commands as any).setResizableImage) {
+          (editor.commands as any).setResizableImage({ src: publicUrl });
+        } else if ((editor.commands as any).setImage) {
+          (editor.commands as any).setImage({ src: publicUrl });
+        } else {
+          editor.chain().focus().insertContent(`<img src="${publicUrl}" />`).run();
+        }
+      } catch (err) {
+        console.error("Image insert error:", err);
+        editor.chain().focus().insertContent(`<img src="${publicUrl}" />`).run();
+      }
+      setImageDialogOpen(false);
+    } catch (err) {
+      console.error("Image upload error:", err);
+    }
     if (e.target) e.target.value = "";
   };
 
