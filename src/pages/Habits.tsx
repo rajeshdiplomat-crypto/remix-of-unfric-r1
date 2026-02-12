@@ -71,6 +71,7 @@ interface ActivityItem {
   startDate: string;
   completions: Record<string, boolean>;
   createdAt: string;
+  coverImageUrl?: string | null;
   notes?: Record<string, string>;
   skipped?: Record<string, boolean>;
   reminders?: { time: string; days: number[] };
@@ -359,29 +360,34 @@ export default function Habits() {
     fetchHabits();
   }, [user]);
 
-  // One-time migration: upload base64 localStorage images to storage
+  // One-time migration: sync localStorage images to database
   useEffect(() => {
     if (!user) return;
-    const migrateBase64Images = async () => {
+    const migrateImages = async () => {
       const allImages = loadAllActivityImages();
       for (const [habitId, imgData] of Object.entries(allImages)) {
-        if (!imgData.startsWith("data:")) continue; // already a URL
-        try {
-          const res = await fetch(imgData);
-          const blob = await res.blob();
-          const ext = blob.type.split("/")[1] || "jpg";
-          const fileName = `${user.id}/${Date.now()}-${habitId}.${ext}`;
-          const { error } = await supabase.storage.from("entry-covers").upload(fileName, blob);
-          if (error) { console.error("Migration upload error:", error); continue; }
-          const { data: { publicUrl } } = supabase.storage.from("entry-covers").getPublicUrl(fileName);
-          saveActivityImage(habitId, publicUrl);
-          await saveActivityImageToDb(habitId, publicUrl);
-        } catch (err) {
-          console.error("Migration error for habit", habitId, err);
+        if (imgData.startsWith("data:")) {
+          // Upload base64 to storage first
+          try {
+            const res = await fetch(imgData);
+            const blob = await res.blob();
+            const ext = blob.type.split("/")[1] || "jpg";
+            const fileName = `${user.id}/${Date.now()}-${habitId}.${ext}`;
+            const { error } = await supabase.storage.from("entry-covers").upload(fileName, blob);
+            if (error) { console.error("Migration upload error:", error); continue; }
+            const { data: { publicUrl } } = supabase.storage.from("entry-covers").getPublicUrl(fileName);
+            saveActivityImage(habitId, publicUrl);
+            await saveActivityImageToDb(habitId, publicUrl);
+          } catch (err) {
+            console.error("Migration error for habit", habitId, err);
+          }
+        } else {
+          // URL exists in localStorage but might be missing from DB — sync it
+          await saveActivityImageToDb(habitId, imgData);
         }
       }
     };
-    migrateBase64Images();
+    migrateImages();
   }, [user]);
 
   const fetchHabits = async () => {
@@ -427,6 +433,7 @@ export default function Habits() {
         startDate: (habit as any).start_date || format(new Date(habit.created_at), "yyyy-MM-dd"),
         completions: habitCompletions,
         createdAt: habit.created_at,
+        coverImageUrl: habit.cover_image_url || null,
       };
     });
 
@@ -713,7 +720,7 @@ export default function Habits() {
     setFormFrequency(activity.frequencyPattern);
     setFormDays(String(activity.habitDays));
     setFormStartDate(activity.startDate ? parseISO(activity.startDate) : new Date());
-    setFormImageUrl(loadActivityImage(activity.id));
+    setFormImageUrl(activity.coverImageUrl || loadActivityImage(activity.id));
     setFormTime(activity.time || "09:00");
     setFormDuration(activity.duration || 30);
     setFormAddToTasks(false);
@@ -748,7 +755,9 @@ export default function Habits() {
         duration: formDuration,
       };
 
-      if (formImageUrl) saveActivityImage(tempActivity.id, formImageUrl);
+      if (formImageUrl) {
+        saveActivityImage(tempActivity.id, formImageUrl);
+      }
 
       setActivities((prev) => {
         if (editingActivity) return prev.map((a) => (a.id === editingActivity.id ? tempActivity : a));
@@ -769,6 +778,7 @@ export default function Habits() {
           target_days: targetDays,
           habit_days: parseInt(formDays) || 1,
           start_date: format(formStartDate, "yyyy-MM-dd"),
+          cover_image_url: formImageUrl || null,
         });
 
         if (error) {
@@ -1512,7 +1522,7 @@ export default function Habits() {
             <div className="space-y-4">
               {(() => {
                 const selectedHabit = selectedActivityId ? activities.find((a) => a.id === selectedActivityId) : null;
-                const habitImage = selectedHabit ? loadActivityImage(selectedHabit.id) : null;
+                const habitImage = selectedHabit ? (selectedHabit.coverImageUrl || loadActivityImage(selectedHabit.id)) : null;
 
                 return (
                   <Card className="rounded-xl overflow-hidden h-full min-h-[400px]">

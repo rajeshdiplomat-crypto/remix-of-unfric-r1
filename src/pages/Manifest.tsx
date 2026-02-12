@@ -233,7 +233,10 @@ export default function Manifest() {
       if (editingGoal) {
         const { error } = await supabase
           .from("manifest_goals")
-          .update({ title: goalData.title })
+          .update({
+            title: goalData.title,
+            cover_image_url: goalData.vision_image_url || editingGoal.cover_image_url || null,
+          })
           .eq("id", editingGoal.id);
         if (error) throw error;
         goalId = editingGoal.id;
@@ -241,7 +244,12 @@ export default function Manifest() {
       } else {
         const { data, error } = await supabase
           .from("manifest_goals")
-          .insert({ user_id: user.id, title: goalData.title, is_completed: false })
+          .insert({
+            user_id: user.id,
+            title: goalData.title,
+            is_completed: false,
+            cover_image_url: goalData.vision_image_url || null,
+          })
           .select()
           .single();
         if (error) throw error;
