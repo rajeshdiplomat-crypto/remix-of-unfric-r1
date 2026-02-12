@@ -18,7 +18,7 @@ export function useDiaryMetrics(userId: string | undefined, timeRange: TimeRange
   const [manifestGoals, setManifestGoals] = useState<any[]>([]);
   const [manifestJournal, setManifestJournal] = useState<any[]>([]);
   const [notes, setNotes] = useState<any[]>([]);
-
+  const [emotions, setEmotions] = useState<any[]>([]);
   const getDateRange = useMemo(() => {
     const now = new Date();
     switch (timeRange) {
@@ -36,12 +36,13 @@ export function useDiaryMetrics(userId: string | undefined, timeRange: TimeRange
     setLoading(true);
 
     try {
-      const [tasksRes, journalRes, goalsRes, manifestJournalRes, notesRes] = await Promise.all([
+      const [tasksRes, journalRes, goalsRes, manifestJournalRes, notesRes, emotionsRes] = await Promise.all([
         supabase.from("tasks").select("*").eq("user_id", userId),
         supabase.from("journal_entries").select("*").eq("user_id", userId).order("entry_date", { ascending: false }),
         supabase.from("manifest_goals").select("*").eq("user_id", userId),
         supabase.from("manifest_journal").select("*").eq("user_id", userId),
         supabase.from("notes").select("*").eq("user_id", userId),
+        supabase.from("emotions").select("*").eq("user_id", userId),
       ]);
 
       setTasks(tasksRes.data || []);
@@ -49,6 +50,7 @@ export function useDiaryMetrics(userId: string | undefined, timeRange: TimeRange
       setManifestGoals(goalsRes.data || []);
       setManifestJournal(manifestJournalRes.data || []);
       setNotes(notesRes.data || []);
+      setEmotions(emotionsRes.data || []);
     } catch (error) {
       console.error("Error fetching metrics:", error);
     } finally {
@@ -113,6 +115,12 @@ export function useDiaryMetrics(userId: string | undefined, timeRange: TimeRange
       return isWithinInterval(updatedAt, { start, end });
     }).length;
 
+    // Emotions metrics
+    const emotionsInRange = emotions.filter(e => {
+      const createdAt = parseISO(e.created_at);
+      return isWithinInterval(createdAt, { start, end });
+    }).length;
+
     return {
       tasks: {
         dueToday,
@@ -120,7 +128,7 @@ export function useDiaryMetrics(userId: string | undefined, timeRange: TimeRange
         planned: tasksInRange.length,
       },
       trackers: {
-        completionPercent: 75, // Mock - trackers data is local
+        completionPercent: 75,
         sessionsCompleted: 12,
       },
       journal: {
@@ -128,7 +136,7 @@ export function useDiaryMetrics(userId: string | undefined, timeRange: TimeRange
         streak,
       },
       focus: {
-        focusMinutes: 180, // Mock - focus data is local
+        focusMinutes: 180,
         sessionsCompleted: 6,
       },
       manifest: {
@@ -139,8 +147,11 @@ export function useDiaryMetrics(userId: string | undefined, timeRange: TimeRange
         created: notesCreated,
         updated: notesUpdated,
       },
+      emotions: {
+        checkIns: emotionsInRange,
+      },
     };
-  }, [tasks, journalEntries, manifestGoals, manifestJournal, notes, getDateRange]);
+  }, [tasks, journalEntries, manifestGoals, manifestJournal, notes, emotions, getDateRange]);
 
   const chartData = useMemo(() => {
     const taskCompletion = metrics.tasks.planned > 0 

@@ -590,13 +590,9 @@ export default function Diary() {
       <aside className="hidden xl:flex flex-col w-[340px] shrink-0 h-full overflow-y-auto border-l border-border/20 bg-background/50 p-4">
         <DiarySidebar
           metrics={metrics}
-          chartData={chartData}
           smartInsight={smartInsight}
           timeRange={timeRange}
           onTimeRangeChange={setTimeRange}
-          filter={filter}
-          onFilterChange={setFilter}
-          onQuickAction={handleQuickAction}
         />
       </aside>
       </div>
