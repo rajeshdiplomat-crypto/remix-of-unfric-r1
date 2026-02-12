@@ -4,7 +4,7 @@ import { Check, Flame, Play, Tag, Pencil, Trash2, CheckCircle, RotateCcw } from 
 import { format, subDays, parseISO, differenceInDays, formatDistanceToNow, isAfter, isBefore, addDays } from "date-fns";
 import { useMemo } from "react";
 import { EntryImageUpload } from "@/components/common/EntryImageUpload";
-import { loadActivityImage, saveActivityImage, saveActivityImageToDb } from "./ActivityImageUpload";
+import { loadActivityImage, saveActivityImage, saveActivityImageToDb } from "@/components/habits/ActivityImageUpload";
 import { computeEndDateForHabitDays } from "@/lib/dateUtils";
 
 interface ActivityItem {
@@ -30,7 +30,7 @@ const CATEGORIES: Record<string, { label: string; color: string }> = {
   wellbeing: { label: "Wellbeing", color: "339 81% 51%" },
 };
 
-interface TrackerCardProps {
+interface HabitCardProps {
   activity: ActivityItem;
   isSelected: boolean;
   onClick: () => void;
@@ -42,7 +42,7 @@ interface TrackerCardProps {
   isCompleted?: boolean;
 }
 
-export function TrackerCard({
+export function HabitCard({
   activity,
   isSelected,
   onClick,
@@ -52,7 +52,7 @@ export function TrackerCard({
   onReactivate,
   onImageUpdate,
   isCompleted = false,
-}: TrackerCardProps) {
+}: HabitCardProps) {
   const getEndDate = (act: ActivityItem) =>
     computeEndDateForHabitDays(parseISO(act.startDate), act.frequencyPattern, act.habitDays);
 

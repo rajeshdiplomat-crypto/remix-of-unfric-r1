@@ -33,7 +33,7 @@ const FILTER_TABS = [
   { value: "journal", label: "Journal" },
   { value: "tasks", label: "Tasks" },
   { value: "notes", label: "Notes" },
-  { value: "trackers", label: "Trackers" },
+  { value: "trackers", label: "Habits" },
   { value: "manifest", label: "Manifest" },
   { value: "focus", label: "Focus" },
   { value: "emotions", label: "Emotions" },
@@ -368,7 +368,7 @@ export default function Diary() {
         navigate("/notes");
         break;
       case "trackers":
-        navigate("/trackers");
+        navigate("/habits");
         break;
       case "manifest":
         navigate("/manifest");
@@ -396,7 +396,7 @@ export default function Diary() {
         navigate("/notes");
         break;
       case "activity":
-        navigate("/trackers");
+        navigate("/habits");
         break;
       case "manifest":
         navigate("/manifest");

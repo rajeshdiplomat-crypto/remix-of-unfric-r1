@@ -31,7 +31,7 @@ interface ActivityItem {
   createdAt: string;
 }
 
-interface TrackerSidebarPanelProps {
+interface HabitSidebarPanelProps {
   selectedDate: Date;
   onDateSelect: (date: Date) => void;
   activities: ActivityItem[];
@@ -40,14 +40,14 @@ interface TrackerSidebarPanelProps {
   onOpenAnalytics?: () => void;
 }
 
-export const TrackerSidebarPanel = memo(function TrackerSidebarPanel({
+export const HabitSidebarPanel = memo(function HabitSidebarPanel({
   selectedDate,
   onDateSelect,
   activities,
   isCollapsed,
   onToggleCollapse,
   onOpenAnalytics,
-}: TrackerSidebarPanelProps) {
+}: HabitSidebarPanelProps) {
   const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
   const [insightIndex, setInsightIndex] = useState(0);
 

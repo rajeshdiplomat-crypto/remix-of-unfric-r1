@@ -17,7 +17,7 @@ import Emotions from "./pages/Emotions";
 import Journal from "./pages/Journal";
 import Manifest from "./pages/Manifest";
 import ManifestHistory from "./pages/ManifestHistory";
-import Trackers from "./pages/Trackers";
+import Habits from "./pages/Habits";
 import Notes from "./pages/Notes";
 import Tasks from "./pages/Tasks";
 import TaskFocus from "./pages/TaskFocus";
@@ -124,13 +124,15 @@ const App = () => (
                       }
                     />
                     <Route
-                      path="/trackers"
+                      path="/habits"
                       element={
                         <ProtectedRoute>
-                          <Trackers />
+                          <Habits />
                         </ProtectedRoute>
                       }
                     />
+                    {/* Legacy route redirect */}
+                    <Route path="/trackers" element={<Navigate to="/habits" replace />} />
                     <Route
                       path="/notes"
                       element={

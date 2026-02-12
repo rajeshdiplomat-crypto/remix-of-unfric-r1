@@ -27,7 +27,7 @@ const mainNavItems = [
   { title: "Emotions", url: "/emotions", icon: Heart },
   { title: "Journal", url: "/journal", icon: PenLine },
   { title: "Manifest", url: "/manifest", icon: Sparkles },
-  { title: "Habits", url: "/trackers", icon: BarChart3 },
+  { title: "Habits", url: "/habits", icon: BarChart3 },
 ];
 
 const productivityItems = [

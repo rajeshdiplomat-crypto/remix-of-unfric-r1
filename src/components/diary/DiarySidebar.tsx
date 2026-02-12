@@ -44,7 +44,7 @@ export function DiarySidebar({
       barClass: "[&>div]:bg-emerald-500",
     },
     {
-      name: "Trackers",
+      name: "Habits",
       stat: `${metrics.trackers.sessionsCompleted} sessions`,
       secondaryStat: `${metrics.trackers.completionPercent}% done`,
       percent: metrics.trackers.completionPercent,

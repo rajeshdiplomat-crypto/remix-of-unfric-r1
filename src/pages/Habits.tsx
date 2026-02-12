@@ -55,7 +55,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { ActivityImageUpload, loadActivityImage, loadAllActivityImages, saveActivityImage, saveActivityImageToDb } from "@/components/trackers/ActivityImageUpload";
+import { ActivityImageUpload, loadActivityImage, loadAllActivityImages, saveActivityImage, saveActivityImageToDb } from "@/components/habits/ActivityImageUpload";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
@@ -300,7 +300,7 @@ function ProgressRing({
   );
 }
 
-export default function Trackers() {
+export default function Habits() {
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -893,7 +893,7 @@ export default function Trackers() {
   };
 
   if (loading) {
-    return <PageLoadingScreen module="trackers" />;
+    return <PageLoadingScreen module="habits" />;
   }
 
   const renderRow = (activity: ActivityItem, originalIndex: number, isActive: boolean) => {

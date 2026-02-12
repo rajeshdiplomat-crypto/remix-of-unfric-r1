@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EntryImageUpload } from "@/components/common/EntryImageUpload";
-import { loadActivityImage, saveActivityImage } from "./ActivityImageUpload";
+import { loadActivityImage, saveActivityImage } from "@/components/habits/ActivityImageUpload";
 import { computeEndDateForHabitDays } from "@/lib/dateUtils";
 
 interface ActivityItem {
@@ -50,7 +50,7 @@ const CATEGORIES: Record<string, { label: string; color: string }> = {
 
 type ViewMode = "grid" | "calendar" | "list";
 
-interface TrackerPracticePanelProps {
+interface HabitPracticePanelProps {
   activity: ActivityItem | null;
   selectedDate: Date;
   onClose: () => void;
@@ -61,7 +61,7 @@ interface TrackerPracticePanelProps {
   userName?: string;
 }
 
-export function TrackerPracticePanel({
+export function HabitPracticePanel({
   activity,
   selectedDate,
   onClose,
@@ -70,7 +70,7 @@ export function TrackerPracticePanel({
   onSkipDay,
   onImageChange,
   userName = "there",
-}: TrackerPracticePanelProps) {
+}: HabitPracticePanelProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
