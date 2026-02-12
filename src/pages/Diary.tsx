@@ -462,7 +462,7 @@ export default function Diary() {
       />
 
       {/* 3-Column Layout Below Hero */}
-      <div className="flex flex-1 w-full overflow-hidden">
+      <div className="flex flex-1 w-full overflow-hidden min-h-0">
         {/* Left Sidebar - Hidden on mobile/tablet, visible on desktop */}
         <aside className="hidden lg:flex flex-col w-[280px] shrink-0 h-full overflow-y-auto border-r border-border/20 bg-background">
           <DiaryLeftSidebar 
