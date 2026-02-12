@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { format, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay } from "date-fns";
+import { extractImagesFromTiptapJSON } from "@/lib/editorUtils";
 import {
   Settings,
   Save,
@@ -411,12 +412,17 @@ export default function Journal() {
     try {
       const extractedAnswers = extractAnswersFromContent(content, template.questions);
 
+      // Extract image URLs from TipTap JSON content and save to images_data
+      const contentImages = extractImagesFromTiptapJSON(content);
+      const imagesDataPayload = contentImages.map(url => ({ url }));
+
       if (currentEntry) {
         const { error } = await supabase
           .from("journal_entries")
           .update({
             text_formatting: content,
             daily_feeling: selectedMood,
+            images_data: imagesDataPayload,
             updated_at: new Date().toISOString(),
           })
           .eq("id", currentEntry.id);
@@ -465,6 +471,7 @@ export default function Journal() {
             entry_date: dateStr,
             text_formatting: content,
             daily_feeling: selectedMood,
+            images_data: imagesDataPayload,
           })
           .select()
           .single();
