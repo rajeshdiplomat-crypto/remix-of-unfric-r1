@@ -1425,7 +1425,7 @@ export default function Habits() {
                         });
 
                         const value = total > 0 ? (completed / total) * 100 : 0;
-                        const x = ((i + 0.5) / numDays) * chartWidth;
+                        const x = numDays <= 1 ? 500 : (i / (numDays - 1)) * chartWidth;
                         const rawY = 160 - (value / 100) * 120;
                         const y = Math.max(20, Math.min(160, rawY));
                         dataPoints.push({ x, y, value, isPast, isFuture, dayNum: parseInt(format(day, "d")) });
