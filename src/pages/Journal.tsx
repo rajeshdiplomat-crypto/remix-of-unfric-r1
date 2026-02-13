@@ -640,7 +640,7 @@ export default function Journal() {
     <div
       className={cn(
         "flex flex-col w-full transition-all duration-300",
-        isFullscreen ? "fixed inset-0 z-50 overflow-hidden" : "h-full overflow-hidden",
+        isFullscreen ? "fixed inset-0 z-50 bg-background" : "h-full overflow-hidden",
       )}
       style={{
         backgroundColor: currentSkin.pageBg,
@@ -781,9 +781,9 @@ export default function Journal() {
       {/* Content Area */}
       <div
         className={cn(
-          "flex-1 min-h-0 grid gap-6 w-full px-4 sm:px-6 py-4 transition-all duration-300",
+          "flex-1 min-h-0 grid gap-6 w-full px-4 sm:px-6 py-4 transition-all duration-300 overflow-hidden",
           isFullscreen
-            ? "grid-cols-1 max-w-4xl mx-auto overflow-y-auto"
+            ? "grid-cols-1 max-w-4xl mx-auto"
             : leftPanelCollapsed
               ? "grid-cols-1 lg:grid-cols-[64px_1fr_280px]"
               : "grid-cols-1 lg:grid-cols-[280px_1fr_280px]",
@@ -808,7 +808,7 @@ export default function Journal() {
           </div>
         )}
 
-        <div className="flex flex-col min-w-0 h-full overflow-y-auto">
+        <div className={cn("flex flex-col min-w-0 overflow-y-auto", isFullscreen ? "h-full" : "h-full")}>
           {/* Greeting Section */}
           <div className="mb-4 px-1">
             <h2 className="text-xl font-semibold text-slate-800">
