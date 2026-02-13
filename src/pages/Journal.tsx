@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { format, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay, parseISO } from "date-fns";
 import { extractImagesFromTiptapJSON } from "@/lib/editorUtils";
 import {
@@ -646,277 +647,207 @@ export default function Journal() {
     return <PageLoadingScreen module="journal" />;
   }
 
-  return (
+  const journalHeader = (
     <div
       className={cn(
-        "flex flex-col w-full transition-all duration-300",
-        isFullscreen ? "fixed inset-0 z-50 bg-background overflow-hidden" : "h-full overflow-hidden",
+        "shrink-0 backdrop-blur-xl border-b border-border/40",
+        isFullscreen ? "" : "sticky top-0 z-40",
       )}
       style={{
-        backgroundColor: currentSkin.pageBg,
-        color: currentSkin.text,
+        backgroundColor: isFullscreen ? currentSkin.pageBg : `${currentSkin.pageBg}e6`,
+        borderColor: isFullscreen ? undefined : `${currentSkin.border}40`,
       }}
     >
-      {!isFullscreen && (
-        <PageHero
-          storageKey="journal_hero_src"
-          typeKey="journal_hero_type"
-          badge={PAGE_HERO_TEXT.journal.badge}
-          title={PAGE_HERO_TEXT.journal.title}
-          subtitle={PAGE_HERO_TEXT.journal.subtitle}
-        />
-      )}
-
-      {/* Compact Header */}
-      <div
-        className={cn(
-          "sticky top-0 z-40 backdrop-blur-xl border-b border-border/40",
-          isFullscreen && "bg-background/95",
-        )}
-        style={{
-          backgroundColor: isFullscreen ? undefined : `${currentSkin.pageBg}e6`,
-          borderColor: isFullscreen ? undefined : `${currentSkin.border}40`,
-        }}
-      >
-        <div className="px-4 sm:px-6 py-2 flex items-center justify-between gap-4">
-          {/* Left - Date Navigation */}
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={goToPreviousDay}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-
-            <button
-              onClick={() => setSelectedDate(new Date())}
-              className="flex items-center gap-2 px-3 py-1.5 bg-white/80 hover:bg-white rounded-xl border border-slate-200 transition-all"
-            >
-              <Calendar className="h-4 w-4 text-stone-500" />
-              <span className="text-sm font-semibold text-slate-700">{format(selectedDate, "EEE, MMM d")}</span>
-            </button>
-
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={goToNextDay}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-lg"
-              onClick={() => setShowRecentEntries(true)}
-              title="Recent Entries"
-            >
-              <BookOpen className="h-4 w-4" />
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-lg"
-              onClick={() => setShowInsights(true)}
-              title="Journal Insights"
-            >
-              <BarChart3 className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Center - Search Bar */}
-          <div className="hidden md:flex flex-1 max-w-md mx-4">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
-              <input
-                type="text"
-                placeholder="Search journal entries..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-10 py-1.5 text-sm bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-200 focus:border-stone-300 transition-all font-medium text-slate-700 dark:text-slate-200"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 rounded-lg transition-colors"
-                  title="Clear search"
-                >
-                  <X className="h-3.5 w-3.5 text-slate-400" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Right - Controls */}
-          <div className="flex items-center gap-1.5">
-            {/* Save Status */}
-            <div
-              className={cn(
-                "flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium",
-                saveStatus === "saved" && "bg-emerald-50 text-emerald-600",
-                saveStatus === "saving" && "bg-amber-50 text-amber-600",
-                saveStatus === "unsaved" && "bg-slate-100 text-slate-500",
-              )}
-            >
-              {saveStatus === "saved" && <Cloud className="h-3 w-3" />}
-              {saveStatus === "saving" && <Loader2 className="h-3 w-3 animate-spin" />}
-              {saveStatus === "unsaved" && <CloudOff className="h-3 w-3" />}
-              <span className="hidden sm:inline">
-                {saveStatus === "saving" ? "Saving" : saveStatus === "saved" ? "Saved" : "Unsaved"}
-              </span>
-            </div>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-lg"
-              onClick={() => setIsFullscreen(!isFullscreen)}
-            >
-              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            </Button>
-
-            {!isFullscreen && (
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setSettingsOpen(true)}>
-                <Settings className="h-4 w-4" />
-              </Button>
+      <div className="px-4 sm:px-6 py-2 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={goToPreviousDay}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <button
+            onClick={() => setSelectedDate(new Date())}
+            className="flex items-center gap-2 px-3 py-1.5 bg-white/80 hover:bg-white rounded-xl border border-slate-200 transition-all"
+          >
+            <Calendar className="h-4 w-4 text-stone-500" />
+            <span className="text-sm font-semibold text-slate-700">{format(selectedDate, "EEE, MMM d")}</span>
+          </button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={goToNextDay}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setShowRecentEntries(true)} title="Recent Entries">
+            <BookOpen className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setShowInsights(true)} title="Journal Insights">
+            <BarChart3 className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="hidden md:flex flex-1 max-w-md mx-4">
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
+            <input
+              type="text"
+              placeholder="Search journal entries..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-10 py-1.5 text-sm bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-200 focus:border-stone-300 transition-all font-medium text-slate-700 dark:text-slate-200"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 rounded-lg transition-colors" title="Clear search">
+                <X className="h-3.5 w-3.5 text-slate-400" />
+              </button>
             )}
-
-            <Button
-              size="sm"
-              onClick={handleManualSave}
-              disabled={saveStatus === "saving"}
-              className="h-8 rounded-lg bg-gradient-to-r from-stone-500 to-orange-600 hover:from-stone-600 hover:to-orange-700 text-xs px-3"
-            >
-              <Save className="h-3.5 w-3.5 mr-1" />
-              Save
-            </Button>
           </div>
         </div>
-      </div>
-
-      {/* Content Area */}
-      <div
-        className={cn(
-          "flex-1 min-h-0 grid gap-6 w-full px-4 sm:px-6 py-4 transition-all duration-300 overflow-hidden",
-          isFullscreen
-            ? "grid-cols-1 max-w-4xl mx-auto overflow-y-auto"
-            : leftPanelCollapsed
-              ? "grid-cols-1 lg:grid-cols-[64px_1fr_280px]"
-              : "grid-cols-1 lg:grid-cols-[280px_1fr_280px]",
-        )}
-      >
-        {/* Left Panel - Calendar */}
-        {!isFullscreen && (
-          <div
-            className={cn("hidden lg:flex flex-col transition-all duration-300 h-full overflow-y-auto", leftPanelCollapsed && "w-16")}
-          >
-            <JournalSidebarPanel
-              selectedDate={selectedDate}
-              onDateSelect={setSelectedDate}
-              entries={entries}
-              onInsertPrompt={handleInsertPrompt}
-              skin={currentSkin}
-              showSection="calendar"
-              isCollapsed={leftPanelCollapsed}
-              onToggleCollapse={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
-              searchQuery={searchQuery}
-            />
-          </div>
-        )}
-
-        <div className={cn("flex flex-col min-w-0 overflow-y-auto", isFullscreen ? "h-full" : "h-full")}>
-          {/* Greeting Section */}
-          <div className="mb-4 px-1">
-            <h2 className="text-xl font-semibold text-slate-800">
-              {(() => {
-                const hour = new Date().getHours();
-                const userName =
-                  user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "";
-                const firstName = userName.split(" ")[0];
-                const greeting =
-                  hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : hour < 21 ? "Good evening" : "Good night";
-                const emoji = hour < 12 ? "☀️" : hour < 17 ? "🌤️" : hour < 21 ? "🌅" : "🌙";
-                return firstName ? `${greeting}, ${firstName} ${emoji}` : `${greeting} ${emoji}`;
-              })()}
-            </h2>
-            <p className="text-sm text-slate-500 mt-1">
-              {(() => {
-                const quotes = [
-                  "Every page you write is a step toward understanding yourself.",
-                  "Your thoughts matter. Let them flow freely today.",
-                  "Writing is the painting of the voice.",
-                  "Today's reflections shape tomorrow's clarity.",
-                  "Be gentle with yourself as you explore your thoughts.",
-                  "Every word you write is a gift to your future self.",
-                  "Let your journal be a safe space for your authentic voice.",
-                ];
-                return quotes[Math.floor(new Date().getDate() % quotes.length)];
-              })()}
-            </p>
-            <p className="text-xs text-stone-500 mt-2">
-              {(() => {
-                if (streak === 0) {
-                  return "Start your journaling journey today — even a few words can make a difference.";
-                } else if (streak === 1) {
-                  return "You wrote yesterday! Keep the momentum going with today's entry.";
-                } else if (streak < 7) {
-                  return `You've been writing for ${streak} days straight. Amazing consistency — keep it up!`;
-                } else if (streak < 30) {
-                  return `Incredible! ${streak} days of journaling. Your dedication is inspiring.`;
-                } else {
-                  return `${streak} days of reflection! You've built a powerful habit. Keep writing.`;
-                }
-              })()}
-            </p>
-          </div>
-
+        <div className="flex items-center gap-1.5">
           <div
             className={cn(
-              "transition-all duration-200 rounded-2xl overflow-hidden shadow-xl shadow-slate-200/50 bg-white",
-              isLoading && "opacity-50 pointer-events-none",
+              "flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium",
+              saveStatus === "saved" && "bg-emerald-50 text-emerald-600",
+              saveStatus === "saving" && "bg-amber-50 text-amber-600",
+              saveStatus === "unsaved" && "bg-slate-100 text-slate-500",
             )}
           >
-            <MemoizedJournalTiptapEditor
-              ref={editorRef}
-              content={content}
-              onChange={handleContentChange}
-              skinStyles={{
-                editorPaperBg: currentSkin.editorPaperBg,
-                text: currentSkin.text,
-                mutedText: currentSkin.mutedText,
-              }}
-            />
+            {saveStatus === "saved" && <Cloud className="h-3 w-3" />}
+            {saveStatus === "saving" && <Loader2 className="h-3 w-3 animate-spin" />}
+            {saveStatus === "unsaved" && <CloudOff className="h-3 w-3" />}
+            <span className="hidden sm:inline">
+              {saveStatus === "saving" ? "Saving" : saveStatus === "saved" ? "Saved" : "Unsaved"}
+            </span>
           </div>
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setIsFullscreen(!isFullscreen)}>
+            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </Button>
+          {!isFullscreen && (
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setSettingsOpen(true)}>
+              <Settings className="h-4 w-4" />
+            </Button>
+          )}
+          <Button size="sm" onClick={handleManualSave} disabled={saveStatus === "saving"} className="h-8 rounded-lg bg-gradient-to-r from-stone-500 to-orange-600 hover:from-stone-600 hover:to-orange-700 text-xs px-3">
+            <Save className="h-3.5 w-3.5 mr-1" />
+            Save
+          </Button>
         </div>
-
-        {/* Right Panel - Date Details */}
-        {!isFullscreen && (
-          <div className="hidden lg:block h-full overflow-y-auto">
-            <JournalDateDetailsPanel
-              selectedDate={selectedDate}
-              wordCount={wordCount}
-              streak={streak}
-              skin={currentSkin}
-            />
-          </div>
-        )}
       </div>
+    </div>
+  );
+
+  const editorContent = (
+    <div className="flex flex-col min-w-0">
+      <div className="mb-4 px-1">
+        <h2 className="text-xl font-semibold text-slate-800">
+          {(() => {
+            const hour = new Date().getHours();
+            const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "";
+            const firstName = userName.split(" ")[0];
+            const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : hour < 21 ? "Good evening" : "Good night";
+            const emoji = hour < 12 ? "☀️" : hour < 17 ? "🌤️" : hour < 21 ? "🌅" : "🌙";
+            return firstName ? `${greeting}, ${firstName} ${emoji}` : `${greeting} ${emoji}`;
+          })()}
+        </h2>
+        <p className="text-sm text-slate-500 mt-1">
+          {(() => {
+            const quotes = [
+              "Every page you write is a step toward understanding yourself.",
+              "Your thoughts matter. Let them flow freely today.",
+              "Writing is the painting of the voice.",
+              "Today's reflections shape tomorrow's clarity.",
+              "Be gentle with yourself as you explore your thoughts.",
+              "Every word you write is a gift to your future self.",
+              "Let your journal be a safe space for your authentic voice.",
+            ];
+            return quotes[Math.floor(new Date().getDate() % quotes.length)];
+          })()}
+        </p>
+        <p className="text-xs text-stone-500 mt-2">
+          {(() => {
+            if (streak === 0) return "Start your journaling journey today — even a few words can make a difference.";
+            if (streak === 1) return "You wrote yesterday! Keep the momentum going with today's entry.";
+            if (streak < 7) return `You've been writing for ${streak} days straight. Amazing consistency — keep it up!`;
+            if (streak < 30) return `Incredible! ${streak} days of journaling. Your dedication is inspiring.`;
+            return `${streak} days of reflection! You've built a powerful habit. Keep writing.`;
+          })()}
+        </p>
+      </div>
+      <div className={cn("transition-all duration-200 rounded-2xl overflow-hidden shadow-xl shadow-slate-200/50 bg-white", isLoading && "opacity-50 pointer-events-none")}>
+        <MemoizedJournalTiptapEditor
+          ref={editorRef}
+          content={content}
+          onChange={handleContentChange}
+          skinStyles={{ editorPaperBg: currentSkin.editorPaperBg, text: currentSkin.text, mutedText: currentSkin.mutedText }}
+        />
+      </div>
+    </div>
+  );
+
+  // Fullscreen portal — renders at document.body to escape all parent stacking contexts
+  const fullscreenView = isFullscreen
+    ? createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex flex-col"
+          style={{ backgroundColor: currentSkin.pageBg, color: currentSkin.text }}
+        >
+          {journalHeader}
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4 max-w-4xl mx-auto w-full">
+            {editorContent}
+          </div>
+        </div>,
+        document.body,
+      )
+    : null;
+
+  return (
+    <div className="flex flex-col w-full h-full overflow-hidden" style={{ backgroundColor: currentSkin.pageBg, color: currentSkin.text }}>
+      {fullscreenView}
+
+      {!isFullscreen && (
+        <>
+          <PageHero
+            storageKey="journal_hero_src"
+            typeKey="journal_hero_type"
+            badge={PAGE_HERO_TEXT.journal.badge}
+            title={PAGE_HERO_TEXT.journal.title}
+            subtitle={PAGE_HERO_TEXT.journal.subtitle}
+          />
+          {journalHeader}
+          <div
+            className={cn(
+              "flex-1 min-h-0 grid gap-6 w-full px-4 sm:px-6 py-4 overflow-hidden",
+              leftPanelCollapsed ? "grid-cols-1 lg:grid-cols-[64px_1fr_280px]" : "grid-cols-1 lg:grid-cols-[280px_1fr_280px]",
+            )}
+          >
+            <div className={cn("hidden lg:flex flex-col transition-all duration-300 h-full overflow-y-auto", leftPanelCollapsed && "w-16")}>
+              <JournalSidebarPanel
+                selectedDate={selectedDate}
+                onDateSelect={setSelectedDate}
+                entries={entries}
+                onInsertPrompt={handleInsertPrompt}
+                skin={currentSkin}
+                showSection="calendar"
+                isCollapsed={leftPanelCollapsed}
+                onToggleCollapse={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
+                searchQuery={searchQuery}
+              />
+            </div>
+            {editorContent}
+            <div className="hidden lg:block h-full overflow-y-auto">
+              <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} />
+            </div>
+          </div>
+        </>
+      )}
 
       <JournalSettingsModal
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         template={template}
-        onTemplateChange={(t) => {
-          setTemplate(t);
-          localStorage.setItem("journal_template", JSON.stringify(t));
-        }}
+        onTemplateChange={(t) => { setTemplate(t); localStorage.setItem("journal_template", JSON.stringify(t)); }}
       />
-
       {showRecentEntries && (
         <JournalRecentEntriesView
           entries={entries}
-          onSelectEntry={(dateStr) => {
-            switchDate(parseISO(dateStr));
-            setShowRecentEntries(false);
-          }}
+          onSelectEntry={(dateStr) => { switchDate(parseISO(dateStr)); setShowRecentEntries(false); }}
           onClose={() => setShowRecentEntries(false)}
         />
       )}
-
       <JournalInsightsModal open={showInsights} onOpenChange={setShowInsights} />
     </div>
   );
