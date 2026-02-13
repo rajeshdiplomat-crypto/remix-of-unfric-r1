@@ -51,6 +51,7 @@ export default function Emotions() {
   const [pleasantness, setPleasantness] = useState(50);
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null);
   const [selectedQuadrant, setSelectedQuadrant] = useState<QuadrantType | null>(null);
+  const [checkinDate, setCheckinDate] = useState<Date>(new Date());
 
   // Context state
   const [note, setNote] = useState("");
@@ -117,6 +118,7 @@ export default function Emotions() {
         let emotion = row.emotion;
         let parsedContext: EmotionEntry["context"] = undefined;
         let showInJournal: boolean | undefined = undefined;
+        let strategy: string | undefined = undefined;
 
         try {
           const parsedData = JSON.parse(row.emotion);
@@ -124,6 +126,7 @@ export default function Emotions() {
           if (parsedData.emotion) emotion = parsedData.emotion;
           if (parsedData.context) parsedContext = parsedData.context;
           if (parsedData.showInJournal !== undefined) showInJournal = parsedData.showInJournal;
+          if (parsedData.strategy) strategy = parsedData.strategy;
         } catch {
           emotion = row.emotion;
         }
@@ -139,6 +142,7 @@ export default function Emotions() {
           note: row.notes || undefined,
           context: parsedContext,
           showInJournal,
+          strategy,
           entry_date: row.entry_date,
           created_at: row.created_at,
         };
@@ -200,7 +204,7 @@ export default function Emotions() {
         showInJournal: sendToJournal,
       });
 
-      const entryDate = format(new Date(), "yyyy-MM-dd");
+      const entryDate = format(checkinDate, "yyyy-MM-dd");
 
       const { data: insertedEmotion, error } = await supabase
         .from("emotions")
@@ -394,6 +398,7 @@ export default function Emotions() {
     setNote("");
     setContext({});
     setSendToJournal(false);
+    setCheckinDate(new Date());
     setActiveView("feel");
     setInternalView("feel");
   };
@@ -533,10 +538,12 @@ export default function Emotions() {
               energy={energy}
               pleasantness={pleasantness}
               selectedEmotion={selectedEmotion}
+              selectedDate={checkinDate}
               onEnergyChange={setEnergy}
               onPleasantnessChange={setPleasantness}
               onEmotionSelect={handleEmotionSelect}
               onContinue={handleContinueToContext}
+              onDateChange={setCheckinDate}
             />
           )}
 
