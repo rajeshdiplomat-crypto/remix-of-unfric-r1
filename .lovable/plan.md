@@ -1,34 +1,22 @@
 
+## Fix: Daily Progress Graph Edge-to-Edge with Aligned Date Labels
 
-## Recent Entries Gallery View for Journal
+### Problem
+The graph currently has `padding = 20` on both sides, causing the chart line and date labels to be inset from the container edges. The graph should stretch from edge to edge of the container, with date labels directly below each corresponding data point.
 
-Add a "Recent Entries" button in the Journal header bar that opens a full-screen overlay showing all journal entries as large page-style cards with dates, providing a visual gallery for quick navigation.
+### Solution
+Remove the horizontal padding from the SVG chart calculations so points span the full width (x = 0 to x = 1000), and the date labels naturally stay centered under their data points.
 
-### What You'll Get
-- A "Recent Entries" button in the top header bar (next to the date navigation)
-- Clicking it opens a full-screen overlay/page showing all entries as large card tiles
-- Each card displays the entry date, title, a content preview, mood indicator, and any images
-- Clicking a card navigates back to the editor with that date selected
+### Technical Changes
 
-### Technical Details
+**File: `src/pages/Habits.tsx` (lines ~1396-1513)**
 
-**1. Create `src/components/journal/JournalRecentEntriesView.tsx`**
-- A full-screen overlay component that receives the `entries` array and `onSelectEntry` callback
-- Displays entries in a responsive grid of large cards (2-3 columns on desktop, 1 on mobile)
-- Each card shows:
-  - Date prominently displayed (e.g., "Feb 12, 2026")
-  - Time of last edit
-  - Entry title (from H1)
-  - Content preview text (first ~100 chars)
-  - Mood color indicator dot
-  - First image from the entry (extracted from TipTap JSON) as a card thumbnail/cover
-- A close/back button at the top to return to the editor
-- Smooth enter/exit animations
+1. Set `padding = 0` (remove the 20px inset) so `chartWidth = 1000`
+2. Adjust x-coordinate calculation: use a small margin (e.g., half a step) so the first and last points aren't literally clipped at the SVG edge. Instead, compute x as: `x = (i + 0.5) / numDays * 1000` -- this centers each point within its "column" across the full width, similar to how a bar chart would center bars.
+3. Update the baseline `<line>` to span `x1="0"` to `x2="1000"`.
+4. Update the area path close to use the actual first/last point x values.
 
-**2. Modify `src/pages/Journal.tsx`**
-- Add a `showRecentEntries` boolean state
-- Add a "Recent Entries" button (with `BookOpen` icon) in the header bar, positioned near the date navigation area
-- When `showRecentEntries` is true, render the `JournalRecentEntriesView` overlay instead of (or on top of) the editor content
-- On card click: set `selectedDate` to that entry's date and close the overlay
-- Extract entry images using existing `extractImagesFromTiptapJSON` utility for card thumbnails
-
+This ensures:
+- The graph line stretches the full container width
+- Each date number sits precisely below its data point
+- No wasted whitespace on left/right edges
