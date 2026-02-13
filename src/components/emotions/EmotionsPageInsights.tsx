@@ -309,6 +309,7 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
                 <MostFrequentFeelings emotions={stats.topEmotions} total={stats.total} />
               </div>
               <MoodByTimeOfDay entries={filteredEntries} timezone={timezone} />
+              <WeeklyMoodJourney entries={filteredEntries} />
             </div>
           )}
 
@@ -515,6 +516,59 @@ function MoodByTimeOfDay({ entries, timezone }: { entries: EmotionEntry[]; timez
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+// Weekly Mood Journey - fills space below Time of Day
+function WeeklyMoodJourney({ entries }: { entries: EmotionEntry[] }) {
+  const journeyData = useMemo(() => {
+    const today = new Date();
+    const days: { date: string; label: string; emotions: string[]; quadrant: QuadrantType | null }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = subDays(today, i);
+      const dateStr = format(d, "yyyy-MM-dd");
+      const dayEntries = entries.filter((e) => e.entry_date === dateStr);
+      const emotions = dayEntries.map((e) => e.emotion);
+      const quadrantCounts: Record<QuadrantType, number> = {
+        "high-pleasant": 0, "high-unpleasant": 0, "low-unpleasant": 0, "low-pleasant": 0,
+      };
+      dayEntries.forEach((e) => { if (e.quadrant) quadrantCounts[e.quadrant]++; });
+      const dominant = dayEntries.length > 0
+        ? (Object.entries(quadrantCounts).sort((a, b) => b[1] - a[1])[0][0] as QuadrantType)
+        : null;
+      days.push({ date: dateStr, label: format(d, "EEE"), emotions, quadrant: dominant });
+    }
+    return days;
+  }, [entries]);
+
+  return (
+    <div className="p-4 rounded-xl bg-muted/30">
+      <h4 className="font-medium text-foreground mb-3 text-sm">Emotion Journey — Last 7 Days</h4>
+      <div className="flex items-center gap-1">
+        {journeyData.map((day, i) => (
+          <div key={day.date} className="flex-1 flex flex-col items-center gap-1.5">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold transition-all"
+              style={day.quadrant ? {
+                backgroundColor: QUADRANT_COLORS[day.quadrant],
+                color: "white",
+              } : { backgroundColor: "hsl(var(--muted))" }}
+            >
+              {day.emotions.length > 0 ? day.emotions.length : "—"}
+            </div>
+            {i < journeyData.length - 1 && (
+              <div className="hidden" /> 
+            )}
+            <span className="text-[9px] text-muted-foreground">{day.label}</span>
+            {day.emotions.length > 0 && (
+              <span className="text-[8px] text-muted-foreground truncate max-w-[50px] text-center">
+                {day.emotions[0]}
+              </span>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
