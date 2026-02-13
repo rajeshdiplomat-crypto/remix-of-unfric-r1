@@ -1393,8 +1393,7 @@ export default function Habits() {
                         [];
                       const numDays = Math.min(daysInMonth.length, 31);
                       const today = new Date();
-                      const padding = 20; // left/right padding so dots don't clip
-                      const chartWidth = 1000 - padding * 2;
+                      const chartWidth = 1000;
 
                       for (let i = 0; i < numDays; i++) {
                         const day = daysInMonth[i];
@@ -1426,7 +1425,7 @@ export default function Habits() {
                         });
 
                         const value = total > 0 ? (completed / total) * 100 : 0;
-                        const x = padding + (i / (numDays - 1)) * chartWidth;
+                        const x = ((i + 0.5) / numDays) * chartWidth;
                         const rawY = 160 - (value / 100) * 120;
                         const y = Math.max(20, Math.min(160, rawY));
                         dataPoints.push({ x, y, value, isPast, isFuture, dayNum: parseInt(format(day, "d")) });
@@ -1510,7 +1509,7 @@ export default function Habits() {
                           })}
 
                           {/* Baseline */}
-                          <line x1={padding} y1="180" x2={padding + chartWidth} y2="180" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 4" />
+                          <line x1="0" y1="180" x2="1000" y2="180" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 4" />
                         </>
                       );
                     })()}
