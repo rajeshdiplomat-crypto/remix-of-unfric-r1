@@ -607,6 +607,16 @@ export default function Journal() {
     };
   }, []);
 
+  // Escape key exits fullscreen
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [isFullscreen]);
+
   // Save before switching dates
   const switchDate = useCallback(
     async (newDate: Date) => {
@@ -640,7 +650,7 @@ export default function Journal() {
     <div
       className={cn(
         "flex flex-col w-full transition-all duration-300",
-        isFullscreen ? "fixed inset-0 z-50 bg-background" : "h-full overflow-hidden",
+        isFullscreen ? "fixed inset-0 z-50 bg-background overflow-hidden" : "h-full overflow-hidden",
       )}
       style={{
         backgroundColor: currentSkin.pageBg,
@@ -660,8 +670,8 @@ export default function Journal() {
       {/* Compact Header */}
       <div
         className={cn(
-          "sticky top-0 z-40 backdrop-blur-xl border-b",
-          isFullscreen ? "bg-white/95 dark:bg-slate-900/95" : "",
+          "sticky top-0 z-40 backdrop-blur-xl border-b border-border/40",
+          isFullscreen && "bg-background/95",
         )}
         style={{
           backgroundColor: isFullscreen ? undefined : `${currentSkin.pageBg}e6`,
@@ -783,7 +793,7 @@ export default function Journal() {
         className={cn(
           "flex-1 min-h-0 grid gap-6 w-full px-4 sm:px-6 py-4 transition-all duration-300 overflow-hidden",
           isFullscreen
-            ? "grid-cols-1 max-w-4xl mx-auto"
+            ? "grid-cols-1 max-w-4xl mx-auto overflow-y-auto"
             : leftPanelCollapsed
               ? "grid-cols-1 lg:grid-cols-[64px_1fr_280px]"
               : "grid-cols-1 lg:grid-cols-[280px_1fr_280px]",
