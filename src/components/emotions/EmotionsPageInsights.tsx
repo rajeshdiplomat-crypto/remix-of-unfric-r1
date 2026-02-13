@@ -13,12 +13,13 @@ import {
   Sun,
   Sunrise,
   Sunset,
+  Maximize2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { EmotionEntry, QUADRANTS, QuadrantType } from "./types";
-import { cn } from "@/lib/utils";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { EmotionEntry, QuadrantType } from "./types";
 import { format, subDays, differenceInCalendarDays, parseISO } from "date-fns";
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { useTimezone } from "@/hooks/useTimezone";
 import { getTimePeriodInTimezone, getStartOfTodayInTimezone } from "@/lib/formatDate";
 
@@ -255,6 +256,9 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
                 {filteredEntries.length === 0 && <p className="text-xs text-muted-foreground">No recent entries</p>}
               </div>
             </div>
+
+            {/* Check-in Frequency Graph */}
+            <CheckinFrequencyGraph entries={entries} />
 
             {/* Pattern Insights */}
             <PatternInsightsCompact entries={filteredEntries} />
@@ -689,5 +693,112 @@ function StrategiesInsights({ entries }: { entries: EmotionEntry[] }) {
         ))}
       </div>
     </div>
+  );
+}
+
+// Check-in Frequency Graph (7-day mini, expandable to 30-day full)
+function CheckinFrequencyGraph({ entries }: { entries: EmotionEntry[] }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const buildChartData = (days: number) => {
+    const today = new Date();
+    const data: { date: string; label: string; count: number }[] = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = subDays(today, i);
+      const dateStr = format(d, "yyyy-MM-dd");
+      const label = days <= 7 ? format(d, "EEE") : format(d, "MMM d");
+      const count = entries.filter((e) => e.entry_date === dateStr).length;
+      data.push({ date: dateStr, label, count });
+    }
+    return data;
+  };
+
+  const miniData = useMemo(() => buildChartData(7), [entries]);
+  const fullData = useMemo(() => buildChartData(30), [entries]);
+
+  const maxCount = Math.max(...miniData.map((d) => d.count), 1);
+
+  return (
+    <>
+      {/* Mini 7-day graph */}
+      <div
+        className="p-4 rounded-xl bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors group"
+        onClick={() => setExpanded(true)}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-foreground">Check-in Activity</span>
+          </div>
+          <Maximize2 className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
+        </div>
+        <div className="flex items-end gap-1 h-16">
+          {miniData.map((d) => (
+            <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
+              <div
+                className="w-full rounded-t-sm bg-primary/80 transition-all duration-300 min-h-[2px]"
+                style={{ height: `${Math.max((d.count / maxCount) * 100, 4)}%` }}
+              />
+              <span className="text-[8px] text-muted-foreground">{d.label}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-[10px] text-muted-foreground mt-2 text-center">Tap to expand • Last 7 days</p>
+      </div>
+
+      {/* Expanded 30-day Dialog */}
+      <Dialog open={expanded} onOpenChange={setExpanded}>
+        <DialogContent className="max-w-3xl rounded-3xl">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Check-in Frequency</h3>
+                <p className="text-sm text-muted-foreground">Last 30 days</p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-primary">
+                  {fullData.reduce((sum, d) => sum + d.count, 0)}
+                </p>
+                <p className="text-xs text-muted-foreground">total check-ins</p>
+              </div>
+            </div>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={fullData} margin={{ top: 5, right: 5, bottom: 20, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 10 }}
+                    className="fill-muted-foreground"
+                    angle={-45}
+                    textAnchor="end"
+                    height={50}
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    tick={{ fontSize: 10 }}
+                    className="fill-muted-foreground"
+                    width={30}
+                  />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const data = payload[0].payload;
+                      return (
+                        <div className="px-3 py-2 rounded-lg bg-background border border-border shadow-lg text-xs">
+                          <p className="font-medium">{data.date}</p>
+                          <p className="text-primary font-bold">{data.count} check-in{data.count !== 1 ? "s" : ""}</p>
+                        </div>
+                      );
+                    }}
+                  />
+                  <Bar dataKey="count" radius={[4, 4, 0, 0]} className="fill-primary" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
