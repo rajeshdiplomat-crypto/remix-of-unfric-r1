@@ -248,55 +248,52 @@ const SAMPLE_ACTIVITIES: ActivityItem[] = [
   },
 ];
 
-// Progress Ring Component
+// Progress Ring Component — Monochrome SaaS design
 function ProgressRing({
   progress,
-  size = 80,
-  strokeWidth = 8,
-  color = "teal",
+  size = 90,
+  strokeWidth = 6,
   label,
 }: {
   progress: number;
   size?: number;
   strokeWidth?: number;
-  color?: string;
   label: string;
 }) {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const offset = circumference - (progress / 100) * circumference;
 
-  const colorMap: Record<string, string> = {
-    teal: "#14b8a6",
-    green: "#22c55e",
-    blue: "#3b82f6",
-    purple: "#a855f7",
-    orange: "#f97316",
-  };
-
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center gap-2">
       <div className="relative" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="transform -rotate-90">
-          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#e5e7eb" strokeWidth={strokeWidth} />
           <circle
             cx={size / 2}
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke={colorMap[color] || colorMap.teal}
+            stroke="hsl(var(--border))"
+            strokeWidth={strokeWidth}
+          />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="hsl(var(--foreground))"
             strokeWidth={strokeWidth}
             strokeDasharray={circumference}
             strokeDashoffset={offset}
             strokeLinecap="round"
-            className="transition-all duration-500"
+            className="transition-all duration-700 ease-out"
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-lg font-bold text-slate-700 dark:text-white">{progress}%</span>
+          <span className="text-lg font-light text-foreground tracking-tight">{progress}%</span>
         </div>
       </div>
-      <p className="text-xs text-slate-500 mt-1 text-center">{label}</p>
+      <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground font-normal">{label}</p>
     </div>
   );
 }
@@ -1166,7 +1163,7 @@ export default function Habits() {
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col w-full flex-1 bg-slate-50 dark:bg-slate-950 min-h-screen">
+      <div className="flex flex-col w-full flex-1 bg-background min-h-screen">
         {/* Hero */}
         <PageHero
           storageKey="tracker_hero_src"
@@ -1178,253 +1175,111 @@ export default function Habits() {
 
         {/* Dashboard Content */}
         <div className="flex-1 px-4 py-4 flex flex-col overflow-y-auto">
-          {/* Top Section: Month + Progress Rings */}
+          {/* Top Section: Header + Stats Dashboard */}
           <div className="flex items-center justify-between mb-4 flex-shrink-0">
-            <h2 className="text-xl font-semibold text-slate-800 dark:text-white">Habits Tracker</h2>
-            <Button
-              onClick={openCreateDialog}
-              size="sm"
-              className="bg-emerald-500 hover:bg-emerald-600 text-white h-8 px-3 text-xs"
-            >
+            <h2 className="text-sm font-normal uppercase tracking-zara-wide text-foreground">Habits Tracker</h2>
+            <Button onClick={openCreateDialog} variant="outline" size="sm">
               <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Habit
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[160px_1fr_200px] gap-4 mb-4 flex-shrink-0">
-            {/* Month Card - Slim Design, Clickable */}
-            <Card
-              className="p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-cyan-50 dark:from-emerald-950/30 dark:to-cyan-950/30 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => {
-                const habitsTable = document.querySelector("[data-habits-table]");
-                habitsTable?.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
-            >
-              {/* Month Header */}
-              <div className="flex items-center justify-between mb-3">
+          <Card className="p-6 mb-4 flex-shrink-0">
+            {/* Month Navigator — inline, minimal */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCurrentMonth(addDays(startOfMonth(currentMonth), -1));
-                  }}
+                  className="h-7 w-7"
+                  onClick={() => setCurrentMonth(addDays(startOfMonth(currentMonth), -1))}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <h2 className="text-base font-semibold text-slate-800 dark:text-white">
-                  {format(currentMonth, "MMM-yy")}
-                </h2>
+                <span className="text-sm font-normal uppercase tracking-zara text-foreground min-w-[120px] text-center">
+                  {format(currentMonth, "MMMM yyyy")}
+                </span>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCurrentMonth(addDays(endOfMonth(currentMonth), 1));
-                  }}
+                  className="h-7 w-7"
+                  onClick={() => setCurrentMonth(addDays(endOfMonth(currentMonth), 1))}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
 
-              {/* Habits Stats */}
-              <div className="mb-3">
-                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-1.5">Habits</p>
-                <div className="grid grid-cols-3 gap-1 text-center">
-                  <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
-                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                      {activities.filter((a) => !a.isArchived).length}
-                    </p>
-                    <p className="text-[9px] text-slate-500">Active</p>
-                  </div>
-                  <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
-                    <p className="text-sm font-bold text-green-600 dark:text-green-400">
-                      {activities.filter((a) => a.isArchived).length}
-                    </p>
-                    <p className="text-[9px] text-slate-500">Done</p>
-                  </div>
-                  <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
-                    <p className="text-sm font-bold text-slate-600 dark:text-slate-300">{activities.length}</p>
-                    <p className="text-[9px] text-slate-500">Total</p>
-                  </div>
-                </div>
-              </div>
+              {/* Selected habit indicator */}
+              {selectedActivityId && (() => {
+                const selectedHabit = activities.find((a) => a.id === selectedActivityId);
+                const startDateStr = selectedHabit?.startDate
+                  ? format(parseISO(selectedHabit.startDate), "MMM d, yyyy")
+                  : "N/A";
+                const endDate = selectedHabit?.startDate
+                  ? computeEndDateForHabitDays(
+                      parseISO(selectedHabit.startDate),
+                      selectedHabit.frequencyPattern,
+                      selectedHabit.habitDays,
+                    )
+                  : null;
+                const endDateStr = endDate ? format(endDate, "MMM d, yyyy") : "N/A";
 
-              {/* Habit Days Stats - Active = Pending (Total - Done) */}
-              <div className="mb-3">
-                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-1.5">Habit Days</p>
-                <div className="grid grid-cols-3 gap-1 text-center">
-                  <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
-                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                      {activities.reduce((sum, a) => sum + a.habitDays, 0) - overallStats.totalCompleted}
-                    </p>
-                    <p className="text-[9px] text-slate-500">Pending</p>
-                  </div>
-                  <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
-                    <p className="text-sm font-bold text-green-600 dark:text-green-400">
-                      {overallStats.totalCompleted}
-                    </p>
-                    <p className="text-[9px] text-slate-500">Done</p>
-                  </div>
-                  <div className="p-1.5 rounded-md bg-white/60 dark:bg-slate-800/60">
-                    <p className="text-sm font-bold text-slate-600 dark:text-slate-300">
-                      {activities.reduce((sum, a) => sum + a.habitDays, 0)}
-                    </p>
-                    <p className="text-[9px] text-slate-500">Total</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Top Habits */}
-              <div>
-                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-1.5">Top Habits</p>
-                <div className="space-y-0.5">
-                  {topHabits.slice(0, 3).map((habit) => (
-                    <div
-                      key={habit.id}
-                      className="flex items-center gap-1.5 text-[10px] p-1 rounded bg-white/40 dark:bg-slate-800/40"
+                return (
+                  <div className="flex items-center gap-3 border-l-2 border-foreground pl-3">
+                    <div>
+                      <span className="text-xs font-normal text-foreground">{selectedHabit?.name}</span>
+                      <span className="text-[10px] text-muted-foreground ml-2">{startDateStr} → {endDateStr}</span>
+                    </div>
+                    <button
+                      onClick={() => setSelectedActivityId(null)}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      <span className="truncate flex-1 text-slate-600 dark:text-slate-400">{habit.name}</span>
-                      <span className="px-1 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium text-[9px]">
-                        {habit.completed}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Card>
-
-            {/* Progress Rings + Chart */}
-            <Card className="p-4 rounded-xl">
-              {/* Selected Habit Indicator */}
-              {selectedActivityId &&
-                (() => {
-                  const selectedHabit = activities.find((a) => a.id === selectedActivityId);
-                  const startDateStr = selectedHabit?.startDate
-                    ? format(parseISO(selectedHabit.startDate), "MMM d, yyyy")
-                    : "N/A";
-                  const endDate = selectedHabit?.startDate
-                    ? computeEndDateForHabitDays(
-                        parseISO(selectedHabit.startDate),
-                        selectedHabit.frequencyPattern,
-                        selectedHabit.habitDays,
-                      )
-                    : null;
-                  const endDateStr = endDate ? format(endDate, "MMM d, yyyy") : "N/A";
-
-                  return (
-                    <div className="mb-4 p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 h-[56px] flex flex-col justify-center">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-emerald-600 dark:text-emerald-400">Viewing:</span>
-                          <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                            {selectedHabit?.name || "Selected Habit"}
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => setSelectedActivityId(null)}
-                          className="text-xs px-2 py-1 rounded bg-emerald-100 dark:bg-emerald-800 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-200 transition-colors flex items-center gap-1"
-                        >
-                          <X className="h-3 w-3" /> Clear
-                        </button>
-                      </div>
-                      <div className="mt-1 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                        <span className="flex items-center gap-1">
-                          <CalendarIcon className="h-3 w-3" />
-                          {startDateStr} → {endDateStr}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-              {/* Motivational Quote when no habit is selected */}
-              {!selectedActivityId && (
-                <div className="mb-4 p-2 rounded-lg bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 h-[56px] flex flex-col justify-center">
-                  <div
-                    className={`text-left transition-opacity duration-500 ${quoteVisible ? "opacity-100" : "opacity-0"}`}
-                  >
-                    <p className="text-sm italic text-purple-700 dark:text-purple-300">
-                      "{MOTIVATIONAL_QUOTES[quoteIndex].text}"
-                    </p>
-                    <p className="text-xs text-purple-500 dark:text-purple-400 mt-1">
-                      — {MOTIVATIONAL_QUOTES[quoteIndex].author}
-                    </p>
+                      <X className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                </div>
-              )}
-
-              {/* Progress Rings - TOTAL GOAL always visible */}
-              {(() => {
-                const selectedHabit = selectedActivityId ? activities.find((a) => a.id === selectedActivityId) : null;
-
-                let totalGoalPercent = 0;
-                if (selectedHabit) {
-                  // Show selected habit's progress
-                  const totalCompletions = Object.keys(selectedHabit.completions || {}).length;
-                  totalGoalPercent = Math.round((totalCompletions / selectedHabit.habitDays) * 100);
-                } else {
-                  // Show overall progress (completed / total)
-                  const totalCompleted = overallStats.totalCompleted;
-                  const totalAll = overallStats.totalCompleted + overallStats.totalRemaining;
-                  totalGoalPercent = totalAll > 0 ? Math.round((totalCompleted / totalAll) * 100) : 0;
-                }
-
-                return (
-                  <div className="flex justify-around mb-4 flex-wrap gap-2">
-                    <ProgressRing progress={Math.min(totalGoalPercent, 100)} color="orange" label="TOTAL GOAL" />
-                    <ProgressRing progress={overallStats.momentum} color="teal" label="MOMENTUM" />
-                    <ProgressRing progress={overallStats.dailyProgress} color="green" label="DAILY" />
-                    <ProgressRing progress={overallStats.weeklyProgress} color="blue" label="WEEKLY" />
-                    <ProgressRing progress={overallStats.monthlyProgress} color="purple" label="OVERALL" />
-                  </div>
-                );
-              })()}
-
-            </Card>
-
-            {/* Right Sidebar: Habit Image Display */}
-            <div className="space-y-4">
-              {(() => {
-                const selectedHabit = selectedActivityId ? activities.find((a) => a.id === selectedActivityId) : null;
-                const habitImage = selectedHabit ? (selectedHabit.coverImageUrl || loadActivityImage(selectedHabit.id)) : null;
-
-                return (
-                  <Card className="rounded-xl overflow-hidden h-full min-h-[400px]">
-                    <div className="relative w-full h-full">
-                      {habitImage ? (
-                        // Show selected habit's image
-                        <>
-                          <img
-                            src={habitImage}
-                            alt={selectedHabit?.name || "Habit"}
-                            className="w-full h-full object-cover"
-                          />
-                          {/* Overlay with habit name */}
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3">
-                            <p className="text-white font-semibold text-sm truncate">{selectedHabit?.name}</p>
-                            <p className="text-white/70 text-xs capitalize">{selectedHabit?.category}</p>
-                          </div>
-                        </>
-                      ) : (
-                        // Show default placeholder
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-emerald-500/10 to-purple-500/10">
-                          <Target className="h-20 w-20 text-emerald-400/30 mb-4" />
-                          <p className="text-sm text-slate-400 text-center px-4">
-                            {selectedHabit ? "No cover image" : "Select a habit to view"}
-                          </p>
-                          {selectedHabit && (
-                            <p className="text-xs text-slate-500 text-center px-4 mt-1">Add image in habit settings</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </Card>
                 );
               })()}
             </div>
-          </div>
+
+            {/* Progress Rings — centered row */}
+            {(() => {
+              const selectedHabit = selectedActivityId ? activities.find((a) => a.id === selectedActivityId) : null;
+
+              let totalGoalPercent = 0;
+              if (selectedHabit) {
+                const totalCompletions = Object.keys(selectedHabit.completions || {}).length;
+                totalGoalPercent = Math.round((totalCompletions / selectedHabit.habitDays) * 100);
+              } else {
+                const totalCompleted = overallStats.totalCompleted;
+                const totalAll = overallStats.totalCompleted + overallStats.totalRemaining;
+                totalGoalPercent = totalAll > 0 ? Math.round((totalCompleted / totalAll) * 100) : 0;
+              }
+
+              return (
+                <div className="flex justify-center gap-8 lg:gap-12 mb-6 flex-wrap">
+                  <ProgressRing progress={Math.min(totalGoalPercent, 100)} label="Total Goal" />
+                  <ProgressRing progress={overallStats.momentum} label="Momentum" />
+                  <ProgressRing progress={overallStats.dailyProgress} label="Daily" />
+                  <ProgressRing progress={overallStats.weeklyProgress} label="Weekly" />
+                  <ProgressRing progress={overallStats.monthlyProgress} label="Overall" />
+                </div>
+              );
+            })()}
+
+            {/* Stats summary line */}
+            <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground flex-wrap">
+              <span>{activities.filter((a) => !a.isArchived).length} Active</span>
+              <span className="text-border">·</span>
+              <span>{activities.filter((a) => a.isArchived).length} Done</span>
+              <span className="text-border">·</span>
+              <span>{activities.length} Total</span>
+              <span className="text-border">·</span>
+              <span>{activities.reduce((sum, a) => sum + a.habitDays, 0) - overallStats.totalCompleted} Pending</span>
+              <span className="text-border">·</span>
+              <span>{overallStats.totalCompleted} Completed</span>
+              <span className="text-border">·</span>
+              <span>{activities.reduce((sum, a) => sum + a.habitDays, 0)} Days</span>
+            </div>
+          </Card>
 
           {/* Habits Grid */}
           <Card className="rounded-xl overflow-hidden" data-habits-table>
