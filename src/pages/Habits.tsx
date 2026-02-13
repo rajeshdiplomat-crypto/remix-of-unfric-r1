@@ -1340,19 +1340,61 @@ export default function Habits() {
               );
             })()}
 
-            {/* Stats summary line */}
-            <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground flex-wrap">
-              <span>{activities.filter((a) => !a.isArchived).length} Active</span>
-              <span className="text-border">·</span>
-              <span>{activities.filter((a) => a.isArchived).length} Done</span>
-              <span className="text-border">·</span>
-              <span>{activities.length} Total</span>
-              <span className="text-border">·</span>
-              <span>{activities.reduce((sum, a) => sum + a.habitDays, 0) - overallStats.totalCompleted} Pending</span>
-              <span className="text-border">·</span>
-              <span>{overallStats.totalCompleted} Completed</span>
-              <span className="text-border">·</span>
-              <span>{activities.reduce((sum, a) => sum + a.habitDays, 0)} Days</span>
+            {/* Stats summary — Habits / Habit Days / Top Habits */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+              {/* Habits */}
+              <div>
+                <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground mb-2">Habits</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="flex flex-col items-center p-2 rounded-lg border border-border bg-muted/20">
+                    <span className="text-lg font-light text-foreground">{activities.filter((a) => !a.isArchived).length}</span>
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-zara">Active</span>
+                  </div>
+                  <div className="flex flex-col items-center p-2 rounded-lg border border-border bg-muted/20">
+                    <span className="text-lg font-light text-foreground">{activities.filter((a) => a.isArchived).length}</span>
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-zara">Done</span>
+                  </div>
+                  <div className="flex flex-col items-center p-2 rounded-lg border border-border bg-muted/20">
+                    <span className="text-lg font-light text-foreground">{activities.length}</span>
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-zara">Total</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Habit Days */}
+              <div>
+                <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground mb-2">Habit Days</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="flex flex-col items-center p-2 rounded-lg border border-border bg-muted/20">
+                    <span className="text-lg font-light text-foreground">{activities.reduce((sum, a) => sum + a.habitDays, 0) - overallStats.totalCompleted}</span>
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-zara">Pending</span>
+                  </div>
+                  <div className="flex flex-col items-center p-2 rounded-lg border border-border bg-muted/20">
+                    <span className="text-lg font-light text-foreground">{overallStats.totalCompleted}</span>
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-zara">Done</span>
+                  </div>
+                  <div className="flex flex-col items-center p-2 rounded-lg border border-border bg-muted/20">
+                    <span className="text-lg font-light text-foreground">{activities.reduce((sum, a) => sum + a.habitDays, 0)}</span>
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-zara">Total</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Top Habits */}
+              <div>
+                <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground mb-2">Top Habits</p>
+                <div className="space-y-1.5">
+                  {topHabits.slice(0, 3).map((habit) => (
+                    <div key={habit.id} className="flex items-center justify-between px-2 py-1 rounded-lg border border-border bg-muted/20">
+                      <span className="text-xs text-foreground truncate max-w-[140px]">{habit.name}</span>
+                      <span className="text-xs font-medium text-foreground ml-2">{habit.streak}</span>
+                    </div>
+                  ))}
+                  {topHabits.length === 0 && (
+                    <p className="text-[10px] text-muted-foreground italic">No habits yet</p>
+                  )}
+                </div>
+              </div>
             </div>
           </Card>
 
