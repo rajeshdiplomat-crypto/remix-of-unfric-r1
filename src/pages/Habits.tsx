@@ -1385,14 +1385,16 @@ export default function Habits() {
               {/* Smooth Wave Area Chart */}
               <div className="mt-4 p-4 rounded-lg bg-gradient-to-b from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20">
                 <p className="text-xs font-medium text-slate-500 mb-3 text-center">DAILY PROGRESS</p>
-                <div className="relative h-32">
-                  <svg viewBox="0 0 1000 200" className="w-full h-full" preserveAspectRatio="none">
+                <div className="relative">
+                  <svg viewBox="0 0 1000 240" className="w-full" style={{ height: 160 }} preserveAspectRatio="xMidYMid meet">
                     {(() => {
                       // Calculate data points
-                      const dataPoints: { x: number; y: number; value: number; isPast: boolean; isFuture: boolean }[] =
+                      const dataPoints: { x: number; y: number; value: number; isPast: boolean; isFuture: boolean; dayNum: number }[] =
                         [];
                       const numDays = Math.min(daysInMonth.length, 31);
                       const today = new Date();
+                      const padding = 20; // left/right padding so dots don't clip
+                      const chartWidth = 1000 - padding * 2;
 
                       for (let i = 0; i < numDays; i++) {
                         const day = daysInMonth[i];
@@ -1402,7 +1404,6 @@ export default function Habits() {
                         const isPast = isBefore(day, today) || isToday(day);
                         const isFuture = isAfter(day, today);
 
-                        // Filter by selected activity if one is selected
                         const chartActivities = selectedActivityId
                           ? activities.filter((a) => a.id === selectedActivityId)
                           : activities;
@@ -1410,7 +1411,6 @@ export default function Habits() {
                         let completed = 0;
                         let total = 0;
                         chartActivities.forEach((a) => {
-                          // Check if day is within habit's valid date range
                           const habitStartDate = parseISO(a.startDate);
                           const habitEndDate = computeEndDateForHabitDays(
                             habitStartDate,
@@ -1425,46 +1425,34 @@ export default function Habits() {
                           }
                         });
 
-                        // Only show value if there are habits scheduled for this day
-                        // For future days within range, show 50% as placeholder; for days with no scheduled habits, show 0
                         const value = total > 0 ? (completed / total) * 100 : 0;
-                        const x = (i / (numDays - 1)) * 1000;
-                        // Clamp Y to stay within bounds (min 20, max 180)
-                        const rawY = 180 - (value / 100) * 140;
-                        const y = Math.max(20, Math.min(180, rawY));
-                        dataPoints.push({ x, y, value, isPast, isFuture });
+                        const x = padding + (i / (numDays - 1)) * chartWidth;
+                        const rawY = 160 - (value / 100) * 120;
+                        const y = Math.max(20, Math.min(160, rawY));
+                        dataPoints.push({ x, y, value, isPast, isFuture, dayNum: parseInt(format(day, "d")) });
                       }
 
                       if (dataPoints.length < 2) return null;
 
-                      // Create smooth bezier curve path with gentle curves
                       const createSmoothPath = (points: { x: number; y: number }[]) => {
                         if (points.length < 2) return "";
-
                         let path = `M ${points[0].x} ${points[0].y}`;
-
                         for (let i = 0; i < points.length - 1; i++) {
                           const current = points[i];
                           const next = points[i + 1];
-
-                          // Use simple quadratic bezier for gentler curves
                           const midX = (current.x + next.x) / 2;
                           const midY = (current.y + next.y) / 2;
-
-                          // Add subtle curve control
                           path += ` Q ${current.x + (midX - current.x) * 0.5} ${current.y}, ${midX} ${midY}`;
                           path += ` Q ${midX + (next.x - midX) * 0.5} ${next.y}, ${next.x} ${next.y}`;
                         }
-
                         return path;
                       };
 
                       const linePath = createSmoothPath(dataPoints);
-                      const areaPath = `${linePath} L 1000 200 L 0 200 Z`;
+                      const areaPath = `${linePath} L ${dataPoints[dataPoints.length - 1].x} 180 L ${dataPoints[0].x} 180 Z`;
 
                       return (
                         <>
-                          {/* Gradient definition */}
                           <defs>
                             <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="0%" stopColor="#5eead4" stopOpacity="0.6" />
@@ -1472,10 +1460,7 @@ export default function Habits() {
                             </linearGradient>
                           </defs>
 
-                          {/* Area fill */}
                           <path d={areaPath} fill="url(#areaGradient)" className="transition-all duration-500" />
-
-                          {/* Line stroke */}
                           <path
                             d={linePath}
                             fill="none"
@@ -1490,26 +1475,42 @@ export default function Habits() {
                           {dataPoints.map((point, i) => {
                             const isMissed = point.isPast && point.value === 0;
                             const pointColor = point.isFuture
-                              ? "#94a3b8" // gray for future
+                              ? "#94a3b8"
                               : isMissed
-                                ? "#ef4444" // red for missed
-                                : "#14b8a6"; // teal for completed
+                                ? "#ef4444"
+                                : "#14b8a6";
 
                             return (
-                              <circle
-                                key={i}
-                                cx={point.x}
-                                cy={point.y}
-                                r={isMissed ? "6" : "4"}
-                                fill={pointColor}
-                                stroke="white"
-                                strokeWidth="2"
-                                className="transition-all duration-300"
-                              >
-                                <title>{`Day ${i + 1}: ${Math.round(point.value)}%${isMissed ? " (Missed)" : point.isFuture ? " (Upcoming)" : ""}`}</title>
-                              </circle>
+                              <g key={i}>
+                                <circle
+                                  cx={point.x}
+                                  cy={point.y}
+                                  r={isMissed ? "6" : "4"}
+                                  fill={pointColor}
+                                  stroke="white"
+                                  strokeWidth="2"
+                                  className="transition-all duration-300"
+                                >
+                                  <title>{`Day ${point.dayNum}: ${Math.round(point.value)}%${isMissed ? " (Missed)" : point.isFuture ? " (Upcoming)" : ""}`}</title>
+                                </circle>
+                                {/* Day label on x-axis */}
+                                <text
+                                  x={point.x}
+                                  y={205}
+                                  textAnchor="middle"
+                                  fontSize={numDays > 28 ? "18" : "20"}
+                                  fill={isToday(daysInMonth[i]) ? "#14b8a6" : "#94a3b8"}
+                                  fontWeight={isToday(daysInMonth[i]) ? "bold" : "normal"}
+                                  className="select-none"
+                                >
+                                  {point.dayNum}
+                                </text>
+                              </g>
                             );
                           })}
+
+                          {/* Baseline */}
+                          <line x1={padding} y1="180" x2={padding + chartWidth} y2="180" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 4" />
                         </>
                       );
                     })()}
