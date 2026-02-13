@@ -168,9 +168,9 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
       </div>
 
       {/* 2-Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-5 items-start">
         {/* LEFT: Why + Overview (Narrow) */}
-        <div className="space-y-4">
+        <div className="space-y-4 lg:self-stretch flex flex-col">
           {/* Why Track - Plain Text at TOP */}
           <div className="px-1">
             <h3 className="font-semibold text-foreground mb-2 text-sm">Why Track Your Moods?</h3>
@@ -197,7 +197,7 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
           </div>
 
           {/* Overview Box at BOTTOM */}
-          <div className="p-5 rounded-2xl bg-card border border-border">
+          <div className="p-5 rounded-2xl bg-card border border-border flex-1">
             <h3 className="font-semibold text-foreground mb-4 uppercase text-xs tracking-wider">Overview</h3>
 
             {/* Stats Grid */}
@@ -268,7 +268,7 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
         </div>
 
         {/* RIGHT: Moods/Context (Wide) */}
-        <div className="p-5 rounded-2xl bg-card border border-border">
+        <div className="p-5 rounded-2xl bg-card border border-border lg:self-stretch">
           {/* Tab Toggle */}
           <div className="flex gap-1 p-1 bg-muted/50 rounded-xl mb-5">
             <button
@@ -311,7 +311,7 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
                 <MostFrequentFeelings emotions={stats.topEmotions} total={stats.total} />
               </div>
               <MoodByTimeOfDay entries={filteredEntries} timezone={timezone} />
-              <MoodStreakCalendar entries={filteredEntries} />
+              <EmotionalBalance entries={filteredEntries} />
             </div>
           )}
 
@@ -523,50 +523,47 @@ function MoodByTimeOfDay({ entries, timezone }: { entries: EmotionEntry[]; timez
   );
 }
 
-// Mood Streak Calendar - shows last 28 days as a heatmap grid
-function MoodStreakCalendar({ entries }: { entries: EmotionEntry[] }) {
-  const calendarData = useMemo(() => {
-    const today = new Date();
-    const days: { date: string; label: string; count: number; quadrant: QuadrantType | null }[] = [];
-    for (let i = 27; i >= 0; i--) {
-      const d = subDays(today, i);
-      const dateStr = format(d, "yyyy-MM-dd");
-      const dayEntries = entries.filter((e) => e.entry_date === dateStr);
-      const quadrantCounts: Record<QuadrantType, number> = {
-        "high-pleasant": 0, "high-unpleasant": 0, "low-unpleasant": 0, "low-pleasant": 0,
-      };
-      dayEntries.forEach((e) => { if (e.quadrant) quadrantCounts[e.quadrant]++; });
-      const dominant = dayEntries.length > 0
-        ? (Object.entries(quadrantCounts).sort((a, b) => b[1] - a[1])[0][0] as QuadrantType)
-        : null;
-      days.push({ date: dateStr, label: format(d, "d"), count: dayEntries.length, quadrant: dominant });
-    }
-    return days;
+// Emotional Balance - pleasant vs unpleasant ratio with trend
+function EmotionalBalance({ entries }: { entries: EmotionEntry[] }) {
+  const balance = useMemo(() => {
+    const pleasant = entries.filter((e) => e.quadrant === "high-pleasant" || e.quadrant === "low-pleasant").length;
+    const unpleasant = entries.filter((e) => e.quadrant === "high-unpleasant" || e.quadrant === "low-unpleasant").length;
+    const total = pleasant + unpleasant;
+    const ratio = total > 0 ? Math.round((pleasant / total) * 100) : 50;
+    const highEnergy = entries.filter((e) => e.quadrant === "high-pleasant" || e.quadrant === "high-unpleasant").length;
+    const energyRatio = total > 0 ? Math.round((highEnergy / total) * 100) : 50;
+    return { pleasant, unpleasant, total, ratio, energyRatio };
   }, [entries]);
 
-  const activeDays = calendarData.filter((d) => d.count > 0).length;
+  if (balance.total === 0) return null;
 
   return (
     <div className="p-4 rounded-xl bg-muted/30">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="font-medium text-foreground text-sm">28-Day Streak</h4>
-        <span className="text-[10px] text-muted-foreground">{activeDays}/28 active</span>
-      </div>
-      <div className="grid grid-cols-7 gap-1">
-        {calendarData.map((day) => (
-          <div
-            key={day.date}
-            className="aspect-square rounded-sm flex items-center justify-center text-[9px] font-medium transition-all"
-            style={day.quadrant ? {
-              backgroundColor: QUADRANT_COLORS[day.quadrant],
-              color: "white",
-              opacity: Math.min(0.4 + day.count * 0.3, 1),
-            } : { backgroundColor: "hsl(var(--muted))" }}
-            title={`${day.date}: ${day.count} check-in${day.count !== 1 ? "s" : ""}`}
-          >
-            {day.label}
+      <h4 className="font-medium text-foreground mb-3 text-sm">Emotional Balance</h4>
+      <div className="space-y-3">
+        <div>
+          <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
+            <span>Pleasant ({balance.pleasant})</span>
+            <span>Unpleasant ({balance.unpleasant})</span>
           </div>
-        ))}
+          <div className="h-2.5 rounded-full overflow-hidden flex bg-muted">
+            <div className="h-full rounded-l-full" style={{ width: `${balance.ratio}%`, backgroundColor: QUADRANT_COLORS["high-pleasant"] }} />
+            <div className="h-full rounded-r-full" style={{ width: `${100 - balance.ratio}%`, backgroundColor: QUADRANT_COLORS["high-unpleasant"] }} />
+          </div>
+        </div>
+        <div>
+          <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
+            <span>High Energy ({balance.energyRatio}%)</span>
+            <span>Low Energy ({100 - balance.energyRatio}%)</span>
+          </div>
+          <div className="h-2.5 rounded-full overflow-hidden flex bg-muted">
+            <div className="h-full rounded-l-full" style={{ width: `${balance.energyRatio}%`, backgroundColor: QUADRANT_COLORS["low-pleasant"] }} />
+            <div className="h-full rounded-r-full" style={{ width: `${100 - balance.energyRatio}%`, backgroundColor: QUADRANT_COLORS["low-unpleasant"] }} />
+          </div>
+        </div>
+        <p className="text-[10px] text-muted-foreground text-center pt-1">
+          {balance.ratio >= 60 ? "✨ You're trending positive!" : balance.ratio <= 40 ? "💙 Consider a regulation strategy" : "⚖️ Balanced emotional range"}
+        </p>
       </div>
     </div>
   );
