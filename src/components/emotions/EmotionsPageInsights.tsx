@@ -261,7 +261,9 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
             <CheckinFrequencyGraph entries={entries} />
 
             {/* Pattern Insights */}
-            <PatternInsightsCompact entries={filteredEntries} />
+            <div className="mt-4">
+              <PatternInsightsCompact entries={filteredEntries} />
+            </div>
           </div>
         </div>
 
@@ -309,7 +311,7 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
                 <MostFrequentFeelings emotions={stats.topEmotions} total={stats.total} />
               </div>
               <MoodByTimeOfDay entries={filteredEntries} timezone={timezone} />
-              <WeeklyMoodJourney entries={filteredEntries} />
+              <MoodStreakCalendar entries={filteredEntries} />
             </div>
           )}
 
@@ -521,16 +523,15 @@ function MoodByTimeOfDay({ entries, timezone }: { entries: EmotionEntry[]; timez
   );
 }
 
-// Weekly Mood Journey - fills space below Time of Day
-function WeeklyMoodJourney({ entries }: { entries: EmotionEntry[] }) {
-  const journeyData = useMemo(() => {
+// Mood Streak Calendar - shows last 28 days as a heatmap grid
+function MoodStreakCalendar({ entries }: { entries: EmotionEntry[] }) {
+  const calendarData = useMemo(() => {
     const today = new Date();
-    const days: { date: string; label: string; emotions: string[]; quadrant: QuadrantType | null }[] = [];
-    for (let i = 6; i >= 0; i--) {
+    const days: { date: string; label: string; count: number; quadrant: QuadrantType | null }[] = [];
+    for (let i = 27; i >= 0; i--) {
       const d = subDays(today, i);
       const dateStr = format(d, "yyyy-MM-dd");
       const dayEntries = entries.filter((e) => e.entry_date === dateStr);
-      const emotions = dayEntries.map((e) => e.emotion);
       const quadrantCounts: Record<QuadrantType, number> = {
         "high-pleasant": 0, "high-unpleasant": 0, "low-unpleasant": 0, "low-pleasant": 0,
       };
@@ -538,35 +539,32 @@ function WeeklyMoodJourney({ entries }: { entries: EmotionEntry[] }) {
       const dominant = dayEntries.length > 0
         ? (Object.entries(quadrantCounts).sort((a, b) => b[1] - a[1])[0][0] as QuadrantType)
         : null;
-      days.push({ date: dateStr, label: format(d, "EEE"), emotions, quadrant: dominant });
+      days.push({ date: dateStr, label: format(d, "d"), count: dayEntries.length, quadrant: dominant });
     }
     return days;
   }, [entries]);
 
+  const activeDays = calendarData.filter((d) => d.count > 0).length;
+
   return (
     <div className="p-4 rounded-xl bg-muted/30">
-      <h4 className="font-medium text-foreground mb-3 text-sm">Emotion Journey — Last 7 Days</h4>
-      <div className="flex items-center gap-1">
-        {journeyData.map((day, i) => (
-          <div key={day.date} className="flex-1 flex flex-col items-center gap-1.5">
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold transition-all"
-              style={day.quadrant ? {
-                backgroundColor: QUADRANT_COLORS[day.quadrant],
-                color: "white",
-              } : { backgroundColor: "hsl(var(--muted))" }}
-            >
-              {day.emotions.length > 0 ? day.emotions.length : "—"}
-            </div>
-            {i < journeyData.length - 1 && (
-              <div className="hidden" /> 
-            )}
-            <span className="text-[9px] text-muted-foreground">{day.label}</span>
-            {day.emotions.length > 0 && (
-              <span className="text-[8px] text-muted-foreground truncate max-w-[50px] text-center">
-                {day.emotions[0]}
-              </span>
-            )}
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="font-medium text-foreground text-sm">28-Day Streak</h4>
+        <span className="text-[10px] text-muted-foreground">{activeDays}/28 active</span>
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {calendarData.map((day) => (
+          <div
+            key={day.date}
+            className="aspect-square rounded-sm flex items-center justify-center text-[9px] font-medium transition-all"
+            style={day.quadrant ? {
+              backgroundColor: QUADRANT_COLORS[day.quadrant],
+              color: "white",
+              opacity: Math.min(0.4 + day.count * 0.3, 1),
+            } : { backgroundColor: "hsl(var(--muted))" }}
+            title={`${day.date}: ${day.count} check-in${day.count !== 1 ? "s" : ""}`}
+          >
+            {day.label}
           </div>
         ))}
       </div>
@@ -641,23 +639,23 @@ function ContextInsights({ entries }: { entries: EmotionEntry[] }) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       {sections.map((section) => {
         const Icon = section.icon;
         return (
           <div key={section.key}>
-            <div className="flex items-center gap-2 mb-3">
-              <Icon className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">{section.label}</span>
+            <div className="flex items-center gap-2 mb-2">
+              <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs font-medium text-foreground">{section.label}</span>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
               {section.data.map((item) => (
                 <div
                   key={item.label}
-                  className="p-3 rounded-lg bg-muted/30 border-l-3"
+                  className="p-2.5 rounded-lg bg-muted/30 border-l-3"
                   style={{ borderLeftColor: QUADRANT_COLORS[item.dominantMood], borderLeftWidth: 3 }}
                 >
-                  <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-medium text-foreground truncate">{item.label}</span>
                     <span className="text-[10px] text-muted-foreground">{item.count}</span>
                   </div>
@@ -786,16 +784,19 @@ function CheckinFrequencyGraph({ entries }: { entries: EmotionEntry[] }) {
           </div>
           <Maximize2 className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
         </div>
-        <div className="flex items-end gap-1 h-16">
-          {miniData.map((d) => (
-            <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
-              <div
-                className="w-full rounded-t-sm bg-primary/80 transition-all duration-300 min-h-[2px]"
-                style={{ height: `${Math.max((d.count / maxCount) * 100, 4)}%` }}
-              />
-              <span className="text-[8px] text-muted-foreground">{d.label}</span>
-            </div>
-          ))}
+        <div className="flex items-end gap-1" style={{ height: 64 }}>
+          {miniData.map((d) => {
+            const barH = maxCount > 0 ? Math.max((d.count / maxCount) * 56, 3) : 3;
+            return (
+              <div key={d.date} className="flex-1 flex flex-col items-center justify-end h-full">
+                <div
+                  className="w-full rounded-t-sm bg-primary/80 transition-all duration-300"
+                  style={{ height: barH }}
+                />
+                <span className="text-[8px] text-muted-foreground mt-1">{d.label}</span>
+              </div>
+            );
+          })}
         </div>
         <p className="text-[10px] text-muted-foreground mt-2 text-center">Tap to expand • Last 7 days</p>
       </div>
