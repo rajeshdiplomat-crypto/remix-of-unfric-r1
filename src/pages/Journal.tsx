@@ -13,14 +13,13 @@ import {
   Cloud,
   CloudOff,
   Calendar,
-  PenLine,
   Heart,
   Smile,
   Meh,
   Frown,
-  TrendingUp,
   Search,
   X,
+  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +38,7 @@ import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { JournalEntry, JournalTemplate, JOURNAL_SKINS, DEFAULT_TEMPLATE } from "@/components/journal/types";
 import { JournalRecentEntriesView } from "@/components/journal/JournalRecentEntriesView";
+import { JournalInsightsModal } from "@/components/journal/JournalInsightsModal";
 import { cn } from "@/lib/utils";
 
 interface JournalAnswer {
@@ -155,6 +155,7 @@ export default function Journal() {
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showRecentEntries, setShowRecentEntries] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
 
   const [template, setTemplate] = useState<JournalTemplate>(() => {
     const saved = localStorage.getItem("journal_template");
@@ -638,13 +639,12 @@ export default function Journal() {
   return (
     <div
       className={cn(
-        "flex flex-col w-full flex-1 transition-all duration-300",
+        "flex flex-col w-full h-full overflow-hidden transition-all duration-300",
         isFullscreen && "fixed inset-0 z-50 overflow-auto",
       )}
       style={{
         backgroundColor: currentSkin.pageBg,
         color: currentSkin.text,
-        minHeight: "100vh",
       }}
     >
       {!isFullscreen && (
@@ -695,6 +695,16 @@ export default function Journal() {
               title="Recent Entries"
             >
               <BookOpen className="h-4 w-4" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-lg"
+              onClick={() => setShowInsights(true)}
+              title="Journal Insights"
+            >
+              <BarChart3 className="h-4 w-4" />
             </Button>
           </div>
 
@@ -771,9 +781,9 @@ export default function Journal() {
       {/* Content Area */}
       <div
         className={cn(
-          "flex-1 grid gap-6 w-full px-4 sm:px-6 py-4 transition-all duration-300 overflow-hidden",
+          "flex-1 min-h-0 grid gap-6 w-full px-4 sm:px-6 py-4 transition-all duration-300",
           isFullscreen
-            ? "grid-cols-1 max-w-4xl mx-auto"
+            ? "grid-cols-1 max-w-4xl mx-auto overflow-y-auto"
             : leftPanelCollapsed
               ? "grid-cols-1 lg:grid-cols-[64px_1fr_280px]"
               : "grid-cols-1 lg:grid-cols-[280px_1fr_280px]",
@@ -896,6 +906,8 @@ export default function Journal() {
           onClose={() => setShowRecentEntries(false)}
         />
       )}
+
+      <JournalInsightsModal open={showInsights} onOpenChange={setShowInsights} />
     </div>
   );
 }
