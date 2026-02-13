@@ -1,7 +1,10 @@
 import { Users, Calendar } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { EmotionEntry } from "./types";
+import { RecentEntriesList } from "./RecentEntriesList";
+import { EmotionCalendarSidebar } from "./EmotionCalendarSidebar";
 
 export type EmotionsView = "feel" | "regulate" | "insights";
 
@@ -11,16 +14,20 @@ interface EmotionsNavigationProps {
     regulate: boolean;
   };
   onViewChange: (view: EmotionsView) => void;
-  onOpenRecentEntries: () => void;
-  onOpenCalendar: () => void;
+  entries: EmotionEntry[];
+  onEditEntry: (entry: EmotionEntry) => void;
+  onDeleteEntry: (entryId: string) => void;
+  onDateClick: (date: string, entries: EmotionEntry[]) => void;
 }
 
 export function EmotionsNavigation({
   activeView,
   canNavigate,
   onViewChange,
-  onOpenRecentEntries,
-  onOpenCalendar,
+  entries,
+  onEditEntry,
+  onDeleteEntry,
+  onDateClick,
 }: EmotionsNavigationProps) {
   const navItems = [
     { id: "feel" as const, label: "Feel", enabled: true },
@@ -54,35 +61,63 @@ export function EmotionsNavigation({
         })}
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions - Popovers */}
       <div className="flex items-center gap-0 p-1 bg-foreground/25 backdrop-blur-md rounded-lg">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={onOpenRecentEntries}
-              className="h-8 w-8 rounded-md flex items-center justify-center text-white/70 hover:text-white transition-colors"
-            >
-              <Users className="h-4 w-4" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            <p>Recent Entries</p>
-          </TooltipContent>
-        </Tooltip>
+        {/* Recent Entries Popover */}
+        <Popover>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <PopoverTrigger asChild>
+                <button
+                  className="h-8 w-8 rounded-md flex items-center justify-center text-white/70 hover:text-white transition-colors"
+                >
+                  <Users className="h-4 w-4" />
+                </button>
+              </PopoverTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <p>Recent Entries</p>
+            </TooltipContent>
+          </Tooltip>
+          <PopoverContent 
+            className="w-[380px] max-h-[70vh] overflow-hidden p-0 rounded-2xl" 
+            align="end" 
+            sideOffset={12}
+          >
+            <div className="max-h-[70vh] overflow-y-auto">
+              <RecentEntriesList 
+                entries={entries} 
+                onEditEntry={onEditEntry} 
+                onDeleteEntry={onDeleteEntry} 
+              />
+            </div>
+          </PopoverContent>
+        </Popover>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={onOpenCalendar}
-              className="h-8 w-8 rounded-md flex items-center justify-center text-white/70 hover:text-white transition-colors"
-            >
-              <Calendar className="h-4 w-4" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            <p>Calendar View</p>
-          </TooltipContent>
-        </Tooltip>
+        {/* Calendar Popover */}
+        <Popover>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <PopoverTrigger asChild>
+                <button
+                  className="h-8 w-8 rounded-md flex items-center justify-center text-white/70 hover:text-white transition-colors"
+                >
+                  <Calendar className="h-4 w-4" />
+                </button>
+              </PopoverTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <p>Calendar View</p>
+            </TooltipContent>
+          </Tooltip>
+          <PopoverContent 
+            className="w-auto p-0 rounded-2xl" 
+            align="end" 
+            sideOffset={12}
+          >
+            <EmotionCalendarSidebar entries={entries} onDateClick={onDateClick} />
+          </PopoverContent>
+        </Popover>
       </div>
     </div>
   );

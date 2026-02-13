@@ -25,18 +25,15 @@ import { EmotionsPageContext } from "@/components/emotions/EmotionsPageContext";
 import { EmotionsPageRegulate } from "@/components/emotions/EmotionsPageRegulate";
 import { EmotionsPageInsights } from "@/components/emotions/EmotionsPageInsights";
 import { EmotionsNavigation, EmotionsView } from "@/components/emotions/EmotionsNavigation";
-import { EmotionCalendarSidebar } from "@/components/emotions/EmotionCalendarSidebar";
-import { RecentEntriesList } from "@/components/emotions/RecentEntriesList";
 import { EmotionSliderPicker } from "@/components/emotions/EmotionSliderPicker";
 import { EmotionContextFieldsEnhanced } from "@/components/emotions/EmotionContextFieldsEnhanced";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 
-import { useTimezone } from "@/hooks/useTimezone";
+
 
 export default function Emotions() {
   const { user } = useAuth();
-  const { timezone } = useTimezone();
   const [entries, setEntries] = useState<EmotionEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -67,9 +64,7 @@ export default function Emotions() {
   const [savedQuadrant, setSavedQuadrant] = useState<QuadrantType | null>(null);
   const [savedEmotion, setSavedEmotion] = useState<string | null>(null);
 
-  // Popup states
-  const [showRecentEntries, setShowRecentEntries] = useState(false);
-  const [showCalendar, setShowCalendar] = useState(false);
+  // For viewing entries by date
 
   // For viewing entries by date
   const [viewingDate, setViewingDate] = useState<string | null>(null);
@@ -406,7 +401,6 @@ export default function Emotions() {
   const handleDateClick = (date: string, dayEntries: EmotionEntry[]) => {
     setViewingDate(date);
     setViewingEntries(dayEntries);
-    setShowCalendar(false);
   };
 
   const startEditEntry = (entry: EmotionEntry) => {
@@ -416,7 +410,6 @@ export default function Emotions() {
     setEditQuadrant(entry.quadrant);
     setEditEmotion(entry.emotion);
     setEditDate(new Date(entry.entry_date + "T12:00:00"));
-    setShowRecentEntries(false);
   };
 
   const cancelEdit = () => {
@@ -523,8 +516,10 @@ export default function Emotions() {
                 activeView={activeView}
                 canNavigate={canNavigate}
                 onViewChange={handleViewChange}
-                onOpenRecentEntries={() => setShowRecentEntries(true)}
-                onOpenCalendar={() => setShowCalendar(true)}
+                entries={entries}
+                onEditEntry={startEditEntry}
+                onDeleteEntry={setDeletingEntryId}
+                onDateClick={handleDateClick}
               />
             </div>
           </div>
@@ -593,29 +588,7 @@ export default function Emotions() {
           )}
         </EmotionsPageLayout>
 
-        {/* Recent Entries Popup */}
-        <Dialog open={showRecentEntries} onOpenChange={setShowRecentEntries}>
-          <DialogContent className="max-w-md max-h-[80vh] overflow-hidden rounded-3xl p-0">
-            <DialogHeader className="p-6 pb-0">
-              <DialogTitle className="text-xl">Recent Check-ins</DialogTitle>
-            </DialogHeader>
-            <div className="p-6 pt-4 overflow-y-auto max-h-[60vh]">
-              <RecentEntriesList entries={entries} onEditEntry={startEditEntry} onDeleteEntry={setDeletingEntryId} />
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Calendar Popup */}
-        <Dialog open={showCalendar} onOpenChange={setShowCalendar}>
-          <DialogContent className="max-w-sm rounded-3xl p-0">
-            <DialogHeader className="p-6 pb-0">
-              <DialogTitle className="text-xl">Emotion Calendar</DialogTitle>
-            </DialogHeader>
-            <div className="p-6 pt-4">
-              <EmotionCalendarSidebar entries={entries} onDateClick={handleDateClick} />
-            </div>
-          </DialogContent>
-        </Dialog>
+        {/* Recent Entries & Calendar are now rendered inside EmotionsNavigation as popovers */}
 
         {/* Dialog: View entries by date */}
         <Dialog open={!!viewingDate} onOpenChange={(open) => !open && setViewingDate(null)}>

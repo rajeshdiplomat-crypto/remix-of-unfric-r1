@@ -86,39 +86,6 @@ export function EmotionsPageFeel({
         {/* Left: Emotion Description Card */}
         <div className="flex flex-col justify-center order-2 lg:order-1">
           <div className="space-y-6 max-w-md text-left">
-            {/* Date Picker */}
-            <div className="flex items-center gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "justify-start text-left font-normal gap-2 rounded-xl",
-                      format(selectedDate, "yyyy-MM-dd") !== format(new Date(), "yyyy-MM-dd") && "border-primary text-primary"
-                    )}
-                  >
-                    <CalendarDays className="h-4 w-4" />
-                    {format(selectedDate, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd")
-                      ? "Today"
-                      : format(selectedDate, "MMM d, yyyy")}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={(date) => date && onDateChange(date)}
-                    disabled={(date) => date > new Date()}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-              {format(selectedDate, "yyyy-MM-dd") !== format(new Date(), "yyyy-MM-dd") && (
-                <span className="text-xs text-muted-foreground">Logging for a past date</span>
-              )}
-            </div>
-
             {/* Badge */}
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
               <Sparkles className="h-4 w-4" />
@@ -147,6 +114,38 @@ export function EmotionsPageFeel({
 
         {/* Right: Wheel */}
         <div className="flex flex-col items-center justify-center order-1 lg:order-2">
+          {/* Date Picker - near the wheel */}
+          <div className="flex items-center gap-2 mb-4">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "justify-start text-left font-normal gap-2 rounded-xl",
+                    format(selectedDate, "yyyy-MM-dd") !== format(new Date(), "yyyy-MM-dd") && "border-primary text-primary"
+                  )}
+                >
+                  <CalendarDays className="h-4 w-4" />
+                  {format(selectedDate, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd")
+                    ? "Today"
+                    : format(selectedDate, "MMM d, yyyy")}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="center">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && onDateChange(date)}
+                  disabled={(date) => date > new Date()}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+            {format(selectedDate, "yyyy-MM-dd") !== format(new Date(), "yyyy-MM-dd") && (
+              <span className="text-xs text-muted-foreground">Past date</span>
+            )}
+          </div>
           <EmotionCircularPicker
             energy={energy}
             pleasantness={pleasantness}
