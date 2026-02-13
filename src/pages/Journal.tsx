@@ -639,8 +639,8 @@ export default function Journal() {
   return (
     <div
       className={cn(
-        "flex flex-col w-full h-full overflow-hidden transition-all duration-300",
-        isFullscreen && "fixed inset-0 z-50 overflow-auto",
+        "flex flex-col w-full transition-all duration-300",
+        isFullscreen ? "fixed inset-0 z-50 overflow-hidden" : "h-full overflow-hidden",
       )}
       style={{
         backgroundColor: currentSkin.pageBg,
