@@ -1240,7 +1240,7 @@ export default function Habits() {
               })()}
             </div>
 
-            {/* Progress Rings — centered row */}
+            {/* Progress Rings — 3-column grid with quote + streak panels */}
             {(() => {
               const selectedHabit = selectedActivityId ? activities.find((a) => a.id === selectedActivityId) : null;
 
@@ -1254,13 +1254,88 @@ export default function Habits() {
                 totalGoalPercent = totalAll > 0 ? Math.round((totalCompleted / totalAll) * 100) : 0;
               }
 
+              // Find the habit with the longest current streak
+              const bestStreakHabit = activityStats.reduce<{ name: string; streak: number; id: string } | null>(
+                (best, stat) => {
+                  if (stat.streak > (best?.streak || 0)) {
+                    const habit = activities.find((a) => a.id === stat.id);
+                    return { name: habit?.name || "", streak: stat.streak, id: stat.id };
+                  }
+                  return best;
+                },
+                null,
+              );
+
+              const currentQuote = MOTIVATIONAL_QUOTES[quoteIndex];
+
               return (
-                <div className="flex justify-center gap-8 lg:gap-12 mb-6 flex-wrap">
-                  <ProgressRing progress={Math.min(totalGoalPercent, 100)} label="Total Goal" />
-                  <ProgressRing progress={overallStats.momentum} label="Momentum" />
-                  <ProgressRing progress={overallStats.dailyProgress} label="Daily" />
-                  <ProgressRing progress={overallStats.weeklyProgress} label="Weekly" />
-                  <ProgressRing progress={overallStats.monthlyProgress} label="Overall" />
+                <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_200px] gap-4 mb-6 items-center">
+                  {/* Left — Motivational Quote */}
+                  <div className="hidden lg:flex flex-col justify-center h-full px-2">
+                    <div
+                      className={cn(
+                        "transition-opacity duration-500 ease-in-out",
+                        quoteVisible ? "opacity-100" : "opacity-0",
+                      )}
+                    >
+                      <p className="text-xs italic text-muted-foreground leading-relaxed">
+                        "{currentQuote.text}"
+                      </p>
+                      <p className="text-[10px] text-muted-foreground/60 mt-1.5 uppercase tracking-zara">
+                        — {currentQuote.author}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Center — Progress Rings */}
+                  <div className="flex justify-center gap-8 lg:gap-10 flex-wrap">
+                    <ProgressRing progress={Math.min(totalGoalPercent, 100)} label="Total Goal" />
+                    <ProgressRing progress={overallStats.momentum} label="Momentum" />
+                    <ProgressRing progress={overallStats.dailyProgress} label="Daily" />
+                    <ProgressRing progress={overallStats.weeklyProgress} label="Weekly" />
+                    <ProgressRing progress={overallStats.monthlyProgress} label="Overall" />
+                  </div>
+
+                  {/* Right — Habit Image or Best Streak */}
+                  <div className="hidden lg:flex flex-col items-center justify-center h-full px-2">
+                    {selectedHabit ? (
+                      (() => {
+                        const imgUrl = selectedHabit.coverImageUrl || loadActivityImage(selectedHabit.id);
+                        return imgUrl ? (
+                          <div className="w-full aspect-square max-w-[120px] rounded-xl overflow-hidden border border-border">
+                            <img src={imgUrl} alt={selectedHabit.name} className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="w-14 h-14 rounded-xl border border-border flex items-center justify-center">
+                              <Target className="h-6 w-6 text-muted-foreground/40" />
+                            </div>
+                            <span className="text-[10px] text-muted-foreground uppercase tracking-zara">
+                              {selectedHabit.name}
+                            </span>
+                          </div>
+                        );
+                      })()
+                    ) : bestStreakHabit && bestStreakHabit.streak > 0 ? (
+                      <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-border bg-muted/30">
+                        <Flame className="h-5 w-5 text-foreground/60" />
+                        <span className="text-2xl font-light text-foreground tracking-tight">
+                          {bestStreakHabit.streak}
+                        </span>
+                        <span className="text-[9px] uppercase tracking-zara-wide text-muted-foreground text-center leading-tight">
+                          Best Streak
+                        </span>
+                        <span className="text-[10px] text-muted-foreground/70 truncate max-w-[160px]">
+                          {bestStreakHabit.name}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1.5 text-muted-foreground/40">
+                        <Flame className="h-5 w-5" />
+                        <span className="text-[10px] uppercase tracking-zara">No streaks yet</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })()}
@@ -1333,11 +1408,11 @@ export default function Habits() {
                 <tbody>
                   {/* Daily Progress Chart Row - embedded in table for perfect date alignment */}
                   <tr>
-                    <td className="sticky left-0 bg-gradient-to-b from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20 p-2 text-xs font-medium text-slate-500 align-bottom" colSpan={2}>
+                    <td className="sticky left-0 bg-muted/30 p-2 text-xs font-medium text-muted-foreground align-bottom" colSpan={2}>
                       DAILY PROGRESS
                     </td>
-                    <td colSpan={daysInMonth.length} className="p-0 bg-gradient-to-b from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20">
-                      <svg viewBox={`0 0 ${daysInMonth.length * 100} 160`} className="w-full" style={{ height: 120 }} preserveAspectRatio="none">
+                    <td colSpan={daysInMonth.length} className="p-0 bg-muted/30">
+                      <svg viewBox={`0 0 ${daysInMonth.length * 100} 220`} className="w-full" style={{ height: 180 }} preserveAspectRatio="none">
                         {(() => {
                           const numDays = daysInMonth.length;
                           const today = new Date();
@@ -1369,10 +1444,9 @@ export default function Habits() {
                             });
 
                             const value = total > 0 ? (completed / total) * 100 : 0;
-                            // Center each point in its column: (i + 0.5) * columnWidth
                             const x = (i + 0.5) * 100;
-                            const rawY = 140 - (value / 100) * 110;
-                            const y = Math.max(10, Math.min(140, rawY));
+                            const rawY = 190 - (value / 100) * 160;
+                            const y = Math.max(10, Math.min(200, rawY));
                             dataPoints.push({ x, y, value, isPast, isFuture });
                           }
 
@@ -1393,30 +1467,29 @@ export default function Habits() {
                           };
 
                           const linePath = createSmoothPath(dataPoints);
-                          const areaPath = `${linePath} L ${dataPoints[dataPoints.length - 1].x} 155 L ${dataPoints[0].x} 155 Z`;
+                          const areaPath = `${linePath} L ${dataPoints[dataPoints.length - 1].x} 215 L ${dataPoints[0].x} 215 Z`;
 
                           return (
                             <>
                               <defs>
                                 <linearGradient id="tableAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="#5eead4" stopOpacity="0.6" />
-                                  <stop offset="100%" stopColor="#5eead4" stopOpacity="0.1" />
+                                  <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.08" />
+                                  <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0.02" />
                                 </linearGradient>
                               </defs>
                               <path d={areaPath} fill="url(#tableAreaGradient)" />
-                              <path d={linePath} fill="none" stroke="#14b8a6" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                              <line x1="0" y1="150" x2={vbWidth} y2="150" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 4" />
+                              <path d={linePath} fill="none" stroke="hsl(var(--foreground))" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" opacity="0.7" />
+                              <line x1="0" y1="210" x2={vbWidth} y2="210" stroke="hsl(var(--border))" strokeWidth="1" strokeDasharray="4 4" />
                               {dataPoints.map((point, i) => {
                                 const isMissed = point.isPast && point.value === 0;
-                                const pointColor = point.isFuture ? "#94a3b8" : isMissed ? "#ef4444" : "#14b8a6";
                                 return (
                                   <circle
                                     key={i}
                                     cx={point.x}
                                     cy={point.y}
                                     r={isMissed ? "6" : "4"}
-                                    fill={pointColor}
-                                    stroke="white"
+                                    fill={point.isFuture ? "hsl(var(--border))" : isMissed ? "hsl(var(--muted-foreground))" : "hsl(var(--foreground))"}
+                                    stroke="hsl(var(--background))"
                                     strokeWidth="2"
                                   >
                                     <title>{`${Math.round(point.value)}%${isMissed ? " (Missed)" : point.isFuture ? " (Upcoming)" : ""}`}</title>
@@ -1428,7 +1501,7 @@ export default function Habits() {
                         })()}
                       </svg>
                     </td>
-                    <td colSpan={2} className="bg-gradient-to-b from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20"></td>
+                    <td colSpan={2} className="bg-muted/30"></td>
                   </tr>
                   {/* Render Active Habits */}
                   {activities
