@@ -1,119 +1,78 @@
 
 
-# World-Class Habits Page Redesign -- Full Screen
+# Redesign: Habits Stats Dashboard -- World-Class SaaS Aesthetic
 
-## What's Already Done
-The stats dashboard (progress rings, month navigator, stats summary) was redesigned to monochrome and looks clean. This will be preserved.
+## Overview
+Redesign the top statistics section of the Habits page (month card, progress rings, and habit image panel) to align with the app's Zara-inspired monochrome design system while delivering a premium, world-class SaaS feel. The current implementation uses jarring emerald/green colors and a cluttered layout that doesn't match the editorial aesthetic of the rest of the app.
 
-## What's Missing / Needs Work
+## Current Problems
+- Emerald/green gradient cards clash with the monochrome Zara design system
+- Progress rings feel dated (basic SVG circles with hardcoded colors)
+- The 3-column layout (160px sidebar, center, 200px image) is cramped
+- The month card packs too much information into a tiny space
+- The motivational quote banner feels like filler
+- The habit image card takes up valuable space with mostly a placeholder
 
-### 1. Table Section Still Uses Emerald/Green Colors
-The entire table below the stats card still uses jarring emerald/green colors that clash with the monochrome stats card above:
-- Today's column highlight: `bg-emerald-50`, `bg-emerald-100`
-- Completion checkmarks: `bg-emerald-500`
-- Selected row: `bg-emerald-50`, `ring-emerald-500`
-- Progress bars: `bg-gradient-to-r from-emerald-400 to-green-400`
-- Daily Progress chart: emerald gradients, teal stroke, teal circles
-- Current week highlight: `bg-blue-50`
+## Design Direction
+Inspired by premium SaaS dashboards (Linear, Notion, Vercel) -- clean, spacious, data-forward with subtle animations. Monochrome palette with a single accent color for key metrics.
 
-### 2. Table Header Design is Dated
-- Uses `bg-slate-100` which feels flat
-- Date columns lack hierarchy and readability
-- Week partitions use basic borders
+## New Layout
 
-### 3. Daily Progress Chart Colors
-- Uses hardcoded `#14b8a6` (teal) and `#5eead4` for gradient
-- Missed days use `#ef4444` (red) -- too aggressive
-- Should use monochrome foreground/muted tones
+```text
++----------------------------------------------------------------------+
+| Habits Tracker                                    [+ Add Habit]       |
++----------------------------------------------------------------------+
+| [< Feb 2025 >]                                                       |
+|                                                                       |
+|  +----------+ +----------+ +----------+ +----------+ +----------+   |
+|  |          |  |          |  |          |  |          |  |          |  |
+|  |   7%     |  |   58%    |  |   75%    |  |   88%    |  |   7%     |  |
+|  |          |  |          |  |          |  |          |  |          |  |
+|  | TOTAL    |  | MOMENTUM |  | DAILY    |  | WEEKLY   |  | OVERALL  |  |
+|  +----------+ +----------+ +----------+ +----------+ +----------+   |
+|                                                                       |
+|  4 Active  ·  0 Done  ·  4 Total  ·  97 Pending  ·  7 Done  · 104   |
++----------------------------------------------------------------------+
+| [Table with graph + habits below]                                     |
+```
 
-### 4. Habit Row Design
-- Selected state uses emerald ring -- should use foreground-based subtle indicator
-- Completion buttons are emerald -- should be monochrome
-- Progress bar uses emerald gradient -- should use foreground color
-- Streak badges use orange -- acceptable accent but could be refined
+## Technical Changes
 
-### 5. Dialog Still Uses Emerald
-- Frequency day buttons: `bg-emerald-500`
-- Save button: `bg-emerald-500 hover:bg-emerald-600`
-- Should use `bg-foreground text-background` (monochrome primary)
+### 1. Redesign `ProgressRing` component (lines ~252-302)
+- Replace hardcoded color map with monochrome stroke using CSS variable `hsl(var(--foreground))`
+- Add a subtle track ring using `hsl(var(--border))`
+- Increase size slightly (90px) for breathing room
+- Use the app's font system (light weight, uppercase tracking)
+- Single accent for the active/selected state only
 
-### 6. No Sidebar Integration
-- The `HabitSidebarPanel` component exists but isn't used on the page
-- No calendar sidebar or detail panel appears when selecting a habit
-- World-class habit trackers show a detail/calendar panel on the side
+### 2. Restructure the stats layout (lines ~1193-1427)
+- Remove the 3-column grid (`grid-cols-[160px_1fr_200px]`)
+- Replace with a single full-width card containing:
+  - Month navigator (inline, left-aligned, minimal)
+  - 5 progress rings in a centered horizontal row with generous spacing
+  - A subtle inline stats bar below the rings showing habit counts
+- Remove the right sidebar image card entirely from the stats section (move it into the habit detail panel or remove)
+- Remove the motivational quote from the stats area (keep it as a subtle line or remove)
 
----
+### 3. Selected habit indicator
+- When a habit is selected, show its name and date range as a slim bar above or below the rings instead of a colored banner
+- Use monochrome styling with subtle border-left accent
 
-## Redesign Plan
+### 4. Month navigation
+- Slim inline design: `< February 2025 >` with ghost icon buttons
+- Positioned top-left of the stats card, not in a separate card
 
-### A. Table Color Overhaul (renderRow + thead + chart)
+### 5. Stats summary line
+- Replace the two 3x grid stat blocks (Habits + Habit Days) with a single inline text line:
+  `4 Active · 0 Done · 4 Total · 97 Pending · 7 Completed · 104 Days`
+- Separated by middle dots, using muted-foreground color
+- Clean, scannable, minimal
 
-**Table Header:**
-- Replace `bg-slate-100` with `bg-muted/50`
-- Today column: `bg-foreground/5` instead of `bg-emerald-100`
-- Current week: subtle `bg-muted/30` instead of `bg-blue-50`
-
-**Habit Rows:**
-- Selected row: `bg-muted ring-1 ring-foreground/20` instead of emerald
-- Selected sticky cell bg: `bg-muted` instead of emerald
-- Completion buttons: `bg-foreground text-background` instead of `bg-emerald-500`
-- Uncompleted past: `bg-muted hover:bg-muted-foreground/20`
-- Progress bar: `bg-foreground` (single solid) instead of emerald gradient
-- Archived completed: `bg-muted-foreground`
-- Complete Habit menu item: `text-foreground` instead of `text-emerald-600`
-
-**Daily Progress Chart:**
-- Line stroke: `hsl(var(--foreground))` with 0.7 opacity
-- Area fill: `hsl(var(--foreground))` with 0.08 to 0.02 opacity gradient
-- Data points: `hsl(var(--foreground))` for completed, `hsl(var(--muted-foreground))` for missed (no red)
-- Future points: `hsl(var(--border))`
-- Chart row background: `bg-muted/30` instead of emerald gradients
-
-### B. Dialog Monochrome Update
-
-- Frequency day buttons active: `bg-foreground text-background`
-- Save/Create button: `bg-foreground text-background hover:bg-foreground/90`
-- Remove all emerald references from the dialog
-
-### C. Sidebar Integration (Optional Enhancement)
-
-Add the existing `HabitSidebarPanel` to the page layout using a responsive grid:
-- Desktop: `grid-cols-[1fr_260px]` with sidebar on the right
-- Mobile: sidebar hidden, accessible via a toggle button
-- The sidebar shows the calendar and progress insights
-
-This mirrors the Tasks module's workspace layout pattern already used in the app.
-
----
-
-## Technical Details
+### 6. Color alignment
+- Remove all emerald/teal/cyan/green hardcoded colors from the stats section
+- Use `foreground` for ring strokes, `muted-foreground` for labels, `border` for tracks
+- The daily progress chart row in the table keeps its current styling (separate concern)
 
 ### File: `src/pages/Habits.tsx`
-
-**Lines ~906-1161 (renderRow function):**
-- Replace all `emerald` class references with monochrome equivalents
-- Update completion button colors
-- Update progress bar gradient
-- Update selected row styling
-
-**Lines ~1289-1331 (thead):**
-- Replace `bg-slate-100` with `bg-muted/50`
-- Replace `bg-emerald-100` today highlight with `bg-foreground/5`
-- Replace `bg-blue-50` current week with `bg-muted/30`
-- Replace `text-emerald-600` today text with `text-foreground font-bold`
-
-**Lines ~1334-1432 (Daily Progress chart row):**
-- Replace emerald gradient backgrounds with `bg-muted/30`
-- Replace teal SVG colors with CSS variable-based monochrome colors
-- Replace red missed-day indicator with muted-foreground
-
-**Lines ~1650-1694 (Dialog):**
-- Replace `bg-emerald-500` on frequency buttons with `bg-foreground text-background`
-- Replace `bg-emerald-500 hover:bg-emerald-600` on save button with `bg-foreground text-background hover:bg-foreground/90`
-
-**Lines ~1164-1170 (Layout):**
-- Wrap content in responsive grid to optionally include sidebar
-- Add sidebar toggle state and render `HabitSidebarPanel` on desktop
-
-### Total: ~15-20 color replacements across the file, plus optional sidebar grid integration
+This is the only file that needs modification. All changes are within the stats/dashboard section (lines ~252-1427). The table, dialog, and logic below remain untouched.
 

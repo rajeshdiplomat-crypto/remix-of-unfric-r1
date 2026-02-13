@@ -56,11 +56,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ActivityImageUpload, loadActivityImage, loadAllActivityImages, saveActivityImage, saveActivityImageToDb } from "@/components/habits/ActivityImageUpload";
-import { HabitSidebarPanel } from "@/components/habits/HabitSidebarPanel";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ActivityItem {
   id: string;
@@ -303,9 +301,6 @@ function ProgressRing({
 export default function Habits() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const isMobile = useIsMobile();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
 
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -923,12 +918,12 @@ export default function Habits() {
       <tr
         key={activity.id}
         className={cn(
-          "border-b border-border/50 transition-all",
+          "border-b border-slate-100 dark:border-slate-800 transition-all",
           isSelected
-            ? "bg-muted ring-1 ring-foreground/20 ring-inset"
+            ? "bg-emerald-50 dark:bg-emerald-900/30 ring-2 ring-emerald-500 ring-inset shadow-sm"
             : isArchived
-              ? "bg-muted/30 opacity-70 grayscale-[0.5]"
-              : "bg-background hover:bg-muted/50",
+              ? "bg-slate-50 dark:bg-slate-900/30 opacity-70 grayscale-[0.5]"
+              : "bg-white dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-800/50",
           "cursor-pointer",
         )}
         onClick={() => setSelectedActivityId(isSelected ? null : activity.id)}
@@ -954,17 +949,17 @@ export default function Habits() {
           className={cn(
             "p-2 sticky left-0",
             isSelected
-              ? "bg-muted"
+              ? "bg-emerald-50 dark:bg-emerald-900/30"
               : isArchived
-                ? "bg-muted/30"
-                : "bg-background",
+                ? "bg-slate-50 dark:bg-slate-900/30"
+                : "bg-white dark:bg-slate-900/50",
           )}
         >
           <div className="flex items-center gap-1.5">
             {/* Drag Handle - Only for active */}
             {isActive && (
               <button
-                className="cursor-grab text-muted-foreground/50 hover:text-muted-foreground"
+                className="cursor-grab text-slate-300 hover:text-slate-500 dark:hover:text-slate-300"
                 onClick={(e) => e.stopPropagation()}
               >
                 <GripVertical className="h-3.5 w-3.5" />
@@ -976,7 +971,7 @@ export default function Habits() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="p-0.5 rounded text-muted-foreground hover:text-foreground transition-colors"
+                  className="p-0.5 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <MoreVertical className="h-4 w-4" />
@@ -1003,7 +998,7 @@ export default function Habits() {
                     }}
                     className="cursor-pointer"
                   >
-                    <Check className={cn("h-4 w-4 mr-2", isTodayCompleted ? "text-foreground" : "")} />
+                    <Check className={cn("h-4 w-4 mr-2", isTodayCompleted ? "text-green-500" : "")} />
                     {isTodayCompleted ? "Today Done ✓" : "Mark Today"}
                   </DropdownMenuItem>
                 )}
@@ -1017,7 +1012,7 @@ export default function Habits() {
                         handleCompleteHabit(activity.id);
                       }
                     }}
-                    className="cursor-pointer text-foreground focus:text-foreground"
+                    className="cursor-pointer text-emerald-600 focus:text-emerald-600"
                   >
                     <CheckCircle className="h-4 w-4 mr-2" />
                     Complete Habit
@@ -1031,7 +1026,7 @@ export default function Habits() {
                       e.stopPropagation();
                       handleRestoreHabit(activity.id);
                     }}
-                    className="cursor-pointer text-foreground focus:text-foreground"
+                    className="cursor-pointer text-blue-600 focus:text-blue-600"
                   >
                     <TrendingUp className="h-4 w-4 mr-2" />
                     Move to Active
@@ -1046,7 +1041,7 @@ export default function Habits() {
                       handleDelete(activity.id);
                     }
                   }}
-                  className="cursor-pointer text-destructive focus:text-destructive"
+                  className="cursor-pointer text-red-600 focus:text-red-600"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete
@@ -1058,14 +1053,14 @@ export default function Habits() {
             <span
               className={cn(
                 "font-medium truncate max-w-[120px] ml-1",
-                isArchived ? "text-muted-foreground line-through" : "text-foreground",
+                isArchived ? "text-slate-500 line-through" : "text-slate-700 dark:text-slate-300",
               )}
             >
               {activity.name}
             </span>
           </div>
         </td>
-        <td className="p-2 text-center text-muted-foreground">{activity.habitDays}</td>
+        <td className="p-2 text-center text-slate-500">{activity.habitDays}</td>
         {daysInMonth.map((day, i) => {
           const dateStr = format(day, "yyyy-MM-dd");
           const dayOfWeek = (day.getDay() + 6) % 7;
@@ -1095,9 +1090,9 @@ export default function Habits() {
               key={i}
               className={cn(
                 "p-1 text-center",
-                (isMonday || isFirstDay) && "border-l-2 border-border",
-                isToday(day) && "bg-foreground/5",
-                isCurrentWeek && !isToday(day) && "bg-muted/30",
+                (isMonday || isFirstDay) && "border-l-2 border-slate-200 dark:border-slate-700",
+                isToday(day) && "bg-emerald-50 dark:bg-emerald-900/20",
+                isCurrentWeek && !isToday(day) && "bg-blue-50/50 dark:bg-blue-900/10",
                 isArchived && "opacity-50",
               )}
             >
@@ -1115,36 +1110,36 @@ export default function Habits() {
                     "w-5 h-5 rounded flex items-center justify-center transition-all mx-auto",
                     isCompleted
                       ? isArchived
-                        ? "bg-muted-foreground text-background cursor-not-allowed"
-                        : "bg-foreground text-background"
+                        ? "bg-slate-400 text-white cursor-not-allowed"
+                        : "bg-emerald-500 text-white"
                       : isPast && !isArchived
-                        ? "bg-muted hover:bg-muted-foreground/20"
-                        : "bg-muted/50 cursor-not-allowed",
+                        ? "bg-slate-200 dark:bg-slate-700 hover:bg-slate-300"
+                        : "bg-slate-100 dark:bg-slate-800 cursor-not-allowed",
                   )}
                 >
                   {isCompleted && <Check className="h-3 w-3" />}
                 </button>
               ) : (
-                <span className="text-muted-foreground/30">-</span>
+                <span className="text-slate-300">-</span>
               )}
             </td>
           );
         })}
         <td className="p-2">
           <div className="flex items-center gap-2">
-            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+            <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
               <div
                 className={cn(
                   "h-full rounded-full transition-all",
-                  isArchived ? "bg-muted-foreground" : "bg-foreground",
+                  isArchived ? "bg-slate-400" : "bg-gradient-to-r from-emerald-400 to-green-400",
                 )}
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
-            <span className="text-muted-foreground w-10 text-right">
+            <span className="text-slate-600 dark:text-slate-400 w-10 text-right">
               {totalCompletions}/{activity.habitDays}
             </span>
-            <span className="text-foreground font-medium w-10">{progressPercent}%</span>
+            <span className="text-slate-500 font-medium w-10">{progressPercent}%</span>
           </div>
         </td>
         <td className="p-2 text-center">
@@ -1153,9 +1148,9 @@ export default function Habits() {
               "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
               (stats?.streak || 0) > 0
                 ? isArchived
-                  ? "bg-muted text-muted-foreground"
-                  : "bg-foreground/10 text-foreground"
-                : "bg-muted text-muted-foreground",
+                  ? "bg-slate-200 text-slate-500"
+                  : "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-400",
             )}
           >
             {(stats?.streak || 0) > 0 && <Flame className="h-3 w-3" />}
@@ -1178,9 +1173,8 @@ export default function Habits() {
           subtitle={PAGE_HERO_TEXT.trackers.subtitle}
         />
 
-        <div className={cn("flex-1 flex overflow-hidden", !isMobile && "grid grid-cols-[1fr_260px]")}>
         {/* Dashboard Content */}
-        <div className="flex-1 px-4 py-4 flex flex-col overflow-y-auto min-h-0">
+        <div className="flex-1 px-4 py-4 flex flex-col overflow-y-auto">
           {/* Top Section: Header + Stats Dashboard */}
           <div className="flex items-center justify-between mb-4 flex-shrink-0">
             <h2 className="text-sm font-normal uppercase tracking-zara-wide text-foreground">Habits Tracker</h2>
@@ -1292,17 +1286,18 @@ export default function Habits() {
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="bg-muted/50">
-                    <th className="text-left p-2 font-semibold text-muted-foreground sticky left-0 bg-muted/50 min-w-[150px]">
+                  <tr className="bg-slate-100 dark:bg-slate-800">
+                    <th className="text-left p-2 font-semibold text-slate-600 dark:text-slate-300 sticky left-0 bg-slate-100 dark:bg-slate-800 min-w-[150px]">
                       DAILY HABITS
                     </th>
-                    <th className="p-2 font-semibold text-muted-foreground w-12">GOALS</th>
+                    <th className="p-2 font-semibold text-slate-600 dark:text-slate-300 w-12">GOALS</th>
                     {daysInMonth.map((day, i) => {
+                      // Correct week partition: Border on left of Mondays
                       const isMonday = day.getDay() === 1;
                       const isFirstDay = i === 0;
                       const isCurrentWeek = (() => {
                         const today = new Date();
-                        const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+                        const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday
                         const weekEnd = addDays(weekStart, 6);
                         return !isBefore(day, weekStart) && !isAfter(day, weekEnd);
                       })();
@@ -1312,16 +1307,16 @@ export default function Habits() {
                           key={i}
                           className={cn(
                             "p-1 font-medium text-center min-w-[28px]",
-                            (isMonday || isFirstDay) && "border-l-2 border-border",
-                            isToday(day) && "bg-foreground/5",
-                            isCurrentWeek && !isToday(day) && "bg-muted/30",
+                            (isMonday || isFirstDay) && "border-l-2 border-slate-200 dark:border-slate-700",
+                            isToday(day) && "bg-emerald-100 dark:bg-emerald-900/30",
+                            isCurrentWeek && !isToday(day) && "bg-blue-50 dark:bg-blue-900/20",
                           )}
                         >
-                          <div className="text-muted-foreground/60">{DAY_NAMES[(day.getDay() + 6) % 7]}</div>
+                          <div className="text-slate-400">{DAY_NAMES[(day.getDay() + 6) % 7]}</div>
                           <div
                             className={cn(
-                              "text-muted-foreground",
-                              isToday(day) && "text-foreground font-bold",
+                              "text-slate-600 dark:text-slate-300",
+                              isToday(day) && "text-emerald-600 dark:text-emerald-400 font-bold",
                             )}
                           >
                             {format(day, "d")}
@@ -1329,19 +1324,19 @@ export default function Habits() {
                         </th>
                       );
                     })}
-                    <th className="p-2 text-center font-semibold text-muted-foreground min-w-[80px]">
+                    <th className="p-2 text-center font-semibold text-slate-600 dark:text-slate-300 min-w-[80px]">
                       PROGRESS
                     </th>
-                    <th className="p-2 text-center font-semibold text-muted-foreground w-16">STREAK</th>
+                    <th className="p-2 text-center font-semibold text-slate-600 dark:text-slate-300 w-16">STREAK</th>
                   </tr>
                 </thead>
                 <tbody>
                   {/* Daily Progress Chart Row - embedded in table for perfect date alignment */}
                   <tr>
-                    <td className="sticky left-0 bg-muted/30 p-2 text-xs font-medium text-muted-foreground align-bottom" colSpan={2}>
+                    <td className="sticky left-0 bg-gradient-to-b from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20 p-2 text-xs font-medium text-slate-500 align-bottom" colSpan={2}>
                       DAILY PROGRESS
                     </td>
-                    <td colSpan={daysInMonth.length} className="p-0 bg-muted/30">
+                    <td colSpan={daysInMonth.length} className="p-0 bg-gradient-to-b from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20">
                       <svg viewBox={`0 0 ${daysInMonth.length * 100} 160`} className="w-full" style={{ height: 120 }} preserveAspectRatio="none">
                         {(() => {
                           const numDays = daysInMonth.length;
@@ -1404,16 +1399,16 @@ export default function Habits() {
                             <>
                               <defs>
                                 <linearGradient id="tableAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.08" />
-                                  <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0.02" />
+                                  <stop offset="0%" stopColor="#5eead4" stopOpacity="0.6" />
+                                  <stop offset="100%" stopColor="#5eead4" stopOpacity="0.1" />
                                 </linearGradient>
                               </defs>
                               <path d={areaPath} fill="url(#tableAreaGradient)" />
-                              <path d={linePath} fill="none" stroke="hsl(var(--foreground))" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" opacity="0.7" />
-                              <line x1="0" y1="150" x2={vbWidth} y2="150" stroke="hsl(var(--border))" strokeWidth="1" strokeDasharray="4 4" />
+                              <path d={linePath} fill="none" stroke="#14b8a6" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                              <line x1="0" y1="150" x2={vbWidth} y2="150" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 4" />
                               {dataPoints.map((point, i) => {
                                 const isMissed = point.isPast && point.value === 0;
-                                const pointColor = point.isFuture ? "hsl(var(--border))" : isMissed ? "hsl(var(--muted-foreground))" : "hsl(var(--foreground))";
+                                const pointColor = point.isFuture ? "#94a3b8" : isMissed ? "#ef4444" : "#14b8a6";
                                 return (
                                   <circle
                                     key={i}
@@ -1421,7 +1416,7 @@ export default function Habits() {
                                     cy={point.y}
                                     r={isMissed ? "6" : "4"}
                                     fill={pointColor}
-                                    stroke="hsl(var(--background))"
+                                    stroke="white"
                                     strokeWidth="2"
                                   >
                                     <title>{`${Math.round(point.value)}%${isMissed ? " (Missed)" : point.isFuture ? " (Upcoming)" : ""}`}</title>
@@ -1433,7 +1428,7 @@ export default function Habits() {
                         })()}
                       </svg>
                     </td>
-                    <td colSpan={2} className="bg-muted/30"></td>
+                    <td colSpan={2} className="bg-gradient-to-b from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20"></td>
                   </tr>
                   {/* Render Active Habits */}
                   {activities
@@ -1445,12 +1440,12 @@ export default function Habits() {
                   {activities.some((a) => a.isArchived) && (
                     <>
                       {/* Separator / Toggle Row */}
-                       <tr
-                        className="bg-muted/30 border-b border-border cursor-pointer hover:bg-muted/50 transition-colors"
+                      <tr
+                        className="bg-slate-50/80 border-b border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors"
                         onClick={() => setShowArchived(!showArchived)}
                       >
                         <td colSpan={daysInMonth.length + 4} className="p-3 text-center">
-                          <div className="flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground">
+                          <div className="flex items-center justify-center gap-2 text-sm font-medium text-slate-500">
                             {showArchived ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                             <span>
                               {showArchived ? "Hide" : "Show"} {activities.filter((a) => a.isArchived).length} Completed
@@ -1472,20 +1467,6 @@ export default function Habits() {
               </table>
             </div>
           </Card>
-        </div>
-
-        {/* Right Sidebar */}
-        {!isMobile && (
-          <div className="border-l border-border overflow-y-auto p-3">
-            <HabitSidebarPanel
-              selectedDate={selectedDate}
-              onDateSelect={setSelectedDate}
-              activities={activities}
-              isCollapsed={sidebarCollapsed}
-              onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-            />
-          </div>
-        )}
         </div>
 
         {/* Create Dialog */}
@@ -1648,15 +1629,15 @@ export default function Habits() {
                 <div className="flex gap-4 items-start">
                   {/* 9:16 Preview */}
                   <div
-                    className="w-16 rounded-lg overflow-hidden bg-foreground border-2 border-foreground/80 flex-shrink-0"
+                    className="w-16 rounded-lg overflow-hidden bg-slate-900 border-2 border-slate-700 flex-shrink-0"
                     style={{ aspectRatio: "9/16" }}
                   >
                     {formImageUrl ? (
                       <img src={formImageUrl} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-foreground/90 to-foreground">
-                        <Target className="h-4 w-4 text-background/40 mb-0.5" />
-                        <p className="text-[6px] text-background/30 text-center px-1">9:16</p>
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+                        <Target className="h-4 w-4 text-slate-600 mb-0.5" />
+                        <p className="text-[6px] text-slate-500 text-center px-1">9:16</p>
                       </div>
                     )}
                   </div>
@@ -1681,8 +1662,8 @@ export default function Habits() {
                       className={cn(
                         "h-9 w-9 rounded-full font-medium text-sm transition-colors",
                         formFrequency[idx]
-                          ? "bg-foreground text-background"
-                          : "bg-muted text-muted-foreground",
+                          ? "bg-emerald-500 text-white"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-400",
                       )}
                     >
                       {day}
@@ -1692,7 +1673,7 @@ export default function Habits() {
               </div>
 
               {!editingActivity && (
-                <div className="flex items-center space-x-2 p-3 rounded-xl bg-muted/50">
+                <div className="flex items-center space-x-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
                   <Checkbox
                     id="addToTasks"
                     checked={formAddToTasks}
@@ -1708,7 +1689,7 @@ export default function Habits() {
                 <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button className="flex-1 rounded-xl bg-foreground text-background hover:bg-foreground/90" onClick={handleSave}>
+                <Button className="flex-1 rounded-xl bg-emerald-500 hover:bg-emerald-600" onClick={handleSave}>
                   {editingActivity ? "Save Changes" : "Create Habit"}
                 </Button>
               </div>
