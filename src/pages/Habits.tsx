@@ -1382,140 +1382,6 @@ export default function Habits() {
                 );
               })()}
 
-              {/* Smooth Wave Area Chart */}
-              <div className="mt-4 p-4 rounded-lg bg-gradient-to-b from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20">
-                <p className="text-xs font-medium text-slate-500 mb-3 text-center">DAILY PROGRESS</p>
-                <div className="relative">
-                  <svg viewBox="0 0 1000 240" className="w-full" style={{ height: 160 }} preserveAspectRatio="xMidYMid meet">
-                    {(() => {
-                      // Calculate data points
-                      const dataPoints: { x: number; y: number; value: number; isPast: boolean; isFuture: boolean; dayNum: number }[] =
-                        [];
-                      const numDays = Math.min(daysInMonth.length, 31);
-                      const today = new Date();
-                      const chartWidth = 1000;
-
-                      for (let i = 0; i < numDays; i++) {
-                        const day = daysInMonth[i];
-                        if (!day) continue;
-                        const dayStr = format(day, "yyyy-MM-dd");
-                        const dayOfWeek = (day.getDay() + 6) % 7;
-                        const isPast = isBefore(day, today) || isToday(day);
-                        const isFuture = isAfter(day, today);
-
-                        const chartActivities = selectedActivityId
-                          ? activities.filter((a) => a.id === selectedActivityId)
-                          : activities;
-
-                        let completed = 0;
-                        let total = 0;
-                        chartActivities.forEach((a) => {
-                          const habitStartDate = parseISO(a.startDate);
-                          const habitEndDate = computeEndDateForHabitDays(
-                            habitStartDate,
-                            a.frequencyPattern,
-                            a.habitDays,
-                          );
-                          const isWithinHabitRange = !isBefore(day, habitStartDate) && !isAfter(day, habitEndDate);
-
-                          if (a.frequencyPattern[dayOfWeek] && isWithinHabitRange) {
-                            total++;
-                            if (a.completions[dayStr]) completed++;
-                          }
-                        });
-
-                        const value = total > 0 ? (completed / total) * 100 : 0;
-                        const x = numDays <= 1 ? 500 : (i / (numDays - 1)) * chartWidth;
-                        const rawY = 160 - (value / 100) * 120;
-                        const y = Math.max(20, Math.min(160, rawY));
-                        dataPoints.push({ x, y, value, isPast, isFuture, dayNum: parseInt(format(day, "d")) });
-                      }
-
-                      if (dataPoints.length < 2) return null;
-
-                      const createSmoothPath = (points: { x: number; y: number }[]) => {
-                        if (points.length < 2) return "";
-                        let path = `M ${points[0].x} ${points[0].y}`;
-                        for (let i = 0; i < points.length - 1; i++) {
-                          const current = points[i];
-                          const next = points[i + 1];
-                          const midX = (current.x + next.x) / 2;
-                          const midY = (current.y + next.y) / 2;
-                          path += ` Q ${current.x + (midX - current.x) * 0.5} ${current.y}, ${midX} ${midY}`;
-                          path += ` Q ${midX + (next.x - midX) * 0.5} ${next.y}, ${next.x} ${next.y}`;
-                        }
-                        return path;
-                      };
-
-                      const linePath = createSmoothPath(dataPoints);
-                      const areaPath = `${linePath} L ${dataPoints[dataPoints.length - 1].x} 180 L ${dataPoints[0].x} 180 Z`;
-
-                      return (
-                        <>
-                          <defs>
-                            <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#5eead4" stopOpacity="0.6" />
-                              <stop offset="100%" stopColor="#5eead4" stopOpacity="0.1" />
-                            </linearGradient>
-                          </defs>
-
-                          <path d={areaPath} fill="url(#areaGradient)" className="transition-all duration-500" />
-                          <path
-                            d={linePath}
-                            fill="none"
-                            stroke="#14b8a6"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="transition-all duration-500"
-                          />
-
-                          {/* Data points */}
-                          {dataPoints.map((point, i) => {
-                            const isMissed = point.isPast && point.value === 0;
-                            const pointColor = point.isFuture
-                              ? "#94a3b8"
-                              : isMissed
-                                ? "#ef4444"
-                                : "#14b8a6";
-
-                            return (
-                              <g key={i}>
-                                <circle
-                                  cx={point.x}
-                                  cy={point.y}
-                                  r={isMissed ? "6" : "4"}
-                                  fill={pointColor}
-                                  stroke="white"
-                                  strokeWidth="2"
-                                  className="transition-all duration-300"
-                                >
-                                  <title>{`Day ${point.dayNum}: ${Math.round(point.value)}%${isMissed ? " (Missed)" : point.isFuture ? " (Upcoming)" : ""}`}</title>
-                                </circle>
-                                {/* Day label on x-axis */}
-                                <text
-                                  x={point.x}
-                                  y={205}
-                                  textAnchor="middle"
-                                  fontSize={numDays > 28 ? "18" : "20"}
-                                  fill={isToday(daysInMonth[i]) ? "#14b8a6" : "#94a3b8"}
-                                  fontWeight={isToday(daysInMonth[i]) ? "bold" : "normal"}
-                                  className="select-none"
-                                >
-                                  {point.dayNum}
-                                </text>
-                              </g>
-                            );
-                          })}
-
-                          {/* Baseline */}
-                          <line x1="0" y1="180" x2="1000" y2="180" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 4" />
-                        </>
-                      );
-                    })()}
-                  </svg>
-                </div>
-              </div>
             </Card>
 
             {/* Right Sidebar: Habit Image Display */}
@@ -1610,6 +1476,105 @@ export default function Habits() {
                   </tr>
                 </thead>
                 <tbody>
+                  {/* Daily Progress Chart Row - embedded in table for perfect date alignment */}
+                  <tr>
+                    <td className="sticky left-0 bg-gradient-to-b from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20 p-2 text-xs font-medium text-slate-500 align-bottom" colSpan={2}>
+                      DAILY PROGRESS
+                    </td>
+                    <td colSpan={daysInMonth.length} className="p-0 bg-gradient-to-b from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20">
+                      <svg viewBox={`0 0 ${daysInMonth.length * 100} 160`} className="w-full" style={{ height: 120 }} preserveAspectRatio="none">
+                        {(() => {
+                          const numDays = daysInMonth.length;
+                          const today = new Date();
+                          const vbWidth = numDays * 100;
+                          const dataPoints: { x: number; y: number; value: number; isPast: boolean; isFuture: boolean }[] = [];
+
+                          for (let i = 0; i < numDays; i++) {
+                            const day = daysInMonth[i];
+                            if (!day) continue;
+                            const dayStr = format(day, "yyyy-MM-dd");
+                            const dayOfWeek = (day.getDay() + 6) % 7;
+                            const isPast = isBefore(day, today) || isToday(day);
+                            const isFuture = isAfter(day, today);
+
+                            const chartActivities = selectedActivityId
+                              ? activities.filter((a) => a.id === selectedActivityId)
+                              : activities;
+
+                            let completed = 0;
+                            let total = 0;
+                            chartActivities.forEach((a) => {
+                              const habitStartDate = parseISO(a.startDate);
+                              const habitEndDate = computeEndDateForHabitDays(habitStartDate, a.frequencyPattern, a.habitDays);
+                              const isWithinHabitRange = !isBefore(day, habitStartDate) && !isAfter(day, habitEndDate);
+                              if (a.frequencyPattern[dayOfWeek] && isWithinHabitRange) {
+                                total++;
+                                if (a.completions[dayStr]) completed++;
+                              }
+                            });
+
+                            const value = total > 0 ? (completed / total) * 100 : 0;
+                            // Center each point in its column: (i + 0.5) * columnWidth
+                            const x = (i + 0.5) * 100;
+                            const rawY = 140 - (value / 100) * 110;
+                            const y = Math.max(10, Math.min(140, rawY));
+                            dataPoints.push({ x, y, value, isPast, isFuture });
+                          }
+
+                          if (dataPoints.length < 2) return null;
+
+                          const createSmoothPath = (points: { x: number; y: number }[]) => {
+                            if (points.length < 2) return "";
+                            let path = `M ${points[0].x} ${points[0].y}`;
+                            for (let j = 0; j < points.length - 1; j++) {
+                              const current = points[j];
+                              const next = points[j + 1];
+                              const midX = (current.x + next.x) / 2;
+                              const midY = (current.y + next.y) / 2;
+                              path += ` Q ${current.x + (midX - current.x) * 0.5} ${current.y}, ${midX} ${midY}`;
+                              path += ` Q ${midX + (next.x - midX) * 0.5} ${next.y}, ${next.x} ${next.y}`;
+                            }
+                            return path;
+                          };
+
+                          const linePath = createSmoothPath(dataPoints);
+                          const areaPath = `${linePath} L ${dataPoints[dataPoints.length - 1].x} 155 L ${dataPoints[0].x} 155 Z`;
+
+                          return (
+                            <>
+                              <defs>
+                                <linearGradient id="tableAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#5eead4" stopOpacity="0.6" />
+                                  <stop offset="100%" stopColor="#5eead4" stopOpacity="0.1" />
+                                </linearGradient>
+                              </defs>
+                              <path d={areaPath} fill="url(#tableAreaGradient)" />
+                              <path d={linePath} fill="none" stroke="#14b8a6" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                              <line x1="0" y1="150" x2={vbWidth} y2="150" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 4" />
+                              {dataPoints.map((point, i) => {
+                                const isMissed = point.isPast && point.value === 0;
+                                const pointColor = point.isFuture ? "#94a3b8" : isMissed ? "#ef4444" : "#14b8a6";
+                                return (
+                                  <circle
+                                    key={i}
+                                    cx={point.x}
+                                    cy={point.y}
+                                    r={isMissed ? "6" : "4"}
+                                    fill={pointColor}
+                                    stroke="white"
+                                    strokeWidth="2"
+                                  >
+                                    <title>{`${Math.round(point.value)}%${isMissed ? " (Missed)" : point.isFuture ? " (Upcoming)" : ""}`}</title>
+                                  </circle>
+                                );
+                              })}
+                            </>
+                          );
+                        })()}
+                      </svg>
+                    </td>
+                    <td colSpan={2} className="bg-gradient-to-b from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20"></td>
+                  </tr>
                   {/* Render Active Habits */}
                   {activities
                     .map((a, i) => ({ ...a, originalIndex: i }))
