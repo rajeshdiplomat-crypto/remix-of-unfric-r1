@@ -415,7 +415,7 @@ export function JournalQuestionCard({
 
         {/* Facebook-style action bar */}
         <div className="border-t border-border/50 mt-1">
-          <div className="flex">
+          <div className="flex min-h-[44px] items-stretch">
             {/* Like */}
             <Popover>
               <PopoverTrigger asChild>
