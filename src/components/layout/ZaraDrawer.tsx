@@ -126,21 +126,6 @@ export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
           {/* Divider */}
           <div className="my-5 border-t border-border" />
 
-          {/* Settings & Account */}
-          <nav className="space-y-4">
-            <NavLink
-              to="/settings"
-              onClick={onClose}
-              className={cn(
-                "text-sm font-light uppercase tracking-zara-wide transition-colors",
-                isActive("/settings")
-                  ? "text-foreground border-b border-foreground pb-0.5 inline-block"
-                  : "text-muted-foreground hover:text-foreground block",
-              )}
-            >
-              Settings
-            </NavLink>
-          </nav>
 
           {/* Footer */}
           <div className="mt-auto pt-6 space-y-4">

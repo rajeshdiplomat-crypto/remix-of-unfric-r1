@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/useAuth";
-import { BookOpen, Heart, PenLine, Sparkles, BarChart3, FileText, CheckSquare, Settings, LogOut } from "lucide-react";
+import { BookOpen, Heart, PenLine, Sparkles, BarChart3, FileText, CheckSquare, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UnfricLogo } from "@/components/common/UnfricLogo";
 
@@ -77,19 +77,6 @@ export function MobileNav({ onNavigate }: MobileNavProps) {
 
         <Separator className="my-4" />
 
-        <div className="px-2">
-          <NavLink
-            to="/settings"
-            onClick={onNavigate}
-            className={cn(
-              "flex items-center gap-3 px-4 py-3 transition-colors text-xs uppercase tracking-zara font-light",
-              isActive("/settings") ? "bg-foreground/5 text-foreground" : "text-foreground hover:bg-muted",
-            )}
-          >
-            <Settings className="h-5 w-5" />
-            <span>Settings</span>
-          </NavLink>
-        </div>
       </ScrollArea>
 
       {/* Footer */}
