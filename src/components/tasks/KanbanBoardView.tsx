@@ -56,10 +56,10 @@ function KanbanCard({
       className={cn(
         "group p-3 cursor-pointer hover:shadow-md transition-shadow",
         task.is_completed
-          ? "bg-muted/30 border-border/30"
+          ? "bg-muted/50 border-border"
           : task.status === "overdue"
-            ? "bg-destructive/5 border-destructive/20"
-            : "bg-background border-border/50",
+            ? "bg-destructive/10 border-destructive/30 shadow-sm"
+            : "bg-background border-border shadow-sm",
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -223,7 +223,7 @@ export function KanbanBoardView({
         {activeQuadrants.map((col) => (
           <div
             key={col.id}
-            className="flex flex-col min-h-0 rounded-xl bg-muted/20 border border-border/30 p-3"
+            className="flex flex-col min-h-0 rounded-xl bg-muted/40 border border-border p-3"
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => handleDrop(col.id, e)}
           >
