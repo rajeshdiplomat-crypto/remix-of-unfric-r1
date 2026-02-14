@@ -8,7 +8,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { loadActivityImage } from "@/components/habits/ActivityImageUpload";
 import { DiaryFeedCard } from "@/components/diary/DiaryFeedCard";
-import { DiarySidebar } from "@/components/diary/DiarySidebar";
 import { DiaryLeftSidebar } from "@/components/diary/DiaryLeftSidebar";
 import { DiaryCreatePost } from "@/components/diary/DiaryCreatePost";
 import { DiaryProfileCard } from "@/components/diary/DiaryProfileCard";
@@ -482,11 +481,6 @@ export default function Diary() {
         {/* Center Feed - Scrollable */}
         <main className="flex-1 min-w-0 h-full overflow-y-auto bg-muted/20">
           <div className="w-full px-4 lg:px-6 py-4">
-            {/* Create Post Box */}
-            <DiaryCreatePost 
-              userName={userName}
-              onOpenJournal={() => setIsJournalModalOpen(true)}
-            />
 
           {/* Search Bar */}
           <div className="mb-4">
@@ -590,13 +584,14 @@ export default function Diary() {
 
       {/* Right Sidebar - Hidden on mobile/tablet, visible on large desktop */}
       <aside className="hidden xl:flex flex-col w-[340px] shrink-0 h-full overflow-y-auto border-l border-border/20 bg-background/50 p-4 gap-4">
-        {/* LinkedIn-style Profile Card */}
-        <DiaryProfileCard userName={userName} userEmail={user?.email || ""} avatarUrl={user?.user_metadata?.avatar_url} />
-        <DiarySidebar
+        <DiaryProfileCard
+          userName={userName}
+          userEmail={user?.email || ""}
+          avatarUrl={user?.user_metadata?.avatar_url}
           metrics={metrics}
-          smartInsight={smartInsight}
           timeRange={timeRange}
           onTimeRangeChange={setTimeRange}
+          smartInsight={smartInsight}
         />
       </aside>
       </div>
