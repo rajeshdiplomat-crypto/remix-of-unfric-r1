@@ -365,6 +365,39 @@ export default function Diary() {
       });
     });
 
+    // Manifest daily practice check-ins (from localStorage)
+    const manifestPractices: Record<string, any> = JSON.parse(localStorage.getItem("manifest_daily_practice") || "{}");
+    const goalsMap = new Map(goalsRes.data?.map(g => [g.id, g]) || []);
+    Object.values(manifestPractices).forEach((practice: any) => {
+      if (practice.user_id !== user.id || !practice.locked) return;
+      const goal = goalsMap.get(practice.goal_id);
+      const goalTitle = goal?.title || "Reality";
+      const goalImage = goal?.cover_image_url;
+      const extras = manifestExtras[practice.goal_id] || {};
+      const visionUrl = goalImage || extras.vision_image_url;
+      const media: string[] = [];
+      if (visionUrl && typeof visionUrl === "string" && visionUrl.startsWith("http")) media.push(visionUrl);
+
+      feedEvents.push({
+        user_id: user.id,
+        type: "checkin",
+        source_module: "manifest",
+        source_id: practice.id,
+        title: goalTitle,
+        summary: `Completed daily practice ✓`,
+        content_preview: practice.growth_note || `Visualized ${practice.visualization_count || 0} time(s), ${practice.act_count || 0} action(s)`,
+        media,
+        metadata: {
+          goal_id: practice.goal_id,
+          entry_date: practice.entry_date,
+          visualization_count: practice.visualization_count,
+          act_count: practice.act_count,
+          alignment: practice.alignment,
+        },
+        created_at: practice.created_at,
+      });
+    });
+
     // Emotions check-ins
     emotionsRes.data?.forEach((emotion) => {
       let parsedEmotion = { quadrant: "", emotion: "", context: {} as any };
