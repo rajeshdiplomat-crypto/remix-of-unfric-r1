@@ -111,7 +111,7 @@ export function NotesGroupSection({
 
   return (
     <div className={focusModeClasses}>
-      <div className="rounded-xl border border-border/40 bg-card shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+      <div className="rounded-xl border border-border bg-card shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
         <div className="flex">
           {/* Left: Wide Cover Image with change option */}
           <div className="w-32 shrink-0 overflow-hidden rounded-l-xl self-start relative group/image">
@@ -205,7 +205,7 @@ export function NotesGroupSection({
                   {allGroupNotes.slice(0, 3).map((note, idx) => (
                     <div
                       key={note.id}
-                      className="flex items-center gap-2 px-2.5 py-1.5 bg-muted/30 hover:bg-muted/50 rounded-md text-xs max-w-[180px] transition-colors"
+                      className="flex items-center gap-2 px-2.5 py-1.5 bg-muted/50 hover:bg-muted/70 rounded-md text-xs max-w-[180px] transition-colors border border-border/50"
                       style={{ opacity: 1 - idx * 0.2 }}
                     >
                       {note.isPinned && <Pin className="h-2.5 w-2.5 text-primary/70 shrink-0" />}
@@ -317,9 +317,9 @@ export function NotesGroupSection({
                           <div className="flex-1 h-px bg-gradient-to-r from-border/40 to-transparent" />
                         </div>
 
-                        <div className="rounded-2xl bg-card/80 backdrop-blur-sm border border-border/30 shadow-sm overflow-hidden">
+                        <div className="rounded-2xl bg-card border border-border shadow-sm overflow-hidden">
                           {directNotes.map((note, idx) => (
-                            <div key={note.id} className={idx > 0 ? "border-t border-border/20" : ""}>
+                            <div key={note.id} className={idx > 0 ? "border-t border-border" : ""}>
                               <NotesNoteRow
                                 note={note}
                                 group={group}

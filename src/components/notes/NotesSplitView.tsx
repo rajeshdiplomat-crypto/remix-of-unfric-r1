@@ -133,17 +133,17 @@ export function NotesSplitView({
 
   return (
     <div className="w-full h-[calc(100vh-80px)] p-4">
-      <div className="flex h-full border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
+      <div className="flex h-full border border-border rounded-xl overflow-hidden bg-card shadow-sm">
         {/* Left Sidebar */}
-        <div className="w-56 shrink-0 border-r border-slate-100 flex flex-col bg-slate-50 overflow-hidden relative z-[200] shadow-[1px_0_10px_rgba(0,0,0,0.02)]">
-          <div className="p-3 border-b border-slate-100 flex items-center justify-between shrink-0">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+        <div className="w-56 shrink-0 border-r border-border flex flex-col bg-muted/30 overflow-hidden relative z-[200]">
+          <div className="p-3 border-b border-border flex items-center justify-between shrink-0">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               {isInFocusMode ? "Context" : "Notes"}
             </span>
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg"
               onClick={onCreateNote}
             >
               <Plus className="h-4 w-4" />
@@ -164,20 +164,20 @@ export function NotesSplitView({
                   <div key={group.id} className={focusModeClass}>
                     <button
                       onClick={() => toggleGroup(group.id)}
-                      className="w-full px-2 py-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-1.5 hover:bg-slate-100/60 rounded-lg transition-colors"
+                      className="w-full px-2 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5 hover:bg-muted/60 rounded-lg transition-colors"
                     >
                       {isGroupExpanded ? (
-                        <ChevronDown className="h-3 w-3 text-slate-400 shrink-0" />
+                        <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
                       ) : (
-                        <ChevronRight className="h-3 w-3 text-slate-400 shrink-0" />
+                        <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
                       )}
                       <span className="flex-1 text-left truncate">{group.name}</span>
                       {mostRecentUpdate && <NotesActivityDot updatedAt={mostRecentUpdate} size="sm" />}
-                      <span className="text-slate-400/60 text-[10px] shrink-0">{groupNotes.length}</span>
+                      <span className="text-muted-foreground text-[10px] shrink-0">{groupNotes.length}</span>
                     </button>
 
                     {isGroupExpanded && (
-                      <div className="space-y-0.5 ml-2 border-l border-slate-100 pl-2">
+                      <div className="space-y-0.5 ml-2 border-l border-border pl-2">
                         {groupFolders.map((folder) => {
                           const folderNotes = groupNotes.filter((n) => n.folderId === folder.id);
                           const isFolderExpanded = expandedFolders.has(folder.id);
@@ -190,7 +190,7 @@ export function NotesSplitView({
                             <div key={folder.id} className={folderFocusClass}>
                               <button
                                 onClick={() => toggleFolder(folder.id)}
-                                className="w-full flex items-center gap-1.5 px-2 py-1 text-[11px] text-slate-500 hover:bg-slate-100/50 rounded-lg transition-colors"
+                                className="w-full flex items-center gap-1.5 px-2 py-1 text-[11px] text-muted-foreground hover:bg-muted/50 rounded-lg transition-colors"
                               >
                                 {isFolderExpanded ? (
                                   <ChevronDown className="h-2.5 w-2.5 shrink-0" />
@@ -204,7 +204,7 @@ export function NotesSplitView({
                                 )}
                                 <span className="flex-1 text-left truncate">{folder.name}</span>
                                 {folderMostRecent && <NotesActivityDot updatedAt={folderMostRecent} size="sm" />}
-                                <span className="text-slate-400/50 text-[10px] shrink-0">{folderNotes.length}</span>
+                                <span className="text-muted-foreground text-[10px] shrink-0">{folderNotes.length}</span>
                               </button>
 
                               {isFolderExpanded && (
@@ -215,12 +215,12 @@ export function NotesSplitView({
                                       className={`p-1.5 rounded-lg cursor-pointer transition-all flex items-start gap-1.5 ${
                                         selectedNote?.id === note.id
                                           ? "bg-primary/10 ring-1 ring-primary/20"
-                                          : "hover:bg-slate-50"
+                                          : "hover:bg-muted/50"
                                       }`}
                                       onClick={() => onSelectNote(note)}
                                     >
-                                      <FileText className="h-3 w-3 mt-0.5 text-slate-400 shrink-0" />
-                                      <span className="text-xs text-slate-700 truncate">
+                                      <FileText className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
+                                      <span className="text-xs text-foreground truncate">
                                         {note.title || "Untitled"}
                                       </span>
                                     </div>
@@ -239,16 +239,16 @@ export function NotesSplitView({
                               className={`p-1.5 rounded-lg cursor-pointer transition-all flex items-start gap-1.5 ${
                                 selectedNote?.id === note.id
                                   ? "bg-primary/10 ring-1 ring-primary/20"
-                                  : "hover:bg-slate-50"
+                                  : "hover:bg-muted/50"
                               }`}
                               onClick={() => onSelectNote(note)}
                             >
-                              <FileText className="h-3 w-3 mt-0.5 text-slate-400 shrink-0" />
+                              <FileText className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
                               <div className="flex-1 min-w-0">
-                                <span className="text-xs text-slate-700 truncate block">
+                                <span className="text-xs text-foreground truncate block">
                                   {note.title || "Untitled"}
                                 </span>
-                                <span className="text-[10px] text-slate-400 truncate block">
+                                <span className="text-[10px] text-muted-foreground truncate block">
                                   {note.plainText && note.plainText !== "undefined"
                                     ? note.plainText.slice(0, 30)
                                     : "No content"}
@@ -271,7 +271,7 @@ export function NotesSplitView({
         >
           {selectedNote ? (
             <>
-              <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100 bg-white shrink-0">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-card shrink-0">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <Badge
                     className="shrink-0 text-[10px]"
@@ -285,20 +285,20 @@ export function NotesSplitView({
                   </Badge>
                   {selectedNote.folderId && (
                     <>
-                      <ChevronRight className="h-3 w-3 text-slate-300 shrink-0" />
-                      <span className="text-[10px] text-slate-500 truncate">
+                      <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <span className="text-[10px] text-muted-foreground truncate">
                         {folders.find((f) => f.id === selectedNote.folderId)?.name}
                       </span>
                     </>
                   )}
-                  <span className="text-[10px] text-slate-400 ml-auto shrink-0">
+                  <span className="text-[10px] text-muted-foreground ml-auto shrink-0">
                     Edited {format(new Date(selectedNote.updatedAt), "MMM d, h:mm a")}
                   </span>
                 </div>
                 <div className="flex items-center gap-1 shrink-0 ml-2">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -311,7 +311,7 @@ export function NotesSplitView({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
                     onClick={handleBack}
                   >
                     <X className="h-4 w-4" />
@@ -331,12 +331,12 @@ export function NotesSplitView({
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 to-white">
+            <div className="flex-1 flex items-center justify-center bg-muted/20">
               <div className="text-center">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-violet-100 flex items-center justify-center mx-auto mb-3">
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
                   <FileText className="h-7 w-7 text-primary/60" />
                 </div>
-                <p className="text-slate-500 text-sm mb-3">Select a note to view</p>
+                <p className="text-muted-foreground text-sm mb-3">Select a note to view</p>
                 <Button
                   onClick={onCreateNote}
                   size="sm"
