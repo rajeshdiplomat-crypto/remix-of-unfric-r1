@@ -646,7 +646,7 @@ export default function Tasks() {
           {/* Unified layout: single column */}
           <div className="flex flex-col gap-4 flex-1 min-h-0">
             {/* Combined Card: Focus + Clock + Insights */}
-            {activeTab !== "files" && (
+            {(
               <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden shrink-0 flex items-stretch">
                 {/* Left column: Focus bar + Insights */}
                 <div className="flex-1 min-w-0 flex flex-col">
@@ -685,7 +685,6 @@ export default function Tasks() {
                 <KanbanBoardView
                   tasks={filteredTasks}
                   onTaskClick={openTaskDetail}
-                  onQuickAdd={handleBoardQuickAdd}
                   onDrop={handleBoardDrop}
                   onStartTask={handleStartTask}
                   onCompleteTask={handleCompleteTask}
@@ -705,11 +704,6 @@ export default function Tasks() {
                 />
               )}
 
-              {activeTab === "files" && (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                  Files coming soon
-                </div>
-              )}
             </div>
           </div>
 

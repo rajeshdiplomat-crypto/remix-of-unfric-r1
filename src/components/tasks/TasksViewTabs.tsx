@@ -1,7 +1,7 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { List, Columns3, Clock, FileText } from "lucide-react";
+import { List, Columns3, Clock } from "lucide-react";
 
-export type TasksViewTab = "lists" | "board" | "timeline" | "files";
+export type TasksViewTab = "lists" | "board" | "timeline";
 
 interface TasksViewTabsProps {
   activeTab: TasksViewTab;
@@ -12,7 +12,6 @@ const tabs: { id: TasksViewTab; label: string; icon: React.ElementType }[] = [
   { id: "lists", label: "Lists", icon: List },
   { id: "board", label: "Board", icon: Columns3 },
   { id: "timeline", label: "Timeline", icon: Clock },
-  { id: "files", label: "Files", icon: FileText },
 ];
 
 export function TasksViewTabs({ activeTab, onTabChange }: TasksViewTabsProps) {
