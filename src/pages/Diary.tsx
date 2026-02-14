@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PenLine, Search, ChevronDown } from "lucide-react";
+import { PenLine, Search, ChevronDown, Filter } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { loadActivityImage } from "@/components/habits/ActivityImageUpload";
@@ -29,6 +29,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DEFAULT_QUESTIONS } from "@/components/journal/types";
 
+type TimeFilter = 'all_time' | 'today' | 'yesterday' | 'last_week';
+type SortOption = 'latest' | 'oldest' | 'most_active';
+
 const FILTER_TABS = [
   { value: "all", label: "All" },
   { value: "emotions", label: "Emotions" },
@@ -39,11 +42,20 @@ const FILTER_TABS = [
   { value: "tasks", label: "Tasks" },
 ];
 
+const TIME_FILTER_OPTIONS: { value: TimeFilter; label: string }[] = [
+  { value: "all_time", label: "All Time" },
+  { value: "today", label: "Today" },
+  { value: "yesterday", label: "Yesterday" },
+  { value: "last_week", label: "Last Week" },
+];
+
 export default function Diary() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState<TimeRange>("week");
   const [searchQuery, setSearchQuery] = useState("");
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('all_time');
+  const [sortOption, setSortOption] = useState<SortOption>('latest');
   const [isJournalModalOpen, setIsJournalModalOpen] = useState(false);
 
   const {
@@ -69,8 +81,8 @@ export default function Diary() {
     if (!user?.id) return;
 
     // Fetch all module data including journal answers
-    const [tasksRes, journalRes, journalAnswersRes, notesRes, habitsRes, goalsRes, emotionsRes] = await Promise.all([
-      supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+    const [tasksRes, journalRes, journalAnswersRes, notesRes, habitsRes, habitCompletionsRes, goalsRes, emotionsRes] = await Promise.all([
+      supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
       supabase
         .from("journal_entries")
         .select("*")
@@ -82,8 +94,9 @@ export default function Diary() {
         .select("*, journal_entries!inner(user_id, entry_date, created_at)")
         .order("created_at", { ascending: false })
         .limit(100),
-      supabase.from("notes").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+      supabase.from("notes").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
       supabase.from("habits").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+      supabase.from("habit_completions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
       supabase
         .from("manifest_goals")
         .select("*")
@@ -95,19 +108,48 @@ export default function Diary() {
 
     const feedEvents: any[] = [];
 
-    // Tasks
+    // Tasks - create separate events for creation and completion
     tasksRes.data?.forEach((task) => {
+      // Always add creation event
       feedEvents.push({
         user_id: user.id,
-        type: task.is_completed ? "complete" : "create",
+        type: "create",
         source_module: "tasks",
         source_id: task.id,
         title: task.title,
-        summary: task.is_completed ? "Completed a task" : "Created a new task",
+        summary: "Created a new task",
         content_preview: task.description,
         metadata: { priority: task.priority, due_date: task.due_date },
         created_at: task.created_at,
       });
+      // If completed, add a separate completion event
+      if (task.is_completed && task.completed_at) {
+        feedEvents.push({
+          user_id: user.id,
+          type: "complete",
+          source_module: "tasks",
+          source_id: task.id,
+          title: task.title,
+          summary: "Completed a task ✓",
+          content_preview: task.description,
+          metadata: { priority: task.priority, due_date: task.due_date },
+          created_at: task.completed_at,
+        });
+      }
+      // If updated after creation
+      if (task.started_at && task.started_at !== task.created_at) {
+        feedEvents.push({
+          user_id: user.id,
+          type: "update",
+          source_module: "tasks",
+          source_id: task.id,
+          title: task.title,
+          summary: "Started working on task",
+          content_preview: task.description,
+          metadata: { priority: task.priority, due_date: task.due_date },
+          created_at: task.started_at,
+        });
+      }
     });
 
     // Journal Answers - each answer is a separate feed event
@@ -257,6 +299,43 @@ export default function Diary() {
         metadata: { frequency: habit.frequency },
         created_at: habit.created_at,
       });
+    });
+
+    // Habit Completions - daily checkmark events
+    const habitsMap = new Map(habitsRes.data?.map(h => [h.id, h]) || []);
+    habitCompletionsRes.data?.forEach((completion) => {
+      const habit = habitsMap.get(completion.habit_id);
+      const habitName = habit?.name || "Habit";
+      const habitImage = habit?.cover_image_url || loadActivityImage(completion.habit_id);
+      feedEvents.push({
+        user_id: user.id,
+        type: "complete",
+        source_module: "trackers",
+        source_id: completion.id,
+        title: habitName,
+        summary: `Completed daily check-in ✓`,
+        content_preview: `Marked "${habitName}" as done for ${completion.completed_date}`,
+        media: habitImage ? [habitImage] : [],
+        metadata: { habit_id: completion.habit_id, completed_date: completion.completed_date },
+        created_at: completion.created_at,
+      });
+    });
+
+    // Notes - also track updated notes
+    notesRes.data?.forEach((note) => {
+      if (note.updated_at && note.updated_at !== note.created_at) {
+        feedEvents.push({
+          user_id: user.id,
+          type: "update",
+          source_module: "notes",
+          source_id: note.id,
+          title: note.title,
+          summary: "Updated a note",
+          content_preview: note.content ? note.content.replace(/<[^>]*>/g, '').substring(0, 200) : undefined,
+          metadata: { category: note.category },
+          created_at: note.updated_at,
+        });
+      }
     });
 
     // Manifest Goals - also check localStorage extras for vision images
@@ -420,21 +499,45 @@ export default function Diary() {
     seedFeedEvents();
   };
 
-  // Filter events based on search
+  // Filter events based on search and time filter
   const filteredEvents = events.filter((event) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      event.title.toLowerCase().includes(query) ||
-      event.content_preview?.toLowerCase().includes(query) ||
-      event.summary?.toLowerCase().includes(query)
-    );
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch = event.title.toLowerCase().includes(query) ||
+        event.content_preview?.toLowerCase().includes(query) ||
+        event.summary?.toLowerCase().includes(query);
+      if (!matchesSearch) return false;
+    }
+    // Time filter
+    if (timeFilter !== 'all_time') {
+      const eventDate = new Date(event.created_at);
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const yesterdayStart = new Date(todayStart.getTime() - 86400000);
+      const lastWeekStart = new Date(todayStart.getTime() - 7 * 86400000);
+      
+      if (timeFilter === 'today' && eventDate < todayStart) return false;
+      if (timeFilter === 'yesterday' && (eventDate < yesterdayStart || eventDate >= todayStart)) return false;
+      if (timeFilter === 'last_week' && eventDate < lastWeekStart) return false;
+    }
+    return true;
   });
 
-  // Sort by entry date (newest first)
-  const sortedEvents = [...filteredEvents].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-  );
+  // Sort events
+  const sortedEvents = [...filteredEvents].sort((a, b) => {
+    if (sortOption === 'oldest') {
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    }
+    if (sortOption === 'most_active') {
+      // Sort by reaction/comment count (most interactions first)
+      const aActivity = (reactions[a.id]?.length || 0) + (comments[a.id]?.length || 0);
+      const bActivity = (reactions[b.id]?.length || 0) + (comments[b.id]?.length || 0);
+      return bActivity - aActivity;
+    }
+    // Default: latest first
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
 
   const [contentReady, setContentReady] = useState(false);
   const userName = user?.email?.split("@")[0] || "User";
@@ -470,7 +573,7 @@ export default function Diary() {
       {/* 3-Column Layout Below Hero */}
       <div className="flex flex-1 w-full overflow-hidden min-h-0">
         {/* Left Sidebar - Editorial style */}
-        <aside className="hidden lg:flex flex-col w-[380px] shrink-0 h-full min-h-0 overflow-y-auto border-r border-border/20 bg-background">
+        <aside className="hidden lg:flex flex-col w-[380px] shrink-0 h-full min-h-0 overflow-y-auto border-r border-border/20">
           <DiaryLeftSidebar 
             userName={userName}
             filter={filter}
@@ -507,16 +610,47 @@ export default function Diary() {
                 {tab.label}
               </Button>
             ))}
+
+            {/* Time Filter */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="chip" size="chip" className="ml-auto">
-                  Latest <ChevronDown className="h-3 w-3 ml-1" />
+                  <Filter className="h-3 w-3 mr-1" />
+                  {TIME_FILTER_OPTIONS.find(o => o.value === timeFilter)?.label || 'All Time'}
+                  <ChevronDown className="h-3 w-3 ml-1" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>Latest</DropdownMenuItem>
-                <DropdownMenuItem>Oldest</DropdownMenuItem>
-                <DropdownMenuItem>Most Active</DropdownMenuItem>
+                {TIME_FILTER_OPTIONS.map(opt => (
+                  <DropdownMenuItem 
+                    key={opt.value} 
+                    onClick={() => setTimeFilter(opt.value)}
+                    className={timeFilter === opt.value ? "bg-muted font-medium" : ""}
+                  >
+                    {opt.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Sort */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="chip" size="chip">
+                  {sortOption === 'latest' ? 'Latest' : sortOption === 'oldest' ? 'Oldest' : 'Most Active'}
+                  <ChevronDown className="h-3 w-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setSortOption('latest')} className={sortOption === 'latest' ? "bg-muted font-medium" : ""}>
+                  Latest
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortOption('oldest')} className={sortOption === 'oldest' ? "bg-muted font-medium" : ""}>
+                  Oldest
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortOption('most_active')} className={sortOption === 'most_active' ? "bg-muted font-medium" : ""}>
+                  Most Active
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

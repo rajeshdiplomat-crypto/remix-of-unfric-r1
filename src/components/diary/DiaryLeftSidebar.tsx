@@ -24,6 +24,7 @@ export function DiaryLeftSidebar({
   return (
     <div className="flex flex-col justify-center h-full px-6 lg:px-8 gap-8 pt-12">
       <div className="space-y-6 max-w-sm">
+
         {/* Badge */}
         <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
           <Layers className="h-4 w-4" />
