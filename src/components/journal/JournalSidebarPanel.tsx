@@ -38,6 +38,7 @@ interface JournalSidebarPanelProps {
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   searchQuery?: string;
+  compact?: boolean;
 }
 
 export const JournalSidebarPanel = memo(
@@ -51,6 +52,7 @@ export const JournalSidebarPanel = memo(
     isCollapsed = false,
     onToggleCollapse,
     searchQuery = "",
+    compact = false,
   }: JournalSidebarPanelProps) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [dailyPrompt, setDailyPrompt] = useState(
@@ -185,18 +187,18 @@ export const JournalSidebarPanel = memo(
             </div>
 
             {/* Calendar Grid */}
-            <div className="p-3">
+            <div className={cn("p-3", compact && "p-2")}>
               {/* Day Headers */}
-              <div className="grid grid-cols-7 gap-1 mb-2">
+              <div className="grid grid-cols-7 gap-0.5 mb-1">
                 {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => (
-                  <div key={i} className="text-[10px] font-semibold text-slate-400 text-center py-1">
+                  <div key={i} className={cn("text-[10px] font-semibold text-slate-400 text-center", compact ? "py-0.5" : "py-1")}>
                     {day}
                   </div>
                 ))}
               </div>
 
               {/* Days */}
-              <div className="grid grid-cols-7 gap-1">
+              <div className="grid grid-cols-7 gap-0.5">
                 {Array.from({ length: daysInMonth[0].getDay() }).map((_, i) => (
                   <div key={`empty-${i}`} className="aspect-square" />
                 ))}
