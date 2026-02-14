@@ -1,27 +1,12 @@
-import { useCustomTheme, DEFAULT_COLORS } from "@/contexts/CustomThemeContext";
 import { useFont, FONT_PAIRS, FontPairId } from "@/contexts/FontContext";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { RotateCcw } from "lucide-react";
 
 export default function Settings() {
-  const { customColors, setCustomColors } = useCustomTheme();
   const { fontPairId, setFontPair } = useFont();
 
-  const currentBg = customColors?.background ?? DEFAULT_COLORS.background;
-  const currentCard = customColors?.card ?? DEFAULT_COLORS.card;
-
-  const handleColorChange = (key: "background" | "card", value: string) => {
-    setCustomColors({
-      background: key === "background" ? value : currentBg,
-      card: key === "card" ? value : currentCard,
-    });
-  };
-
   const handleReset = () => {
-    setCustomColors(null);
     setFontPair("elegant");
   };
 
@@ -37,63 +22,6 @@ export default function Settings() {
             Customize your experience
           </p>
         </div>
-
-        {/* Colors Section */}
-        <section className="space-y-6">
-          <h2 className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-            Colors
-          </h2>
-
-          <div className="grid grid-cols-2 gap-6">
-            {/* Background color */}
-            <div className="space-y-2">
-              <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                Background
-              </Label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={currentBg}
-                  onChange={(e) => handleColorChange("background", e.target.value)}
-                  className="w-10 h-10 rounded-md border border-border cursor-pointer bg-transparent p-0.5"
-                />
-                <Input
-                  value={currentBg}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    if (/^#[0-9A-Fa-f]{6}$/.test(v)) handleColorChange("background", v);
-                  }}
-                  className="font-mono text-xs uppercase h-10"
-                  maxLength={7}
-                />
-              </div>
-            </div>
-
-            {/* Card color */}
-            <div className="space-y-2">
-              <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                Card / Sidebar
-              </Label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={currentCard}
-                  onChange={(e) => handleColorChange("card", e.target.value)}
-                  className="w-10 h-10 rounded-md border border-border cursor-pointer bg-transparent p-0.5"
-                />
-                <Input
-                  value={currentCard}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    if (/^#[0-9A-Fa-f]{6}$/.test(v)) handleColorChange("card", v);
-                  }}
-                  className="font-mono text-xs uppercase h-10"
-                  maxLength={7}
-                />
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* Font Section */}
         <section className="space-y-6">

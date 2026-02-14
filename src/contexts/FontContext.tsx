@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
-export type FontPairId = "classic" | "modern" | "geometric" | "elegant";
+export type FontPairId = "classic" | "modern" | "geometric" | "elegant" | "cursive" | "handwritten" | "monospace" | "editorial";
 
 export interface FontPairConfig {
   id: FontPairId;
@@ -48,6 +48,42 @@ export const FONT_PAIRS: FontPairConfig[] = [
     bodyFamily: "'DM Sans', system-ui, sans-serif",
     headingUrl: "https://fonts.googleapis.com/css2?family=DM+Serif+Display:wght@400&display=swap",
     bodyUrl: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap",
+  },
+  {
+    id: "cursive",
+    name: "Cursive",
+    description: "Dancing Script + Nunito",
+    headingFamily: "'Dancing Script', cursive",
+    bodyFamily: "'Nunito', system-ui, sans-serif",
+    headingUrl: "https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&display=swap",
+    bodyUrl: "https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap",
+  },
+  {
+    id: "handwritten",
+    name: "Handwritten",
+    description: "Caveat + Quicksand",
+    headingFamily: "'Caveat', cursive",
+    bodyFamily: "'Quicksand', system-ui, sans-serif",
+    headingUrl: "https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap",
+    bodyUrl: "https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap",
+  },
+  {
+    id: "monospace",
+    name: "Monospace",
+    description: "JetBrains Mono + IBM Plex Sans",
+    headingFamily: "'JetBrains Mono', monospace",
+    bodyFamily: "'IBM Plex Sans', system-ui, sans-serif",
+    headingUrl: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap",
+    bodyUrl: "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap",
+  },
+  {
+    id: "editorial",
+    name: "Editorial",
+    description: "Cormorant Garamond + Lato",
+    headingFamily: "'Cormorant Garamond', Georgia, serif",
+    bodyFamily: "'Lato', system-ui, sans-serif",
+    headingUrl: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&display=swap",
+    bodyUrl: "https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap",
   },
 ];
 
