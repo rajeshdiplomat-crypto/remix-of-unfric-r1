@@ -37,6 +37,8 @@ type TimePeriod = "today" | "tomorrow" | "week";
 interface InsightsPanelProps {
   tasks: QuadrantTask[];
   compactMode?: boolean;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 function KpiCard({
   icon,
@@ -167,7 +169,7 @@ function ClockKpiCard() {
     </Card>
   );
 }
-export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
+export function InsightsPanel({ tasks, compactMode, collapsed, onToggleCollapse }: InsightsPanelProps) {
   const [expanded, setExpanded] = useState(true);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("today");
 
@@ -320,22 +322,25 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
       ].filter((d) => d.value > 0),
     [pieChartTasks],
   );
-  if (!expanded) {
+  if (collapsed) {
     return (
-      <button
-        onClick={() => setExpanded(true)}
-        className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors group"
-      >
-        <ChevronUp className="h-3.5 w-3.5 rotate-180 group-hover:translate-y-0.5 transition-transform" />
-        Show Insights
-      </button>
+      <div className="px-3 py-1.5 border-t border-border/20">
+        <button
+          onClick={onToggleCollapse}
+          className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors group"
+        >
+          <ChevronUp className="h-3.5 w-3.5 rotate-180 group-hover:translate-y-0.5 transition-transform" />
+          Show Insights
+        </button>
+      </div>
     );
   }
   return (
     <div className="overflow-hidden">
-      <div className="px-3 py-2.5">
-        {/* Time Period Selector */}
-        <div className="flex items-center gap-1 bg-muted/40 rounded-lg p-0.5 w-fit mb-2.5">
+      <div className="px-3 py-1.5">
+        {/* Time Period Selector + Toggle */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1 bg-muted/40 rounded-lg p-0.5 w-fit">
           {(["today", "tomorrow", "week"] as TimePeriod[]).map((period) => (
             <button
               key={period}
@@ -350,10 +355,20 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
               {period === "today" ? "Today" : period === "tomorrow" ? "Tomorrow" : "Week"}
             </button>
           ))}
+          </div>
+          {onToggleCollapse && (
+            <button
+              onClick={onToggleCollapse}
+              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Hide Insights
+              <ChevronUp className="h-3 w-3" />
+            </button>
+          )}
         </div>
 
         {/* Main row: KPIs column + Charts */}
-        <div className="flex gap-3 h-[140px]">
+        <div className="flex gap-3 h-[180px]">
           {/* KPIs - vertical stack on the left */}
           <div className="grid grid-rows-4 gap-1.5 shrink-0 w-[100px]">
             <div className="flex items-center gap-2 rounded-lg bg-muted/20 border border-border/30 px-2">

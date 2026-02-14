@@ -649,7 +649,7 @@ export default function Tasks() {
             {activeTab !== "files" && (
               <div className="rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm overflow-hidden shrink-0">
                 {/* Top row: Focus bar left + Clock widget right */}
-                <div className="flex items-stretch border-b border-border/30">
+                <div className="flex items-stretch">
                   {/* Focus bar section */}
                   <div className="flex-1 min-w-0 p-2">
                     <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
@@ -660,34 +660,12 @@ export default function Tasks() {
                   </div>
                 </div>
 
-                {/* Insights toggle + panel */}
-                <div className="flex flex-col">
-                  <div className="flex items-center justify-end px-3 pt-1.5">
-                    <button
-                      onClick={() => setInsightsCollapsed(prev => !prev)}
-                      className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {insightsCollapsed ? "Show Insights" : "Hide Insights"}
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className={`transition-transform duration-200 ${insightsCollapsed ? "rotate-180" : ""}`}
-                      >
-                        <polyline points="18 15 12 9 6 15" />
-                      </svg>
-                    </button>
-                  </div>
-                  {!insightsCollapsed && (
-                    <InsightsPanel tasks={filteredTasks} compactMode={true} />
-                  )}
-                </div>
+                <InsightsPanel
+                  tasks={filteredTasks}
+                  compactMode={true}
+                  collapsed={insightsCollapsed}
+                  onToggleCollapse={() => setInsightsCollapsed(prev => !prev)}
+                />
               </div>
             )}
 
