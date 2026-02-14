@@ -24,6 +24,8 @@ export interface JournalTemplate {
   applyOnNewEntry: boolean;
   unstructured: boolean;
   defaultSkinId: string;
+  /** ISO date (YYYY-MM-DD) from which the current mode takes effect */
+  effectiveFrom?: string;
 }
 
 export interface JournalSkin {
