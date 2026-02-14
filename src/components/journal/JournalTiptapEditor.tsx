@@ -1261,12 +1261,40 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
 
         <style>{`
         .ProseMirror { min-height: 300px; word-break: break-word; overflow-wrap: anywhere; }
-        .ProseMirror .is-empty::before { color: ${skinStyles?.mutedText || "#94a3b8"}; content: attr(data-placeholder); float: left; height: 0; pointer-events: none; }
-        .ProseMirror h1 { font-size: 1.875rem; font-weight: 700; line-height: 1.2; margin: 0; padding: 0; }
-        .ProseMirror h1 + p, .ProseMirror h1 + .is-empty { margin-top: 0.25rem; }
-        .ProseMirror h2 { font-size: 1.5rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
-        .ProseMirror h3 { font-size: 1.25rem; font-weight: 600; margin: 1rem 0 0.5rem; }
-        .ProseMirror p { margin: 0.125rem 0; line-height: 1.75; }
+        
+        /* Placeholder styling — uses absolute positioning to prevent any layout shift */
+        .ProseMirror .is-empty::before,
+        .ProseMirror .is-node-empty::before {
+          color: ${skinStyles?.mutedText || "#94a3b8"};
+          content: attr(data-placeholder);
+          position: absolute;
+          pointer-events: none;
+        }
+
+        /* H1 Title — fixed dimensions, no margin collapse, no shift */
+        .ProseMirror h1 {
+          font-size: 1.875rem;
+          font-weight: 700;
+          line-height: 2.25rem;
+          min-height: 2.25rem;
+          margin: 0 0 0.25rem 0;
+          padding: 0;
+          position: relative;
+        }
+
+        /* Paragraphs — consistent tight spacing */
+        .ProseMirror p {
+          margin: 0;
+          padding: 0.0625rem 0;
+          line-height: 1.75;
+          min-height: 1.75em;
+          position: relative;
+        }
+
+        /* H2/H3 keep structured mode spacing */
+        .ProseMirror h2 { font-size: 1.5rem; font-weight: 600; margin: 1.25rem 0 0.5rem; position: relative; }
+        .ProseMirror h3 { font-size: 1.25rem; font-weight: 600; margin: 1rem 0 0.5rem; position: relative; }
+
         .ProseMirror strong { font-weight: 700; }
         .ProseMirror ul { list-style: disc; padding-left: 1.5rem; }
         .ProseMirror ol { list-style: decimal; padding-left: 1.5rem; }
