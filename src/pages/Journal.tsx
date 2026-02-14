@@ -21,6 +21,8 @@ import {
   Search,
   X,
   BarChart3,
+  Sparkles,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -153,7 +155,7 @@ export default function Journal() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
-  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
+  const [activeLeftPanel, setActiveLeftPanel] = useState<"calendar" | "emotions" | "progress" | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showRecentEntries, setShowRecentEntries] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
@@ -775,47 +777,72 @@ export default function Journal() {
             subtitle={PAGE_HERO_TEXT.journal.subtitle}
           />
           {journalHeader}
-          <div
-            className={cn(
-              "flex-1 min-h-0 grid gap-8 w-full px-4 sm:px-6 py-6 overflow-hidden",
-              leftPanelCollapsed ? "grid-cols-1 lg:grid-cols-[64px_1fr_260px]" : "grid-cols-1 lg:grid-cols-[300px_1fr_260px]",
-            )}
-          >
-            <div className={cn("hidden lg:flex flex-col gap-4 transition-all duration-300 h-full overflow-y-auto", leftPanelCollapsed && "w-16")}>
-              <JournalSidebarPanel
-                selectedDate={selectedDate}
-                onDateSelect={setSelectedDate}
-                entries={entries}
-                onInsertPrompt={handleInsertPrompt}
-                skin={currentSkin}
-                showSection="calendar"
-                isCollapsed={leftPanelCollapsed}
-                onToggleCollapse={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
-                searchQuery={searchQuery}
-              />
-              {!leftPanelCollapsed && (
-                <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} />
+          <div className="flex-1 min-h-0 grid gap-8 w-full px-4 sm:px-6 py-6 overflow-hidden grid-cols-1 lg:grid-cols-[320px_1fr]">
+            {/* Left column: Editorial + toggle panels */}
+            <div className="hidden lg:flex flex-col gap-6 h-full overflow-y-auto pr-2">
+              {/* Editorial header */}
+              <div className="space-y-3">
+                <h2 className="text-lg font-semibold tracking-wide text-foreground">Journaling</h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Journaling helps you process emotions, track growth, and find clarity. A few minutes each day can transform how you understand yourself.
+                </p>
+              </div>
+
+              <div className="h-px bg-border" />
+
+              {/* Toggle buttons */}
+              <div className="flex gap-2">
+                <Button
+                  variant={activeLeftPanel === "calendar" ? "outline" : "ghost"}
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => setActiveLeftPanel(activeLeftPanel === "calendar" ? null : "calendar")}
+                >
+                  <Calendar className="h-3.5 w-3.5" />
+                  Calendar
+                </Button>
+                <Button
+                  variant={activeLeftPanel === "emotions" ? "outline" : "ghost"}
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => setActiveLeftPanel(activeLeftPanel === "emotions" ? null : "emotions")}
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Emotions
+                </Button>
+                <Button
+                  variant={activeLeftPanel === "progress" ? "outline" : "ghost"}
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => setActiveLeftPanel(activeLeftPanel === "progress" ? null : "progress")}
+                >
+                  <TrendingUp className="h-3.5 w-3.5" />
+                  Progress
+                </Button>
+              </div>
+
+              {/* Expandable panel area */}
+              {activeLeftPanel === "calendar" && (
+                <JournalSidebarPanel
+                  selectedDate={selectedDate}
+                  onDateSelect={setSelectedDate}
+                  entries={entries}
+                  onInsertPrompt={handleInsertPrompt}
+                  skin={currentSkin}
+                  showSection="calendar"
+                  searchQuery={searchQuery}
+                />
+              )}
+              {activeLeftPanel === "emotions" && (
+                <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="emotions" />
+              )}
+              {activeLeftPanel === "progress" && (
+                <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="progress" />
               )}
             </div>
+
+            {/* Right column: Editor only */}
             {editorContent}
-            {/* Editorial right space */}
-            <div className="hidden lg:flex flex-col items-center justify-center h-full text-center px-6">
-              <div className="space-y-8">
-                <div className="w-8 h-px bg-muted-foreground/20 mx-auto" />
-                <p className="text-lg font-light italic tracking-wide text-muted-foreground/30 leading-relaxed">
-                  "Writing is the painting of the voice."
-                </p>
-                <div className="w-8 h-px bg-muted-foreground/20 mx-auto" />
-                <div className="space-y-2">
-                  <p className="text-xs tracking-[0.2em] uppercase text-muted-foreground/25">
-                    {format(selectedDate, "EEEE, MMMM d")}
-                  </p>
-                  <p className="text-xs text-muted-foreground/20">
-                    {wordCount === 0 ? "ready to write" : `${wordCount} words written`}
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         </>
       )}
