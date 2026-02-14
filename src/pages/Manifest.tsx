@@ -418,7 +418,7 @@ export default function Manifest() {
           animation: float-particle 1.5s ease-out forwards;
         }
       `}</style>
-      <div className="flex flex-col w-full flex-1 bg-background min-h-screen overflow-hidden">
+      <div className="flex flex-col w-full flex-1 bg-background h-full overflow-hidden">
         {/* Hero */}
         <PageHero
           storageKey="manifest_hero_src"
