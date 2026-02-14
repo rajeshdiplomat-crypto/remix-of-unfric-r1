@@ -1,4 +1,4 @@
-import { BookOpen, CheckSquare, StickyNote, Activity, Sparkles, Heart, Clock, Lightbulb } from "lucide-react";
+import { BookOpen, CheckSquare, StickyNote, Activity, Sparkles, Heart, Clock, Lightbulb, Layers } from "lucide-react";
 import type { SourceModule } from "./types";
 
 interface DiaryLeftSidebarProps {
@@ -22,46 +22,48 @@ export function DiaryLeftSidebar({
   onFilterChange,
 }: DiaryLeftSidebarProps) {
   return (
-    <div className="flex flex-col h-full p-4 gap-6">
-      {/* About Section */}
-      <div className="space-y-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          About Diary
-        </h3>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Your unified timeline — every journal entry, completed task, note, habit, goal, and emotion check-in flows into one feed so you can see the full picture of your day.
-        </p>
-      </div>
+    <div className="flex flex-col justify-center h-full px-6 lg:px-8 gap-8">
+      <div className="space-y-6 max-w-sm">
+        {/* Badge */}
+        <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
+          <Layers className="h-4 w-4" />
+          Your Timeline
+        </span>
 
-      {/* How it works */}
-      <div className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          How it works
-        </h3>
+        {/* Title */}
+        <h2 className="text-3xl md:text-4xl font-light leading-tight">
+          Your Unified <span className="font-semibold">Life Feed</span>
+        </h2>
+
+        {/* Description */}
+        <p className="text-muted-foreground text-lg leading-relaxed">
+          Every journal entry, completed task, note, habit, and emotion check-in flows into one timeline — the full picture of your day.
+        </p>
+
+        <div className="h-px bg-border" />
+
+        {/* How it works */}
         <div className="space-y-3">
-          <div className="flex items-start gap-2.5">
-            <Clock className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-            <p className="text-xs text-muted-foreground leading-relaxed">
+          <div className="flex items-start gap-3">
+            <Clock className="h-4 w-4 text-primary mt-1 shrink-0" />
+            <p className="text-sm text-muted-foreground leading-relaxed">
               Activities from all modules appear here automatically, sorted by date.
             </p>
           </div>
-          <div className="flex items-start gap-2.5">
-            <Lightbulb className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-            <p className="text-xs text-muted-foreground leading-relaxed">
+          <div className="flex items-start gap-3">
+            <Lightbulb className="h-4 w-4 text-primary mt-1 shrink-0" />
+            <p className="text-sm text-muted-foreground leading-relaxed">
               React, comment, and save entries to build your personal highlights.
             </p>
           </div>
         </div>
-      </div>
 
-      {/* Modules */}
-      <div className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Modules
-        </h3>
-        <div className="space-y-2">
+        <div className="h-px bg-border" />
+
+        {/* Modules */}
+        <div className="space-y-2.5">
           {MODULE_INFO.map((mod) => (
-            <div key={mod.name} className="flex items-center gap-2.5 py-1.5">
+            <div key={mod.name} className="flex items-center gap-3 py-1">
               <mod.icon className="h-4 w-4 text-primary shrink-0" />
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground leading-tight">{mod.name}</p>
