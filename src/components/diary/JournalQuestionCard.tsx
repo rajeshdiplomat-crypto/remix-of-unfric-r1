@@ -57,6 +57,15 @@ const REACTION_TYPES = [
 
 type ReactionType = typeof REACTION_TYPES[number]['type'];
 
+interface FeedCommentItem {
+  id: string;
+  text: string;
+  created_at: string;
+  user_id: string;
+  is_edited?: boolean | null;
+  parent_comment_id?: string | null;
+}
+
 interface JournalQuestionCardProps {
   eventId: string;
   questionLabel: string;
@@ -71,12 +80,14 @@ interface JournalQuestionCardProps {
   isSaved: boolean;
   userReaction?: ReactionType | null;
   reactionCounts?: Record<ReactionType, number>;
-  commentCount?: number;
+  comments?: FeedCommentItem[];
+  currentUserId?: string;
   onToggleSave: () => void;
   onEdit: () => void;
   onNavigate: () => void;
   onToggleReaction?: (eventId: string, reaction: ReactionType | null) => void;
   onAddComment?: (eventId: string, text: string) => void;
+  onDeleteComment?: (commentId: string) => void;
 }
 
 export function JournalQuestionCard({
@@ -93,12 +104,14 @@ export function JournalQuestionCard({
   isSaved,
   userReaction: initialUserReaction,
   reactionCounts: initialReactionCounts,
-  commentCount = 0,
+  comments: feedComments = [],
+  currentUserId,
   onToggleSave,
   onEdit,
   onNavigate,
   onToggleReaction,
   onAddComment,
+  onDeleteComment,
 }: JournalQuestionCardProps) {
   const { toast } = useToast();
   const [expanded, setExpanded] = useState(false);
@@ -395,9 +408,7 @@ export function JournalQuestionCard({
             )}
           </div>
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            {(commentCount > 0 || showComposer) && (
-              <span>{commentCount} comment{commentCount !== 1 ? 's' : ''}</span>
-            )}
+            <span>{feedComments.length} comment{feedComments.length !== 1 ? 's' : ''}</span>
             <span>0 shares</span>
           </div>
         </div>
@@ -411,7 +422,7 @@ export function JournalQuestionCard({
                 <button
                   aria-pressed={!!userReaction}
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
+                    "flex-1 flex items-center justify-center gap-2 py-2.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
                     userReaction && "text-primary"
                   )}
                 >
@@ -449,7 +460,7 @@ export function JournalQuestionCard({
             <button
               onClick={() => setShowComposer(!showComposer)}
               className={cn(
-                "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
+                "flex-1 flex items-center justify-center gap-2 py-2.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
                 showComposer && "text-primary"
               )}
             >
@@ -460,7 +471,7 @@ export function JournalQuestionCard({
             {/* Share */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors">
+                <button className="flex-1 flex items-center justify-center gap-2 py-2.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors">
                   <Share2 className="h-4 w-4" />
                   <span>Share</span>
                 </button>
@@ -483,9 +494,10 @@ export function JournalQuestionCard({
           </div>
         </div>
 
-        {/* Inline Comment Composer */}
+        {/* Comments section */}
         {showComposer && (
-          <div className="mt-3 pt-3 border-t border-border/30">
+          <div className="mt-3 pt-3 border-t border-border/30 space-y-3">
+            {/* Comment input */}
             <div className="flex gap-2">
               <Input
                 placeholder="Write a comment..."
@@ -502,6 +514,25 @@ export function JournalQuestionCard({
                 <Send className="h-4 w-4" />
               </Button>
             </div>
+
+            {/* Existing comments */}
+            {feedComments.map((comment) => (
+              <div key={comment.id} className="bg-muted/30 rounded-lg p-3">
+                <p className="text-sm">{comment.text}</p>
+                <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
+                  <span>{format(new Date(comment.created_at), "MMM d, h:mm a")}</span>
+                  {comment.is_edited && <span>(edited)</span>}
+                  {comment.user_id === currentUserId && (
+                    <button 
+                      className="hover:text-destructive"
+                      onClick={() => onDeleteComment?.(comment.id)}
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </CardContent>
