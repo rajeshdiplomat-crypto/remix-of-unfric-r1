@@ -12,7 +12,7 @@ import { TopFocusBar } from "@/components/tasks/TopFocusBar";
 import { AllTasksList } from "@/components/tasks/AllTasksList";
 import { BoardView } from "@/components/tasks/BoardView";
 import { KanbanBoardView } from "@/components/tasks/KanbanBoardView";
-import { TasksRightSidebar } from "@/components/tasks/TasksRightSidebar";
+import { TasksClockWidget } from "@/components/tasks/TasksClockWidget";
 import { InsightsPanel } from "@/components/tasks/InsightsPanel";
 import { UnifiedTaskDrawer } from "@/components/tasks/UnifiedTaskDrawer";
 import { DeepFocusPrompt } from "@/components/tasks/DeepFocusPromptModal";
@@ -643,94 +643,97 @@ export default function Tasks() {
           {/* View Tabs */}
           <TasksViewTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-          {/* Unified grid: task content left, clock sidebar right */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6 flex-1 min-h-0">
-            {/* Left column: Focus bar + Insights + Tab content */}
-            <div className="flex flex-col gap-2.5 min-h-0">
-              {activeTab !== "files" && (
-                <>
-                  <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
-
-                  {/* Insights toggle + panel */}
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center justify-end">
-                      <button
-                        onClick={() => setInsightsCollapsed(prev => !prev)}
-                        className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {insightsCollapsed ? "Show Insights" : "Hide Insights"}
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className={`transition-transform duration-200 ${insightsCollapsed ? "rotate-180" : ""}`}
-                        >
-                          <polyline points="18 15 12 9 6 15" />
-                        </svg>
-                      </button>
-                    </div>
-                    {!insightsCollapsed && (
-                      <InsightsPanel tasks={filteredTasks} compactMode={true} />
-                    )}
+          {/* Unified layout: single column */}
+          <div className="flex flex-col gap-4 flex-1 min-h-0">
+            {/* Combined Card: Focus + Clock + Insights */}
+            {activeTab !== "files" && (
+              <div className="rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm overflow-hidden shrink-0">
+                {/* Top row: Focus bar left + Clock widget right */}
+                <div className="flex items-stretch border-b border-border/30">
+                  {/* Focus bar section */}
+                  <div className="flex-1 min-w-0 p-2">
+                    <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
                   </div>
-                </>
+                  {/* Clock widget - compact inline */}
+                  <div className="hidden lg:flex w-[220px] shrink-0 border-l border-border/30">
+                    <TasksClockWidget />
+                  </div>
+                </div>
+
+                {/* Insights toggle + panel */}
+                <div className="flex flex-col">
+                  <div className="flex items-center justify-end px-3 pt-1.5">
+                    <button
+                      onClick={() => setInsightsCollapsed(prev => !prev)}
+                      className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {insightsCollapsed ? "Show Insights" : "Hide Insights"}
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={`transition-transform duration-200 ${insightsCollapsed ? "rotate-180" : ""}`}
+                      >
+                        <polyline points="18 15 12 9 6 15" />
+                      </svg>
+                    </button>
+                  </div>
+                  {!insightsCollapsed && (
+                    <InsightsPanel tasks={filteredTasks} compactMode={true} />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Main tab content */}
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              {activeTab === "lists" && (
+                <AllTasksList
+                  tasks={filteredTasks}
+                  onTaskClick={openTaskDetail}
+                  onStartTask={handleStartTask}
+                  onCompleteTask={handleCompleteTask}
+                  onDeleteTask={(task) => handleDeleteTask(task.id)}
+                  collapsed={false}
+                  onToggleCollapse={() => {}}
+                />
               )}
 
-              {/* Main tab content */}
-              <div className="flex-1 min-h-0 overflow-y-auto">
-                {activeTab === "lists" && (
-                  <AllTasksList
-                    tasks={filteredTasks}
-                    onTaskClick={openTaskDetail}
-                    onStartTask={handleStartTask}
-                    onCompleteTask={handleCompleteTask}
-                    onDeleteTask={(task) => handleDeleteTask(task.id)}
-                    collapsed={false}
-                    onToggleCollapse={() => {}}
-                  />
-                )}
+              {activeTab === "board" && (
+                <KanbanBoardView
+                  tasks={filteredTasks}
+                  onTaskClick={openTaskDetail}
+                  onQuickAdd={handleBoardQuickAdd}
+                  onDrop={handleBoardDrop}
+                  onStartTask={handleStartTask}
+                  onCompleteTask={handleCompleteTask}
+                />
+              )}
 
-                {activeTab === "board" && (
-                  <KanbanBoardView
-                    tasks={filteredTasks}
-                    onTaskClick={openTaskDetail}
-                    onQuickAdd={handleBoardQuickAdd}
-                    onDrop={handleBoardDrop}
-                    onStartTask={handleStartTask}
-                    onCompleteTask={handleCompleteTask}
-                  />
-                )}
+              {activeTab === "timeline" && (
+                <BoardView
+                  mode="status"
+                  tasks={filteredTasks}
+                  onTaskClick={openTaskDetail}
+                  onDragStart={() => {}}
+                  onDrop={handleBoardDrop}
+                  onQuickAdd={handleBoardQuickAdd}
+                  onStartTask={handleStartTask}
+                  onCompleteTask={handleCompleteTask}
+                />
+              )}
 
-                {activeTab === "timeline" && (
-                  <BoardView
-                    mode="status"
-                    tasks={filteredTasks}
-                    onTaskClick={openTaskDetail}
-                    onDragStart={() => {}}
-                    onDrop={handleBoardDrop}
-                    onQuickAdd={handleBoardQuickAdd}
-                    onStartTask={handleStartTask}
-                    onCompleteTask={handleCompleteTask}
-                  />
-                )}
-
-                {activeTab === "files" && (
-                  <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                    Files coming soon
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Right column: Clock sidebar spanning full height */}
-            <div className="hidden lg:block">
-              <TasksRightSidebar />
+              {activeTab === "files" && (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                  Files coming soon
+                </div>
+              )}
             </div>
           </div>
 

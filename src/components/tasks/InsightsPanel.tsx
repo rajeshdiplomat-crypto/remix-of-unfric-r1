@@ -332,7 +332,7 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
     );
   }
   return (
-    <div className="rounded-xl border border-border/40 bg-card/40 backdrop-blur-sm overflow-hidden">
+    <div className="overflow-hidden">
       <div className="px-3 py-2.5">
         {/* Time Period Selector */}
         <div className="flex items-center gap-1 bg-muted/40 rounded-lg p-0.5 w-fit mb-2.5">
@@ -353,7 +353,7 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
         </div>
 
         {/* Main row: KPIs column + Charts */}
-        <div className="flex gap-3 h-[120px]">
+        <div className="flex gap-3 h-[140px]">
           {/* KPIs - vertical stack on the left */}
           <div className="grid grid-rows-4 gap-1.5 shrink-0 w-[100px]">
             <div className="flex items-center gap-2 rounded-lg bg-muted/20 border border-border/30 px-2">
