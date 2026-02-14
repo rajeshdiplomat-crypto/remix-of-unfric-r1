@@ -1,47 +1,38 @@
 
 
-## Move Insights Into the Red-Marked Space (Left of Clock)
+## Move Time Period Selector to Vertical Left Position
 
-The current layout stacks vertically: focus bar + clock row, then insights below both. The red-marked area shows the insights should fill the space **below the focus bar, but still to the left of the clock** -- so the clock spans the full card height on the right.
+Currently the Today/Tomorrow/Week pills sit horizontally at the top of the insights area. The change moves them to a vertical strip on the left edge of the insights content.
+
+### Changes
+
+**`src/components/tasks/InsightsPanel.tsx`**
+
+1. **Restructure the insights content area** (lines 338-368): Wrap the entire insights body in a horizontal `flex` container. The left side becomes a narrow vertical column with the three period buttons stacked vertically, and the right side contains the KPIs + charts.
+
+2. **Convert the period selector** (lines 343-358): Change from a horizontal `flex gap-1` row to a vertical `flex flex-col` stack. Each button gets slightly adjusted padding for vertical readability. The container gets a left-aligned vertical pill style.
+
+3. **Move the "Hide Insights" toggle**: Keep it in the top-right corner of the charts area, or inline with the first chart row header.
+
+4. **Remove the top `mb-2` header row**: Since the period selector moves to the left, the horizontal header bar is no longer needed as a separate row.
 
 ### Layout Change
 
 ```text
-Current:
-+--[Focus Bar]------------------+--[Clock]--+
-+--[Insights (full width)]------------------+
+Before:
+[Today] [Tomorrow] [Week]        [Hide Insights]
+[KPIs] [Chart 1] [Chart 2] [Pie]
 
-Desired:
-+--[Focus Bar]------------------+           +
-|                               |  [Clock]  |
-+--[Insights: KPIs + Charts]----+           +
+After:
+[Today  ]  [KPIs] [Chart 1] [Chart 2] [Pie]  [Hide]
+[Tomorrow]
+[Week   ]
 ```
-
-### Changes
-
-**1. `src/pages/Tasks.tsx`** (lines 650-669)
-- Restructure the unified card from vertical stacking to a **two-column layout**: left column (flex-1) contains Focus Bar on top and Insights below; right column (fixed width, full height) contains the Clock widget.
-- The outer container becomes `flex` with the clock column spanning the entire card height via `items-stretch`.
-
-**2. `src/components/tasks/InsightsPanel.tsx`**
-- No major structural changes needed, just ensure it fills available space without extra top borders or padding that create gaps.
 
 ### Technical Detail
 
-```text
-<div class="rounded-xl border ... flex">
-  <!-- Left column -->
-  <div class="flex-1 flex flex-col min-w-0">
-    <div class="p-2">
-      <TopFocusBar ... />
-    </div>
-    <InsightsPanel ... />
-  </div>
-  <!-- Right column: clock spans full height -->
-  <div class="hidden lg:flex w-[220px] border-l border-border/30">
-    <TasksClockWidget />
-  </div>
-</div>
-```
+- Lines 340-368: Replace the horizontal header + body structure with a single `flex` row
+- The period selector becomes a `flex flex-col gap-1` column with `w-[72px] shrink-0` and vertical centering
+- The existing KPIs + charts `flex gap-3 h-[180px]` block moves into the right side of this new flex container
+- The "Hide Insights" button stays top-right via absolute positioning or flex justify-between in the charts header
 
-This eliminates the empty red-marked space by placing the insights directly below the focus bar, constrained to the left of the clock column.
