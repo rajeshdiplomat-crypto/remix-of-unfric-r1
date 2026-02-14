@@ -364,6 +364,15 @@ export default function Manifest() {
     setSelectedDate(date);
   };
 
+  // Get goals that have practice entries on a specific date
+  const getGoalsWithPracticeOnDate = useCallback((date: Date) => {
+    const dateStr = format(date, "yyyy-MM-dd");
+    const goalIdsWithPractice = new Set(
+      practices.filter((p) => p.entry_date === dateStr && p.locked).map((p) => p.goal_id)
+    );
+    return goals.filter((g) => goalIdsWithPractice.has(g.id));
+  }, [practices, goals]);
+
   const getMotivationalQuote = () => {
     const quotes = [
       "What you imagine, you create. What you feel, you attract.",
@@ -499,7 +508,7 @@ export default function Manifest() {
                   </Card>
                 </div>
               ) : (
-                <div className="overflow-y-auto flex-1 min-h-0 p-2 custom-scrollbar relative">
+                <div className="overflow-y-auto flex-1 min-h-0 p-2 relative scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
                   <div className="space-y-2">
                     {activeGoals.map((goal) => {
                       const { streak, momentum } = getGoalMetrics(goal);
@@ -710,6 +719,34 @@ export default function Manifest() {
                 }}
                 section="calendar"
               />
+              {/* Goals practiced on selected date */}
+              {(() => {
+                const practicedGoals = getGoalsWithPracticeOnDate(selectedDate);
+                if (practicedGoals.length === 0) return null;
+                return (
+                  <div className="mt-3 pt-3 border-t border-border space-y-1.5">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Practiced on {format(selectedDate, "MMM d")}
+                    </p>
+                    {practicedGoals.map((goal) => (
+                      <button
+                        key={goal.id}
+                        onClick={() => {
+                          setShowCalendarPopup(false);
+                          navigate(`/manifest/practice/${goal.id}?date=${format(selectedDate, "yyyy-MM-dd")}`);
+                        }}
+                        className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors text-left"
+                      >
+                        <div className="h-6 w-6 rounded-md bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center flex-shrink-0">
+                          <Sparkles className="h-3 w-3 text-teal-600" />
+                        </div>
+                        <span className="text-sm text-foreground line-clamp-1">{goal.title}</span>
+                        <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto -rotate-90" />
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           </DialogContent>
         </Dialog>
