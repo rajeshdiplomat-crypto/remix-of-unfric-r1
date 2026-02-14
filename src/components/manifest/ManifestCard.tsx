@@ -64,6 +64,10 @@ export function ManifestCard({
     return weekProgress.filter(Boolean).length;
   }, [weekProgress]);
 
+  const totalPracticeDays = useMemo(() => {
+    return practices.filter((p) => p.goal_id === goal.id && p.locked).length;
+  }, [goal.id, practices]);
+
   const startDateLabel = useMemo(() => {
     const d = goal.start_date || goal.created_at;
     return format(parseISO(d), "MMM d, yyyy");
@@ -162,7 +166,7 @@ export function ManifestCard({
               )}
             </div>
 
-            {/* Week checkboxes */}
+            {/* Week checkboxes + Practice button in same row */}
             <div className="flex items-center gap-1.5 w-full">
               <div className="flex flex-1 justify-between">
                 {DAY_LABELS.map((day, i) => (
@@ -179,20 +183,25 @@ export function ManifestCard({
               <span className="text-[9px] font-medium text-teal-600 dark:text-teal-400 flex-shrink-0">
                 {weekCompletionCount}/7
               </span>
+              {!isCompleted && (
+                <Button
+                  onClick={(e) => { e.stopPropagation(); onClick(); }}
+                  size="sm"
+                  className="h-6 px-2.5 rounded-md bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-medium text-[9px] flex-shrink-0"
+                >
+                  <Play className="h-2 w-2 mr-0.5" />
+                  Practice
+                </Button>
+              )}
             </div>
-          </div>
 
-          {/* CTA */}
-          {!isCompleted && (
-            <Button
-              onClick={(e) => { e.stopPropagation(); onClick(); }}
-              size="sm"
-              className="w-auto h-7 px-3 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-medium text-[10px] mt-1 ml-auto"
-            >
-              <Play className="h-2.5 w-2.5 mr-1" />
-              Practice
-            </Button>
-          )}
+            {/* Practice days count */}
+            {totalPracticeDays > 0 && (
+              <span className="text-[9px] text-muted-foreground mt-1">
+                {totalPracticeDays} practice day{totalPracticeDays !== 1 ? "s" : ""} total
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </Card>

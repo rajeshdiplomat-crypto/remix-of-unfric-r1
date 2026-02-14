@@ -340,13 +340,14 @@ export function ManifestPracticePanel({
     );
   }
 
-  const Step = ({
+  const StepCard = ({
     id,
     icon: Icon,
     title,
     done,
     disabled,
     children,
+    accentColor = "teal",
   }: {
     id: string;
     icon: any;
@@ -354,33 +355,51 @@ export function ManifestPracticePanel({
     done: boolean;
     disabled?: boolean;
     children: React.ReactNode;
-  }) => (
-    <Card className={`overflow-hidden ${done ? "border-teal-200 dark:border-teal-800 bg-teal-50/30 dark:bg-teal-900/10" : ""} ${disabled ? "opacity-60" : ""}`}>
-      <button
+    accentColor?: string;
+  }) => {
+    const isExpanded = expandedSection === id;
+    return (
+      <Card
+        className={`overflow-hidden cursor-pointer transition-all ${
+          done
+            ? "border-teal-200 dark:border-teal-800 bg-teal-50/30 dark:bg-teal-900/10"
+            : ""
+        } ${disabled ? "opacity-60 pointer-events-none" : ""}`}
         onClick={() => !disabled && toggle(id)}
-        className="w-full flex items-center justify-between p-3.5"
-        disabled={disabled}
       >
-        <div className="flex items-center gap-3">
+        {/* Square card header */}
+        <div className="flex items-center gap-3 p-3">
           <div
-            className={`w-8 h-8 rounded-lg flex items-center justify-center ${done ? "bg-teal-500 text-white" : "bg-muted text-muted-foreground"}`}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+              done ? "bg-teal-500 text-white" : "bg-muted text-muted-foreground"
+            }`}
           >
-            {done ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+            {done ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
           </div>
-          <span className={`font-medium text-sm ${done ? "text-teal-700 dark:text-teal-300" : "text-foreground"}`}>
-            {title}
-          </span>
-          {done && <span className="text-[10px] bg-teal-100 dark:bg-teal-900/50 text-teal-600 dark:text-teal-400 px-2 py-0.5 rounded-full">Done</span>}
+          <div className="flex-1 min-w-0">
+            <span className={`font-medium text-sm leading-tight ${done ? "text-teal-700 dark:text-teal-300" : "text-foreground"}`}>
+              {title}
+            </span>
+            {done && (
+              <span className="ml-2 text-[9px] bg-teal-100 dark:bg-teal-900/50 text-teal-600 dark:text-teal-400 px-1.5 py-0.5 rounded-full">
+                Done
+              </span>
+            )}
+          </div>
+          {isExpanded ? (
+            <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          )}
         </div>
-        {expandedSection === id ? (
-          <ChevronUp className="h-4 w-4 text-muted-foreground" />
-        ) : (
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        {isExpanded && !disabled && (
+          <div className="px-3 pb-3 space-y-3 border-t border-border pt-3" onClick={(e) => e.stopPropagation()}>
+            {children}
+          </div>
         )}
-      </button>
-      {expandedSection === id && !disabled && <div className="px-3.5 pb-3.5 space-y-3 border-t border-border pt-3">{children}</div>}
-    </Card>
-  );
+      </Card>
+    );
+  };
 
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-900 overflow-hidden">
@@ -489,15 +508,16 @@ export function ManifestPracticePanel({
 
       {/* Steps - Single scrollable area */}
       <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3">
-        <div className="space-y-2">
-          <Step
+        <div className="grid grid-cols-2 gap-2">
+          {/* Visualize card */}
+          <StepCard
             id="viz"
             icon={Eye}
             title={`Visualize (${goal.visualization_minutes} min)`}
             done={hasViz}
             disabled={isViewingPast && !isLocked}
           >
-            <p className="text-sm text-slate-500 mb-3">Close your eyes and feel your new reality</p>
+            <p className="text-sm text-muted-foreground mb-3">Close your eyes and feel your new reality</p>
             <Button
               onClick={() => setShowVisualization(true)}
               className="w-full h-11 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
@@ -510,7 +530,7 @@ export function ManifestPracticePanel({
                 {visualizations.map((v, i) => (
                   <div
                     key={v.id}
-                    className="text-xs text-slate-500 bg-teal-50 dark:bg-teal-900/30 px-3 py-2 rounded-lg flex items-center gap-2"
+                    className="text-xs text-muted-foreground bg-teal-50 dark:bg-teal-900/30 px-3 py-2 rounded-lg flex items-center gap-2"
                   >
                     <Check className="h-3 w-3 text-teal-500" /> Session {i + 1} •{" "}
                     {format(new Date(v.created_at), "h:mm a")}
@@ -518,10 +538,11 @@ export function ManifestPracticePanel({
                 ))}
               </div>
             )}
-          </Step>
+          </StepCard>
 
-          <Step id="act" icon={Zap} title="Take Action" done={hasAct} disabled={isViewingPast && !isLocked}>
-            <p className="text-sm text-slate-500 mb-2">Suggestion: {goal.act_as_if}</p>
+          {/* Take Action card */}
+          <StepCard id="act" icon={Zap} title="Take Action" done={hasAct} disabled={isViewingPast && !isLocked}>
+            <p className="text-sm text-muted-foreground mb-2">Suggestion: {goal.act_as_if}</p>
             <div className="flex gap-2">
               <Input
                 ref={actInputRef}
@@ -546,10 +567,10 @@ export function ManifestPracticePanel({
                     className="flex items-start justify-between bg-teal-50 dark:bg-teal-900/30 px-3 py-2 rounded-lg"
                   >
                     <div className="flex-1">
-                      <span className="text-sm text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                      <span className="text-sm text-foreground flex items-center gap-2">
                         <Check className="h-3 w-3 text-teal-500 flex-shrink-0" /> {a.text}
                       </span>
-                      <span className="text-[9px] text-slate-400 ml-5">{format(new Date(a.created_at), "h:mm a")}</span>
+                      <span className="text-[9px] text-muted-foreground ml-5">{format(new Date(a.created_at), "h:mm a")}</span>
                     </div>
                     {isViewingToday && (
                       <Button
@@ -558,17 +579,18 @@ export function ManifestPracticePanel({
                         className="h-6 w-6 flex-shrink-0"
                         onClick={() => handleRemoveAct(a.id)}
                       >
-                        <Trash2 className="h-3 w-3 text-slate-400" />
+                        <Trash2 className="h-3 w-3 text-muted-foreground" />
                       </Button>
                     )}
                   </div>
                 ))}
               </div>
             )}
-          </Step>
+          </StepCard>
 
-          <Step id="proof" icon={Camera} title="Record Proof" done={hasProof} disabled={isViewingPast && !isLocked}>
-            <p className="text-sm text-slate-500 mb-2">What happened today that proves your reality?</p>
+          {/* Record Proof card */}
+          <StepCard id="proof" icon={Camera} title="Record Proof" done={hasProof} disabled={isViewingPast && !isLocked}>
+            <p className="text-sm text-muted-foreground mb-2">What happened today that proves your reality?</p>
             <Textarea
               ref={proofTextRef}
               defaultValue=""
@@ -619,8 +641,8 @@ export function ManifestPracticePanel({
                   <div key={p.id} className="bg-teal-50 dark:bg-teal-900/30 p-3 rounded-lg">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <p className="text-sm text-slate-700 dark:text-slate-200">{p.text}</p>
-                        <span className="text-[9px] text-slate-400">{format(new Date(p.created_at), "h:mm a")}</span>
+                        <p className="text-sm text-foreground">{p.text}</p>
+                        <span className="text-[9px] text-muted-foreground">{format(new Date(p.created_at), "h:mm a")}</span>
                       </div>
                       {isViewingToday && (
                         <Button
@@ -640,17 +662,17 @@ export function ManifestPracticePanel({
                 ))}
               </div>
             )}
-          </Step>
+          </StepCard>
 
-          {/* Gratitude Step - Always visible */}
-          <Step
+          {/* Gratitude card */}
+          <StepCard
             id="gratitude"
             icon={Heart}
             title="Practice Gratitude"
             done={hasGratitude}
             disabled={isViewingPast && !isLocked}
           >
-            <p className="text-sm text-slate-500 mb-2">What are you grateful for today?</p>
+            <p className="text-sm text-muted-foreground mb-2">What are you grateful for today?</p>
             <div className="flex gap-2">
               <Input
                 ref={gratitudeInputRef}
@@ -675,10 +697,10 @@ export function ManifestPracticePanel({
                     className="flex items-start justify-between bg-pink-50 dark:bg-pink-900/30 px-3 py-2 rounded-lg"
                   >
                     <div className="flex-1">
-                      <span className="text-sm text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                      <span className="text-sm text-foreground flex items-center gap-2">
                         <Heart className="h-3 w-3 text-pink-500 flex-shrink-0 fill-pink-500" /> {g.text}
                       </span>
-                      <span className="text-[9px] text-slate-400 ml-5">{format(new Date(g.created_at), "h:mm a")}</span>
+                      <span className="text-[9px] text-muted-foreground ml-5">{format(new Date(g.created_at), "h:mm a")}</span>
                     </div>
                     {isViewingToday && (
                       <Button
@@ -687,19 +709,22 @@ export function ManifestPracticePanel({
                         className="h-6 w-6 flex-shrink-0"
                         onClick={() => handleRemoveGratitude(g.id)}
                       >
-                        <Trash2 className="h-3 w-3 text-slate-400" />
+                        <Trash2 className="h-3 w-3 text-muted-foreground" />
                       </Button>
                     )}
                   </div>
                 ))}
               </div>
             )}
-          </Step>
+          </StepCard>
+        </div>
 
-          {allDone && (
-            <Step id="complete" icon={Lock} title="Complete Day" done={isLocked} disabled={isViewingPast && !isLocked}>
+        {/* Complete Day - Full width below the grid */}
+        {allDone && (
+          <div className="mt-2">
+            <StepCard id="complete" icon={Lock} title="Complete Day" done={isLocked} disabled={isViewingPast && !isLocked}>
               <div className="space-y-3">
-                <p className="text-sm text-slate-500">Add a growth note to lock your practice</p>
+                <p className="text-sm text-muted-foreground">Add a growth note to lock your practice</p>
                 <Input
                   ref={growthNoteRef}
                   defaultValue={growthNoteValue}
@@ -719,9 +744,9 @@ export function ManifestPracticePanel({
                   <Lock className="h-4 w-4 mr-2" /> Complete Day ✨
                 </Button>
               </div>
-            </Step>
-          )}
-        </div>
+            </StepCard>
+          </div>
+        )}
       </div>
     </div>
   );
