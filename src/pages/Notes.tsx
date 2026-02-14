@@ -312,12 +312,23 @@ export default function Notes() {
   const [sortBy, setSortBy] = useState<SortOption>("updatedAt");
   const [filterGroupId, setFilterGroupId] = useState<string>("all");
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
-  const [notesView, setNotesView] = useState<NotesViewType>(() => {
-    const saved = localStorage.getItem("settings_default_notes_view");
-    if (saved === "board") return "board";
-    if (saved === "mindmap") return "mindmap";
-    return "atlas";
-  });
+  const [notesView, setNotesView] = useState<NotesViewType>("atlas");
+
+  // Load default notes view from DB
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("user_settings")
+      .select("default_notes_view")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        const v = (data as any)?.default_notes_view;
+        if (v === "board" || v === "mindmap" || v === "atlas") {
+          setNotesView(v as NotesViewType);
+        }
+      });
+  }, [user]);
 
   useEffect(() => {
     try {

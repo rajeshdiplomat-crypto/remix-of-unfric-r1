@@ -189,11 +189,23 @@ export default function Tasks() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<TasksViewTab>(() => {
-    const saved = localStorage.getItem("settings_default_task_view");
-    if (saved === "status" || saved === "urgent-important" || saved === "date" || saved === "time-of-day") return "board";
-    return "board";
-  });
+  const [activeTab, setActiveTab] = useState<TasksViewTab>("board");
+
+  // Load default task view from DB
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("user_settings")
+      .select("default_task_view")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        const v = (data as any)?.default_task_view;
+        if (v === "status" || v === "urgent-important" || v === "date" || v === "time-of-day") {
+          setActiveTab("board");
+        }
+      });
+  }, [user]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
