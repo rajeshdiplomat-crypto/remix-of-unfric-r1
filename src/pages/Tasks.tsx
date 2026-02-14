@@ -647,25 +647,23 @@ export default function Tasks() {
           <div className="flex flex-col gap-4 flex-1 min-h-0">
             {/* Combined Card: Focus + Clock + Insights */}
             {activeTab !== "files" && (
-              <div className="rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm overflow-hidden shrink-0">
-                {/* Top row: Focus bar left + Clock widget right */}
-                <div className="flex items-stretch">
-                  {/* Focus bar section */}
-                  <div className="flex-1 min-w-0 p-2">
+              <div className="rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm overflow-hidden shrink-0 flex items-stretch">
+                {/* Left column: Focus bar + Insights */}
+                <div className="flex-1 min-w-0 flex flex-col">
+                  <div className="p-2">
                     <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
                   </div>
-                  {/* Clock widget - compact inline */}
-                  <div className="hidden lg:flex w-[220px] shrink-0 border-l border-border/30">
-                    <TasksClockWidget />
-                  </div>
+                  <InsightsPanel
+                    tasks={filteredTasks}
+                    compactMode={true}
+                    collapsed={insightsCollapsed}
+                    onToggleCollapse={() => setInsightsCollapsed(prev => !prev)}
+                  />
                 </div>
-
-                <InsightsPanel
-                  tasks={filteredTasks}
-                  compactMode={true}
-                  collapsed={insightsCollapsed}
-                  onToggleCollapse={() => setInsightsCollapsed(prev => !prev)}
-                />
+                {/* Right column: Clock spans full height */}
+                <div className="hidden lg:flex w-[220px] shrink-0 border-l border-border/30">
+                  <TasksClockWidget />
+                </div>
               </div>
             )}
 
