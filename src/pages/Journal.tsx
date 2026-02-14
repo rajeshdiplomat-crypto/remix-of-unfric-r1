@@ -348,49 +348,20 @@ export default function Journal() {
               return true;
             });
 
-            const entryDateStr = format(selectedDate, "yyyy-MM-dd");
-            const isInEffectiveRange = template.effectiveFrom && entryDateStr >= template.effectiveFrom;
-
-            if (!hasRealContent) {
-              if (isInEffectiveRange) {
-                if (template.unstructured) {
-                  finalContent = JSON.stringify({
-                    type: "doc",
-                    content: [
-                      { type: "heading", attrs: { level: 1, textAlign: "left" }, content: existingTitle ? [{ type: "text", text: existingTitle }] : [] },
-                      { type: "paragraph", attrs: { textAlign: "left" }, content: [] },
-                    ],
-                  });
-                } else if (template.applyOnNewEntry) {
-                  finalContent = JSON.stringify({
-                    type: "doc",
-                    content: [
-                      { type: "heading", attrs: { level: 1, textAlign: "left" }, content: existingTitle ? [{ type: "text", text: existingTitle }] : [] },
-                      ...template.questions.flatMap((q) => {
-                        const answer = answersData?.find((a) => a.question_id === q.id);
-                        return [
-                          { type: "heading", attrs: { level: 2, textAlign: "left" }, content: [{ type: "text", text: q.text }] },
-                          { type: "paragraph", attrs: { textAlign: "left" }, content: answer?.answer_text ? [{ type: "text", text: answer.answer_text }] : [] },
-                        ];
-                      }),
-                    ],
-                  });
-                }
-              } else if (answersData?.length) {
-                finalContent = JSON.stringify({
-                  type: "doc",
-                  content: [
-                    { type: "heading", attrs: { level: 1, textAlign: "left" }, content: existingTitle ? [{ type: "text", text: existingTitle }] : [] },
-                    ...template.questions.flatMap((q) => {
-                      const answer = answersData.find((a) => a.question_id === q.id);
-                      return [
-                        { type: "heading", attrs: { level: 2, textAlign: "left" }, content: [{ type: "text", text: q.text }] },
-                        { type: "paragraph", attrs: { textAlign: "left" }, content: answer?.answer_text ? [{ type: "text", text: answer.answer_text }] : [] },
-                      ];
-                    }),
-                  ],
-                });
-              }
+            if (!hasRealContent && answersData?.length) {
+              finalContent = JSON.stringify({
+                type: "doc",
+                content: [
+                  { type: "heading", attrs: { level: 1, textAlign: "left" }, content: existingTitle ? [{ type: "text", text: existingTitle }] : [] },
+                  ...template.questions.flatMap((q) => {
+                    const answer = answersData.find((a) => a.question_id === q.id);
+                    return [
+                      { type: "heading", attrs: { level: 2, textAlign: "left" }, content: [{ type: "text", text: q.text }] },
+                      { type: "paragraph", attrs: { textAlign: "left" }, content: answer?.answer_text ? [{ type: "text", text: answer.answer_text }] : [] },
+                    ];
+                  }),
+                ],
+              });
             } else {
               const firstNode = parsed.content?.[0];
               if (!firstNode || !(firstNode.type === "heading" && firstNode.attrs?.level === 1)) {
@@ -412,12 +383,7 @@ export default function Journal() {
           setCurrentEntry(null);
           setCurrentAnswers([]);
           setSelectedMood(null);
-          const entryDateStr = format(selectedDate, "yyyy-MM-dd");
-          const isInEffectiveRange = template.effectiveFrom && entryDateStr >= template.effectiveFrom;
-          const useStructured = isInEffectiveRange
-            ? !template.unstructured && template.applyOnNewEntry
-            : template.applyOnNewEntry && !template.unstructured;
-          const newContent = useStructured
+          const newContent = template.applyOnNewEntry
             ? generateInitialContent(template.questions)
             : JSON.stringify({
                 type: "doc",
