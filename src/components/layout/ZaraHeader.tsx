@@ -1,4 +1,4 @@
-import { Menu, LogOut, Maximize2, Minimize2 } from "lucide-react";
+import { Menu, LogOut, Maximize2, Minimize2, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavLink } from "@/components/NavLink";
 import { useEffect, useState, useCallback } from "react";
@@ -123,6 +123,23 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
               </NavLink>
             ))}
           </nav>
+
+          {/* Settings button */}
+          <NavLink to="/settings">
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-10 w-10 hover:bg-transparent transition-all duration-300 hidden md:flex",
+                isScrolled
+                  ? "text-foreground/60 hover:text-foreground"
+                  : "text-foreground/70 hover:text-foreground [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]",
+              )}
+              title="Settings"
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
+          </NavLink>
 
           {/* Fullscreen button */}
           <Button

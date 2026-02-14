@@ -24,6 +24,7 @@ import Tasks from "./pages/Tasks";
 import TaskFocus from "./pages/TaskFocus";
 
 import ClarityWindow from "./pages/ClarityWindow";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -155,6 +156,14 @@ const App = () => (
                       element={
                         <ProtectedRoute>
                           <Tasks />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/settings"
+                      element={
+                        <ProtectedRoute>
+                          <Settings />
                         </ProtectedRoute>
                       }
                     />
