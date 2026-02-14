@@ -162,29 +162,24 @@ export function KanbanBoardView({
   onCompleteTask,
 }: KanbanBoardViewProps) {
   const [boardMode, setBoardMode] = useState<QuadrantMode>("urgent-important");
-  const [completedOpen, setCompletedOpen] = useState(false);
+  const [completedOpenMap, setCompletedOpenMap] = useState<Record<string, boolean>>({});
 
   const activeQuadrants = QUADRANT_MODES[boardMode].quadrants;
 
-  const { activeTasks, completedTasks } = useMemo(() => {
-    const active = tasks.filter(t => !t.is_completed);
-    const completed = tasks.filter(t => t.is_completed);
-    return { activeTasks: active, completedTasks: completed };
-  }, [tasks]);
-
-  const columnTasks = useMemo(() => {
-    const map: Record<string, QuadrantTask[]> = {};
-    activeQuadrants.forEach((q) => (map[q.id] = []));
-    activeTasks.forEach((t) => {
+  const { columnTasks, columnCompleted } = useMemo(() => {
+    const active: Record<string, QuadrantTask[]> = {};
+    const completed: Record<string, QuadrantTask[]> = {};
+    activeQuadrants.forEach((q) => { active[q.id] = []; completed[q.id] = []; });
+    tasks.forEach((t) => {
       for (const q of activeQuadrants) {
         if (filterTaskForQuadrant(t, boardMode, q.id)) {
-          map[q.id].push(t);
+          (t.is_completed ? completed : active)[q.id].push(t);
           break;
         }
       }
     });
-    return map;
-  }, [activeTasks, boardMode, activeQuadrants]);
+    return { columnTasks: active, columnCompleted: completed };
+  }, [tasks, boardMode, activeQuadrants]);
 
   const handleDrop = (quadrantId: string, e: React.DragEvent) => {
     e.preventDefault();
@@ -235,32 +230,31 @@ export function KanbanBoardView({
               </Badge>
             </div>
 
-            {/* Cards */}
             <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
               {columnTasks[col.id]?.map((task) => (
                 <KanbanCard key={task.id} task={task} onClick={() => onTaskClick(task)} onStartTask={onStartTask} onCompleteTask={onCompleteTask} />
               ))}
+
+              {columnCompleted[col.id]?.length > 0 && (
+                <Collapsible
+                  open={completedOpenMap[col.id] || false}
+                  onOpenChange={(open) => setCompletedOpenMap(prev => ({ ...prev, [col.id]: open }))}
+                >
+                  <CollapsibleTrigger className="flex items-center gap-1.5 w-full py-1.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors">
+                    <ChevronDown className={cn("h-3 w-3 transition-transform", completedOpenMap[col.id] && "rotate-180")} />
+                    <span className="font-medium">Done ({columnCompleted[col.id].length})</span>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-2">
+                    {columnCompleted[col.id].map((task) => (
+                      <KanbanCard key={task.id} task={task} onClick={() => onTaskClick(task)} onStartTask={onStartTask} onCompleteTask={onCompleteTask} />
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
             </div>
           </div>
         ))}
       </div>
-
-      {/* Completed tasks collapsible */}
-      {completedTasks.length > 0 && (
-        <Collapsible open={completedOpen} onOpenChange={setCompletedOpen}>
-          <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <ChevronDown className={cn("h-4 w-4 transition-transform", completedOpen && "rotate-180")} />
-            <span className="font-medium">Completed ({completedTasks.length})</span>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mt-2">
-              {completedTasks.map((task) => (
-                <KanbanCard key={task.id} task={task} onClick={() => onTaskClick(task)} onStartTask={onStartTask} onCompleteTask={onCompleteTask} />
-              ))}
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-      )}
     </div>
   );
 }
