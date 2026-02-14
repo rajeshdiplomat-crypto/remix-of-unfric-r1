@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Heart,
   PenLine,
@@ -64,6 +64,17 @@ const REACTION_TYPES = [
 type ReactionType = typeof REACTION_TYPES[number]['type'];
 
 // Soft pastel module colors matching the new design system
+// Default circular images for each module
+const MODULE_IMAGES: Record<string, string> = {
+  tasks: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=100&h=100&fit=crop",
+  journal: "https://images.unsplash.com/photo-1517842645767-c639042777db?w=100&h=100&fit=crop",
+  notes: "https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=100&h=100&fit=crop",
+  trackers: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=100&h=100&fit=crop",
+  manifest: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&h=100&fit=crop",
+  emotions: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=100&h=100&fit=crop",
+  mindmap: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=100&h=100&fit=crop",
+};
+
 const MODULE_CONFIG: Record<SourceModule | "emotions", ModuleConfig> = {
   tasks: { icon: CheckSquare, label: "Tasks", color: "text-emerald-600", bgColor: "bg-emerald-50" },
   journal: { icon: PenLine, label: "Journal", color: "text-amber-600", bgColor: "bg-amber-50" },
@@ -71,7 +82,6 @@ const MODULE_CONFIG: Record<SourceModule | "emotions", ModuleConfig> = {
   mindmap: { icon: Target, label: "Mind Map", color: "text-violet-600", bgColor: "bg-violet-50" },
   trackers: { icon: BarChart3, label: "Habits", color: "text-teal-600", bgColor: "bg-teal-50" },
   manifest: { icon: Sparkles, label: "Manifest", color: "text-purple-600", bgColor: "bg-purple-50" },
-  
   emotions: { icon: Heart, label: "Emotions", color: "text-pink-500", bgColor: "bg-pink-50" },
 };
 
@@ -208,6 +218,7 @@ export function DiaryFeedCard({
               {/* Left: Avatar + Label block */}
               <div className="flex items-center gap-3">
                 <Avatar className="h-8 w-8">
+                  <AvatarImage src={MODULE_IMAGES[event.source_module]} alt={config.label} className="object-cover" />
                   <AvatarFallback className={cn("text-xs font-medium", config.bgColor, config.color)}>
                     <IconComponent className="h-4 w-4" />
                   </AvatarFallback>
@@ -368,7 +379,7 @@ export function DiaryFeedCard({
           if (count === 1) {
             return (
               <div className="mt-3">
-                <img src={images[0]} alt="" className="w-full max-h-[320px] object-cover rounded-lg" />
+                <img src={images[0]} alt="" className="w-full rounded-lg" />
               </div>
             );
           }
