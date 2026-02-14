@@ -11,6 +11,7 @@ import { DiaryFeedCard } from "@/components/diary/DiaryFeedCard";
 import { DiarySidebar } from "@/components/diary/DiarySidebar";
 import { DiaryLeftSidebar } from "@/components/diary/DiaryLeftSidebar";
 import { DiaryCreatePost } from "@/components/diary/DiaryCreatePost";
+import { DiaryProfileCard } from "@/components/diary/DiaryProfileCard";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { JournalQuestionCard } from "@/components/diary/JournalQuestionCard";
 import { DiaryJournalModal } from "@/components/diary/DiaryJournalModal";
@@ -469,8 +470,8 @@ export default function Diary() {
 
       {/* 3-Column Layout Below Hero */}
       <div className="flex flex-1 w-full overflow-hidden min-h-0">
-        {/* Left Sidebar - Hidden on mobile/tablet, visible on desktop */}
-        <aside className="hidden lg:flex flex-col w-[280px] shrink-0 h-full overflow-y-auto border-r border-border/20 bg-background">
+        {/* Left Sidebar - Editorial style, wider like Emotions page */}
+        <aside className="hidden lg:flex flex-col w-[380px] shrink-0 h-full border-r border-border/20 bg-background">
           <DiaryLeftSidebar 
             userName={userName}
             filter={filter}
@@ -588,7 +589,9 @@ export default function Diary() {
       </main>
 
       {/* Right Sidebar - Hidden on mobile/tablet, visible on large desktop */}
-      <aside className="hidden xl:flex flex-col w-[340px] shrink-0 h-full overflow-y-auto border-l border-border/20 bg-background/50 p-4">
+      <aside className="hidden xl:flex flex-col w-[340px] shrink-0 h-full overflow-y-auto border-l border-border/20 bg-background/50 p-4 gap-4">
+        {/* LinkedIn-style Profile Card */}
+        <DiaryProfileCard userName={userName} userEmail={user?.email || ""} avatarUrl={user?.user_metadata?.avatar_url} />
         <DiarySidebar
           metrics={metrics}
           smartInsight={smartInsight}
