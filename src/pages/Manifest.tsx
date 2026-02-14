@@ -1,15 +1,15 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Sparkles, Plus, ChevronDown, ChevronUp, Calendar, BarChart3, TrendingUp } from "lucide-react";
+import { Sparkles, Plus, ChevronDown, ChevronUp, Calendar, BarChart3, TrendingUp, Clock } from "lucide-react";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { subDays, parseISO, isSameDay, format } from "date-fns";
 
 import { ManifestCard } from "@/components/manifest/ManifestCard";
 import { ManifestCreateModal } from "@/components/manifest/ManifestCreateModal";
-import { ManifestPracticePanel } from "@/components/manifest/ManifestPracticePanel";
 import { ManifestSidebarPanel } from "@/components/manifest/ManifestSidebarPanel";
 import { ManifestAnalyticsModal } from "@/components/manifest/ManifestAnalyticsModal";
 import { HistoryDrawer } from "@/components/manifest/HistoryDrawer";
@@ -79,6 +79,7 @@ function loadAllPractices(): Record<string, ManifestDailyPractice> {
 
 export default function Manifest() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [goals, setGoals] = useState<ManifestGoal[]>([]);
   const [proofs, setProofs] = useState<ManifestProof[]>([]);
@@ -89,7 +90,6 @@ export default function Manifest() {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const [editingGoal, setEditingGoal] = useState<ManifestGoal | null>(null);
-  const [selectedGoal, setSelectedGoal] = useState<ManifestGoal | null>(null);
   const [deletingGoal, setDeletingGoal] = useState<ManifestGoal | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [newlyCreatedGoalId, setNewlyCreatedGoalId] = useState<string | null>(null);
@@ -287,11 +287,10 @@ export default function Manifest() {
     }
   };
 
-  const handlePracticeComplete = useCallback(() => fetchData(), [fetchData]);
+  
 
   const handleSelectGoal = (goal: ManifestGoal) => {
-    setSelectedGoal(goal);
-    setSelectedDate(new Date());
+    navigate(`/manifest/practice/${goal.id}`);
   };
 
   const handleEditGoal = (goal: ManifestGoal) => {
@@ -309,7 +308,7 @@ export default function Manifest() {
       delete extras[deletingGoal.id];
       localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify(extras));
 
-      if (selectedGoal?.id === deletingGoal.id) setSelectedGoal(null);
+      // Goal deleted, no selected state needed
 
       toast.success("Reality deleted");
       fetchData();
@@ -326,7 +325,7 @@ export default function Manifest() {
       const { error } = await supabase.from("manifest_goals").update({ is_completed: true }).eq("id", goal.id);
       if (error) throw error;
 
-      if (selectedGoal?.id === goal.id) setSelectedGoal(null);
+      // Goal completed
 
       toast.success("🎉 Reality manifested! Congratulations!");
       fetchData();
@@ -438,7 +437,29 @@ export default function Manifest() {
               {/* Header with Create Button */}
               <div className="p-3 flex items-center justify-between border-b border-border flex-shrink-0">
                 <h2 className="text-base font-semibold text-foreground">Your Realities</h2>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant={activeLeftPanel === "calendar" ? "default" : "ghost"}
+                    size="sm"
+                    className={cn(
+                      "rounded-lg h-8 px-2",
+                      activeLeftPanel === "calendar" ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white border-0" : "text-muted-foreground"
+                    )}
+                    onClick={() => toggleLeftPanel("calendar")}
+                  >
+                    <Calendar className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant={activeLeftPanel === "progress" ? "default" : "ghost"}
+                    size="sm"
+                    className={cn(
+                      "rounded-lg h-8 px-2",
+                      activeLeftPanel === "progress" ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white border-0" : "text-muted-foreground"
+                    )}
+                    onClick={() => toggleLeftPanel("progress")}
+                  >
+                    <TrendingUp className="h-3.5 w-3.5" />
+                  </Button>
                   <Button
                     onClick={() => setShowAnalytics(true)}
                     variant="ghost"
@@ -492,7 +513,7 @@ export default function Manifest() {
                             streak={streak}
                             momentum={momentum}
                             practices={practices}
-                            isSelected={selectedGoal?.id === goal.id}
+                            isSelected={false}
                             onClick={() => handleSelectGoal(goal)}
                             onEdit={() => handleEditGoal(goal)}
                             onDelete={() => setDeletingGoal(goal)}
@@ -549,7 +570,7 @@ export default function Manifest() {
                             streak={streak}
                             momentum={momentum}
                             practices={practices}
-                            isSelected={selectedGoal?.id === goal.id}
+                            isSelected={false}
                             onClick={() => handleSelectGoal(goal)}
                             onDelete={() => setDeletingGoal(goal)}
                             onReactivate={() => handleReactivateGoal(goal)}
@@ -562,34 +583,6 @@ export default function Manifest() {
                   )}
                 </div>
               )}
-            </div>
-
-            {/* Toggle Buttons Row */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Button
-                variant={activeLeftPanel === "calendar" ? "default" : "outline"}
-                size="sm"
-                className={cn(
-                  "rounded-xl h-9 text-xs gap-1.5 flex-1",
-                  activeLeftPanel === "calendar" && "bg-gradient-to-r from-teal-500 to-cyan-500 text-white border-0"
-                )}
-                onClick={() => toggleLeftPanel("calendar")}
-              >
-                <Calendar className="h-3.5 w-3.5" />
-                Calendar
-              </Button>
-              <Button
-                variant={activeLeftPanel === "progress" ? "default" : "outline"}
-                size="sm"
-                className={cn(
-                  "rounded-xl h-9 text-xs gap-1.5 flex-1",
-                  activeLeftPanel === "progress" && "bg-gradient-to-r from-teal-500 to-cyan-500 text-white border-0"
-                )}
-                onClick={() => toggleLeftPanel("progress")}
-              >
-                <TrendingUp className="h-3.5 w-3.5" />
-                Progress
-              </Button>
             </div>
 
             {/* Expandable Panel Area */}
@@ -610,97 +603,77 @@ export default function Manifest() {
             )}
           </div>
 
-          {/* ========== RIGHT COLUMN: Editorial or Practice Panel ========== */}
+          {/* ========== RIGHT COLUMN: Editorial ========== */}
           <div className="hidden lg:flex flex-col h-full min-h-0 overflow-y-auto">
-            {selectedGoal ? (
-              /* Practice Panel - replaces editorial when a goal is selected */
-              <div className="bg-card rounded-2xl shadow-sm border border-border flex-1 overflow-hidden">
-                <ManifestPracticePanel
-                  goal={selectedGoal}
-                  streak={getGoalMetrics(selectedGoal).streak}
-                  selectedDate={selectedDate}
-                  previousPractice={getPreviousDayPractice(selectedGoal.id)}
-                  onClose={() => setSelectedGoal(null)}
-                  onPracticeComplete={handlePracticeComplete}
-                  onGoalUpdate={() => {
-                    fetchData();
-                    const updatedGoal = goals.find((g) => g.id === selectedGoal.id);
-                    if (updatedGoal) setSelectedGoal(updatedGoal);
-                  }}
-                />
+            <div className="flex flex-col gap-6 py-6 px-5">
+              {/* Badge */}
+              <Badge variant="secondary" className="w-fit rounded-full px-3 py-1 gap-1.5">
+                <Sparkles className="h-3 w-3" />
+                Manifestation
+              </Badge>
+
+              {/* Title */}
+              <div>
+                <h1 className="text-3xl font-light text-foreground tracking-tight leading-tight">
+                  Manifest Your
+                </h1>
+                <h1 className="text-3xl font-semibold text-foreground tracking-tight leading-tight">
+                  Reality
+                </h1>
               </div>
-            ) : (
-              /* Editorial Section - default view */
-              <div className="flex flex-col gap-6 py-6 px-5">
-                {/* Badge */}
-                <Badge variant="secondary" className="w-fit rounded-full px-3 py-1 gap-1.5">
-                  <Sparkles className="h-3 w-3" />
-                  Manifestation
-                </Badge>
 
-                {/* Title */}
-                <div>
-                  <h1 className="text-3xl font-light text-foreground tracking-tight leading-tight">
-                    Manifest Your
-                  </h1>
-                  <h1 className="text-3xl font-semibold text-foreground tracking-tight leading-tight">
-                    Reality
-                  </h1>
-                </div>
+              {/* Description */}
+              <p className="text-muted-foreground text-base leading-relaxed max-w-md">
+                What you imagine, you create. Visualize daily, act boldly, and trust the process. Small aligned actions compound into extraordinary transformations.
+              </p>
 
-                {/* Description */}
-                <p className="text-muted-foreground text-base leading-relaxed max-w-md">
-                  What you imagine, you create. Visualize daily, act boldly, and trust the process. Small aligned actions compound into extraordinary transformations.
+              {/* Divider */}
+              <div className="h-px bg-border" />
+
+              {/* Motivational quote */}
+              <div className="bg-muted/30 rounded-xl p-4 border border-border">
+                <p className="text-sm text-muted-foreground italic leading-relaxed">
+                  "{getMotivationalQuote()}"
                 </p>
+              </div>
 
-                {/* Divider */}
-                <div className="h-px bg-border" />
-
-                {/* Motivational quote */}
-                <div className="bg-muted/30 rounded-xl p-4 border border-border">
-                  <p className="text-sm text-muted-foreground italic leading-relaxed">
-                    "{getMotivationalQuote()}"
-                  </p>
+              {/* Stats summary */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
+                    <Sparkles className="h-4 w-4 text-teal-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{activeGoals.length} Active {activeGoals.length === 1 ? "Reality" : "Realities"}</p>
+                    <p className="text-xs text-muted-foreground">Select one to begin practicing</p>
+                  </div>
                 </div>
 
-                {/* Stats summary */}
-                <div className="space-y-3">
+                {aggregateStreak > 0 && (
                   <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
-                      <Sparkles className="h-4 w-4 text-teal-600" />
+                    <div className="h-8 w-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                      <span className="text-sm font-bold text-orange-600">{aggregateStreak}</span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-foreground">{activeGoals.length} Active {activeGoals.length === 1 ? "Reality" : "Realities"}</p>
-                      <p className="text-xs text-muted-foreground">Select one to begin practicing</p>
+                      <p className="text-sm font-medium text-foreground">Day Streak</p>
+                      <p className="text-xs text-muted-foreground">Consecutive practice days</p>
                     </div>
                   </div>
+                )}
 
-                  {aggregateStreak > 0 && (
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                        <span className="text-sm font-bold text-orange-600">{aggregateStreak}</span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">Day Streak</p>
-                        <p className="text-xs text-muted-foreground">Consecutive practice days</p>
-                      </div>
+                {avgMomentum > 0 && (
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
+                      <TrendingUp className="h-4 w-4 text-cyan-600" />
                     </div>
-                  )}
-
-                  {avgMomentum > 0 && (
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
-                        <TrendingUp className="h-4 w-4 text-cyan-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{avgMomentum}% Momentum</p>
-                        <p className="text-xs text-muted-foreground">Average across all realities</p>
-                      </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{avgMomentum}% Momentum</p>
+                      <p className="text-xs text-muted-foreground">Average across all realities</p>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
 
