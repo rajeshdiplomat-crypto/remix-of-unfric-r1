@@ -380,8 +380,8 @@ export function DiaryFeedCard({
         
         if (count === 1) {
           return (
-            <div className="mt-2 bg-muted flex items-center justify-center">
-              <img src={images[0]} alt="" className="max-w-full max-h-[500px] object-contain" loading="lazy" />
+            <div className="mt-2 bg-muted flex items-center justify-center min-h-[200px]">
+              <img src={images[0]} alt="" className="max-w-full max-h-[500px] object-contain block" loading="lazy" />
             </div>
           );
         }
