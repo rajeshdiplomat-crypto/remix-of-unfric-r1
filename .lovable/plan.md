@@ -1,28 +1,47 @@
 
 
-## Move Insights Into the Red-Marked Space
+## Move Insights Into the Red-Marked Space (Left of Clock)
 
-The empty area between the focus bar/clock row and the current insights position needs to be filled by the insights content. The insights are already inside the same card, but there's wasted vertical space because the charts have a fixed `h-[140px]` constraint and the card doesn't expand to use the available room.
+The current layout stacks vertically: focus bar + clock row, then insights below both. The red-marked area shows the insights should fill the space **below the focus bar, but still to the left of the clock** -- so the clock spans the full card height on the right.
+
+### Layout Change
+
+```text
+Current:
++--[Focus Bar]------------------+--[Clock]--+
++--[Insights (full width)]------------------+
+
+Desired:
++--[Focus Bar]------------------+           +
+|                               |  [Clock]  |
++--[Insights: KPIs + Charts]----+           +
+```
 
 ### Changes
 
-**1. `src/components/tasks/InsightsPanel.tsx`**
-- Increase the main charts row height from `h-[140px]` to `h-[180px]` to give charts more vertical space
-- Reduce excess padding so the insights content sits tighter against the focus bar above
+**1. `src/pages/Tasks.tsx`** (lines 650-669)
+- Restructure the unified card from vertical stacking to a **two-column layout**: left column (flex-1) contains Focus Bar on top and Insights below; right column (fixed width, full height) contains the Clock widget.
+- The outer container becomes `flex` with the clock column spanning the entire card height via `items-stretch`.
 
-**2. `src/pages/Tasks.tsx`**
-- Remove the `border-b border-border/30` from the top row divider between focus bar and insights, so they feel continuous
-- Remove the extra wrapper div and padding around the insights toggle button, moving it inline with the time period selector inside InsightsPanel
-- Move the "Hide Insights" toggle button into the InsightsPanel component itself (next to the time period pills) so there's no separate row creating dead space
-- Remove the outer `flex flex-col` wrapper that adds vertical gaps between the focus row and insights
+**2. `src/components/tasks/InsightsPanel.tsx`**
+- No major structural changes needed, just ensure it fills available space without extra top borders or padding that create gaps.
 
-### Technical Details
+### Technical Detail
 
-- In `Tasks.tsx` lines 652: remove `border-b border-border/30` from the focus/clock row
-- In `Tasks.tsx` lines 663-690: remove the separate insights toggle wrapper div; pass `onToggleCollapse` and `collapsed` props to InsightsPanel directly
-- In `InsightsPanel.tsx` line 336: reduce padding from `py-2.5` to `py-1.5`  
-- In `InsightsPanel.tsx` line 356: increase chart row height from `h-[140px]` to `h-[180px]`
-- Add the "Hide Insights" toggle button inside InsightsPanel's header row (next to time period pills) via new props `onCollapse`
+```text
+<div class="rounded-xl border ... flex">
+  <!-- Left column -->
+  <div class="flex-1 flex flex-col min-w-0">
+    <div class="p-2">
+      <TopFocusBar ... />
+    </div>
+    <InsightsPanel ... />
+  </div>
+  <!-- Right column: clock spans full height -->
+  <div class="hidden lg:flex w-[220px] border-l border-border/30">
+    <TasksClockWidget />
+  </div>
+</div>
+```
 
-### Result
-The focus bar, clock, and insights will flow as one seamless card with no dead space. Charts will be taller and more readable.
+This eliminates the empty red-marked space by placing the insights directly below the focus bar, constrained to the left of the clock column.
