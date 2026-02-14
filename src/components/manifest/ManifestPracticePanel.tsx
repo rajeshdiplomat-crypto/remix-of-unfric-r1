@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Play,
@@ -354,35 +355,31 @@ export function ManifestPracticePanel({
     disabled?: boolean;
     children: React.ReactNode;
   }) => (
-    <div
-      className={`rounded-xl border ${done ? "border-teal-200 bg-teal-50/50 dark:border-teal-800 dark:bg-teal-900/20" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"} ${disabled ? "opacity-60" : ""}`}
-    >
+    <Card className={`overflow-hidden ${done ? "border-teal-200 dark:border-teal-800 bg-teal-50/30 dark:bg-teal-900/10" : ""} ${disabled ? "opacity-60" : ""}`}>
       <button
         onClick={() => !disabled && toggle(id)}
-        className="w-full flex items-center justify-between p-4"
+        className="w-full flex items-center justify-between p-3.5"
         disabled={disabled}
       >
         <div className="flex items-center gap-3">
           <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center ${done ? "bg-teal-500 text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-500"}`}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center ${done ? "bg-teal-500 text-white" : "bg-muted text-muted-foreground"}`}
           >
             {done ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
           </div>
-          <span
-            className={`font-medium ${done ? "text-teal-700 dark:text-teal-300" : "text-slate-700 dark:text-slate-200"}`}
-          >
+          <span className={`font-medium text-sm ${done ? "text-teal-700 dark:text-teal-300" : "text-foreground"}`}>
             {title}
           </span>
-          {done && <span className="text-xs bg-teal-100 text-teal-600 px-2 py-0.5 rounded-full">Done</span>}
+          {done && <span className="text-[10px] bg-teal-100 dark:bg-teal-900/50 text-teal-600 dark:text-teal-400 px-2 py-0.5 rounded-full">Done</span>}
         </div>
         {expandedSection === id ? (
-          <ChevronUp className="h-4 w-4 text-slate-400" />
+          <ChevronUp className="h-4 w-4 text-muted-foreground" />
         ) : (
-          <ChevronDown className="h-4 w-4 text-slate-400" />
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
         )}
       </button>
-      {expandedSection === id && !disabled && <div className="px-4 pb-4 space-y-3">{children}</div>}
-    </div>
+      {expandedSection === id && !disabled && <div className="px-3.5 pb-3.5 space-y-3 border-t border-border pt-3">{children}</div>}
+    </Card>
   );
 
   return (
