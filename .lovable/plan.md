@@ -1,32 +1,38 @@
 
 
-# Fill Empty Dashboard Areas and Increase Graph Height
+# Merge 3 Dashboard Cards into One Wide Card
 
 ## Problem
-The stats dashboard card has two empty areas flanking the progress rings (left and right, marked in red), and the Daily Progress graph row is too short.
+The stats dashboard currently uses 3 separate cards (left stats sidebar, center rings, right habit preview) which looks fragmented. The user wants them combined into a single wide card, with "Top Habits" moved to the center area to reduce overall card height.
+
+## New Layout (Single Card)
+
+```text
++---------------------------------------------------------------------------------+
+| < Feb-26 >  |  "Quote text here..."                          | SELECT A HABIT   |
+|             |  -- AUTHOR                                     | [preview/target] |
+| HABITS      |                                                |                  |
+| [4][0][4]   |  (o) (o) (o) (o) (o)  <- progress rings       |                  |
+|             |  TG  MO  DA  WE  OV                            |                  |
+| HABIT DAYS  |                                                |                  |
+| [96][8][104]|  TOP HABITS                                    |                  |
+|             |  hello 3 · dfghjkl 2 · jkasd 2                 |                  |
++---------------------------------------------------------------------------------+
+```
 
 ## Changes (single file: `src/pages/Habits.tsx`)
 
-### 1. Left Area -- Motivational Quote
-Reuse the existing quote rotation logic (already in state) to display a rotating motivational quote in the left space beside the progress rings. Styled with italic text, muted color, and subtle fade animation.
+### 1. Wrap everything in one Card
+Replace the `grid-cols-[200px_1fr_200px]` with a single `Card` that uses an internal grid/flex layout with 3 sections separated by borders (not separate cards).
 
-### 2. Right Area -- Habit Image or Quick Summary
-When a habit is selected: show its cover image (or a placeholder icon). When no habit is selected: show a compact "top streak" or "best habit" mini-card highlighting the habit with the longest current streak.
+### 2. Move Top Habits to center
+Remove "Top Habits" from the left sidebar area and place it below the progress rings in the center section, displayed as an inline horizontal list to save vertical space.
 
-### 3. Layout Adjustment
-Change the progress rings section from a centered flex row to a 3-column grid:
-- Left column (~200px): Quote / info panel
-- Center (flex-1): The 5 progress rings (unchanged)
-- Right column (~200px): Image / streak card
+### 3. Internal structure
+- Left section (200px, border-right): Month nav, Habits stats, Habit Days stats
+- Center section (flex-1): Quote, progress rings, top habits inline row
+- Right section (200px, border-left): Habit preview or placeholder
 
-### 4. Increase Graph Height
-Change the Daily Progress SVG `style={{ height: 120 }}` to `style={{ height: 180 }}` and increase the viewBox height from 160 to 220, adjusting the Y-axis scale so the chart breathes more.
-
-### 5. Monochrome Cleanup
-The graph row still uses emerald/teal hardcoded colors -- these will be updated to monochrome (`hsl(var(--foreground))` for line, `hsl(var(--border))` for baseline) to match the redesigned stats card above, consistent with the plan already approved.
-
-### Technical Detail
-- Quote area uses the existing `MOTIVATIONAL_QUOTES` array and `quoteIndex`/`quoteVisible` state
-- Right panel uses the existing `loadActivityImage()` helper and streak calculation already in `getHabitStats()`
-- Graph viewBox changes from `0 0 N*100 160` to `0 0 N*100 220`, with Y points recalculated from `rawY = 190 - (value/100) * 160`
+### 4. Dividers
+Use `border-r border-border` and `border-l border-border` on the internal sections instead of card gaps, creating a seamless single-card appearance.
 
