@@ -266,8 +266,8 @@ export function JournalQuestionCard({
         </div>
       </div>
 
-      {/* Body */}
-      <CardContent className="px-4 pb-2 pt-2 py-[4px]">
+      {/* Body - text content with padding */}
+      <CardContent className="px-4 pb-0 pt-2 py-[4px]">
         {/* Title (Question) */}
         <h3 className="text-base font-medium text-foreground mb-2">
           {questionLabel}
@@ -320,88 +320,85 @@ export function JournalQuestionCard({
           </>
         }
 
-        {/* Media images */}
-        {media && media.length > 0 && (() => {
-          const images = media;
-          const count = images.length;
-
-          if (count === 1) {
-            return (
-              <div className="mt-3">
-                <img src={images[0]} alt="" className="w-full rounded-lg" loading="lazy" />
-              </div>);
-
-          }
-
-          if (count === 2) {
-            return (
-              <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg overflow-hidden">
-                {images.map((url, i) =>
-                <div key={i} className="bg-muted">
-                    <img src={url} alt="" className="w-full h-auto max-h-80 object-contain mx-auto" loading="lazy" />
-                  </div>
-                )}
-              </div>);
-
-          }
-
-          if (count === 3) {
-            return (
-              <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg overflow-hidden">
-                <div className="row-span-2 bg-muted">
-                  <img src={images[0]} alt="" className="w-full h-full object-cover" loading="lazy" />
-                </div>
-                <div className="bg-muted">
-                  <img src={images[1]} alt="" className="w-full aspect-square object-cover" loading="lazy" />
-                </div>
-                <div className="bg-muted">
-                  <img src={images[2]} alt="" className="w-full aspect-square object-cover" loading="lazy" />
-                </div>
-              </div>);
-
-          }
-
-          const extra = count - 4;
-          return (
-            <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg overflow-hidden">
-              {images.slice(0, 4).map((url, i) =>
-              <div key={i} className="relative bg-muted">
-                  <img src={url} alt="" className="w-full aspect-square object-cover" loading="lazy" />
-                  {i === 3 && extra > 0 &&
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <span className="text-2xl font-semibold text-white">+{extra}</span>
-                    </div>
-                }
-                </div>
-              )}
-            </div>);
-
-        })()}
-
         {emotionTag &&
         <div className="flex items-center gap-2 mt-3">
             <PenLine className="h-3.5 w-3.5 text-muted-foreground" />
-            <Badge
-            variant="secondary"
-            className="text-xs px-2 py-0 h-5 bg-rose-100 text-rose-700">
-
+            <Badge variant="secondary" className="text-xs px-2 py-0 h-5 bg-rose-100 text-rose-700">
               {emotionTag}
             </Badge>
           </div>
         }
+      </CardContent>
 
-        {/* Facebook-style counts row */}
+      {/* Edge-to-edge media - outside CardContent */}
+      {media && media.length > 0 && (() => {
+        const images = media;
+        const count = images.length;
+
+        if (count === 1) {
+          return (
+            <div className="mt-2">
+              <img src={images[0]} alt="" className="w-full" loading="lazy" />
+            </div>
+          );
+        }
+
+        if (count === 2) {
+          return (
+            <div className="mt-2 grid grid-cols-2 gap-0.5">
+              {images.map((url, i) =>
+                <div key={i} className="bg-muted">
+                  <img src={url} alt="" className="w-full h-auto max-h-80 object-contain mx-auto" loading="lazy" />
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        if (count === 3) {
+          return (
+            <div className="mt-2 grid grid-cols-2 gap-0.5">
+              <div className="row-span-2 bg-muted">
+                <img src={images[0]} alt="" className="w-full h-full object-cover" loading="lazy" />
+              </div>
+              <div className="bg-muted">
+                <img src={images[1]} alt="" className="w-full aspect-square object-cover" loading="lazy" />
+              </div>
+              <div className="bg-muted">
+                <img src={images[2]} alt="" className="w-full aspect-square object-cover" loading="lazy" />
+              </div>
+            </div>
+          );
+        }
+
+        const extra = count - 4;
+        return (
+          <div className="mt-2 grid grid-cols-2 gap-0.5">
+            {images.slice(0, 4).map((url, i) =>
+              <div key={i} className="relative bg-muted">
+                <img src={url} alt="" className="w-full aspect-square object-cover" loading="lazy" />
+                {i === 3 && extra > 0 &&
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <span className="text-2xl font-semibold text-white">+{extra}</span>
+                  </div>
+                }
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Counts + actions + comments - with padding */}
+      <div className="px-4 pb-2">
         <div className="flex items-center justify-between mt-2 px-1">
           <div className="flex items-center gap-1.5">
             {totalReactions > 0 &&
-            <>
+              <>
                 <div className="flex -space-x-1">
                   {topReactions.map(([type]) => {
-                  const reaction = REACTION_TYPES.find((r) => r.type === type);
-                  return reaction ?
-                  <span key={type} className="text-xs leading-none">{reaction.emoji}</span> :
-                  null;
-                })}
+                    const reaction = REACTION_TYPES.find((r) => r.type === type);
+                    return reaction ? <span key={type} className="text-xs leading-none">{reaction.emoji}</span> : null;
+                  })}
                 </div>
                 <span className="text-xs text-muted-foreground">{totalReactions}</span>
               </>
@@ -413,25 +410,17 @@ export function JournalQuestionCard({
           </div>
         </div>
 
-        {/* Facebook-style action bar */}
         <div className="border-t border-border/50 mt-1">
           <div className="flex min-h-[44px] items-stretch">
-            {/* Like */}
             <Popover>
               <PopoverTrigger asChild>
                 <button
                   aria-pressed={!!userReaction}
-                  className={cn("flex-1 flex items-center justify-center gap-2 py-0.2 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
-
-                  userReaction && "text-primary"
-                  )}>
-
+                  className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors", userReaction && "text-primary")}
+                >
                   {userReaction ?
-                  <span className="text-sm leading-none">
-                      {REACTION_TYPES.find((r) => r.type === userReaction)?.emoji}
-                    </span> :
-
-                  <ThumbsUp className="h-4 w-4" />
+                    <span className="text-sm leading-none">{REACTION_TYPES.find((r) => r.type === userReaction)?.emoji}</span> :
+                    <ThumbsUp className="h-4 w-4" />
                   }
                   <span>{userReaction ? REACTION_TYPES.find((r) => r.type === userReaction)?.label : 'Like'}</span>
                 </button>
@@ -439,16 +428,13 @@ export function JournalQuestionCard({
               <PopoverContent className="w-auto p-1.5" side="top">
                 <div className="flex gap-0.5">
                   {REACTION_TYPES.map((reaction) =>
-                  <button
-                    key={reaction.type}
-                    onClick={() => handleToggleReaction(reaction.type)}
-                    aria-pressed={userReaction === reaction.type}
-                    className={cn(
-                      "text-xl p-1.5 rounded-full hover:bg-muted transition-transform hover:scale-125",
-                      userReaction === reaction.type && "bg-primary/20"
-                    )}
-                    title={reaction.label}>
-
+                    <button
+                      key={reaction.type}
+                      onClick={() => handleToggleReaction(reaction.type)}
+                      aria-pressed={userReaction === reaction.type}
+                      className={cn("text-xl p-1.5 rounded-full hover:bg-muted transition-transform hover:scale-125", userReaction === reaction.type && "bg-primary/20")}
+                      title={reaction.label}
+                    >
                       {reaction.emoji}
                     </button>
                   )}
@@ -456,19 +442,14 @@ export function JournalQuestionCard({
               </PopoverContent>
             </Popover>
 
-            {/* Comment */}
             <button
               onClick={() => setShowComposer(!showComposer)}
-              className={cn("flex-1 flex items-center justify-center gap-2 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors py-[8px]",
-
-              showComposer && "text-primary"
-              )}>
-
+              className={cn("flex-1 flex items-center justify-center gap-2 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors py-[8px]", showComposer && "text-primary")}
+            >
               <MessageCircle className="h-4 w-4" />
               <span>Comment</span>
             </button>
 
-            {/* Share */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex-1 flex items-center justify-center gap-2 py-2.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors">
@@ -494,48 +475,35 @@ export function JournalQuestionCard({
           </div>
         </div>
 
-        {/* Comments section */}
         {showComposer &&
-        <div className="mt-3 pt-3 border-t border-border/30 space-y-3">
-            {/* Comment input */}
+          <div className="mt-3 pt-3 border-t border-border/30 space-y-3">
             <div className="flex gap-2">
               <Input
-              placeholder="Write a comment..."
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleAddComment()}
-              className="flex-1 bg-muted/30" />
-
-              <Button
-              size="icon"
-              onClick={handleAddComment}
-              disabled={!commentText.trim()}>
-
+                placeholder="Write a comment..."
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleAddComment()}
+                className="flex-1 bg-muted/30"
+              />
+              <Button size="icon" onClick={handleAddComment} disabled={!commentText.trim()}>
                 <Send className="h-4 w-4" />
               </Button>
             </div>
-
-            {/* Existing comments */}
             {feedComments.map((comment) =>
-          <div key={comment.id} className="bg-muted/30 rounded-lg p-3">
+              <div key={comment.id} className="bg-muted/30 rounded-lg p-3">
                 <p className="text-sm">{comment.text}</p>
                 <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
                   <span>{format(new Date(comment.created_at), "MMM d, h:mm a")}</span>
                   {comment.is_edited && <span>(edited)</span>}
                   {comment.user_id === currentUserId &&
-              <button
-                className="hover:text-destructive"
-                onClick={() => onDeleteComment?.(comment.id)}>
-
-                      Delete
-                    </button>
-              }
+                    <button className="hover:text-destructive" onClick={() => onDeleteComment?.(comment.id)}>Delete</button>
+                  }
                 </div>
               </div>
-          )}
+            )}
           </div>
         }
-      </CardContent>
-    </Card>);
-
+      </div>
+    </Card>
+  );
 }
