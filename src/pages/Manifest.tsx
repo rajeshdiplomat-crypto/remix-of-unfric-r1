@@ -14,6 +14,12 @@ import { ManifestSidebarPanel } from "@/components/manifest/ManifestSidebarPanel
 import { ManifestAnalyticsModal } from "@/components/manifest/ManifestAnalyticsModal";
 import { HistoryDrawer } from "@/components/manifest/HistoryDrawer";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import {
   AlertDialog,
@@ -96,7 +102,8 @@ export default function Manifest() {
   const [historyGoal, setHistoryGoal] = useState<ManifestGoal | null>(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
-  const [activeLeftPanel, setActiveLeftPanel] = useState<"calendar" | "progress" | null>(null);
+  const [showCalendarPopup, setShowCalendarPopup] = useState(false);
+  const [showProgressPopup, setShowProgressPopup] = useState(false);
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -370,9 +377,6 @@ export default function Manifest() {
     return quotes[Math.floor(new Date().getDate() % quotes.length)];
   };
 
-  const toggleLeftPanel = (panel: "calendar" | "progress") => {
-    setActiveLeftPanel((prev) => (prev === panel ? null : panel));
-  };
 
   if (loading) return <PageLoadingScreen module="manifest" />;
 
@@ -439,24 +443,18 @@ export default function Manifest() {
                 <h2 className="text-base font-semibold text-foreground">Your Realities</h2>
                 <div className="flex items-center gap-1">
                   <Button
-                    variant={activeLeftPanel === "calendar" ? "default" : "ghost"}
+                    variant="ghost"
                     size="sm"
-                    className={cn(
-                      "rounded-lg h-8 px-2",
-                      activeLeftPanel === "calendar" ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white border-0" : "text-muted-foreground"
-                    )}
-                    onClick={() => toggleLeftPanel("calendar")}
+                    className="rounded-lg h-8 px-2 text-muted-foreground"
+                    onClick={() => setShowCalendarPopup(true)}
                   >
                     <Calendar className="h-3.5 w-3.5" />
                   </Button>
                   <Button
-                    variant={activeLeftPanel === "progress" ? "default" : "ghost"}
+                    variant="ghost"
                     size="sm"
-                    className={cn(
-                      "rounded-lg h-8 px-2",
-                      activeLeftPanel === "progress" ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white border-0" : "text-muted-foreground"
-                    )}
-                    onClick={() => toggleLeftPanel("progress")}
+                    className="rounded-lg h-8 px-2 text-muted-foreground"
+                    onClick={() => setShowProgressPopup(true)}
                   >
                     <TrendingUp className="h-3.5 w-3.5" />
                   </Button>
@@ -585,22 +583,6 @@ export default function Manifest() {
               )}
             </div>
 
-            {/* Expandable Panel Area */}
-            {activeLeftPanel && (
-              <div className="flex-shrink-0 max-h-[400px] overflow-y-auto">
-                <ManifestSidebarPanel
-                  selectedDate={selectedDate}
-                  onDateSelect={handleDateSelect}
-                  goals={goals}
-                  practices={practices}
-                  activeCount={activeGoals.length}
-                  streak={aggregateStreak}
-                  avgMomentum={avgMomentum}
-                  onOpenAnalytics={() => setShowAnalytics(true)}
-                  section={activeLeftPanel}
-                />
-              </div>
-            )}
           </div>
 
           {/* ========== RIGHT COLUMN: Editorial ========== */}
@@ -706,6 +688,56 @@ export default function Manifest() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Calendar Popup */}
+        <Dialog open={showCalendarPopup} onOpenChange={setShowCalendarPopup}>
+          <DialogContent className="rounded-2xl max-w-sm p-0 overflow-hidden">
+            <DialogHeader className="p-4 pb-0">
+              <DialogTitle>Calendar</DialogTitle>
+            </DialogHeader>
+            <div className="p-4 pt-2">
+              <ManifestSidebarPanel
+                selectedDate={selectedDate}
+                onDateSelect={handleDateSelect}
+                goals={goals}
+                practices={practices}
+                activeCount={activeGoals.length}
+                streak={aggregateStreak}
+                avgMomentum={avgMomentum}
+                onOpenAnalytics={() => {
+                  setShowCalendarPopup(false);
+                  setShowAnalytics(true);
+                }}
+                section="calendar"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Progress Popup */}
+        <Dialog open={showProgressPopup} onOpenChange={setShowProgressPopup}>
+          <DialogContent className="rounded-2xl max-w-sm p-0 overflow-hidden">
+            <DialogHeader className="p-4 pb-0">
+              <DialogTitle>Progress</DialogTitle>
+            </DialogHeader>
+            <div className="p-4 pt-2">
+              <ManifestSidebarPanel
+                selectedDate={selectedDate}
+                onDateSelect={handleDateSelect}
+                goals={goals}
+                practices={practices}
+                activeCount={activeGoals.length}
+                streak={aggregateStreak}
+                avgMomentum={avgMomentum}
+                onOpenAnalytics={() => {
+                  setShowProgressPopup(false);
+                  setShowAnalytics(true);
+                }}
+                section="progress"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Analytics Modal */}
         <ManifestAnalyticsModal
