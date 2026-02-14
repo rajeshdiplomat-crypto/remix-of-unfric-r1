@@ -66,11 +66,21 @@ export function JournalSettingsModal({ open, onOpenChange, template, onTemplateC
   };
 
   const handleSave = () => {
+    // If unstructured mode changed, set effectiveFrom to yesterday so it applies from yesterday onward
+    const modeChanged = unstructured !== (template.unstructured ?? false);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const effectiveFrom = modeChanged
+      ? yesterday.toISOString().split("T")[0]
+      : template.effectiveFrom;
+
     onTemplateChange({
       ...template,
       questions: localQuestions,
       applyOnNewEntry,
       unstructured,
+      effectiveFrom,
     });
     onOpenChange(false);
   };
