@@ -117,7 +117,7 @@ export default function Settings() {
           privacy_passcode_enabled: false,
           note_skin_preference: null,
           default_task_view: "status",
-          default_notes_view: "list",
+          default_notes_view: "atlas",
           default_emotions_tab: "feel",
           journal_mode: "structured",
           diary_show_lines: true,
