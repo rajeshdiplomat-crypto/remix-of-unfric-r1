@@ -1,50 +1,38 @@
 
-# Settings Page: Theme Colors and Font
 
-## What This Does
+## Move Time Period Selector to Vertical Left Position
 
-Creates a new `/settings` page where you can customize three things:
-1. **Card color** -- the darker grey areas (sidebars, cards, progress panels)
-2. **Background color** -- the very light grey page background behind everything
-3. **Font** -- changes the font family across the entire app (no changes to bold, size, or letter case)
+Currently the Today/Tomorrow/Week pills sit horizontally at the top of the insights area. The change moves them to a vertical strip on the left edge of the insights content.
 
-All changes preview instantly and persist between sessions.
+### Changes
 
----
+**`src/components/tasks/InsightsPanel.tsx`**
 
-## How It Will Look
+1. **Restructure the insights content area** (lines 338-368): Wrap the entire insights body in a horizontal `flex` container. The left side becomes a narrow vertical column with the three period buttons stacked vertically, and the right side contains the KPIs + charts.
 
-The Settings page will follow the same Zara-inspired minimal aesthetic:
-- Clean layout with clear section labels
-- Color pickers for Background and Card colors with hex input
-- Font selector showing 4 font pair options as clickable cards with live preview text
-- A "Reset to Default" button to restore original values
+2. **Convert the period selector** (lines 343-358): Change from a horizontal `flex gap-1` row to a vertical `flex flex-col` stack. Each button gets slightly adjusted padding for vertical readability. The container gets a left-aligned vertical pill style.
 
----
+3. **Move the "Hide Insights" toggle**: Keep it in the top-right corner of the charts area, or inline with the first chart row header.
 
-## Technical Details
+4. **Remove the top `mb-2` header row**: Since the period selector moves to the left, the horizontal header bar is no longer needed as a separate row.
 
-### 1. New file: `src/pages/Settings.tsx`
-- Full settings page with two sections:
-  - **Colors**: Two color inputs (Background + Card) with hex pickers. Uses the existing `CustomThemeContext` to apply overrides to `--background` and `--card` CSS variables only.
-  - **Font**: Four selectable font pair cards (Classic Elegance, Modern Serif, Geometric, Elegant Sans). Uses the existing `FontContext`.
-- Reset button clears custom colors and reverts font to default ("Elegant Sans").
+### Layout Change
 
-### 2. Simplify `CustomThemeContext.tsx`
-- Reduce `CustomColors` interface to only two fields: `background` and `card`.
-- Remove the 4 unused color overrides (foreground, mutedForeground, primary, border) and all contrast-checking utilities since we are no longer exposing those.
-- The `applyCustomColors` function will only set `--background` and `--card`.
+```text
+Before:
+[Today] [Tomorrow] [Week]        [Hide Insights]
+[KPIs] [Chart 1] [Chart 2] [Pie]
 
-### 3. Update `src/App.tsx`
-- Add route: `/settings` pointing to the new `Settings` page (inside `ProtectedRoute`).
-- Import the new Settings page component.
+After:
+[Today  ]  [KPIs] [Chart 1] [Chart 2] [Pie]  [Hide]
+[Tomorrow]
+[Week   ]
+```
 
-### 4. Update `ZaraDrawer.tsx`
-- Replace the current inline `ThemeToggle` with a "Settings" link pointing to `/settings`.
-- Remove ThemeToggle import (the light/dark toggle will move into the Settings page as an optional enhancement later, or can remain in the drawer if desired).
+### Technical Detail
 
-### 5. No changes to
-- Font sizes, bold weights, uppercase/lowercase styling
-- Any module-specific component code
-- ThemeContext (the 6 preset themes remain untouched)
-- The way fonts are loaded (Google Fonts links stay the same)
+- Lines 340-368: Replace the horizontal header + body structure with a single `flex` row
+- The period selector becomes a `flex flex-col gap-1` column with `w-[72px] shrink-0` and vertical centering
+- The existing KPIs + charts `flex gap-3 h-[180px]` block moves into the right side of this new flex container
+- The "Hide Insights" button stays top-right via absolute positioning or flex justify-between in the charts header
+

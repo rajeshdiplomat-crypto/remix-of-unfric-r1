@@ -23,7 +23,6 @@ import Notes from "./pages/Notes";
 import Tasks from "./pages/Tasks";
 import TaskFocus from "./pages/TaskFocus";
 
-import Settings from "./pages/Settings";
 import ClarityWindow from "./pages/ClarityWindow";
 import NotFound from "./pages/NotFound";
 
@@ -165,14 +164,6 @@ const App = () => (
                         <ProtectedFullscreenRoute>
                           <TaskFocus />
                         </ProtectedFullscreenRoute>
-                      }
-                    />
-                    <Route
-                      path="/settings"
-                      element={
-                        <ProtectedRoute>
-                          <Settings />
-                        </ProtectedRoute>
                       }
                     />
                     <Route
