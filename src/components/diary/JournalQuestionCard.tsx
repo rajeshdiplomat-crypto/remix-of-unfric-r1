@@ -185,7 +185,6 @@ export function JournalQuestionCard({
     if (!commentText.trim()) return;
     onAddComment?.(eventId, commentText.trim());
     setCommentText("");
-    setShowComposer(false);
     toast({ title: "Comment posted" });
   };
 
@@ -332,13 +331,14 @@ export function JournalQuestionCard({
 
       {/* Edge-to-edge media - outside CardContent */}
       {media && media.length > 0 && (() => {
-        const images = media;
+        const images = media.filter(url => url && typeof url === 'string' && url.trim() !== '');
+        if (images.length === 0) return null;
         const count = images.length;
 
         if (count === 1) {
           return (
-            <div className="mt-2">
-              <img src={images[0]} alt="" className="w-full" loading="lazy" />
+            <div className="mt-2 bg-muted flex items-center justify-center">
+              <img src={images[0]} alt="" className="max-w-full max-h-[500px] object-contain" loading="lazy" />
             </div>
           );
         }

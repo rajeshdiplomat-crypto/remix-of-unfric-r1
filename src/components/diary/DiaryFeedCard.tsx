@@ -374,13 +374,14 @@ export function DiaryFeedCard({
 
       {/* Facebook-style edge-to-edge media - OUTSIDE CardContent for full bleed */}
       {hasUserAttachedMedia && (() => {
-        const images = event.media!;
+        const images = event.media!.filter(url => url && typeof url === 'string' && url.trim() !== '');
+        if (images.length === 0) return null;
         const count = images.length;
         
         if (count === 1) {
           return (
-            <div className="mt-2">
-              <img src={images[0]} alt="" className="w-full" />
+            <div className="mt-2 bg-muted flex items-center justify-center">
+              <img src={images[0]} alt="" className="max-w-full max-h-[500px] object-contain" loading="lazy" />
             </div>
           );
         }
