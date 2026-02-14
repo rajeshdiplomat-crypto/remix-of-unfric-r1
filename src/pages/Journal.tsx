@@ -755,7 +755,7 @@ export default function Journal() {
           {journalHeader}
           <div className="flex-1 min-h-0 grid gap-12 w-full px-6 lg:px-8 py-8 overflow-hidden grid-cols-1 lg:grid-cols-[1fr_2fr]">
             {/* Left column: Editorial + toggle panels */}
-            <div className="hidden lg:flex flex-col justify-start gap-6 h-full overflow-y-auto pt-12">
+            <div className="hidden lg:flex flex-col justify-start gap-6 h-full pt-12">
               <div className="space-y-6 max-w-md">
                 {/* Badge */}
                 <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
@@ -795,15 +795,6 @@ export default function Journal() {
                     <Sparkles className="h-3.5 w-3.5" />
                     Emotions
                   </Button>
-                  <Button
-                    variant={activeLeftPanel === "progress" ? "outline" : "ghost"}
-                    size="sm"
-                    className="gap-1.5"
-                    onClick={() => setActiveLeftPanel(activeLeftPanel === "progress" ? null : "progress")}
-                  >
-                    <TrendingUp className="h-3.5 w-3.5" />
-                    Progress
-                  </Button>
                 </div>
 
                 {/* Expandable panel area */}
@@ -816,14 +807,15 @@ export default function Journal() {
                     skin={currentSkin}
                     showSection="calendar"
                     searchQuery={searchQuery}
+                    compact
                   />
                 )}
                 {activeLeftPanel === "emotions" && (
                   <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="emotions" />
                 )}
-                {activeLeftPanel === "progress" && (
-                  <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="progress" />
-                )}
+
+                {/* Progress always visible */}
+                <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="progress" />
               </div>
             </div>
 
