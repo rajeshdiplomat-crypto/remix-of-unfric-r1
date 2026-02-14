@@ -337,38 +337,35 @@ export function InsightsPanel({ tasks, compactMode, collapsed, onToggleCollapse 
   }
   return (
     <div className="overflow-hidden">
-      <div className="px-3 py-1.5">
-        {/* Time Period Selector + Toggle */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1 bg-muted/40 rounded-lg p-0.5 w-fit">
-          {(["today", "tomorrow", "week"] as TimePeriod[]).map((period) => (
-            <button
-              key={period}
-              onClick={() => setTimePeriod(period)}
-              className={cn(
-                "px-2.5 py-1 rounded-md text-[10px] font-medium transition-all",
-                timePeriod === period
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {period === "today" ? "Today" : period === "tomorrow" ? "Tomorrow" : "Week"}
-            </button>
-          ))}
-          </div>
-          {onToggleCollapse && (
-            <button
-              onClick={onToggleCollapse}
-              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Hide Insights
-              <ChevronUp className="h-3 w-3" />
-            </button>
-          )}
-        </div>
-
-        {/* Main row: KPIs column + Charts */}
+    <div className="px-3 py-1.5">
+        {/* Main row: Period selector (vertical) + KPIs + Charts */}
         <div className="flex gap-3 h-[180px]">
+          {/* Vertical period selector */}
+          <div className="flex flex-col gap-1 w-[72px] shrink-0 justify-center">
+            {(["today", "tomorrow", "week"] as TimePeriod[]).map((period) => (
+              <button
+                key={period}
+                onClick={() => setTimePeriod(period)}
+                className={cn(
+                  "px-2 py-1.5 rounded-md text-[10px] font-medium transition-all text-left",
+                  timePeriod === period
+                    ? "bg-background text-foreground shadow-sm border border-border/40"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {period === "today" ? "Today" : period === "tomorrow" ? "Tomorrow" : "Week"}
+              </button>
+            ))}
+            {onToggleCollapse && (
+              <button
+                onClick={onToggleCollapse}
+                className="mt-auto flex items-center gap-1 text-[9px] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ChevronUp className="h-3 w-3" />
+                Hide
+              </button>
+            )}
+          </div>
           {/* KPIs - vertical stack on the left */}
           <div className="grid grid-rows-4 gap-1.5 shrink-0 w-[100px]">
             <div className="flex items-center gap-2 rounded-lg bg-muted/20 border border-border/30 px-2">
