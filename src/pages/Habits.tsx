@@ -1357,25 +1357,23 @@ export default function Habits() {
               </div>
 
               {/* Right section — Selected habit preview */}
-              <div className="p-4 hidden lg:flex flex-col items-center justify-center border-l border-border">
+              <div className="hidden lg:flex border-l border-border overflow-hidden relative">
                 {(() => {
                   const selectedHabit = selectedActivityId ? activities.find((a) => a.id === selectedActivityId) : null;
                   if (selectedHabit) {
                     const imgUrl = selectedHabit.coverImageUrl || loadActivityImage(selectedHabit.id);
                     return imgUrl ? (
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="w-full aspect-square max-w-[120px] rounded-xl overflow-hidden border border-border">
-                          <img src={imgUrl} alt={selectedHabit.name} className="w-full h-full object-cover" />
+                      <>
+                        <img src={imgUrl} alt={selectedHabit.name} className="w-full h-full object-cover" />
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                          <span className="text-[10px] text-white uppercase tracking-zara">
+                            {selectedHabit.name}
+                          </span>
                         </div>
-                        <span className="text-[10px] text-muted-foreground uppercase tracking-zara text-center">
-                          {selectedHabit.name}
-                        </span>
-                      </div>
+                      </>
                     ) : (
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="w-20 h-20 rounded-full border-2 border-border flex items-center justify-center opacity-30">
-                          <Target className="h-8 w-8 text-muted-foreground" />
-                        </div>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-muted/30">
+                        <Target className="h-8 w-8 text-muted-foreground opacity-30" />
                         <span className="text-[10px] text-muted-foreground uppercase tracking-zara text-center">
                           {selectedHabit.name}
                         </span>
@@ -1383,16 +1381,10 @@ export default function Habits() {
                     );
                   }
                   return (
-                    <div className="flex flex-col items-center gap-3 text-center">
-                      <div className="w-24 h-24 rounded-full border-2 border-primary/20 flex items-center justify-center relative">
-                        <div className="w-16 h-16 rounded-full border-2 border-primary/15 flex items-center justify-center">
-                          <div className="w-8 h-8 rounded-full border-2 border-primary/10 flex items-center justify-center">
-                            <Target className="h-4 w-4 text-primary/30" />
-                          </div>
-                        </div>
-                      </div>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center">
+                      <Target className="h-6 w-6 text-muted-foreground opacity-20" />
                       <span className="text-[10px] text-muted-foreground uppercase tracking-zara">
-                        Select a habit to view
+                        Select a habit
                       </span>
                     </div>
                   );
