@@ -387,7 +387,7 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
           </div>
 
           {/* Charts - fill remaining space */}
-          <div className="grid grid-cols-3 gap-3 flex-1 min-w-0">
+          <div className="grid grid-cols-[1fr_1fr_160px] gap-3 flex-1 min-w-0">
           {/* Plan vs Actual */}
           <div className="rounded-lg bg-muted/20 border border-border/30 p-2.5 flex flex-col min-h-0">
             <div className="flex items-center gap-1.5 mb-1 shrink-0">
