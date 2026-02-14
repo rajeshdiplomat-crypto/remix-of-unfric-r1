@@ -418,7 +418,7 @@ export default function Manifest() {
           animation: float-particle 1.5s ease-out forwards;
         }
       `}</style>
-      <div className="flex flex-col w-full flex-1 bg-background h-full overflow-hidden">
+      <div className="flex flex-col w-full flex-1 bg-background min-h-screen overflow-hidden">
         {/* Hero */}
         <PageHero
           storageKey="manifest_hero_src"
@@ -436,73 +436,49 @@ export default function Manifest() {
             <div className="bg-card rounded-2xl shadow-sm border border-border flex flex-col overflow-hidden flex-1 min-h-0">
               {/* Header with Create Button */}
               <div className="p-3 flex items-center justify-between border-b border-border flex-shrink-0">
+                <h2 className="text-base font-semibold text-foreground">Your Realities</h2>
                 <div className="flex items-center gap-1">
-                  <Button
-                    variant={!activeLeftPanel ? "default" : "ghost"}
-                    size="sm"
-                    className={cn(
-                      "rounded-lg h-8 px-3 text-xs",
-                      !activeLeftPanel ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white border-0" : "text-muted-foreground"
-                    )}
-                    onClick={() => setActiveLeftPanel(null)}
-                  >
-                    <Sparkles className="h-3.5 w-3.5 mr-1" /> Realities
-                  </Button>
                   <Button
                     variant={activeLeftPanel === "calendar" ? "default" : "ghost"}
                     size="sm"
                     className={cn(
-                      "rounded-lg h-8 px-3 text-xs",
+                      "rounded-lg h-8 px-2",
                       activeLeftPanel === "calendar" ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white border-0" : "text-muted-foreground"
                     )}
                     onClick={() => toggleLeftPanel("calendar")}
                   >
-                    <Calendar className="h-3.5 w-3.5 mr-1" /> Calendar
+                    <Calendar className="h-3.5 w-3.5" />
                   </Button>
                   <Button
                     variant={activeLeftPanel === "progress" ? "default" : "ghost"}
                     size="sm"
                     className={cn(
-                      "rounded-lg h-8 px-3 text-xs",
+                      "rounded-lg h-8 px-2",
                       activeLeftPanel === "progress" ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white border-0" : "text-muted-foreground"
                     )}
                     onClick={() => toggleLeftPanel("progress")}
                   >
-                    <TrendingUp className="h-3.5 w-3.5 mr-1" /> Progress
+                    <TrendingUp className="h-3.5 w-3.5" />
                   </Button>
                   <Button
                     onClick={() => setShowAnalytics(true)}
                     variant="ghost"
                     size="sm"
-                    className="rounded-lg h-8 px-3 text-xs text-muted-foreground"
+                    className="rounded-lg h-8 px-2 text-muted-foreground"
                   >
-                    <BarChart3 className="h-3.5 w-3.5 mr-1" /> Analytics
+                    <BarChart3 className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    onClick={() => setShowCreateModal(true)}
+                    size="sm"
+                    className="rounded-lg h-8 px-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all text-xs"
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" /> New
                   </Button>
                 </div>
-                <Button
-                  onClick={() => setShowCreateModal(true)}
-                  size="sm"
-                  className="rounded-lg h-8 px-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all text-xs"
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1" /> New
-                </Button>
               </div>
 
-            {activeLeftPanel ? (
-              <div className="overflow-y-auto flex-1 min-h-0 p-2">
-                <ManifestSidebarPanel
-                  selectedDate={selectedDate}
-                  onDateSelect={handleDateSelect}
-                  goals={goals}
-                  practices={practices}
-                  activeCount={activeGoals.length}
-                  streak={aggregateStreak}
-                  avgMomentum={avgMomentum}
-                  onOpenAnalytics={() => setShowAnalytics(true)}
-                  section={activeLeftPanel}
-                />
-              </div>
-            ) : activeGoals.length === 0 ? (
+              {activeGoals.length === 0 ? (
                 <div className="p-3 flex-1 flex items-center justify-center">
                   <Card className="rounded-xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-card w-full">
                     <CardContent className="py-8 px-4 text-center">
@@ -567,8 +543,8 @@ export default function Manifest() {
                 </div>
               )}
 
-              {/* Completed Realities Section - only show when viewing realities */}
-              {!activeLeftPanel && completedGoals.length > 0 && (
+              {/* Completed Realities Section */}
+              {completedGoals.length > 0 && (
                 <div className="border-t border-border">
                   <button
                     onClick={() => setShowCompleted(!showCompleted)}
@@ -608,10 +584,27 @@ export default function Manifest() {
                 </div>
               )}
             </div>
+
+            {/* Expandable Panel Area */}
+            {activeLeftPanel && (
+              <div className="flex-shrink-0 max-h-[400px] overflow-y-auto">
+                <ManifestSidebarPanel
+                  selectedDate={selectedDate}
+                  onDateSelect={handleDateSelect}
+                  goals={goals}
+                  practices={practices}
+                  activeCount={activeGoals.length}
+                  streak={aggregateStreak}
+                  avgMomentum={avgMomentum}
+                  onOpenAnalytics={() => setShowAnalytics(true)}
+                  section={activeLeftPanel}
+                />
+              </div>
+            )}
           </div>
 
           {/* ========== RIGHT COLUMN: Editorial ========== */}
-          <div className="hidden lg:flex flex-col h-full min-h-0 overflow-hidden">
+          <div className="hidden lg:flex flex-col h-full min-h-0 overflow-y-auto">
             <div className="flex flex-col gap-6 py-6 px-5">
               {/* Badge */}
               <Badge variant="secondary" className="w-fit rounded-full px-3 py-1 gap-1.5">
