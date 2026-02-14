@@ -777,71 +777,81 @@ export default function Journal() {
             subtitle={PAGE_HERO_TEXT.journal.subtitle}
           />
           {journalHeader}
-          <div className="flex-1 min-h-0 grid gap-8 w-full px-4 sm:px-6 py-6 overflow-hidden grid-cols-1 lg:grid-cols-[320px_1fr]">
+          <div className="flex-1 min-h-0 grid gap-12 w-full px-6 lg:px-8 py-8 overflow-hidden grid-cols-1 lg:grid-cols-[1fr_2fr]">
             {/* Left column: Editorial + toggle panels */}
-            <div className="hidden lg:flex flex-col gap-6 h-full overflow-y-auto pr-2">
-              {/* Editorial header */}
-              <div className="space-y-3">
-                <h2 className="text-lg font-semibold tracking-wide text-foreground">Journaling</h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+            <div className="hidden lg:flex flex-col justify-center gap-6 h-full overflow-y-auto">
+              <div className="space-y-6 max-w-md">
+                {/* Badge */}
+                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
+                  <Sparkles className="h-4 w-4" />
+                  Daily Journal
+                </span>
+
+                {/* Title */}
+                <h2 className="text-3xl md:text-4xl font-light leading-tight">
+                  Capture Your <span className="font-semibold">Inner World</span>
+                </h2>
+
+                {/* Description */}
+                <p className="text-muted-foreground text-lg leading-relaxed">
                   Journaling helps you process emotions, track growth, and find clarity. A few minutes each day can transform how you understand yourself.
                 </p>
+
+                <div className="h-px bg-border" />
+
+                {/* Toggle buttons */}
+                <div className="flex gap-2">
+                  <Button
+                    variant={activeLeftPanel === "calendar" ? "outline" : "ghost"}
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => setActiveLeftPanel(activeLeftPanel === "calendar" ? null : "calendar")}
+                  >
+                    <Calendar className="h-3.5 w-3.5" />
+                    Calendar
+                  </Button>
+                  <Button
+                    variant={activeLeftPanel === "emotions" ? "outline" : "ghost"}
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => setActiveLeftPanel(activeLeftPanel === "emotions" ? null : "emotions")}
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Emotions
+                  </Button>
+                  <Button
+                    variant={activeLeftPanel === "progress" ? "outline" : "ghost"}
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => setActiveLeftPanel(activeLeftPanel === "progress" ? null : "progress")}
+                  >
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    Progress
+                  </Button>
+                </div>
+
+                {/* Expandable panel area */}
+                {activeLeftPanel === "calendar" && (
+                  <JournalSidebarPanel
+                    selectedDate={selectedDate}
+                    onDateSelect={setSelectedDate}
+                    entries={entries}
+                    onInsertPrompt={handleInsertPrompt}
+                    skin={currentSkin}
+                    showSection="calendar"
+                    searchQuery={searchQuery}
+                  />
+                )}
+                {activeLeftPanel === "emotions" && (
+                  <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="emotions" />
+                )}
+                {activeLeftPanel === "progress" && (
+                  <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="progress" />
+                )}
               </div>
-
-              <div className="h-px bg-border" />
-
-              {/* Toggle buttons */}
-              <div className="flex gap-2">
-                <Button
-                  variant={activeLeftPanel === "calendar" ? "outline" : "ghost"}
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => setActiveLeftPanel(activeLeftPanel === "calendar" ? null : "calendar")}
-                >
-                  <Calendar className="h-3.5 w-3.5" />
-                  Calendar
-                </Button>
-                <Button
-                  variant={activeLeftPanel === "emotions" ? "outline" : "ghost"}
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => setActiveLeftPanel(activeLeftPanel === "emotions" ? null : "emotions")}
-                >
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Emotions
-                </Button>
-                <Button
-                  variant={activeLeftPanel === "progress" ? "outline" : "ghost"}
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => setActiveLeftPanel(activeLeftPanel === "progress" ? null : "progress")}
-                >
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  Progress
-                </Button>
-              </div>
-
-              {/* Expandable panel area */}
-              {activeLeftPanel === "calendar" && (
-                <JournalSidebarPanel
-                  selectedDate={selectedDate}
-                  onDateSelect={setSelectedDate}
-                  entries={entries}
-                  onInsertPrompt={handleInsertPrompt}
-                  skin={currentSkin}
-                  showSection="calendar"
-                  searchQuery={searchQuery}
-                />
-              )}
-              {activeLeftPanel === "emotions" && (
-                <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="emotions" />
-              )}
-              {activeLeftPanel === "progress" && (
-                <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="progress" />
-              )}
             </div>
 
-            {/* Right column: Editor only */}
+            {/* Right column: Editor only (2/3 width) */}
             {editorContent}
           </div>
         </>
