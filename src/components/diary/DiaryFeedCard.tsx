@@ -279,7 +279,7 @@ export function DiaryFeedCard({
       </div>
 
       {/* Body */}
-      <CardContent className="px-4 pb-4 pt-2">
+      <CardContent className="px-4 pb-2 pt-2">
         {/* Title */}
         <h3 
           className="text-base font-medium text-foreground mb-2 cursor-pointer hover:underline"
@@ -388,7 +388,9 @@ export function DiaryFeedCard({
             return (
               <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg overflow-hidden">
                 {images.map((url, i) => (
-                  <img key={i} src={url} alt="" className="w-full aspect-[4/5] object-cover" />
+                  <div key={i} className="bg-muted">
+                    <img src={url} alt="" className="w-full h-auto max-h-80 object-contain mx-auto" />
+                  </div>
                 ))}
               </div>
             );
@@ -396,21 +398,26 @@ export function DiaryFeedCard({
           
           if (count === 3) {
             return (
-              <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg overflow-hidden" style={{ height: 280 }}>
-                <img src={images[0]} alt="" className="w-full h-full object-cover row-span-2" style={{ gridRow: '1 / 3' }} />
-                <img src={images[1]} alt="" className="w-full object-cover" style={{ height: 139 }} />
-                <img src={images[2]} alt="" className="w-full object-cover" style={{ height: 139 }} />
+              <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg overflow-hidden">
+                <div className="row-span-2 bg-muted">
+                  <img src={images[0]} alt="" className="w-full h-full object-cover" />
+                </div>
+                <div className="bg-muted">
+                  <img src={images[1]} alt="" className="w-full aspect-square object-cover" />
+                </div>
+                <div className="bg-muted">
+                  <img src={images[2]} alt="" className="w-full aspect-square object-cover" />
+                </div>
               </div>
             );
           }
           
-          // 4+ images: 2x2 grid with "+N" overlay
           const extra = count - 4;
           return (
             <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg overflow-hidden">
               {images.slice(0, 4).map((url, i) => (
-                <div key={i} className="relative">
-                  <img src={url} alt="" className="w-full h-40 object-cover" />
+                <div key={i} className="relative bg-muted">
+                  <img src={url} alt="" className="w-full aspect-square object-cover" />
                   {i === 3 && extra > 0 && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                       <span className="text-2xl font-semibold text-white">+{extra}</span>
@@ -422,41 +429,43 @@ export function DiaryFeedCard({
           );
         })()}
 
-        {/* Facebook-style reaction summary */}
-        {totalReactions > 0 && (
-          <div className="flex items-center justify-between py-2 mt-2">
-            <div className="flex items-center gap-1.5">
-              <div className="flex -space-x-1">
-                {topReactions.map(([emoji]) => (
-                  <span key={emoji} className="text-sm leading-none">
-                    {emoji}
-                  </span>
-                ))}
-              </div>
-              <span className="text-xs text-muted-foreground">
-                {totalReactions}
-              </span>
-            </div>
+        {/* Facebook-style counts row */}
+        <div className="flex items-center justify-between mt-2 px-1">
+          <div className="flex items-center gap-1.5">
+            {totalReactions > 0 && (
+              <>
+                <div className="flex -space-x-1">
+                  {topReactions.map(([emoji]) => (
+                    <span key={emoji} className="text-xs leading-none">{emoji}</span>
+                  ))}
+                </div>
+                <span className="text-xs text-muted-foreground">{totalReactions}</span>
+              </>
+            )}
           </div>
-        )}
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span>{comments.length} comment{comments.length !== 1 ? 's' : ''}</span>
+            <span>0 shares</span>
+          </div>
+        </div>
 
         {/* Facebook-style action bar */}
-        <div className="border-t border-border/50 mt-2">
-          <div className="grid grid-cols-3 py-1">
-            {/* React */}
+        <div className="border-t border-border/50 mt-1">
+          <div className="grid grid-cols-3">
+            {/* Like */}
             <Popover>
               <PopoverTrigger asChild>
                 <button
                   aria-pressed={!!userReaction}
                   className={cn(
-                    "flex items-center justify-center gap-2 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
+                    "flex items-center justify-center gap-1.5 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
                     userReaction && "text-primary"
                   )}
                 >
                   {userReaction ? (
-                    <span className="text-base leading-none">{userReaction}</span>
+                    <span className="text-sm leading-none">{userReaction}</span>
                   ) : (
-                    <ThumbsUp className="h-[18px] w-[18px]" />
+                    <ThumbsUp className="h-4 w-4" />
                   )}
                   <span>{userReaction ? REACTION_TYPES.find(r => r.emoji === userReaction)?.label || 'Like' : 'Like'}</span>
                 </button>
@@ -484,21 +493,20 @@ export function DiaryFeedCard({
             {/* Comment */}
             <button
               onClick={() => setShowComments(!showComments)}
-              aria-pressed={showComments}
               className={cn(
-                "flex items-center justify-center gap-2 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
+                "flex items-center justify-center gap-1.5 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
                 showComments && "text-primary"
               )}
             >
-              <MessageCircle className="h-[18px] w-[18px]" />
+              <MessageCircle className="h-4 w-4" />
               <span>Comment</span>
             </button>
 
             {/* Share */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center justify-center gap-2 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors">
-                  <Share2 className="h-[18px] w-[18px]" />
+                <button className="flex items-center justify-center gap-1.5 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors">
+                  <Share2 className="h-4 w-4" />
                   <span>Share</span>
                 </button>
               </DropdownMenuTrigger>
