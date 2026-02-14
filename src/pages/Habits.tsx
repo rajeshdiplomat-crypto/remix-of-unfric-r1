@@ -1283,36 +1283,40 @@ export default function Habits() {
                   );
                 })()}
 
-                {/* Selected habit indicator */}
-                {selectedActivityId && (() => {
-                  const selectedHabit = activities.find((a) => a.id === selectedActivityId);
-                  const startDateStr = selectedHabit?.startDate
-                    ? format(parseISO(selectedHabit.startDate), "MMM d, yyyy")
-                    : "N/A";
-                  const endDate = selectedHabit?.startDate
-                    ? computeEndDateForHabitDays(
-                        parseISO(selectedHabit.startDate),
-                        selectedHabit.frequencyPattern,
-                        selectedHabit.habitDays,
-                      )
-                    : null;
-                  const endDateStr = endDate ? format(endDate, "MMM d, yyyy") : "N/A";
+                {/* Selected habit indicator — always rendered to reserve space */}
+                <div className={cn("flex items-center justify-center gap-3 border-l-2 pl-3 mb-4 h-6",
+                  selectedActivityId ? "border-foreground" : "border-transparent invisible"
+                )}>
+                  {selectedActivityId && (() => {
+                    const selectedHabit = activities.find((a) => a.id === selectedActivityId);
+                    const startDateStr = selectedHabit?.startDate
+                      ? format(parseISO(selectedHabit.startDate), "MMM d, yyyy")
+                      : "N/A";
+                    const endDate = selectedHabit?.startDate
+                      ? computeEndDateForHabitDays(
+                          parseISO(selectedHabit.startDate),
+                          selectedHabit.frequencyPattern,
+                          selectedHabit.habitDays,
+                        )
+                      : null;
+                    const endDateStr = endDate ? format(endDate, "MMM d, yyyy") : "N/A";
 
-                  return (
-                    <div className="flex items-center justify-center gap-3 border-l-2 border-foreground pl-3 mb-4">
-                      <div>
-                        <span className="text-xs font-normal text-foreground">{selectedHabit?.name}</span>
-                        <span className="text-[10px] text-muted-foreground ml-2">{startDateStr} → {endDateStr}</span>
-                      </div>
-                      <button
-                        onClick={() => setSelectedActivityId(null)}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  );
-                })()}
+                    return (
+                      <>
+                        <div>
+                          <span className="text-xs font-normal text-foreground">{selectedHabit?.name}</span>
+                          <span className="text-[10px] text-muted-foreground ml-2">{startDateStr} → {endDateStr}</span>
+                        </div>
+                        <button
+                          onClick={() => setSelectedActivityId(null)}
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </>
+                    );
+                  })()}
+                </div>
 
                 {/* Progress Rings — colored */}
                 {(() => {
