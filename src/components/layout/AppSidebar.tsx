@@ -1,5 +1,5 @@
 import { useLocation } from "react-router-dom";
-import { BookOpen, Heart, PenLine, Sparkles, BarChart3, FileText, CheckSquare, Settings, LogOut } from "lucide-react";
+import { BookOpen, Heart, PenLine, Sparkles, BarChart3, FileText, CheckSquare, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -106,24 +106,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/settings")} tooltip="Settings">
-                  <NavLink
-                    to="/settings"
-                    className="flex items-center gap-3 transition-colors text-xs uppercase tracking-zara font-light"
-                    activeClassName="bg-foreground/5 text-foreground"
-                  >
-                    <Settings className="h-4 w-4" />
-                    <span>Settings</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
 
         {/* Profile section below Settings */}
         <SidebarGroup className="mt-auto">
