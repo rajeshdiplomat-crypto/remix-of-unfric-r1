@@ -1,0 +1,239 @@
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
+import { Sparkles, ArrowLeft, TrendingUp } from "lucide-react";
+import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
+import { subDays, parseISO, isSameDay, format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+
+import { ManifestPracticePanel } from "@/components/manifest/ManifestPracticePanel";
+
+import {
+  type ManifestGoal,
+  type ManifestDailyPractice,
+  GOAL_EXTRAS_KEY,
+  DAILY_PRACTICE_KEY,
+} from "@/components/manifest/types";
+
+function loadAllGoalExtras(): Record<string, Partial<ManifestGoal>> {
+  return JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
+}
+
+function loadAllPractices(): Record<string, ManifestDailyPractice> {
+  return JSON.parse(localStorage.getItem(DAILY_PRACTICE_KEY) || "{}");
+}
+
+export default function ManifestPractice() {
+  const { goalId } = useParams<{ goalId: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const [goal, setGoal] = useState<ManifestGoal | null>(null);
+  const [practices, setPractices] = useState<ManifestDailyPractice[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedDate] = useState(new Date());
+
+  const fetchData = useCallback(async () => {
+    if (!user || !goalId) return;
+
+    try {
+      const { data: goalData, error } = await supabase
+        .from("manifest_goals")
+        .select("*")
+        .eq("id", goalId)
+        .eq("user_id", user.id)
+        .single();
+
+      if (error) throw error;
+
+      const extras = loadAllGoalExtras();
+      const g = goalData;
+      const mergedGoal: ManifestGoal = {
+        id: g.id,
+        user_id: g.user_id,
+        title: g.title,
+        category: extras[g.id]?.category || "other",
+        vision_image_url: extras[g.id]?.vision_image_url || g.cover_image_url,
+        vision_images: extras[g.id]?.vision_images || [],
+        cover_image_url: g.cover_image_url,
+        start_date: extras[g.id]?.start_date,
+        live_from_end: extras[g.id]?.live_from_end,
+        act_as_if: extras[g.id]?.act_as_if || "Take one small action",
+        conviction: extras[g.id]?.conviction ?? 5,
+        visualization_minutes: extras[g.id]?.visualization_minutes || 3,
+        daily_affirmation: extras[g.id]?.daily_affirmation || "",
+        check_in_time: extras[g.id]?.check_in_time || "08:00",
+        committed_7_days: extras[g.id]?.committed_7_days || false,
+        is_completed: g.is_completed || false,
+        is_locked: extras[g.id]?.is_locked || false,
+        created_at: g.created_at,
+        updated_at: g.updated_at,
+        reminder_count: extras[g.id]?.reminder_count,
+        reminder_times: extras[g.id]?.reminder_times,
+      };
+
+      setGoal(mergedGoal);
+
+      const allPractices = loadAllPractices();
+      const practicesList = Object.values(allPractices).filter((p) => p.user_id === user.id);
+      setPractices(practicesList);
+    } catch (error) {
+      console.error("Error fetching goal:", error);
+      toast.error("Failed to load reality");
+      navigate("/manifest");
+    } finally {
+      setLoading(false);
+    }
+  }, [user, goalId, navigate]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const streak = useMemo(() => {
+    if (!goal) return 0;
+    const today = new Date();
+    const goalPractices = practices.filter((p) => p.goal_id === goal.id && p.locked);
+    let s = 0;
+    for (let i = 0; i < 30; i++) {
+      const checkDate = subDays(today, i);
+      const hasPractice = goalPractices.some((p) => isSameDay(parseISO(p.entry_date), checkDate));
+      if (hasPractice) s++;
+      else if (i > 0) break;
+    }
+    return s;
+  }, [goal, practices]);
+
+  const getPreviousDayPractice = useCallback((): ManifestDailyPractice | null => {
+    if (!goal) return null;
+    const yesterday = format(subDays(new Date(), 1), "yyyy-MM-dd");
+    const allPractices = loadAllPractices();
+    return allPractices[`${goal.id}_${yesterday}`] || null;
+  }, [goal]);
+
+  const getMotivationalQuote = () => {
+    const quotes = [
+      "What you imagine, you create. What you feel, you attract.",
+      "Your beliefs become your reality. Choose them wisely.",
+      "The universe is rearranging itself for your dreams.",
+      "Feel the feeling of your wish fulfilled.",
+      "Assume the feeling of your wish fulfilled today.",
+      "You are the creator of your own experience.",
+      "Every thought is a seed for your future.",
+    ];
+    return quotes[Math.floor(new Date().getDate() % quotes.length)];
+  };
+
+  if (loading) return <PageLoadingScreen module="manifest" />;
+  if (!goal) return null;
+
+  return (
+    <div className="flex flex-col w-full flex-1 bg-background min-h-screen overflow-hidden">
+      {/* Content Area - 2-column: [Left: Editorial] [Right: Practice] */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-3 w-full px-2 sm:px-4 py-2 overflow-hidden">
+        {/* ========== LEFT COLUMN: Editorial ========== */}
+        <div className="hidden lg:flex flex-col h-full min-h-0 overflow-y-auto">
+          <div className="flex flex-col gap-6 py-6 px-5">
+            {/* Back button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-fit gap-1.5 text-muted-foreground hover:text-foreground -ml-2"
+              onClick={() => navigate("/manifest")}
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Back to Realities
+            </Button>
+
+            {/* Badge */}
+            <Badge variant="secondary" className="w-fit rounded-full px-3 py-1 gap-1.5">
+              <Sparkles className="h-3 w-3" />
+              Daily Practice
+            </Badge>
+
+            {/* Title */}
+            <div>
+              <h1 className="text-3xl font-light text-foreground tracking-tight leading-tight">
+                Practice Your
+              </h1>
+              <h1 className="text-3xl font-semibold text-foreground tracking-tight leading-tight">
+                Reality
+              </h1>
+            </div>
+
+            {/* Description */}
+            <p className="text-muted-foreground text-base leading-relaxed max-w-md">
+              Visualization rewires your brain for success. Act as if your dream is already real, collect proof, and watch the universe align.
+            </p>
+
+            {/* Divider */}
+            <div className="h-px bg-border" />
+
+            {/* Motivational quote */}
+            <div className="bg-muted/30 rounded-xl p-4 border border-border">
+              <p className="text-sm text-muted-foreground italic leading-relaxed">
+                "{getMotivationalQuote()}"
+              </p>
+            </div>
+
+            {/* Current goal info */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
+                  <Sparkles className="h-4 w-4 text-teal-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground line-clamp-1">{goal.title}</p>
+                  <p className="text-xs text-muted-foreground">Current reality in focus</p>
+                </div>
+              </div>
+
+              {streak > 0 && (
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                    <span className="text-sm font-bold text-orange-600">{streak}</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Day Streak</p>
+                    <p className="text-xs text-muted-foreground">Consecutive practice days</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ========== RIGHT COLUMN: Practice Panel ========== */}
+        <div className="flex flex-col h-full min-h-0">
+          {/* Mobile back button */}
+          <div className="lg:hidden mb-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-fit gap-1.5 text-muted-foreground"
+              onClick={() => navigate("/manifest")}
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Back
+            </Button>
+          </div>
+
+          <div className="bg-card rounded-2xl shadow-sm border border-border flex-1 overflow-hidden">
+            <ManifestPracticePanel
+              goal={goal}
+              streak={streak}
+              selectedDate={selectedDate}
+              previousPractice={getPreviousDayPractice()}
+              onClose={() => navigate("/manifest")}
+              onPracticeComplete={() => fetchData()}
+              onGoalUpdate={() => fetchData()}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

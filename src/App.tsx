@@ -16,6 +16,7 @@ import Diary from "./pages/Diary";
 import Emotions from "./pages/Emotions";
 import Journal from "./pages/Journal";
 import Manifest from "./pages/Manifest";
+import ManifestPractice from "./pages/ManifestPractice";
 import ManifestHistory from "./pages/ManifestHistory";
 import Habits from "./pages/Habits";
 import Notes from "./pages/Notes";
@@ -112,6 +113,14 @@ const App = () => (
                       element={
                         <ProtectedRoute>
                           <Manifest />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/manifest/practice/:goalId"
+                      element={
+                        <ProtectedRoute>
+                          <ManifestPractice />
                         </ProtectedRoute>
                       }
                     />
