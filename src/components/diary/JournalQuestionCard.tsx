@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  PenLine, 
-  Bookmark, 
-  BookmarkCheck, 
-  Edit2, 
+import {
+  PenLine,
+  Bookmark,
+  BookmarkCheck,
+  Edit2,
   Plus,
   MessageCircle,
   Share2,
@@ -23,37 +23,37 @@ import {
   Heart,
   Lightbulb,
   PartyPopper,
-  HandHeart,
-} from "lucide-react";
+  HandHeart } from
+"lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  TooltipTrigger } from
+"@/components/ui/tooltip";
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  PopoverTrigger } from
+"@/components/ui/popover";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  DropdownMenuTrigger } from
+"@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 
 // Reaction types with icons
 const REACTION_TYPES = [
-  { type: 'like', emoji: '👍', icon: ThumbsUp, label: 'Like' },
-  { type: 'love', emoji: '❤️', icon: Heart, label: 'Love' },
-  { type: 'insight', emoji: '💡', icon: Lightbulb, label: 'Insight' },
-  { type: 'celebrate', emoji: '🎉', icon: PartyPopper, label: 'Celebrate' },
-  { type: 'support', emoji: '🤝', icon: HandHeart, label: 'Support' },
-] as const;
+{ type: 'like', emoji: '👍', icon: ThumbsUp, label: 'Like' },
+{ type: 'love', emoji: '❤️', icon: Heart, label: 'Love' },
+{ type: 'insight', emoji: '💡', icon: Lightbulb, label: 'Insight' },
+{ type: 'celebrate', emoji: '🎉', icon: PartyPopper, label: 'Celebrate' },
+{ type: 'support', emoji: '🤝', icon: HandHeart, label: 'Support' }] as
+const;
 
 type ReactionType = typeof REACTION_TYPES[number]['type'];
 
@@ -111,7 +111,7 @@ export function JournalQuestionCard({
   onNavigate,
   onToggleReaction,
   onAddComment,
-  onDeleteComment,
+  onDeleteComment
 }: JournalQuestionCardProps) {
   const { toast } = useToast();
   const [expanded, setExpanded] = useState(false);
@@ -122,7 +122,7 @@ export function JournalQuestionCard({
 
   const journalDateObj = new Date(journalDate);
   const entryDateObj = new Date(entryDate);
-  
+
   const formattedJournalDate = format(journalDateObj, "d MMM");
   const formattedEntryDate = `${format(entryDateObj, "d MMM yy")}, ${format(entryDateObj, "h:mm a").toLowerCase()}`;
   const fullJournalDate = journalDateObj.toISOString();
@@ -132,18 +132,18 @@ export function JournalQuestionCard({
   const needsReadMore = answerContent?.length > 140;
 
   // Get author initials for avatar fallback
-  const authorInitials = authorName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  const authorInitials = authorName.
+  split(" ").
+  map((n) => n[0]).
+  join("").
+  toUpperCase().
+  slice(0, 2);
 
   // Toggle reaction with optimistic update
   const handleToggleReaction = (type: ReactionType) => {
     const prevReaction = userReaction;
     const nextReaction = prevReaction === type ? null : type;
-    
+
     // Optimistic update
     setUserReaction(nextReaction);
     setReactionCounts((prev) => {
@@ -193,10 +193,10 @@ export function JournalQuestionCard({
   const totalReactions = Object.values(reactionCounts).reduce((sum, count) => sum + count, 0);
 
   // Get top 3 reactions for display
-  const topReactions = Object.entries(reactionCounts)
-    .filter(([, count]) => count > 0)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 3);
+  const topReactions = Object.entries(reactionCounts).
+  filter(([, count]) => count > 0).
+  sort(([, a], [, b]) => b - a).
+  slice(0, 3);
 
   return (
     <Card className="overflow-hidden max-w-full bg-card border-border/40 shadow-sm hover:shadow-md transition-shadow rounded-xl">
@@ -274,77 +274,77 @@ export function JournalQuestionCard({
         </h3>
 
         {/* Content (Answer) - Inline expandable */}
-        {isEmptyAnswer ? (
-          <div className="flex items-center justify-between py-3 px-3 bg-muted/30 rounded-lg">
+        {isEmptyAnswer ?
+        <div className="flex items-center justify-between py-3 px-3 bg-muted/30 rounded-lg">
             <span className="text-sm text-muted-foreground italic">
               No response
             </span>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-7 px-2 text-xs text-primary hover:text-primary/80"
-              onClick={onEdit}
-            >
+            <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs text-primary hover:text-primary/80"
+            onClick={onEdit}>
+
               <Plus className="h-3 w-3 mr-1" />
               Add
             </Button>
-          </div>
-        ) : (
-          <>
-            <div 
-              className={cn(
-                "overflow-hidden transition-[max-height] duration-200 ease-in-out",
-                expanded ? "max-h-[1000px]" : "max-h-[72px]"
-              )}
-            >
-              {contentHtml ? (
-                <div 
-                  className="text-sm text-foreground/80 leading-relaxed prose prose-sm max-w-none break-words"
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(contentHtml) }}
-                />
-              ) : (
-                <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
+          </div> :
+
+        <>
+            <div
+            className={cn(
+              "overflow-hidden transition-[max-height] duration-200 ease-in-out",
+              expanded ? "max-h-[1000px]" : "max-h-[72px]"
+            )}>
+
+              {contentHtml ?
+            <div
+              className="text-sm text-foreground/80 leading-relaxed prose prose-sm max-w-none break-words"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(contentHtml) }} /> :
+
+
+            <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
                   {answerContent}
                 </p>
-              )}
+            }
             </div>
             
-            {needsReadMore && (
-              <button 
-                onClick={() => setExpanded(!expanded)}
-                className="text-sm text-primary hover:text-primary/80 underline mt-2"
-              >
+            {needsReadMore &&
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-sm text-primary hover:text-primary/80 underline mt-2">
+
                 {expanded ? "Show less" : "Read more"}
               </button>
-            )}
+          }
           </>
-        )}
+        }
 
         {/* Media images */}
         {media && media.length > 0 && (() => {
           const images = media;
           const count = images.length;
-          
+
           if (count === 1) {
             return (
               <div className="mt-3">
                 <img src={images[0]} alt="" className="w-full rounded-lg" loading="lazy" />
-              </div>
-            );
+              </div>);
+
           }
-          
+
           if (count === 2) {
             return (
               <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg overflow-hidden">
-                {images.map((url, i) => (
-                  <div key={i} className="bg-muted">
+                {images.map((url, i) =>
+                <div key={i} className="bg-muted">
                     <img src={url} alt="" className="w-full h-auto max-h-80 object-contain mx-auto" loading="lazy" />
                   </div>
-                ))}
-              </div>
-            );
+                )}
+              </div>);
+
           }
-          
+
           if (count === 3) {
             return (
               <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg overflow-hidden">
@@ -357,55 +357,55 @@ export function JournalQuestionCard({
                 <div className="bg-muted">
                   <img src={images[2]} alt="" className="w-full aspect-square object-cover" loading="lazy" />
                 </div>
-              </div>
-            );
+              </div>);
+
           }
-          
+
           const extra = count - 4;
           return (
             <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg overflow-hidden">
-              {images.slice(0, 4).map((url, i) => (
-                <div key={i} className="relative bg-muted">
+              {images.slice(0, 4).map((url, i) =>
+              <div key={i} className="relative bg-muted">
                   <img src={url} alt="" className="w-full aspect-square object-cover" loading="lazy" />
-                  {i === 3 && extra > 0 && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  {i === 3 && extra > 0 &&
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                       <span className="text-2xl font-semibold text-white">+{extra}</span>
                     </div>
-                  )}
+                }
                 </div>
-              ))}
-            </div>
-          );
+              )}
+            </div>);
+
         })()}
 
-        {emotionTag && (
-          <div className="flex items-center gap-2 mt-3">
+        {emotionTag &&
+        <div className="flex items-center gap-2 mt-3">
             <PenLine className="h-3.5 w-3.5 text-muted-foreground" />
-            <Badge 
-              variant="secondary" 
-              className="text-xs px-2 py-0 h-5 bg-rose-100 text-rose-700"
-            >
+            <Badge
+            variant="secondary"
+            className="text-xs px-2 py-0 h-5 bg-rose-100 text-rose-700">
+
               {emotionTag}
             </Badge>
           </div>
-        )}
+        }
 
         {/* Facebook-style counts row */}
         <div className="flex items-center justify-between mt-2 px-1">
           <div className="flex items-center gap-1.5">
-            {totalReactions > 0 && (
-              <>
+            {totalReactions > 0 &&
+            <>
                 <div className="flex -space-x-1">
                   {topReactions.map(([type]) => {
-                    const reaction = REACTION_TYPES.find(r => r.type === type);
-                    return reaction ? (
-                      <span key={type} className="text-xs leading-none">{reaction.emoji}</span>
-                    ) : null;
-                  })}
+                  const reaction = REACTION_TYPES.find((r) => r.type === type);
+                  return reaction ?
+                  <span key={type} className="text-xs leading-none">{reaction.emoji}</span> :
+                  null;
+                })}
                 </div>
                 <span className="text-xs text-muted-foreground">{totalReactions}</span>
               </>
-            )}
+            }
           </div>
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span>{feedComments.length} comment{feedComments.length !== 1 ? 's' : ''}</span>
@@ -424,34 +424,34 @@ export function JournalQuestionCard({
                   className={cn(
                     "flex-1 flex items-center justify-center gap-2 py-2.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
                     userReaction && "text-primary"
-                  )}
-                >
-                  {userReaction ? (
-                    <span className="text-sm leading-none">
-                      {REACTION_TYPES.find(r => r.type === userReaction)?.emoji}
-                    </span>
-                  ) : (
-                    <ThumbsUp className="h-4 w-4" />
-                  )}
-                  <span>{userReaction ? REACTION_TYPES.find(r => r.type === userReaction)?.label : 'Like'}</span>
+                  )}>
+
+                  {userReaction ?
+                  <span className="text-sm leading-none">
+                      {REACTION_TYPES.find((r) => r.type === userReaction)?.emoji}
+                    </span> :
+
+                  <ThumbsUp className="h-4 w-4" />
+                  }
+                  <span>{userReaction ? REACTION_TYPES.find((r) => r.type === userReaction)?.label : 'Like'}</span>
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-1.5" side="top">
                 <div className="flex gap-0.5">
-                  {REACTION_TYPES.map((reaction) => (
-                    <button
-                      key={reaction.type}
-                      onClick={() => handleToggleReaction(reaction.type)}
-                      aria-pressed={userReaction === reaction.type}
-                      className={cn(
-                        "text-xl p-1.5 rounded-full hover:bg-muted transition-transform hover:scale-125",
-                        userReaction === reaction.type && "bg-primary/20"
-                      )}
-                      title={reaction.label}
-                    >
+                  {REACTION_TYPES.map((reaction) =>
+                  <button
+                    key={reaction.type}
+                    onClick={() => handleToggleReaction(reaction.type)}
+                    aria-pressed={userReaction === reaction.type}
+                    className={cn(
+                      "text-xl p-1.5 rounded-full hover:bg-muted transition-transform hover:scale-125",
+                      userReaction === reaction.type && "bg-primary/20"
+                    )}
+                    title={reaction.label}>
+
                       {reaction.emoji}
                     </button>
-                  ))}
+                  )}
                 </div>
               </PopoverContent>
             </Popover>
@@ -459,11 +459,11 @@ export function JournalQuestionCard({
             {/* Comment */}
             <button
               onClick={() => setShowComposer(!showComposer)}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-2.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
-                showComposer && "text-primary"
-              )}
-            >
+              className={cn("flex-1 flex items-center justify-center gap-2 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors py-[6px]",
+
+              showComposer && "text-primary"
+              )}>
+
               <MessageCircle className="h-4 w-4" />
               <span>Comment</span>
             </button>
@@ -495,47 +495,47 @@ export function JournalQuestionCard({
         </div>
 
         {/* Comments section */}
-        {showComposer && (
-          <div className="mt-3 pt-3 border-t border-border/30 space-y-3">
+        {showComposer &&
+        <div className="mt-3 pt-3 border-t border-border/30 space-y-3">
             {/* Comment input */}
             <div className="flex gap-2">
               <Input
-                placeholder="Write a comment..."
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleAddComment()}
-                className="flex-1 bg-muted/30"
-              />
-              <Button 
-                size="icon" 
-                onClick={handleAddComment} 
-                disabled={!commentText.trim()}
-              >
+              placeholder="Write a comment..."
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleAddComment()}
+              className="flex-1 bg-muted/30" />
+
+              <Button
+              size="icon"
+              onClick={handleAddComment}
+              disabled={!commentText.trim()}>
+
                 <Send className="h-4 w-4" />
               </Button>
             </div>
 
             {/* Existing comments */}
-            {feedComments.map((comment) => (
-              <div key={comment.id} className="bg-muted/30 rounded-lg p-3">
+            {feedComments.map((comment) =>
+          <div key={comment.id} className="bg-muted/30 rounded-lg p-3">
                 <p className="text-sm">{comment.text}</p>
                 <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
                   <span>{format(new Date(comment.created_at), "MMM d, h:mm a")}</span>
                   {comment.is_edited && <span>(edited)</span>}
-                  {comment.user_id === currentUserId && (
-                    <button 
-                      className="hover:text-destructive"
-                      onClick={() => onDeleteComment?.(comment.id)}
-                    >
+                  {comment.user_id === currentUserId &&
+              <button
+                className="hover:text-destructive"
+                onClick={() => onDeleteComment?.(comment.id)}>
+
                       Delete
                     </button>
-                  )}
+              }
                 </div>
               </div>
-            ))}
+          )}
           </div>
-        )}
+        }
       </CardContent>
-    </Card>
-  );
+    </Card>);
+
 }
