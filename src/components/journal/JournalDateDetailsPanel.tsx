@@ -166,36 +166,33 @@ export const JournalDateDetailsPanel = memo(function JournalDateDetailsPanel({
   return (
     <div className="w-full h-full overflow-auto space-y-4 pb-4">
       {/* Dashboard Box - Journal-focused nudges only */}
-      <div className="bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50 rounded-2xl shadow-sm border border-violet-100/50 overflow-hidden">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-violet-100/30">
-          <div className="p-1.5 bg-white rounded-lg shadow-sm">
-            <TrendingUp className="h-4 w-4 text-violet-600" />
+      <div className="bg-muted/30 rounded-2xl shadow-sm border border-border overflow-hidden">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50">
+          <div className="p-1.5 bg-muted rounded-lg">
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </div>
-          <span className="text-sm font-semibold text-violet-800">Your Progress</span>
+          <span className="text-sm font-semibold text-foreground">Your Progress</span>
         </div>
         <div className="p-3 space-y-2">
-          {/* Writing progress */}
-          <div className="flex items-start gap-3 bg-white/60 rounded-xl p-2.5 border border-white/50">
-            <div className="p-1 bg-blue-100 rounded-lg mt-0.5">
-              <PenLine className="h-3 w-3 text-blue-600" />
+          <div className="flex items-start gap-3 bg-background rounded-xl p-2.5 border border-border">
+            <div className="p-1 bg-muted rounded-lg mt-0.5">
+              <PenLine className="h-3 w-3 text-muted-foreground" />
             </div>
-            <p className="text-xs text-slate-600 leading-relaxed">{getWritingSentence()}</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">{getWritingSentence()}</p>
           </div>
 
-          {/* Streak */}
-          <div className="flex items-start gap-3 bg-white/60 rounded-xl p-2.5 border border-white/50">
-            <div className="p-1 bg-orange-100 rounded-lg mt-0.5">
-              <Zap className="h-3 w-3 text-orange-600" />
+          <div className="flex items-start gap-3 bg-background rounded-xl p-2.5 border border-border">
+            <div className="p-1 bg-muted rounded-lg mt-0.5">
+              <Zap className="h-3 w-3 text-muted-foreground" />
             </div>
-            <p className="text-xs text-slate-600 leading-relaxed">{getStreakSentence()}</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">{getStreakSentence()}</p>
           </div>
 
-          {/* Encouraging tip based on writing status */}
-          <div className="flex items-start gap-3 bg-white/60 rounded-xl p-2.5 border border-white/50">
-            <div className="p-1 bg-indigo-100 rounded-lg mt-0.5">
-              <Sparkles className="h-3 w-3 text-indigo-600" />
+          <div className="flex items-start gap-3 bg-background rounded-xl p-2.5 border border-border">
+            <div className="p-1 bg-muted rounded-lg mt-0.5">
+              <Sparkles className="h-3 w-3 text-muted-foreground" />
             </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               {wordCount === 0
                 ? "A blank page is full of possibilities"
                 : wordCount < 100
@@ -207,12 +204,12 @@ export const JournalDateDetailsPanel = memo(function JournalDateDetailsPanel({
       </div>
 
       {/* Emotions from this Date */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-50">
-          <div className="p-1.5 bg-pink-100 rounded-lg">
-            <Sparkles className="h-4 w-4 text-pink-600" />
+      <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50">
+          <div className="p-1.5 bg-muted rounded-lg">
+            <Sparkles className="h-4 w-4 text-muted-foreground" />
           </div>
-          <span className="text-sm font-semibold text-slate-800">Emotions Today</span>
+          <span className="text-sm font-semibold text-foreground">Emotions Today</span>
         </div>
         <div className="p-3">
           {isLoading ? (
