@@ -306,32 +306,54 @@ export function JournalQuestionCard({
         )}
 
         {/* Media images */}
-        {media && media.length > 0 && (
-          <div className={cn(
-            "mt-3 grid gap-1 rounded-lg overflow-hidden",
-            media.length === 1 && "grid-cols-1",
-            media.length === 2 && "grid-cols-2",
-            media.length >= 3 && "grid-cols-2"
-          )}>
-            {media.slice(0, 4).map((url, idx) => (
-              <div 
-                key={idx} 
-                className={cn(
-                  "relative overflow-hidden bg-muted",
-                  media.length === 1 ? "max-h-72" : "aspect-square",
-                  media.length === 3 && idx === 0 && "row-span-2"
-                )}
-              >
-                <img 
-                  src={url} 
-                  alt="" 
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
+        {media && media.length > 0 && (() => {
+          const images = media;
+          const count = images.length;
+          
+          if (count === 1) {
+            return (
+              <div className="mt-3">
+                <img src={images[0]} alt="" className="w-full rounded-lg" loading="lazy" />
               </div>
-            ))}
-          </div>
-        )}
+            );
+          }
+          
+          if (count === 2) {
+            return (
+              <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg overflow-hidden">
+                {images.map((url, i) => (
+                  <img key={i} src={url} alt="" className="w-full h-48 object-cover" loading="lazy" />
+                ))}
+              </div>
+            );
+          }
+          
+          if (count === 3) {
+            return (
+              <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg overflow-hidden" style={{ height: 280 }}>
+                <img src={images[0]} alt="" className="w-full h-full object-cover row-span-2" style={{ gridRow: '1 / 3' }} loading="lazy" />
+                <img src={images[1]} alt="" className="w-full object-cover" style={{ height: 139 }} loading="lazy" />
+                <img src={images[2]} alt="" className="w-full object-cover" style={{ height: 139 }} loading="lazy" />
+              </div>
+            );
+          }
+          
+          const extra = count - 4;
+          return (
+            <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg overflow-hidden">
+              {images.slice(0, 4).map((url, i) => (
+                <div key={i} className="relative">
+                  <img src={url} alt="" className="w-full h-40 object-cover" loading="lazy" />
+                  {i === 3 && extra > 0 && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <span className="text-2xl font-semibold text-white">+{extra}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          );
+        })()}
 
         {emotionTag && (
           <div className="flex items-center gap-2 mt-3">
