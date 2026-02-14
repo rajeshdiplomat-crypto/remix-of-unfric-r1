@@ -458,7 +458,7 @@ export function DiaryFeedCard({
                 <button
                   aria-pressed={!!userReaction}
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
+                    "flex-1 flex items-center justify-center gap-2 py-2.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
                     userReaction && "text-primary"
                   )}
                 >
@@ -494,7 +494,7 @@ export function DiaryFeedCard({
             <button
               onClick={() => setShowComments(!showComments)}
               className={cn(
-                "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
+                "flex-1 flex items-center justify-center gap-2 py-2.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
                 showComments && "text-primary"
               )}
             >
@@ -505,7 +505,7 @@ export function DiaryFeedCard({
             {/* Share */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors">
+                <button className="flex-1 flex items-center justify-center gap-2 py-2.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors">
                   <Share2 className="h-4 w-4" />
                   <span>Share</span>
                 </button>

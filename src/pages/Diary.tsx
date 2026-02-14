@@ -692,8 +692,10 @@ export default function Diary() {
                     onEdit={() => handleNavigateToSource(event)}
                     onNavigate={() => handleNavigateToSource(event)}
                     onToggleReaction={(eventId, reaction) => toggleReaction(eventId, reaction || "")}
-                    commentCount={(comments[event.id] || []).length}
+                    comments={comments[event.id] || []}
+                    currentUserId={user?.id || ""}
                     onAddComment={(eventId, text) => addComment(eventId, text)}
+                    onDeleteComment={deleteComment}
                   />
                 ) : (
                   <DiaryFeedCard
