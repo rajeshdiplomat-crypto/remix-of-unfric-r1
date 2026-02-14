@@ -123,12 +123,11 @@ export function TasksClockWidget() {
   ];
 
   return (
-    <Card className="h-full rounded-xl border-0 bg-gradient-to-br from-card via-card/95 to-card/90 shadow-xl overflow-hidden relative">
+    <div className="h-full w-full relative overflow-hidden">
       {/* Subtle background effects */}
       <div className="absolute top-0 right-0 -mr-12 -mt-12 w-40 h-40 bg-gradient-to-br from-primary/8 to-transparent rounded-full blur-2xl pointer-events-none" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
 
-      <CardContent className="p-4 h-full flex flex-col">
+      <div className="p-3 h-full flex flex-col">
         {/* Mode Switcher */}
         <div className="flex items-center justify-center gap-1 mb-3">
           {modeButtons.map(({ id, icon: Icon }) => (
@@ -356,7 +355,7 @@ export function TasksClockWidget() {
             </div>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
