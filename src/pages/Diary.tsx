@@ -692,6 +692,7 @@ export default function Diary() {
                     onEdit={() => handleNavigateToSource(event)}
                     onNavigate={() => handleNavigateToSource(event)}
                     onToggleReaction={(eventId, reaction) => toggleReaction(eventId, reaction || "")}
+                    commentCount={(comments[event.id] || []).length}
                     onAddComment={(eventId, text) => addComment(eventId, text)}
                   />
                 ) : (
