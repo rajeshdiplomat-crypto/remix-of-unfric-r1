@@ -1,85 +1,28 @@
 
 
-# Journal Redesign: Two-Column Layout with Hidden Panels
+## Move Insights Into the Red-Marked Space
 
-## Concept
+The empty area between the focus bar/clock row and the current insights position needs to be filled by the insights content. The insights are already inside the same card, but there's wasted vertical space because the charts have a fixed `h-[140px]` constraint and the card doesn't expand to use the available room.
 
-Replace the current three-column layout with a clean two-column design:
+### Changes
 
-- **Left column (~320px)**: An editorial "about journaling" section with a header, a brief explanation of why journaling matters, and 3 icon buttons that toggle open the Calendar, Emotions Today, and Progress panels (as slide-out drawers or inline expandable sections).
-- **Right column (1fr)**: The editor only -- greeting, quote, and the writing area. Full breathing room.
+**1. `src/components/tasks/InsightsPanel.tsx`**
+- Increase the main charts row height from `h-[140px]` to `h-[180px]` to give charts more vertical space
+- Reduce excess padding so the insights content sits tighter against the focus bar above
 
-This creates a magazine-style layout where the writing space dominates, and the utility panels (calendar, emotions, progress) are accessible on demand but hidden by default.
+**2. `src/pages/Tasks.tsx`**
+- Remove the `border-b border-border/30` from the top row divider between focus bar and insights, so they feel continuous
+- Remove the extra wrapper div and padding around the insights toggle button, moving it inline with the time period selector inside InsightsPanel
+- Move the "Hide Insights" toggle button into the InsightsPanel component itself (next to the time period pills) so there's no separate row creating dead space
+- Remove the outer `flex flex-col` wrapper that adds vertical gaps between the focus row and insights
 
-## Layout
+### Technical Details
 
-```text
-+---------------------------+----------------------------------------+
-| LEFT (~320px)             | RIGHT (1fr)                            |
-|                           |                                        |
-| "Journaling"              | Good afternoon, Ankit                 |
-| Why it matters...         | "Quote..."                             |
-|                           |                                        |
-| [Calendar] [Emotions]    | +------------------------------------+ |
-| [Progress]                | |                                    | |
-|                           | |  Editor                            | |
-| (clicking a button        | |                                    | |
-|  expands its panel         | |                                    | |
-|  inline below)             | |                                    | |
-|                           | +------------------------------------+ |
-+---------------------------+----------------------------------------+
-```
+- In `Tasks.tsx` lines 652: remove `border-b border-border/30` from the focus/clock row
+- In `Tasks.tsx` lines 663-690: remove the separate insights toggle wrapper div; pass `onToggleCollapse` and `collapsed` props to InsightsPanel directly
+- In `InsightsPanel.tsx` line 336: reduce padding from `py-2.5` to `py-1.5`  
+- In `InsightsPanel.tsx` line 356: increase chart row height from `h-[140px]` to `h-[180px]`
+- Add the "Hide Insights" toggle button inside InsightsPanel's header row (next to time period pills) via new props `onCollapse`
 
-## How the 3 Buttons Work
-
-Three small icon buttons (Calendar, Sparkles/Emotions, TrendingUp/Progress) sit in a row. Clicking one toggles its corresponding panel open/closed inline below the buttons within the left column. Only one panel open at a time (accordion-style), or allow multiple -- accordion feels cleaner.
-
-## What the Left Column Contains (top to bottom)
-
-1. **Header**: "Journaling" in `text-lg font-semibold tracking-wide`
-2. **Body text**: 2-3 short sentences about the value of journaling in `text-sm text-muted-foreground` -- e.g., "Journaling helps you process emotions, track growth, and find clarity. A few minutes each day can transform how you understand yourself."
-3. **Decorative divider**: A subtle `h-px bg-border` line
-4. **3 toggle buttons** in a row: Calendar, Emotions, Progress -- styled as ghost icon buttons with labels
-5. **Expandable panel area**: When a button is clicked, the corresponding component renders below with a smooth transition
-
-## Technical Details
-
-### `src/pages/Journal.tsx`
-
-**State**: Add `activeLeftPanel` state: `useState<"calendar" | "emotions" | "progress" | null>(null)`
-
-**Remove**: The `leftPanelCollapsed` state and related collapse logic (simplifying to the new toggle approach)
-
-**Grid change**: From `grid-cols-[300px_1fr_260px]` to `grid-cols-[320px_1fr]` (two columns only)
-
-**Left column content**:
-- Static editorial text about journaling
-- Three buttons row
-- Conditionally render:
-  - `activeLeftPanel === "calendar"` --> `<JournalSidebarPanel />` (calendar only)
-  - `activeLeftPanel === "emotions"` --> Emotions section from `<JournalDateDetailsPanel />` (just the emotions card)
-  - `activeLeftPanel === "progress"` --> Progress section from `<JournalDateDetailsPanel />` (just the progress card)
-
-**Right column**: Just `{editorContent}` -- the greeting, quote, and editor
-
-**Remove**: The entire editorial right column (the quote/date/word-count decorative space) since that info moves partly to the left column and partly stays in the editor greeting
-
-### `src/components/journal/JournalDateDetailsPanel.tsx`
-
-Split the two cards into individually renderable sections. Either:
-- Export two sub-components: `JournalProgressCard` and `JournalEmotionsCard`
-- Or add a `showSection` prop (like JournalSidebarPanel already has) to show only "progress" or "emotions"
-
-The cleanest approach: add a `section` prop (`"progress" | "emotions" | "all"`) that controls which card renders.
-
-### `src/components/journal/JournalSidebarPanel.tsx`
-
-No changes needed -- it already supports `showSection="calendar"` which is what we'll use.
-
-Remove the collapse/expand logic props since they're no longer needed (the panel is toggled by the parent).
-
-### Files Modified
-
-1. **`src/pages/Journal.tsx`** -- Main layout restructure, new state, left column editorial content, 3 toggle buttons
-2. **`src/components/journal/JournalDateDetailsPanel.tsx`** -- Add `section` prop to render progress-only or emotions-only
-
+### Result
+The focus bar, clock, and insights will flow as one seamless card with no dead space. Charts will be taller and more readable.
