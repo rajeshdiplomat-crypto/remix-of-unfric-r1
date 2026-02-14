@@ -1484,8 +1484,12 @@ export default function Habits() {
                               }
                             });
 
-                            const value = total > 0 ? (completed / total) * 100 : 0;
+                            const value = total > 0 ? (completed / total) * 100 : -1;
                             const x = (i + 0.5) * 100;
+                            if (value < 0) {
+                              // No habits scheduled this day — skip data point
+                              continue;
+                            }
                             const rawY = 190 - (value / 100) * 160;
                             const y = Math.max(10, Math.min(200, rawY));
                             dataPoints.push({ x, y, value, isPast, isFuture });
