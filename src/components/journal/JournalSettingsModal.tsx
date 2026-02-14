@@ -19,6 +19,7 @@ interface JournalSettingsModalProps {
 export function JournalSettingsModal({ open, onOpenChange, template, onTemplateChange }: JournalSettingsModalProps) {
   const [localQuestions, setLocalQuestions] = useState<JournalQuestion[]>(template.questions);
   const [applyOnNewEntry, setApplyOnNewEntry] = useState(template.applyOnNewEntry);
+  const [unstructured, setUnstructured] = useState(template.unstructured ?? false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -69,6 +70,7 @@ export function JournalSettingsModal({ open, onOpenChange, template, onTemplateC
       ...template,
       questions: localQuestions,
       applyOnNewEntry,
+      unstructured,
     });
     onOpenChange(false);
   };
@@ -90,29 +92,52 @@ export function JournalSettingsModal({ open, onOpenChange, template, onTemplateC
           </div>
 
           <div className="flex-1 overflow-auto space-y-4">
-            {/* Toggle Card */}
+            {/* Unstructured Toggle */}
             <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-violet-100 rounded-xl">
-                  <Sparkles className="h-4 w-4 text-violet-600" />
+                  <Edit3 className="h-4 w-4 text-violet-600" />
                 </div>
                 <div>
-                  <Label htmlFor="apply-preset" className="text-sm font-semibold text-slate-700">
-                    Auto-apply on new entries
+                  <Label htmlFor="unstructured" className="text-sm font-semibold text-slate-700">
+                    Unstructured Journaling
                   </Label>
-                  <p className="text-xs text-slate-400">Add these prompts when you start a new day</p>
+                  <p className="text-xs text-slate-400">Write freely without question prompts</p>
                 </div>
               </div>
               <Switch
-                id="apply-preset"
-                checked={applyOnNewEntry}
-                onCheckedChange={setApplyOnNewEntry}
+                id="unstructured"
+                checked={unstructured}
+                onCheckedChange={setUnstructured}
                 className="data-[state=checked]:bg-violet-500"
               />
             </div>
 
-            {/* Questions List */}
-            <div className="space-y-2">
+            {/* Auto-apply Toggle (hidden when unstructured) */}
+            {!unstructured && (
+              <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-violet-100 rounded-xl">
+                    <Sparkles className="h-4 w-4 text-violet-600" />
+                  </div>
+                  <div>
+                    <Label htmlFor="apply-preset" className="text-sm font-semibold text-slate-700">
+                      Auto-apply on new entries
+                    </Label>
+                    <p className="text-xs text-slate-400">Add these prompts when you start a new day</p>
+                  </div>
+                </div>
+                <Switch
+                  id="apply-preset"
+                  checked={applyOnNewEntry}
+                  onCheckedChange={setApplyOnNewEntry}
+                  className="data-[state=checked]:bg-violet-500"
+                />
+              </div>
+            )}
+
+            {/* Questions List (hidden when unstructured) */}
+            {!unstructured && <div className="space-y-2">
               {localQuestions.map((question, index) => (
                 <div
                   key={question.id}
@@ -169,10 +194,10 @@ export function JournalSettingsModal({ open, onOpenChange, template, onTemplateC
                   </div>
                 </div>
               ))}
-            </div>
+            </div>}
 
-            {/* Add & Reset Buttons */}
-            <div className="flex gap-2">
+            {/* Add & Reset Buttons (hidden when unstructured) */}
+            {!unstructured && <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -191,7 +216,7 @@ export function JournalSettingsModal({ open, onOpenChange, template, onTemplateC
                 <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
                 Reset
               </Button>
-            </div>
+            </div>}
           </div>
         </div>
 
