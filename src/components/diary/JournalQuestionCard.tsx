@@ -421,7 +421,7 @@ export function JournalQuestionCard({
               <PopoverTrigger asChild>
                 <button
                   aria-pressed={!!userReaction}
-                  className={cn("flex-1 flex items-center justify-center gap-2 py-1 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
+                  className={cn("flex-1 flex items-center justify-center gap-2 py-0.2 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
 
                   userReaction && "text-primary"
                   )}>
