@@ -778,10 +778,10 @@ export default function Journal() {
           <div
             className={cn(
               "flex-1 min-h-0 grid gap-8 w-full px-4 sm:px-6 py-6 overflow-hidden",
-              leftPanelCollapsed ? "grid-cols-1 lg:grid-cols-[64px_1fr_280px]" : "grid-cols-1 lg:grid-cols-[280px_1fr_280px]",
+              leftPanelCollapsed ? "grid-cols-1 lg:grid-cols-[64px_1fr_260px]" : "grid-cols-1 lg:grid-cols-[300px_1fr_260px]",
             )}
           >
-            <div className={cn("hidden lg:flex flex-col transition-all duration-300 h-full overflow-y-auto", leftPanelCollapsed && "w-16")}>
+            <div className={cn("hidden lg:flex flex-col gap-4 transition-all duration-300 h-full overflow-y-auto", leftPanelCollapsed && "w-16")}>
               <JournalSidebarPanel
                 selectedDate={selectedDate}
                 onDateSelect={setSelectedDate}
@@ -793,10 +793,28 @@ export default function Journal() {
                 onToggleCollapse={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
                 searchQuery={searchQuery}
               />
+              {!leftPanelCollapsed && (
+                <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} />
+              )}
             </div>
             {editorContent}
-            <div className="hidden lg:block h-full overflow-y-auto">
-              <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} />
+            {/* Editorial right space */}
+            <div className="hidden lg:flex flex-col items-center justify-center h-full text-center px-6">
+              <div className="space-y-8">
+                <div className="w-8 h-px bg-muted-foreground/20 mx-auto" />
+                <p className="text-lg font-light italic tracking-wide text-muted-foreground/30 leading-relaxed">
+                  "Writing is the painting of the voice."
+                </p>
+                <div className="w-8 h-px bg-muted-foreground/20 mx-auto" />
+                <div className="space-y-2">
+                  <p className="text-xs tracking-[0.2em] uppercase text-muted-foreground/25">
+                    {format(selectedDate, "EEEE, MMMM d")}
+                  </p>
+                  <p className="text-xs text-muted-foreground/20">
+                    {wordCount === 0 ? "ready to write" : `${wordCount} words written`}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </>
