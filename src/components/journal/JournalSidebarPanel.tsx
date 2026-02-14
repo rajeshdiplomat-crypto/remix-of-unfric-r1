@@ -165,9 +165,9 @@ export const JournalSidebarPanel = memo(
                 ))}
               </div>
 
-              <div className="grid grid-cols-7 gap-0">
+              <div className="grid grid-cols-7">
                 {Array.from({ length: daysInMonth[0].getDay() }).map((_, i) => (
-                  <div key={`empty-${i}`} className={cn(compact ? "h-6" : "aspect-square")} />
+                  <div key={`empty-${i}`} className={cn(compact ? "h-7" : "aspect-square")} />
                 ))}
                 {daysInMonth.map((day) => {
                   const isSelected = isSameDay(day, selectedDate);
@@ -179,18 +179,24 @@ export const JournalSidebarPanel = memo(
                       key={day.toISOString()}
                       onClick={() => onDateSelect(day)}
                       className={cn(
-                        "flex items-center justify-center font-medium transition-all",
-                        compact ? "h-6 w-full rounded text-[10px]" : "aspect-square rounded-lg text-xs",
+                        "flex items-center justify-center font-medium transition-all relative",
+                        compact ? "h-7 w-full text-[10px]" : "aspect-square text-xs",
                         isSelected
-                          ? "bg-foreground text-background shadow-sm"
-                          : hasEntryOnDay
-                            ? "bg-muted text-foreground hover:bg-muted/80"
-                            : isTodayDate
-                              ? "border border-foreground/30 text-foreground"
-                              : "hover:bg-muted text-muted-foreground",
+                          ? "text-primary font-bold"
+                          : isTodayDate
+                            ? "text-foreground font-semibold"
+                            : hasEntryOnDay
+                              ? "text-foreground"
+                              : "text-muted-foreground hover:text-foreground",
                       )}
                     >
                       {format(day, "d")}
+                      {hasEntryOnDay && !isSelected && (
+                        <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-primary" />
+                      )}
+                      {isSelected && (
+                        <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-0.5 w-3 rounded-full bg-primary" />
+                      )}
                     </button>
                   );
                 })}
