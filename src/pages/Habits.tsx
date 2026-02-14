@@ -1344,11 +1344,11 @@ export default function Habits() {
                 })()}
 
                 {/* Top Habits — inline row */}
-                <div className="mt-4 pt-3 border-t border-border">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] uppercase tracking-zara-wide text-muted-foreground">Top Habits</span>
+                <div className="mt-4 pt-3 border-t border-border overflow-hidden">
+                  <div className="flex items-center gap-2 flex-nowrap overflow-hidden whitespace-nowrap">
+                    <span className="text-[10px] uppercase tracking-zara-wide text-muted-foreground shrink-0">Top Habits</span>
                     {topHabits.slice(0, 5).map((habit, i) => (
-                      <span key={habit.id} className="text-xs text-foreground">
+                      <span key={habit.id} className="text-xs text-foreground shrink-0">
                         {habit.name} <span className="text-primary font-medium">{habit.streak}</span>
                         {i < Math.min(topHabits.length, 5) - 1 && <span className="text-muted-foreground mx-1">·</span>}
                       </span>
