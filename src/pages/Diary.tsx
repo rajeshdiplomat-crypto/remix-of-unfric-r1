@@ -378,14 +378,32 @@ export default function Diary() {
       const media: string[] = [];
       if (visionUrl && typeof visionUrl === "string" && visionUrl.startsWith("http")) media.push(visionUrl);
 
-      // Build rich summary from all practice fields
-      const summaryParts: string[] = [];
-      if (practice.visualization_count > 0) summaryParts.push(`🧘 Visualized ${practice.visualization_count}x`);
-      if (practice.act_count > 0) summaryParts.push(`⚡ ${practice.act_count} action(s) taken`);
-      if (practice.proofs?.length > 0) summaryParts.push(`📸 ${practice.proofs.length} proof(s) logged`);
-      if (practice.gratitudes?.length > 0) summaryParts.push(`🙏 ${practice.gratitudes.length} gratitude(s)`);
-      if (practice.alignment) summaryParts.push(`🎯 Alignment: ${practice.alignment}/10`);
-      if (practice.growth_note) summaryParts.push(`💡 ${practice.growth_note}`);
+      // Collect proof images
+      if (practice.proofs?.length) {
+        practice.proofs.forEach((p: any) => {
+          if (p.image_url && typeof p.image_url === "string" && p.image_url.startsWith("http") && !media.includes(p.image_url)) {
+            media.push(p.image_url);
+          }
+        });
+      }
+
+      // Build rich content with actual written entries
+      const contentLines: string[] = [];
+      if (practice.visualization_count > 0) contentLines.push(`🧘 Visualized ${practice.visualization_count}x`);
+      if (practice.acts?.length > 0) {
+        contentLines.push(`⚡ Actions taken:`);
+        practice.acts.forEach((a: any) => { if (a.text) contentLines.push(`  • ${a.text}`); });
+      }
+      if (practice.proofs?.length > 0) {
+        contentLines.push(`📸 Proof logged:`);
+        practice.proofs.forEach((p: any) => { if (p.text) contentLines.push(`  • ${p.text}`); });
+      }
+      if (practice.gratitudes?.length > 0) {
+        contentLines.push(`🙏 Gratitude:`);
+        practice.gratitudes.forEach((g: any) => { if (g.text) contentLines.push(`  • ${g.text}`); });
+      }
+      if (practice.alignment) contentLines.push(`🎯 Alignment: ${practice.alignment}/10`);
+      if (practice.growth_note) contentLines.push(`💡 ${practice.growth_note}`);
 
       feedEvents.push({
         user_id: user.id,
@@ -394,7 +412,7 @@ export default function Diary() {
         source_id: practice.id,
         title: goalTitle,
         summary: `Daily practice completed ✓`,
-        content_preview: summaryParts.length > 0 ? summaryParts.join("\n") : "Completed daily practice",
+        content_preview: contentLines.length > 0 ? contentLines.join("\n") : "Completed daily practice",
         media,
         metadata: {
           goal_id: practice.goal_id,
