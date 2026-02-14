@@ -404,7 +404,21 @@ export default function Journal() {
           setSelectedMood(null);
           const newContent = (template.applyOnNewEntry && !template.unstructured)
             ? generateInitialContent(template.questions)
-            : JSON.stringify({ type: "doc", content: [{ type: "paragraph" }] });
+            : JSON.stringify({
+                type: "doc",
+                content: [
+                  {
+                    type: "heading",
+                    attrs: { level: 1, textAlign: "left" },
+                    content: [],
+                  },
+                  {
+                    type: "paragraph",
+                    attrs: { textAlign: "left" },
+                    content: [],
+                  },
+                ],
+              });
           setContent(newContent);
           lastSavedContentRef.current = newContent;
         }
