@@ -402,7 +402,7 @@ export default function Journal() {
           setCurrentEntry(null);
           setCurrentAnswers([]);
           setSelectedMood(null);
-          const newContent = template.applyOnNewEntry
+          const newContent = (template.applyOnNewEntry && !template.unstructured)
             ? generateInitialContent(template.questions)
             : JSON.stringify({ type: "doc", content: [{ type: "paragraph" }] });
           setContent(newContent);
