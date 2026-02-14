@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
+
 import { cn } from "@/lib/utils";
 import { UnfricLogo } from "@/components/common/UnfricLogo";
 const mainNavItems = [
@@ -129,11 +129,14 @@ export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
 
           {/* Footer */}
           <div className="mt-auto pt-6 space-y-4">
-            {/* Theme toggle */}
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-light uppercase tracking-zara-wide text-muted-foreground">Theme</span>
-              <ThemeToggle collapsed={false} />
-            </div>
+            {/* Settings link */}
+            <NavLink
+              to="/settings"
+              onClick={onClose}
+              className="text-sm font-light uppercase tracking-zara-wide text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Settings
+            </NavLink>
 
             {/* User email */}
             {user?.email && (
