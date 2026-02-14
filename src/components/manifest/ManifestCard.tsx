@@ -1,3 +1,4 @@
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Check, Flame, Play, Tag, Pencil, Trash2, CheckCircle, RotateCcw } from "lucide-react";
 import { type ManifestGoal, type ManifestDailyPractice, DAILY_PRACTICE_KEY, CATEGORIES } from "./types";
@@ -99,55 +100,55 @@ export function ManifestCard({
   };
 
   return (
-    <div
+    <Card
       onClick={onClick}
-      className={`group overflow-hidden rounded-xl cursor-pointer transition-all duration-200 relative bg-card/50 hover:bg-card ${
-        isSelected ? "ring-1 ring-primary/40 bg-card" : ""
-      } ${isCompleted ? "opacity-50 grayscale" : ""}`}
+      className={`overflow-hidden rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg relative ${
+        isSelected ? "ring-2 ring-teal-500 shadow-lg" : "border-slate-200 dark:border-slate-700"
+      } ${isCompleted ? "opacity-60 grayscale" : ""}`}
     >
-      {/* Top-right action buttons - visible on hover only */}
-      <div className="absolute top-2 right-2 z-20 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200" onClick={(e) => e.stopPropagation()}>
+      {/* Top-right action buttons - positioned over content area */}
+      <div className="absolute top-1 right-1 z-20 flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
         {onComplete && !isCompleted && (
           <button
             onClick={onComplete}
-            className="w-6 h-6 rounded-full bg-background/90 backdrop-blur-sm flex items-center justify-center hover:bg-primary/10 transition-colors"
+            className="w-4 h-4 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-teal-50 dark:hover:bg-teal-900/50 transition-colors"
             title="Mark as Complete"
           >
-            <CheckCircle className="h-3 w-3 text-primary" />
+            <CheckCircle className="h-2.5 w-2.5 text-teal-500" />
           </button>
         )}
         {onReactivate && isCompleted && (
           <button
             onClick={onReactivate}
-            className="w-6 h-6 rounded-full bg-background/90 backdrop-blur-sm flex items-center justify-center hover:bg-muted transition-colors"
+            className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/50 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors"
             title="Reactivate Reality"
           >
-            <RotateCcw className="h-3 w-3 text-muted-foreground" />
+            <RotateCcw className="h-3 w-3 text-amber-600" />
           </button>
         )}
         {onEdit && !isCompleted && (
           <button
             onClick={onEdit}
-            className="w-6 h-6 rounded-full bg-background/90 backdrop-blur-sm flex items-center justify-center hover:bg-muted transition-colors"
+            className="w-4 h-4 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
             title="Edit Reality"
           >
-            <Pencil className="h-3 w-3 text-muted-foreground" />
+            <Pencil className="h-2.5 w-2.5 text-slate-500" />
           </button>
         )}
         {onDelete && (
           <button
             onClick={onDelete}
-            className="w-6 h-6 rounded-full bg-background/90 backdrop-blur-sm flex items-center justify-center hover:bg-destructive/10 transition-colors"
+            className="w-4 h-4 rounded-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
             title="Delete Reality"
           >
-            <Trash2 className="h-3 w-3 text-destructive" />
+            <Trash2 className="h-2.5 w-2.5 text-destructive" />
           </button>
         )}
       </div>
 
-      <div className="flex flex-row h-[140px]">
-        {/* Image Section - Left side */}
-        <div className="relative w-[130px] h-full flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+      <div className="flex flex-row h-[132px]">
+        {/* Image Section - Left side, full height */}
+        <div className="relative w-[132px] h-full flex-shrink-0" onClick={(e) => e.stopPropagation()}>
           <EntryImageUpload
             currentImageUrl={goal.cover_image_url || goal.vision_image_url || null}
             presetType="manifest"
@@ -157,12 +158,12 @@ export function ManifestCard({
           />
 
           {/* Overlay Badges */}
-          <div className="absolute bottom-2 left-2 flex flex-col gap-1">
-            <span className="text-[9px] font-normal px-2 py-0.5 rounded-full bg-background/80 backdrop-blur-sm text-muted-foreground">
+          <div className="absolute bottom-1.5 left-1.5 flex flex-col gap-0.5">
+            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-white/90 backdrop-blur-sm text-teal-600 shadow-sm">
               Day {dayNumber}
             </span>
             {streak > 1 && (
-              <span className="text-[9px] font-normal px-2 py-0.5 rounded-full bg-primary/80 text-primary-foreground flex items-center gap-0.5">
+              <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-orange-500 text-white flex items-center gap-0.5">
                 <Flame className="h-2 w-2" /> {streak}
               </span>
             )}
@@ -170,34 +171,34 @@ export function ManifestCard({
         </div>
 
         {/* Content - Right side */}
-        <div className="flex-1 p-4 flex flex-col justify-between min-w-0 relative">
+        <div className="flex-1 p-2.5 flex flex-col justify-between min-w-0 relative">
           <div>
-            <h3 className="font-medium text-foreground text-xs leading-relaxed mb-2 line-clamp-2 pr-16">
+            <h3 className="font-semibold text-slate-800 dark:text-white text-xs leading-snug mb-1 line-clamp-2 pr-14">
               {goal.title}
             </h3>
 
             {/* Category & Last Practiced */}
-            <div className="flex items-center gap-2 mb-3 flex-wrap">
-              <span className="inline-flex items-center gap-1 text-[9px] font-normal px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+            <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+              <span className="inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                 <Tag className="h-2 w-2" />
                 {categoryLabel}
               </span>
               {lastPracticed && (
-                <span className="text-[9px] text-muted-foreground/60">
+                <span className="text-[9px] text-slate-400">
                   {formatDistanceToNow(lastPracticed, { addSuffix: true })}
                 </span>
               )}
             </div>
 
-            {/* Week Dots - lighter, thinner */}
+            {/* Week Dots with completion count - stretched */}
             <div className="flex items-center gap-2 w-full">
               <div className="flex flex-1 justify-between">
                 {["M", "T", "W", "T", "F", "S", "S"].map((day, i) => (
-                  <div key={i} className="flex flex-col items-center gap-0.5">
-                    <span className="text-[7px] text-muted-foreground/50">{day}</span>
+                  <div key={i} className="flex flex-col items-center gap-0">
+                    <span className="text-[7px] text-slate-400">{day}</span>
                     <div
-                      className={`w-3.5 h-3.5 rounded-full flex items-center justify-center transition-colors ${
-                        weekProgress[i] ? "bg-primary/70 text-primary-foreground" : "bg-muted/60"
+                      className={`w-4 h-4 rounded-full flex items-center justify-center ${
+                        weekProgress[i] ? "bg-teal-500 text-white" : "bg-slate-100 dark:bg-slate-800"
                       }`}
                     >
                       {weekProgress[i] && <Check className="h-2 w-2" />}
@@ -205,13 +206,13 @@ export function ManifestCard({
                   </div>
                 ))}
               </div>
-              <span className="text-[9px] font-normal text-muted-foreground flex-shrink-0">
+              <span className="text-[9px] font-medium text-teal-600 dark:text-teal-400 flex-shrink-0">
                 {weekCompletionCount}/7
               </span>
             </div>
           </div>
 
-          {/* CTA - softer */}
+          {/* CTA - reduced width */}
           {!isCompleted && (
             <Button
               onClick={(e) => {
@@ -219,8 +220,7 @@ export function ManifestCard({
                 onClick();
               }}
               size="sm"
-              variant="ghost"
-              className="w-auto h-7 px-4 rounded-full text-primary hover:text-primary/80 hover:bg-primary/5 font-normal text-[10px] mt-2 ml-auto"
+              className="w-auto h-7 px-3 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-medium text-[10px] mt-1.5 ml-auto"
             >
               <Play className="h-2.5 w-2.5 mr-1" />
               Practice
@@ -228,6 +228,6 @@ export function ManifestCard({
           )}
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
