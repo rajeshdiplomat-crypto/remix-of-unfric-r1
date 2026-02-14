@@ -436,46 +436,56 @@ export default function Manifest() {
             <div className="bg-card rounded-2xl shadow-sm border border-border flex flex-col overflow-hidden flex-1 min-h-0">
               {/* Header with Create Button */}
               <div className="p-3 flex items-center justify-between border-b border-border flex-shrink-0">
-                <h2 className="text-base font-semibold text-foreground">Your Realities</h2>
                 <div className="flex items-center gap-1">
+                  <Button
+                    variant={!activeLeftPanel ? "default" : "ghost"}
+                    size="sm"
+                    className={cn(
+                      "rounded-lg h-8 px-3 text-xs",
+                      !activeLeftPanel ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white border-0" : "text-muted-foreground"
+                    )}
+                    onClick={() => setActiveLeftPanel(null)}
+                  >
+                    <Sparkles className="h-3.5 w-3.5 mr-1" /> Realities
+                  </Button>
                   <Button
                     variant={activeLeftPanel === "calendar" ? "default" : "ghost"}
                     size="sm"
                     className={cn(
-                      "rounded-lg h-8 px-2",
+                      "rounded-lg h-8 px-3 text-xs",
                       activeLeftPanel === "calendar" ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white border-0" : "text-muted-foreground"
                     )}
                     onClick={() => toggleLeftPanel("calendar")}
                   >
-                    <Calendar className="h-3.5 w-3.5" />
+                    <Calendar className="h-3.5 w-3.5 mr-1" /> Calendar
                   </Button>
                   <Button
                     variant={activeLeftPanel === "progress" ? "default" : "ghost"}
                     size="sm"
                     className={cn(
-                      "rounded-lg h-8 px-2",
+                      "rounded-lg h-8 px-3 text-xs",
                       activeLeftPanel === "progress" ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white border-0" : "text-muted-foreground"
                     )}
                     onClick={() => toggleLeftPanel("progress")}
                   >
-                    <TrendingUp className="h-3.5 w-3.5" />
+                    <TrendingUp className="h-3.5 w-3.5 mr-1" /> Progress
                   </Button>
                   <Button
                     onClick={() => setShowAnalytics(true)}
                     variant="ghost"
                     size="sm"
-                    className="rounded-lg h-8 px-2 text-muted-foreground"
+                    className="rounded-lg h-8 px-3 text-xs text-muted-foreground"
                   >
-                    <BarChart3 className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    onClick={() => setShowCreateModal(true)}
-                    size="sm"
-                    className="rounded-lg h-8 px-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all text-xs"
-                  >
-                    <Plus className="h-3.5 w-3.5 mr-1" /> New
+                    <BarChart3 className="h-3.5 w-3.5 mr-1" /> Analytics
                   </Button>
                 </div>
+                <Button
+                  onClick={() => setShowCreateModal(true)}
+                  size="sm"
+                  className="rounded-lg h-8 px-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all text-xs"
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" /> New
+                </Button>
               </div>
 
             {activeLeftPanel ? (
