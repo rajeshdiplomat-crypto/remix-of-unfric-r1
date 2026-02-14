@@ -711,31 +711,7 @@ export default function Journal() {
 
   const editorContent = (
     <div className="flex flex-col min-w-0">
-      <div className="mb-6 px-1 space-y-1">
-        <h2 className="text-lg font-light tracking-wide text-muted-foreground">
-          {(() => {
-            const hour = new Date().getHours();
-            const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "";
-            const firstName = userName.split(" ")[0];
-            const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : hour < 21 ? "Good evening" : "Good night";
-            return firstName ? `${greeting}, ${firstName}` : greeting;
-          })()}
-        </h2>
-        <p className="text-xs text-muted-foreground/50 italic">
-          {(() => {
-            const quotes = [
-              "Every page you write is a step toward understanding yourself.",
-              "Your thoughts matter. Let them flow freely today.",
-              "Writing is the painting of the voice.",
-              "Today's reflections shape tomorrow's clarity.",
-              "Be gentle with yourself as you explore your thoughts.",
-              "Every word you write is a gift to your future self.",
-              "Let your journal be a safe space for your authentic voice.",
-            ];
-            return `"${quotes[Math.floor(new Date().getDate() % quotes.length)]}"`;
-          })()}
-        </p>
-      </div>
+
       <div className={cn("transition-all duration-200 rounded-2xl overflow-hidden shadow-sm border border-border bg-card", isLoading && "opacity-50 pointer-events-none")}>
         <MemoizedJournalTiptapEditor
           ref={editorRef}
@@ -779,7 +755,7 @@ export default function Journal() {
           {journalHeader}
           <div className="flex-1 min-h-0 grid gap-12 w-full px-6 lg:px-8 py-8 overflow-hidden grid-cols-1 lg:grid-cols-[1fr_2fr]">
             {/* Left column: Editorial + toggle panels */}
-            <div className="hidden lg:flex flex-col justify-center gap-6 h-full overflow-y-auto">
+            <div className="hidden lg:flex flex-col justify-start gap-6 h-full overflow-y-auto pt-12">
               <div className="space-y-6 max-w-md">
                 {/* Badge */}
                 <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
