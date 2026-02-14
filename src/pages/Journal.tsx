@@ -155,7 +155,7 @@ export default function Journal() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
-  const [activeLeftPanel, setActiveLeftPanel] = useState<"calendar" | "emotions" | "progress" | null>(null);
+  const [activeLeftPanel, setActiveLeftPanel] = useState<"calendar" | "emotions" | "progress" | null>("progress");
   const [searchQuery, setSearchQuery] = useState("");
   const [showRecentEntries, setShowRecentEntries] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
@@ -795,6 +795,15 @@ export default function Journal() {
                     <Sparkles className="h-3.5 w-3.5" />
                     Emotions
                   </Button>
+                  <Button
+                    variant={activeLeftPanel === "progress" ? "outline" : "ghost"}
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => setActiveLeftPanel(activeLeftPanel === "progress" ? null : "progress")}
+                  >
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    Progress
+                  </Button>
                 </div>
 
                 {/* Expandable panel area */}
@@ -813,9 +822,9 @@ export default function Journal() {
                 {activeLeftPanel === "emotions" && (
                   <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="emotions" />
                 )}
-
-                {/* Progress always visible */}
-                <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="progress" />
+                {activeLeftPanel === "progress" && (
+                  <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="progress" />
+                )}
               </div>
             </div>
 
