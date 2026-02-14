@@ -333,80 +333,61 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
   }
   return (
     <div className="rounded-xl border border-border/40 bg-card/40 backdrop-blur-sm overflow-hidden">
-      <div className="px-4 py-3">
-        {/* Top row: Time selector + KPIs inline */}
-        <div className="flex items-center gap-3 mb-3">
-          {/* Time Period Selector - horizontal pills */}
-          <div className="flex items-center gap-1 bg-muted/40 rounded-lg p-0.5 shrink-0">
-            {(["today", "tomorrow", "week"] as TimePeriod[]).map((period) => (
-              <button
-                key={period}
-                onClick={() => setTimePeriod(period)}
-                className={cn(
-                  "px-2.5 py-1 rounded-md text-[10px] font-medium transition-all",
-                  timePeriod === period
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {period === "today" ? "Today" : period === "tomorrow" ? "Tomorrow" : "Week"}
-              </button>
-            ))}
-          </div>
-
-          {/* Divider */}
-          <div className="h-6 w-px bg-border/40" />
-
-          {/* KPIs - inline horizontal */}
-          <div className="flex items-center gap-4 flex-1 min-w-0">
-            {/* Pending */}
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                <Calendar className="h-3.5 w-3.5 text-primary" />
-              </div>
-              <div>
-                <p className="text-lg font-semibold text-foreground leading-none">{pendingCount}</p>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Planned</p>
-              </div>
-            </div>
-
-            {/* Done */}
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-lg bg-chart-1/10 flex items-center justify-center shrink-0">
-                <CheckCircle className="h-3.5 w-3.5 text-chart-1" />
-              </div>
-              <div>
-                <p className="text-lg font-semibold text-foreground leading-none">{completedCount}</p>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Done</p>
-              </div>
-            </div>
-
-            {/* Overdue */}
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
-                <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
-              </div>
-              <div>
-                <p className="text-lg font-semibold text-foreground leading-none">{overdueCount}</p>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Overdue</p>
-              </div>
-            </div>
-
-            {/* Focus */}
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-lg bg-chart-2/10 flex items-center justify-center shrink-0">
-                <ClockIcon className="h-3.5 w-3.5 text-chart-2" />
-              </div>
-              <div>
-                <p className="text-lg font-semibold text-foreground leading-none">{totalFocusMinutes}<span className="text-xs font-normal text-muted-foreground">m</span></p>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Focus</p>
-              </div>
-            </div>
-          </div>
+      <div className="px-3 py-2.5">
+        {/* Time Period Selector */}
+        <div className="flex items-center gap-1 bg-muted/40 rounded-lg p-0.5 w-fit mb-2.5">
+          {(["today", "tomorrow", "week"] as TimePeriod[]).map((period) => (
+            <button
+              key={period}
+              onClick={() => setTimePeriod(period)}
+              className={cn(
+                "px-2.5 py-1 rounded-md text-[10px] font-medium transition-all",
+                timePeriod === period
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {period === "today" ? "Today" : period === "tomorrow" ? "Tomorrow" : "Week"}
+            </button>
+          ))}
         </div>
 
-        {/* Charts row - 3 equal columns */}
-        <div className="grid grid-cols-3 gap-3 h-[120px]">
+        {/* Main row: KPIs column + Charts */}
+        <div className="flex gap-3 h-[120px]">
+          {/* KPIs - vertical stack on the left */}
+          <div className="grid grid-rows-4 gap-1.5 shrink-0 w-[100px]">
+            <div className="flex items-center gap-2 rounded-lg bg-muted/20 border border-border/30 px-2">
+              <Calendar className="h-3 w-3 text-primary shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground leading-none">{pendingCount}</p>
+                <p className="text-[8px] text-muted-foreground uppercase tracking-wider">Planned</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg bg-muted/20 border border-border/30 px-2">
+              <CheckCircle className="h-3 w-3 text-chart-1 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground leading-none">{completedCount}</p>
+                <p className="text-[8px] text-muted-foreground uppercase tracking-wider">Done</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg bg-muted/20 border border-border/30 px-2">
+              <AlertTriangle className="h-3 w-3 text-destructive shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground leading-none">{overdueCount}</p>
+                <p className="text-[8px] text-muted-foreground uppercase tracking-wider">Overdue</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg bg-muted/20 border border-border/30 px-2">
+              <ClockIcon className="h-3 w-3 text-chart-2 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground leading-none">{totalFocusMinutes}<span className="text-[10px] font-normal text-muted-foreground">m</span></p>
+                <p className="text-[8px] text-muted-foreground uppercase tracking-wider">Focus</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Charts - fill remaining space */}
+          <div className="grid grid-cols-3 gap-3 flex-1 min-w-0">
           {/* Plan vs Actual */}
           <div className="rounded-lg bg-muted/20 border border-border/30 p-2.5 flex flex-col min-h-0">
             <div className="flex items-center gap-1.5 mb-1 shrink-0">
@@ -537,6 +518,7 @@ export function InsightsPanel({ tasks, compactMode }: InsightsPanelProps) {
                 <p className="text-[9px] text-muted-foreground">No data</p>
               )}
             </div>
+          </div>
           </div>
         </div>
       </div>
