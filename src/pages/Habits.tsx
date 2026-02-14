@@ -1262,14 +1262,14 @@ export default function Habits() {
               </div>
 
               {/* Center section — Quote + Rings + Top Habits */}
-              <div className="p-6 overflow-y-auto">
+              <div className="p-4 flex flex-col justify-between overflow-hidden">
                 {/* Quote at top center */}
                 {(() => {
                   const currentQuote = MOTIVATIONAL_QUOTES[quoteIndex];
                   return (
                     <div
                       className={cn(
-                        "mb-5 text-center transition-opacity duration-500 ease-in-out",
+                        "mb-3 text-center transition-opacity duration-500 ease-in-out",
                         quoteVisible ? "opacity-100" : "opacity-0",
                       )}
                     >
@@ -1284,7 +1284,7 @@ export default function Habits() {
                 })()}
 
                 {/* Selected habit indicator — always rendered to reserve space */}
-                <div className={cn("flex items-center justify-center gap-3 border-l-2 pl-3 mb-4 h-6",
+                <div className={cn("flex items-center justify-center gap-3 border-l-2 pl-3 mb-2 h-5",
                   selectedActivityId ? "border-foreground" : "border-transparent invisible"
                 )}>
                   {selectedActivityId && (() => {
@@ -1333,7 +1333,7 @@ export default function Habits() {
                   }
 
                   return (
-                    <div className="flex justify-center gap-8 lg:gap-10 flex-wrap">
+                    <div className="flex justify-center gap-6 lg:gap-8 flex-wrap">
                       <ProgressRing progress={Math.min(totalGoalPercent, 100)} label="Total Goal" color={RING_COLORS[0]} />
                       <ProgressRing progress={overallStats.momentum} label="Momentum" color={RING_COLORS[1]} />
                       <ProgressRing progress={overallStats.dailyProgress} label="Daily" color={RING_COLORS[2]} />
@@ -1344,7 +1344,7 @@ export default function Habits() {
                 })()}
 
                 {/* Top Habits — inline row */}
-                <div className="mt-4 pt-3 border-t border-border overflow-hidden">
+                <div className="mt-2 pt-2 border-t border-border overflow-hidden">
                   <div className="flex items-center gap-2 flex-nowrap overflow-hidden whitespace-nowrap">
                     <span className="text-[10px] uppercase tracking-zara-wide text-muted-foreground shrink-0">Top Habits</span>
                     {topHabits.slice(0, 5).map((habit, i) => (
