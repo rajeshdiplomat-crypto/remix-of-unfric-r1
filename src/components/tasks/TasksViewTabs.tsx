@@ -18,7 +18,7 @@ const tabs: { id: TasksViewTab; label: string; icon: React.ElementType }[] = [
 export function TasksViewTabs({ activeTab, onTabChange }: TasksViewTabsProps) {
   return (
     <Tabs value={activeTab} onValueChange={(v) => onTabChange(v as TasksViewTab)}>
-      <TabsList className="w-full justify-start border-b border-border/40 rounded-none px-0 gap-4">
+      <TabsList className="w-full justify-start border-b border-border rounded-none px-0 gap-4">
         {tabs.map(({ id, label, icon: Icon }) => (
           <TabsTrigger key={id} value={id} className="gap-1.5 text-[11px]">
             <Icon className="h-3.5 w-3.5" />

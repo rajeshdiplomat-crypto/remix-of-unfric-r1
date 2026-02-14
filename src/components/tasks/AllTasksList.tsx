@@ -138,7 +138,7 @@ export function AllTasksList({
   // Collapsed state - just show toggle button
   if (collapsed) {
     return (
-      <div className="h-full flex flex-col items-center py-4 bg-card rounded-2xl border border-border/50">
+      <div className="h-full flex flex-col items-center py-4 bg-card rounded-2xl border border-border shadow-sm">
         <Button
           variant="ghost"
           size="icon"
