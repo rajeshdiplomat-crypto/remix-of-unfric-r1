@@ -57,6 +57,21 @@ export default function Diary() {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all_time');
   const [sortOption, setSortOption] = useState<SortOption>('latest');
   const [isJournalModalOpen, setIsJournalModalOpen] = useState(false);
+  const [showLines, setShowLines] = useState(true);
+
+  // Load diary_show_lines from DB
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("user_settings")
+      .select("diary_show_lines")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        const v = (data as any)?.diary_show_lines;
+        if (v !== null && v !== undefined) setShowLines(v);
+      });
+  }, [user]);
 
   const {
     events,
@@ -726,7 +741,7 @@ export default function Diary() {
               </p>
             </Card>
           ) : (
-            <div className="space-y-4 pb-8">
+            <div className={cn("pb-8", showLines ? "space-y-4 divide-y divide-border" : "space-y-4")}>
               {sortedEvents.map((event) =>
                 event.type === "journal_question" ? (
                   <JournalQuestionCard

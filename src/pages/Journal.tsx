@@ -162,6 +162,21 @@ export default function Journal() {
     const saved = localStorage.getItem("journal_template");
     return saved ? JSON.parse(saved) : DEFAULT_TEMPLATE;
   });
+  const [journalMode, setJournalMode] = useState<string>("structured");
+
+  // Load journal mode from DB
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("user_settings")
+      .select("journal_mode")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        const mode = (data as any)?.journal_mode;
+        if (mode) setJournalMode(mode);
+      });
+  }, [user]);
 
   const { theme } = useTheme();
   const [currentSkinId, setCurrentSkinId] = useState(() => localStorage.getItem("journal_skin_id") || "minimal-light");
@@ -381,7 +396,8 @@ export default function Journal() {
           setCurrentEntry(null);
           setCurrentAnswers([]);
           setSelectedMood(null);
-          const newContent = template.applyOnNewEntry
+          const isUnstructured = journalMode === "unstructured";
+          const newContent = (!isUnstructured && template.applyOnNewEntry)
             ? generateInitialContent(template.questions)
             : JSON.stringify({
                 type: "doc",
@@ -397,7 +413,7 @@ export default function Journal() {
         setSaveStatus("saved");
         setIsLoading(false);
       });
-  }, [selectedDate, user, template]);
+  }, [selectedDate, user, template, journalMode]);
 
   // Save function
   const performSave = useCallback(async () => {

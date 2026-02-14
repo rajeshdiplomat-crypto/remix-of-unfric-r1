@@ -32,6 +32,11 @@ interface UserSettings {
   privacy_blur_sensitive: boolean | null;
   privacy_passcode_enabled: boolean | null;
   note_skin_preference: string | null;
+  default_task_view: string | null;
+  default_notes_view: string | null;
+  default_emotions_tab: string | null;
+  journal_mode: string | null;
+  diary_show_lines: boolean | null;
 }
 
 const TIMEZONES = (Intl as any).supportedValuesOf("timeZone") as string[];
@@ -57,16 +62,7 @@ export default function Settings() {
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
 
-  // Local state for default views (stored in localStorage)
-  const [defaultTaskView, setDefaultTaskView] = useState(
-    () => localStorage.getItem("settings_default_task_view") || "status"
-  );
-  const [defaultNotesView, setDefaultNotesView] = useState(
-    () => localStorage.getItem("settings_default_notes_view") || "list"
-  );
-  const [defaultEmotionsTab, setDefaultEmotionsTab] = useState(
-    () => localStorage.getItem("settings_default_emotions_tab") || "feel"
-  );
+  // Default views are now stored in DB via settings object
 
   // Journal template state
   const [template, setTemplate] = useState<JournalTemplate>(() => {
@@ -100,6 +96,11 @@ export default function Settings() {
           privacy_blur_sensitive: data.privacy_blur_sensitive,
           privacy_passcode_enabled: data.privacy_passcode_enabled,
           note_skin_preference: data.note_skin_preference,
+          default_task_view: (data as any).default_task_view ?? "status",
+          default_notes_view: (data as any).default_notes_view ?? "list",
+          default_emotions_tab: (data as any).default_emotions_tab ?? "feel",
+          journal_mode: (data as any).journal_mode ?? "structured",
+          diary_show_lines: (data as any).diary_show_lines ?? true,
         });
       } else {
         // Create default row
@@ -115,6 +116,11 @@ export default function Settings() {
           privacy_blur_sensitive: false,
           privacy_passcode_enabled: false,
           note_skin_preference: null,
+          default_task_view: "status",
+          default_notes_view: "list",
+          default_emotions_tab: "feel",
+          journal_mode: "structured",
+          diary_show_lines: true,
         };
         await supabase.from("user_settings").insert({ user_id: user.id, ...defaults });
         setSettings(defaults);
@@ -218,14 +224,7 @@ export default function Settings() {
     await signOut();
   };
 
-  // ── Save Default Views to localStorage ───────────────────────────
-
-  const handleDefaultViewChange = (key: string, value: string) => {
-    localStorage.setItem(key, value);
-    if (key === "settings_default_task_view") setDefaultTaskView(value);
-    if (key === "settings_default_notes_view") setDefaultNotesView(value);
-    if (key === "settings_default_emotions_tab") setDefaultEmotionsTab(value);
-  };
+  // Default views are now saved via saveField to DB
 
   // ── Render ───────────────────────────────────────────────────────
 
@@ -246,6 +245,20 @@ export default function Settings() {
 
       {/* ─── Section 1: Journal Preferences ─── */}
       <SettingsSection icon={PenLine} title="Journal Preferences">
+        <SettingsRow label="Journal Mode" description="Structured uses prompts, unstructured is freeform">
+          <Select
+            value={settings.journal_mode || "structured"}
+            onValueChange={(v) => saveField("journal_mode", v)}
+          >
+            <SelectTrigger className="w-36 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="structured">Structured</SelectItem>
+              <SelectItem value="unstructured">Unstructured</SelectItem>
+            </SelectContent>
+          </Select>
+        </SettingsRow>
         <SettingsRow label="Auto-apply prompts on new entries" description="Add template questions when you start a new day">
           <Switch
             checked={template.applyOnNewEntry}
@@ -513,8 +526,8 @@ export default function Settings() {
         </SettingsRow>
         <SettingsRow label="Default Task Board" description="Which task view to show first">
           <Select
-            value={defaultTaskView}
-            onValueChange={(v) => handleDefaultViewChange("settings_default_task_view", v)}
+            value={settings.default_task_view || "status"}
+            onValueChange={(v) => saveField("default_task_view", v)}
           >
             <SelectTrigger className="w-36 text-xs">
               <SelectValue />
@@ -529,14 +542,14 @@ export default function Settings() {
         </SettingsRow>
         <SettingsRow label="Default Notes View" description="Which notes layout to show first">
           <Select
-            value={defaultNotesView}
-            onValueChange={(v) => handleDefaultViewChange("settings_default_notes_view", v)}
+            value={settings.default_notes_view || "atlas"}
+            onValueChange={(v) => saveField("default_notes_view", v)}
           >
             <SelectTrigger className="w-28 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="list">List</SelectItem>
+              <SelectItem value="atlas">Atlas</SelectItem>
               <SelectItem value="board">Board</SelectItem>
               <SelectItem value="mindmap">Mind Map</SelectItem>
             </SelectContent>
@@ -544,19 +557,24 @@ export default function Settings() {
         </SettingsRow>
         <SettingsRow label="Default Emotions Tab" description="Which emotions tab to show first">
           <Select
-            value={defaultEmotionsTab}
-            onValueChange={(v) => handleDefaultViewChange("settings_default_emotions_tab", v)}
+            value={settings.default_emotions_tab || "feel"}
+            onValueChange={(v) => saveField("default_emotions_tab", v)}
           >
             <SelectTrigger className="w-28 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="feel">Feel</SelectItem>
-              <SelectItem value="context">Context</SelectItem>
               <SelectItem value="regulate">Regulate</SelectItem>
               <SelectItem value="insights">Insights</SelectItem>
             </SelectContent>
           </Select>
+        </SettingsRow>
+        <SettingsRow label="Diary Feed Lines" description="Show separator lines between feed items">
+          <Switch
+            checked={settings.diary_show_lines ?? true}
+            onCheckedChange={(v) => saveField("diary_show_lines", v)}
+          />
         </SettingsRow>
       </SettingsSection>
 

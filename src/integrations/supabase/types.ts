@@ -743,8 +743,13 @@ export type Database = {
           created_at: string
           daily_reset_time: string | null
           date_format: string | null
+          default_emotions_tab: string | null
           default_home_screen: string | null
+          default_notes_view: string | null
+          default_task_view: string | null
+          diary_show_lines: boolean | null
           id: string
+          journal_mode: string | null
           note_skin_preference: string | null
           notification_diary_prompt: boolean | null
           notification_emotion_checkin: boolean | null
@@ -760,8 +765,13 @@ export type Database = {
           created_at?: string
           daily_reset_time?: string | null
           date_format?: string | null
+          default_emotions_tab?: string | null
           default_home_screen?: string | null
+          default_notes_view?: string | null
+          default_task_view?: string | null
+          diary_show_lines?: boolean | null
           id?: string
+          journal_mode?: string | null
           note_skin_preference?: string | null
           notification_diary_prompt?: boolean | null
           notification_emotion_checkin?: boolean | null
@@ -777,8 +787,13 @@ export type Database = {
           created_at?: string
           daily_reset_time?: string | null
           date_format?: string | null
+          default_emotions_tab?: string | null
           default_home_screen?: string | null
+          default_notes_view?: string | null
+          default_task_view?: string | null
+          diary_show_lines?: boolean | null
           id?: string
+          journal_mode?: string | null
           note_skin_preference?: string | null
           notification_diary_prompt?: boolean | null
           notification_emotion_checkin?: boolean | null
