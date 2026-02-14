@@ -5,7 +5,6 @@ import { Flame, Play, Tag, Pencil, Trash2, CheckCircle, RotateCcw, Clock, Calend
 import { type ManifestGoal, type ManifestDailyPractice, DAILY_PRACTICE_KEY, CATEGORIES } from "./types";
 import { format, subDays, parseISO, differenceInDays, formatDistanceToNow } from "date-fns";
 import { useMemo } from "react";
-import { EntryImageUpload } from "@/components/common/EntryImageUpload";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ManifestCardProps {
@@ -73,18 +72,6 @@ export function ManifestCard({
     return format(parseISO(d), "MMM d, yyyy");
   }, [goal.start_date, goal.created_at]);
 
-  const handleImageChange = async (url: string) => {
-    try {
-      await supabase.from("manifest_goals").update({ cover_image_url: url }).eq("id", goal.id);
-      const GOAL_EXTRAS_KEY = "manifest_goal_extras";
-      const extras = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
-      extras[goal.id] = { ...extras[goal.id], cover_image_url: url };
-      localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify(extras));
-      if (onImageUpdate) onImageUpdate();
-    } catch (e) {
-      console.error(e);
-    }
-  };
 
   const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
@@ -120,15 +107,17 @@ export function ManifestCard({
       </div>
 
       <div className="flex flex-row h-[152px]">
-        {/* Image */}
-        <div className="relative w-[120px] h-full flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-          <EntryImageUpload
-            currentImageUrl={goal.cover_image_url || goal.vision_image_url || null}
-            presetType="manifest"
-            category={goal.category || "other"}
-            onImageChange={handleImageChange}
-            className="w-full h-full rounded-l-xl overflow-hidden"
-          />
+        {/* Image (read-only, set during creation) */}
+        <div className="relative w-[120px] h-full flex-shrink-0">
+          {(goal.cover_image_url || goal.vision_image_url) ? (
+            <img
+              src={goal.cover_image_url || goal.vision_image_url || ""}
+              alt={goal.title}
+              className="w-full h-full object-cover rounded-l-xl"
+            />
+          ) : (
+            <div className="w-full h-full bg-muted rounded-l-xl" />
+          )}
           <div className="absolute bottom-1.5 left-1.5 flex flex-col gap-0.5">
             <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-background/90 backdrop-blur-sm text-teal-600 shadow-sm">
               Day {dayNumber}
@@ -166,7 +155,7 @@ export function ManifestCard({
               )}
             </div>
 
-            {/* Week checkboxes + Practice button in same row */}
+            {/* Week checkboxes */}
             <div className="flex items-center gap-1.5 w-full">
               <div className="flex flex-1 justify-between">
                 {DAY_LABELS.map((day, i) => (
@@ -183,6 +172,15 @@ export function ManifestCard({
               <span className="text-[9px] font-medium text-teal-600 dark:text-teal-400 flex-shrink-0">
                 {weekCompletionCount}/7
               </span>
+            </div>
+
+            {/* Practice button + practice days */}
+            <div className="flex items-center justify-between mt-1.5">
+              {totalPracticeDays > 0 ? (
+                <span className="text-[9px] text-muted-foreground">
+                  {totalPracticeDays} practice day{totalPracticeDays !== 1 ? "s" : ""} total
+                </span>
+              ) : <span />}
               {!isCompleted && (
                 <Button
                   onClick={(e) => { e.stopPropagation(); onClick(); }}
@@ -194,13 +192,6 @@ export function ManifestCard({
                 </Button>
               )}
             </div>
-
-            {/* Practice days count */}
-            {totalPracticeDays > 0 && (
-              <span className="text-[9px] text-muted-foreground mt-1">
-                {totalPracticeDays} practice day{totalPracticeDays !== 1 ? "s" : ""} total
-              </span>
-            )}
           </div>
         </div>
       </div>

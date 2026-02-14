@@ -37,7 +37,6 @@ import { ManifestVisualizationMode } from "./ManifestVisualizationMode";
 import { format, isToday, isBefore, startOfDay } from "date-fns";
 import confetti from "canvas-confetti";
 import { toast } from "sonner";
-import { EntryImageUpload } from "@/components/common/EntryImageUpload";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ManifestPracticePanelProps {
@@ -405,19 +404,13 @@ export function ManifestPracticePanel({
     <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-900 overflow-hidden">
       {/* Header with Vision Image */}
       <div className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex-shrink-0">
-        {/* Vision Image - Full width, editable */}
+        {/* Vision Image - Read-only display */}
         <div className="relative h-36 w-full overflow-hidden">
-          <EntryImageUpload
-            currentImageUrl={currentImageUrl}
-            presetType="manifest"
-            category={goal.category || "other"}
-            onImageChange={handleImageChange}
-            className="w-full h-full"
-          />
-          <div className="absolute bottom-2 right-2 flex items-center gap-1 text-[10px] text-white/80 bg-black/30 px-2 py-1 rounded-full backdrop-blur-sm">
-            <Image className="h-3 w-3" /> Tap to change
-          </div>
-          {/* Gradient overlay for text readability */}
+          {currentImageUrl ? (
+            <img src={currentImageUrl} alt={goal.title} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-muted" />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
         </div>
 
