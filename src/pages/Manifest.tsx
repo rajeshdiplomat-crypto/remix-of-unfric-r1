@@ -478,7 +478,21 @@ export default function Manifest() {
                 </div>
               </div>
 
-              {activeGoals.length === 0 ? (
+            {activeLeftPanel ? (
+              <div className="overflow-y-auto flex-1 min-h-0 p-2">
+                <ManifestSidebarPanel
+                  selectedDate={selectedDate}
+                  onDateSelect={handleDateSelect}
+                  goals={goals}
+                  practices={practices}
+                  activeCount={activeGoals.length}
+                  streak={aggregateStreak}
+                  avgMomentum={avgMomentum}
+                  onOpenAnalytics={() => setShowAnalytics(true)}
+                  section={activeLeftPanel}
+                />
+              </div>
+            ) : activeGoals.length === 0 ? (
                 <div className="p-3 flex-1 flex items-center justify-center">
                   <Card className="rounded-xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-card w-full">
                     <CardContent className="py-8 px-4 text-center">
@@ -543,8 +557,8 @@ export default function Manifest() {
                 </div>
               )}
 
-              {/* Completed Realities Section */}
-              {completedGoals.length > 0 && (
+              {/* Completed Realities Section - only show when viewing realities */}
+              {!activeLeftPanel && completedGoals.length > 0 && (
                 <div className="border-t border-border">
                   <button
                     onClick={() => setShowCompleted(!showCompleted)}
@@ -584,27 +598,10 @@ export default function Manifest() {
                 </div>
               )}
             </div>
-
-            {/* Expandable Panel Area */}
-            {activeLeftPanel && (
-              <div className="flex-shrink-0 max-h-[400px] overflow-y-auto">
-                <ManifestSidebarPanel
-                  selectedDate={selectedDate}
-                  onDateSelect={handleDateSelect}
-                  goals={goals}
-                  practices={practices}
-                  activeCount={activeGoals.length}
-                  streak={aggregateStreak}
-                  avgMomentum={avgMomentum}
-                  onOpenAnalytics={() => setShowAnalytics(true)}
-                  section={activeLeftPanel}
-                />
-              </div>
-            )}
           </div>
 
           {/* ========== RIGHT COLUMN: Editorial ========== */}
-          <div className="hidden lg:flex flex-col h-full min-h-0 overflow-y-auto">
+          <div className="hidden lg:flex flex-col h-full min-h-0 overflow-hidden">
             <div className="flex flex-col gap-6 py-6 px-5">
               {/* Badge */}
               <Badge variant="secondary" className="w-fit rounded-full px-3 py-1 gap-1.5">
