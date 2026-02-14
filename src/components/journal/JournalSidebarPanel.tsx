@@ -134,10 +134,10 @@ export const JournalSidebarPanel = memo(
                     <ArrowLeftToLine className="h-4 w-4" style={{ color: skin?.mutedText || "#94a3b8" }} />
                   </button>
                 )}
-                <div className="p-1.5 rounded-lg" style={{ backgroundColor: `${skin?.accent}20` || "#f5f3ff" }}>
-                  <CalendarIcon className="h-4 w-4" style={{ color: skin?.accent || "#7c3aed" }} />
+                <div className="p-1.5 rounded-lg bg-muted">
+                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <span className="text-sm font-semibold" style={{ color: skin?.text || "#1e293b" }}>
+                <span className="text-sm font-semibold text-foreground">
                   Calendar
                 </span>
               </div>
@@ -211,13 +211,13 @@ export const JournalSidebarPanel = memo(
                       onClick={() => onDateSelect(day)}
                       className={cn(
                         "aspect-square rounded-lg text-xs font-medium transition-all relative flex items-center justify-center",
-                        isSelected
-                          ? "bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-md"
+                      isSelected
+                          ? "bg-foreground text-background shadow-sm"
                           : hasEntryOnDay
-                            ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100"
+                            ? "bg-muted text-foreground hover:bg-muted/80"
                             : isTodayDate
-                              ? "bg-violet-50 text-violet-600 ring-1 ring-violet-200"
-                              : "hover:bg-slate-100 text-slate-700",
+                              ? "border border-foreground/30 text-foreground"
+                              : "hover:bg-muted text-muted-foreground",
                       )}
                     >
                       {format(day, "d")}
@@ -232,7 +232,7 @@ export const JournalSidebarPanel = memo(
                   onDateSelect(new Date());
                   setCurrentMonth(new Date());
                 }}
-                className="w-full mt-3 py-2 text-xs font-medium text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
+                className="w-full mt-3 py-2 text-xs font-medium text-foreground hover:bg-muted rounded-lg transition-colors"
               >
                 Jump to Today
               </button>

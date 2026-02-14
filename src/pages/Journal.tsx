@@ -658,17 +658,17 @@ export default function Journal() {
         borderColor: isFullscreen ? undefined : `${currentSkin.border}40`,
       }}
     >
-      <div className="px-4 sm:px-6 py-2 flex items-center justify-between gap-4">
+      <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={goToPreviousDay}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <button
             onClick={() => setSelectedDate(new Date())}
-            className="flex items-center gap-2 px-3 py-1.5 bg-white/80 hover:bg-white rounded-xl border border-slate-200 transition-all"
+            className="flex items-center gap-2 px-3 py-1.5 hover:bg-muted rounded-xl transition-all"
           >
-            <Calendar className="h-4 w-4 text-stone-500" />
-            <span className="text-sm font-semibold text-slate-700">{format(selectedDate, "EEE, MMM d")}</span>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">{format(selectedDate, "EEE, MMM d")}</span>
           </button>
           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={goToNextDay}>
             <ChevronRight className="h-4 w-4" />
@@ -682,14 +682,7 @@ export default function Journal() {
         </div>
         {/* Search bar removed */}
         <div className="flex items-center gap-1.5">
-          <div
-            className={cn(
-              "flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium",
-              saveStatus === "saved" && "bg-emerald-50 text-emerald-600",
-              saveStatus === "saving" && "bg-amber-50 text-amber-600",
-              saveStatus === "unsaved" && "bg-slate-100 text-slate-500",
-            )}
-          >
+          <div className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground">
             {saveStatus === "saved" && <Cloud className="h-3 w-3" />}
             {saveStatus === "saving" && <Loader2 className="h-3 w-3 animate-spin" />}
             {saveStatus === "unsaved" && <CloudOff className="h-3 w-3" />}
@@ -705,7 +698,7 @@ export default function Journal() {
               <Settings className="h-4 w-4" />
             </Button>
           )}
-          <Button size="sm" onClick={handleManualSave} disabled={saveStatus === "saving"} className="h-8 rounded-lg bg-gradient-to-r from-stone-500 to-orange-600 hover:from-stone-600 hover:to-orange-700 text-xs px-3">
+          <Button variant="outline" size="sm" onClick={handleManualSave} disabled={saveStatus === "saving"} className="h-8 rounded-lg text-xs px-3">
             <Save className="h-3.5 w-3.5 mr-1" />
             Save
           </Button>
@@ -716,18 +709,17 @@ export default function Journal() {
 
   const editorContent = (
     <div className="flex flex-col min-w-0">
-      <div className="mb-4 px-1">
-        <h2 className="text-xl font-semibold text-slate-800">
+      <div className="mb-6 px-1 space-y-1">
+        <h2 className="text-lg font-light tracking-wide text-muted-foreground">
           {(() => {
             const hour = new Date().getHours();
             const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "";
             const firstName = userName.split(" ")[0];
             const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : hour < 21 ? "Good evening" : "Good night";
-            const emoji = hour < 12 ? "☀️" : hour < 17 ? "🌤️" : hour < 21 ? "🌅" : "🌙";
-            return firstName ? `${greeting}, ${firstName} ${emoji}` : `${greeting} ${emoji}`;
+            return firstName ? `${greeting}, ${firstName}` : greeting;
           })()}
         </h2>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-xs text-muted-foreground/50 italic">
           {(() => {
             const quotes = [
               "Every page you write is a step toward understanding yourself.",
@@ -738,20 +730,11 @@ export default function Journal() {
               "Every word you write is a gift to your future self.",
               "Let your journal be a safe space for your authentic voice.",
             ];
-            return quotes[Math.floor(new Date().getDate() % quotes.length)];
-          })()}
-        </p>
-        <p className="text-xs text-stone-500 mt-2">
-          {(() => {
-            if (streak === 0) return "Start your journaling journey today — even a few words can make a difference.";
-            if (streak === 1) return "You wrote yesterday! Keep the momentum going with today's entry.";
-            if (streak < 7) return `You've been writing for ${streak} days straight. Amazing consistency — keep it up!`;
-            if (streak < 30) return `Incredible! ${streak} days of journaling. Your dedication is inspiring.`;
-            return `${streak} days of reflection! You've built a powerful habit. Keep writing.`;
+            return `"${quotes[Math.floor(new Date().getDate() % quotes.length)]}"`;
           })()}
         </p>
       </div>
-      <div className={cn("transition-all duration-200 rounded-2xl overflow-hidden shadow-xl shadow-slate-200/50 bg-white", isLoading && "opacity-50 pointer-events-none")}>
+      <div className={cn("transition-all duration-200 rounded-2xl overflow-hidden shadow-sm border border-border bg-card", isLoading && "opacity-50 pointer-events-none")}>
         <MemoizedJournalTiptapEditor
           ref={editorRef}
           content={content}
@@ -794,7 +777,7 @@ export default function Journal() {
           {journalHeader}
           <div
             className={cn(
-              "flex-1 min-h-0 grid gap-6 w-full px-4 sm:px-6 py-4 overflow-hidden",
+              "flex-1 min-h-0 grid gap-8 w-full px-4 sm:px-6 py-6 overflow-hidden",
               leftPanelCollapsed ? "grid-cols-1 lg:grid-cols-[64px_1fr_280px]" : "grid-cols-1 lg:grid-cols-[280px_1fr_280px]",
             )}
           >
