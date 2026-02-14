@@ -1,17 +1,16 @@
 import { useMemo, useState } from "react";
-import { Plus, Calendar, Check, Play, Loader2 } from "lucide-react";
+import { Calendar, Check, Play, Loader2, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { QuadrantTask, QuadrantMode, QUADRANT_MODES, computeTaskStatus, computeDateBucket, suggestTimeOfDay } from "./types";
+import { QuadrantTask, QuadrantMode, QUADRANT_MODES, computeTaskStatus, computeDateBucket } from "./types";
 import { format } from "date-fns";
 
 interface KanbanBoardViewProps {
   tasks: QuadrantTask[];
   onTaskClick: (task: QuadrantTask) => void;
-  onQuickAdd: (title: string, columnId: string) => void;
   onDrop: (columnId: string, task: QuadrantTask) => void;
   onStartTask: (task: QuadrantTask) => void;
   onCompleteTask: (task: QuadrantTask) => void;
@@ -158,21 +157,25 @@ const MODE_LABELS: { mode: QuadrantMode; label: string }[] = [
 export function KanbanBoardView({
   tasks,
   onTaskClick,
-  onQuickAdd,
   onDrop,
   onStartTask,
   onCompleteTask,
 }: KanbanBoardViewProps) {
   const [boardMode, setBoardMode] = useState<QuadrantMode>("urgent-important");
-  const [quickAddCol, setQuickAddCol] = useState<string | null>(null);
-  const [quickAddTitle, setQuickAddTitle] = useState("");
+  const [completedOpen, setCompletedOpen] = useState(false);
 
   const activeQuadrants = QUADRANT_MODES[boardMode].quadrants;
+
+  const { activeTasks, completedTasks } = useMemo(() => {
+    const active = tasks.filter(t => !t.is_completed);
+    const completed = tasks.filter(t => t.is_completed);
+    return { activeTasks: active, completedTasks: completed };
+  }, [tasks]);
 
   const columnTasks = useMemo(() => {
     const map: Record<string, QuadrantTask[]> = {};
     activeQuadrants.forEach((q) => (map[q.id] = []));
-    tasks.forEach((t) => {
+    activeTasks.forEach((t) => {
       for (const q of activeQuadrants) {
         if (filterTaskForQuadrant(t, boardMode, q.id)) {
           map[q.id].push(t);
@@ -181,7 +184,7 @@ export function KanbanBoardView({
       }
     });
     return map;
-  }, [tasks, boardMode, activeQuadrants]);
+  }, [activeTasks, boardMode, activeQuadrants]);
 
   const handleDrop = (quadrantId: string, e: React.DragEvent) => {
     e.preventDefault();
@@ -190,14 +193,6 @@ export function KanbanBoardView({
     if (task) {
       // Pass the quadrantId prefixed with mode so parent can decide what field to update
       onDrop(`${boardMode}:${quadrantId}`, task);
-    }
-  };
-
-  const submitQuickAdd = (quadrantId: string) => {
-    if (quickAddTitle.trim()) {
-      onQuickAdd(quickAddTitle.trim(), `${boardMode}:${quadrantId}`);
-      setQuickAddTitle("");
-      setQuickAddCol(null);
     }
   };
 
@@ -246,44 +241,26 @@ export function KanbanBoardView({
                 <KanbanCard key={task.id} task={task} onClick={() => onTaskClick(task)} onStartTask={onStartTask} onCompleteTask={onCompleteTask} />
               ))}
             </div>
-
-            {/* Quick add */}
-            {quickAddCol === col.id ? (
-              <div className="mt-2 space-y-1">
-                <Input
-                  autoFocus
-                  value={quickAddTitle}
-                  onChange={(e) => setQuickAddTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") submitQuickAdd(col.id);
-                    if (e.key === "Escape") setQuickAddCol(null);
-                  }}
-                  placeholder="Task title..."
-                  className="h-8 text-sm"
-                />
-                <div className="flex gap-1">
-                  <Button size="sm" className="h-7 text-[10px] flex-1" onClick={() => submitQuickAdd(col.id)}>
-                    Add
-                  </Button>
-                  <Button size="sm" variant="ghost" className="h-7 text-[10px]" onClick={() => setQuickAddCol(null)}>
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="mt-2 h-7 text-[10px] text-muted-foreground w-full justify-start"
-                onClick={() => setQuickAddCol(col.id)}
-              >
-                <Plus className="h-3 w-3 mr-1" />
-                Add task
-              </Button>
-            )}
           </div>
         ))}
       </div>
+
+      {/* Completed tasks collapsible */}
+      {completedTasks.length > 0 && (
+        <Collapsible open={completedOpen} onOpenChange={setCompletedOpen}>
+          <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <ChevronDown className={cn("h-4 w-4 transition-transform", completedOpen && "rotate-180")} />
+            <span className="font-medium">Completed ({completedTasks.length})</span>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mt-2">
+              {completedTasks.map((task) => (
+                <KanbanCard key={task.id} task={task} onClick={() => onTaskClick(task)} onStartTask={onStartTask} onCompleteTask={onCompleteTask} />
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
     </div>
   );
 }
