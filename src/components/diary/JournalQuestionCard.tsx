@@ -459,7 +459,7 @@ export function JournalQuestionCard({
             {/* Comment */}
             <button
               onClick={() => setShowComposer(!showComposer)}
-              className={cn("flex-1 flex items-center justify-center gap-2 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors py-[15px]",
+              className={cn("flex-1 flex items-center justify-center gap-2 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors py-[8px]",
 
               showComposer && "text-primary"
               )}>
