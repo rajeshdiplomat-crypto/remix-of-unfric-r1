@@ -1,8 +1,10 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Camera, Play, Pause, Volume2, VolumeX, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 type MediaType = "image" | "video" | null;
 
@@ -12,32 +14,6 @@ interface PageHeroProps {
   badge?: string;
   title: string;
   subtitle?: string;
-}
-
-function loadHeroMedia(storageKey: string, typeKey: string): { src: string | null; type: MediaType } {
-  const src = localStorage.getItem(storageKey);
-  const type = localStorage.getItem(typeKey) as MediaType;
-  return { src, type };
-}
-
-function saveHeroMedia(storageKey: string, typeKey: string, src: string | null, type: MediaType) {
-  try {
-    if (src && type) {
-      // Only store URLs (not base64 data) to prevent quota issues
-      if (src.startsWith("http")) {
-        localStorage.setItem(storageKey, src);
-        localStorage.setItem(typeKey, type);
-      } else {
-        // For base64 data, don't store - it exceeds localStorage quota
-        console.warn("Skipping localStorage save for large base64 media - use URL instead");
-      }
-    } else {
-      localStorage.removeItem(storageKey);
-      localStorage.removeItem(typeKey);
-    }
-  } catch (e) {
-    console.warn("Could not save hero media to localStorage - quota exceeded");
-  }
 }
 
 // Derive page type from storage key
@@ -75,87 +51,109 @@ export const PAGE_HERO_TEXT = {
 };
 
 export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHeroProps) {
-  const [mediaSrc, setMediaSrc] = useState<string | null>(() => loadHeroMedia(storageKey, typeKey).src);
-  const [mediaType, setMediaType] = useState<MediaType>(() => loadHeroMedia(storageKey, typeKey).type);
+  const { user } = useAuth();
+  const pageKey = getPageTypeFromStorageKey(storageKey);
+
+  const [mediaSrc, setMediaSrc] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<MediaType>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const [isHovering, setIsHovering] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Reload media when storage keys change
+  // Load from database
   useEffect(() => {
-    const loaded = loadHeroMedia(storageKey, typeKey);
-    setMediaSrc(loaded.src);
-    setMediaType(loaded.type);
-  }, [storageKey, typeKey]);
+    if (!user) { setIsLoading(false); return; }
+    (async () => {
+      const { data } = await supabase
+        .from("hero_media")
+        .select("media_url, media_type")
+        .eq("user_id", user.id)
+        .eq("page_key", pageKey)
+        .maybeSingle();
+      if (data) {
+        setMediaSrc(data.media_url);
+        setMediaType(data.media_type as MediaType);
+      }
+      setIsLoading(false);
+    })();
+  }, [user, pageKey]);
+
+  // Save to database
+  const saveToDb = useCallback(async (url: string | null, type: MediaType) => {
+    if (!user) return;
+    if (url && type) {
+      await supabase.from("hero_media").upsert(
+        { user_id: user.id, page_key: pageKey, media_url: url, media_type: type },
+        { onConflict: "user_id,page_key" }
+      );
+    } else {
+      await supabase.from("hero_media").delete().eq("user_id", user.id).eq("page_key", pageKey);
+    }
+  }, [user, pageKey]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: "image" | "video") => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !user) return;
+    if (file.size > 50 * 1024 * 1024) { toast.error("File too large. Max 50MB."); return; }
 
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error("File too large. Max 50MB.");
-      return;
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${user.id}/hero-${pageKey}-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from("entry-covers").upload(fileName, file);
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from("entry-covers").getPublicUrl(fileName);
+      const url = data.publicUrl;
+
+      setMediaSrc(url);
+      setMediaType(type);
+      await saveToDb(url, type);
+      setDialogOpen(false);
+      toast.success(`${type === "image" ? "Image" : "Video"} uploaded!`);
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
     }
-
-    // Create object URL for immediate display (memory-only, no storage issues)
-    const objectUrl = URL.createObjectURL(file);
-    setMediaSrc(objectUrl);
-    setMediaType(type);
-    setDialogOpen(false);
-
-    // Note: Object URLs are session-only and will be lost on page refresh
-    // For persistence, the AI-generated images (which return URLs) are recommended
-    toast.success(
-      `${type === "image" ? "Image" : "Video"} added! Note: Upload will reset on refresh. Use AI generation for persistent images.`,
-    );
   };
 
-  const handleRemove = () => {
+  const handleRemove = async () => {
     setMediaSrc(null);
     setMediaType(null);
-    saveHeroMedia(storageKey, typeKey, null, null);
+    await saveToDb(null, null);
     setDialogOpen(false);
+    toast.success("Hero media removed");
   };
 
   const handleGenerateAI = async () => {
     setIsGenerating(true);
     try {
-      const pageType = getPageTypeFromStorageKey(storageKey);
-
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-hero-image`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ pageType }),
+        body: JSON.stringify({ pageType: pageKey }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        if (response.status === 429) {
-          toast.error("Rate limit exceeded. Please try again later.");
-          return;
-        }
-        if (response.status === 402) {
-          toast.error("AI credits exhausted. Please add credits to continue.");
-          return;
-        }
+        if (response.status === 429) { toast.error("Rate limit exceeded. Try again later."); return; }
+        if (response.status === 402) { toast.error("AI credits exhausted."); return; }
         throw new Error(errorData.error || "Failed to generate image");
       }
 
       const data = await response.json();
-
       if (data.imageUrl) {
         setMediaSrc(data.imageUrl);
         setMediaType("image");
-        saveHeroMedia(storageKey, typeKey, data.imageUrl, "image");
+        await saveToDb(data.imageUrl, "image");
         setDialogOpen(false);
         toast.success("AI hero image generated!");
       } else {
@@ -171,11 +169,7 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
 
   const togglePlay = () => {
     if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
+      if (isPlaying) videoRef.current.pause(); else videoRef.current.play();
       setIsPlaying(!isPlaying);
     }
   };
@@ -213,58 +207,30 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
           <DialogTitle className="uppercase tracking-wider font-light">HERO MEDIA</DialogTitle>
         </DialogHeader>
         <div className="grid gap-3 py-4">
-          <input
-            ref={imageInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => handleFileUpload(e, "image")}
-          />
-          <input
-            ref={videoInputRef}
-            type="file"
-            accept="video/*"
-            className="hidden"
-            onChange={(e) => handleFileUpload(e, "video")}
-          />
-          <Button
-            variant="default"
-            className="w-full justify-start uppercase tracking-wider text-xs gap-2"
-            onClick={handleGenerateAI}
-            disabled={isGenerating}
-          >
+          <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, "image")} />
+          <input ref={videoInputRef} type="file" accept="video/*" className="hidden" onChange={(e) => handleFileUpload(e, "video")} />
+          <Button variant="default" className="w-full justify-start uppercase tracking-wider text-xs gap-2" onClick={handleGenerateAI} disabled={isGenerating}>
             {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             {isGenerating ? "GENERATING..." : "GENERATE AI IMAGE"}
           </Button>
-          <Button
-            variant="outline"
-            className="w-full justify-start uppercase tracking-wider text-xs"
-            onClick={() => imageInputRef.current?.click()}
-          >
-            UPLOAD IMAGE
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full justify-start uppercase tracking-wider text-xs"
-            onClick={() => videoInputRef.current?.click()}
-          >
-            UPLOAD VIDEO
-          </Button>
+          <Button variant="outline" className="w-full justify-start uppercase tracking-wider text-xs" onClick={() => imageInputRef.current?.click()}>UPLOAD IMAGE</Button>
+          <Button variant="outline" className="w-full justify-start uppercase tracking-wider text-xs" onClick={() => videoInputRef.current?.click()}>UPLOAD VIDEO</Button>
           {mediaSrc && (
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-destructive uppercase tracking-wider text-xs"
-              onClick={handleRemove}
-            >
-              REMOVE MEDIA
-            </Button>
+            <Button variant="ghost" className="w-full justify-start text-destructive uppercase tracking-wider text-xs" onClick={handleRemove}>REMOVE MEDIA</Button>
           )}
         </div>
       </DialogContent>
     </Dialog>
   );
 
-  // Default placeholder with Zara-style editorial aesthetic
+  if (isLoading) {
+    return (
+      <div className="relative w-full h-[calc(40vh+2.8rem)] bg-foreground/5 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   if (!mediaSrc) {
     return (
       <div className="relative w-full h-[calc(40vh+2.8rem)] bg-foreground/5 flex items-end justify-start overflow-hidden">
@@ -283,35 +249,12 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
     >
       {mediaType === "video" ? (
         <>
-          <video
-            ref={videoRef}
-            src={mediaSrc}
-            autoPlay
-            loop
-            muted={isMuted}
-            playsInline
-            className="w-full h-full object-cover"
-          />
-          {/* Video controls */}
-          <div
-            className={`absolute bottom-4 right-4 z-20 flex gap-2 transition-opacity duration-300 ${
-              isHovering ? "opacity-100" : "opacity-0"
-            }`}
-          >
-            <Button
-              variant="ghost"
-              size="icon"
-              className="bg-background/20 hover:bg-background/40 backdrop-blur-sm"
-              onClick={togglePlay}
-            >
+          <video ref={videoRef} src={mediaSrc} autoPlay loop muted={isMuted} playsInline className="w-full h-full object-cover" />
+          <div className={`absolute bottom-4 right-4 z-20 flex gap-2 transition-opacity duration-300 ${isHovering ? "opacity-100" : "opacity-0"}`}>
+            <Button variant="ghost" size="icon" className="bg-background/20 hover:bg-background/40 backdrop-blur-sm" onClick={togglePlay}>
               {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="bg-background/20 hover:bg-background/40 backdrop-blur-sm"
-              onClick={toggleMute}
-            >
+            <Button variant="ghost" size="icon" className="bg-background/20 hover:bg-background/40 backdrop-blur-sm" onClick={toggleMute}>
               {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
             </Button>
           </div>
@@ -319,14 +262,8 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
       ) : (
         <img src={mediaSrc} alt={`${title} hero`} className="w-full h-full object-cover" />
       )}
-
-      {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
-
-      {/* Text overlay */}
       {textOverlay}
-
-      {/* Edit button */}
       {editDialog(true)}
     </div>
   );
