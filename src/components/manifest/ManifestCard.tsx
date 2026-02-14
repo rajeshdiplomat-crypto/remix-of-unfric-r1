@@ -83,32 +83,32 @@ export function ManifestCard({
       } ${isCompleted ? "opacity-60 grayscale" : ""}`}
     >
       {/* Action buttons */}
-      <div className="absolute top-1 right-1 z-20 flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+      <div className="absolute top-2 right-2 z-20 flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
         {onComplete && !isCompleted && (
-          <button onClick={onComplete} className="w-4 h-4 rounded-full bg-background/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-teal-50 dark:hover:bg-teal-900/50 transition-colors" title="Mark as Complete">
-            <CheckCircle className="h-2.5 w-2.5 text-teal-500" />
+          <button onClick={onComplete} className="w-6 h-6 rounded-full bg-background/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-teal-50 dark:hover:bg-teal-900/50 transition-colors" title="Mark as Complete">
+            <CheckCircle className="h-3.5 w-3.5 text-teal-500" />
           </button>
         )}
         {onReactivate && isCompleted && (
-          <button onClick={onReactivate} className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/50 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-amber-200 transition-colors" title="Reactivate">
-            <RotateCcw className="h-3 w-3 text-amber-600" />
+          <button onClick={onReactivate} className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/50 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-amber-200 transition-colors" title="Reactivate">
+            <RotateCcw className="h-3.5 w-3.5 text-amber-600" />
           </button>
         )}
         {onEdit && !isCompleted && (
-          <button onClick={onEdit} className="w-4 h-4 rounded-full bg-background/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-muted transition-colors" title="Edit">
-            <Pencil className="h-2.5 w-2.5 text-muted-foreground" />
+          <button onClick={onEdit} className="w-6 h-6 rounded-full bg-background/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-muted transition-colors" title="Edit">
+            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
           </button>
         )}
         {onDelete && (
-          <button onClick={onDelete} className="w-4 h-4 rounded-full bg-background/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-destructive/10 transition-colors" title="Delete">
-            <Trash2 className="h-2.5 w-2.5 text-destructive" />
+          <button onClick={onDelete} className="w-6 h-6 rounded-full bg-background/95 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-destructive/10 transition-colors" title="Delete">
+            <Trash2 className="h-3.5 w-3.5 text-destructive" />
           </button>
         )}
       </div>
 
-      <div className="flex flex-row h-[152px]">
-        {/* Image (read-only, set during creation) */}
-        <div className="relative w-[120px] h-full flex-shrink-0">
+      <div className="flex flex-row min-h-[180px]">
+        {/* Image */}
+        <div className="relative w-[140px] h-auto flex-shrink-0">
           {(goal.cover_image_url || goal.vision_image_url) ? (
             <img
               src={goal.cover_image_url || goal.vision_image_url || ""}
@@ -118,80 +118,80 @@ export function ManifestCard({
           ) : (
             <div className="w-full h-full bg-muted rounded-l-xl" />
           )}
-          <div className="absolute bottom-1.5 left-1.5 flex flex-col gap-0.5">
-            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-background/90 backdrop-blur-sm text-teal-600 shadow-sm">
+          <div className="absolute bottom-2 left-2 flex flex-col gap-1">
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-background/90 backdrop-blur-sm text-teal-600 shadow-sm">
               Day {dayNumber}
             </span>
             {streak > 1 && (
-              <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-orange-500 text-white flex items-center gap-0.5">
-                <Flame className="h-2 w-2" /> {streak}
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-500 text-white flex items-center gap-0.5">
+                <Flame className="h-2.5 w-2.5" /> {streak}
               </span>
             )}
           </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-2.5 flex flex-col justify-between min-w-0">
+        <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
           <div>
-            <h3 className="font-semibold text-foreground text-xs leading-snug mb-1 line-clamp-1 pr-14">
+            <h3 className="font-semibold text-foreground text-sm leading-snug mb-1.5 line-clamp-1 pr-16">
               {goal.title}
             </h3>
 
-            {/* Metadata row: category, start date, check-in */}
-            <div className="flex items-center gap-1 mb-1.5 flex-wrap text-[9px] text-muted-foreground">
-              <span className="inline-flex items-center gap-0.5 font-medium px-1.5 py-0.5 rounded-full bg-muted">
-                <Tag className="h-2 w-2" />
+            {/* Metadata row */}
+            <div className="flex items-center gap-1.5 mb-3 flex-wrap text-[11px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1 font-medium px-2 py-0.5 rounded-full bg-muted">
+                <Tag className="h-2.5 w-2.5" />
                 {categoryLabel}
               </span>
-              <span className="inline-flex items-center gap-0.5">
-                <CalendarDays className="h-2 w-2" />
+              <span className="inline-flex items-center gap-1">
+                <CalendarDays className="h-2.5 w-2.5" />
                 {startDateLabel}
               </span>
               {goal.check_in_time && (
-                <span className="inline-flex items-center gap-0.5">
-                  <Clock className="h-2 w-2" />
+                <span className="inline-flex items-center gap-1">
+                  <Clock className="h-2.5 w-2.5" />
                   {goal.check_in_time}
                 </span>
               )}
             </div>
 
             {/* Week checkboxes */}
-            <div className="flex items-center gap-1.5 w-full">
+            <div className="flex items-center gap-2 w-full">
               <div className="flex flex-1 justify-between">
                 {DAY_LABELS.map((day, i) => (
-                  <div key={i} className="flex flex-col items-center gap-0.5">
-                    <span className="text-[7px] text-muted-foreground">{day}</span>
+                  <div key={i} className="flex flex-col items-center gap-1">
+                    <span className="text-[10px] font-medium text-muted-foreground">{day}</span>
                     <Checkbox
                       checked={weekProgress[i]}
-                      className="h-3.5 w-3.5 rounded-[3px] pointer-events-none"
+                      className="h-4.5 w-4.5 rounded pointer-events-none"
                       tabIndex={-1}
                     />
                   </div>
                 ))}
               </div>
-              <span className="text-[9px] font-medium text-teal-600 dark:text-teal-400 flex-shrink-0">
+              <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 flex-shrink-0">
                 {weekCompletionCount}/7
               </span>
             </div>
+          </div>
 
-            {/* Practice button + practice days */}
-            <div className="flex items-center justify-between mt-1.5">
-              {totalPracticeDays > 0 ? (
-                <span className="text-[9px] text-muted-foreground">
-                  {totalPracticeDays} practice day{totalPracticeDays !== 1 ? "s" : ""} total
-                </span>
-              ) : <span />}
-              {!isCompleted && (
-                <Button
-                  onClick={(e) => { e.stopPropagation(); onClick(); }}
-                  size="sm"
-                  className="h-6 px-2.5 rounded-md bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-medium text-[9px] flex-shrink-0"
-                >
-                  <Play className="h-2 w-2 mr-0.5" />
-                  Practice
-                </Button>
-              )}
-            </div>
+          {/* Practice button + practice days */}
+          <div className="flex items-center justify-between mt-3">
+            {totalPracticeDays > 0 ? (
+              <span className="text-xs text-muted-foreground">
+                {totalPracticeDays} practice day{totalPracticeDays !== 1 ? "s" : ""} total
+              </span>
+            ) : <span />}
+            {!isCompleted && (
+              <Button
+                onClick={(e) => { e.stopPropagation(); onClick(); }}
+                size="sm"
+                className="h-8 px-4 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold text-xs flex-shrink-0"
+              >
+                <Play className="h-3 w-3 mr-1" />
+                Practice
+              </Button>
+            )}
           </div>
         </div>
       </div>
