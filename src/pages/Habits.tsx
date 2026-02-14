@@ -1196,7 +1196,7 @@ export default function Habits() {
 
           {/* Main dashboard — Single wide card with 3 internal sections */}
           <Card className="mb-4 flex-shrink-0 overflow-hidden">
-            <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_200px]">
+            <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_200px] lg:h-[280px]">
               {/* Left section — Month nav + Stats */}
               <div className="p-4 hidden lg:block border-r border-border">
                 {/* Month Navigator */}
@@ -1262,7 +1262,7 @@ export default function Habits() {
               </div>
 
               {/* Center section — Quote + Rings + Top Habits */}
-              <div className="p-6">
+              <div className="p-6 overflow-y-auto">
                 {/* Quote at top center */}
                 {(() => {
                   const currentQuote = MOTIVATIONAL_QUOTES[quoteIndex];
