@@ -3,7 +3,6 @@ import { createPortal } from "react-dom";
 import { format, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay, parseISO } from "date-fns";
 import { extractImagesFromTiptapJSON } from "@/lib/editorUtils";
 import {
-  Settings,
   Save,
   ChevronLeft,
   ChevronRight,
@@ -36,7 +35,6 @@ import {
 } from "@/components/journal/JournalTiptapEditor";
 import { JournalSidebarPanel } from "@/components/journal/JournalSidebarPanel";
 import { JournalDateDetailsPanel } from "@/components/journal/JournalDateDetailsPanel";
-import { JournalSettingsModal } from "@/components/journal/JournalSettingsModal";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { JournalEntry, JournalTemplate, JOURNAL_SKINS, DEFAULT_TEMPLATE } from "@/components/journal/types";
@@ -152,7 +150,7 @@ export default function Journal() {
   const [content, setContent] = useState("");
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved");
   const [isLoading, setIsLoading] = useState(true);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [_settingsOpen, _setSettingsOpen] = useState(false); // kept for compat
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [activeLeftPanel, setActiveLeftPanel] = useState<"calendar" | "emotions" | "progress" | null>("progress");
@@ -682,11 +680,6 @@ export default function Journal() {
           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setIsFullscreen(!isFullscreen)}>
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </Button>
-          {!isFullscreen && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setSettingsOpen(true)}>
-              <Settings className="h-4 w-4" />
-            </Button>
-          )}
           <Button variant="outline" size="sm" onClick={handleManualSave} disabled={saveStatus === "saving"} className="h-8 rounded-lg text-xs px-3">
             <Save className="h-3.5 w-3.5 mr-1" />
             Save
@@ -821,12 +814,8 @@ export default function Journal() {
         </>
       )}
 
-      <JournalSettingsModal
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-        template={template}
-        onTemplateChange={(t) => { setTemplate(t); localStorage.setItem("journal_template", JSON.stringify(t)); }}
-      />
+
+
       {showRecentEntries && (
         <JournalRecentEntriesView
           entries={entries}

@@ -39,9 +39,17 @@ export default function Emotions() {
   const [saving, setSaving] = useState(false);
 
   // Navigation state (for nav bar)
-  const [activeView, setActiveView] = useState<EmotionsView>("feel");
+  const [activeView, setActiveView] = useState<EmotionsView>(() => {
+    const saved = localStorage.getItem("settings_default_emotions_tab");
+    if (saved === "regulate" || saved === "insights") return saved as EmotionsView;
+    return "feel";
+  });
   // Internal flow state (includes context which is not in nav)
-  const [internalView, setInternalView] = useState<"feel" | "context" | "regulate" | "insights">("feel");
+  const [internalView, setInternalView] = useState<"feel" | "context" | "regulate" | "insights">(() => {
+    const saved = localStorage.getItem("settings_default_emotions_tab");
+    if (saved === "regulate" || saved === "insights") return saved;
+    return "feel";
+  });
 
   // Emotion selection state (persisted across pages)
   const [energy, setEnergy] = useState(50);
