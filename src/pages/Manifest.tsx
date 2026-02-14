@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Sparkles, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { Sparkles, Plus, ChevronDown, ChevronUp, Calendar, BarChart3, TrendingUp } from "lucide-react";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { subDays, parseISO, isSameDay, format } from "date-fns";
@@ -13,6 +13,7 @@ import { ManifestPracticePanel } from "@/components/manifest/ManifestPracticePan
 import { ManifestSidebarPanel } from "@/components/manifest/ManifestSidebarPanel";
 import { ManifestAnalyticsModal } from "@/components/manifest/ManifestAnalyticsModal";
 import { HistoryDrawer } from "@/components/manifest/HistoryDrawer";
+import { Badge } from "@/components/ui/badge";
 
 import {
   AlertDialog,
@@ -44,7 +45,6 @@ function saveGoalExtras(goalId: string, extras: Partial<ManifestGoal>) {
     if (safeExtras.vision_image_url && safeExtras.vision_image_url.startsWith("data:")) {
       safeExtras.vision_image_url = undefined;
     }
-    // Filter out base64 from vision_images array
     if (safeExtras.vision_images) {
       safeExtras.vision_images = safeExtras.vision_images.filter((img) => !img.startsWith("data:"));
     }
@@ -92,11 +92,11 @@ export default function Manifest() {
   const [selectedGoal, setSelectedGoal] = useState<ManifestGoal | null>(null);
   const [deletingGoal, setDeletingGoal] = useState<ManifestGoal | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   const [newlyCreatedGoalId, setNewlyCreatedGoalId] = useState<string | null>(null);
   const [historyGoal, setHistoryGoal] = useState<ManifestGoal | null>(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [activeLeftPanel, setActiveLeftPanel] = useState<"calendar" | "progress" | null>(null);
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -254,7 +254,6 @@ export default function Manifest() {
           .single();
         if (error) throw error;
         goalId = data.id;
-        // Trigger energy animation for new reality
         setNewlyCreatedGoalId(goalId);
         setTimeout(() => setNewlyCreatedGoalId(null), 2000);
         toast.success("Reality created!");
@@ -292,7 +291,6 @@ export default function Manifest() {
 
   const handleSelectGoal = (goal: ManifestGoal) => {
     setSelectedGoal(goal);
-    // When selecting a goal, reset to today's date
     setSelectedDate(new Date());
   };
 
@@ -356,21 +354,8 @@ export default function Manifest() {
     if (!open) setEditingGoal(null);
   };
 
-  // Handle calendar date selection - sync with center panel
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
-    // If a goal is selected, it will now show practice for the selected date
-  };
-
-  // Dynamic greeting
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "";
-    const firstName = userName.split(" ")[0];
-    const greeting =
-      hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : hour < 21 ? "Good evening" : "Good night";
-    const emoji = hour < 12 ? "☀️" : hour < 17 ? "🌤️" : hour < 21 ? "🌅" : "🌙";
-    return firstName ? `${greeting}, ${firstName} ${emoji}` : `${greeting} ${emoji}`;
   };
 
   const getMotivationalQuote = () => {
@@ -386,18 +371,8 @@ export default function Manifest() {
     return quotes[Math.floor(new Date().getDate() % quotes.length)];
   };
 
-  const getStreakMessage = () => {
-    if (aggregateStreak === 0) {
-      return "Start your manifestation practice today — even small steps create big changes.";
-    } else if (aggregateStreak === 1) {
-      return "You practiced yesterday! Keep the momentum going with today's session.";
-    } else if (aggregateStreak < 7) {
-      return `You've been manifesting for ${aggregateStreak} days straight. Amazing consistency — keep it up!`;
-    } else if (aggregateStreak < 30) {
-      return `Incredible! ${aggregateStreak} days of manifestation. Your dedication is inspiring.`;
-    } else {
-      return `${aggregateStreak} days of aligned action! You've built a powerful manifestation habit.`;
-    }
+  const toggleLeftPanel = (panel: "calendar" | "progress") => {
+    setActiveLeftPanel((prev) => (prev === panel ? null : panel));
   };
 
   if (loading) return <PageLoadingScreen module="manifest" />;
@@ -444,7 +419,7 @@ export default function Manifest() {
           animation: float-particle 1.5s ease-out forwards;
         }
       `}</style>
-      <div className="flex flex-col w-full flex-1 bg-slate-50 dark:bg-slate-950 min-h-screen overflow-hidden">
+      <div className="flex flex-col w-full flex-1 bg-background min-h-screen overflow-hidden">
         {/* Hero */}
         <PageHero
           storageKey="manifest_hero_src"
@@ -454,41 +429,45 @@ export default function Manifest() {
           subtitle={PAGE_HERO_TEXT.manifest.subtitle}
         />
 
-        {/* Content Area - 3-column layout: [Left: Entries] [Center: Greeting+Practice] [Right: Progress+Calendar] */}
-        <div
-          className={cn(
-            "flex-1 grid gap-3 w-full px-2 sm:px-4 py-2 transition-all duration-300 overflow-hidden",
-            rightPanelCollapsed
-              ? "grid-cols-1 lg:grid-cols-[420px_1fr_64px]"
-              : "grid-cols-1 lg:grid-cols-[420px_1fr_260px]",
-          )}
-        >
-          {/* Left Panel - Entries List */}
-          <div className="hidden lg:flex flex-col h-full min-h-0">
+        {/* Content Area - 2-column layout: [Left: Goals+Calendar] [Right: Editorial or Practice] */}
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-3 w-full px-2 sm:px-4 py-2 overflow-hidden">
+          {/* ========== LEFT COLUMN: Goals List + Toggle Panels ========== */}
+          <div className="flex flex-col h-full min-h-0 gap-3">
             {/* Goals Container */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex flex-col overflow-hidden flex-1 min-h-0">
+            <div className="bg-card rounded-2xl shadow-sm border border-border flex flex-col overflow-hidden flex-1 min-h-0">
               {/* Header with Create Button */}
-              <div className="p-3 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
-                <h2 className="text-base font-semibold text-slate-800 dark:text-white">Your Realities</h2>
-                <Button
-                  onClick={() => setShowCreateModal(true)}
-                  size="sm"
-                  className="rounded-lg h-8 px-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all text-xs"
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1" /> New
-                </Button>
+              <div className="p-3 flex items-center justify-between border-b border-border flex-shrink-0">
+                <h2 className="text-base font-semibold text-foreground">Your Realities</h2>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => setShowAnalytics(true)}
+                    variant="ghost"
+                    size="sm"
+                    className="rounded-lg h-8 px-2 text-muted-foreground"
+                  >
+                    <BarChart3 className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    onClick={() => setShowCreateModal(true)}
+                    size="sm"
+                    className="rounded-lg h-8 px-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all text-xs"
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" /> New
+                  </Button>
+                </div>
               </div>
+
               {activeGoals.length === 0 ? (
                 <div className="p-3 flex-1 flex items-center justify-center">
-                  <Card className="rounded-xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900 w-full">
+                  <Card className="rounded-xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-card w-full">
                     <CardContent className="py-8 px-4 text-center">
                       <div className="mx-auto mb-3 h-10 w-10 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg">
                         <Sparkles className="h-5 w-5 text-white" />
                       </div>
-                      <h3 className="text-base font-semibold text-slate-800 dark:text-white mb-1">
+                      <h3 className="text-base font-semibold text-foreground mb-1">
                         Start Your First Reality
                       </h3>
-                      <p className="text-slate-500 mb-3 text-xs max-w-xs mx-auto">
+                      <p className="text-muted-foreground mb-3 text-xs max-w-xs mx-auto">
                         Write a belief in present tense and practice it daily.
                       </p>
                       <Button
@@ -501,10 +480,7 @@ export default function Manifest() {
                   </Card>
                 </div>
               ) : (
-                <div
-                  className="overflow-y-auto flex-1 min-h-0 p-2 custom-scrollbar relative"
-                  style={{ maxHeight: "calc(5 * 140px + 4 * 8px)" }}
-                >
+                <div className="overflow-y-auto flex-1 min-h-0 p-2 custom-scrollbar relative">
                   <div className="space-y-2">
                     {activeGoals.map((goal) => {
                       const { streak, momentum } = getGoalMetrics(goal);
@@ -523,7 +499,6 @@ export default function Manifest() {
                             onComplete={() => handleCompleteGoal(goal)}
                             onImageUpdate={fetchData}
                           />
-                          {/* Energy particles effect for new reality */}
                           {isNewlyCreated && (
                             <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
                               <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-teal-500/20 via-cyan-500/20 to-teal-500/20" />
@@ -544,27 +519,23 @@ export default function Manifest() {
                       );
                     })}
                   </div>
-                  {/* Fade indicator at bottom */}
-                  {activeGoals.length > 5 && (
-                    <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white dark:from-slate-900 to-transparent pointer-events-none" />
-                  )}
                 </div>
               )}
 
               {/* Completed Realities Section */}
               {completedGoals.length > 0 && (
-                <div className="border-t border-slate-100 dark:border-slate-800">
+                <div className="border-t border-border">
                   <button
                     onClick={() => setShowCompleted(!showCompleted)}
-                    className="w-full p-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                    className="w-full p-3 flex items-center justify-between hover:bg-muted/50 transition-colors"
                   >
-                    <span className="text-xs font-medium text-slate-500">
+                    <span className="text-xs font-medium text-muted-foreground">
                       Manifested Realities ({completedGoals.length})
                     </span>
                     {showCompleted ? (
-                      <ChevronUp className="h-4 w-4 text-slate-400" />
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
                     ) : (
-                      <ChevronDown className="h-4 w-4 text-slate-400" />
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
                     )}
                   </button>
                   {showCompleted && (
@@ -592,19 +563,58 @@ export default function Manifest() {
                 </div>
               )}
             </div>
-          </div>
 
-          {/* Center - Greeting + Practice Panel */}
-          <div className="flex flex-col min-w-0 min-h-0 gap-3 h-full overflow-y-auto">
-            {/* Greeting Section - Top of center panel */}
-            <div className="bg-gradient-to-r from-teal-50 via-cyan-50 to-emerald-50 dark:from-teal-900/20 dark:via-cyan-900/20 dark:to-emerald-900/20 rounded-xl p-3 border border-teal-100/50 dark:border-teal-800/50">
-              <h2 className="text-base font-semibold text-slate-800 dark:text-white">{getGreeting()}</h2>
-              <p className="text-xs text-teal-600 dark:text-teal-400 mt-0.5">{getStreakMessage()}</p>
+            {/* Toggle Buttons Row */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button
+                variant={activeLeftPanel === "calendar" ? "default" : "outline"}
+                size="sm"
+                className={cn(
+                  "rounded-xl h-9 text-xs gap-1.5 flex-1",
+                  activeLeftPanel === "calendar" && "bg-gradient-to-r from-teal-500 to-cyan-500 text-white border-0"
+                )}
+                onClick={() => toggleLeftPanel("calendar")}
+              >
+                <Calendar className="h-3.5 w-3.5" />
+                Calendar
+              </Button>
+              <Button
+                variant={activeLeftPanel === "progress" ? "default" : "outline"}
+                size="sm"
+                className={cn(
+                  "rounded-xl h-9 text-xs gap-1.5 flex-1",
+                  activeLeftPanel === "progress" && "bg-gradient-to-r from-teal-500 to-cyan-500 text-white border-0"
+                )}
+                onClick={() => toggleLeftPanel("progress")}
+              >
+                <TrendingUp className="h-3.5 w-3.5" />
+                Progress
+              </Button>
             </div>
 
-            {/* Practice Panel */}
+            {/* Expandable Panel Area */}
+            {activeLeftPanel && (
+              <div className="flex-shrink-0 max-h-[400px] overflow-y-auto">
+                <ManifestSidebarPanel
+                  selectedDate={selectedDate}
+                  onDateSelect={handleDateSelect}
+                  goals={goals}
+                  practices={practices}
+                  activeCount={activeGoals.length}
+                  streak={aggregateStreak}
+                  avgMomentum={avgMomentum}
+                  onOpenAnalytics={() => setShowAnalytics(true)}
+                  section={activeLeftPanel}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* ========== RIGHT COLUMN: Editorial or Practice Panel ========== */}
+          <div className="hidden lg:flex flex-col h-full min-h-0 overflow-y-auto">
             {selectedGoal ? (
-              <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex-1 overflow-hidden">
+              /* Practice Panel - replaces editorial when a goal is selected */
+              <div className="bg-card rounded-2xl shadow-sm border border-border flex-1 overflow-hidden">
                 <ManifestPracticePanel
                   goal={selectedGoal}
                   streak={getGoalMetrics(selectedGoal).streak}
@@ -620,35 +630,77 @@ export default function Manifest() {
                 />
               </div>
             ) : (
-              <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex-1 p-8 flex flex-col items-center justify-center">
-                <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-teal-100 to-cyan-100 dark:from-teal-900/30 dark:to-cyan-900/30 flex items-center justify-center mb-4">
-                  <Sparkles className="h-8 w-8 text-teal-500" />
+              /* Editorial Section - default view */
+              <div className="flex flex-col gap-6 py-6 px-5">
+                {/* Badge */}
+                <Badge variant="secondary" className="w-fit rounded-full px-3 py-1 gap-1.5">
+                  <Sparkles className="h-3 w-3" />
+                  Manifestation
+                </Badge>
+
+                {/* Title */}
+                <div>
+                  <h1 className="text-3xl font-light text-foreground tracking-tight leading-tight">
+                    Manifest Your
+                  </h1>
+                  <h1 className="text-3xl font-semibold text-foreground tracking-tight leading-tight">
+                    Reality
+                  </h1>
                 </div>
-                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-1">Select a Reality</h3>
-                <p className="text-sm text-slate-400 text-center max-w-sm">
-                  Choose a reality from the left panel to start your daily practice
+
+                {/* Description */}
+                <p className="text-muted-foreground text-base leading-relaxed max-w-md">
+                  What you imagine, you create. Visualize daily, act boldly, and trust the process. Small aligned actions compound into extraordinary transformations.
                 </p>
-                <p className="text-xs text-teal-500 mt-4 text-center">{getMotivationalQuote()}</p>
+
+                {/* Divider */}
+                <div className="h-px bg-border" />
+
+                {/* Motivational quote */}
+                <div className="bg-muted/30 rounded-xl p-4 border border-border">
+                  <p className="text-sm text-muted-foreground italic leading-relaxed">
+                    "{getMotivationalQuote()}"
+                  </p>
+                </div>
+
+                {/* Stats summary */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
+                      <Sparkles className="h-4 w-4 text-teal-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{activeGoals.length} Active {activeGoals.length === 1 ? "Reality" : "Realities"}</p>
+                      <p className="text-xs text-muted-foreground">Select one to begin practicing</p>
+                    </div>
+                  </div>
+
+                  {aggregateStreak > 0 && (
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                        <span className="text-sm font-bold text-orange-600">{aggregateStreak}</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Day Streak</p>
+                        <p className="text-xs text-muted-foreground">Consecutive practice days</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {avgMomentum > 0 && (
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
+                        <TrendingUp className="h-4 w-4 text-cyan-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{avgMomentum}% Momentum</p>
+                        <p className="text-xs text-muted-foreground">Average across all realities</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
-          </div>
-
-          {/* Right Panel - Progress & Calendar */}
-          <div
-            className={cn("hidden lg:flex flex-col transition-all duration-300 h-full", rightPanelCollapsed && "w-16")}
-          >
-            <ManifestSidebarPanel
-              selectedDate={selectedDate}
-              onDateSelect={handleDateSelect}
-              goals={goals}
-              practices={practices}
-              isCollapsed={rightPanelCollapsed}
-              onToggleCollapse={() => setRightPanelCollapsed(!rightPanelCollapsed)}
-              activeCount={activeGoals.length}
-              streak={aggregateStreak}
-              avgMomentum={avgMomentum}
-              onOpenAnalytics={() => setShowAnalytics(true)}
-            />
           </div>
         </div>
 
