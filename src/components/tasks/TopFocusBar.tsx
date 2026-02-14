@@ -242,7 +242,7 @@ export function TopFocusBar({ tasks, onStartFocus }: TopFocusBarProps) {
         </span>
 
         {/* Divider */}
-        <div className="h-3.5 w-px bg-border/60" />
+        <div className="h-3.5 w-px bg-border" />
 
         {/* Task title */}
         <p className="text-xs font-medium min-w-0 truncate text-foreground flex-1">{topTask.title}</p>

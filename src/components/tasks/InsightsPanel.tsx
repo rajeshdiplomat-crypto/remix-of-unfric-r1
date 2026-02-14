@@ -324,7 +324,7 @@ export function InsightsPanel({ tasks, compactMode, collapsed, onToggleCollapse 
   );
   if (collapsed) {
     return (
-      <div className="px-3 py-1.5 border-t border-border/20">
+      <div className="px-3 py-1.5 border-t border-border">
         <button
           onClick={onToggleCollapse}
           className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors group"
@@ -349,7 +349,7 @@ export function InsightsPanel({ tasks, compactMode, collapsed, onToggleCollapse 
                 className={cn(
                   "px-2 py-1.5 rounded-md text-[10px] font-medium transition-all text-left",
                   timePeriod === period
-                    ? "bg-background text-foreground shadow-sm border border-border/40"
+                    ? "bg-background text-foreground shadow-sm border border-border"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
@@ -368,28 +368,28 @@ export function InsightsPanel({ tasks, compactMode, collapsed, onToggleCollapse 
           </div>
           {/* KPIs - vertical stack on the left */}
           <div className="grid grid-rows-4 gap-1.5 shrink-0 w-[100px]">
-            <div className="flex items-center gap-2 rounded-lg bg-muted/20 border border-border/30 px-2">
+            <div className="flex items-center gap-2 rounded-lg bg-muted/40 border border-border px-2">
               <Calendar className="h-3 w-3 text-primary shrink-0" />
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-foreground leading-none">{pendingCount}</p>
                 <p className="text-[8px] text-muted-foreground uppercase tracking-wider">Planned</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 rounded-lg bg-muted/20 border border-border/30 px-2">
+            <div className="flex items-center gap-2 rounded-lg bg-muted/40 border border-border px-2">
               <CheckCircle className="h-3 w-3 text-chart-1 shrink-0" />
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-foreground leading-none">{completedCount}</p>
                 <p className="text-[8px] text-muted-foreground uppercase tracking-wider">Done</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 rounded-lg bg-muted/20 border border-border/30 px-2">
+            <div className="flex items-center gap-2 rounded-lg bg-muted/40 border border-border px-2">
               <AlertTriangle className="h-3 w-3 text-destructive shrink-0" />
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-foreground leading-none">{overdueCount}</p>
                 <p className="text-[8px] text-muted-foreground uppercase tracking-wider">Overdue</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 rounded-lg bg-muted/20 border border-border/30 px-2">
+            <div className="flex items-center gap-2 rounded-lg bg-muted/40 border border-border px-2">
               <ClockIcon className="h-3 w-3 text-chart-2 shrink-0" />
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-foreground leading-none">{totalFocusMinutes}<span className="text-[10px] font-normal text-muted-foreground">m</span></p>
@@ -401,7 +401,7 @@ export function InsightsPanel({ tasks, compactMode, collapsed, onToggleCollapse 
           {/* Charts - fill remaining space */}
           <div className="grid grid-cols-[1fr_1fr_160px] gap-3 flex-1 min-w-0">
           {/* Plan vs Actual */}
-          <div className="rounded-lg bg-muted/20 border border-border/30 p-2.5 flex flex-col min-h-0">
+          <div className="rounded-lg bg-muted/40 border border-border p-2.5 flex flex-col min-h-0">
             <div className="flex items-center gap-1.5 mb-1 shrink-0">
               <TrendingUp className="h-3 w-3 text-primary" />
               <span className="text-[9px] font-medium text-foreground/70 uppercase tracking-wider">Plan vs Actual</span>
@@ -448,7 +448,7 @@ export function InsightsPanel({ tasks, compactMode, collapsed, onToggleCollapse 
           </div>
 
           {/* Upcoming */}
-          <div className="rounded-lg bg-muted/20 border border-border/30 p-2.5 flex flex-col min-h-0">
+          <div className="rounded-lg bg-muted/40 border border-border p-2.5 flex flex-col min-h-0">
             <div className="flex items-center gap-1.5 mb-1 shrink-0">
               <Calendar className="h-3 w-3 text-chart-1" />
               <span className="text-[9px] font-medium text-foreground/70 uppercase tracking-wider">Upcoming</span>
@@ -482,7 +482,7 @@ export function InsightsPanel({ tasks, compactMode, collapsed, onToggleCollapse 
           </div>
 
           {/* Priority Pie */}
-          <div className="rounded-lg bg-muted/20 border border-border/30 p-2.5 flex flex-col min-h-0">
+          <div className="rounded-lg bg-muted/40 border border-border p-2.5 flex flex-col min-h-0">
             <div className="flex items-center gap-1.5 mb-1 shrink-0">
               <ClockIcon className="h-3 w-3 text-chart-2" />
               <span className="text-[9px] font-medium text-foreground/70 uppercase tracking-wider">Priority</span>

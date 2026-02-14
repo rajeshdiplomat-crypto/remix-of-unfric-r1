@@ -204,7 +204,7 @@ export function KanbanBoardView({
   return (
     <div className="space-y-4">
       {/* Board Mode Selector */}
-      <div className="flex items-center gap-1 border-b border-border/30 pb-2">
+      <div className="flex items-center gap-1 border-b border-border pb-2">
         {MODE_LABELS.map(({ mode, label }) => (
           <Button
             key={mode}

@@ -25,7 +25,7 @@ interface TasksHeaderProps {
   onTagFilterChange?: (tag: string) => void;
 }
 
-const controlBase = "h-9 rounded-xl bg-background/70 border-border/40 shadow-sm";
+const controlBase = "h-9 rounded-xl bg-background border-border shadow-sm";
 
 export function TasksHeader({
   searchQuery,
