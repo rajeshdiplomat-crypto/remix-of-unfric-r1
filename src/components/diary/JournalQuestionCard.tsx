@@ -267,7 +267,7 @@ export function JournalQuestionCard({
       </div>
 
       {/* Body */}
-      <CardContent className="px-4 pb-2 pt-2">
+      <CardContent className="px-4 pb-2 pt-2 py-[4px]">
         {/* Title (Question) */}
         <h3 className="text-base font-medium text-foreground mb-2">
           {questionLabel}
