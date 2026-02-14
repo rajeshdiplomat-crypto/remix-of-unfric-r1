@@ -26,7 +26,6 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 import {
@@ -444,7 +443,7 @@ export default function Manifest() {
           animation: float-particle 1.5s ease-out forwards;
         }
       `}</style>
-      <div className="flex flex-col w-full flex-1 bg-slate-50 dark:bg-slate-950 min-h-screen overflow-hidden">
+      <div className="flex flex-col w-full flex-1 bg-background min-h-screen overflow-hidden">
         {/* Hero */}
         <PageHero
           storageKey="manifest_hero_src"
@@ -454,58 +453,60 @@ export default function Manifest() {
           subtitle={PAGE_HERO_TEXT.manifest.subtitle}
         />
 
-        {/* Content Area - 3-column layout: [Left: Entries] [Center: Greeting+Practice] [Right: Progress+Calendar] */}
+        {/* Content Area - 3-column layout */}
         <div
           className={cn(
-            "flex-1 grid gap-3 w-full px-2 sm:px-4 py-2 transition-all duration-300 overflow-hidden",
+            "flex-1 grid gap-6 w-full px-6 lg:px-8 py-6 transition-all duration-300 overflow-hidden",
             rightPanelCollapsed
-              ? "grid-cols-1 lg:grid-cols-[420px_1fr_64px]"
-              : "grid-cols-1 lg:grid-cols-[420px_1fr_260px]",
+              ? "grid-cols-1 lg:grid-cols-[22%_1fr_64px]"
+              : "grid-cols-1 lg:grid-cols-[22%_1fr_22%]",
           )}
         >
           {/* Left Panel - Entries List */}
           <div className="hidden lg:flex flex-col h-full min-h-0">
             {/* Goals Container */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex flex-col overflow-hidden flex-1 min-h-0">
+            <div className="flex flex-col overflow-hidden flex-1 min-h-0">
               {/* Header with Create Button */}
-              <div className="p-3 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
-                <h2 className="text-base font-semibold text-slate-800 dark:text-white">Your Realities</h2>
+              <div className="pb-4 flex items-center justify-between flex-shrink-0">
+                <h2 className="text-sm font-medium text-muted-foreground tracking-wide">Your Realities</h2>
                 <Button
                   onClick={() => setShowCreateModal(true)}
+                  variant="ghost"
                   size="sm"
-                  className="rounded-lg h-8 px-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all text-xs"
+                  className="h-8 px-3 text-xs text-primary hover:text-primary/80"
                 >
                   <Plus className="h-3.5 w-3.5 mr-1" /> New
                 </Button>
               </div>
               {activeGoals.length === 0 ? (
-                <div className="p-3 flex-1 flex items-center justify-center">
-                  <Card className="rounded-xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900 w-full">
-                    <CardContent className="py-8 px-4 text-center">
-                      <div className="mx-auto mb-3 h-10 w-10 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg">
-                        <Sparkles className="h-5 w-5 text-white" />
-                      </div>
-                      <h3 className="text-base font-semibold text-slate-800 dark:text-white mb-1">
+                <div className="flex-1 flex items-center justify-center py-8">
+                  <div className="text-center space-y-4">
+                    <div className="mx-auto h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
+                      <Sparkles className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-foreground mb-1">
                         Start Your First Reality
                       </h3>
-                      <p className="text-slate-500 mb-3 text-xs max-w-xs mx-auto">
+                      <p className="text-muted-foreground text-xs max-w-xs mx-auto leading-relaxed">
                         Write a belief in present tense and practice it daily.
                       </p>
-                      <Button
-                        onClick={() => setShowCreateModal(true)}
-                        className="rounded-lg h-9 px-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm"
-                      >
-                        <Plus className="h-4 w-4 mr-1.5" /> Create Reality
-                      </Button>
-                    </CardContent>
-                  </Card>
+                    </div>
+                    <Button
+                      onClick={() => setShowCreateModal(true)}
+                      size="sm"
+                      className="h-9 px-5"
+                    >
+                      <Plus className="h-4 w-4 mr-1.5" /> Create Reality
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div
-                  className="overflow-y-auto flex-1 min-h-0 p-2 custom-scrollbar relative"
-                  style={{ maxHeight: "calc(5 * 140px + 4 * 8px)" }}
+                  className="overflow-y-auto flex-1 min-h-0 custom-scrollbar relative"
+                  style={{ maxHeight: "calc(5 * 152px + 4 * 20px)" }}
                 >
-                  <div className="space-y-2">
+                  <div className="space-y-5">
                     {activeGoals.map((goal) => {
                       const { streak, momentum } = getGoalMetrics(goal);
                       const isNewlyCreated = newlyCreatedGoalId === goal.id;
@@ -546,19 +547,19 @@ export default function Manifest() {
                   </div>
                   {/* Fade indicator at bottom */}
                   {activeGoals.length > 5 && (
-                    <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white dark:from-slate-900 to-transparent pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none" />
                   )}
                 </div>
               )}
 
               {/* Completed Realities Section */}
               {completedGoals.length > 0 && (
-                <div className="border-t border-slate-100 dark:border-slate-800">
+                <div className="border-t border-border/50 mt-4 pt-2">
                   <button
                     onClick={() => setShowCompleted(!showCompleted)}
-                    className="w-full p-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                    className="w-full py-3 flex items-center justify-between hover:opacity-70 transition-opacity"
                   >
-                    <span className="text-xs font-medium text-slate-500">
+                    <span className="text-xs font-normal text-muted-foreground">
                       Manifested Realities ({completedGoals.length})
                     </span>
                     {showCompleted ? (
@@ -568,7 +569,7 @@ export default function Manifest() {
                     )}
                   </button>
                   {showCompleted && (
-                    <div className="p-2 space-y-2 max-h-[300px] overflow-y-auto">
+                    <div className="pt-2 space-y-4 max-h-[300px] overflow-y-auto">
                       {completedGoals.map((goal) => {
                         const { streak, momentum } = getGoalMetrics(goal);
                         return (
@@ -595,16 +596,16 @@ export default function Manifest() {
           </div>
 
           {/* Center - Greeting + Practice Panel */}
-          <div className="flex flex-col min-w-0 min-h-0 gap-3 h-full overflow-y-auto">
-            {/* Greeting Section - Top of center panel */}
-            <div className="bg-gradient-to-r from-teal-50 via-cyan-50 to-emerald-50 dark:from-teal-900/20 dark:via-cyan-900/20 dark:to-emerald-900/20 rounded-xl p-3 border border-teal-100/50 dark:border-teal-800/50">
-              <h2 className="text-base font-semibold text-slate-800 dark:text-white">{getGreeting()}</h2>
-              <p className="text-xs text-teal-600 dark:text-teal-400 mt-0.5">{getStreakMessage()}</p>
+          <div className="flex flex-col min-w-0 min-h-0 gap-6 h-full overflow-y-auto">
+            {/* Greeting Section */}
+            <div className="rounded-xl px-6 py-5 bg-muted/40 border border-border/30">
+              <h2 className="text-base font-normal text-foreground">{getGreeting()}</h2>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{getStreakMessage()}</p>
             </div>
 
             {/* Practice Panel */}
             {selectedGoal ? (
-              <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex-1 overflow-hidden">
+              <div className="flex-1 overflow-hidden rounded-xl border border-border/30">
                 <ManifestPracticePanel
                   goal={selectedGoal}
                   streak={getGoalMetrics(selectedGoal).streak}
@@ -620,22 +621,24 @@ export default function Manifest() {
                 />
               </div>
             ) : (
-              <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex-1 p-8 flex flex-col items-center justify-center">
-                <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-teal-100 to-cyan-100 dark:from-teal-900/30 dark:to-cyan-900/30 flex items-center justify-center mb-4">
-                  <Sparkles className="h-8 w-8 text-teal-500" />
+              <div className="flex-1 flex flex-col items-center justify-center py-16 space-y-6">
+                <div className="h-14 w-14 rounded-xl bg-muted flex items-center justify-center">
+                  <Sparkles className="h-7 w-7 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-1">Select a Reality</h3>
-                <p className="text-sm text-slate-400 text-center max-w-sm">
-                  Choose a reality from the left panel to start your daily practice
-                </p>
-                <p className="text-xs text-teal-500 mt-4 text-center">{getMotivationalQuote()}</p>
+                <div className="text-center space-y-2">
+                  <h3 className="text-base font-normal text-foreground">Select a Reality</h3>
+                  <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
+                    Choose a reality from the left panel to start your daily practice
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground/60 text-center max-w-md italic">{getMotivationalQuote()}</p>
               </div>
             )}
           </div>
 
           {/* Right Panel - Progress & Calendar */}
           <div
-            className={cn("hidden lg:flex flex-col transition-all duration-300 h-full", rightPanelCollapsed && "w-16")}
+            className={cn("hidden lg:flex flex-col transition-all duration-300 h-full min-h-0", rightPanelCollapsed && "w-16")}
           >
             <ManifestSidebarPanel
               selectedDate={selectedDate}
