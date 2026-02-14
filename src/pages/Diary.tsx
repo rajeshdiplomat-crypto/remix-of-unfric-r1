@@ -469,8 +469,8 @@ export default function Diary() {
 
       {/* 3-Column Layout Below Hero */}
       <div className="flex flex-1 w-full overflow-hidden min-h-0">
-        {/* Left Sidebar - Editorial style, wider like Emotions page */}
-        <aside className="hidden lg:flex flex-col w-[380px] shrink-0 h-full border-r border-border/20 bg-background">
+        {/* Left Sidebar - Editorial style */}
+        <aside className="hidden lg:flex flex-col w-[380px] shrink-0 h-full min-h-0 overflow-y-auto border-r border-border/20 bg-background">
           <DiaryLeftSidebar 
             userName={userName}
             filter={filter}
@@ -479,7 +479,7 @@ export default function Diary() {
         </aside>
 
         {/* Center Feed - Scrollable */}
-        <main className="flex-1 min-w-0 h-full overflow-y-auto bg-muted/20">
+        <main className="flex-1 min-w-0 min-h-0 h-full overflow-y-auto bg-muted/20">
           <div className="w-full px-4 lg:px-6 py-4">
 
           {/* Search Bar */}
@@ -582,8 +582,8 @@ export default function Diary() {
         </div>
       </main>
 
-      {/* Right Sidebar - Hidden on mobile/tablet, visible on large desktop */}
-      <aside className="hidden xl:flex flex-col w-[340px] shrink-0 h-full overflow-y-auto border-l border-border/20 bg-background/50 p-4 gap-4">
+      {/* Right Sidebar */}
+      <aside className="hidden xl:flex flex-col w-[340px] shrink-0 h-full min-h-0 overflow-y-auto border-l border-border/20 bg-background/50 p-4 gap-4">
         <DiaryProfileCard
           userName={userName}
           userEmail={user?.email || ""}

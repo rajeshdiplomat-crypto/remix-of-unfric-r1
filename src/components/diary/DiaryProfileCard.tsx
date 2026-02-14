@@ -1,10 +1,13 @@
-import { Calendar, Award, Sparkles, Trophy, Star, Flame, Zap } from "lucide-react";
-import { format } from "date-fns";
+import { useRef, useState } from "react";
+import { Award, Sparkles, Trophy, Star, Flame, Zap, Camera, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import type { TimeRange } from "./types";
 
 interface DiaryProfileCardProps {
@@ -40,8 +43,57 @@ export function DiaryProfileCard({
   onTimeRangeChange,
   smartInsight,
 }: DiaryProfileCardProps) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState(avatarUrl);
+
   const displayName = userName.charAt(0).toUpperCase() + userName.slice(1);
   const initials = displayName.slice(0, 2).toUpperCase();
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Please select an image file", variant: "destructive" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Image must be under 5MB", variant: "destructive" });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const filePath = `${user.id}/avatar.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
+
+      const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
+
+      await supabase.from("profiles").update({ avatar_url: urlWithCacheBust }).eq("user_id", user.id);
+
+      setCurrentAvatarUrl(urlWithCacheBust);
+      toast({ title: "Profile photo updated!" });
+    } catch (err) {
+      console.error("Avatar upload error:", err);
+      toast({ title: "Failed to upload photo", variant: "destructive" });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   // Calculate overall performance score
   const taskPercent = metrics.tasks.planned > 0
@@ -69,20 +121,39 @@ export function DiaryProfileCard({
     { name: "Emotions", stat: `${metrics.emotions?.checkIns || 0}`, percent: emotionsPercent, bar: "[&>div]:bg-rose-400" },
   ];
 
+  const resolvedAvatar = currentAvatarUrl || avatarUrl;
+
   return (
     <Card className="bg-card border-border/40 overflow-hidden">
-      {/* Cover banner */}
-      <div className="h-16 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/5" />
-
-      <CardContent className="pt-0 -mt-8 space-y-4">
-        {/* Avatar + Badge row */}
-        <div className="flex items-end justify-between">
-          <Avatar className="h-16 w-16 border-4 border-card shadow-sm">
-            <AvatarImage src={avatarUrl} alt={displayName} />
-            <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+      <CardContent className="pt-5 space-y-4">
+        {/* Avatar with upload + Badge row */}
+        <div className="flex items-start justify-between">
+          <div className="relative group">
+            <Avatar className="h-16 w-16 border-2 border-border shadow-sm">
+              <AvatarImage src={resolvedAvatar} alt={displayName} />
+              <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="absolute inset-0 flex items-center justify-center bg-foreground/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            >
+              {uploading ? (
+                <Loader2 className="h-5 w-5 text-background animate-spin" />
+              ) : (
+                <Camera className="h-5 w-5 text-background" />
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarUpload}
+              className="hidden"
+            />
+          </div>
           {/* Performance Badge */}
           <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold", badge.bg, badge.color)}>
             <BadgeIcon className="h-3.5 w-3.5" />
