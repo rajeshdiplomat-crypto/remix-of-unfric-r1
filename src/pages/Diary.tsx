@@ -378,10 +378,10 @@ export default function Diary() {
       const media: string[] = [];
       if (visionUrl && typeof visionUrl === "string" && visionUrl.startsWith("http")) media.push(visionUrl);
 
-      // Collect proof images
+      // Collect proof images (can be http URLs or base64 data URIs)
       if (practice.proofs?.length) {
         practice.proofs.forEach((p: any) => {
-          if (p.image_url && typeof p.image_url === "string" && p.image_url.startsWith("http") && !media.includes(p.image_url)) {
+          if (p.image_url && typeof p.image_url === "string" && !media.includes(p.image_url)) {
             media.push(p.image_url);
           }
         });
@@ -402,7 +402,6 @@ export default function Diary() {
         contentLines.push(`🙏 Gratitude:`);
         practice.gratitudes.forEach((g: any) => { if (g.text) contentLines.push(`  • ${g.text}`); });
       }
-      if (practice.alignment) contentLines.push(`🎯 Alignment: ${practice.alignment}/10`);
       if (practice.growth_note) contentLines.push(`💡 ${practice.growth_note}`);
 
       feedEvents.push({
@@ -419,7 +418,6 @@ export default function Diary() {
           entry_date: practice.entry_date,
           visualization_count: practice.visualization_count,
           act_count: practice.act_count,
-          alignment: practice.alignment,
           proofs_count: practice.proofs?.length || 0,
           gratitudes_count: practice.gratitudes?.length || 0,
           growth_note: practice.growth_note,
