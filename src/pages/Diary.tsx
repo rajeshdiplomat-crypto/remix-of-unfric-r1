@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { loadActivityImage } from "@/components/habits/ActivityImageUpload";
 import { DiaryFeedCard } from "@/components/diary/DiaryFeedCard";
 import { DiaryLeftSidebar } from "@/components/diary/DiaryLeftSidebar";
-import { DiaryCreatePost } from "@/components/diary/DiaryCreatePost";
+
 import { DiaryProfileCard } from "@/components/diary/DiaryProfileCard";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { JournalQuestionCard } from "@/components/diary/JournalQuestionCard";

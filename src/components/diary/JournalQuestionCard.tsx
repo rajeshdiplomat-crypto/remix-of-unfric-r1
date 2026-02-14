@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import DOMPurify from "dompurify";
 import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,7 +10,6 @@ import {
   PenLine,
   Bookmark,
   BookmarkCheck,
-  Edit2,
   Plus,
   MessageCircle,
   Share2,
