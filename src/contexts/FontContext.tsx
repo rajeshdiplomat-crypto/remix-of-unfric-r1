@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
-export type FontPairId = "classic" | "modern" | "geometric" | "elegant" | "cursive" | "handwritten" | "monospace" | "editorial";
+export type FontPairId = "classic" | "modern" | "geometric" | "elegant" | "cursive" | "handwritten" | "monospace" | "editorial" | "angelina";
 
 export interface FontPairConfig {
   id: FontPairId;
@@ -84,6 +84,15 @@ export const FONT_PAIRS: FontPairConfig[] = [
     bodyFamily: "'Lato', system-ui, sans-serif",
     headingUrl: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&display=swap",
     bodyUrl: "https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap",
+  },
+  {
+    id: "angelina",
+    name: "Angelina",
+    description: "Great Vibes + Poppins",
+    headingFamily: "'Great Vibes', cursive",
+    bodyFamily: "'Poppins', system-ui, sans-serif",
+    headingUrl: "https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap",
+    bodyUrl: "https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap",
   },
 ];
 
