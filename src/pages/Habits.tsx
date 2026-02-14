@@ -1363,14 +1363,14 @@ export default function Habits() {
                   if (selectedHabit) {
                     const imgUrl = selectedHabit.coverImageUrl || loadActivityImage(selectedHabit.id);
                     return imgUrl ? (
-                      <>
+                      <div className="absolute inset-0">
                         <img src={imgUrl} alt={selectedHabit.name} className="w-full h-full object-cover" />
                         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3">
                           <span className="text-[10px] text-white uppercase tracking-zara">
                             {selectedHabit.name}
                           </span>
                         </div>
-                      </>
+                      </div>
                     ) : (
                       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-muted/30">
                         <Target className="h-8 w-8 text-muted-foreground opacity-30" />
