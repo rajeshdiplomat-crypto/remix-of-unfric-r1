@@ -278,8 +278,8 @@ export function DiaryFeedCard({
         </div>
       </div>
 
-      {/* Body */}
-      <CardContent className="px-4 pb-2 pt-2">
+      {/* Body - text content with padding */}
+      <CardContent className="px-4 pb-0 pt-2">
         {/* Title */}
         <h3 
           className="text-base font-medium text-foreground mb-2 cursor-pointer hover:underline"
@@ -288,7 +288,7 @@ export function DiaryFeedCard({
           {event.type === "complete" ? `Completed: ${event.title}` : event.title}
         </h3>
 
-        {/* Content - Inline expandable matching JournalQuestionCard */}
+        {/* Content - Inline expandable */}
         {contentPreview ? (
           <>
             <div 
@@ -370,66 +370,67 @@ export function DiaryFeedCard({
             )}
           </div>
         )}
+      </CardContent>
 
-        {/* Facebook-style media grid - for any module with attached images */}
-        {hasUserAttachedMedia && (() => {
-          const images = event.media!;
-          const count = images.length;
-          
-          if (count === 1) {
-            return (
-              <div className="mt-3">
-                <img src={images[0]} alt="" className="w-full rounded-lg" />
-              </div>
-            );
-          }
-          
-          if (count === 2) {
-            return (
-              <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg overflow-hidden">
-                {images.map((url, i) => (
-                  <div key={i} className="bg-muted">
-                    <img src={url} alt="" className="w-full h-auto max-h-80 object-contain mx-auto" />
-                  </div>
-                ))}
-              </div>
-            );
-          }
-          
-          if (count === 3) {
-            return (
-              <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg overflow-hidden">
-                <div className="row-span-2 bg-muted">
-                  <img src={images[0]} alt="" className="w-full h-full object-cover" />
-                </div>
-                <div className="bg-muted">
-                  <img src={images[1]} alt="" className="w-full aspect-square object-cover" />
-                </div>
-                <div className="bg-muted">
-                  <img src={images[2]} alt="" className="w-full aspect-square object-cover" />
-                </div>
-              </div>
-            );
-          }
-          
-          const extra = count - 4;
+      {/* Facebook-style edge-to-edge media - OUTSIDE CardContent for full bleed */}
+      {hasUserAttachedMedia && (() => {
+        const images = event.media!;
+        const count = images.length;
+        
+        if (count === 1) {
           return (
-            <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg overflow-hidden">
-              {images.slice(0, 4).map((url, i) => (
-                <div key={i} className="relative bg-muted">
-                  <img src={url} alt="" className="w-full aspect-square object-cover" />
-                  {i === 3 && extra > 0 && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <span className="text-2xl font-semibold text-white">+{extra}</span>
-                    </div>
-                  )}
+            <div className="mt-2">
+              <img src={images[0]} alt="" className="w-full" />
+            </div>
+          );
+        }
+        
+        if (count === 2) {
+          return (
+            <div className="mt-2 grid grid-cols-2 gap-0.5">
+              {images.map((url, i) => (
+                <div key={i} className="bg-muted">
+                  <img src={url} alt="" className="w-full h-auto max-h-80 object-contain mx-auto" />
                 </div>
               ))}
             </div>
           );
-        })()}
-
-        {/* Facebook-style counts row */}
+        }
+        
+        if (count === 3) {
+          return (
+            <div className="mt-2 grid grid-cols-2 gap-0.5">
+              <div className="row-span-2 bg-muted">
+                <img src={images[0]} alt="" className="w-full h-full object-cover" />
+              </div>
+              <div className="bg-muted">
+                <img src={images[1]} alt="" className="w-full aspect-square object-cover" />
+              </div>
+              <div className="bg-muted">
+                <img src={images[2]} alt="" className="w-full aspect-square object-cover" />
+              </div>
+            </div>
+          );
+        }
+        
+        const extra = count - 4;
+        return (
+          <div className="mt-2 grid grid-cols-2 gap-0.5">
+            {images.slice(0, 4).map((url, i) => (
+              <div key={i} className="relative bg-muted">
+                <img src={url} alt="" className="w-full aspect-square object-cover" />
+                {i === 3 && extra > 0 && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <span className="text-2xl font-semibold text-white">+{extra}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+      {/* Facebook-style counts row + action bar */}
+      <div className="px-4 pb-2">
         <div className="flex items-center justify-between mt-2 px-1">
           <div className="flex items-center gap-1.5">
             {totalReactions > 0 && (
@@ -449,10 +450,8 @@ export function DiaryFeedCard({
           </div>
         </div>
 
-        {/* Facebook-style action bar */}
         <div className="border-t border-border/50 mt-1">
           <div className="flex min-h-[44px] items-stretch">
-            {/* Like */}
             <Popover>
               <PopoverTrigger asChild>
                 <button
@@ -490,7 +489,6 @@ export function DiaryFeedCard({
               </PopoverContent>
             </Popover>
 
-            {/* Comment */}
             <button
               onClick={() => setShowComments(!showComments)}
               className={cn(
@@ -502,7 +500,6 @@ export function DiaryFeedCard({
               <span>Comment</span>
             </button>
 
-            {/* Share */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex-1 flex items-center justify-center gap-2 py-2.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors">
@@ -528,10 +525,8 @@ export function DiaryFeedCard({
           </div>
         </div>
 
-        {/* Comments section */}
         {showComments && (
           <div className="mt-3 pt-3 border-t border-border/30 space-y-3">
-            {/* Comment input */}
             <div className="flex gap-2">
               <Input
                 placeholder="Write a comment..."
@@ -544,24 +539,14 @@ export function DiaryFeedCard({
                 <Send className="h-4 w-4" />
               </Button>
             </div>
-
-            {/* Comments list */}
             {topLevelComments.map((comment) => (
               <div key={comment.id} className="space-y-2">
                 <div className="bg-muted/30 rounded-lg p-3">
                   {editingComment === comment.id ? (
                     <div className="flex gap-2">
-                      <Input
-                        value={editText}
-                        onChange={(e) => setEditText(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleEditComment(comment.id)}
-                      />
-                      <Button size="sm" onClick={() => handleEditComment(comment.id)}>
-                        Save
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setEditingComment(null)}>
-                        Cancel
-                      </Button>
+                      <Input value={editText} onChange={(e) => setEditText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleEditComment(comment.id)} />
+                      <Button size="sm" onClick={() => handleEditComment(comment.id)}>Save</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingComment(null)}>Cancel</Button>
                     </div>
                   ) : (
                     <>
@@ -569,37 +554,17 @@ export function DiaryFeedCard({
                       <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
                         <span>{format(new Date(comment.created_at), "MMM d, h:mm a")}</span>
                         {comment.is_edited && <span>(edited)</span>}
-                        <button
-                          className="hover:text-foreground"
-                          onClick={() => {
-                            setReplyingTo(comment.id);
-                            setReplyText("");
-                          }}
-                        >
-                          Reply
-                        </button>
+                        <button className="hover:text-foreground" onClick={() => { setReplyingTo(comment.id); setReplyText(""); }}>Reply</button>
                         {comment.user_id === currentUserId && (
                           <>
-                            <button
-                              className="hover:text-foreground"
-                              onClick={() => {
-                                setEditingComment(comment.id);
-                                setEditText(comment.text);
-                              }}
-                            >
-                              Edit
-                            </button>
-                            <button className="hover:text-destructive" onClick={() => onDeleteComment(comment.id)}>
-                              Delete
-                            </button>
+                            <button className="hover:text-foreground" onClick={() => { setEditingComment(comment.id); setEditText(comment.text); }}>Edit</button>
+                            <button className="hover:text-destructive" onClick={() => onDeleteComment(comment.id)}>Delete</button>
                           </>
                         )}
                       </div>
                     </>
                   )}
                 </div>
-
-                {/* Replies */}
                 {getReplies(comment.id).map((reply) => (
                   <div key={reply.id} className="ml-6 bg-muted/20 rounded-lg p-3">
                     <p className="text-sm">{reply.text}</p>
@@ -607,24 +572,14 @@ export function DiaryFeedCard({
                       <span>{format(new Date(reply.created_at), "MMM d, h:mm a")}</span>
                       {reply.is_edited && <span>(edited)</span>}
                       {reply.user_id === currentUserId && (
-                        <button className="hover:text-destructive" onClick={() => onDeleteComment(reply.id)}>
-                          Delete
-                        </button>
+                        <button className="hover:text-destructive" onClick={() => onDeleteComment(reply.id)}>Delete</button>
                       )}
                     </div>
                   </div>
                 ))}
-
-                {/* Reply input */}
                 {replyingTo === comment.id && (
                   <div className="ml-6 flex gap-2">
-                    <Input
-                      placeholder="Write a reply..."
-                      value={replyText}
-                      onChange={(e) => setReplyText(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleAddReply(comment.id)}
-                      className="flex-1 bg-muted/30"
-                    />
+                    <Input placeholder="Write a reply..." value={replyText} onChange={(e) => setReplyText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAddReply(comment.id)} className="flex-1 bg-muted/30" />
                     <Button size="icon" onClick={() => handleAddReply(comment.id)} disabled={!replyText.trim()}>
                       <Reply className="h-4 w-4" />
                     </Button>
@@ -634,7 +589,7 @@ export function DiaryFeedCard({
             ))}
           </div>
         )}
-      </CardContent>
+      </div>
         </div>
       </div>
     </Card>
