@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { format, formatDistanceToNow } from "date-fns";
-import DOMPurify from "dompurify";
+import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,6 @@ import {
   Share2,
   Send,
   MoreHorizontal,
-  Trash2,
   Copy,
   Bookmark,
   BookmarkCheck,
@@ -49,7 +47,6 @@ import {
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { getPresetImage } from "@/lib/presetImages";
 import type { FeedEvent, FeedReaction, FeedComment, ModuleConfig, SourceModule } from "./types";
 
 // Reaction types matching JournalQuestionCard
@@ -61,7 +58,7 @@ const REACTION_TYPES = [
   { type: 'support', emoji: '🤝', icon: HandHeart, label: 'Support' },
 ] as const;
 
-type ReactionType = typeof REACTION_TYPES[number]['type'];
+// Module avatar images and config
 
 // Soft pastel module colors matching the new design system
 // Default circular images for each module
@@ -125,8 +122,6 @@ export function DiaryFeedCard({
   const IconComponent = config.icon;
   const userReaction = reactions.find((r) => r.user_id === currentUserId)?.emoji;
 
-  // Check if user actually attached media (not preset images)
-  // Check if user actually attached media (not preset images)
   const hasUserAttachedMedia = event.media && event.media.length > 0;
 
   // Group reactions by emoji
