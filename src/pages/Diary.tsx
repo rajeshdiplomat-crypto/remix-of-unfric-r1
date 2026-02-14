@@ -378,14 +378,23 @@ export default function Diary() {
       const media: string[] = [];
       if (visionUrl && typeof visionUrl === "string" && visionUrl.startsWith("http")) media.push(visionUrl);
 
+      // Build rich summary from all practice fields
+      const summaryParts: string[] = [];
+      if (practice.visualization_count > 0) summaryParts.push(`🧘 Visualized ${practice.visualization_count}x`);
+      if (practice.act_count > 0) summaryParts.push(`⚡ ${practice.act_count} action(s) taken`);
+      if (practice.proofs?.length > 0) summaryParts.push(`📸 ${practice.proofs.length} proof(s) logged`);
+      if (practice.gratitudes?.length > 0) summaryParts.push(`🙏 ${practice.gratitudes.length} gratitude(s)`);
+      if (practice.alignment) summaryParts.push(`🎯 Alignment: ${practice.alignment}/10`);
+      if (practice.growth_note) summaryParts.push(`💡 ${practice.growth_note}`);
+
       feedEvents.push({
         user_id: user.id,
         type: "checkin",
         source_module: "manifest",
         source_id: practice.id,
         title: goalTitle,
-        summary: `Completed daily practice ✓`,
-        content_preview: practice.growth_note || `Visualized ${practice.visualization_count || 0} time(s), ${practice.act_count || 0} action(s)`,
+        summary: `Daily practice completed ✓`,
+        content_preview: summaryParts.length > 0 ? summaryParts.join("\n") : "Completed daily practice",
         media,
         metadata: {
           goal_id: practice.goal_id,
@@ -393,6 +402,9 @@ export default function Diary() {
           visualization_count: practice.visualization_count,
           act_count: practice.act_count,
           alignment: practice.alignment,
+          proofs_count: practice.proofs?.length || 0,
+          gratitudes_count: practice.gratitudes?.length || 0,
+          growth_note: practice.growth_note,
         },
         created_at: practice.created_at,
       });
