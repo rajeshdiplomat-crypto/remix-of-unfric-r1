@@ -680,23 +680,7 @@ export default function Journal() {
             <BarChart3 className="h-4 w-4" />
           </Button>
         </div>
-        <div className="hidden md:flex flex-1 max-w-md mx-4">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
-            <input
-              type="text"
-              placeholder="Search journal entries..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-10 py-1.5 text-sm bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-200 focus:border-stone-300 transition-all font-medium text-slate-700 dark:text-slate-200"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 rounded-lg transition-colors" title="Clear search">
-                <X className="h-3.5 w-3.5 text-slate-400" />
-              </button>
-            )}
-          </div>
-        </div>
+        {/* Search bar removed */}
         <div className="flex items-center gap-1.5">
           <div
             className={cn(
