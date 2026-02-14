@@ -647,7 +647,7 @@ export default function Tasks() {
           <div className="flex flex-col gap-4 flex-1 min-h-0">
             {/* Combined Card: Focus + Clock + Insights */}
             {activeTab !== "files" && (
-              <div className="rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm overflow-hidden shrink-0 flex items-stretch">
+              <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden shrink-0 flex items-stretch">
                 {/* Left column: Focus bar + Insights */}
                 <div className="flex-1 min-w-0 flex flex-col">
                   <div className="p-2">
