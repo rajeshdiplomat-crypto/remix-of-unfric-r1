@@ -260,7 +260,7 @@ function StatCard({
 
   return (
     <div
-      className="group relative overflow-hidden rounded-2xl bg-card/60 backdrop-blur-xl border border-white/10 hover:border-white/20 shadow-sm hover:shadow-lg transition-all duration-500 animate-in fade-in slide-in-from-bottom-2"
+      className="group relative overflow-hidden rounded-2xl bg-card border border-border shadow-sm hover:shadow-md transition-all duration-500 animate-in fade-in slide-in-from-bottom-2"
       style={{ animationDelay: `${index * 75}ms`, animationFillMode: "backwards" }}
     >
       {/* Gradient glow effect */}
@@ -659,7 +659,7 @@ export default function Notes() {
             {/* Modern Floating Toolbar */}
             <div className="relative">
               {/* Glassmorphism toolbar container */}
-              <div className="rounded-2xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg shadow-black/5">
+              <div className="rounded-2xl bg-card border border-border shadow-sm">
                 <div className="p-2 flex flex-wrap items-center gap-2">
                   {/* View Mode Switcher */}
                   <NotesViewSwitcher currentView={notesView} onViewChange={setNotesView} />

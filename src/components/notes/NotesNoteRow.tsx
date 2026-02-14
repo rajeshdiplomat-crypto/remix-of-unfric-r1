@@ -121,7 +121,7 @@ export function NotesNoteRow({
 
       {/* Time - sleek pill */}
       <div className="flex items-center gap-2 shrink-0">
-        <span className="text-[10px] text-muted-foreground/50 bg-muted/30 px-2 py-1 rounded-full flex items-center gap-1">
+        <span className="text-[10px] text-muted-foreground/50 bg-muted/50 px-2 py-1 rounded-full flex items-center gap-1 border border-border/50">
           <Clock className="h-2.5 w-2.5" />
           {formatDate(note.updatedAt)}
         </span>
@@ -158,7 +158,7 @@ export function NotesNoteRow({
             <MoreHorizontal className="h-3.5 w-3.5" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-lg border border-border/50">
+        <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-lg border border-border">
           <DropdownMenuLabel className="text-xs text-muted-foreground">Actions</DropdownMenuLabel>
 
           {/* Pin/Unpin option */}
