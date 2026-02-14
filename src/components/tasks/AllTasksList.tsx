@@ -152,9 +152,9 @@ export function AllTasksList({
   }
 
   return (
-    <div className="h-full flex flex-col bg-card rounded-2xl border border-border/50 overflow-hidden">
+    <div className="h-full flex flex-col bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
             <ListChecks className="h-4 w-4 text-primary-foreground" />
@@ -189,10 +189,10 @@ export function AllTasksList({
                   "group p-3 rounded-xl border cursor-pointer transition-all",
                   "hover:shadow-md hover:border-primary/30",
                   task.is_completed
-                    ? "bg-muted/30 border-border/30"
+                    ? "bg-muted/50 border-border"
                     : task.status === "overdue"
-                      ? "bg-destructive/5 border-destructive/20"
-                      : "bg-background border-border/50"
+                      ? "bg-destructive/10 border-destructive/30 shadow-sm"
+                      : "bg-background border-border shadow-sm"
                 )}
               >
                 <div className="flex items-start justify-between gap-2">
