@@ -11,6 +11,7 @@ interface JournalDateDetailsPanelProps {
   wordCount: number;
   streak: number;
   skin?: JournalSkin;
+  section?: "progress" | "emotions" | "all";
 }
 
 interface EmotionContext {
@@ -35,6 +36,7 @@ export const JournalDateDetailsPanel = memo(function JournalDateDetailsPanel({
   wordCount,
   streak,
   skin,
+  section = "all",
 }: JournalDateDetailsPanelProps) {
   const { user } = useAuth();
   const [emotions, setEmotions] = useState<EmotionEntry[]>([]);
@@ -163,129 +165,128 @@ export const JournalDateDetailsPanel = memo(function JournalDateDetailsPanel({
     return `Incredible ${streak}-day journey!`;
   };
 
+  const showProgress = section === "progress" || section === "all";
+  const showEmotions = section === "emotions" || section === "all";
+
   return (
-    <div className="w-full h-full overflow-auto space-y-4 pb-4">
+    <div className="w-full overflow-auto space-y-4 pb-4">
       {/* Dashboard Box - Journal-focused nudges only */}
-      <div className="bg-muted/30 rounded-2xl shadow-sm border border-border overflow-hidden">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50">
-          <div className="p-1.5 bg-muted rounded-lg">
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <span className="text-sm font-semibold text-foreground">Your Progress</span>
-        </div>
-        <div className="p-3 space-y-2">
-          <div className="flex items-start gap-3 bg-background rounded-xl p-2.5 border border-border">
-            <div className="p-1 bg-muted rounded-lg mt-0.5">
-              <PenLine className="h-3 w-3 text-muted-foreground" />
+      {showProgress && (
+        <div className="bg-muted/30 rounded-2xl shadow-sm border border-border overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50">
+            <div className="p-1.5 bg-muted rounded-lg">
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">{getWritingSentence()}</p>
+            <span className="text-sm font-semibold text-foreground">Your Progress</span>
           </div>
+          <div className="p-3 space-y-2">
+            <div className="flex items-start gap-3 bg-background rounded-xl p-2.5 border border-border">
+              <div className="p-1 bg-muted rounded-lg mt-0.5">
+                <PenLine className="h-3 w-3 text-muted-foreground" />
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">{getWritingSentence()}</p>
+            </div>
 
-          <div className="flex items-start gap-3 bg-background rounded-xl p-2.5 border border-border">
-            <div className="p-1 bg-muted rounded-lg mt-0.5">
-              <Zap className="h-3 w-3 text-muted-foreground" />
+            <div className="flex items-start gap-3 bg-background rounded-xl p-2.5 border border-border">
+              <div className="p-1 bg-muted rounded-lg mt-0.5">
+                <Zap className="h-3 w-3 text-muted-foreground" />
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">{getStreakSentence()}</p>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">{getStreakSentence()}</p>
-          </div>
 
-          <div className="flex items-start gap-3 bg-background rounded-xl p-2.5 border border-border">
-            <div className="p-1 bg-muted rounded-lg mt-0.5">
-              <Sparkles className="h-3 w-3 text-muted-foreground" />
+            <div className="flex items-start gap-3 bg-background rounded-xl p-2.5 border border-border">
+              <div className="p-1 bg-muted rounded-lg mt-0.5">
+                <Sparkles className="h-3 w-3 text-muted-foreground" />
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {wordCount === 0
+                  ? "A blank page is full of possibilities"
+                  : wordCount < 100
+                    ? "You're building a beautiful habit"
+                    : "Your words tell a story worth keeping"}
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {wordCount === 0
-                ? "A blank page is full of possibilities"
-                : wordCount < 100
-                  ? "You're building a beautiful habit"
-                  : "Your words tell a story worth keeping"}
-            </p>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Emotions from this Date */}
-      <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50">
-          <div className="p-1.5 bg-muted rounded-lg">
-            <Sparkles className="h-4 w-4 text-muted-foreground" />
+      {showEmotions && (
+        <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50">
+            <div className="p-1.5 bg-muted rounded-lg">
+              <Sparkles className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <span className="text-sm font-semibold text-foreground">Emotions Today</span>
           </div>
-          <span className="text-sm font-semibold text-foreground">Emotions Today</span>
-        </div>
-        <div className="p-3">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-6">
-              <div className="animate-spin rounded-full h-5 w-5 border-2 border-violet-500 border-t-transparent" />
-            </div>
-          ) : emotions.length === 0 ? (
-            <div className="text-center py-6">
-              <Sparkles className="h-8 w-8 text-slate-200 mx-auto mb-2" />
-              <p className="text-xs text-slate-400">No emotions logged today</p>
-              <p className="text-[10px] text-slate-300 mt-1">Visit the Emotions page to check in</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {emotions.map((entry) => (
-                <div
-                  key={entry.id}
-                  className={cn("rounded-xl p-3 border transition-colors", getEmotionColor(entry.emotion))}
-                >
-                  {/* Sentence-based emotion display */}
-                  <p className={cn("text-sm leading-relaxed", getEmotionTextColor(entry.emotion))}>
-                    {(() => {
-                      // Build a grammatically correct sentence
-                      let sentence = `At ${entry.time}, you felt `;
-                      sentence += `**${entry.emotion.toLowerCase()}**`;
-
-                      // Add context with proper grammar
-                      const hasWho = entry.context?.who;
-                      const hasWhat = entry.context?.what;
-
-                      if (hasWho && hasWhat) {
-                        sentence += ` while you were with ${entry.context.who.toLowerCase()}, ${entry.context.what.toLowerCase()}`;
-                      } else if (hasWho) {
-                        sentence += ` while you were with ${entry.context.who.toLowerCase()}`;
-                      } else if (hasWhat) {
-                        sentence += ` while ${entry.context.what.toLowerCase()}`;
-                      }
-
-                      sentence += ".";
-                      return sentence;
-                    })()}
-                  </p>
-
-                  {/* Body and wellness info as a secondary sentence */}
-                  {(entry.context?.body || entry.context?.sleepHours || entry.context?.physicalActivity) && (
-                    <p className="text-xs text-slate-500 mt-1.5">
+          <div className="p-3">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-6">
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-violet-500 border-t-transparent" />
+              </div>
+            ) : emotions.length === 0 ? (
+              <div className="text-center py-6">
+                <Sparkles className="h-8 w-8 text-slate-200 mx-auto mb-2" />
+                <p className="text-xs text-slate-400">No emotions logged today</p>
+                <p className="text-[10px] text-slate-300 mt-1">Visit the Emotions page to check in</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {emotions.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className={cn("rounded-xl p-3 border transition-colors", getEmotionColor(entry.emotion))}
+                  >
+                    {/* Sentence-based emotion display */}
+                    <p className={cn("text-sm leading-relaxed", getEmotionTextColor(entry.emotion))}>
                       {(() => {
-                        const wellnessParts: string[] = [];
-                        if (entry.context?.body) {
-                          wellnessParts.push(`feeling ${entry.context.body.toLowerCase()}`);
+                        let sentence = `At ${entry.time}, you felt `;
+                        sentence += `**${entry.emotion.toLowerCase()}**`;
+                        const hasWho = entry.context?.who;
+                        const hasWhat = entry.context?.what;
+                        if (hasWho && hasWhat) {
+                          sentence += ` while you were with ${entry.context.who.toLowerCase()}, ${entry.context.what.toLowerCase()}`;
+                        } else if (hasWho) {
+                          sentence += ` while you were with ${entry.context.who.toLowerCase()}`;
+                        } else if (hasWhat) {
+                          sentence += ` while ${entry.context.what.toLowerCase()}`;
                         }
-                        if (entry.context?.sleepHours) {
-                          wellnessParts.push(`with ${entry.context.sleepHours} of sleep`);
-                        }
-                        if (entry.context?.physicalActivity && entry.context.physicalActivity !== "None") {
-                          wellnessParts.push(`and ${entry.context.physicalActivity.toLowerCase()} for exercise`);
-                        }
-
-                        if (wellnessParts.length === 0) return "";
-                        return `You were ${wellnessParts.join(", ")}.`;
+                        sentence += ".";
+                        return sentence;
                       })()}
                     </p>
-                  )}
 
-                  {/* Note as reflection */}
-                  {entry.note && (
-                    <p className="text-xs text-slate-600 mt-2 pt-2 border-t border-slate-100/50">
-                      You also wrote <span className="italic">"{entry.note}"</span>
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+                    {(entry.context?.body || entry.context?.sleepHours || entry.context?.physicalActivity) && (
+                      <p className="text-xs text-slate-500 mt-1.5">
+                        {(() => {
+                          const wellnessParts: string[] = [];
+                          if (entry.context?.body) {
+                            wellnessParts.push(`feeling ${entry.context.body.toLowerCase()}`);
+                          }
+                          if (entry.context?.sleepHours) {
+                            wellnessParts.push(`with ${entry.context.sleepHours} of sleep`);
+                          }
+                          if (entry.context?.physicalActivity && entry.context.physicalActivity !== "None") {
+                            wellnessParts.push(`and ${entry.context.physicalActivity.toLowerCase()} for exercise`);
+                          }
+                          if (wellnessParts.length === 0) return "";
+                          return `You were ${wellnessParts.join(", ")}.`;
+                        })()}
+                      </p>
+                    )}
+
+                    {entry.note && (
+                      <p className="text-xs text-slate-600 mt-2 pt-2 border-t border-slate-100/50">
+                        You also wrote <span className="italic">"{entry.note}"</span>
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 });
