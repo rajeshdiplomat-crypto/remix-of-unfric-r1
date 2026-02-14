@@ -643,44 +643,44 @@ export default function Tasks() {
           {/* View Tabs */}
           <TasksViewTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-          {/* Full-width Focus bar + Insights above the grid */}
-          {activeTab !== "files" && (
-            <div className="flex flex-col gap-1.5">
-              <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-end">
-                  <button
-                    onClick={() => setInsightsCollapsed(prev => !prev)}
-                    className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {insightsCollapsed ? "Show Insights" : "Hide Insights"}
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className={`transition-transform duration-200 ${insightsCollapsed ? "rotate-180" : ""}`}
-                    >
-                      <polyline points="18 15 12 9 6 15" />
-                    </svg>
-                  </button>
-                </div>
-                {!insightsCollapsed && (
-                  <InsightsPanel tasks={filteredTasks} compactMode={true} />
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Unified grid: task content left, clock sidebar right */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6 flex-1 min-h-0">
-            {/* Left column: Tab content */}
+            {/* Left column: Focus bar + Insights + Tab content */}
             <div className="flex flex-col gap-2.5 min-h-0">
+              {activeTab !== "files" && (
+                <>
+                  <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
+
+                  {/* Insights toggle + panel */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-end">
+                      <button
+                        onClick={() => setInsightsCollapsed(prev => !prev)}
+                        className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {insightsCollapsed ? "Show Insights" : "Hide Insights"}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className={`transition-transform duration-200 ${insightsCollapsed ? "rotate-180" : ""}`}
+                        >
+                          <polyline points="18 15 12 9 6 15" />
+                        </svg>
+                      </button>
+                    </div>
+                    {!insightsCollapsed && (
+                      <InsightsPanel tasks={filteredTasks} compactMode={true} />
+                    )}
+                  </div>
+                </>
+              )}
 
               {/* Main tab content */}
               <div className="flex-1 min-h-0 overflow-y-auto">
