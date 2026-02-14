@@ -71,6 +71,7 @@ interface JournalQuestionCardProps {
   isSaved: boolean;
   userReaction?: ReactionType | null;
   reactionCounts?: Record<ReactionType, number>;
+  commentCount?: number;
   onToggleSave: () => void;
   onEdit: () => void;
   onNavigate: () => void;
@@ -92,6 +93,7 @@ export function JournalQuestionCard({
   isSaved,
   userReaction: initialUserReaction,
   reactionCounts: initialReactionCounts,
+  commentCount = 0,
   onToggleSave,
   onEdit,
   onNavigate,
@@ -393,21 +395,23 @@ export function JournalQuestionCard({
             )}
           </div>
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span>0 comments</span>
+            {(commentCount > 0 || showComposer) && (
+              <span>{commentCount} comment{commentCount !== 1 ? 's' : ''}</span>
+            )}
             <span>0 shares</span>
           </div>
         </div>
 
         {/* Facebook-style action bar */}
         <div className="border-t border-border/50 mt-1">
-          <div className="grid grid-cols-3">
+          <div className="flex">
             {/* Like */}
             <Popover>
               <PopoverTrigger asChild>
                 <button
                   aria-pressed={!!userReaction}
                   className={cn(
-                    "flex items-center justify-center gap-1.5 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
+                    "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
                     userReaction && "text-primary"
                   )}
                 >
@@ -445,7 +449,7 @@ export function JournalQuestionCard({
             <button
               onClick={() => setShowComposer(!showComposer)}
               className={cn(
-                "flex items-center justify-center gap-1.5 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
+                "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
                 showComposer && "text-primary"
               )}
             >
@@ -456,7 +460,7 @@ export function JournalQuestionCard({
             {/* Share */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center justify-center gap-1.5 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors">
+                <button className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors">
                   <Share2 className="h-4 w-4" />
                   <span>Share</span>
                 </button>
