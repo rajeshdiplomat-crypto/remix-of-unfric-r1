@@ -390,8 +390,8 @@ export function DiaryFeedCard({
           return (
             <div className="mt-2 grid grid-cols-2 gap-0.5">
               {images.map((url, i) => (
-                <div key={i} className="bg-muted">
-                  <img src={url} alt="" className="w-full h-auto max-h-80 object-contain mx-auto" />
+                <div key={i} className="bg-muted flex items-center justify-center min-h-[150px]">
+                  <img src={url} alt="" className="max-w-full max-h-80 object-contain" loading="lazy" />
                 </div>
               ))}
             </div>
