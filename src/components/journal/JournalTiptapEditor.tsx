@@ -1262,7 +1262,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
         <style>{`
         .ProseMirror { min-height: 300px; word-break: break-word; overflow-wrap: anywhere; }
         .ProseMirror p.is-editor-empty:first-child::before { color: ${skinStyles?.mutedText || "#94a3b8"}; content: attr(data-placeholder); float: left; height: 0; pointer-events: none; }
-        .ProseMirror h1 { font-size: 1.875rem; font-weight: 700; margin: 1.5rem 0 0.75rem; }
+        .ProseMirror h1 { font-size: 1.875rem; font-weight: 700; margin: 0 0 0.75rem; }
         .ProseMirror h2 { font-size: 1.5rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
         .ProseMirror h3 { font-size: 1.25rem; font-weight: 600; margin: 1rem 0 0.5rem; }
         .ProseMirror p { margin: 0.5rem 0; line-height: 1.75; }

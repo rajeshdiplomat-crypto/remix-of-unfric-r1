@@ -65,7 +65,16 @@ export const JournalSidebarPanel = memo(
       return eachDayOfInterval({ start, end });
     }, [currentMonth]);
 
-    const entriesDates = useMemo(() => new Set(entries.map((e) => e.entryDate)), [entries]);
+    const entriesDates = useMemo(() => {
+      // Only mark dates that have actual written content (not just empty templates)
+      const datesWithContent = entries.filter((e) => {
+        if (!e.preview || e.preview.trim() === "") return false;
+        // Exclude entries where preview is just the title or empty headings
+        const titleOnly = e.title && e.preview.trim() === e.title.trim();
+        return !titleOnly;
+      });
+      return new Set(datesWithContent.map((e) => e.entryDate));
+    }, [entries]);
 
     const hasEntry = useCallback((date: Date) => entriesDates.has(format(date, "yyyy-MM-dd")), [entriesDates]);
 
