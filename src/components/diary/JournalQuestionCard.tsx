@@ -322,7 +322,7 @@ export function JournalQuestionCard({
             return (
               <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg overflow-hidden">
                 {images.map((url, i) => (
-                  <img key={i} src={url} alt="" className="w-full h-48 object-cover" loading="lazy" />
+                  <img key={i} src={url} alt="" className="w-full aspect-[4/5] object-cover" loading="lazy" />
                 ))}
               </div>
             );
@@ -367,59 +367,59 @@ export function JournalQuestionCard({
           </div>
         )}
 
-        {/* Reaction summary */}
+        {/* Facebook-style reaction summary + counts row */}
         {totalReactions > 0 && (
-          <div className="flex items-center gap-2 py-2 mt-2">
-            <div className="flex -space-x-1">
-              {topReactions.map(([type]) => {
-                const reaction = REACTION_TYPES.find(r => r.type === type);
-                return reaction ? (
-                  <span key={type} className="text-sm">
-                    {reaction.emoji}
-                  </span>
-                ) : null;
-              })}
+          <div className="flex items-center justify-between py-2 mt-2">
+            <div className="flex items-center gap-1.5">
+              <div className="flex -space-x-1">
+                {topReactions.map(([type]) => {
+                  const reaction = REACTION_TYPES.find(r => r.type === type);
+                  return reaction ? (
+                    <span key={type} className="text-sm leading-none">
+                      {reaction.emoji}
+                    </span>
+                  ) : null;
+                })}
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {totalReactions}
+              </span>
             </div>
-            <span className="text-xs text-muted-foreground">
-              {totalReactions} reaction{totalReactions !== 1 ? "s" : ""}
-            </span>
           </div>
         )}
 
-        {/* Actions: Reactions · Comment · Share */}
-        <div className="flex items-center mt-4 pt-3 border-t border-border/50">
-          {/* Reactions */}
-          <div className="flex-1 flex justify-center">
+        {/* Facebook-style action bar */}
+        <div className="border-t border-border/50 mt-2">
+          <div className="grid grid-cols-3 py-1">
+            {/* React */}
             <Popover>
               <PopoverTrigger asChild>
                 <button
                   aria-pressed={!!userReaction}
                   className={cn(
-                    "flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors",
-                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-2 py-1",
+                    "flex items-center justify-center gap-2 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
                     userReaction && "text-primary"
                   )}
                 >
                   {userReaction ? (
-                    <span className="text-base">
+                    <span className="text-base leading-none">
                       {REACTION_TYPES.find(r => r.type === userReaction)?.emoji}
                     </span>
                   ) : (
-                    <ThumbsUp className="h-4 w-4" />
+                    <ThumbsUp className="h-[18px] w-[18px]" />
                   )}
-                  <span>{userReaction ? REACTION_TYPES.find(r => r.type === userReaction)?.label : 'React'}</span>
+                  <span>{userReaction ? REACTION_TYPES.find(r => r.type === userReaction)?.label : 'Like'}</span>
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-2" side="top">
-                <div className="flex gap-1">
+              <PopoverContent className="w-auto p-1.5" side="top">
+                <div className="flex gap-0.5">
                   {REACTION_TYPES.map((reaction) => (
                     <button
                       key={reaction.type}
                       onClick={() => handleToggleReaction(reaction.type)}
                       aria-pressed={userReaction === reaction.type}
                       className={cn(
-                        "text-xl p-1.5 rounded hover:bg-muted transition-transform hover:scale-125",
-                        "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        "text-xl p-1.5 rounded-full hover:bg-muted transition-transform hover:scale-125",
                         userReaction === reaction.type && "bg-primary/20"
                       )}
                       title={reaction.label}
@@ -430,39 +430,29 @@ export function JournalQuestionCard({
                 </div>
               </PopoverContent>
             </Popover>
-          </div>
 
-          {/* Comment */}
-          <div className="flex-1 flex justify-center">
+            {/* Comment */}
             <button
               onClick={() => setShowComposer(!showComposer)}
               aria-pressed={showComposer}
               className={cn(
-                "flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-2 py-1",
+                "flex items-center justify-center gap-2 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
                 showComposer && "text-primary"
               )}
             >
-              <MessageCircle className="h-4 w-4" />
+              <MessageCircle className="h-[18px] w-[18px]" />
               <span>Comment</span>
             </button>
-          </div>
 
-          {/* Share */}
-          <div className="flex-1 flex justify-center">
+            {/* Share */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button
-                  className={cn(
-                    "flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors",
-                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-2 py-1"
-                  )}
-                >
-                  <Share2 className="h-4 w-4" />
+                <button className="flex items-center justify-center gap-2 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors">
+                  <Share2 className="h-[18px] w-[18px]" />
                   <span>Share</span>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={handleCopyLink}>
                   <Copy className="h-4 w-4 mr-2" />
                   Copy link
