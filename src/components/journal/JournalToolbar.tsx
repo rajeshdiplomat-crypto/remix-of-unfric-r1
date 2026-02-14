@@ -1261,11 +1261,36 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
 
         <style>{`
         .ProseMirror { min-height: 300px; word-break: break-word; overflow-wrap: anywhere; }
-        .ProseMirror p.is-editor-empty:first-child::before { color: ${skinStyles?.mutedText || "#94a3b8"}; content: attr(data-placeholder); float: left; height: 0; pointer-events: none; }
-        .ProseMirror h1 { font-size: 1.875rem; font-weight: 700; margin: 1.5rem 0 0.75rem; }
-        .ProseMirror h2 { font-size: 1.5rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
-        .ProseMirror h3 { font-size: 1.25rem; font-weight: 600; margin: 1rem 0 0.5rem; }
-        .ProseMirror p { margin: 0.5rem 0; line-height: 1.75; }
+        
+        .ProseMirror .is-empty::before,
+        .ProseMirror .is-node-empty::before {
+          color: ${skinStyles?.mutedText || "#94a3b8"};
+          content: attr(data-placeholder);
+          position: absolute;
+          pointer-events: none;
+        }
+
+        .ProseMirror h1 {
+          font-size: 1.875rem;
+          font-weight: 700;
+          line-height: 2.25rem;
+          min-height: 2.25rem;
+          margin: 0 0 0.25rem 0;
+          padding: 0;
+          position: relative;
+        }
+
+        .ProseMirror p {
+          margin: 0;
+          padding: 0.0625rem 0;
+          line-height: 1.75;
+          min-height: 1.75em;
+          position: relative;
+        }
+
+        .ProseMirror h2 { font-size: 1.5rem; font-weight: 600; margin: 1.25rem 0 0.5rem; position: relative; }
+        .ProseMirror h3 { font-size: 1.25rem; font-weight: 600; margin: 1rem 0 0.5rem; position: relative; }
+
         .ProseMirror strong { font-weight: 700; }
         .ProseMirror ul { list-style: disc; padding-left: 1.5rem; }
         .ProseMirror ol { list-style: decimal; padding-left: 1.5rem; }
