@@ -19,7 +19,6 @@ interface JournalSettingsModalProps {
 export function JournalSettingsModal({ open, onOpenChange, template, onTemplateChange }: JournalSettingsModalProps) {
   const [localQuestions, setLocalQuestions] = useState<JournalQuestion[]>(template.questions);
   const [applyOnNewEntry, setApplyOnNewEntry] = useState(template.applyOnNewEntry);
-  const [unstructured, setUnstructured] = useState(template.unstructured ?? false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -66,21 +65,10 @@ export function JournalSettingsModal({ open, onOpenChange, template, onTemplateC
   };
 
   const handleSave = () => {
-    // If unstructured mode changed, set effectiveFrom to yesterday so it applies from yesterday onward
-    const modeChanged = unstructured !== (template.unstructured ?? false);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const effectiveFrom = modeChanged
-      ? yesterday.toISOString().split("T")[0]
-      : template.effectiveFrom;
-
     onTemplateChange({
       ...template,
       questions: localQuestions,
       applyOnNewEntry,
-      unstructured,
-      effectiveFrom,
     });
     onOpenChange(false);
   };
@@ -102,29 +90,9 @@ export function JournalSettingsModal({ open, onOpenChange, template, onTemplateC
           </div>
 
           <div className="flex-1 overflow-auto space-y-4">
-            {/* Unstructured Toggle */}
-            <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-violet-100 rounded-xl">
-                  <Edit3 className="h-4 w-4 text-violet-600" />
-                </div>
-                <div>
-                  <Label htmlFor="unstructured" className="text-sm font-semibold text-slate-700">
-                    Unstructured Journaling
-                  </Label>
-                  <p className="text-xs text-slate-400">Write freely without question prompts</p>
-                </div>
-              </div>
-              <Switch
-                id="unstructured"
-                checked={unstructured}
-                onCheckedChange={setUnstructured}
-                className="data-[state=checked]:bg-violet-500"
-              />
-            </div>
 
             {/* Auto-apply Toggle (hidden when unstructured) */}
-            {!unstructured && (
+            {(
               <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-violet-100 rounded-xl">
@@ -146,8 +114,8 @@ export function JournalSettingsModal({ open, onOpenChange, template, onTemplateC
               </div>
             )}
 
-            {/* Questions List (hidden when unstructured) */}
-            {!unstructured && <div className="space-y-2">
+            {/* Questions List */}
+            {<div className="space-y-2">
               {localQuestions.map((question, index) => (
                 <div
                   key={question.id}
@@ -206,8 +174,8 @@ export function JournalSettingsModal({ open, onOpenChange, template, onTemplateC
               ))}
             </div>}
 
-            {/* Add & Reset Buttons (hidden when unstructured) */}
-            {!unstructured && <div className="flex gap-2">
+            {/* Add & Reset Buttons */}
+            {<div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"

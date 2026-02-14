@@ -22,10 +22,7 @@ export interface JournalQuestion {
 export interface JournalTemplate {
   questions: JournalQuestion[];
   applyOnNewEntry: boolean;
-  unstructured: boolean;
   defaultSkinId: string;
-  /** ISO date (YYYY-MM-DD) from which the current mode takes effect */
-  effectiveFrom?: string;
 }
 
 export interface JournalSkin {
@@ -133,7 +130,6 @@ export const JOURNAL_SKINS: JournalSkin[] = [
 export const DEFAULT_TEMPLATE: JournalTemplate = {
   questions: DEFAULT_QUESTIONS,
   applyOnNewEntry: true,
-  unstructured: false,
   defaultSkinId: "minimal-light",
 };
 
