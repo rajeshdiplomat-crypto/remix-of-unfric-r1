@@ -9,12 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { 
   PenLine, Bell, Shield, Clock, LayoutDashboard, 
-  Download, Trash2, UserX, ChevronRight, Loader2 
+  Download, Trash2, UserX, ChevronRight, Loader2,
+  Plus, RotateCcw, GripVertical, Edit3
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { JournalTemplate, JournalQuestion, DEFAULT_QUESTIONS, DEFAULT_TEMPLATE, JOURNAL_SKINS } from "@/components/journal/types";
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -65,6 +67,14 @@ export default function Settings() {
   const [defaultEmotionsTab, setDefaultEmotionsTab] = useState(
     () => localStorage.getItem("settings_default_emotions_tab") || "feel"
   );
+
+  // Journal template state
+  const [template, setTemplate] = useState<JournalTemplate>(() => {
+    const saved = localStorage.getItem("journal_template");
+    return saved ? JSON.parse(saved) : DEFAULT_TEMPLATE;
+  });
+  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   // ── Load Settings ────────────────────────────────────────────────
 
@@ -236,23 +246,132 @@ export default function Settings() {
 
       {/* ─── Section 1: Journal Preferences ─── */}
       <SettingsSection icon={PenLine} title="Journal Preferences">
-        <SettingsRow label="Default Template Questions" description="Edit your journal prompts and template">
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs uppercase tracking-wider"
-            onClick={() => navigate("/journal")}
+        <SettingsRow label="Auto-apply prompts on new entries" description="Add template questions when you start a new day">
+          <Switch
+            checked={template.applyOnNewEntry}
+            onCheckedChange={(v) => {
+              const updated = { ...template, applyOnNewEntry: v };
+              setTemplate(updated);
+              localStorage.setItem("journal_template", JSON.stringify(updated));
+            }}
+          />
+        </SettingsRow>
+        <SettingsRow label="Default Journal Skin" description="Choose the default skin for journal entries">
+          <Select
+            value={template.defaultSkinId}
+            onValueChange={(v) => {
+              const updated = { ...template, defaultSkinId: v };
+              setTemplate(updated);
+              localStorage.setItem("journal_template", JSON.stringify(updated));
+              localStorage.setItem("journal_skin_id", v);
+            }}
           >
-            Open Journal
-            <ChevronRight className="h-3 w-3 ml-1" />
-          </Button>
+            <SelectTrigger className="w-36 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {JOURNAL_SKINS.map((skin) => (
+                <SelectItem key={skin.id} value={skin.id} className="text-xs">{skin.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </SettingsRow>
-        <SettingsRow label="Auto-apply prompts" description="Add prompts when you start a new day">
-          <span className="text-xs text-muted-foreground">Managed in Journal Settings</span>
-        </SettingsRow>
-        <SettingsRow label="Default Journal Skin" description="Managed within the journal editor">
-          <span className="text-xs text-muted-foreground">Via Journal</span>
-        </SettingsRow>
+
+        {/* Questions inline editor */}
+        <div className="px-4 py-3 border-b border-border last:border-b-0">
+          <p className="text-sm font-light text-foreground mb-1">Template Questions</p>
+          <p className="text-[11px] text-muted-foreground mb-3">Drag to reorder, click to edit</p>
+          <div className="space-y-2">
+            {template.questions.map((question, index) => (
+              <div
+                key={question.id}
+                draggable
+                onDragStart={() => setDraggedIndex(index)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (draggedIndex === null || draggedIndex === index) return;
+                  const newQuestions = [...template.questions];
+                  const [item] = newQuestions.splice(draggedIndex, 1);
+                  newQuestions.splice(index, 0, item);
+                  const updated = { ...template, questions: newQuestions };
+                  setTemplate(updated);
+                  localStorage.setItem("journal_template", JSON.stringify(updated));
+                  setDraggedIndex(index);
+                }}
+                onDragEnd={() => setDraggedIndex(null)}
+                className={cn(
+                  "group flex items-center gap-2 p-2 rounded-lg border border-border bg-background transition-all hover:border-primary/30",
+                  draggedIndex === index && "opacity-50 scale-[0.98]",
+                )}
+              >
+                <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 cursor-grab" />
+                <div className="flex-1 min-w-0">
+                  {editingQuestionId === question.id ? (
+                    <Input
+                      value={question.text}
+                      onChange={(e) => {
+                        const updated = { ...template, questions: template.questions.map(q => q.id === question.id ? { ...q, text: e.target.value } : q) };
+                        setTemplate(updated);
+                        localStorage.setItem("journal_template", JSON.stringify(updated));
+                      }}
+                      onBlur={() => setEditingQuestionId(null)}
+                      onKeyDown={(e) => e.key === "Enter" && setEditingQuestionId(null)}
+                      autoFocus
+                      className="h-7 text-xs"
+                    />
+                  ) : (
+                    <button
+                      onClick={() => setEditingQuestionId(question.id)}
+                      className="w-full text-left text-xs text-foreground hover:text-primary truncate"
+                    >
+                      {question.text}
+                    </button>
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const updated = { ...template, questions: template.questions.filter(q => q.id !== question.id) };
+                    setTemplate(updated);
+                    localStorage.setItem("journal_template", JSON.stringify(updated));
+                  }}
+                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2 mt-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const newQ: JournalQuestion = { id: `q${Date.now()}`, text: "New question...", type: "heading+answer" };
+                const updated = { ...template, questions: [...template.questions, newQ] };
+                setTemplate(updated);
+                localStorage.setItem("journal_template", JSON.stringify(updated));
+                setEditingQuestionId(newQ.id);
+              }}
+              className="flex-1 text-xs"
+            >
+              <Plus className="h-3 w-3 mr-1" /> Add
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const updated = { ...template, questions: [...DEFAULT_QUESTIONS] };
+                setTemplate(updated);
+                localStorage.setItem("journal_template", JSON.stringify(updated));
+              }}
+              className="text-xs"
+            >
+              <RotateCcw className="h-3 w-3 mr-1" /> Reset
+            </Button>
+          </div>
+        </div>
       </SettingsSection>
 
       {/* ─── Section 2: Notifications ─── */}

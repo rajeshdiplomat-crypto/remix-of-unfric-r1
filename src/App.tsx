@@ -1,8 +1,10 @@
+import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { FontProvider } from "@/contexts/FontContext";
@@ -28,6 +30,38 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+function HomeRedirect() {
+  const defaultHome = localStorage.getItem("settings_default_home") || "diary";
+  // Also check user_settings from supabase via a quick read
+  const [target, setTarget] = useState(`/${defaultHome}`);
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("user_settings")
+      .select("default_home_screen")
+      .eq("user_id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data?.default_home_screen) {
+          setTarget(`/${data.default_home_screen}`);
+        }
+      });
+  }, [user]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) return <Navigate to="/auth" replace />;
+  return <Navigate to={target} replace />;
+}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -84,7 +118,7 @@ const App = () => (
                 <AuthProvider>
                   <Routes>
                     <Route path="/auth" element={<Auth />} />
-                    <Route path="/" element={<Navigate to="/diary" replace />} />
+                    <Route path="/" element={<HomeRedirect />} />
                     <Route
                       path="/diary"
                       element={

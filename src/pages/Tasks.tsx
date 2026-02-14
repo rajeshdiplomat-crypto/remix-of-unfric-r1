@@ -189,7 +189,11 @@ export default function Tasks() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<TasksViewTab>("board");
+  const [activeTab, setActiveTab] = useState<TasksViewTab>(() => {
+    const saved = localStorage.getItem("settings_default_task_view");
+    if (saved === "status" || saved === "urgent-important" || saved === "date" || saved === "time-of-day") return "board";
+    return "board";
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
