@@ -310,30 +310,9 @@ export default function Settings() {
             </SelectContent>
           </Select>
         </SettingsRow>
-        <SettingsRow label="Settings Effective From" description="Date from which these journal settings apply">
-          <Input
-            type="date"
-            value={template.effectiveFrom || ""}
-            onChange={(e) => {
-              const updated = { ...template, effectiveFrom: e.target.value || undefined };
-              setTemplate(updated);
-              localStorage.setItem("journal_template", JSON.stringify(updated));
-            }}
-            className="w-36 text-xs"
-          />
-        </SettingsRow>
-        <SettingsRow label="Settings Effective To" description="Date until which these journal settings apply">
-          <Input
-            type="date"
-            value={template.effectiveTo || ""}
-            onChange={(e) => {
-              const updated = { ...template, effectiveTo: e.target.value || undefined };
-              setTemplate(updated);
-              localStorage.setItem("journal_template", JSON.stringify(updated));
-            }}
-            className="w-36 text-xs"
-          />
-        </SettingsRow>
+        <div className="px-4 py-2">
+          <p className="text-[11px] text-muted-foreground italic">These settings apply to new journal entries going forward. Existing entries keep their original look.</p>
+        </div>
 
         {/* Questions inline editor */}
         <div className="px-4 py-3 border-b border-border last:border-b-0">
