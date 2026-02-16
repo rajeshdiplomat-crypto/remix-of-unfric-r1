@@ -164,6 +164,14 @@ export default function Journal() {
   });
   const [journalMode, setJournalMode] = useState<string>("structured");
 
+  // Check if current date is within effective range
+  const isTemplateEffective = useMemo(() => {
+    const dateStr = format(selectedDate, "yyyy-MM-dd");
+    if (template.effectiveFrom && dateStr < template.effectiveFrom) return false;
+    if (template.effectiveTo && dateStr > template.effectiveTo) return false;
+    return true;
+  }, [selectedDate, template.effectiveFrom, template.effectiveTo]);
+
   // Load journal mode from DB
   useEffect(() => {
     if (!user) return;
@@ -181,14 +189,16 @@ export default function Journal() {
   const { theme } = useTheme();
   const [currentSkinId, setCurrentSkinId] = useState(() => localStorage.getItem("journal_skin_id") || "minimal-light");
 
-  // Sync skin with global dark mode if needed
+  // Sync skin with effective range and dark mode
   useEffect(() => {
-    if (theme.isDark && currentSkinId !== "midnight-dark") {
+    if (theme.isDark) {
       setCurrentSkinId("midnight-dark");
-    } else if (!theme.isDark && currentSkinId === "midnight-dark") {
-      setCurrentSkinId("minimal-light");
+    } else if (!isTemplateEffective) {
+      setCurrentSkinId("minimal-light"); // fallback outside date range
+    } else {
+      setCurrentSkinId(template.defaultSkinId || "minimal-light");
     }
-  }, [theme.isDark, currentSkinId]);
+  }, [theme.isDark, isTemplateEffective, template.defaultSkinId]);
 
   const currentSkin = useMemo(
     () => JOURNAL_SKINS.find((s) => s.id === currentSkinId) || JOURNAL_SKINS[0],
@@ -397,7 +407,8 @@ export default function Journal() {
           setCurrentAnswers([]);
           setSelectedMood(null);
           const isUnstructured = journalMode === "unstructured";
-          const newContent = (!isUnstructured && template.applyOnNewEntry)
+          const shouldApplyTemplate = !isUnstructured && template.applyOnNewEntry && isTemplateEffective;
+          const newContent = shouldApplyTemplate
             ? generateInitialContent(template.questions)
             : JSON.stringify({
                 type: "doc",
@@ -413,7 +424,7 @@ export default function Journal() {
         setSaveStatus("saved");
         setIsLoading(false);
       });
-  }, [selectedDate, user, template, journalMode]);
+  }, [selectedDate, user, template, journalMode, isTemplateEffective]);
 
   // Save function
   const performSave = useCallback(async () => {
@@ -713,7 +724,7 @@ export default function Journal() {
           content={content}
           onChange={handleContentChange}
           skinStyles={{ editorPaperBg: currentSkin.editorPaperBg, text: currentSkin.text, mutedText: currentSkin.mutedText }}
-          defaultLineStyle={template.defaultLineStyle}
+          defaultLineStyle={isTemplateEffective ? template.defaultLineStyle : "none"}
         />
       </div>
     </div>
