@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Calendar, Check, Play, Loader2, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
@@ -165,6 +165,11 @@ export function KanbanBoardView({
 }: KanbanBoardViewProps) {
   const [boardMode, setBoardMode] = useState<QuadrantMode>(defaultMode || "urgent-important");
   const [completedOpenMap, setCompletedOpenMap] = useState<Record<string, boolean>>({});
+
+  // Sync with defaultMode when it loads from DB
+  useEffect(() => {
+    if (defaultMode) setBoardMode(defaultMode);
+  }, [defaultMode]);
 
   const activeQuadrants = QUADRANT_MODES[boardMode].quadrants;
 

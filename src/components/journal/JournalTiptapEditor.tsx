@@ -154,6 +154,7 @@ interface Props {
   skinStyles?: { editorPaperBg?: string; text?: string; mutedText?: string };
   scribbleStrokes?: string | null;
   onScribbleChange?: (data: string | null) => void;
+  defaultLineStyle?: string;
 }
 export interface TiptapEditorRef {
   editor: ReturnType<typeof useEditor> | null;
@@ -240,7 +241,7 @@ interface Stroke {
 }
 
 export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
-  ({ content, onChange, skinStyles, scribbleStrokes: initialStrokes, onScribbleChange }, ref) => {
+  ({ content, onChange, skinStyles, scribbleStrokes: initialStrokes, onScribbleChange, defaultLineStyle }, ref) => {
     const [font, setFont] = useState("inter");
     const [size, setSize] = useState("16");
     const [editorBg, setEditorBg] = useState("transparent");
@@ -251,7 +252,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Line Style State
-    const [lineStyle, setLineStyle] = useState("none");
+    const [lineStyle, setLineStyle] = useState(defaultLineStyle || "none");
     const showLines = lineStyle !== "none";
 
     // Advanced Scribble State

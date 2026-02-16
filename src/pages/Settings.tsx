@@ -289,6 +289,51 @@ export default function Settings() {
             </SelectContent>
           </Select>
         </SettingsRow>
+        <SettingsRow label="Default Editor Lines" description="Line style for the writing area">
+          <Select
+            value={template.defaultLineStyle || "none"}
+            onValueChange={(v) => {
+              const updated = { ...template, defaultLineStyle: v };
+              setTemplate(updated);
+              localStorage.setItem("journal_template", JSON.stringify(updated));
+            }}
+          >
+            <SelectTrigger className="w-28 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No Lines</SelectItem>
+              <SelectItem value="ruled">Ruled</SelectItem>
+              <SelectItem value="grid">Grid</SelectItem>
+              <SelectItem value="dotted">Dotted</SelectItem>
+              <SelectItem value="college">College</SelectItem>
+            </SelectContent>
+          </Select>
+        </SettingsRow>
+        <SettingsRow label="Settings Effective From" description="Date from which these journal settings apply">
+          <Input
+            type="date"
+            value={template.effectiveFrom || ""}
+            onChange={(e) => {
+              const updated = { ...template, effectiveFrom: e.target.value || undefined };
+              setTemplate(updated);
+              localStorage.setItem("journal_template", JSON.stringify(updated));
+            }}
+            className="w-36 text-xs"
+          />
+        </SettingsRow>
+        <SettingsRow label="Settings Effective To" description="Date until which these journal settings apply">
+          <Input
+            type="date"
+            value={template.effectiveTo || ""}
+            onChange={(e) => {
+              const updated = { ...template, effectiveTo: e.target.value || undefined };
+              setTemplate(updated);
+              localStorage.setItem("journal_template", JSON.stringify(updated));
+            }}
+            className="w-36 text-xs"
+          />
+        </SettingsRow>
 
         {/* Questions inline editor */}
         <div className="px-4 py-3 border-b border-border last:border-b-0">
