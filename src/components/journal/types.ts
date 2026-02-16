@@ -23,6 +23,9 @@ export interface JournalTemplate {
   questions: JournalQuestion[];
   applyOnNewEntry: boolean;
   defaultSkinId: string;
+  defaultLineStyle?: string;
+  effectiveFrom?: string; // YYYY-MM-DD
+  effectiveTo?: string;   // YYYY-MM-DD
 }
 
 export interface JournalSkin {

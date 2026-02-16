@@ -656,10 +656,6 @@ export default function Journal() {
         "shrink-0 backdrop-blur-xl border-b border-border/40",
         isFullscreen ? "" : "sticky top-0 z-40",
       )}
-      style={{
-        backgroundColor: isFullscreen ? currentSkin.pageBg : `${currentSkin.pageBg}e6`,
-        borderColor: isFullscreen ? undefined : `${currentSkin.border}40`,
-      }}
     >
       <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
@@ -708,12 +704,16 @@ export default function Journal() {
   const editorContent = (
     <div className="flex flex-col min-w-0">
 
-      <div className={cn("transition-all duration-200 rounded-2xl overflow-hidden shadow-sm border border-border bg-card", isLoading && "opacity-50 pointer-events-none")}>
+      <div
+        className={cn("transition-all duration-200 rounded-2xl overflow-hidden shadow-sm border border-border", isLoading && "opacity-50 pointer-events-none")}
+        style={{ backgroundColor: currentSkin.cardBg }}
+      >
         <MemoizedJournalTiptapEditor
           ref={editorRef}
           content={content}
           onChange={handleContentChange}
           skinStyles={{ editorPaperBg: currentSkin.editorPaperBg, text: currentSkin.text, mutedText: currentSkin.mutedText }}
+          defaultLineStyle={template.defaultLineStyle}
         />
       </div>
     </div>
@@ -723,8 +723,7 @@ export default function Journal() {
   const fullscreenView = isFullscreen
     ? createPortal(
         <div
-          className="fixed inset-0 z-[9999] flex flex-col"
-          style={{ backgroundColor: currentSkin.pageBg, color: currentSkin.text }}
+          className="fixed inset-0 z-[9999] flex flex-col bg-background text-foreground"
         >
           {journalHeader}
           <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4 max-w-4xl mx-auto w-full">
@@ -736,7 +735,7 @@ export default function Journal() {
     : null;
 
   return (
-    <div className="flex flex-col w-full h-full overflow-hidden" style={{ backgroundColor: currentSkin.pageBg, color: currentSkin.text }}>
+    <div className="flex flex-col w-full h-full overflow-hidden">
       {fullscreenView}
 
       {!isFullscreen && (
