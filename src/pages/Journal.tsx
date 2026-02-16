@@ -22,6 +22,7 @@ import {
   BarChart3,
   Sparkles,
   TrendingUp,
+  Settings2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +41,7 @@ import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { JournalEntry, JournalTemplate, JOURNAL_SKINS, DEFAULT_TEMPLATE } from "@/components/journal/types";
 import { JournalRecentEntriesView } from "@/components/journal/JournalRecentEntriesView";
 import { JournalInsightsModal } from "@/components/journal/JournalInsightsModal";
+import { JournalSettingsModal } from "@/components/journal/JournalSettingsModal";
 import { cn } from "@/lib/utils";
 
 interface JournalAnswer {
@@ -164,13 +166,9 @@ export default function Journal() {
   });
   const [journalMode, setJournalMode] = useState<string>("structured");
 
-  // Check if current date is within effective range
-  const isTemplateEffective = useMemo(() => {
-    const dateStr = format(selectedDate, "yyyy-MM-dd");
-    if (template.effectiveFrom && dateStr < template.effectiveFrom) return false;
-    if (template.effectiveTo && dateStr > template.effectiveTo) return false;
-    return true;
-  }, [selectedDate, template.effectiveFrom, template.effectiveTo]);
+  // Per-entry page settings state
+  const [entryPageSettings, setEntryPageSettings] = useState<{ skinId?: string; lineStyle?: string } | null>(null);
+  const [entrySettingsOpen, setEntrySettingsOpen] = useState(false);
 
   // Load journal mode from DB
   useEffect(() => {
@@ -189,16 +187,16 @@ export default function Journal() {
   const { theme } = useTheme();
   const [currentSkinId, setCurrentSkinId] = useState(() => localStorage.getItem("journal_skin_id") || "minimal-light");
 
-  // Sync skin with effective range and dark mode
+  // Sync skin with per-entry settings and dark mode
   useEffect(() => {
     if (theme.isDark) {
       setCurrentSkinId("midnight-dark");
-    } else if (!isTemplateEffective) {
-      setCurrentSkinId("minimal-light"); // fallback outside date range
+    } else if (entryPageSettings?.skinId) {
+      setCurrentSkinId(entryPageSettings.skinId);
     } else {
       setCurrentSkinId(template.defaultSkinId || "minimal-light");
     }
-  }, [theme.isDark, isTemplateEffective, template.defaultSkinId]);
+  }, [theme.isDark, entryPageSettings?.skinId, template.defaultSkinId]);
 
   const currentSkin = useMemo(
     () => JOURNAL_SKINS.find((s) => s.id === currentSkinId) || JOURNAL_SKINS[0],
@@ -354,6 +352,10 @@ export default function Journal() {
           setCurrentAnswers(answersData || []);
           setSelectedMood(entryData.daily_feeling || null);
 
+          // Load per-entry page settings
+          const ps = entryData.page_settings as any;
+          setEntryPageSettings(ps ? { skinId: ps.skinId, lineStyle: ps.lineStyle } : null);
+
           // Helper to ensure proper content structure with H1 Title
           const existingTitle = extractTitle(contentJSON);
 
@@ -406,8 +408,9 @@ export default function Journal() {
           setCurrentEntry(null);
           setCurrentAnswers([]);
           setSelectedMood(null);
+          setEntryPageSettings(null);
           const isUnstructured = journalMode === "unstructured";
-          const shouldApplyTemplate = !isUnstructured && template.applyOnNewEntry && isTemplateEffective;
+          const shouldApplyTemplate = !isUnstructured && template.applyOnNewEntry;
           const newContent = shouldApplyTemplate
             ? generateInitialContent(template.questions)
             : JSON.stringify({
@@ -424,7 +427,7 @@ export default function Journal() {
         setSaveStatus("saved");
         setIsLoading(false);
       });
-  }, [selectedDate, user, template, journalMode, isTemplateEffective]);
+  }, [selectedDate, user, template, journalMode]);
 
   // Save function
   const performSave = useCallback(async () => {
@@ -453,6 +456,7 @@ export default function Journal() {
             text_formatting: content,
             daily_feeling: selectedMood,
             images_data: imagesDataPayload,
+            page_settings: { skinId: currentSkinId, lineStyle: entryPageSettings?.lineStyle || template.defaultLineStyle || "none" },
             updated_at: new Date().toISOString(),
           })
           .eq("id", currentEntry.id);
@@ -502,6 +506,7 @@ export default function Journal() {
             text_formatting: content,
             daily_feeling: selectedMood,
             images_data: imagesDataPayload,
+            page_settings: { skinId: currentSkinId, lineStyle: entryPageSettings?.lineStyle || template.defaultLineStyle || "none" },
           })
           .select()
           .single();
@@ -700,6 +705,9 @@ export default function Journal() {
               {saveStatus === "saving" ? "Saving" : saveStatus === "saved" ? "Saved" : "Unsaved"}
             </span>
           </div>
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setEntrySettingsOpen(true)} title="Entry Appearance">
+            <Settings2 className="h-4 w-4" />
+          </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setIsFullscreen(!isFullscreen)}>
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </Button>
@@ -724,7 +732,7 @@ export default function Journal() {
           content={content}
           onChange={handleContentChange}
           skinStyles={{ editorPaperBg: currentSkin.editorPaperBg, text: currentSkin.text, mutedText: currentSkin.mutedText }}
-          defaultLineStyle={isTemplateEffective ? template.defaultLineStyle : "none"}
+          defaultLineStyle={entryPageSettings?.lineStyle || template.defaultLineStyle || "none"}
         />
       </div>
     </div>
@@ -850,6 +858,28 @@ export default function Journal() {
         />
       )}
       <JournalInsightsModal open={showInsights} onOpenChange={setShowInsights} />
+      <JournalSettingsModal
+        open={entrySettingsOpen}
+        onOpenChange={setEntrySettingsOpen}
+        mode="entry"
+        currentSkinId={currentSkinId}
+        onSkinChange={setCurrentSkinId}
+        currentLineStyle={entryPageSettings?.lineStyle || template.defaultLineStyle || "none"}
+        onEntryOverrideSave={(skinId, lineStyle) => {
+          setEntryPageSettings({ skinId, lineStyle });
+          setCurrentSkinId(skinId);
+          setSaveStatus("unsaved");
+          if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+          autosaveTimerRef.current = setTimeout(() => performSave(), 1000);
+        }}
+        onEntryOverrideReset={() => {
+          setEntryPageSettings(null);
+          setCurrentSkinId(theme.isDark ? "midnight-dark" : template.defaultSkinId || "minimal-light");
+          setSaveStatus("unsaved");
+          if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+          autosaveTimerRef.current = setTimeout(() => performSave(), 1000);
+        }}
+      />
     </div>
   );
 }
