@@ -305,9 +305,11 @@ export default function Settings() {
         </div>
 
         {/* Questions inline editor */}
-        <div className="px-4 py-3 border-b border-border last:border-b-0">
+        <div className={cn("px-4 py-3 border-b border-border last:border-b-0", (settings.journal_mode || "structured") === "unstructured" && "opacity-50 pointer-events-none")}>
           <p className="text-sm font-light text-foreground mb-1">Template Questions</p>
-          <p className="text-[11px] text-muted-foreground mb-3">Drag to reorder, click to edit</p>
+          <p className="text-[11px] text-muted-foreground mb-3">
+            {(settings.journal_mode || "structured") === "unstructured" ? "Switch to Structured mode to edit questions" : "Drag to reorder, click to edit"}
+          </p>
           <div className="space-y-2">
             {template.questions.map((question, index) => (
               <div
@@ -553,22 +555,24 @@ export default function Settings() {
             </SelectContent>
           </Select>
         </SettingsRow>
-        <SettingsRow label="Default Board Mode" description="Which board categorization to use">
-          <Select
-            value={settings.default_task_view || "status"}
-            onValueChange={(v) => saveField("default_task_view", v)}
-          >
-            <SelectTrigger className="w-36 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="status">Status</SelectItem>
-              <SelectItem value="urgent-important">Urgent × Important</SelectItem>
-              <SelectItem value="date">Date</SelectItem>
-              <SelectItem value="time">Time of Day</SelectItem>
-            </SelectContent>
-          </Select>
-        </SettingsRow>
+        {(settings.default_task_tab || "board") === "board" && (
+          <SettingsRow label="Default Board Mode" description="Which board categorization to use">
+            <Select
+              value={settings.default_task_view || "status"}
+              onValueChange={(v) => saveField("default_task_view", v)}
+            >
+              <SelectTrigger className="w-36 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="status">Status</SelectItem>
+                <SelectItem value="urgent-important">Urgent × Important</SelectItem>
+                <SelectItem value="date">Date</SelectItem>
+                <SelectItem value="time">Time of Day</SelectItem>
+              </SelectContent>
+            </Select>
+          </SettingsRow>
+        )}
         <SettingsRow label="Default Notes View" description="Which notes layout to show first">
           <Select
             value={settings.default_notes_view || "atlas"}

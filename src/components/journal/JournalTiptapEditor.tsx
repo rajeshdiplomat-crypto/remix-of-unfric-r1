@@ -251,8 +251,11 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
     const [imageUrl, setImageUrl] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Line Style State
+    // Line Style State - sync with prop
     const [lineStyle, setLineStyle] = useState(defaultLineStyle || "none");
+    useEffect(() => {
+      if (defaultLineStyle) setLineStyle(defaultLineStyle);
+    }, [defaultLineStyle]);
     const showLines = lineStyle !== "none";
 
     // Advanced Scribble State
@@ -945,59 +948,6 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
             <ToolBtn onClick={() => setImageDialogOpen(true)} title="Image">
               <ImageIcon className="h-4 w-4" />
             </ToolBtn>
-            <ToolBtn onClick={() => setScribbleMode(!scribbleMode)} active={scribbleMode} title="Scribble Mode">
-              <PenTool className="h-4 w-4" />
-            </ToolBtn>
-
-            <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100"
-                  title="Background"
-                >
-                  <ImagePlus className="h-4 w-4 text-slate-500" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-48 p-3 z-[9999]" align="start">
-                <p className="text-xs font-medium text-slate-500 mb-2">Background</p>
-                <div className="grid grid-cols-4 gap-2">
-                  {BG_PRESETS.map((bg) => (
-                    <button
-                      key={bg.id}
-                      onClick={() => setEditorBg(bg.value)}
-                      title={bg.label}
-                      className={cn(
-                        "h-8 w-8 rounded-lg border-2 hover:scale-105 transition",
-                        editorBg === bg.value ? "border-primary ring-2 ring-primary/20" : "border-slate-200",
-                      )}
-                      style={{ backgroundColor: bg.value === "transparent" ? "#fff" : bg.value }}
-                    />
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            {/* Line Style Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  className="h-8 px-2 flex items-center gap-1 rounded-lg text-slate-500 hover:bg-slate-100"
-                  title="Line Style"
-                >
-                  <Rows className="h-4 w-4" />
-                  <ChevronDown className="h-3 w-3" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="z-[9999]">
-                {LINE_STYLES.map((l) => (
-                  <DropdownMenuItem key={l.id} onClick={() => setLineStyle(l.id)} className="gap-2">
-                    <span>{l.preview}</span>
-                    <span>{l.label}</span>
-                    {lineStyle === l.id && <Check className="h-3 w-3 ml-auto" />}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
             <div className="w-px h-5 bg-slate-200 mx-1" />
 
             <DropdownMenu>
@@ -1006,7 +956,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
                   <MoreHorizontal className="h-4 w-4" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="z-[9999]">
+              <DropdownMenuContent align="end" className="z-[9999] w-48">
                 <DropdownMenuItem onClick={() => editor.chain().focus().toggleStrike().run()}>
                   <Strikethrough className="h-4 w-4 mr-2" /> Strikethrough
                 </DropdownMenuItem>
@@ -1018,6 +968,10 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => editor.chain().focus().setHorizontalRule().run()}>
                   <Minus className="h-4 w-4 mr-2" /> Divider
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setScribbleMode(!scribbleMode)}>
+                  <PenTool className="h-4 w-4 mr-2" /> Scribble {scribbleMode ? "Off" : "On"}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}>
@@ -1322,12 +1276,12 @@ JournalTiptapEditor.displayName = "JournalTiptapEditor";
 
 // Memoized version to prevent unnecessary re-renders
 export const MemoizedJournalTiptapEditor = React.memo(JournalTiptapEditor, (prevProps, nextProps) => {
-  // Re-render when content, skinStyles, or handlers change
   return (
     prevProps.content === nextProps.content &&
     prevProps.skinStyles?.editorPaperBg === nextProps.skinStyles?.editorPaperBg &&
     prevProps.skinStyles?.text === nextProps.skinStyles?.text &&
     prevProps.skinStyles?.mutedText === nextProps.skinStyles?.mutedText &&
+    prevProps.defaultLineStyle === nextProps.defaultLineStyle &&
     prevProps.onChange === nextProps.onChange &&
     prevProps.onScribbleChange === nextProps.onScribbleChange
   );
