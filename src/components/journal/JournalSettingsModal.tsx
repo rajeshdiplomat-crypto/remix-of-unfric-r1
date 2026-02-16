@@ -43,7 +43,6 @@ export function JournalSettingsModal({
   onEntryOverrideReset,
 }: JournalSettingsModalProps) {
   const [localQuestions, setLocalQuestions] = useState<JournalQuestion[]>(template?.questions || []);
-  const [applyOnNewEntry, setApplyOnNewEntry] = useState(template?.applyOnNewEntry ?? true);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedSkinId, setSelectedSkinId] = useState(currentSkinId);
@@ -74,7 +73,6 @@ export function JournalSettingsModal({
       return;
     }
     setLocalQuestions([...DEFAULT_QUESTIONS]);
-    setApplyOnNewEntry(true);
   };
 
   const handleDragStart = (index: number) => setDraggedIndex(index);
@@ -99,7 +97,6 @@ export function JournalSettingsModal({
       onTemplateChange({
         ...template,
         questions: localQuestions,
-        applyOnNewEntry,
         defaultSkinId: selectedSkinId,
         defaultLineStyle: selectedLineStyle,
       });
@@ -198,15 +195,6 @@ export function JournalSettingsModal({
                 <span className="text-sm font-medium text-foreground">Questions & Template</span>
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border mb-3">
-                <div>
-                  <Label htmlFor="apply-preset" className="text-sm font-medium text-foreground">
-                    Auto-apply on new entries
-                  </Label>
-                  <p className="text-xs text-muted-foreground">Add these prompts when you start a new day</p>
-                </div>
-                <Switch id="apply-preset" checked={applyOnNewEntry} onCheckedChange={setApplyOnNewEntry} />
-              </div>
 
               <div className="space-y-2">
                 {localQuestions.map((question, index) => (
@@ -259,7 +247,7 @@ export function JournalSettingsModal({
                 <Button variant="outline" size="sm" onClick={handleAddQuestion} className="flex-1 text-xs border-dashed">
                   <Plus className="h-4 w-4 mr-1.5" /> Add Question
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => { setLocalQuestions([...DEFAULT_QUESTIONS]); setApplyOnNewEntry(true); }} className="text-xs">
+                <Button variant="outline" size="sm" onClick={() => { setLocalQuestions([...DEFAULT_QUESTIONS]); }} className="text-xs">
                   <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Reset
                 </Button>
               </div>

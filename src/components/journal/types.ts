@@ -21,7 +21,6 @@ export interface JournalQuestion {
 
 export interface JournalTemplate {
   questions: JournalQuestion[];
-  applyOnNewEntry: boolean;
   defaultSkinId: string;
   defaultLineStyle?: string;
 }
@@ -130,7 +129,6 @@ export const JOURNAL_SKINS: JournalSkin[] = [
 
 export const DEFAULT_TEMPLATE: JournalTemplate = {
   questions: DEFAULT_QUESTIONS,
-  applyOnNewEntry: true,
   defaultSkinId: "minimal-light",
 };
 
