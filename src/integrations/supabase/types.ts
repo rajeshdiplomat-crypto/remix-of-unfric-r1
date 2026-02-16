@@ -746,6 +746,7 @@ export type Database = {
           default_emotions_tab: string | null
           default_home_screen: string | null
           default_notes_view: string | null
+          default_task_tab: string | null
           default_task_view: string | null
           diary_show_lines: boolean | null
           id: string
@@ -768,6 +769,7 @@ export type Database = {
           default_emotions_tab?: string | null
           default_home_screen?: string | null
           default_notes_view?: string | null
+          default_task_tab?: string | null
           default_task_view?: string | null
           diary_show_lines?: boolean | null
           id?: string
@@ -790,6 +792,7 @@ export type Database = {
           default_emotions_tab?: string | null
           default_home_screen?: string | null
           default_notes_view?: string | null
+          default_task_tab?: string | null
           default_task_view?: string | null
           diary_show_lines?: boolean | null
           id?: string

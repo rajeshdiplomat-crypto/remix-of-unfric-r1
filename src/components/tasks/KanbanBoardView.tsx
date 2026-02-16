@@ -14,6 +14,7 @@ interface KanbanBoardViewProps {
   onDrop: (columnId: string, task: QuadrantTask) => void;
   onStartTask: (task: QuadrantTask) => void;
   onCompleteTask: (task: QuadrantTask) => void;
+  defaultMode?: QuadrantMode;
 }
 
 function getQuadrantLabel(task: QuadrantTask) {
@@ -160,8 +161,9 @@ export function KanbanBoardView({
   onDrop,
   onStartTask,
   onCompleteTask,
+  defaultMode,
 }: KanbanBoardViewProps) {
-  const [boardMode, setBoardMode] = useState<QuadrantMode>("urgent-important");
+  const [boardMode, setBoardMode] = useState<QuadrantMode>(defaultMode || "urgent-important");
   const [completedOpenMap, setCompletedOpenMap] = useState<Record<string, boolean>>({});
 
   const activeQuadrants = QUADRANT_MODES[boardMode].quadrants;

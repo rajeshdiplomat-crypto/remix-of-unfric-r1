@@ -190,20 +190,23 @@ export default function Tasks() {
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<TasksViewTab>("board");
+  const [defaultBoardMode, setDefaultBoardMode] = useState<string | null>(null);
 
-  // Load default task view from DB
+  // Load default task tab and board mode from DB
   useEffect(() => {
     if (!user) return;
     supabase
       .from("user_settings")
-      .select("default_task_view")
+      .select("default_task_tab, default_task_view")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => {
-        const v = (data as any)?.default_task_view;
-        if (v === "status" || v === "urgent-important" || v === "date" || v === "time-of-day") {
-          setActiveTab("board");
+        const tab = (data as any)?.default_task_tab;
+        if (tab === "lists" || tab === "board" || tab === "timeline") {
+          setActiveTab(tab);
         }
+        const mode = (data as any)?.default_task_view;
+        if (mode) setDefaultBoardMode(mode);
       });
   }, [user]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -704,6 +707,7 @@ export default function Tasks() {
                   onDrop={handleBoardDrop}
                   onStartTask={handleStartTask}
                   onCompleteTask={handleCompleteTask}
+                  defaultMode={defaultBoardMode as any}
                 />
               )}
 

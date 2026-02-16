@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, GripVertical, RotateCcw, Check, Sparkles, Palette, Edit3 } from "lucide-react";
+import { Plus, Trash2, GripVertical, RotateCcw, Check, Sparkles, Edit3, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { JournalTemplate, JournalQuestion, JournalSkin, JOURNAL_SKINS, DEFAULT_QUESTIONS } from "./types";
 
@@ -14,13 +13,16 @@ interface JournalSettingsModalProps {
   onOpenChange: (open: boolean) => void;
   template: JournalTemplate;
   onTemplateChange: (template: JournalTemplate) => void;
+  currentSkinId: string;
+  onSkinChange: (skinId: string) => void;
 }
 
-export function JournalSettingsModal({ open, onOpenChange, template, onTemplateChange }: JournalSettingsModalProps) {
+export function JournalSettingsModal({ open, onOpenChange, template, onTemplateChange, currentSkinId, onSkinChange }: JournalSettingsModalProps) {
   const [localQuestions, setLocalQuestions] = useState<JournalQuestion[]>(template.questions);
   const [applyOnNewEntry, setApplyOnNewEntry] = useState(template.applyOnNewEntry);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedSkinId, setSelectedSkinId] = useState(currentSkinId);
 
   const handleQuestionTextChange = (id: string, text: string) => {
     setLocalQuestions((prev) => prev.map((q) => (q.id === id ? { ...q, text } : q)));
@@ -69,53 +71,82 @@ export function JournalSettingsModal({ open, onOpenChange, template, onTemplateC
       ...template,
       questions: localQuestions,
       applyOnNewEntry,
+      defaultSkinId: selectedSkinId,
     });
+    onSkinChange(selectedSkinId);
     onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col bg-gradient-to-b from-slate-50 to-white border-0 shadow-2xl">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col bg-card border border-border shadow-2xl">
         <DialogHeader className="pb-2">
-          <DialogTitle className="text-xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-violet-500" />
+          <DialogTitle className="text-xl font-light uppercase tracking-wider text-foreground flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-muted-foreground" />
             Journal Settings
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden flex flex-col">
-          <div className="flex items-center gap-2 mb-4">
-            <Edit3 className="h-4 w-4 text-violet-500" />
-            <span className="text-sm font-semibold text-slate-700">Questions & Template</span>
+        <div className="flex-1 overflow-auto space-y-6">
+          {/* Skin Selection */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Palette className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">Journal Skin</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {JOURNAL_SKINS.map((skin) => (
+                <button
+                  key={skin.id}
+                  onClick={() => setSelectedSkinId(skin.id)}
+                  className={cn(
+                    "relative p-3 rounded-lg border transition-all text-left",
+                    selectedSkinId === skin.id
+                      ? "border-primary ring-1 ring-primary"
+                      : "border-border hover:border-muted-foreground/30"
+                  )}
+                >
+                  <div
+                    className="h-8 rounded-md mb-2 border"
+                    style={{ backgroundColor: skin.cardBg, borderColor: skin.border }}
+                  >
+                    <div className="h-2 w-2/3 rounded-sm mt-2 ml-2" style={{ backgroundColor: skin.accent }} />
+                  </div>
+                  <p className="text-xs font-medium text-foreground">{skin.name}</p>
+                  {selectedSkinId === skin.id && (
+                    <div className="absolute top-1.5 right-1.5 h-4 w-4 rounded-full bg-primary flex items-center justify-center">
+                      <Check className="h-2.5 w-2.5 text-primary-foreground" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="flex-1 overflow-auto space-y-4">
+          {/* Questions & Template */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Edit3 className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">Questions & Template</span>
+            </div>
 
-            {/* Auto-apply Toggle (hidden when unstructured) */}
-            {(
-              <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-violet-100 rounded-xl">
-                    <Sparkles className="h-4 w-4 text-violet-600" />
-                  </div>
-                  <div>
-                    <Label htmlFor="apply-preset" className="text-sm font-semibold text-slate-700">
-                      Auto-apply on new entries
-                    </Label>
-                    <p className="text-xs text-slate-400">Add these prompts when you start a new day</p>
-                  </div>
-                </div>
-                <Switch
-                  id="apply-preset"
-                  checked={applyOnNewEntry}
-                  onCheckedChange={setApplyOnNewEntry}
-                  className="data-[state=checked]:bg-violet-500"
-                />
+            {/* Auto-apply Toggle */}
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border mb-3">
+              <div>
+                <Label htmlFor="apply-preset" className="text-sm font-medium text-foreground">
+                  Auto-apply on new entries
+                </Label>
+                <p className="text-xs text-muted-foreground">Add these prompts when you start a new day</p>
               </div>
-            )}
+              <Switch
+                id="apply-preset"
+                checked={applyOnNewEntry}
+                onCheckedChange={setApplyOnNewEntry}
+              />
+            </div>
 
             {/* Questions List */}
-            {<div className="space-y-2">
+            <div className="space-y-2">
               {localQuestions.map((question, index) => (
                 <div
                   key={question.id}
@@ -124,12 +155,12 @@ export function JournalSettingsModal({ open, onOpenChange, template, onTemplateC
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDragEnd={handleDragEnd}
                   className={cn(
-                    "group flex items-center gap-3 p-3 rounded-xl bg-white border border-slate-100 shadow-sm transition-all hover:border-violet-200 hover:shadow-md",
+                    "group flex items-center gap-3 p-3 rounded-lg bg-background border border-border transition-all hover:border-primary/30",
                     draggedIndex === index && "opacity-50 scale-[0.98]",
                   )}
                 >
-                  <div className="cursor-grab active:cursor-grabbing p-1 rounded-lg hover:bg-slate-100 transition-colors">
-                    <GripVertical className="h-4 w-4 text-slate-300 group-hover:text-slate-400" />
+                  <div className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors">
+                    <GripVertical className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground" />
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -140,12 +171,12 @@ export function JournalSettingsModal({ open, onOpenChange, template, onTemplateC
                         onBlur={() => setEditingId(null)}
                         onKeyDown={(e) => e.key === "Enter" && setEditingId(null)}
                         autoFocus
-                        className="border-violet-200 focus-visible:ring-violet-300"
+                        className="h-7 text-xs"
                       />
                     ) : (
                       <button
                         onClick={() => setEditingId(question.id)}
-                        className="w-full text-left text-sm font-medium text-slate-700 hover:text-violet-600 transition-colors truncate"
+                        className="w-full text-left text-sm text-foreground hover:text-primary transition-colors truncate"
                       >
                         {question.text}
                       </button>
@@ -157,7 +188,7 @@ export function JournalSettingsModal({ open, onOpenChange, template, onTemplateC
                       variant="ghost"
                       size="sm"
                       onClick={() => setEditingId(question.id)}
-                      className="h-8 w-8 p-0 text-slate-400 hover:text-violet-500 hover:bg-violet-50"
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
                     >
                       <Edit3 className="h-3.5 w-3.5" />
                     </Button>
@@ -165,22 +196,22 @@ export function JournalSettingsModal({ open, onOpenChange, template, onTemplateC
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDeleteQuestion(question.id)}
-                      className="h-8 w-8 p-0 text-slate-400 hover:text-rose-500 hover:bg-rose-50"
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </div>
               ))}
-            </div>}
+            </div>
 
             {/* Add & Reset Buttons */}
-            {<div className="flex gap-2">
+            <div className="flex gap-2 mt-3">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleAddQuestion}
-                className="flex-1 rounded-xl border-dashed border-violet-200 text-violet-600 hover:bg-violet-50 hover:border-violet-300"
+                className="flex-1 text-xs border-dashed"
               >
                 <Plus className="h-4 w-4 mr-1.5" />
                 Add Question
@@ -189,24 +220,21 @@ export function JournalSettingsModal({ open, onOpenChange, template, onTemplateC
                 variant="outline"
                 size="sm"
                 onClick={handleResetToDefault}
-                className="rounded-xl text-slate-500 hover:text-slate-700"
+                className="text-xs"
               >
                 <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
                 Reset
               </Button>
-            </div>}
+            </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">
+        <div className="flex justify-end gap-2 pt-4 border-t border-border">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button
-            onClick={handleSave}
-            className="rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 shadow-lg shadow-purple-200/50"
-          >
+          <Button onClick={handleSave}>
             Save Changes
           </Button>
         </div>
