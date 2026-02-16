@@ -259,16 +259,6 @@ export default function Settings() {
             </SelectContent>
           </Select>
         </SettingsRow>
-        <SettingsRow label="Auto-apply prompts on new entries" description="Add template questions when you start a new day">
-          <Switch
-            checked={template.applyOnNewEntry}
-            onCheckedChange={(v) => {
-              const updated = { ...template, applyOnNewEntry: v };
-              setTemplate(updated);
-              localStorage.setItem("journal_template", JSON.stringify(updated));
-            }}
-          />
-        </SettingsRow>
         <SettingsRow label="Default Journal Skin" description="Choose the default skin for journal entries">
           <Select
             value={template.defaultSkinId}

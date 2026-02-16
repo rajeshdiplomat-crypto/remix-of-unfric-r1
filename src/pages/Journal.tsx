@@ -410,7 +410,7 @@ export default function Journal() {
           setSelectedMood(null);
           setEntryPageSettings(null);
           const isUnstructured = journalMode === "unstructured";
-          const shouldApplyTemplate = !isUnstructured && template.applyOnNewEntry;
+          const shouldApplyTemplate = !isUnstructured;
           const newContent = shouldApplyTemplate
             ? generateInitialContent(template.questions)
             : JSON.stringify({
