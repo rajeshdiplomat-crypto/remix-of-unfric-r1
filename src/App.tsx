@@ -32,10 +32,8 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function HomeRedirect() {
-  const defaultHome = localStorage.getItem("settings_default_home") || "diary";
-  // Also check user_settings from supabase via a quick read
-  const [target, setTarget] = useState(`/${defaultHome}`);
   const { user, loading: authLoading } = useAuth();
+  const [target, setTarget] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -43,11 +41,10 @@ function HomeRedirect() {
       .from("user_settings")
       .select("default_home_screen")
       .eq("user_id", user.id)
-      .single()
+      .maybeSingle()
       .then(({ data }) => {
-        if (data?.default_home_screen) {
-          setTarget(`/${data.default_home_screen}`);
-        }
+        const home = data?.default_home_screen || "diary";
+        setTarget(`/${home}`);
       });
   }, [user]);
 
@@ -60,6 +57,13 @@ function HomeRedirect() {
   }
 
   if (!user) return <Navigate to="/auth" replace />;
+  if (!target) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
   return <Navigate to={target} replace />;
 }
 

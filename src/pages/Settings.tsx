@@ -32,11 +32,11 @@ interface UserSettings {
   privacy_blur_sensitive: boolean | null;
   privacy_passcode_enabled: boolean | null;
   note_skin_preference: string | null;
+  default_task_tab: string | null;
   default_task_view: string | null;
   default_notes_view: string | null;
   default_emotions_tab: string | null;
   journal_mode: string | null;
-  diary_show_lines: boolean | null;
 }
 
 const TIMEZONES = (Intl as any).supportedValuesOf("timeZone") as string[];
@@ -96,11 +96,11 @@ export default function Settings() {
           privacy_blur_sensitive: data.privacy_blur_sensitive,
           privacy_passcode_enabled: data.privacy_passcode_enabled,
           note_skin_preference: data.note_skin_preference,
+          default_task_tab: (data as any).default_task_tab ?? "board",
           default_task_view: (data as any).default_task_view ?? "status",
           default_notes_view: (data as any).default_notes_view ?? "list",
           default_emotions_tab: (data as any).default_emotions_tab ?? "feel",
           journal_mode: (data as any).journal_mode ?? "structured",
-          diary_show_lines: (data as any).diary_show_lines ?? true,
         });
       } else {
         // Create default row
@@ -116,11 +116,11 @@ export default function Settings() {
           privacy_blur_sensitive: false,
           privacy_passcode_enabled: false,
           note_skin_preference: null,
+          default_task_tab: "board",
           default_task_view: "status",
           default_notes_view: "atlas",
           default_emotions_tab: "feel",
           journal_mode: "structured",
-          diary_show_lines: true,
         };
         await supabase.from("user_settings").insert({ user_id: user.id, ...defaults });
         setSettings(defaults);
@@ -524,7 +524,22 @@ export default function Settings() {
             </SelectContent>
           </Select>
         </SettingsRow>
-        <SettingsRow label="Default Task Board" description="Which task view to show first">
+        <SettingsRow label="Default Task Tab" description="Which task tab to show first">
+          <Select
+            value={settings.default_task_tab || "board"}
+            onValueChange={(v) => saveField("default_task_tab", v)}
+          >
+            <SelectTrigger className="w-28 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="lists">Lists</SelectItem>
+              <SelectItem value="board">Board</SelectItem>
+              <SelectItem value="timeline">Timeline</SelectItem>
+            </SelectContent>
+          </Select>
+        </SettingsRow>
+        <SettingsRow label="Default Board Mode" description="Which board categorization to use">
           <Select
             value={settings.default_task_view || "status"}
             onValueChange={(v) => saveField("default_task_view", v)}
@@ -534,9 +549,9 @@ export default function Settings() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="status">Status</SelectItem>
-              <SelectItem value="urgent-important">Urgent/Important</SelectItem>
+              <SelectItem value="urgent-important">Urgent × Important</SelectItem>
               <SelectItem value="date">Date</SelectItem>
-              <SelectItem value="time-of-day">Time of Day</SelectItem>
+              <SelectItem value="time">Time of Day</SelectItem>
             </SelectContent>
           </Select>
         </SettingsRow>
@@ -569,12 +584,6 @@ export default function Settings() {
               <SelectItem value="insights">Insights</SelectItem>
             </SelectContent>
           </Select>
-        </SettingsRow>
-        <SettingsRow label="Diary Feed Lines" description="Show separator lines between feed items">
-          <Switch
-            checked={settings.diary_show_lines ?? true}
-            onCheckedChange={(v) => saveField("diary_show_lines", v)}
-          />
         </SettingsRow>
       </SettingsSection>
 
