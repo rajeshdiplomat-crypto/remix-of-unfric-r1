@@ -13,6 +13,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useTimezone } from "@/hooks/useTimezone";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import { Clock, Timer, Hourglass, Calendar, Play, Pause, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +45,8 @@ export function TasksClockWidget() {
   }, [mode]);
   const [now, setNow] = useState(new Date());
   const { timezone, getTimeInTimezone, formatInTimezone } = useTimezone();
+  const { timeFormat: userTimeFormat } = useTimeFormat();
+  const is12h = userTimeFormat === "12h";
 
   // Stopwatch state
   const [stopwatchMs, setStopwatchMs] = useState(0);
@@ -168,15 +171,17 @@ export function TasksClockWidget() {
               </div>
               <div className="flex items-baseline justify-center gap-1">
                 <span className="text-5xl font-black tracking-tight bg-gradient-to-br from-foreground via-foreground to-muted-foreground bg-clip-text text-transparent drop-shadow-sm">
-                  {formatInTimezone(now, { hour: "numeric", minute: "2-digit", hour12: true }).replace(
+                  {formatInTimezone(now, { hour: "numeric", minute: "2-digit", hour12: is12h }).replace(
                     /\s?(AM|PM)$/i,
                     "",
                   )}
                 </span>
                 <div className="flex flex-col items-start ml-1">
-                  <span className="text-sm font-bold text-primary/60">
-                    {formatInTimezone(now, { hour: "numeric", hour12: true }).replace(/^[\d:]+\s?/, "")}
-                  </span>
+                  {is12h && (
+                    <span className="text-sm font-bold text-primary/60">
+                      {formatInTimezone(now, { hour: "numeric", hour12: true }).replace(/^[\d:]+\s?/, "")}
+                    </span>
+                  )}
                   <span className="text-xs font-mono text-muted-foreground/50 tabular-nums">
                     {String(getTimeInTimezone(now).seconds).padStart(2, "0")}
                   </span>
