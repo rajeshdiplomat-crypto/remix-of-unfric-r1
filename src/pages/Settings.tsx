@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -58,6 +59,9 @@ interface UserSettings {
   default_emotions_tab: string | null;
   journal_mode: string | null;
   time_format: string | null;
+  reminder_time_diary: string | null;
+  reminder_time_habits: string | null;
+  reminder_time_emotions: string | null;
 }
 
 const TIMEZONES = (Intl as any).supportedValuesOf("timeZone") as string[];
@@ -130,6 +134,9 @@ export default function Settings() {
           default_emotions_tab: (data as any).default_emotions_tab ?? "feel",
           journal_mode: (data as any).journal_mode ?? "structured",
           time_format: data.time_format ?? "24h",
+          reminder_time_diary: (data as any).reminder_time_diary ?? "08:00",
+          reminder_time_habits: (data as any).reminder_time_habits ?? "08:00",
+          reminder_time_emotions: (data as any).reminder_time_emotions ?? "08:00",
         });
       } else {
         // Create default row
@@ -151,6 +158,9 @@ export default function Settings() {
           default_emotions_tab: "feel",
           journal_mode: "structured",
           time_format: "24h",
+          reminder_time_diary: "08:00",
+          reminder_time_habits: "08:00",
+          reminder_time_emotions: "08:00",
         };
         await supabase.from("user_settings").insert({ user_id: user.id, ...defaults });
         setSettings(defaults);
@@ -240,6 +250,107 @@ export default function Settings() {
       toast.success("Data exported successfully");
     } catch (e) {
       toast.error("Export failed");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  // ── Export PDF ────────────────────────────────────────────────────
+
+  const handleExportPdf = async () => {
+    if (!user) return;
+    setExportLoading(true);
+    try {
+      const [emotions, journal, habits, notes, tasks, goals] = await Promise.all([
+        supabase.from("emotions").select("*").eq("user_id", user.id),
+        supabase.from("journal_entries").select("*").eq("user_id", user.id),
+        supabase.from("habits").select("*").eq("user_id", user.id),
+        supabase.from("notes").select("*").eq("user_id", user.id),
+        supabase.from("tasks").select("*").eq("user_id", user.id),
+        supabase.from("manifest_goals").select("*").eq("user_id", user.id),
+      ]);
+
+      const doc = new jsPDF();
+      let y = 20;
+      const pageH = 280;
+      const marginLeft = 14;
+
+      const checkPage = (needed: number) => {
+        if (y + needed > pageH) { doc.addPage(); y = 20; }
+      };
+
+      const addHeading = (text: string) => {
+        checkPage(14);
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text(text, marginLeft, y);
+        y += 8;
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+      };
+
+      const addLine = (text: string) => {
+        checkPage(6);
+        const lines = doc.splitTextToSize(text, 180);
+        doc.text(lines, marginLeft, y);
+        y += lines.length * 4.5;
+      };
+
+      // Title
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("Unfric Data Export", marginLeft, y);
+      y += 8;
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Exported: ${new Date().toLocaleDateString()}`, marginLeft, y);
+      y += 12;
+
+      // Emotions
+      addHeading(`Emotions (${emotions.data?.length || 0})`);
+      (emotions.data || []).forEach((e: any) => {
+        addLine(`${e.entry_date} — ${e.emotion}${e.notes ? ': ' + e.notes : ''}`);
+      });
+      y += 4;
+
+      // Journal
+      addHeading(`Journal Entries (${journal.data?.length || 0})`);
+      (journal.data || []).forEach((e: any) => {
+        addLine(`${e.entry_date}${e.daily_feeling ? ' — Feeling: ' + e.daily_feeling : ''}${e.daily_gratitude ? ' — Gratitude: ' + e.daily_gratitude : ''}`);
+      });
+      y += 4;
+
+      // Habits
+      addHeading(`Habits (${habits.data?.length || 0})`);
+      (habits.data || []).forEach((h: any) => {
+        addLine(`${h.name}${h.description ? ' — ' + h.description : ''} (${h.frequency || 'daily'})`);
+      });
+      y += 4;
+
+      // Notes
+      addHeading(`Notes (${notes.data?.length || 0})`);
+      (notes.data || []).forEach((n: any) => {
+        addLine(`${n.title}${n.category ? ' [' + n.category + ']' : ''}`);
+      });
+      y += 4;
+
+      // Tasks
+      addHeading(`Tasks (${tasks.data?.length || 0})`);
+      (tasks.data || []).forEach((t: any) => {
+        addLine(`${t.is_completed ? '✓' : '○'} ${t.title}${t.due_date ? ' — Due: ' + new Date(t.due_date).toLocaleDateString() : ''}`);
+      });
+      y += 4;
+
+      // Manifest Goals
+      addHeading(`Manifest Goals (${goals.data?.length || 0})`);
+      (goals.data || []).forEach((g: any) => {
+        addLine(`${g.is_completed ? '✓' : '○'} ${g.title}${g.description ? ' — ' + g.description : ''}`);
+      });
+
+      doc.save(`unfric-export-${new Date().toISOString().split("T")[0]}.pdf`);
+      toast.success("PDF exported successfully");
+    } catch (e) {
+      toast.error("PDF export failed");
     } finally {
       setExportLoading(false);
     }
@@ -574,49 +685,99 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* Individual reminder toggles */}
-        <SettingsRow label="Daily Journal Reminder" description="Get reminded to write in your journal">
-          <Switch
-            checked={settings.notification_diary_prompt ?? true}
-            onCheckedChange={(v) => saveField("notification_diary_prompt", v)}
-          />
-        </SettingsRow>
-        <SettingsRow label="Habit Check-in Reminders" description="Get nudged to complete your habits">
-          <Switch
-            checked={settings.notification_task_reminder ?? true}
-            onCheckedChange={(v) => saveField("notification_task_reminder", v)}
-          />
-        </SettingsRow>
-        <SettingsRow label="Emotion Check-in Nudges" description="Periodic reminders to log your emotions">
-          <Switch
-            checked={settings.notification_emotion_checkin ?? true}
-            onCheckedChange={(v) => saveField("notification_emotion_checkin", v)}
-          />
-        </SettingsRow>
-        <SettingsRow label="Reminder Time" description="When to send daily reminders">
-          <UnifiedTimePicker
-            value={settings.daily_reset_time || "08:00"}
-            onChange={(v) => saveField("daily_reset_time", v)}
-            intervalMinutes={15}
-            triggerClassName="w-28 text-xs"
-          />
-        </SettingsRow>
+        {/* Individual reminder toggles with per-module times */}
+        <div className="px-4 py-3 border-b border-border last:border-b-0">
+          <div className="flex items-center justify-between">
+            <div className="flex-1 min-w-0 mr-4">
+              <p className="text-sm font-light text-foreground">Daily Journal Reminder</p>
+              <p className="text-[11px] text-muted-foreground">Get reminded to write in your journal</p>
+            </div>
+            <Switch
+              checked={settings.notification_diary_prompt ?? true}
+              onCheckedChange={(v) => saveField("notification_diary_prompt", v)}
+            />
+          </div>
+          <div className={cn("mt-2 flex items-center gap-2", !(settings.notification_diary_prompt ?? true) && "opacity-40 pointer-events-none")}>
+            <span className="text-[11px] text-muted-foreground">Remind at</span>
+            <UnifiedTimePicker
+              value={settings.reminder_time_diary || "08:00"}
+              onChange={(v) => saveField("reminder_time_diary", v)}
+              triggerClassName="w-24 text-xs h-7"
+            />
+          </div>
+        </div>
+        <div className="px-4 py-3 border-b border-border last:border-b-0">
+          <div className="flex items-center justify-between">
+            <div className="flex-1 min-w-0 mr-4">
+              <p className="text-sm font-light text-foreground">Habit Check-in Reminders</p>
+              <p className="text-[11px] text-muted-foreground">Get nudged to complete your habits</p>
+            </div>
+            <Switch
+              checked={settings.notification_task_reminder ?? true}
+              onCheckedChange={(v) => saveField("notification_task_reminder", v)}
+            />
+          </div>
+          <div className={cn("mt-2 flex items-center gap-2", !(settings.notification_task_reminder ?? true) && "opacity-40 pointer-events-none")}>
+            <span className="text-[11px] text-muted-foreground">Remind at</span>
+            <UnifiedTimePicker
+              value={settings.reminder_time_habits || "08:00"}
+              onChange={(v) => saveField("reminder_time_habits", v)}
+              triggerClassName="w-24 text-xs h-7"
+            />
+          </div>
+        </div>
+        <div className="px-4 py-3 border-b border-border last:border-b-0">
+          <div className="flex items-center justify-between">
+            <div className="flex-1 min-w-0 mr-4">
+              <p className="text-sm font-light text-foreground">Emotion Check-in Nudges</p>
+              <p className="text-[11px] text-muted-foreground">Periodic reminders to log your emotions</p>
+            </div>
+            <Switch
+              checked={settings.notification_emotion_checkin ?? true}
+              onCheckedChange={(v) => saveField("notification_emotion_checkin", v)}
+            />
+          </div>
+          <div className={cn("mt-2 flex items-center gap-2", !(settings.notification_emotion_checkin ?? true) && "opacity-40 pointer-events-none")}>
+            <span className="text-[11px] text-muted-foreground">Remind at</span>
+            <UnifiedTimePicker
+              value={settings.reminder_time_emotions || "08:00"}
+              onChange={(v) => saveField("reminder_time_emotions", v)}
+              triggerClassName="w-24 text-xs h-7"
+            />
+          </div>
+        </div>
       </SettingsSection>
 
       {/* ─── Section 3: Data & Privacy ─── */}
       <SettingsSection icon={Shield} title="Data & Privacy">
-        <SettingsRow label="Export Data" description="Download all your data as JSON">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportData}
-            disabled={exportLoading}
-            className="text-xs uppercase tracking-wider"
-          >
-            {exportLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Download className="h-3 w-3 mr-1" />}
-            Export
-          </Button>
-        </SettingsRow>
+        <div className="px-4 py-3 border-b border-border last:border-b-0">
+          <div className="flex-1 min-w-0 mb-2">
+            <p className="text-sm font-light text-foreground">Export Data</p>
+            <p className="text-[11px] text-muted-foreground">Download all your data</p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportData}
+              disabled={exportLoading}
+              className="text-xs uppercase tracking-wider"
+            >
+              {exportLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Download className="h-3 w-3 mr-1" />}
+              JSON
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportPdf}
+              disabled={exportLoading}
+              className="text-xs uppercase tracking-wider"
+            >
+              {exportLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Download className="h-3 w-3 mr-1" />}
+              PDF
+            </Button>
+          </div>
+        </div>
         <SettingsRow label="Clear Module Data" description="Reset data for a specific module">
           <Select onValueChange={(v) => setClearDialog(v)}>
             <SelectTrigger className="w-32 text-xs">

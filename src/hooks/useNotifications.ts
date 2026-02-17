@@ -8,7 +8,10 @@ interface ReminderSettings {
   notification_diary_prompt: boolean;
   notification_task_reminder: boolean;
   notification_emotion_checkin: boolean;
-  daily_reset_time: string; // "HH:mm"
+  daily_reset_time: string; // "HH:mm" (legacy fallback)
+  reminder_time_diary: string;
+  reminder_time_habits: string;
+  reminder_time_emotions: string;
 }
 
 const NOTIFICATION_TITLES: Record<string, { title: string; body: string; tag: string }> = {
@@ -131,7 +134,7 @@ export function useNotificationScheduler(): void {
     const fetchSettings = async () => {
       const { data } = await supabase
         .from("user_settings")
-        .select("notification_diary_prompt, notification_task_reminder, notification_emotion_checkin, daily_reset_time")
+        .select("notification_diary_prompt, notification_task_reminder, notification_emotion_checkin, daily_reset_time, reminder_time_diary, reminder_time_habits, reminder_time_emotions")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -141,6 +144,9 @@ export function useNotificationScheduler(): void {
           notification_task_reminder: data.notification_task_reminder ?? true,
           notification_emotion_checkin: data.notification_emotion_checkin ?? true,
           daily_reset_time: data.daily_reset_time ?? "08:00",
+          reminder_time_diary: (data as any).reminder_time_diary ?? data.daily_reset_time ?? "08:00",
+          reminder_time_habits: (data as any).reminder_time_habits ?? data.daily_reset_time ?? "08:00",
+          reminder_time_emotions: (data as any).reminder_time_emotions ?? data.daily_reset_time ?? "08:00",
         };
       }
     };
@@ -165,6 +171,9 @@ export function useNotificationScheduler(): void {
             notification_task_reminder: d.notification_task_reminder ?? true,
             notification_emotion_checkin: d.notification_emotion_checkin ?? true,
             daily_reset_time: d.daily_reset_time ?? "08:00",
+            reminder_time_diary: d.reminder_time_diary ?? d.daily_reset_time ?? "08:00",
+            reminder_time_habits: d.reminder_time_habits ?? d.daily_reset_time ?? "08:00",
+            reminder_time_emotions: d.reminder_time_emotions ?? d.daily_reset_time ?? "08:00",
           };
         }
       )
@@ -184,11 +193,10 @@ export function useNotificationScheduler(): void {
     const check = () => {
       const s = settingsRef.current;
       if (!s) return;
-      if (!isTimeToNotify(s.daily_reset_time)) return;
 
-      if (s.notification_diary_prompt) sendNotification("diary");
-      if (s.notification_task_reminder) sendNotification("habits");
-      if (s.notification_emotion_checkin) sendNotification("emotions");
+      if (s.notification_diary_prompt && isTimeToNotify(s.reminder_time_diary)) sendNotification("diary");
+      if (s.notification_task_reminder && isTimeToNotify(s.reminder_time_habits)) sendNotification("habits");
+      if (s.notification_emotion_checkin && isTimeToNotify(s.reminder_time_emotions)) sendNotification("emotions");
     };
 
     // Check immediately, then every 60s
