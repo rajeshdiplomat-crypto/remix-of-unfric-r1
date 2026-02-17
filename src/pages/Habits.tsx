@@ -1196,6 +1196,22 @@ export default function Habits() {
 
           {/* Main dashboard — Single wide card with 3 internal sections */}
           <Card className="mb-4 flex-shrink-0 overflow-hidden">
+            {/* Mobile: show compact stats */}
+            <div className="lg:hidden p-3 flex items-center justify-between border-b border-border">
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setCurrentMonth(addDays(startOfMonth(currentMonth), -1))}>
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </Button>
+                <span className="text-xs font-medium text-foreground">{format(currentMonth, "MMM yyyy")}</span>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setCurrentMonth(addDays(endOfMonth(currentMonth), 1))}>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <span><strong className="text-foreground">{activities.filter(a => !a.isArchived).length}</strong> Active</span>
+                <span><strong className="text-foreground">{overallStats.dailyProgress}%</strong> Today</span>
+              </div>
+            </div>
             <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_200px] lg:h-[280px]">
               {/* Left section — Month nav + Stats */}
               <div className="p-4 hidden lg:block border-r border-border">

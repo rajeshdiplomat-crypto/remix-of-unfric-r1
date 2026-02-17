@@ -182,10 +182,10 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
   };
 
   const textOverlay = (
-    <div className="absolute bottom-0 left-0 z-10 p-8 lg:p-12">
-      {badge && <p className="text-[10px] uppercase tracking-[0.3em] text-foreground/70 mb-3">{badge}</p>}
-      <h1 className="text-4xl lg:text-6xl font-light uppercase tracking-[0.15em] text-foreground mb-2">{title}</h1>
-      {subtitle && <p className="text-sm font-light tracking-wider text-foreground/70 max-w-md">{subtitle}</p>}
+    <div className="absolute bottom-0 left-0 z-10 p-4 sm:p-8 lg:p-12">
+      {badge && <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.3em] text-foreground/70 mb-2 sm:mb-3">{badge}</p>}
+      <h1 className="text-2xl sm:text-4xl lg:text-6xl font-light uppercase tracking-[0.15em] text-foreground mb-1 sm:mb-2">{title}</h1>
+      {subtitle && <p className="text-xs sm:text-sm font-light tracking-wider text-foreground/70 max-w-xs sm:max-w-md">{subtitle}</p>}
     </div>
   );
 
@@ -225,7 +225,7 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
 
   if (isLoading) {
     return (
-      <div className="relative w-full h-[calc(40vh+2.8rem)] bg-foreground/5 flex items-center justify-center">
+      <div className="relative w-full h-[calc(30vh+2.8rem)] sm:h-[calc(40vh+2.8rem)] bg-foreground/5 flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
@@ -233,7 +233,7 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
 
   if (!mediaSrc) {
     return (
-      <div className="relative w-full h-[calc(40vh+2.8rem)] bg-foreground/5 flex items-end justify-start overflow-hidden">
+      <div className="relative w-full h-[calc(30vh+2.8rem)] sm:h-[calc(40vh+2.8rem)] bg-foreground/5 flex items-end justify-start overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
         {textOverlay}
         {editDialog(false)}
@@ -243,7 +243,7 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
 
   return (
     <div
-      className="relative w-full h-[calc(40vh+2.8rem)] overflow-hidden"
+      className="relative w-full h-[calc(30vh+2.8rem)] sm:h-[calc(40vh+2.8rem)] overflow-hidden"
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
