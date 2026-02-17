@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { format, parseISO } from "date-fns";
+import { useDatePreferences } from "@/hooks/useDatePreferences";
 import { ArrowLeft, FileText, Grid3X3, LayoutGrid, List, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { extractImagesFromTiptapJSON } from "@/lib/editorUtils";
@@ -28,6 +29,7 @@ const VIEW_OPTIONS: { mode: ViewMode; icon: typeof LayoutGrid; label: string }[]
 ];
 
 export function JournalRecentEntriesView({ entries, onSelectEntry, onClose }: JournalRecentEntriesViewProps) {
+  const { formatDate: fmtDate } = useDatePreferences();
   const [viewMode, setViewMode] = useState<ViewMode>("large");
   const [search, setSearch] = useState("");
 
@@ -136,7 +138,7 @@ export function JournalRecentEntriesView({ entries, onSelectEntry, onClose }: Jo
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-foreground">{format(date, "MMM d, yyyy")}</p>
+                      <p className="text-sm font-medium text-foreground">{fmtDate(date, "full")}</p>
                       <span className="text-xs text-muted-foreground">{format(date, "EEEE")}</span>
                       {moodColor && <span className={cn("h-2 w-2 rounded-full shrink-0", moodColor)} />}
                     </div>
@@ -211,7 +213,7 @@ export function JournalRecentEntriesView({ entries, onSelectEntry, onClose }: Jo
                           "font-semibold text-foreground",
                           viewMode === "large" ? "text-lg" : "text-xs"
                         )}>
-                          {format(date, viewMode === "large" ? "MMM d, yyyy" : "MMM d")}
+                          {fmtDate(date, viewMode === "large" ? "full" : "short")}
                         </p>
                         {viewMode === "large" && (
                           <p className="text-xs text-muted-foreground">{format(date, "EEEE")}</p>

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useDatePreferences } from "@/hooks/useDatePreferences";
 import { Button } from "@/components/ui/button";
 import { QuadrantType, QUADRANTS, EmotionEntry } from "./types";
 import {
@@ -19,12 +20,13 @@ interface EmotionCalendarSidebarProps {
 export function EmotionCalendarSidebar({ entries, onDateClick }: EmotionCalendarSidebarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const { timezone } = useTimezone();
+  const { weekStartsOn } = useDatePreferences();
 
   const { days, firstDayOfWeek, entriesByDate, today, todayStr } = useMemo(() => {
     const start = startOfMonth(currentMonth);
     const end = endOfMonth(currentMonth);
     const days = eachDayOfInterval({ start, end });
-    const firstDayOfWeek = start.getDay();
+    const firstDayOfWeek = (start.getDay() - weekStartsOn + 7) % 7;
 
     const entriesByDate: Record<string, EmotionEntry[]> = {};
     entries.forEach((entry) => {
@@ -37,7 +39,7 @@ export function EmotionCalendarSidebar({ entries, onDateClick }: EmotionCalendar
     const today = getStartOfTodayInTimezone(timezone);
 
     return { days, firstDayOfWeek, entriesByDate, today, todayStr };
-  }, [currentMonth, entries, timezone]);
+  }, [currentMonth, entries, timezone, weekStartsOn]);
 
   const getDominant = (dayEntries: EmotionEntry[]): QuadrantType | null => {
     if (dayEntries.length === 0) return null;
@@ -85,7 +87,7 @@ export function EmotionCalendarSidebar({ entries, onDateClick }: EmotionCalendar
       {/* Calendar Grid */}
       <div className="p-3">
         <div className="grid grid-cols-7 gap-0.5 mb-1">
-          {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+          {(weekStartsOn === 1 ? ["M", "T", "W", "T", "F", "S", "S"] : ["S", "M", "T", "W", "T", "F", "S"]).map((d, i) => (
             <div key={i} className="text-center text-[10px] font-medium text-slate-400 py-1">
               {d}
             </div>

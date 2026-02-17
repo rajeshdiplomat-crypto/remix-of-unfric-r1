@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { useDatePreferences } from "@/hooks/useDatePreferences";
 import {
   format,
   startOfMonth,
@@ -29,6 +30,7 @@ const TIMER_PRESETS = [
 ];
 
 export function TasksClockWidget() {
+  const { weekStartsOn } = useDatePreferences();
   const [mode, setMode] = useState<WidgetMode>(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -123,10 +125,10 @@ export function TasksClockWidget() {
   const calendarDays = useMemo(() => {
     const monthStart = startOfMonth(calendarMonth);
     const monthEnd = endOfMonth(calendarMonth);
-    const start = startOfWeek(monthStart);
-    const end = endOfWeek(monthEnd);
+    const start = startOfWeek(monthStart, { weekStartsOn });
+    const end = endOfWeek(monthEnd, { weekStartsOn });
     return eachDayOfInterval({ start, end });
-  }, [calendarMonth]);
+  }, [calendarMonth, weekStartsOn]);
 
   const modeButtons = [
     { id: "digital" as WidgetMode, icon: Clock, label: "Digital" },
@@ -369,7 +371,7 @@ export function TasksClockWidget() {
 
               {/* Days header */}
               <div className="grid grid-cols-7 gap-0.5 text-center">
-                {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+                {(weekStartsOn === 1 ? ["M", "T", "W", "T", "F", "S", "S"] : ["S", "M", "T", "W", "T", "F", "S"]).map((d, i) => (
                   <span key={i} className="text-[8px] font-medium text-muted-foreground/50">
                     {d}
                   </span>

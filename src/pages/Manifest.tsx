@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useDatePreferences } from "@/hooks/useDatePreferences";
 import { toast } from "sonner";
 import { Sparkles, Plus, ChevronDown, ChevronUp, Calendar, BarChart3, TrendingUp, Clock } from "lucide-react";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
@@ -85,6 +86,7 @@ function loadAllPractices(): Record<string, ManifestDailyPractice> {
 
 export default function Manifest() {
   const { user } = useAuth();
+  const { formatDate: fmtDate } = useDatePreferences();
   const navigate = useNavigate();
 
   const [goals, setGoals] = useState<ManifestGoal[]>([]);
@@ -726,7 +728,7 @@ export default function Manifest() {
                 return (
                   <div className="mt-3 pt-3 border-t border-border space-y-1.5">
                     <p className="text-xs font-medium text-muted-foreground">
-                      Practiced on {format(selectedDate, "MMM d")}
+                      Practiced on {fmtDate(selectedDate, "short")}
                     </p>
                     {practicedGoals.map((goal) => (
                       <button

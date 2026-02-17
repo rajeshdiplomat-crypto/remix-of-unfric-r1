@@ -18,6 +18,7 @@ import { computeEndDateForHabitDays } from "@/lib/dateUtils";
 import { UnifiedTimePicker } from "@/components/common/UnifiedTimePicker";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useDatePreferences } from "@/hooks/useDatePreferences";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -313,6 +314,7 @@ function ProgressRing({
 export default function Habits() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { weekStartsOn } = useDatePreferences();
 
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1080,7 +1082,7 @@ export default function Habits() {
           const isCompleted = activity.completions[dateStr];
           const isPast = isBefore(day, new Date()) || isToday(day);
 
-          const isMonday = day.getDay() === 1;
+          const isWeekStart = day.getDay() === weekStartsOn;
           const isFirstDay = i === 0;
 
           // Check if day is within habit's date range
@@ -1093,7 +1095,7 @@ export default function Habits() {
           const isWithinRange = !isBefore(day, habitStartDate) && !isAfter(day, habitEndDate);
 
           const today = new Date();
-          const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+          const weekStart = startOfWeek(today, { weekStartsOn });
           const weekEnd = addDays(weekStart, 6);
           const isCurrentWeek = !isBefore(day, weekStart) && !isAfter(day, weekEnd);
 
@@ -1102,7 +1104,7 @@ export default function Habits() {
               key={i}
               className={cn(
                 "p-1 text-center",
-                (isMonday || isFirstDay) && "border-l-2 border-slate-200 dark:border-slate-700",
+                (isWeekStart || isFirstDay) && "border-l-2 border-slate-200 dark:border-slate-700",
                 isToday(day) && "bg-emerald-50 dark:bg-emerald-900/20",
                 isCurrentWeek && !isToday(day) && "bg-blue-50/50 dark:bg-blue-900/10",
                 isArchived && "opacity-50",
@@ -1427,12 +1429,12 @@ export default function Habits() {
                     </th>
                     <th className="p-2 font-semibold text-slate-600 dark:text-slate-300 w-12">GOALS</th>
                     {daysInMonth.map((day, i) => {
-                      // Correct week partition: Border on left of Mondays
-                      const isMonday = day.getDay() === 1;
+                      // Correct week partition: Border on left of week start day
+                      const isWeekStart = day.getDay() === weekStartsOn;
                       const isFirstDay = i === 0;
                       const isCurrentWeek = (() => {
                         const today = new Date();
-                        const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday
+                        const weekStart = startOfWeek(today, { weekStartsOn });
                         const weekEnd = addDays(weekStart, 6);
                         return !isBefore(day, weekStart) && !isAfter(day, weekEnd);
                       })();
@@ -1442,7 +1444,7 @@ export default function Habits() {
                           key={i}
                           className={cn(
                             "p-1 font-medium text-center min-w-[28px]",
-                            (isMonday || isFirstDay) && "border-l-2 border-slate-200 dark:border-slate-700",
+                            (isWeekStart || isFirstDay) && "border-l-2 border-slate-200 dark:border-slate-700",
                             isToday(day) && "bg-emerald-100 dark:bg-emerald-900/30",
                             isCurrentWeek && !isToday(day) && "bg-blue-50 dark:bg-blue-900/20",
                           )}

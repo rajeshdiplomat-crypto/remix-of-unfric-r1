@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { X, Clock, ChevronDown, ChevronUp, Sparkles, TrendingUp, Camera, Image } from "lucide-react";
 import { format, startOfWeek, endOfWeek, isWithinInterval, parseISO } from "date-fns";
+import { useDatePreferences } from "@/hooks/useDatePreferences";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -58,6 +59,7 @@ interface WeekGroup {
 const ENTRIES_PER_PAGE = 5;
 
 export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: HistoryDrawerProps) {
+  const { weekStartsOn, formatDate: fmtDate } = useDatePreferences();
   const [filter, setFilter] = useState<FilterType>("all");
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [historyData, setHistoryData] = useState<HistoryDay[]>([]);
@@ -102,7 +104,7 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
     // Expand the first week by default
     if (goalPractices.length > 0) {
       const firstDate = parseISO(goalPractices[0].date);
-      const firstWeekStart = startOfWeek(firstDate, { weekStartsOn: 1 });
+      const firstWeekStart = startOfWeek(firstDate, { weekStartsOn });
       setExpandedWeeks(new Set([firstWeekStart.toISOString()]));
     }
   }, [isOpen, goal.id]);
@@ -131,8 +133,8 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
     
     filteredData.forEach((day) => {
       const dayDate = parseISO(day.date);
-      const weekStart = startOfWeek(dayDate, { weekStartsOn: 1 });
-      const weekEnd = endOfWeek(dayDate, { weekStartsOn: 1 });
+      const weekStart = startOfWeek(dayDate, { weekStartsOn });
+      const weekEnd = endOfWeek(dayDate, { weekStartsOn });
       
       let group = groups.find(g => 
         isWithinInterval(dayDate, { start: g.weekStart, end: g.weekEnd })
@@ -325,7 +327,7 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
                         >
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold text-foreground">
-                              {format(week.weekStart, "MMM d")} – {format(week.weekEnd, "MMM d")}
+                              {fmtDate(week.weekStart, "short")} – {fmtDate(week.weekEnd, "short")}
                             </span>
                             <Badge variant="secondary" className="text-[10px] h-5">
                               {week.days.filter(d => d.practiced).length}/{week.days.length} days
