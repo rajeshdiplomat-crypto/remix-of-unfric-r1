@@ -1,6 +1,9 @@
-import { useMemo, useCallback } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useMemo, useCallback, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
+import { cn } from "@/lib/utils";
 
 interface UnifiedTimePickerProps {
   value: string;
@@ -11,11 +14,6 @@ interface UnifiedTimePickerProps {
   triggerClassName?: string;
 }
 
-/**
- * Unified time picker with separate Hour / Minute / AM-PM selectors.
- * Respects the global 12h/24h setting.
- * Value is always stored in 24h "HH:mm" format internally.
- */
 export function UnifiedTimePicker({
   value,
   onChange,
@@ -24,10 +22,9 @@ export function UnifiedTimePicker({
   className: _className,
   triggerClassName,
 }: UnifiedTimePickerProps) {
-  const { timeFormat } = useTimeFormat();
+  const { timeFormat, formatTime } = useTimeFormat();
   const is12h = timeFormat === "12h";
 
-  // Parse current value
   const parsed = useMemo(() => {
     const [hStr, mStr] = (value || "08:00").split(":");
     const h24 = parseInt(hStr, 10) || 0;
@@ -37,98 +34,136 @@ export function UnifiedTimePicker({
     return { h24, h12, m, period };
   }, [value]);
 
-  // Build hour options
   const hours = useMemo(() => {
     if (is12h) {
-      return Array.from({ length: 12 }, (_, i) => {
-        const v = i === 0 ? 12 : i;
-        return { value: v.toString(), label: v.toString() };
-      });
+      return Array.from({ length: 12 }, (_, i) => (i === 0 ? 12 : i));
     }
-    return Array.from({ length: 24 }, (_, i) => ({
-      value: i.toString(),
-      label: i.toString().padStart(2, "0"),
-    }));
+    return Array.from({ length: 24 }, (_, i) => i);
   }, [is12h]);
 
-  // Build minute options based on interval
-  const minutes = useMemo(() => {
-    const result: { value: string; label: string }[] = [];
-    for (let m = 0; m < 60; m += intervalMinutes) {
-      result.push({ value: m.toString(), label: m.toString().padStart(2, "0") });
-    }
+  const minuteOptions = useMemo(() => {
+    const result: number[] = [];
+    for (let m = 0; m < 60; m += intervalMinutes) result.push(m);
     return result;
   }, [intervalMinutes]);
 
-  const buildValue = useCallback(
+  const build24h = useCallback(
     (h: number, m: number, period: "AM" | "PM") => {
       let h24 = h;
       if (is12h) {
-        if (period === "AM") h24 = h === 12 ? 0 : h;
-        else h24 = h === 12 ? 12 : h + 12;
+        h24 = period === "AM" ? (h === 12 ? 0 : h) : (h === 12 ? 12 : h + 12);
       }
       return `${h24.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
     },
     [is12h],
   );
 
-  const onHourChange = (v: string) => {
-    const h = parseInt(v, 10);
-    onChange(buildValue(h, parsed.m, parsed.period));
-  };
+  const displayTime = formatTime(value || "08:00");
 
-  const onMinuteChange = (v: string) => {
-    const m = parseInt(v, 10);
-    const h = is12h ? parsed.h12 : parsed.h24;
-    onChange(buildValue(h, m, parsed.period));
-  };
+  const hourRef = useRef<HTMLDivElement>(null);
+  const minRef = useRef<HTMLDivElement>(null);
 
-  const onPeriodChange = (v: string) => {
-    onChange(buildValue(parsed.h12, parsed.m, v as "AM" | "PM"));
-  };
-
-  const selectTriggerBase = `${triggerClassName || ""} h-8 text-xs`;
+  const scrollToActive = useCallback(() => {
+    setTimeout(() => {
+      hourRef.current?.querySelector("[data-active=true]")?.scrollIntoView({ block: "center" });
+      minRef.current?.querySelector("[data-active=true]")?.scrollIntoView({ block: "center" });
+    }, 50);
+  }, []);
 
   return (
-    <div className="flex items-center gap-1">
-      {/* Hour */}
-      <Select value={(is12h ? parsed.h12 : parsed.h24).toString()} onValueChange={onHourChange}>
-        <SelectTrigger className={`${selectTriggerBase} w-16`}>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent className="max-h-52 z-[9999]">
-          {hours.map((h) => (
-            <SelectItem key={h.value} value={h.value}>{h.label}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+    <Popover onOpenChange={(open) => open && scrollToActive()}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn("font-normal tabular-nums", triggerClassName)}
+        >
+          {displayTime}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-2 z-[9999]" align="start">
+        <div className="flex gap-1">
+          {/* Hours */}
+          <div className="flex flex-col items-center">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Hr</span>
+            <ScrollArea className="h-48 w-12">
+              <div ref={hourRef} className="flex flex-col gap-0.5 p-0.5">
+                {hours.map((h) => {
+                  const active = is12h ? h === parsed.h12 : h === parsed.h24;
+                  return (
+                    <button
+                      key={h}
+                      data-active={active}
+                      onClick={() => onChange(build24h(h, parsed.m, parsed.period))}
+                      className={cn(
+                        "h-7 w-full rounded text-xs transition-colors",
+                        active
+                          ? "bg-accent text-accent-foreground font-medium"
+                          : "hover:bg-muted text-foreground",
+                      )}
+                    >
+                      {is12h ? h : h.toString().padStart(2, "0")}
+                    </button>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          </div>
 
-      <span className="text-xs text-muted-foreground font-medium">:</span>
+          {/* Minutes */}
+          <div className="flex flex-col items-center">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Min</span>
+            <ScrollArea className="h-48 w-12">
+              <div ref={minRef} className="flex flex-col gap-0.5 p-0.5">
+                {minuteOptions.map((m) => {
+                  const active = m === parsed.m;
+                  return (
+                    <button
+                      key={m}
+                      data-active={active}
+                      onClick={() => {
+                        const h = is12h ? parsed.h12 : parsed.h24;
+                        onChange(build24h(h, m, parsed.period));
+                      }}
+                      className={cn(
+                        "h-7 w-full rounded text-xs transition-colors",
+                        active
+                          ? "bg-accent text-accent-foreground font-medium"
+                          : "hover:bg-muted text-foreground",
+                      )}
+                    >
+                      {m.toString().padStart(2, "0")}
+                    </button>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          </div>
 
-      {/* Minute */}
-      <Select value={parsed.m.toString()} onValueChange={onMinuteChange}>
-        <SelectTrigger className={`${selectTriggerBase} w-16`}>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent className="max-h-52 z-[9999]">
-          {minutes.map((m) => (
-            <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      {/* AM/PM (only in 12h mode) */}
-      {is12h && (
-        <Select value={parsed.period} onValueChange={onPeriodChange}>
-          <SelectTrigger className={`${selectTriggerBase} w-16`}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="z-[9999]">
-            <SelectItem value="AM">AM</SelectItem>
-            <SelectItem value="PM">PM</SelectItem>
-          </SelectContent>
-        </Select>
-      )}
-    </div>
+          {/* AM/PM */}
+          {is12h && (
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">&nbsp;</span>
+              <div className="flex flex-col gap-1 pt-0.5">
+                {(["AM", "PM"] as const).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => onChange(build24h(parsed.h12, parsed.m, p))}
+                    className={cn(
+                      "h-7 w-10 rounded text-xs transition-colors",
+                      p === parsed.period
+                        ? "bg-accent text-accent-foreground font-medium"
+                        : "hover:bg-muted text-foreground",
+                    )}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
