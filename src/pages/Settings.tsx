@@ -55,6 +55,7 @@ interface UserSettings {
   default_notes_view: string | null;
   default_emotions_tab: string | null;
   journal_mode: string | null;
+  time_format: string | null;
 }
 
 const TIMEZONES = (Intl as any).supportedValuesOf("timeZone") as string[];
@@ -115,6 +116,7 @@ export default function Settings() {
           default_notes_view: (data as any).default_notes_view ?? "list",
           default_emotions_tab: (data as any).default_emotions_tab ?? "feel",
           journal_mode: (data as any).journal_mode ?? "structured",
+          time_format: data.time_format ?? "24h",
         });
       } else {
         // Create default row
@@ -135,6 +137,7 @@ export default function Settings() {
           default_notes_view: "atlas",
           default_emotions_tab: "feel",
           journal_mode: "structured",
+          time_format: "24h",
         };
         await supabase.from("user_settings").insert({ user_id: user.id, ...defaults });
         setSettings(defaults);
@@ -556,8 +559,8 @@ export default function Settings() {
       <SettingsSection icon={Clock} title="Time & Locale">
         <SettingsRow label="Time Format" description="12-hour (AM/PM) or 24-hour clock">
           <Select
-            value={(settings as any).time_format || "24h"}
-            onValueChange={(v) => saveField("time_format" as any, v)}
+            value={settings.time_format || "24h"}
+            onValueChange={(v) => saveField("time_format", v)}
           >
             <SelectTrigger className="w-28 text-xs">
               <SelectValue />
