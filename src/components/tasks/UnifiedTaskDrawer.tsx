@@ -512,7 +512,7 @@ export function UnifiedTaskDrawer({
                         return (
                           <div
                             key={`${hour}-${i % 2 === 0 ? "00" : "30"}`}
-                            className="h-[28px] flex items-center justify-end pr-1.5 text-[9px] font-medium text-muted-foreground border-b border-border/20"
+                            className={cn("h-[28px] flex items-center justify-end pr-1.5 text-[9px] font-medium text-muted-foreground", i < 47 && "border-b border-border/20")}
                           >
                             {i % 2 === 0 ? formatHour(hour) : ""}
                           </div>
@@ -520,14 +520,14 @@ export function UnifiedTaskDrawer({
                       })}
                     </div>
                     {/* Schedule area */}
-                    <div className="flex-1 relative" style={{ minHeight: `${48 * 28}px` }}>
+                    <div className="flex-1 relative" style={{ height: `${48 * 28}px` }}>
                       {Array.from({ length: 48 }, (_, i) => {
                         const hour = Math.floor(i / 2);
                         return (
                           <button
                             key={i}
                             type="button"
-                            className={cn("w-full h-[28px] border-b border-border/20 hover:bg-primary/10 transition-colors", i % 2 === 0 && "bg-muted/10")}
+                            className={cn("w-full h-[28px] hover:bg-primary/10 transition-colors", i % 2 === 0 && "bg-muted/10", i < 47 && "border-b border-border/20")}
                             onClick={() => {
                               const min = i % 2 === 0 ? "00" : "30";
                               const time = `${hour.toString().padStart(2, "0")}:${min}`;
