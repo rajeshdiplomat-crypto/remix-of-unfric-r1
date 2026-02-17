@@ -192,8 +192,8 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
   }, [isFullscreen, onFullscreenChange]);
 
   // Theme & Line Style states
-  const [pageTheme, setPageTheme] = useState("white");
-  const [lineStyle, setLineStyle] = useState("none");
+  const [pageTheme, setPageTheme] = useState(note.pageTheme || "white");
+  const [lineStyle, setLineStyle] = useState(note.lineStyle || "none");
 
   // Scribble States
   const [scribbleMode, setScribbleMode] = useState(false);
@@ -357,6 +357,8 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
     }
     setTitle(note.title);
     setTags(note.tags);
+    setPageTheme(note.pageTheme || "white");
+    setLineStyle(note.lineStyle || "none");
     setSaveStatus("saved");
     if (note.scribbleStrokes) {
       try {
@@ -390,12 +392,14 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
       plainText: editor.getText(),
       tags,
       updatedAt: new Date().toISOString(),
+      pageTheme,
+      lineStyle,
     };
     noteData.scribbleStrokes = strokes.length > 0 ? JSON.stringify(strokes) : null;
     onSave(noteData);
     lastSavedContent.current = html;
     setTimeout(() => setSaveStatus("saved"), 500);
-  }, [editor, note, title, tags, strokes, onSave]);
+  }, [editor, note, title, tags, strokes, onSave, pageTheme, lineStyle]);
 
   const getCanvasPos = (e: React.MouseEvent) => {
     const canvas = canvasRef.current;
@@ -795,85 +799,34 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
           </ToolBtn>
           <div className="w-px h-5 bg-slate-200 mx-1" />
 
-          <ToolBtn
-            onClick={() => editor.chain().focus().setTextAlign("left").run()}
-            active={editor.isActive({ textAlign: "left" })}
-            title="Left"
-          >
-            <AlignLeft className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn
-            onClick={() => editor.chain().focus().setTextAlign("center").run()}
-            active={editor.isActive({ textAlign: "center" })}
-            title="Center"
-          >
-            <AlignCenter className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn
-            onClick={() => editor.chain().focus().setTextAlign("right").run()}
-            active={editor.isActive({ textAlign: "right" })}
-            title="Right"
-          >
-            <AlignRight className="h-4 w-4" />
-          </ToolBtn>
-          <div className="w-px h-5 bg-slate-200 mx-1" />
-
           <ToolBtn onClick={() => setLinkDialogOpen(true)} active={editor.isActive("link")} title="Link">
             <Link2 className="h-4 w-4" />
           </ToolBtn>
           <ToolBtn onClick={() => setImageDialogOpen(true)} title="Image">
             <ImageIcon className="h-4 w-4" />
           </ToolBtn>
-          <ToolBtn onClick={() => setScribbleMode(!scribbleMode)} active={scribbleMode} title="Scribble">
-            <PenTool className="h-4 w-4" />
-          </ToolBtn>
           <div className="w-px h-5 bg-slate-200 mx-1" />
 
-          {/* Theme Selector - works in both modes */}
+          {/* Settings/More dropdown — contains alignment, scribble, theme, line style, etc. */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="h-8 px-2 flex items-center gap-1 rounded-md hover:bg-slate-100" title="Page Theme">
-                <div className="w-4 h-4 rounded border" style={{ backgroundColor: currentTheme.value }} />
-                <ChevronDown className="h-3 w-3" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="z-[99999]">
-              {PAGE_THEMES.map((t) => (
-                <DropdownMenuItem key={t.id} onClick={() => setPageTheme(t.id)} className="gap-2">
-                  <div className="w-4 h-4 rounded border" style={{ backgroundColor: t.value }} />
-                  <span>{t.label}</span>
-                  {pageTheme === t.id && <Check className="h-3 w-3 ml-auto" />}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Line Style - works in both modes */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="h-8 px-2 flex items-center gap-1 rounded-md hover:bg-slate-100" title="Line Style">
-                <span>{LINE_STYLES.find((l) => l.id === lineStyle)?.preview}</span>
-                <ChevronDown className="h-3 w-3" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="z-[99999]">
-              {LINE_STYLES.map((l) => (
-                <DropdownMenuItem key={l.id} onClick={() => setLineStyle(l.id)} className="gap-2">
-                  <span>{l.preview}</span>
-                  <span>{l.label}</span>
-                  {lineStyle === l.id && <Check className="h-3 w-3 ml-auto" />}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-slate-100">
+              <button className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-slate-100" title="More options">
                 <MoreHorizontal className="h-4 w-4 text-slate-500" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="z-[99999]">
+            <DropdownMenuContent align="end" className="z-[99999] w-56">
+              {/* Alignment */}
+              <DropdownMenuItem onClick={() => editor.chain().focus().setTextAlign("left").run()}>
+                <AlignLeft className="h-4 w-4 mr-2" /> Align Left
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().setTextAlign("center").run()}>
+                <AlignCenter className="h-4 w-4 mr-2" /> Align Center
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().setTextAlign("right").run()}>
+                <AlignRight className="h-4 w-4 mr-2" /> Align Right
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {/* Formatting */}
               <DropdownMenuItem onClick={() => editor.chain().focus().toggleStrike().run()}>
                 <Strikethrough className="h-4 w-4 mr-2" /> Strikethrough
               </DropdownMenuItem>
@@ -886,6 +839,43 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
               <DropdownMenuItem onClick={() => editor.chain().focus().setHorizontalRule().run()}>
                 <Minus className="h-4 w-4 mr-2" /> Divider
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {/* Scribble */}
+              <DropdownMenuItem onClick={() => setScribbleMode(!scribbleMode)}>
+                <PenTool className="h-4 w-4 mr-2" /> {scribbleMode ? "Exit Scribble" : "Scribble Mode"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {/* Page Theme */}
+              <div className="px-2 py-1.5">
+                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-medium">Page Theme</span>
+                <div className="flex gap-1 mt-1.5 flex-wrap">
+                  {PAGE_THEMES.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => { setPageTheme(t.id); setSaveStatus("unsaved"); }}
+                      className={cn("w-5 h-5 rounded border transition-transform hover:scale-110", pageTheme === t.id && "ring-2 ring-primary ring-offset-1")}
+                      style={{ backgroundColor: t.value }}
+                      title={t.label}
+                    />
+                  ))}
+                </div>
+              </div>
+              {/* Line Style */}
+              <div className="px-2 py-1.5">
+                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-medium">Line Style</span>
+                <div className="flex gap-1 mt-1.5">
+                  {LINE_STYLES.map((l) => (
+                    <button
+                      key={l.id}
+                      onClick={() => { setLineStyle(l.id); setSaveStatus("unsaved"); }}
+                      className={cn("px-2 py-1 text-xs rounded border transition-colors", lineStyle === l.id ? "bg-primary/10 border-primary text-primary" : "hover:bg-slate-100")}
+                      title={l.label}
+                    >
+                      {l.preview}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}>
                 Clear Formatting
