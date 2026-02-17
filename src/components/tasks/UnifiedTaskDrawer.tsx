@@ -507,10 +507,10 @@ export function UnifiedTaskDrawer({
                   <div className="mt-2 relative w-full max-h-56 bg-background rounded-lg border shadow-sm overflow-y-auto flex">
                     {/* Time labels */}
                     <div className="w-12 shrink-0 border-r border-border/40 bg-muted/30 sticky left-0">
-                      {Array.from({ length: 32 }, (_, i) => {
+                      {Array.from({ length: 36 }, (_, i) => {
                         const hour = Math.floor(i / 2) + 6;
                         const min = i % 2 === 0 ? "00" : "30";
-                        if (hour > 21) return null;
+                        if (hour > 23) return null;
                         return (
                           <div
                             key={`${hour}-${min}`}
@@ -522,10 +522,10 @@ export function UnifiedTaskDrawer({
                       }).filter(Boolean)}
                     </div>
                     {/* Schedule area */}
-                    <div className="flex-1 relative" style={{ minHeight: `${32 * 28}px` }}>
-                      {Array.from({ length: 32 }, (_, i) => {
+                    <div className="flex-1 relative" style={{ minHeight: `${36 * 28}px` }}>
+                      {Array.from({ length: 36 }, (_, i) => {
                         const hour = Math.floor(i / 2) + 6;
-                        if (hour > 21) return null;
+                        if (hour > 23) return null;
                         return (
                           <button
                             key={i}
