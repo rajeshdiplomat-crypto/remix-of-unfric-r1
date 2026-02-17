@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronLeft, ChevronRight, ImagePlus, Sparkles, X, Clock, Plus, Trash2, Bell } from "lucide-react";
+import { format } from "date-fns";
+import { UnifiedDatePicker } from "@/components/common/UnifiedDatePicker";
 import { type ManifestGoal, MANIFEST_DRAFT_KEY } from "./types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -600,11 +602,12 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
 
               <div>
                 <Label className="text-sm font-medium text-slate-700 mb-2 block">Start Date</Label>
-                <Input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="rounded-xl h-10"
+                <UnifiedDatePicker
+                  value={startDate ? new Date(startDate) : undefined}
+                  onChange={(date) => setStartDate(date ? format(date, "yyyy-MM-dd") : "")}
+                  placeholder="Pick a start date"
+                  displayFormat="PPP"
+                  triggerClassName="w-full rounded-xl h-10"
                 />
               </div>
             </div>
