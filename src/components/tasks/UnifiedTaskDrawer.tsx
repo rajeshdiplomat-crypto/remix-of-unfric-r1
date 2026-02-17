@@ -504,7 +504,7 @@ export function UnifiedTaskDrawer({
                     <span className="group-open:rotate-90 transition-transform">▶</span>
                     View day schedule
                   </summary>
-                  <div className="mt-2 relative w-full max-h-56 bg-background rounded-lg border shadow-sm overflow-y-auto flex">
+                  <div className="mt-2 relative w-full max-h-[336px] bg-background rounded-lg border shadow-sm overflow-y-auto flex">
                     {/* Time labels */}
                     <div className="w-12 shrink-0 border-r border-border/40 bg-muted/30 sticky left-0">
                       {Array.from({ length: 48 }, (_, i) => {
