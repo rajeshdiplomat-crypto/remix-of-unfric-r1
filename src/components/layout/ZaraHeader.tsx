@@ -119,9 +119,9 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
         </nav>
 
         {/* Right: Action buttons */}
-        <div className={cn(
-          "flex items-center gap-0.5 rounded-full px-1 py-0.5 transition-all duration-300",
-          isScrolled ? "bg-muted/60" : "bg-foreground/10 backdrop-blur-sm"
+        <div className={cn("flex items-center gap-0.5 px-1 py-0.5 transition-all duration-300 rounded-sm",
+
+        isScrolled ? "bg-muted/60" : "bg-foreground/10 backdrop-blur-sm"
         )}>
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className={iconClass(isScrolled)} title="Back">
             <ChevronLeft className="h-4 w-4" />
