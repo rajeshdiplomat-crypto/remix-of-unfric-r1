@@ -886,7 +886,7 @@ export default function Journal() {
             subtitle={PAGE_HERO_TEXT.journal.subtitle}
           />
           {journalHeader}
-          <div className="flex-1 min-h-0 grid gap-12 w-full px-6 lg:px-8 py-8 overflow-hidden grid-cols-1 lg:grid-cols-[1fr_2fr]">
+          <div className="flex-1 min-h-0 grid gap-6 lg:gap-12 w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-8 overflow-hidden grid-cols-1 lg:grid-cols-[1fr_2fr]">
             {/* Left column: Editorial + toggle panels */}
             <div className="hidden lg:flex flex-col justify-start gap-6 h-full pt-12">
               <div className="space-y-6 max-w-md">
