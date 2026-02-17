@@ -505,80 +505,67 @@ export function UnifiedTaskDrawer({
                     View day schedule
                   </summary>
                   <div className="mt-2 w-full bg-background rounded-lg border shadow-sm overflow-hidden">
-                    <div className="max-h-[336px] overflow-y-auto flex" style={{ scrollbarGutter: "stable" }}>
-                      {/* Time labels */}
-                      <div className="w-12 shrink-0 border-r border-border/40 bg-muted/30 sticky left-0 z-10">
-                        {Array.from({ length: 48 }, (_, i) => {
-                          const hour = Math.floor(i / 2);
-                          return (
-                            <div
-                              key={`${hour}-${i % 2 === 0 ? "00" : "30"}`}
-                              className={cn("h-[28px] flex items-center justify-end pr-1.5 text-[9px] font-medium text-muted-foreground", i < 47 && "border-b border-border/20")}
-                            >
-                              {i % 2 === 0 ? formatHour(hour) : ""}
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {/* Schedule area */}
-                      <div className="flex-1 relative" style={{ height: `${48 * 28}px`, minHeight: `${48 * 28}px`, maxHeight: `${48 * 28}px` }}>
-                        {Array.from({ length: 48 }, (_, i) => {
-                          const hour = Math.floor(i / 2);
-                          return (
-                            <button
-                              key={i}
-                              type="button"
-                              className={cn("w-full h-[28px] hover:bg-primary/10 transition-colors", i % 2 === 0 && "bg-muted/10", i < 47 && "border-b border-border/20")}
-                              onClick={() => {
-                                const min = i % 2 === 0 ? "00" : "30";
-                                const time = `${hour.toString().padStart(2, "0")}:${min}`;
-                                updateField("due_time", time);
-                                const endMins = hour * 60 + (i % 2 === 0 ? 0 : 30) + 60;
-                                const endH = Math.floor(endMins / 60) % 24;
-                                const endM = endMins % 60;
-                                updateField("end_time", `${endH.toString().padStart(2, "0")}:${endM.toString().padStart(2, "0")}`);
-                              }}
-                            />
-                          );
-                        })}
-                        {/* Busy slots */}
-                        {busySlots.map((slot) => {
-                          const [sh, sm] = slot.start.split(":").map(Number);
-                          const [eh, em] = slot.end.split(":").map(Number);
-                          const startMins = sh * 60 + sm;
-                          const endMins = eh * 60 + em;
-                          const totalMins = 48 * 28;
-                          const topPx = (startMins / 1440) * totalMins;
-                          const heightPx = Math.max(18, ((endMins - startMins) / 1440) * totalMins);
-                          return (
-                            <div
-                              key={slot.id}
-                              className="absolute left-1 right-1 bg-destructive/10 border-l-2 border-destructive rounded-r px-1.5 py-0.5 overflow-hidden pointer-events-none"
-                              style={{ top: `${topPx}px`, height: `${heightPx}px` }}
-                            >
-                              <span className="text-[10px] font-medium text-destructive truncate block">{slot.title}</span>
-                            </div>
-                          );
-                        })}
-                        {/* Current task indicator */}
-                        {formData.due_time && formData.end_time && (() => {
-                          const [sh, sm] = formData.due_time.split(":").map(Number);
-                          const [eh, em] = formData.end_time.split(":").map(Number);
-                          const startMins = sh * 60 + sm;
-                          const endMins = eh * 60 + em;
-                          const totalMins = 48 * 28;
-                          const topPx = (startMins / 1440) * totalMins;
-                          const heightPx = Math.max(18, ((endMins - startMins) / 1440) * totalMins);
-                          return (
-                            <div
-                              className="absolute left-1 right-1 bg-primary/20 border-l-2 border-primary rounded-r px-1.5 py-0.5 flex items-center pointer-events-none"
-                              style={{ top: `${topPx}px`, height: `${heightPx}px` }}
-                            >
-                              <span className="text-[10px] font-semibold text-primary">{formatTime(formData.due_time)}–{formatTime(formData.end_time)}</span>
-                            </div>
-                          );
-                        })()}
-                      </div>
+                    <div className="max-h-[336px] overflow-y-auto">
+                      <table className="w-full border-collapse" style={{ tableLayout: "fixed" }}>
+                        <tbody>
+                          {Array.from({ length: 48 }, (_, i) => {
+                            const hour = Math.floor(i / 2);
+                            const min = i % 2 === 0 ? "00" : "30";
+                            const timeVal = `${hour.toString().padStart(2, "0")}:${min}`;
+                            const isBusy = busySlots.some((slot) => {
+                              const [sh, sm] = slot.start.split(":").map(Number);
+                              const [eh, em] = slot.end.split(":").map(Number);
+                              const slotStart = sh * 60 + sm;
+                              const slotEnd = eh * 60 + em;
+                              const rowStart = hour * 60 + (i % 2 === 0 ? 0 : 30);
+                              return rowStart >= slotStart && rowStart < slotEnd;
+                            });
+                            const busyTask = busySlots.find((slot) => {
+                              const [sh, sm] = slot.start.split(":").map(Number);
+                              return sh * 60 + sm === hour * 60 + (i % 2 === 0 ? 0 : 30);
+                            });
+                            const isCurrentStart = formData.due_time === timeVal;
+                            const isCurrentSlot = formData.due_time && formData.end_time && (() => {
+                              const [sh, sm] = formData.due_time!.split(":").map(Number);
+                              const [eh, em] = formData.end_time!.split(":").map(Number);
+                              const rowStart = hour * 60 + (i % 2 === 0 ? 0 : 30);
+                              return rowStart >= sh * 60 + sm && rowStart < eh * 60 + em;
+                            })();
+
+                            return (
+                              <tr
+                                key={i}
+                                className={cn(
+                                  "h-[28px] cursor-pointer transition-colors",
+                                  isCurrentSlot ? "bg-primary/15" : isBusy ? "bg-destructive/8" : i % 2 === 0 ? "bg-muted/10" : "",
+                                  "hover:bg-primary/10"
+                                )}
+                                onClick={() => {
+                                  updateField("due_time", timeVal);
+                                  const endMins = hour * 60 + (i % 2 === 0 ? 0 : 30) + 60;
+                                  const endH = Math.floor(endMins / 60) % 24;
+                                  const endM = endMins % 60;
+                                  updateField("end_time", `${endH.toString().padStart(2, "0")}:${endM.toString().padStart(2, "0")}`);
+                                }}
+                              >
+                                <td className="w-12 pr-1.5 text-right text-[9px] font-medium text-muted-foreground border-r border-border/40 bg-muted/30">
+                                  {i % 2 === 0 ? formatHour(hour) : ""}
+                                </td>
+                                <td className={cn("pl-2 text-[10px]", i < 47 && "border-b border-border/20")}>
+                                  {isCurrentStart && (
+                                    <span className="font-semibold text-primary">
+                                      {formatTime(formData.due_time!)}–{formatTime(formData.end_time!)}
+                                    </span>
+                                  )}
+                                  {!isCurrentStart && busyTask && (
+                                    <span className="font-medium text-destructive">{busyTask.title}</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 </details>
