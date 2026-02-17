@@ -397,7 +397,14 @@ export default function Journal() {
             const hasRealContent = parsed?.content?.some((node: any) => {
               if (node.type === "heading" && node.attrs?.level === 1) return false;
               if (node.type === "heading" && node.attrs?.level === 2) return false;
-              if (node.type === "paragraph" && (!node.content || node.content.length === 0)) return false;
+              if (node.type === "paragraph") {
+                if (!node.content || node.content.length === 0) return false;
+                // Check if paragraph has only whitespace text
+                const textOnly = node.content.every((c: any) => c.type === "text");
+                if (textOnly && node.content.every((c: any) => !c.text?.trim())) return false;
+                return true; // Has non-empty content (text, images, etc.)
+              }
+              // Any other node type (image, taskList, etc.) counts as real content
               return true;
             });
 
@@ -472,7 +479,9 @@ export default function Journal() {
         setSaveStatus("saved");
         setIsLoading(false);
       });
-  }, [selectedDate, user, template, journalMode]);
+  }, [selectedDate, user]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Note: template and journalMode intentionally excluded — we read their current values
+  // inside the callback. Including them would cause unwanted re-fetches mid-edit.
 
   // Save function
   const performSave = useCallback(async () => {
@@ -501,7 +510,7 @@ export default function Journal() {
             text_formatting: content,
             daily_feeling: selectedMood,
             images_data: imagesDataPayload,
-            page_settings: entryPageSettings ? { skinId: currentSkinId, lineStyle: entryPageSettings.lineStyle || template.defaultLineStyle || "none", mode: entryPageSettings.mode } : null,
+            page_settings: entryPageSettings ? { skinId: entryPageSettings.skinId, lineStyle: entryPageSettings.lineStyle || template.defaultLineStyle || "none", mode: entryPageSettings.mode } : null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", currentEntry.id);
@@ -551,7 +560,7 @@ export default function Journal() {
             text_formatting: content,
             daily_feeling: selectedMood,
             images_data: imagesDataPayload,
-            page_settings: entryPageSettings ? { skinId: currentSkinId, lineStyle: entryPageSettings.lineStyle || template.defaultLineStyle || "none", mode: entryPageSettings.mode } : null,
+            page_settings: entryPageSettings ? { skinId: entryPageSettings.skinId, lineStyle: entryPageSettings.lineStyle || template.defaultLineStyle || "none", mode: entryPageSettings.mode } : null,
           })
           .select()
           .single();
@@ -964,23 +973,41 @@ export default function Journal() {
         currentLineStyle={entryPageSettings?.lineStyle || template.defaultLineStyle || "none"}
         entryMode={(entryPageSettings?.mode || journalMode) as "structured" | "unstructured"}
         onEntryOverrideSave={(skinId, lineStyle, newMode) => {
+          const previousEffectiveMode = entryPageSettings?.mode || journalMode;
           setEntryPageSettings({ skinId, lineStyle, mode: newMode });
           setCurrentSkinId(skinId);
 
-          // If mode changed, regenerate content
-          if (newMode && newMode !== journalMode) {
-            const isUnstructured = newMode === "unstructured";
-            const newContent = !isUnstructured
-              ? generateInitialContent(template.questions)
-              : JSON.stringify({
-                  type: "doc",
-                  content: [
-                    { type: "heading", attrs: { level: 1, textAlign: "left" }, content: [] },
-                    { type: "paragraph", attrs: { textAlign: "left" }, content: [] },
-                  ],
-                });
-            setContent(newContent);
-            lastSavedContentRef.current = "";
+          // Only regenerate content if mode actually changed AND entry has no real user content
+          if (newMode && newMode !== previousEffectiveMode) {
+            try {
+              const parsed = JSON.parse(content);
+              const hasRealContent = parsed?.content?.some((node: any) => {
+                if (node.type === "heading") return false;
+                if (node.type === "paragraph") {
+                  if (!node.content || node.content.length === 0) return false;
+                  const textOnly = node.content.every((c: any) => c.type === "text");
+                  if (textOnly && node.content.every((c: any) => !c.text?.trim())) return false;
+                  return true;
+                }
+                return true;
+              });
+
+              if (!hasRealContent) {
+                const existingTitle = extractTitle(content);
+                const isUnstructured = newMode === "unstructured";
+                const newContent = !isUnstructured
+                  ? generateInitialContent(template.questions)
+                  : JSON.stringify({
+                      type: "doc",
+                      content: [
+                        { type: "heading", attrs: { level: 1, textAlign: "left" }, content: existingTitle ? [{ type: "text", text: existingTitle }] : [] },
+                        { type: "paragraph", attrs: { textAlign: "left" }, content: [] },
+                      ],
+                    });
+                setContent(newContent);
+                lastSavedContentRef.current = "";
+              }
+            } catch { /* keep current content on parse error */ }
           }
 
           setSaveStatus("unsaved");
@@ -990,6 +1017,38 @@ export default function Journal() {
         onEntryOverrideReset={() => {
           setEntryPageSettings(null);
           setCurrentSkinId(theme.isDark ? "midnight-dark" : template.defaultSkinId || "minimal-light");
+
+          // Regenerate content based on global mode if entry has no real content
+          try {
+            const parsed = JSON.parse(content);
+            const hasRealContent = parsed?.content?.some((node: any) => {
+              if (node.type === "heading") return false;
+              if (node.type === "paragraph") {
+                if (!node.content || node.content.length === 0) return false;
+                const textOnly = node.content.every((c: any) => c.type === "text");
+                if (textOnly && node.content.every((c: any) => !c.text?.trim())) return false;
+                return true;
+              }
+              return true;
+            });
+
+            if (!hasRealContent) {
+              const existingTitle = extractTitle(content);
+              const isUnstructured = journalMode === "unstructured";
+              const newContent = !isUnstructured
+                ? generateInitialContent(template.questions)
+                : JSON.stringify({
+                    type: "doc",
+                    content: [
+                      { type: "heading", attrs: { level: 1, textAlign: "left" }, content: existingTitle ? [{ type: "text", text: existingTitle }] : [] },
+                      { type: "paragraph", attrs: { textAlign: "left" }, content: [] },
+                    ],
+                  });
+              setContent(newContent);
+              lastSavedContentRef.current = "";
+            }
+          } catch { /* keep current content */ }
+
           setSaveStatus("unsaved");
           if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
           autosaveTimerRef.current = setTimeout(() => performSave(), 1000);

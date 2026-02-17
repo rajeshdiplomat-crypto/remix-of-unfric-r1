@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +50,17 @@ export function JournalSettingsModal({
   const [selectedSkinId, setSelectedSkinId] = useState(currentSkinId);
   const [selectedLineStyle, setSelectedLineStyle] = useState(currentLineStyle);
   const [selectedMode, setSelectedMode] = useState<"structured" | "unstructured">(entryMode || "structured");
+
+  // Re-sync internal state when modal opens with new props
+  useEffect(() => {
+    if (open) {
+      setSelectedSkinId(currentSkinId);
+      setSelectedLineStyle(currentLineStyle);
+      setSelectedMode(entryMode || "structured");
+      setLocalQuestions(template?.questions || []);
+      setEditingId(null);
+    }
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleQuestionTextChange = (id: string, text: string) => {
     setLocalQuestions((prev) => prev.map((q) => (q.id === id ? { ...q, text } : q)));
