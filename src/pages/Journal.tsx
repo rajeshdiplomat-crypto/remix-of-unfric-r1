@@ -159,6 +159,7 @@ export default function Journal() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showRecentEntries, setShowRecentEntries] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
+  const [scribbleData, setScribbleData] = useState<string | null>(null);
 
   const [template, setTemplate] = useState<JournalTemplate>(() => {
     const saved = localStorage.getItem("journal_template");
@@ -379,6 +380,7 @@ export default function Journal() {
           });
           setCurrentAnswers(answersData || []);
           setSelectedMood(entryData.daily_feeling || null);
+          setScribbleData(entryData.scribble_data || null);
 
           // Load per-entry page settings
           const ps = entryData.page_settings as any;
@@ -460,6 +462,7 @@ export default function Journal() {
           setCurrentEntry(null);
           setCurrentAnswers([]);
           setSelectedMood(null);
+          setScribbleData(null);
           setEntryPageSettings(null);
           const isUnstructured = journalMode === "unstructured";
           const shouldApplyTemplate = !isUnstructured;
@@ -510,6 +513,7 @@ export default function Journal() {
             text_formatting: content,
             daily_feeling: selectedMood,
             images_data: imagesDataPayload,
+            scribble_data: scribbleData,
             page_settings: entryPageSettings ? { skinId: entryPageSettings.skinId, lineStyle: entryPageSettings.lineStyle || template.defaultLineStyle || "none", mode: entryPageSettings.mode } : null,
             updated_at: new Date().toISOString(),
           })
@@ -560,6 +564,7 @@ export default function Journal() {
             text_formatting: content,
             daily_feeling: selectedMood,
             images_data: imagesDataPayload,
+            scribble_data: scribbleData,
             page_settings: entryPageSettings ? { skinId: entryPageSettings.skinId, lineStyle: entryPageSettings.lineStyle || template.defaultLineStyle || "none", mode: entryPageSettings.mode } : null,
           })
           .select()
@@ -608,7 +613,7 @@ export default function Journal() {
     } finally {
       isSavingRef.current = false;
     }
-  }, [user, content, selectedDate, currentEntry, currentAnswers, template.questions, template.defaultLineStyle, selectedMood, entryPageSettings, currentSkinId, toast]);
+  }, [user, content, selectedDate, currentEntry, currentAnswers, template.questions, template.defaultLineStyle, selectedMood, entryPageSettings, scribbleData, toast]);
 
   // Handle content change with autosave
   const handleContentChange = useCallback(
@@ -727,6 +732,7 @@ export default function Journal() {
       setCurrentAnswers([]);
     }
     setSelectedMood(null);
+    setScribbleData(null);
     setEntryPageSettings(null);
 
     // Re-read the latest template from localStorage to pick up any Settings changes
@@ -838,6 +844,13 @@ export default function Journal() {
           onChange={handleContentChange}
           skinStyles={{ editorPaperBg: currentSkin.editorPaperBg, text: currentSkin.text, mutedText: currentSkin.mutedText }}
           defaultLineStyle={entryPageSettings?.lineStyle || template.defaultLineStyle || "none"}
+          scribbleStrokes={scribbleData}
+          onScribbleChange={(data) => {
+            setScribbleData(data);
+            setSaveStatus("unsaved");
+            if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+            autosaveTimerRef.current = setTimeout(() => performSave(), 2000);
+          }}
           onClear={handleClearEntry}
         />
       </div>
