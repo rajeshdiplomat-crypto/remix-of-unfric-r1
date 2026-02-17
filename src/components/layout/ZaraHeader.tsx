@@ -1,4 +1,4 @@
-import { Menu, Maximize2, Minimize2, Settings, ChevronLeft, ChevronRight, SquareArrowOutUpRight } from "lucide-react";
+import { Menu, Maximize2, Settings, ChevronLeft, ChevronRight, SquareArrowOutUpRight, Maximize } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavLink } from "@/components/NavLink";
 import { useEffect, useState, useCallback } from "react";
@@ -147,7 +147,7 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
             className={cn(iconClass(isScrolled), "hidden sm:flex")}
             title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}>
 
-            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            {isFullscreen ? <Maximize className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </Button>
 
           {/* Sign out — hidden on mobile, visible on sm+ */}
