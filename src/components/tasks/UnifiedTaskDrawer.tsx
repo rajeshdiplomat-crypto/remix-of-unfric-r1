@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { X, Play, Plus, Trash2, Bell, Volume2, CalendarIcon, Clock } from "lucide-react";
 import { format, parseISO, isSameDay } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,7 @@ export function UnifiedTaskDrawer({
 }: UnifiedTaskDrawerProps) {
   const [formData, setFormData] = useState<Partial<QuadrantTask>>(DEFAULT_TASK);
   const [newSubtask, setNewSubtask] = useState("");
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const timeInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -177,10 +178,10 @@ export function UnifiedTaskDrawer({
 
   return (
     <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
-      <DrawerContent className="max-w-md ml-auto h-full rounded-l-2xl">
-        <div className="flex flex-col h-full">
+      <DrawerContent className="max-w-md ml-auto h-full rounded-l-2xl overflow-hidden">
+        <div className="flex flex-col h-full min-h-0">
           {/* Header */}
-          <DrawerHeader className="border-b border-border pb-4">
+          <DrawerHeader className="border-b border-border pb-4 shrink-0">
             <div className="flex items-center justify-between">
               <DrawerTitle>{isNew ? "Create New Task" : "Task Details"}</DrawerTitle>
               <Button variant="ghost" size="icon" onClick={onClose}>
@@ -190,7 +191,7 @@ export function UnifiedTaskDrawer({
           </DrawerHeader>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-6">
             {/* Title */}
             <div>
               <Label className="text-sm font-medium">Title *</Label>
@@ -256,7 +257,7 @@ export function UnifiedTaskDrawer({
                 {/* Date */}
                 <div>
                   <Label className="text-[10px] text-muted-foreground mb-1 block">Date</Label>
-                  <Popover>
+                  <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
@@ -269,11 +270,14 @@ export function UnifiedTaskDrawer({
                         <CalendarIcon className="ml-auto h-3 w-3 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-auto p-0 z-[9999]" align="start">
                       <Calendar
                         mode="single"
                         selected={formData.due_date ? new Date(formData.due_date) : undefined}
-                        onSelect={(date) => updateField("due_date", date?.toISOString() || null)}
+                        onSelect={(date) => {
+                          updateField("due_date", date?.toISOString() || null);
+                          setCalendarOpen(false);
+                        }}
                         initialFocus
                         className="pointer-events-auto"
                       />
@@ -288,7 +292,7 @@ export function UnifiedTaskDrawer({
                     type="time"
                     value={formData.due_time || ""}
                     onChange={(e) => updateField("due_time", e.target.value)}
-                    className="h-8 text-xs"
+                    className="h-8 text-xs [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                     placeholder="09:00"
                   />
                 </div>
@@ -300,7 +304,7 @@ export function UnifiedTaskDrawer({
                     type="time"
                     value={formData.end_time || ""}
                     onChange={(e) => updateField("end_time", e.target.value)}
-                    className="h-8 text-xs"
+                    className="h-8 text-xs [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                     placeholder="11:00"
                   />
                 </div>
@@ -534,30 +538,6 @@ export function UnifiedTaskDrawer({
               )}
             </div>
 
-            {/* Time of Day - Auto-derived from Due Time (locked) */}
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground">Time of Day (auto)</Label>
-              <div className="mt-1.5 flex items-center gap-2">
-                <div
-                  className={cn(
-                    "flex-1 h-10 px-3 py-2 rounded-md border border-input bg-muted/50 text-sm",
-                    "flex items-center gap-2 text-muted-foreground cursor-not-allowed",
-                  )}
-                >
-                  {formData.due_time ? (
-                    <>
-                      {formData.time_of_day === "morning" && "🌅 Morning"}
-                      {formData.time_of_day === "afternoon" && "☀️ Afternoon"}
-                      {formData.time_of_day === "evening" && "🌆 Evening"}
-                      {formData.time_of_day === "night" && "🌙 Night"}
-                    </>
-                  ) : (
-                    <span className="italic">— Set due time first</span>
-                  )}
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Auto-set based on due time</p>
-            </div>
 
             {/* Quadrant Assignment */}
             <div className="grid grid-cols-2 gap-4">
