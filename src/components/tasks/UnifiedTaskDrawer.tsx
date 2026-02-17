@@ -9,8 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { UnifiedDatePicker } from "@/components/common/UnifiedDatePicker";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 import { QuadrantTask, Urgency, Importance, Subtask, suggestTimeOfDay, getDefaultEndTime } from "./types";
@@ -66,7 +65,6 @@ export function UnifiedTaskDrawer({
 }: UnifiedTaskDrawerProps) {
   const [formData, setFormData] = useState<Partial<QuadrantTask>>(DEFAULT_TASK);
   const [newSubtask, setNewSubtask] = useState("");
-  const [calendarOpen, setCalendarOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const timeInputRef = useRef<HTMLInputElement>(null);
   const { timeFormat, formatTime, formatHour } = useTimeFormat();
@@ -266,32 +264,14 @@ export function UnifiedTaskDrawer({
                 {/* Date */}
                 <div>
                   <Label className="text-[10px] text-muted-foreground mb-1 block">Date</Label>
-                  <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal h-8 text-xs",
-                          !formData.due_date && "text-muted-foreground",
-                        )}
-                      >
-                        {formData.due_date ? format(new Date(formData.due_date), "dd MMM") : "Pick"}
-                        <CalendarIcon className="ml-auto h-3 w-3 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 z-[9999]" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formData.due_date ? new Date(formData.due_date) : undefined}
-                        onSelect={(date) => {
-                          updateField("due_date", date?.toISOString() || null);
-                          setCalendarOpen(false);
-                        }}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <UnifiedDatePicker
+                    value={formData.due_date ? new Date(formData.due_date) : undefined}
+                    onChange={(date) => updateField("due_date", date?.toISOString() || null)}
+                    placeholder="Pick"
+                    displayFormat="dd MMM"
+                    triggerClassName="w-full h-8 text-xs"
+                    icon={<CalendarIcon className="h-3 w-3 opacity-50" />}
+                  />
                 </div>
 
                 {/* Start Time */}
@@ -489,17 +469,13 @@ export function UnifiedTaskDrawer({
                     })}
 
                     <span className="text-xs text-muted-foreground ml-2">Until</span>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
-                          Jul 07, 2026
-                          <CalendarIcon className="h-3 w-3 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar mode="single" initialFocus className="pointer-events-auto" />
-                      </PopoverContent>
-                    </Popover>
+                    <UnifiedDatePicker
+                      value={undefined}
+                      onChange={() => {}}
+                      placeholder="Jul 07, 2026"
+                      triggerClassName="h-7 text-xs gap-1"
+                      icon={<CalendarIcon className="h-3 w-3 opacity-50" />}
+                    />
                   </div>
                 </div>
               )}

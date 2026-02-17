@@ -25,8 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+import { UnifiedDatePicker } from "@/components/common/UnifiedDatePicker";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Calendar as CalendarIcon,
@@ -1661,22 +1660,12 @@ export default function Habits() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-2 block">Start Date</label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal rounded-xl h-10">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {format(formStartDate, "PPP")}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formStartDate}
-                        onSelect={(date) => { if (date) setFormStartDate(date); }}
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <UnifiedDatePicker
+                    value={formStartDate}
+                    onChange={(date) => { if (date) setFormStartDate(date); }}
+                    displayFormat="PPP"
+                    triggerClassName="w-full rounded-xl h-10"
+                  />
                 </div>
 
                 <div>

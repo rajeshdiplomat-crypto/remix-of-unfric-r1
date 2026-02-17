@@ -1,8 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { ArrowRight, Check, Sparkles, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { UnifiedDatePicker } from "@/components/common/UnifiedDatePicker";
 import { QuadrantType, QUADRANTS } from "./types";
 import { EmotionCircularPicker } from "./EmotionCircularPicker";
 import { cn } from "@/lib/utils";
@@ -116,32 +115,18 @@ export function EmotionsPageFeel({
         <div className="flex flex-col items-center justify-center order-1 lg:order-2">
           {/* Date Picker - near the wheel */}
           <div className="flex items-center gap-2 mb-4">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "justify-start text-left font-normal gap-2 rounded-xl",
-                    format(selectedDate, "yyyy-MM-dd") !== format(new Date(), "yyyy-MM-dd") && "border-primary text-primary"
-                  )}
-                >
-                  <CalendarDays className="h-4 w-4" />
-                  {format(selectedDate, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd")
-                    ? "Today"
-                    : format(selectedDate, "MMM d, yyyy")}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="center">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(date) => { if (date) onDateChange(date); }}
-                  disabled={(date) => date > new Date()}
-                  initialFocus
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
+            <UnifiedDatePicker
+              value={selectedDate}
+              onChange={(date) => { if (date) onDateChange(date); }}
+              displayFormat={format(selectedDate, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd") ? "'Today'" : "MMM d, yyyy"}
+              disabledDates={(date) => date > new Date()}
+              triggerClassName={cn(
+                "rounded-xl gap-2",
+                format(selectedDate, "yyyy-MM-dd") !== format(new Date(), "yyyy-MM-dd") && "border-primary text-primary"
+              )}
+              icon={<CalendarDays className="h-4 w-4" />}
+              align="center"
+            />
             {format(selectedDate, "yyyy-MM-dd") !== format(new Date(), "yyyy-MM-dd") && (
               <span className="text-xs text-muted-foreground">Past date</span>
             )}
