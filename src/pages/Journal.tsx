@@ -690,8 +690,8 @@ export default function Journal() {
     lastSavedContentRef.current = newContent;
     setSaveStatus("saved");
 
-    // Reset skin to default
-    setCurrentSkinId(theme.isDark ? "midnight-dark" : template.defaultSkinId || "minimal-light");
+    // Reset skin to current global default (entryPageSettings is null so line style falls back to template default)
+    setCurrentSkinId(template.defaultSkinId || (theme.isDark ? "midnight-dark" : "minimal-light"));
   }, [currentEntry, user, journalMode, template, theme.isDark]);
 
   if (isLoading && !currentEntry && !content) {
