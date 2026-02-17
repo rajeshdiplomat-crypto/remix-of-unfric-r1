@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UnifiedDatePicker } from "@/components/common/UnifiedDatePicker";
+import { UnifiedTimePicker } from "@/components/common/UnifiedTimePicker";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { QuadrantTask, Urgency, Importance, Subtask, suggestTimeOfDay, getDefaultEndTime } from "./types";
@@ -274,51 +275,21 @@ export function UnifiedTaskDrawer({
                 {/* Start Time */}
                 <div>
                   <Label className="text-[10px] text-muted-foreground mb-1 block">Start</Label>
-                  <Select
-                    value={formData.due_time || ""}
-                    onValueChange={(v) => updateField("due_time", v)}
-                  >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="Start" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-60 z-[9999]">
-                      {Array.from({ length: 48 }, (_, i) => {
-                        const h = Math.floor(i / 2);
-                        const m = i % 2 === 0 ? "00" : "30";
-                        const val = `${h.toString().padStart(2, "0")}:${m}`;
-                        return (
-                          <SelectItem key={val} value={val}>
-                            {formatTime(val)}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+                  <UnifiedTimePicker
+                    value={formData.due_time || "09:00"}
+                    onChange={(v) => updateField("due_time", v)}
+                    triggerClassName="h-8 text-xs w-full"
+                  />
                 </div>
 
                 {/* End Time */}
                 <div>
                   <Label className="text-[10px] text-muted-foreground mb-1 block">End</Label>
-                  <Select
-                    value={formData.end_time || ""}
-                    onValueChange={(v) => updateField("end_time", v)}
-                  >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="End" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-60 z-[9999]">
-                      {Array.from({ length: 48 }, (_, i) => {
-                        const h = Math.floor(i / 2);
-                        const m = i % 2 === 0 ? "00" : "30";
-                        const val = `${h.toString().padStart(2, "0")}:${m}`;
-                        return (
-                          <SelectItem key={val} value={val}>
-                            {formatTime(val)}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+                  <UnifiedTimePicker
+                    value={formData.end_time || "10:00"}
+                    onChange={(v) => updateField("end_time", v)}
+                    triggerClassName="h-8 text-xs w-full"
+                  />
                 </div>
               </div>
 

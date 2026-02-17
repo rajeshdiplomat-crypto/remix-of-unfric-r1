@@ -42,10 +42,8 @@ export function UnifiedTimePicker({
   }, [is12h]);
 
   const minuteOptions = useMemo(() => {
-    const result: number[] = [];
-    for (let m = 0; m < 60; m += intervalMinutes) result.push(m);
-    return result;
-  }, [intervalMinutes]);
+    return Array.from({ length: 60 }, (_, i) => i);
+  }, []);
 
   const build24h = useCallback(
     (h: number, m: number, period: "AM" | "PM") => {
