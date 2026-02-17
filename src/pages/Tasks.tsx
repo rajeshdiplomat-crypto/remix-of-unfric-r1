@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { ChevronUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -665,7 +666,7 @@ export default function Tasks() {
           {/* Unified layout: single column */}
           <div className="flex flex-col gap-4 flex-1 min-h-0">
             {/* Combined Card: Focus + Clock + Insights */}
-            {(
+            {!insightsCollapsed ? (
               <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden shrink-0 flex items-stretch">
                 {/* Left column: Focus bar + Insights */}
                 <div className="flex-1 min-w-0 flex flex-col">
@@ -675,14 +676,24 @@ export default function Tasks() {
                   <InsightsPanel
                     tasks={filteredTasks}
                     compactMode={true}
-                    collapsed={insightsCollapsed}
-                    onToggleCollapse={() => setInsightsCollapsed(prev => !prev)}
+                    collapsed={false}
+                    onToggleCollapse={() => setInsightsCollapsed(true)}
                   />
                 </div>
                 {/* Right column: Clock spans full height */}
                 <div className="hidden lg:flex w-[220px] shrink-0 border-l border-border">
                   <TasksClockWidget />
                 </div>
+              </div>
+            ) : (
+              <div className="px-3 py-1.5 border border-border rounded-xl bg-card shrink-0">
+                <button
+                  onClick={() => setInsightsCollapsed(false)}
+                  className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors group"
+                >
+                  <ChevronUp className="h-3.5 w-3.5 rotate-180 group-hover:translate-y-0.5 transition-transform" />
+                  Show Insights
+                </button>
               </div>
             )}
 
