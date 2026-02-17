@@ -471,7 +471,7 @@ export default function Journal() {
             text_formatting: content,
             daily_feeling: selectedMood,
             images_data: imagesDataPayload,
-            page_settings: { skinId: currentSkinId, lineStyle: entryPageSettings?.lineStyle || template.defaultLineStyle || "none" },
+            page_settings: entryPageSettings ? { skinId: currentSkinId, lineStyle: entryPageSettings.lineStyle || template.defaultLineStyle || "none" } : null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", currentEntry.id);
@@ -521,7 +521,7 @@ export default function Journal() {
             text_formatting: content,
             daily_feeling: selectedMood,
             images_data: imagesDataPayload,
-            page_settings: { skinId: currentSkinId, lineStyle: entryPageSettings?.lineStyle || template.defaultLineStyle || "none" },
+            page_settings: entryPageSettings ? { skinId: currentSkinId, lineStyle: entryPageSettings.lineStyle || template.defaultLineStyle || "none" } : null,
           })
           .select()
           .single();
@@ -569,7 +569,7 @@ export default function Journal() {
     } finally {
       isSavingRef.current = false;
     }
-  }, [user, content, selectedDate, currentEntry, currentAnswers, template.questions, selectedMood, toast]);
+  }, [user, content, selectedDate, currentEntry, currentAnswers, template.questions, template.defaultLineStyle, selectedMood, entryPageSettings, currentSkinId, toast]);
 
   // Handle content change with autosave
   const handleContentChange = useCallback(
