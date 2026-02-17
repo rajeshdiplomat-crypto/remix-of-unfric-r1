@@ -499,40 +499,82 @@ export default function Settings() {
 
       {/* ─── Section 2: Notifications ─── */}
       <SettingsSection icon={Bell} title="Notifications & Reminders">
-        {supported && permission !== "granted" && (
-          <div className="px-4 py-3 border-b border-border last:border-b-0 bg-muted/30">
-            <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0 mr-4">
-                <p className="text-sm font-light text-foreground">
-                  {permission === "denied" ? "Notifications Blocked" : "Enable Notifications"}
-                </p>
-                <p className="text-[11px] text-muted-foreground">
-                  {permission === "denied"
-                    ? "Please allow notifications in your browser settings to receive reminders"
-                    : "Allow browser notifications to get reminders even when the tab is in the background"}
-                </p>
+        {/* Reminder Method */}
+        <div className="px-4 py-3 border-b border-border">
+          <p className="text-sm font-light text-foreground mb-1">Reminder Method</p>
+          <p className="text-[11px] text-muted-foreground mb-3">Choose how you'd like to receive reminders</p>
+          <div className="space-y-2">
+            {/* App (Browser) Notifications — Active */}
+            <div className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-background">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Bell className="h-3.5 w-3.5 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-foreground">App Notifications</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {permission === "granted"
+                      ? "Enabled — reminders fire when browser is open"
+                      : permission === "denied"
+                        ? "Blocked in browser settings"
+                        : "Browser push notifications"}
+                  </p>
+                </div>
               </div>
-              <Button
-                variant={permission === "denied" ? "outline" : "default"}
-                size="sm"
-                onClick={handleRequestPermission}
-                className="text-xs"
-                disabled={permission === "denied"}
-              >
-                <Bell className="h-3 w-3 mr-1" />
-                {permission === "denied" ? "Blocked" : "Enable"}
-              </Button>
+              {permission === "granted" ? (
+                <span className="text-[10px] text-primary flex items-center gap-1 flex-shrink-0">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary" />
+                  Active
+                </span>
+              ) : (
+                <Button
+                  variant={permission === "denied" ? "outline" : "default"}
+                  size="sm"
+                  onClick={handleRequestPermission}
+                  className="text-[10px] h-7 px-2.5"
+                  disabled={permission === "denied"}
+                >
+                  {permission === "denied" ? "Blocked" : "Enable"}
+                </Button>
+              )}
+            </div>
+
+            {/* WhatsApp — Coming Soon */}
+            <div className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-background opacity-60">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="h-7 w-7 rounded-md bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                  <svg className="h-3.5 w-3.5 text-emerald-500" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                    <path d="M12 0C5.373 0 0 5.373 0 12c0 2.116.549 4.106 1.513 5.839L.06 23.49l5.824-1.525A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.82c-1.908 0-3.727-.514-5.32-1.483l-.382-.227-3.96 1.039 1.057-3.863-.249-.396A9.808 9.808 0 012.18 12c0-5.422 4.398-9.82 9.82-9.82 5.422 0 9.82 4.398 9.82 9.82 0 5.422-4.398 9.82-9.82 9.82z"/>
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-foreground">WhatsApp Reminders</p>
+                  <p className="text-[10px] text-muted-foreground">Get reminders via WhatsApp messages</p>
+                </div>
+              </div>
+              <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0">Coming Soon</span>
+            </div>
+
+            {/* SMS — Coming Soon */}
+            <div className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-background opacity-60">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="h-7 w-7 rounded-md bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                  <svg className="h-3.5 w-3.5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-foreground">Text (SMS) Reminders</p>
+                  <p className="text-[10px] text-muted-foreground">Get reminders via text message</p>
+                </div>
+              </div>
+              <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0">Coming Soon</span>
             </div>
           </div>
-        )}
-        {supported && permission === "granted" && (
-          <div className="px-4 py-2 border-b border-border last:border-b-0">
-            <p className="text-[11px] text-primary flex items-center gap-1">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary" />
-              Notifications enabled — reminders will fire at the scheduled time when the browser is open
-            </p>
-          </div>
-        )}
+        </div>
+
+        {/* Individual reminder toggles */}
         <SettingsRow label="Daily Journal Reminder" description="Get reminded to write in your journal">
           <Switch
             checked={settings.notification_diary_prompt ?? true}
