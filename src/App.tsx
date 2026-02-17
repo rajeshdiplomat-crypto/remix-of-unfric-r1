@@ -33,25 +33,42 @@ import { NotificationScheduler } from "@/components/NotificationScheduler";
 const queryClient = new QueryClient();
 
 function HomeRedirect() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const [target, setTarget] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("user_settings")
-      .select("default_home_screen")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (error) {
-          console.error("[HomeRedirect] Failed to fetch default_home_screen:", error);
+    if (!user || !session) return;
+
+    let cancelled = false;
+
+    const fetchHome = async () => {
+      const { data, error } = await supabase
+        .from("user_settings")
+        .select("default_home_screen")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (error) {
+        console.error("[HomeRedirect] Fetch failed (attempt", retryCount + 1, "):", error);
+        if (retryCount < 3) {
+          setTimeout(() => {
+            if (!cancelled) setRetryCount((r) => r + 1);
+          }, 1000);
+          return;
         }
-        const home = data?.default_home_screen || "diary";
-        console.log("[HomeRedirect] DB value:", data?.default_home_screen, "→ redirecting to:", `/${home}`);
-        setTarget(`/${home}`);
-      });
-  }, [user]);
+      }
+
+      const home = data?.default_home_screen || "diary";
+      console.log("[HomeRedirect] DB value:", data?.default_home_screen, "→ redirecting to:", `/${home}`);
+      setTarget(`/${home}`);
+    };
+
+    fetchHome();
+    return () => { cancelled = true; };
+  }, [user, session, retryCount]);
 
   if (authLoading) {
     return (
