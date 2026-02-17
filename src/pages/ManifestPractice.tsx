@@ -263,7 +263,7 @@ export default function ManifestPractice() {
                 <Calendar
                   mode="single"
                   selected={selectedDate}
-                  onSelect={(date) => date && setSelectedDate(date)}
+                  onSelect={(date) => { if (date) setSelectedDate(date); }}
                   initialFocus
                   className={cn("p-3 pointer-events-auto")}
                 />

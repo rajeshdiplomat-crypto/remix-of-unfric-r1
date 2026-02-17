@@ -10,6 +10,7 @@ import { ChevronLeft, ChevronRight, ImagePlus, Sparkles, X, Clock, Plus, Trash2,
 import { type ManifestGoal, MANIFEST_DRAFT_KEY } from "./types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { UnifiedTimePicker } from "@/components/common/UnifiedTimePicker";
 
 interface ManifestCreateModalProps {
   open: boolean;
@@ -746,11 +747,11 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                     <div key={index} className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-amber-600" />
                       <span className="text-xs text-slate-600 w-20">{getReminderLabel(index, reminderCount)}</span>
-                      <Input
-                        type="time"
+                      <UnifiedTimePicker
                         value={time}
-                        onChange={(e) => handleReminderTimeChange(index, e.target.value)}
-                        className="flex-1 rounded-lg h-9 text-sm"
+                        onChange={(v) => handleReminderTimeChange(index, v)}
+                        intervalMinutes={30}
+                        triggerClassName="flex-1 rounded-lg h-9 text-sm"
                       />
                     </div>
                   ))}

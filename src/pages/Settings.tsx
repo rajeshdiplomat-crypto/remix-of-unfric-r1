@@ -27,6 +27,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { UnifiedTimePicker } from "@/components/common/UnifiedTimePicker";
 import { cn } from "@/lib/utils";
 import {
   JournalTemplate,
@@ -505,11 +506,11 @@ export default function Settings() {
           />
         </SettingsRow>
         <SettingsRow label="Reminder Time" description="When to send daily reminders">
-          <Input
-            type="time"
+          <UnifiedTimePicker
             value={settings.daily_reset_time || "08:00"}
-            onChange={(e) => saveField("daily_reset_time", e.target.value)}
-            className="w-28 text-xs"
+            onChange={(v) => saveField("daily_reset_time", v)}
+            intervalMinutes={30}
+            triggerClassName="w-28 text-xs"
           />
         </SettingsRow>
       </SettingsSection>
