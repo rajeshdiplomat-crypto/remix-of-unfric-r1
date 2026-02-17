@@ -28,6 +28,7 @@ import TaskFocus from "./pages/TaskFocus";
 import ClarityWindow from "./pages/ClarityWindow";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import { NotificationScheduler } from "@/components/NotificationScheduler";
 
 const queryClient = new QueryClient();
 
@@ -124,6 +125,7 @@ const App = () => (
               <Sonner />
               <BrowserRouter>
                 <AuthProvider>
+                  <NotificationScheduler />
                   <Routes>
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/" element={<HomeRedirect />} />

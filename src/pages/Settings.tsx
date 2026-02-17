@@ -29,6 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UnifiedTimePicker } from "@/components/common/UnifiedTimePicker";
 import { cn } from "@/lib/utils";
+import { useNotificationPermission } from "@/hooks/useNotifications";
 import {
   JournalTemplate,
   JournalQuestion,
@@ -73,6 +74,17 @@ const MODULES_FOR_CLEAR = [
 // ── Component ──────────────────────────────────────────────────────
 
 export default function Settings() {
+  const { permission, supported, requestPermission } = useNotificationPermission();
+
+  const handleRequestPermission = async () => {
+    const result = await requestPermission();
+    if (result === "granted") {
+      toast.success("Notifications enabled! You'll get reminders at the scheduled time.");
+    } else if (result === "denied") {
+      toast.error("Notifications blocked. Please enable them in your browser settings.");
+    }
+  };
+
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [settings, setSettings] = useState<UserSettings | null>(null);
@@ -487,6 +499,40 @@ export default function Settings() {
 
       {/* ─── Section 2: Notifications ─── */}
       <SettingsSection icon={Bell} title="Notifications & Reminders">
+        {supported && permission !== "granted" && (
+          <div className="px-4 py-3 border-b border-border last:border-b-0 bg-muted/30">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 min-w-0 mr-4">
+                <p className="text-sm font-light text-foreground">
+                  {permission === "denied" ? "Notifications Blocked" : "Enable Notifications"}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  {permission === "denied"
+                    ? "Please allow notifications in your browser settings to receive reminders"
+                    : "Allow browser notifications to get reminders even when the tab is in the background"}
+                </p>
+              </div>
+              <Button
+                variant={permission === "denied" ? "outline" : "default"}
+                size="sm"
+                onClick={handleRequestPermission}
+                className="text-xs"
+                disabled={permission === "denied"}
+              >
+                <Bell className="h-3 w-3 mr-1" />
+                {permission === "denied" ? "Blocked" : "Enable"}
+              </Button>
+            </div>
+          </div>
+        )}
+        {supported && permission === "granted" && (
+          <div className="px-4 py-2 border-b border-border last:border-b-0">
+            <p className="text-[11px] text-primary flex items-center gap-1">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary" />
+              Notifications enabled — reminders will fire at the scheduled time when the browser is open
+            </p>
+          </div>
+        )}
         <SettingsRow label="Daily Journal Reminder" description="Get reminded to write in your journal">
           <Switch
             checked={settings.notification_diary_prompt ?? true}
