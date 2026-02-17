@@ -42,8 +42,12 @@ function HomeRedirect() {
       .select("default_home_screen")
       .eq("user_id", user.id)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("[HomeRedirect] Failed to fetch default_home_screen:", error);
+        }
         const home = data?.default_home_screen || "diary";
+        console.log("[HomeRedirect] DB value:", data?.default_home_screen, "→ redirecting to:", `/${home}`);
         setTarget(`/${home}`);
       });
   }, [user]);

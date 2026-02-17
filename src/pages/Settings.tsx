@@ -7,16 +7,34 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { 
-  PenLine, Bell, Shield, Clock, LayoutDashboard, 
-  Download, Trash2, UserX, ChevronRight, Loader2,
-  Plus, RotateCcw, GripVertical, Edit3, Save
+import {
+  PenLine,
+  Bell,
+  Shield,
+  Clock,
+  LayoutDashboard,
+  Download,
+  Trash2,
+  UserX,
+  ChevronRight,
+  Loader2,
+  Plus,
+  RotateCcw,
+  GripVertical,
+  Edit3,
+  Save,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { JournalTemplate, JournalQuestion, DEFAULT_QUESTIONS, DEFAULT_TEMPLATE, JOURNAL_SKINS } from "@/components/journal/types";
+import {
+  JournalTemplate,
+  JournalQuestion,
+  DEFAULT_QUESTIONS,
+  DEFAULT_TEMPLATE,
+  JOURNAL_SKINS,
+} from "@/components/journal/types";
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -77,11 +95,7 @@ export default function Settings() {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await supabase
-        .from("user_settings")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
+      const { data } = await supabase.from("user_settings").select("*").eq("user_id", user.id).single();
 
       if (data) {
         setSettings({
@@ -135,7 +149,7 @@ export default function Settings() {
 
   // ── Local change helper (no DB write) ──────────────────────────
   const updateField = (field: keyof UserSettings, value: any) => {
-    setSettings((prev) => prev ? { ...prev, [field]: value } : prev);
+    setSettings((prev) => (prev ? { ...prev, [field]: value } : prev));
     setPendingSettings((prev) => ({ ...prev, [field]: value }));
     setIsDirty(true);
   };
@@ -147,10 +161,7 @@ export default function Settings() {
     try {
       // Save DB settings
       if (Object.keys(pendingSettings).length > 0) {
-        await supabase
-          .from("user_settings")
-          .update(pendingSettings)
-          .eq("user_id", user.id);
+        await supabase.from("user_settings").update(pendingSettings).eq("user_id", user.id);
       }
       // Template is saved to localStorage on change already
       setPendingSettings({});
@@ -164,8 +175,16 @@ export default function Settings() {
   };
 
   // Legacy helper kept for non-settings-page callers
+  // Now also writes to DB immediately so changes like default_home_screen
+  // and notification settings take effect right away
   const saveField = async (field: keyof UserSettings, value: any) => {
     updateField(field, value);
+    if (user) {
+      await supabase
+        .from("user_settings")
+        .update({ [field]: value })
+        .eq("user_id", user.id);
+    }
   };
 
   // ── Export Data ──────────────────────────────────────────────────
@@ -236,7 +255,10 @@ export default function Settings() {
         }
       }
 
-      await supabase.from(tableKey as any).delete().eq("user_id", user.id);
+      await supabase
+        .from(tableKey as any)
+        .delete()
+        .eq("user_id", user.id);
       toast.success("Module data cleared");
     } catch (e) {
       toast.error("Failed to clear data");
@@ -282,10 +304,7 @@ export default function Settings() {
       {/* ─── Section 1: Journal Preferences ─── */}
       <SettingsSection icon={PenLine} title="Journal Preferences">
         <SettingsRow label="Journal Mode" description="Structured uses prompts, unstructured is freeform">
-          <Select
-            value={settings.journal_mode || "structured"}
-            onValueChange={(v) => saveField("journal_mode", v)}
-          >
+          <Select value={settings.journal_mode || "structured"} onValueChange={(v) => saveField("journal_mode", v)}>
             <SelectTrigger className="w-36 text-xs">
               <SelectValue />
             </SelectTrigger>
@@ -311,7 +330,9 @@ export default function Settings() {
             </SelectTrigger>
             <SelectContent>
               {JOURNAL_SKINS.map((skin) => (
-                <SelectItem key={skin.id} value={skin.id} className="text-xs">{skin.name}</SelectItem>
+                <SelectItem key={skin.id} value={skin.id} className="text-xs">
+                  {skin.name}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -339,14 +360,23 @@ export default function Settings() {
           </Select>
         </SettingsRow>
         <div className="px-4 py-2">
-          <p className="text-[11px] text-muted-foreground italic">These settings apply to new journal entries going forward. Existing entries keep their original look.</p>
+          <p className="text-[11px] text-muted-foreground italic">
+            These settings apply to new journal entries going forward. Existing entries keep their original look.
+          </p>
         </div>
 
         {/* Questions inline editor */}
-        <div className={cn("px-4 py-3 border-b border-border last:border-b-0", (settings.journal_mode || "structured") === "unstructured" && "opacity-50 pointer-events-none")}>
+        <div
+          className={cn(
+            "px-4 py-3 border-b border-border last:border-b-0",
+            (settings.journal_mode || "structured") === "unstructured" && "opacity-50 pointer-events-none",
+          )}
+        >
           <p className="text-sm font-light text-foreground mb-1">Template Questions</p>
           <p className="text-[11px] text-muted-foreground mb-3">
-            {(settings.journal_mode || "structured") === "unstructured" ? "Switch to Structured mode to edit questions" : "Drag to reorder, click to edit"}
+            {(settings.journal_mode || "structured") === "unstructured"
+              ? "Switch to Structured mode to edit questions"
+              : "Drag to reorder, click to edit"}
           </p>
           <div className="space-y-2">
             {template.questions.map((question, index) => (
@@ -378,7 +408,12 @@ export default function Settings() {
                     <Input
                       value={question.text}
                       onChange={(e) => {
-                        const updated = { ...template, questions: template.questions.map(q => q.id === question.id ? { ...q, text: e.target.value } : q) };
+                        const updated = {
+                          ...template,
+                          questions: template.questions.map((q) =>
+                            q.id === question.id ? { ...q, text: e.target.value } : q,
+                          ),
+                        };
                         setTemplate(updated);
                         localStorage.setItem("journal_template", JSON.stringify(updated));
                         setIsDirty(true);
@@ -401,7 +436,7 @@ export default function Settings() {
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    const updated = { ...template, questions: template.questions.filter(q => q.id !== question.id) };
+                    const updated = { ...template, questions: template.questions.filter((q) => q.id !== question.id) };
                     setTemplate(updated);
                     localStorage.setItem("journal_template", JSON.stringify(updated));
                     setIsDirty(true);
@@ -497,7 +532,9 @@ export default function Settings() {
             </SelectTrigger>
             <SelectContent>
               {MODULES_FOR_CLEAR.map((m) => (
-                <SelectItem key={m.key} value={m.table}>{m.label}</SelectItem>
+                <SelectItem key={m.key} value={m.table}>
+                  {m.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -527,16 +564,15 @@ export default function Settings() {
             </SelectTrigger>
             <SelectContent className="max-h-60">
               {TIMEZONES.map((tz) => (
-                <SelectItem key={tz} value={tz} className="text-xs">{tz.replace(/_/g, " ")}</SelectItem>
+                <SelectItem key={tz} value={tz} className="text-xs">
+                  {tz.replace(/_/g, " ")}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </SettingsRow>
         <SettingsRow label="Date Format" description="Controls all calendar and date displays">
-          <Select
-            value={settings.date_format || "MM/DD"}
-            onValueChange={(v) => saveField("date_format", v)}
-          >
+          <Select value={settings.date_format || "MM/DD"} onValueChange={(v) => saveField("date_format", v)}>
             <SelectTrigger className="w-28 text-xs">
               <SelectValue />
             </SelectTrigger>
@@ -547,10 +583,7 @@ export default function Settings() {
           </Select>
         </SettingsRow>
         <SettingsRow label="Week Start Day" description="Controls all calendar views">
-          <Select
-            value={settings.start_of_week || "monday"}
-            onValueChange={(v) => saveField("start_of_week", v)}
-          >
+          <Select value={settings.start_of_week || "monday"} onValueChange={(v) => saveField("start_of_week", v)}>
             <SelectTrigger className="w-28 text-xs">
               <SelectValue />
             </SelectTrigger>
@@ -584,10 +617,7 @@ export default function Settings() {
           </Select>
         </SettingsRow>
         <SettingsRow label="Default Task Tab" description="Which task tab to show first">
-          <Select
-            value={settings.default_task_tab || "board"}
-            onValueChange={(v) => saveField("default_task_tab", v)}
-          >
+          <Select value={settings.default_task_tab || "board"} onValueChange={(v) => saveField("default_task_tab", v)}>
             <SelectTrigger className="w-28 text-xs">
               <SelectValue />
             </SelectTrigger>
@@ -599,11 +629,14 @@ export default function Settings() {
           </Select>
         </SettingsRow>
         <div className={cn((settings.default_task_tab || "board") !== "board" && "opacity-50 pointer-events-none")}>
-          <SettingsRow label="Default Board Mode" description={
-            (settings.default_task_tab || "board") !== "board"
-              ? "Switch to Board tab to edit this"
-              : "Which board categorization to use"
-          }>
+          <SettingsRow
+            label="Default Board Mode"
+            description={
+              (settings.default_task_tab || "board") !== "board"
+                ? "Switch to Board tab to edit this"
+                : "Which board categorization to use"
+            }
+          >
             <Select
               value={settings.default_task_view || "status"}
               onValueChange={(v) => saveField("default_task_view", v)}
@@ -662,7 +695,9 @@ export default function Settings() {
             This will permanently delete all data for this module. This action cannot be undone.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setClearDialog(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setClearDialog(null)}>
+              Cancel
+            </Button>
             <Button variant="destructive" onClick={() => clearDialog && handleClearModule(clearDialog)}>
               <Trash2 className="h-3 w-3 mr-1" /> Clear Data
             </Button>
@@ -679,7 +714,9 @@ export default function Settings() {
             This will permanently delete your account and all associated data. This cannot be undone.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialog(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDeleteDialog(false)}>
+              Cancel
+            </Button>
             <Button variant="destructive" onClick={handleDeleteAccount}>
               <UserX className="h-3 w-3 mr-1" /> Delete Account
             </Button>
@@ -699,14 +736,20 @@ function SettingsSection({ icon: Icon, title, children }: { icon: any; title: st
         <Icon className="h-4 w-4 text-muted-foreground" />
         <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{title}</h2>
       </div>
-      <div className="space-y-1 rounded-xl border border-border bg-card overflow-hidden">
-        {children}
-      </div>
+      <div className="space-y-1 rounded-xl border border-border bg-card overflow-hidden">{children}</div>
     </div>
   );
 }
 
-function SettingsRow({ label, description, children }: { label: string; description: string; children: React.ReactNode }) {
+function SettingsRow({
+  label,
+  description,
+  children,
+}: {
+  label: string;
+  description: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex items-center justify-between px-4 py-3 border-b border-border last:border-b-0">
       <div className="flex-1 min-w-0 mr-4">
