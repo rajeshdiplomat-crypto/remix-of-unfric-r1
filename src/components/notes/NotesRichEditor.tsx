@@ -799,6 +799,30 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
           </ToolBtn>
           <div className="w-px h-5 bg-slate-200 mx-1" />
 
+          {/* Alignment buttons - on toolbar */}
+          <ToolBtn
+            onClick={() => editor.chain().focus().setTextAlign("left").run()}
+            active={editor.isActive({ textAlign: "left" })}
+            title="Align Left"
+          >
+            <AlignLeft className="h-4 w-4" />
+          </ToolBtn>
+          <ToolBtn
+            onClick={() => editor.chain().focus().setTextAlign("center").run()}
+            active={editor.isActive({ textAlign: "center" })}
+            title="Align Center"
+          >
+            <AlignCenter className="h-4 w-4" />
+          </ToolBtn>
+          <ToolBtn
+            onClick={() => editor.chain().focus().setTextAlign("right").run()}
+            active={editor.isActive({ textAlign: "right" })}
+            title="Align Right"
+          >
+            <AlignRight className="h-4 w-4" />
+          </ToolBtn>
+          <div className="w-px h-5 bg-slate-200 mx-1" />
+
           <ToolBtn onClick={() => setLinkDialogOpen(true)} active={editor.isActive("link")} title="Link">
             <Link2 className="h-4 w-4" />
           </ToolBtn>
@@ -807,7 +831,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
           </ToolBtn>
           <div className="w-px h-5 bg-slate-200 mx-1" />
 
-          {/* Settings/More dropdown — contains alignment, scribble, theme, line style, etc. */}
+          {/* Settings/More dropdown — contains formatting extras, scribble, theme, line style */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-slate-100" title="More options">
@@ -815,17 +839,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="z-[99999] w-56">
-              {/* Alignment */}
-              <DropdownMenuItem onClick={() => editor.chain().focus().setTextAlign("left").run()}>
-                <AlignLeft className="h-4 w-4 mr-2" /> Align Left
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => editor.chain().focus().setTextAlign("center").run()}>
-                <AlignCenter className="h-4 w-4 mr-2" /> Align Center
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => editor.chain().focus().setTextAlign("right").run()}>
-                <AlignRight className="h-4 w-4 mr-2" /> Align Right
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
               {/* Formatting */}
               <DropdownMenuItem onClick={() => editor.chain().focus().toggleStrike().run()}>
                 <Strikethrough className="h-4 w-4 mr-2" /> Strikethrough
@@ -882,13 +895,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          <button
-            onClick={() => alert("AI coming soon!")}
-            className="h-8 px-3 flex items-center gap-1.5 rounded-md text-sm font-medium bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow hover:shadow-md"
-          >
-            <Sparkles className="h-3.5 w-3.5" /> AI
-          </button>
 
           <div className="flex-1 min-w-4" />
 

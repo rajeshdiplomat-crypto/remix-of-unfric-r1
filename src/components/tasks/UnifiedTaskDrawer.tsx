@@ -247,286 +247,120 @@ export function UnifiedTaskDrawer({
               </div>
             </div>
 
-            {/* Date & Time Section - Matching Reference UI */}
-            <div className="space-y-4 p-4 bg-muted/20 rounded-xl">
-              {/* Row 1: Start date */}
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1.5 block">Start date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal h-9 text-sm",
-                        !formData.due_date && "text-muted-foreground",
-                      )}
-                    >
-                      {formData.due_date ? format(new Date(formData.due_date), "dd-MM-yyyy") : "Pick date"}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={formData.due_date ? new Date(formData.due_date) : undefined}
-                      onSelect={(date) => updateField("due_date", date?.toISOString() || null)}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+            {/* Schedule Section — Compact Horizontal Layout */}
+            <div className="space-y-3 p-4 bg-muted/20 rounded-xl">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Schedule</Label>
 
-              {/* Day Schedule - Vertical Time Blocks */}
-              {formData.due_date && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Day Schedule</Label>
-                  <p className="text-xs text-muted-foreground">Click a time slot to set start time</p>
-
-                  <div className="flex gap-4">
-                    {/* Vertical timeline */}
-                    <div className="relative w-full h-80 bg-background rounded-xl border shadow-sm overflow-hidden flex">
-                      {/* Time labels on left */}
-                      <div className="w-14 shrink-0 border-r border-border/40 bg-muted/30">
-                        {[6, 8, 10, 12, 14, 16, 18, 20, 22].map((hour) => (
-                          <div
-                            key={hour}
-                            className="h-[36px] flex items-center justify-end pr-2 text-xs font-medium text-muted-foreground border-b border-border/20"
-                          >
-                            {hour === 12 ? "12 PM" : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Schedule area */}
-                      <div className="flex-1 relative">
-                        {/* Hour grid lines */}
-                        {[6, 8, 10, 12, 14, 16, 18, 20, 22].map((hour, i) => (
-                          <div
-                            key={hour}
-                            className={cn("h-[36px] border-b border-border/20", i % 2 === 0 && "bg-muted/10")}
-                          />
-                        ))}
-
-                        {/* Busy slots (existing tasks) */}
-                        {busySlots.map((slot) => {
-                          const [sh, sm] = slot.start.split(":").map(Number);
-                          const [eh, em] = slot.end.split(":").map(Number);
-                          const startMins = sh * 60 + sm;
-                          const endMins = eh * 60 + em;
-                          const dayStart = 6 * 60;
-                          const dayEnd = 22 * 60;
-                          const topPercent = Math.max(0, ((startMins - dayStart) / (dayEnd - dayStart)) * 100);
-                          const heightPercent = Math.min(
-                            100 - topPercent,
-                            ((endMins - startMins) / (dayEnd - dayStart)) * 100,
-                          );
-
-                          return (
-                            <div
-                              key={slot.id}
-                              className="absolute left-2 right-2 bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 rounded-r px-2 py-1 overflow-hidden shadow-sm"
-                              style={{ top: `${topPercent}%`, height: `${heightPercent}%`, minHeight: "24px" }}
-                              title={`${slot.title}: ${slot.start} - ${slot.end}`}
-                            >
-                              <span className="text-xs font-medium text-red-700 dark:text-red-300 truncate block">
-                                {slot.title}
-                              </span>
-                              <span className="text-[10px] text-red-600/70 dark:text-red-400/70">{slot.start}</span>
-                            </div>
-                          );
-                        })}
-
-                        {/* Current selection indicator */}
-                        {formData.due_time &&
-                          formData.end_time &&
-                          (() => {
-                            const [sh, sm] = formData.due_time.split(":").map(Number);
-                            const [eh, em] = formData.end_time.split(":").map(Number);
-                            const startMins = sh * 60 + sm;
-                            const endMins = eh * 60 + em;
-                            const dayStart = 6 * 60;
-                            const dayEnd = 22 * 60;
-                            const topPercent = Math.max(0, ((startMins - dayStart) / (dayEnd - dayStart)) * 100);
-                            const heightPercent = Math.min(
-                              100 - topPercent,
-                              ((endMins - startMins) / (dayEnd - dayStart)) * 100,
-                            );
-
-                            return (
-                              <div
-                                className="absolute left-2 right-2 bg-primary/20 border-l-4 border-primary rounded-r px-2 py-1 flex items-center shadow-sm"
-                                style={{ top: `${topPercent}%`, height: `${heightPercent}%`, minHeight: "28px" }}
-                              >
-                                <div>
-                                  <span className="text-xs font-semibold text-primary block">New Task</span>
-                                  <span className="text-[10px] text-primary/70">
-                                    {formData.due_time} - {formData.end_time}
-                                  </span>
-                                </div>
-                              </div>
-                            );
-                          })()}
-
-                        {/* Clickable time slots */}
-                        <div className="absolute inset-0 flex flex-col">
-                          {Array.from({ length: 16 }, (_, i) => i + 6).map((hour) => (
-                            <button
-                              key={hour}
-                              type="button"
-                              className="flex-1 hover:bg-primary/10 transition-all hover:shadow-inner border-b border-transparent"
-                              onClick={() => {
-                                const time = `${hour.toString().padStart(2, "0")}:00`;
-                                updateField("due_time", time);
-                                updateField("end_time", `${hour.toString().padStart(2, "0")}:30`);
-                              }}
-                              title={`Click to set ${hour}:00`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Legend */}
-                    <div className="flex flex-col gap-3 text-xs text-muted-foreground pt-1">
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-red-100 dark:bg-red-900/30 border-l-2 border-red-500 rounded-r" />
-                        <span>Busy</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-primary/20 border-l-2 border-primary rounded-r" />
-                        <span>This task</span>
-                      </div>
-                    </div>
-                  </div>
+              {/* Row 1: Date + Start + End — all inline */}
+              <div className="grid grid-cols-3 gap-2">
+                {/* Date */}
+                <div>
+                  <Label className="text-[10px] text-muted-foreground mb-1 block">Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal h-8 text-xs",
+                          !formData.due_date && "text-muted-foreground",
+                        )}
+                      >
+                        {formData.due_date ? format(new Date(formData.due_date), "dd MMM") : "Pick"}
+                        <CalendarIcon className="ml-auto h-3 w-3 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={formData.due_date ? new Date(formData.due_date) : undefined}
+                        onSelect={(date) => updateField("due_date", date?.toISOString() || null)}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
-              )}
-              <div className="grid grid-cols-3 gap-3">
+
                 {/* Start Time */}
                 <div>
-                  <Label className="text-xs text-muted-foreground mb-1.5 block">Start time</Label>
-                  <div className="relative">
-                    <Input
-                      type="time"
-                      value={formData.due_time || "09:00"}
-                      onChange={(e) => updateField("due_time", e.target.value)}
-                      className="h-9 text-sm pr-8"
-                    />
-                    <Clock className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  </div>
-                </div>
-
-                {/* Duration picker (hrs + mins) */}
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1.5 block">Duration</Label>
-                  <div className="flex gap-1">
-                    <Select
-                      value={(() => {
-                        if (!formData.due_time || !formData.end_time) return "0";
-                        const [sh, sm] = formData.due_time.split(":").map(Number);
-                        const [eh, em] = formData.end_time.split(":").map(Number);
-                        let totalMins = eh * 60 + em - (sh * 60 + sm);
-                        if (totalMins < 0) totalMins += 24 * 60;
-                        return String(Math.floor(totalMins / 60));
-                      })()}
-                      onValueChange={(hrs) => {
-                        if (formData.due_time) {
-                          const [sh, sm] = formData.due_time.split(":").map(Number);
-                          const currentMins = formData.end_time
-                            ? (() => {
-                                const [eh, em] = formData.end_time.split(":").map(Number);
-                                let totalMins = eh * 60 + em - (sh * 60 + sm);
-                                if (totalMins < 0) totalMins += 24 * 60;
-                                return totalMins % 60;
-                              })()
-                            : 30;
-                          const totalMinutes = sh * 60 + sm + parseInt(hrs) * 60 + currentMins;
-                          const endHours = Math.floor(totalMinutes / 60) % 24;
-                          const endMins = totalMinutes % 60;
-                          updateField(
-                            "end_time",
-                            `${endHours.toString().padStart(2, "0")}:${endMins.toString().padStart(2, "0")}`,
-                          );
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="h-9 text-sm flex-1">
-                        <SelectValue placeholder="0h" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {[0, 1, 2, 3, 4, 5, 6, 8, 10, 12].map((h) => (
-                          <SelectItem key={h} value={String(h)}>
-                            {h}h
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select
-                      value={(() => {
-                        if (!formData.due_time || !formData.end_time) return "30";
-                        const [sh, sm] = formData.due_time.split(":").map(Number);
-                        const [eh, em] = formData.end_time.split(":").map(Number);
-                        let totalMins = eh * 60 + em - (sh * 60 + sm);
-                        if (totalMins < 0) totalMins += 24 * 60;
-                        return String(totalMins % 60);
-                      })()}
-                      onValueChange={(mins) => {
-                        if (formData.due_time) {
-                          const [sh, sm] = formData.due_time.split(":").map(Number);
-                          const currentHrs = formData.end_time
-                            ? (() => {
-                                const [eh, em] = formData.end_time.split(":").map(Number);
-                                let totalMins = eh * 60 + em - (sh * 60 + sm);
-                                if (totalMins < 0) totalMins += 24 * 60;
-                                return Math.floor(totalMins / 60);
-                              })()
-                            : 0;
-                          const totalMinutes = sh * 60 + sm + currentHrs * 60 + parseInt(mins);
-                          const endHours = Math.floor(totalMinutes / 60) % 24;
-                          const endMins = totalMinutes % 60;
-                          updateField(
-                            "end_time",
-                            `${endHours.toString().padStart(2, "0")}:${endMins.toString().padStart(2, "0")}`,
-                          );
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="h-9 text-sm flex-1">
-                        <SelectValue placeholder="30m" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {[0, 15, 30, 45].map((m) => (
-                          <SelectItem key={m} value={String(m)}>
-                            {m}m
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <Label className="text-[10px] text-muted-foreground mb-1 block">Start</Label>
+                  <Input
+                    type="time"
+                    value={formData.due_time || ""}
+                    onChange={(e) => updateField("due_time", e.target.value)}
+                    className="h-8 text-xs"
+                    placeholder="09:00"
+                  />
                 </div>
 
                 {/* End Time */}
                 <div>
-                  <Label className="text-xs text-muted-foreground mb-1.5 block">End time</Label>
-                  <div className="relative">
-                    <Input
-                      type="time"
-                      value={formData.end_time || "09:30"}
-                      onChange={(e) => updateField("end_time", e.target.value)}
-                      className="h-9 text-sm pr-8"
-                    />
-                    <Clock className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  </div>
+                  <Label className="text-[10px] text-muted-foreground mb-1 block">End</Label>
+                  <Input
+                    type="time"
+                    value={formData.end_time || ""}
+                    onChange={(e) => updateField("end_time", e.target.value)}
+                    className="h-8 text-xs"
+                    placeholder="11:00"
+                  />
                 </div>
               </div>
 
-              {/* Row 3: Recurring button */}
-              <div className="flex items-center">
+              {/* Row 2: Duration chips — quick set */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] text-muted-foreground mr-1">Duration:</span>
+                {[
+                  { label: "30m", mins: 30 },
+                  { label: "1h", mins: 60 },
+                  { label: "1.5h", mins: 90 },
+                  { label: "2h", mins: 120 },
+                  { label: "3h", mins: 180 },
+                ].map(({ label, mins }) => {
+                  // Check if currently matching
+                  const isActive = (() => {
+                    if (!formData.due_time || !formData.end_time) return false;
+                    const [sh, sm] = formData.due_time.split(":").map(Number);
+                    const [eh, em] = formData.end_time.split(":").map(Number);
+                    let total = eh * 60 + em - (sh * 60 + sm);
+                    if (total < 0) total += 24 * 60;
+                    return total === mins;
+                  })();
+
+                  return (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => {
+                        if (!formData.due_time) {
+                          updateField("due_time", "09:00");
+                        }
+                        const startTime = formData.due_time || "09:00";
+                        const [sh, sm] = startTime.split(":").map(Number);
+                        const totalMins = sh * 60 + sm + mins;
+                        const endH = Math.floor(totalMins / 60) % 24;
+                        const endM = totalMins % 60;
+                        updateField("end_time", `${endH.toString().padStart(2, "0")}:${endM.toString().padStart(2, "0")}`);
+                      }}
+                      className={cn(
+                        "px-2.5 py-1 text-[10px] font-medium rounded-full border transition-colors",
+                        isActive
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background text-muted-foreground border-border hover:border-primary/50",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Row 3: Recurring toggle */}
+              <div className="flex items-center gap-2">
                 <Button
                   type="button"
                   variant={formData.tags?.includes("recurring") ? "default" : "outline"}
                   size="sm"
-                  className="h-8 gap-1.5"
+                  className="h-7 gap-1.5 text-xs"
                   onClick={() => {
                     const currentTags = formData.tags || [];
                     if (currentTags.includes("recurring")) {
@@ -541,7 +375,7 @@ export function UnifiedTaskDrawer({
                     }
                   }}
                 >
-                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M17 1l4 4-4 4" />
                     <path d="M3 11V9a4 4 0 0 1 4-4h14" />
                     <path d="M7 23l-4-4 4-4" />
@@ -554,11 +388,10 @@ export function UnifiedTaskDrawer({
               {/* Recurring Options */}
               {formData.tags?.includes("recurring") && (
                 <div className="space-y-3 pt-2 border-t border-border/30">
-                  {/* Repeat every X week(s) */}
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Repeat every</span>
+                    <span className="text-xs text-muted-foreground">Repeat every</span>
                     <Select defaultValue="1">
-                      <SelectTrigger className="w-16 h-8 text-sm">
+                      <SelectTrigger className="w-14 h-7 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -569,7 +402,7 @@ export function UnifiedTaskDrawer({
                       </SelectContent>
                     </Select>
                     <Select defaultValue="week">
-                      <SelectTrigger className="w-20 h-8 text-sm">
+                      <SelectTrigger className="w-18 h-7 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -580,7 +413,6 @@ export function UnifiedTaskDrawer({
                     </Select>
                   </div>
 
-                  {/* Day of week circles */}
                   <div className="flex items-center gap-1.5">
                     {[
                       { key: "mon", label: "M" },
@@ -600,16 +432,13 @@ export function UnifiedTaskDrawer({
                             const tag = `repeat-${key}`;
                             const currentTags = formData.tags || [];
                             if (isSelected) {
-                              updateField(
-                                "tags",
-                                currentTags.filter((t) => t !== tag),
-                              );
+                              updateField("tags", currentTags.filter((t) => t !== tag));
                             } else {
                               updateField("tags", [...currentTags, tag]);
                             }
                           }}
                           className={cn(
-                            "w-8 h-8 rounded-full text-sm font-medium transition-colors",
+                            "w-7 h-7 rounded-full text-xs font-medium transition-colors",
                             isSelected
                               ? "bg-primary text-primary-foreground"
                               : "bg-muted hover:bg-muted/80 text-muted-foreground",
@@ -620,13 +449,12 @@ export function UnifiedTaskDrawer({
                       );
                     })}
 
-                    {/* Until date */}
-                    <span className="text-sm text-muted-foreground ml-3">Until</span>
+                    <span className="text-xs text-muted-foreground ml-2">Until</span>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-8 text-sm gap-1">
+                        <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
                           Jul 07, 2026
-                          <CalendarIcon className="h-3.5 w-3.5 opacity-50" />
+                          <CalendarIcon className="h-3 w-3 opacity-50" />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -635,6 +463,74 @@ export function UnifiedTaskDrawer({
                     </Popover>
                   </div>
                 </div>
+              )}
+
+              {/* Day Schedule visual (collapsible) */}
+              {formData.due_date && (
+                <details className="group">
+                  <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors flex items-center gap-1">
+                    <span className="group-open:rotate-90 transition-transform">▶</span>
+                    View day schedule
+                  </summary>
+                  <div className="mt-2 relative w-full h-48 bg-background rounded-lg border shadow-sm overflow-hidden flex">
+                    {/* Time labels */}
+                    <div className="w-12 shrink-0 border-r border-border/40 bg-muted/30">
+                      {[6, 9, 12, 15, 18, 21].map((hour) => (
+                        <div
+                          key={hour}
+                          className="h-[32px] flex items-center justify-end pr-1.5 text-[10px] font-medium text-muted-foreground border-b border-border/20"
+                        >
+                          {hour === 12 ? "12P" : hour > 12 ? `${hour - 12}P` : `${hour}A`}
+                        </div>
+                      ))}
+                    </div>
+                    {/* Schedule area */}
+                    <div className="flex-1 relative">
+                      {[6, 9, 12, 15, 18, 21].map((hour, i) => (
+                        <div key={hour} className={cn("h-[32px] border-b border-border/20", i % 2 === 0 && "bg-muted/10")} />
+                      ))}
+                      {/* Busy slots */}
+                      {busySlots.map((slot) => {
+                        const [sh, sm] = slot.start.split(":").map(Number);
+                        const [eh, em] = slot.end.split(":").map(Number);
+                        const startMins = sh * 60 + sm;
+                        const endMins = eh * 60 + em;
+                        const dayStart = 6 * 60;
+                        const dayEnd = 22 * 60;
+                        const topP = Math.max(0, ((startMins - dayStart) / (dayEnd - dayStart)) * 100);
+                        const heightP = Math.min(100 - topP, ((endMins - startMins) / (dayEnd - dayStart)) * 100);
+                        return (
+                          <div
+                            key={slot.id}
+                            className="absolute left-1 right-1 bg-destructive/10 border-l-2 border-destructive rounded-r px-1.5 py-0.5 overflow-hidden"
+                            style={{ top: `${topP}%`, height: `${heightP}%`, minHeight: "18px" }}
+                          >
+                            <span className="text-[10px] font-medium text-destructive truncate block">{slot.title}</span>
+                          </div>
+                        );
+                      })}
+                      {/* Current task indicator */}
+                      {formData.due_time && formData.end_time && (() => {
+                        const [sh, sm] = formData.due_time.split(":").map(Number);
+                        const [eh, em] = formData.end_time.split(":").map(Number);
+                        const startMins = sh * 60 + sm;
+                        const endMins = eh * 60 + em;
+                        const dayStart = 6 * 60;
+                        const dayEnd = 22 * 60;
+                        const topP = Math.max(0, ((startMins - dayStart) / (dayEnd - dayStart)) * 100);
+                        const heightP = Math.min(100 - topP, ((endMins - startMins) / (dayEnd - dayStart)) * 100);
+                        return (
+                          <div
+                            className="absolute left-1 right-1 bg-primary/20 border-l-2 border-primary rounded-r px-1.5 py-0.5 flex items-center"
+                            style={{ top: `${topP}%`, height: `${heightP}%`, minHeight: "18px" }}
+                          >
+                            <span className="text-[10px] font-semibold text-primary">{formData.due_time}–{formData.end_time}</span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </details>
               )}
             </div>
 
@@ -692,7 +588,7 @@ export function UnifiedTaskDrawer({
             </div>
 
             {/* Reminder & Alarm */}
-            <div className="space-y-4 p-4 bg-muted/30 rounded-xl">
+            <div className="space-y-3 p-4 bg-muted/30 rounded-xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Bell className="h-4 w-4 text-muted-foreground" />
@@ -702,9 +598,22 @@ export function UnifiedTaskDrawer({
                   checked={!!formData.reminder_at}
                   onCheckedChange={(checked) => {
                     if (checked) {
-                      const reminderDate = formData.due_date
-                        ? new Date(new Date(formData.due_date).getTime() - 60 * 60 * 1000)
-                        : new Date(Date.now() + 60 * 60 * 1000);
+                      // Default: task date + task start time - 30 minutes
+                      let reminderDate: Date;
+                      if (formData.due_date && formData.due_time) {
+                        const taskDate = new Date(formData.due_date);
+                        const [h, m] = formData.due_time.split(":").map(Number);
+                        taskDate.setHours(h, m, 0, 0);
+                        reminderDate = new Date(taskDate.getTime() - 30 * 60 * 1000);
+                      } else if (formData.due_date) {
+                        // Has date but no time — default to 9:00 AM on that day
+                        const taskDate = new Date(formData.due_date);
+                        taskDate.setHours(9, 0, 0, 0);
+                        reminderDate = new Date(taskDate.getTime() - 30 * 60 * 1000);
+                      } else {
+                        // No date set — default to 30 min from now
+                        reminderDate = new Date(Date.now() + 30 * 60 * 1000);
+                      }
                       updateField("reminder_at", reminderDate.toISOString());
                     } else {
                       updateField("reminder_at", null);
