@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -33,42 +33,42 @@ import { NotificationScheduler } from "@/components/NotificationScheduler";
 const queryClient = new QueryClient();
 
 function HomeRedirect() {
-  const { user, session, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [target, setTarget] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
+  const hasQueried = React.useRef(false);
 
   useEffect(() => {
-    if (!user || !session) return;
+    // Only run once per mount when user is available
+    if (!user || hasQueried.current) return;
+    hasQueried.current = true;
 
-    let cancelled = false;
+    // Wait a tick to ensure the session token is propagated to the supabase client
+    const timer = setTimeout(async () => {
+      // Verify we have a valid session before querying
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        console.warn("[HomeRedirect] No active session, defaulting to diary");
+        setTarget("/diary");
+        return;
+      }
 
-    const fetchHome = async () => {
       const { data, error } = await supabase
         .from("user_settings")
         .select("default_home_screen")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (cancelled) return;
-
       if (error) {
-        console.error("[HomeRedirect] Fetch failed (attempt", retryCount + 1, "):", error);
-        if (retryCount < 3) {
-          setTimeout(() => {
-            if (!cancelled) setRetryCount((r) => r + 1);
-          }, 1000);
-          return;
-        }
+        console.error("[HomeRedirect] Failed to fetch default_home_screen:", error);
       }
 
       const home = data?.default_home_screen || "diary";
       console.log("[HomeRedirect] DB value:", data?.default_home_screen, "→ redirecting to:", `/${home}`);
       setTarget(`/${home}`);
-    };
+    }, 100);
 
-    fetchHome();
-    return () => { cancelled = true; };
-  }, [user, session, retryCount]);
+    return () => clearTimeout(timer);
+  }, [user]);
 
   if (authLoading) {
     return (
