@@ -594,11 +594,11 @@ export default function Settings() {
           />
         </SettingsRow>
         <SettingsRow label="Reminder Time" description="When to send daily reminders">
-          <UnifiedTimePicker
+          <input
+            type="time"
             value={settings.daily_reset_time || "08:00"}
-            onChange={(v) => saveField("daily_reset_time", v)}
-            intervalMinutes={30}
-            triggerClassName="w-28 text-xs"
+            onChange={(e) => saveField("daily_reset_time", e.target.value)}
+            className="w-28 text-xs rounded-md border border-input bg-background px-3 py-1.5 text-foreground"
           />
         </SettingsRow>
       </SettingsSection>
