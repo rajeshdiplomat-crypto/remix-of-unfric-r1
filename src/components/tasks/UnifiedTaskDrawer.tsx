@@ -67,6 +67,7 @@ export function UnifiedTaskDrawer({
   const [formData, setFormData] = useState<Partial<QuadrantTask>>(DEFAULT_TASK);
   const [newSubtask, setNewSubtask] = useState("");
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
   const timeInputRef = useRef<HTMLInputElement>(null);
   const { timeFormat, formatTime, formatHour } = useTimeFormat();
 
@@ -194,61 +195,67 @@ export function UnifiedTaskDrawer({
 
           {/* Content */}
           <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-6">
-            {/* Title */}
-            <div>
-              <Label className="text-sm font-medium">Title *</Label>
-              <Input
-                value={formData.title || ""}
-                onChange={(e) => updateField("title", e.target.value)}
-                placeholder="What needs to be done?"
-                className="mt-1.5"
-              />
-            </div>
+            {/* Title — hidden when schedule is open */}
+            {!scheduleOpen && (
+              <div>
+                <Label className="text-sm font-medium">Title *</Label>
+                <Input
+                  value={formData.title || ""}
+                  onChange={(e) => updateField("title", e.target.value)}
+                  placeholder="What needs to be done?"
+                  className="mt-1.5"
+                />
+              </div>
+            )}
 
-            {/* Description */}
-            <div>
-              <Label className="text-sm font-medium">Description</Label>
-              <Textarea
-                value={formData.description || ""}
-                onChange={(e) => updateField("description", e.target.value)}
-                placeholder="Add more details..."
-                rows={3}
-                className="mt-1.5"
-              />
-            </div>
+            {/* Description — hidden when schedule is open */}
+            {!scheduleOpen && (
+              <div>
+                <Label className="text-sm font-medium">Description</Label>
+                <Textarea
+                  value={formData.description || ""}
+                  onChange={(e) => updateField("description", e.target.value)}
+                  placeholder="Add more details..."
+                  rows={3}
+                  className="mt-1.5"
+                />
+              </div>
+            )}
 
-            {/* Subtasks */}
-            <div>
-              <Label className="text-sm font-medium">Subtasks</Label>
-              <div className="mt-2 space-y-2">
-                {(formData.subtasks || []).map((subtask) => (
-                  <div key={subtask.id} className="flex items-center gap-3 group">
-                    <Checkbox checked={subtask.completed} onCheckedChange={() => handleToggleSubtask(subtask.id)} />
-                    <span className={cn("flex-1 text-sm", subtask.completed && "line-through text-muted-foreground")}>
-                      {subtask.title}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                      onClick={() => handleDeleteSubtask(subtask.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+            {/* Subtasks — hidden when schedule is open */}
+            {!scheduleOpen && (
+              <div>
+                <Label className="text-sm font-medium">Subtasks</Label>
+                <div className="mt-2 space-y-2">
+                  {(formData.subtasks || []).map((subtask) => (
+                    <div key={subtask.id} className="flex items-center gap-3 group">
+                      <Checkbox checked={subtask.completed} onCheckedChange={() => handleToggleSubtask(subtask.id)} />
+                      <span className={cn("flex-1 text-sm", subtask.completed && "line-through text-muted-foreground")}>
+                        {subtask.title}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                        onClick={() => handleDeleteSubtask(subtask.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-2">
+                    <Plus className="h-4 w-4 text-muted-foreground" />
+                    <Input
+                      value={newSubtask}
+                      onChange={(e) => setNewSubtask(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleAddSubtask()}
+                      placeholder="Add subtask..."
+                      className="h-8 text-sm border-dashed"
+                    />
                   </div>
-                ))}
-                <div className="flex items-center gap-2">
-                  <Plus className="h-4 w-4 text-muted-foreground" />
-                  <Input
-                    value={newSubtask}
-                    onChange={(e) => setNewSubtask(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleAddSubtask()}
-                    placeholder="Add subtask..."
-                    className="h-8 text-sm border-dashed"
-                  />
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Schedule Section — Compact Horizontal Layout */}
             <div className="space-y-3 p-4 bg-muted/20 rounded-xl">
@@ -499,13 +506,18 @@ export function UnifiedTaskDrawer({
 
               {/* Day Schedule visual (collapsible, scrollable, 30-min slots) */}
               {formData.due_date && (
-                <details className="group">
-                  <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors flex items-center gap-1">
-                    <span className="group-open:rotate-90 transition-transform">▶</span>
-                    View day schedule
-                  </summary>
+                <div>
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors flex items-center gap-1"
+                    onClick={() => setScheduleOpen(!scheduleOpen)}
+                  >
+                    <span className={cn("transition-transform", scheduleOpen && "rotate-90")}>▶</span>
+                    {scheduleOpen ? "Hide day schedule" : "View day schedule"}
+                  </button>
+                  {scheduleOpen && (
                   <div className="mt-2 w-full bg-background rounded-lg border shadow-sm overflow-hidden">
-                    <div className="max-h-[336px] overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto">
                       <table className="w-full border-collapse" style={{ tableLayout: "fixed" }}>
                         <tbody>
                           {Array.from({ length: 48 }, (_, i) => {
@@ -568,7 +580,8 @@ export function UnifiedTaskDrawer({
                       </table>
                     </div>
                   </div>
-                </details>
+                  )}
+                </div>
               )}
             </div>
 
