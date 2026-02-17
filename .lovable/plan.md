@@ -1,49 +1,26 @@
 
 
-## Unified Time Picker: Single Popover Design
+## Fix: Allow Re-notification After Changing Reminder Time
 
-### What changes
-Replace the current three separate dropdown boxes (Hour, Minute, AM/PM) with a single button that opens one popover containing all three selectors side by side.
+### Problem
+Currently, each reminder fires once per day. If a user changes the reminder time to a later time after it has already fired, the notification will not fire again because the "already sent" flag in localStorage is still set.
 
-### How it will look
-- A single trigger button showing the current time (e.g., "08:15" or "8:15 AM")
-- Clicking it opens a popover with scrollable hour and minute columns, plus an AM/PM toggle in 12h mode
-- Selecting values updates in real-time; clicking outside closes the popover
-
-### Where it applies
-Since all time pickers already use `UnifiedTimePicker`, this single component change automatically updates:
-- **Settings** -- Reminder Time
-- **Habits** -- Activity start time
-- **Manifest** -- Reminder times
+### Solution
+Clear the localStorage "sent" flag for a specific module whenever the user updates that module's reminder time. This way:
+- If the new time is in the future, the notification will fire at the new time
+- If the new time is in the past, it will fire on the next check (within 5 minutes) -- which is acceptable since the user just actively changed it
 
 ### Technical Details
 
-**File: `src/components/common/UnifiedTimePicker.tsx`** (rewrite)
+**File: `src/pages/Settings.tsx`**
 
-- Replace the three `Select` components with a `Popover` + `PopoverTrigger` + `PopoverContent`
-- Trigger button displays the formatted time using `useTimeFormat`
-- Inside the popover, render two scrollable columns (hours and minutes) using simple `button` grids
-- In 12h mode, add an AM/PM toggle row at the bottom of the popover
-- Keep all existing props (`value`, `onChange`, `intervalMinutes`, `triggerClassName`)
-- Keep the internal 24h `"HH:mm"` storage format unchanged
-- Use `Popover` from `@/components/ui/popover` (already exists)
+In the `saveField` function, detect when a `reminder_time_*` field is being saved and clear the corresponding localStorage key:
 
-**Layout inside the popover:**
 ```text
-+-------------------+
-|  Hours  | Minutes |
-| [  8 ]  | [ 00 ]  |
-| [  9 ]  | [ 15 ]  |
-| [ 10 ]  | [ 30 ]  |
-| [ 11 ]  | [ 45 ]  |
-|  ...    |  ...    |
-+-------------------+
-|   [AM]    [PM]    |  <-- only in 12h mode
-+-------------------+
+When saving "reminder_time_diary"  -> remove "unfric_notif_sent_diary_YYYY-MM-DD"
+When saving "reminder_time_habits" -> remove "unfric_notif_sent_habits_YYYY-MM-DD"
+When saving "reminder_time_emotions" -> remove "unfric_notif_sent_emotions_YYYY-MM-DD"
 ```
 
-- Active hour/minute highlighted with accent background
-- Columns scroll independently with `max-h` and `overflow-y-auto`
-- Popover uses `z-[9999]` to stay above modals/drawers
+This is a small addition (~10 lines) to the existing `saveField` function. No other files need changes -- the scheduler already re-checks every 60 seconds and will pick up the new time naturally.
 
-No other files need changes since all modules import `UnifiedTimePicker`.
