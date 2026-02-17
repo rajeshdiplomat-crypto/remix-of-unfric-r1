@@ -62,7 +62,10 @@ import {
   Circle,
   Check,
   Rows,
+  Mic,
+  MicOff,
 } from "lucide-react";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
 
 // Font size extension
 const FontSize = Extension.create({
@@ -275,6 +278,16 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const lastPos = useRef({ x: 0, y: 0 });
+    const editorInstanceRef = useRef<any>(null);
+
+    // Voice input
+    const { isListening, toggleListening } = useVoiceInput(
+      useCallback((text: string) => {
+        if (editorInstanceRef.current) {
+          editorInstanceRef.current.chain().focus().insertContent(text + " ").run();
+        }
+      }, [])
+    );
 
     const editor = useEditor({
       extensions: [
@@ -338,6 +351,9 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
     });
 
     useImperativeHandle(ref, () => ({ editor }));
+
+    // Keep editorInstanceRef in sync for voice input
+    useEffect(() => { editorInstanceRef.current = editor; }, [editor]);
 
     useEffect(() => {
       if (editor && content) {
@@ -991,12 +1007,14 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
 
             <div className="flex-1 min-w-4" />
 
-            <button
-              onClick={() => alert("AI coming soon!")}
-              className="h-8 px-3 flex items-center gap-1.5 rounded-lg text-sm font-medium bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow hover:shadow-md transition-all"
+            {/* Voice Input */}
+            <ToolBtn
+              onClick={toggleListening}
+              active={isListening}
+              title={isListening ? "Stop voice input" : "Voice input"}
             >
-              <Sparkles className="h-3.5 w-3.5" /> AI
-            </button>
+              {isListening ? <MicOff className="h-4 w-4 text-destructive" /> : <Mic className="h-4 w-4" />}
+            </ToolBtn>
           </div>
         </div>
 

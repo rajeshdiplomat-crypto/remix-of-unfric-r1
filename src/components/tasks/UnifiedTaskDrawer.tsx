@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { X, Play, Plus, Trash2, Bell, Volume2, CalendarIcon, Clock } from "lucide-react";
+import { X, Play, Plus, Trash2, Bell, Volume2, CalendarIcon } from "lucide-react";
 import { format, parseISO, isSameDay } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -288,25 +288,51 @@ export function UnifiedTaskDrawer({
                 {/* Start Time */}
                 <div>
                   <Label className="text-[10px] text-muted-foreground mb-1 block">Start</Label>
-                  <Input
-                    type="time"
+                  <Select
                     value={formData.due_time || ""}
-                    onChange={(e) => updateField("due_time", e.target.value)}
-                    className="h-8 text-xs [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-                    placeholder="09:00"
-                  />
+                    onValueChange={(v) => updateField("due_time", v)}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Start" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60 z-[9999]">
+                      {Array.from({ length: 48 }, (_, i) => {
+                        const h = Math.floor(i / 2);
+                        const m = i % 2 === 0 ? "00" : "30";
+                        const val = `${h.toString().padStart(2, "0")}:${m}`;
+                        return (
+                          <SelectItem key={val} value={val}>
+                            {val}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* End Time */}
                 <div>
                   <Label className="text-[10px] text-muted-foreground mb-1 block">End</Label>
-                  <Input
-                    type="time"
+                  <Select
                     value={formData.end_time || ""}
-                    onChange={(e) => updateField("end_time", e.target.value)}
-                    className="h-8 text-xs [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-                    placeholder="11:00"
-                  />
+                    onValueChange={(v) => updateField("end_time", v)}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="End" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60 z-[9999]">
+                      {Array.from({ length: 48 }, (_, i) => {
+                        const h = Math.floor(i / 2);
+                        const m = i % 2 === 0 ? "00" : "30";
+                        const val = `${h.toString().padStart(2, "0")}:${m}`;
+                        return (
+                          <SelectItem key={val} value={val}>
+                            {val}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -469,30 +495,55 @@ export function UnifiedTaskDrawer({
                 </div>
               )}
 
-              {/* Day Schedule visual (collapsible) */}
+              {/* Day Schedule visual (collapsible, scrollable, 30-min slots) */}
               {formData.due_date && (
                 <details className="group">
                   <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors flex items-center gap-1">
                     <span className="group-open:rotate-90 transition-transform">▶</span>
                     View day schedule
                   </summary>
-                  <div className="mt-2 relative w-full h-48 bg-background rounded-lg border shadow-sm overflow-hidden flex">
+                  <div className="mt-2 relative w-full max-h-56 bg-background rounded-lg border shadow-sm overflow-y-auto flex">
                     {/* Time labels */}
-                    <div className="w-12 shrink-0 border-r border-border/40 bg-muted/30">
-                      {[6, 9, 12, 15, 18, 21].map((hour) => (
-                        <div
-                          key={hour}
-                          className="h-[32px] flex items-center justify-end pr-1.5 text-[10px] font-medium text-muted-foreground border-b border-border/20"
-                        >
-                          {hour === 12 ? "12P" : hour > 12 ? `${hour - 12}P` : `${hour}A`}
-                        </div>
-                      ))}
+                    <div className="w-12 shrink-0 border-r border-border/40 bg-muted/30 sticky left-0">
+                      {Array.from({ length: 32 }, (_, i) => {
+                        const hour = Math.floor(i / 2) + 6;
+                        const min = i % 2 === 0 ? "00" : "30";
+                        if (hour > 21) return null;
+                        return (
+                          <div
+                            key={`${hour}-${min}`}
+                            className="h-[28px] flex items-center justify-end pr-1.5 text-[9px] font-medium text-muted-foreground border-b border-border/20"
+                          >
+                            {i % 2 === 0
+                              ? hour === 12 ? "12 PM" : hour > 12 ? `${hour - 12} PM` : `${hour} AM`
+                              : ""}
+                          </div>
+                        );
+                      }).filter(Boolean)}
                     </div>
                     {/* Schedule area */}
-                    <div className="flex-1 relative">
-                      {[6, 9, 12, 15, 18, 21].map((hour, i) => (
-                        <div key={hour} className={cn("h-[32px] border-b border-border/20", i % 2 === 0 && "bg-muted/10")} />
-                      ))}
+                    <div className="flex-1 relative" style={{ minHeight: `${32 * 28}px` }}>
+                      {Array.from({ length: 32 }, (_, i) => {
+                        const hour = Math.floor(i / 2) + 6;
+                        if (hour > 21) return null;
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            className={cn("w-full h-[28px] border-b border-border/20 hover:bg-primary/10 transition-colors", i % 2 === 0 && "bg-muted/10")}
+                            onClick={() => {
+                              const min = i % 2 === 0 ? "00" : "30";
+                              const time = `${hour.toString().padStart(2, "0")}:${min}`;
+                              updateField("due_time", time);
+                              // Auto-set end time to +1h
+                              const endMins = hour * 60 + (i % 2 === 0 ? 0 : 30) + 60;
+                              const endH = Math.floor(endMins / 60) % 24;
+                              const endM = endMins % 60;
+                              updateField("end_time", `${endH.toString().padStart(2, "0")}:${endM.toString().padStart(2, "0")}`);
+                            }}
+                          />
+                        );
+                      }).filter(Boolean)}
                       {/* Busy slots */}
                       {busySlots.map((slot) => {
                         const [sh, sm] = slot.start.split(":").map(Number);
@@ -500,13 +551,13 @@ export function UnifiedTaskDrawer({
                         const startMins = sh * 60 + sm;
                         const endMins = eh * 60 + em;
                         const dayStart = 6 * 60;
-                        const dayEnd = 22 * 60;
-                        const topP = Math.max(0, ((startMins - dayStart) / (dayEnd - dayStart)) * 100);
-                        const heightP = Math.min(100 - topP, ((endMins - startMins) / (dayEnd - dayStart)) * 100);
+                        const totalH = 16 * 60;
+                        const topP = Math.max(0, ((startMins - dayStart) / totalH) * 100);
+                        const heightP = Math.min(100 - topP, ((endMins - startMins) / totalH) * 100);
                         return (
                           <div
                             key={slot.id}
-                            className="absolute left-1 right-1 bg-destructive/10 border-l-2 border-destructive rounded-r px-1.5 py-0.5 overflow-hidden"
+                            className="absolute left-1 right-1 bg-destructive/10 border-l-2 border-destructive rounded-r px-1.5 py-0.5 overflow-hidden pointer-events-none"
                             style={{ top: `${topP}%`, height: `${heightP}%`, minHeight: "18px" }}
                           >
                             <span className="text-[10px] font-medium text-destructive truncate block">{slot.title}</span>
@@ -520,12 +571,12 @@ export function UnifiedTaskDrawer({
                         const startMins = sh * 60 + sm;
                         const endMins = eh * 60 + em;
                         const dayStart = 6 * 60;
-                        const dayEnd = 22 * 60;
-                        const topP = Math.max(0, ((startMins - dayStart) / (dayEnd - dayStart)) * 100);
-                        const heightP = Math.min(100 - topP, ((endMins - startMins) / (dayEnd - dayStart)) * 100);
+                        const totalH = 16 * 60;
+                        const topP = Math.max(0, ((startMins - dayStart) / totalH) * 100);
+                        const heightP = Math.min(100 - topP, ((endMins - startMins) / totalH) * 100);
                         return (
                           <div
-                            className="absolute left-1 right-1 bg-primary/20 border-l-2 border-primary rounded-r px-1.5 py-0.5 flex items-center"
+                            className="absolute left-1 right-1 bg-primary/20 border-l-2 border-primary rounded-r px-1.5 py-0.5 flex items-center pointer-events-none"
                             style={{ top: `${topP}%`, height: `${heightP}%`, minHeight: "18px" }}
                           >
                             <span className="text-[10px] font-semibold text-primary">{formData.due_time}–{formData.end_time}</span>
