@@ -695,8 +695,22 @@ export default function Journal() {
     const latestTemplate: JournalTemplate = savedTemplate ? JSON.parse(savedTemplate) : DEFAULT_TEMPLATE;
     setTemplate(latestTemplate);
 
+    // Re-read the latest journal mode from the database
+    let latestMode = journalMode;
+    if (user) {
+      const { data } = await supabase
+        .from("user_settings")
+        .select("journal_mode")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if ((data as any)?.journal_mode) {
+        latestMode = (data as any).journal_mode;
+        setJournalMode(latestMode);
+      }
+    }
+
     // Re-initialize content based on current settings
-    const isUnstructured = journalMode === "unstructured";
+    const isUnstructured = latestMode === "unstructured";
     const newContent = !isUnstructured
       ? generateInitialContent(latestTemplate.questions)
       : JSON.stringify({
@@ -918,9 +932,27 @@ export default function Journal() {
         currentSkinId={currentSkinId}
         onSkinChange={setCurrentSkinId}
         currentLineStyle={entryPageSettings?.lineStyle || template.defaultLineStyle || "none"}
-        onEntryOverrideSave={(skinId, lineStyle) => {
+        entryMode={journalMode as "structured" | "unstructured"}
+        onEntryOverrideSave={(skinId, lineStyle, newMode) => {
           setEntryPageSettings({ skinId, lineStyle });
           setCurrentSkinId(skinId);
+
+          // If mode changed, regenerate content
+          if (newMode && newMode !== journalMode) {
+            const isUnstructured = newMode === "unstructured";
+            const newContent = !isUnstructured
+              ? generateInitialContent(template.questions)
+              : JSON.stringify({
+                  type: "doc",
+                  content: [
+                    { type: "heading", attrs: { level: 1, textAlign: "left" }, content: [] },
+                    { type: "paragraph", attrs: { textAlign: "left" }, content: [] },
+                  ],
+                });
+            setContent(newContent);
+            lastSavedContentRef.current = "";
+          }
+
           setSaveStatus("unsaved");
           if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
           autosaveTimerRef.current = setTimeout(() => performSave(), 1000);

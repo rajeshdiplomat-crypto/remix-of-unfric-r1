@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, GripVertical, RotateCcw, Check, Sparkles, Edit3, Palette, Type } from "lucide-react";
+import { Plus, Trash2, GripVertical, RotateCcw, Check, Sparkles, Edit3, Palette, Type, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { JournalTemplate, JournalQuestion, JournalSkin, JOURNAL_SKINS, DEFAULT_QUESTIONS } from "./types";
 
@@ -29,7 +29,8 @@ interface JournalSettingsModalProps {
   currentLineStyle?: string;
   onLineStyleChange?: (lineStyle: string) => void;
   // Entry mode props
-  onEntryOverrideSave?: (skinId: string, lineStyle: string) => void;
+  entryMode?: "structured" | "unstructured";
+  onEntryOverrideSave?: (skinId: string, lineStyle: string, mode?: "structured" | "unstructured") => void;
   onEntryOverrideReset?: () => void;
 }
 
@@ -39,6 +40,7 @@ export function JournalSettingsModal({
   currentSkinId, onSkinChange,
   currentLineStyle = "none",
   onLineStyleChange,
+  entryMode,
   onEntryOverrideSave,
   onEntryOverrideReset,
 }: JournalSettingsModalProps) {
@@ -47,6 +49,7 @@ export function JournalSettingsModal({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedSkinId, setSelectedSkinId] = useState(currentSkinId);
   const [selectedLineStyle, setSelectedLineStyle] = useState(currentLineStyle);
+  const [selectedMode, setSelectedMode] = useState<"structured" | "unstructured">(entryMode || "structured");
 
   const handleQuestionTextChange = (id: string, text: string) => {
     setLocalQuestions((prev) => prev.map((q) => (q.id === id ? { ...q, text } : q)));
@@ -89,7 +92,7 @@ export function JournalSettingsModal({
 
   const handleSave = () => {
     if (mode === "entry") {
-      onEntryOverrideSave?.(selectedSkinId, selectedLineStyle);
+      onEntryOverrideSave?.(selectedSkinId, selectedLineStyle, selectedMode);
       onOpenChange(false);
       return;
     }
@@ -181,10 +184,36 @@ export function JournalSettingsModal({
 
           {/* Entry mode: Reset button */}
           {mode === "entry" && (
-            <Button variant="outline" size="sm" onClick={handleResetToDefault} className="text-xs w-full">
-              <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
-              Reset to Default
-            </Button>
+            <>
+              {/* Entry Mode */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-foreground">Entry Mode</span>
+                </div>
+                <div className="flex gap-2">
+                  {(["structured", "unstructured"] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setSelectedMode(m)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg border text-xs font-medium transition-all capitalize",
+                        selectedMode === m
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground hover:border-muted-foreground/30"
+                      )}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <Button variant="outline" size="sm" onClick={handleResetToDefault} className="text-xs w-full">
+                <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                Reset to Default
+              </Button>
+            </>
           )}
 
           {/* Global mode: Questions & Template */}
