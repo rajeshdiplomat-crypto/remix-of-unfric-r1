@@ -19,7 +19,7 @@ export default function Auth() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (user && !loading) navigate("/diary");
+    if (user && !loading) navigate("/");
   }, [user, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
