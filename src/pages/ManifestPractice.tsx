@@ -8,8 +8,7 @@ import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { subDays, addDays, parseISO, isSameDay, format, isToday } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { UnifiedDatePicker } from "@/components/common/UnifiedDatePicker";
 import { cn } from "@/lib/utils";
 
 import { ManifestPracticePanel } from "@/components/manifest/ManifestPracticePanel";
@@ -245,30 +244,17 @@ export default function ManifestPractice() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
 
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={cn(
-                    "h-8 px-3 gap-1.5 rounded-lg text-sm font-medium",
-                    isToday(selectedDate) && "border-teal-300 dark:border-teal-700"
-                  )}
-                >
-                  <CalendarIcon className="h-3.5 w-3.5" />
-                  {isToday(selectedDate) ? "Today" : format(selectedDate, "MMM d, yyyy")}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="center">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(date) => { if (date) setSelectedDate(date); }}
-                  initialFocus
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
+            <UnifiedDatePicker
+              value={selectedDate}
+              onChange={(date) => { if (date) setSelectedDate(date); }}
+              displayFormat={isToday(selectedDate) ? "'Today'" : "MMM d, yyyy"}
+              triggerClassName={cn(
+                "h-8 px-3 gap-1.5 rounded-lg text-sm font-medium",
+                isToday(selectedDate) && "border-primary/30"
+              )}
+              icon={<CalendarIcon className="h-3.5 w-3.5" />}
+              align="center"
+            />
 
             <div className="flex items-center gap-1">
               <Button
