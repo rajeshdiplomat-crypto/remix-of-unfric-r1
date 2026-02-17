@@ -1,6 +1,7 @@
 import { ReactNode, useState } from "react";
 import { ZaraHeader } from "./ZaraHeader";
 import { ZaraDrawer } from "./ZaraDrawer";
+import { useNotificationScheduler } from "@/hooks/useNotificationScheduler";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -8,6 +9,9 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Activate notification/reminder scheduler for all authenticated pages
+  useNotificationScheduler();
 
   return (
     <div className="min-h-screen flex flex-col w-full bg-background overflow-x-hidden">
@@ -19,9 +23,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Main content with top padding for fixed header */}
       <main className="flex-1 flex flex-col w-full min-w-0 pt-14">
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {children}
-        </div>
+        <div className="flex-1 flex flex-col overflow-hidden">{children}</div>
       </main>
     </div>
   );
