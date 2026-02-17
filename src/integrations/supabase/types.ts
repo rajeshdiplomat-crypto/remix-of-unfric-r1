@@ -757,6 +757,9 @@ export type Database = {
           notification_task_reminder: boolean | null
           privacy_blur_sensitive: boolean | null
           privacy_passcode_enabled: boolean | null
+          reminder_time_diary: string | null
+          reminder_time_emotions: string | null
+          reminder_time_habits: string | null
           start_of_week: string | null
           time_format: string | null
           timezone: string | null
@@ -781,6 +784,9 @@ export type Database = {
           notification_task_reminder?: boolean | null
           privacy_blur_sensitive?: boolean | null
           privacy_passcode_enabled?: boolean | null
+          reminder_time_diary?: string | null
+          reminder_time_emotions?: string | null
+          reminder_time_habits?: string | null
           start_of_week?: string | null
           time_format?: string | null
           timezone?: string | null
@@ -805,6 +811,9 @@ export type Database = {
           notification_task_reminder?: boolean | null
           privacy_blur_sensitive?: boolean | null
           privacy_passcode_enabled?: boolean | null
+          reminder_time_diary?: string | null
+          reminder_time_emotions?: string | null
+          reminder_time_habits?: string | null
           start_of_week?: string | null
           time_format?: string | null
           timezone?: string | null
