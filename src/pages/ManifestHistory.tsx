@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useDatePreferences } from "@/hooks/useDatePreferences";
 import {
   type ManifestGoal,
   type ManifestDailyPractice,
@@ -67,6 +68,7 @@ export default function ManifestHistory() {
   const { goalId } = useParams<{ goalId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { weekStartsOn, formatDate: fmtDate } = useDatePreferences();
 
   const [goal, setGoal] = useState<ManifestGoal | null>(null);
   const [loading, setLoading] = useState(true);
@@ -180,8 +182,8 @@ export default function ManifestHistory() {
   const weekGroups: WeekGroup[] = [];
   filteredData.forEach((day) => {
     const dayDate = parseISO(day.date);
-    const weekStart = startOfWeek(dayDate, { weekStartsOn: 1 });
-    const weekEnd = endOfWeek(dayDate, { weekStartsOn: 1 });
+    const weekStart = startOfWeek(dayDate, { weekStartsOn });
+    const weekEnd = endOfWeek(dayDate, { weekStartsOn });
 
     let group = weekGroups.find((g) => isWithinInterval(dayDate, { start: g.weekStart, end: g.weekEnd }));
 
@@ -320,7 +322,7 @@ export default function ManifestHistory() {
               {/* Week Header */}
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-sm font-medium text-muted-foreground">
-                  Week of {format(week.weekStart, "MMM d")}–{format(week.weekEnd, "d")}
+                  Week of {fmtDate(week.weekStart, "short")}–{format(week.weekEnd, "d")}
                 </span>
                 <div className="flex-1 h-px bg-border/50" />
               </div>

@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useDatePreferences } from "@/hooks/useDatePreferences";
 import {
   CheckCircle2,
   Circle,
@@ -154,6 +155,7 @@ const getTaskDuration = (startTime: string | null, endTime: string | null): numb
 const HOUR_HEIGHT = 60;
 
 export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps) {
+  const { formatDate: fmtDate } = useDatePreferences();
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState(today);
   const [currentTimeMinutes, setCurrentTimeMinutes] = useState(() => {
@@ -282,7 +284,7 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
                   : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200",
               )}
             >
-              {isToday ? "Today" : format(selectedDate, "EEE, MMM d")}
+              {isToday ? "Today" : fmtDate(selectedDate, "weekday")}
             </button>
             <Button
               variant="ghost"
@@ -380,7 +382,7 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
                 <p className="text-sm text-slate-400 dark:text-slate-500 mt-1 max-w-xs">
                   {isToday
                     ? "Add tasks with a start time to see them in the planner"
-                    : format(selectedDate, "EEEE, MMMM d")}
+                    : fmtDate(selectedDate, "weekdayFull")}
                 </p>
               </div>
             )}

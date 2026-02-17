@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useDatePreferences } from "@/hooks/useDatePreferences";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -58,6 +59,7 @@ export function ManifestPracticePanel({
   onPracticeComplete,
   onGoalUpdate,
 }: ManifestPracticePanelProps) {
+  const { formatDate: fmtDate } = useDatePreferences();
   const dateStr = format(selectedDate, "yyyy-MM-dd");
   const isViewingToday = isToday(selectedDate);
   const isViewingPast = isBefore(startOfDay(selectedDate), startOfDay(new Date()));
@@ -419,7 +421,7 @@ export function ManifestPracticePanel({
             <div className="flex gap-1.5 flex-wrap">
               {!isViewingToday && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-600 font-medium flex items-center gap-1">
-                  <CalendarDays className="h-2.5 w-2.5" /> {format(selectedDate, "MMM d, yyyy")}
+                  <CalendarDays className="h-2.5 w-2.5" /> {fmtDate(selectedDate, "full")}
                 </span>
               )}
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 text-teal-600 font-medium">
@@ -445,7 +447,7 @@ export function ManifestPracticePanel({
             <div className="text-xs text-slate-500">
               <span className="text-slate-400">Started:</span>{" "}
               <span className="font-medium text-slate-600 dark:text-slate-300">
-                {format(new Date(goal.start_date || goal.created_at), "MMM d, yyyy")}
+                {fmtDate(new Date(goal.start_date || goal.created_at), "full")}
               </span>
             </div>
             {goal.created_at && (

@@ -5,6 +5,7 @@ import { Flame, Play, Tag, Pencil, Trash2, CheckCircle, RotateCcw, Clock, Calend
 import { type ManifestGoal, type ManifestDailyPractice, DAILY_PRACTICE_KEY, CATEGORIES } from "./types";
 import { format, subDays, parseISO, differenceInDays, formatDistanceToNow } from "date-fns";
 import { useMemo } from "react";
+import { useDatePreferences } from "@/hooks/useDatePreferences";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ManifestCardProps {
@@ -36,6 +37,7 @@ export function ManifestCard({
   onImageUpdate,
   isCompleted = false,
 }: ManifestCardProps) {
+  const { formatDate: fmtDate } = useDatePreferences();
   const weekProgress = useMemo(() => {
     const days: boolean[] = [];
     const practiceMap = new Set(practices.filter((p) => p.goal_id === goal.id && p.locked).map((p) => p.entry_date));
@@ -69,7 +71,7 @@ export function ManifestCard({
 
   const startDateLabel = useMemo(() => {
     const d = goal.start_date || goal.created_at;
-    return format(parseISO(d), "MMM d, yyyy");
+    return fmtDate(parseISO(d), "full");
   }, [goal.start_date, goal.created_at]);
 
 
