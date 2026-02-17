@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 import { QuadrantTask, Urgency, Importance, Subtask, suggestTimeOfDay, getDefaultEndTime } from "./types";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 
 interface UnifiedTaskDrawerProps {
   task: QuadrantTask | null;
@@ -67,6 +68,7 @@ export function UnifiedTaskDrawer({
   const [newSubtask, setNewSubtask] = useState("");
   const [calendarOpen, setCalendarOpen] = useState(false);
   const timeInputRef = useRef<HTMLInputElement>(null);
+  const { timeFormat, formatTime, formatHour } = useTimeFormat();
 
   useEffect(() => {
     if (task) {
@@ -302,7 +304,7 @@ export function UnifiedTaskDrawer({
                         const val = `${h.toString().padStart(2, "0")}:${m}`;
                         return (
                           <SelectItem key={val} value={val}>
-                            {val}
+                            {formatTime(val)}
                           </SelectItem>
                         );
                       })}
@@ -327,7 +329,7 @@ export function UnifiedTaskDrawer({
                         const val = `${h.toString().padStart(2, "0")}:${m}`;
                         return (
                           <SelectItem key={val} value={val}>
-                            {val}
+                            {formatTime(val)}
                           </SelectItem>
                         );
                       })}
@@ -514,9 +516,7 @@ export function UnifiedTaskDrawer({
                             key={`${hour}-${min}`}
                             className="h-[28px] flex items-center justify-end pr-1.5 text-[9px] font-medium text-muted-foreground border-b border-border/20"
                           >
-                            {i % 2 === 0
-                              ? hour === 12 ? "12 PM" : hour > 12 ? `${hour - 12} PM` : `${hour} AM`
-                              : ""}
+                            {i % 2 === 0 ? formatHour(hour) : ""}
                           </div>
                         );
                       }).filter(Boolean)}
@@ -579,7 +579,7 @@ export function UnifiedTaskDrawer({
                             className="absolute left-1 right-1 bg-primary/20 border-l-2 border-primary rounded-r px-1.5 py-0.5 flex items-center pointer-events-none"
                             style={{ top: `${topP}%`, height: `${heightP}%`, minHeight: "18px" }}
                           >
-                            <span className="text-[10px] font-semibold text-primary">{formData.due_time}–{formData.end_time}</span>
+                            <span className="text-[10px] font-semibold text-primary">{formatTime(formData.due_time)}–{formatTime(formData.end_time)}</span>
                           </div>
                         );
                       })()}
@@ -666,17 +666,31 @@ export function UnifiedTaskDrawer({
                     }}
                     className="text-sm"
                   />
-                  <Input
-                    type="time"
+                  <Select
                     value={formData.reminder_at ? format(new Date(formData.reminder_at), "HH:mm") : ""}
-                    onChange={(e) => {
+                    onValueChange={(v) => {
                       const current = formData.reminder_at ? new Date(formData.reminder_at) : new Date();
-                      const [h, m] = e.target.value.split(":").map(Number);
+                      const [h, m] = v.split(":").map(Number);
                       current.setHours(h, m);
                       updateField("reminder_at", current.toISOString());
                     }}
-                    className="text-sm"
-                  />
+                  >
+                    <SelectTrigger className="text-sm">
+                      <SelectValue placeholder="Time" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60 z-[9999]">
+                      {Array.from({ length: 48 }, (_, i) => {
+                        const h = Math.floor(i / 2);
+                        const m2 = i % 2 === 0 ? "00" : "30";
+                        const val = `${h.toString().padStart(2, "0")}:${m2}`;
+                        return (
+                          <SelectItem key={val} value={val}>
+                            {formatTime(val)}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
 
