@@ -73,6 +73,8 @@ export interface Note {
   isCompleted?: boolean;
   scribbleStrokes?: string;
   sortOrder?: number;
+  pageTheme?: string;
+  lineStyle?: string;
 }
 
 const STORAGE_KEY_GROUPS = "notes-groups";
@@ -382,6 +384,13 @@ export default function Notes() {
             updatedAt: dbNote.updated_at,
             isPinned: false,
             isArchived: false,
+            scribbleStrokes: dbNote.scribble_data || undefined,
+            ...(dbNote.skin ? (() => {
+              try {
+                const parsed = JSON.parse(dbNote.skin);
+                return { pageTheme: parsed.pageTheme, lineStyle: parsed.lineStyle };
+              } catch { return {}; }
+            })() : {}),
           };
           if (idx >= 0) {
             // Supabase wins if it has newer data (preserves images even if localStorage lost them)
@@ -483,10 +492,12 @@ export default function Notes() {
         id: note.id,
         user_id: user.id,
         title: note.title || "Untitled",
-        content: note.contentRich || note.plainText, // Save rich content to preserve inline images
+        content: note.contentRich || note.plainText,
         cover_image_url: coverImageUrl,
         category,
         tags: note.tags,
+        skin: note.pageTheme && note.lineStyle ? JSON.stringify({ pageTheme: note.pageTheme, lineStyle: note.lineStyle }) : null,
+        scribble_data: note.scribbleStrokes || null,
         created_at: note.createdAt,
         updated_at: note.updatedAt,
       });

@@ -402,64 +402,18 @@ export function UnifiedTaskDrawer({
                 </div>
               )}
               <div className="grid grid-cols-3 gap-3">
-                {/* Start Time - Wheel picker style */}
+                {/* Start Time */}
                 <div>
                   <Label className="text-xs text-muted-foreground mb-1.5 block">Start time</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full h-9 text-sm justify-between">
-                        {formData.due_time || "09:00"}
-                        <Clock className="h-4 w-4 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-48 p-2" align="start">
-                      <div className="flex gap-2">
-                        {/* Hours */}
-                        <div className="flex-1 max-h-48 overflow-y-auto">
-                          {Array.from({ length: 24 }, (_, h) => (
-                            <button
-                              key={h}
-                              type="button"
-                              onClick={() => {
-                                const currentMins = formData.due_time?.split(":")[1] || "00";
-                                const newTime = `${h.toString().padStart(2, "0")}:${currentMins}`;
-                                updateField("due_time", newTime);
-                              }}
-                              className={cn(
-                                "w-full py-1.5 text-center text-sm rounded hover:bg-muted",
-                                formData.due_time?.startsWith(h.toString().padStart(2, "0")) &&
-                                  "bg-primary text-primary-foreground",
-                              )}
-                            >
-                              {h.toString().padStart(2, "0")}
-                            </button>
-                          ))}
-                        </div>
-                        <div className="text-muted-foreground self-center">:</div>
-                        {/* Minutes */}
-                        <div className="flex-1 max-h-48 overflow-y-auto">
-                          {[0, 15, 30, 45].map((m) => (
-                            <button
-                              key={m}
-                              type="button"
-                              onClick={() => {
-                                const currentHours = formData.due_time?.split(":")[0] || "09";
-                                const newTime = `${currentHours}:${m.toString().padStart(2, "0")}`;
-                                updateField("due_time", newTime);
-                              }}
-                              className={cn(
-                                "w-full py-1.5 text-center text-sm rounded hover:bg-muted",
-                                formData.due_time?.endsWith(`:${m.toString().padStart(2, "0")}`) &&
-                                  "bg-primary text-primary-foreground",
-                              )}
-                            >
-                              {m.toString().padStart(2, "0")}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                  <div className="relative">
+                    <Input
+                      type="time"
+                      value={formData.due_time || "09:00"}
+                      onChange={(e) => updateField("due_time", e.target.value)}
+                      className="h-9 text-sm pr-8"
+                    />
+                    <Clock className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  </div>
                 </div>
 
                 {/* Duration picker (hrs + mins) */}
@@ -551,64 +505,18 @@ export function UnifiedTaskDrawer({
                   </div>
                 </div>
 
-                {/* End Time - Auto calculated, can override */}
+                {/* End Time */}
                 <div>
                   <Label className="text-xs text-muted-foreground mb-1.5 block">End time</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full h-9 text-sm justify-between">
-                        {formData.end_time || "09:30"}
-                        <Clock className="h-4 w-4 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-48 p-2" align="start">
-                      <div className="flex gap-2">
-                        {/* Hours */}
-                        <div className="flex-1 max-h-48 overflow-y-auto">
-                          {Array.from({ length: 24 }, (_, h) => (
-                            <button
-                              key={h}
-                              type="button"
-                              onClick={() => {
-                                const currentMins = formData.end_time?.split(":")[1] || "00";
-                                const newTime = `${h.toString().padStart(2, "0")}:${currentMins}`;
-                                updateField("end_time", newTime);
-                              }}
-                              className={cn(
-                                "w-full py-1.5 text-center text-sm rounded hover:bg-muted",
-                                formData.end_time?.startsWith(h.toString().padStart(2, "0")) &&
-                                  "bg-primary text-primary-foreground",
-                              )}
-                            >
-                              {h.toString().padStart(2, "0")}
-                            </button>
-                          ))}
-                        </div>
-                        <div className="text-muted-foreground self-center">:</div>
-                        {/* Minutes */}
-                        <div className="flex-1 max-h-48 overflow-y-auto">
-                          {[0, 15, 30, 45].map((m) => (
-                            <button
-                              key={m}
-                              type="button"
-                              onClick={() => {
-                                const currentHours = formData.end_time?.split(":")[0] || "09";
-                                const newTime = `${currentHours}:${m.toString().padStart(2, "0")}`;
-                                updateField("end_time", newTime);
-                              }}
-                              className={cn(
-                                "w-full py-1.5 text-center text-sm rounded hover:bg-muted",
-                                formData.end_time?.endsWith(`:${m.toString().padStart(2, "0")}`) &&
-                                  "bg-primary text-primary-foreground",
-                              )}
-                            >
-                              {m.toString().padStart(2, "0")}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                  <div className="relative">
+                    <Input
+                      type="time"
+                      value={formData.end_time || "09:30"}
+                      onChange={(e) => updateField("end_time", e.target.value)}
+                      className="h-9 text-sm pr-8"
+                    />
+                    <Clock className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  </div>
                 </div>
               </div>
 

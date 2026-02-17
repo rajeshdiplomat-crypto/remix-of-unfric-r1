@@ -56,6 +56,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ActivityImageUpload, loadActivityImage, loadAllActivityImages, saveActivityImage, saveActivityImageToDb } from "@/components/habits/ActivityImageUpload";
+import habitsDefaultImage from "@/assets/habits-default.jpg";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
@@ -1401,11 +1402,13 @@ export default function Habits() {
                     );
                   }
                   return (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center">
-                      <Target className="h-6 w-6 text-muted-foreground opacity-20" />
-                      <span className="text-[10px] text-muted-foreground uppercase tracking-zara">
-                        Select a habit
-                      </span>
+                    <div className="absolute inset-0">
+                      <img src={habitsDefaultImage} alt="Habits" className="w-full h-full object-cover" />
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/50 to-transparent p-3">
+                        <span className="text-[10px] text-white/80 uppercase tracking-zara">
+                          Select a habit
+                        </span>
+                      </div>
                     </div>
                   );
                 })()}
