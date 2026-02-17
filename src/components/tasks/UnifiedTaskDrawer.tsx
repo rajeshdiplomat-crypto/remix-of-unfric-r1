@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UnifiedDatePicker } from "@/components/common/UnifiedDatePicker";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { QuadrantTask, Urgency, Importance, Subtask, suggestTimeOfDay, getDefaultEndTime } from "./types";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
@@ -178,18 +178,15 @@ export function UnifiedTaskDrawer({
   const isOngoing = !!formData.started_at && !isCompleted;
 
   return (
-    <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
-      <DrawerContent className="max-w-md ml-auto h-full rounded-l-2xl overflow-hidden">
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-lg p-0 rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
         <div className="flex flex-col h-full min-h-0">
-          {/* Header */}
-          <DrawerHeader className="border-b border-border pb-4 shrink-0">
-            <div className="flex items-center justify-between">
-              <DrawerTitle>{isNew ? "Create New Task" : "Task Details"}</DrawerTitle>
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </DrawerHeader>
+          {/* Blue gradient header — matches Manifest's teal header style */}
+          <div className="bg-gradient-to-r from-blue-500 to-indigo-500 px-6 py-4 text-white flex-shrink-0">
+            <DialogTitle className="text-lg font-semibold text-white">
+              {isNew ? "Create New Task" : "Task Details"}
+            </DialogTitle>
+          </div>
 
           {/* Content */}
           <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-6">
@@ -746,7 +743,7 @@ export function UnifiedTaskDrawer({
             </div>
           </div>
         </div>
-      </DrawerContent>
-    </Drawer>
+      </DialogContent>
+    </Dialog>
   );
 }
