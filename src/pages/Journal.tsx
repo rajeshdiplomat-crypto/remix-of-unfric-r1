@@ -164,6 +164,21 @@ export default function Journal() {
     const saved = localStorage.getItem("journal_template");
     return saved ? JSON.parse(saved) : DEFAULT_TEMPLATE;
   });
+
+  // Re-sync template from localStorage when window regains focus (e.g. after Settings changes)
+  useEffect(() => {
+    const syncTemplate = () => {
+      const saved = localStorage.getItem("journal_template");
+      if (saved) {
+        try {
+          setTemplate(JSON.parse(saved));
+        } catch { /* ignore parse errors */ }
+      }
+    };
+    window.addEventListener("focus", syncTemplate);
+    return () => window.removeEventListener("focus", syncTemplate);
+  }, []);
+
   const [journalMode, setJournalMode] = useState<string>("structured");
 
   // Per-entry page settings state
@@ -675,10 +690,15 @@ export default function Journal() {
     setSelectedMood(null);
     setEntryPageSettings(null);
 
+    // Re-read the latest template from localStorage to pick up any Settings changes
+    const savedTemplate = localStorage.getItem("journal_template");
+    const latestTemplate: JournalTemplate = savedTemplate ? JSON.parse(savedTemplate) : DEFAULT_TEMPLATE;
+    setTemplate(latestTemplate);
+
     // Re-initialize content based on current settings
     const isUnstructured = journalMode === "unstructured";
     const newContent = !isUnstructured
-      ? generateInitialContent(template.questions)
+      ? generateInitialContent(latestTemplate.questions)
       : JSON.stringify({
           type: "doc",
           content: [
@@ -690,9 +710,9 @@ export default function Journal() {
     lastSavedContentRef.current = newContent;
     setSaveStatus("saved");
 
-    // Reset skin to current global default (entryPageSettings is null so line style falls back to template default)
-    setCurrentSkinId(template.defaultSkinId || (theme.isDark ? "midnight-dark" : "minimal-light"));
-  }, [currentEntry, user, journalMode, template, theme.isDark]);
+    // Reset skin and line style to latest global defaults
+    setCurrentSkinId(latestTemplate.defaultSkinId || (theme.isDark ? "midnight-dark" : "minimal-light"));
+  }, [currentEntry, user, journalMode, theme.isDark]);
 
   if (isLoading && !currentEntry && !content) {
     return <PageLoadingScreen module="journal" />;
