@@ -4,23 +4,38 @@ import { supabase } from "@/integrations/supabase/client";
 export type TimeFormatType = "12h" | "24h";
 
 export function useTimeFormat() {
-  const [timeFormat, setTimeFormat] = useState<TimeFormatType>("24h");
+  const [timeFormat, setTimeFormat] = useState<TimeFormatType>(() => {
+    // Read from localStorage for instant value before async fetch
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("unfric-time-format");
+      if (cached === "12h" || cached === "24h") return cached;
+    }
+    return "24h";
+  });
+
+  const fetchFormat = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from("user_settings")
+      .select("time_format")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if ((data as any)?.time_format) {
+      const fmt = (data as any).time_format as TimeFormatType;
+      setTimeFormat(fmt);
+      localStorage.setItem("unfric-time-format", fmt);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchFormat = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase
-        .from("user_settings")
-        .select("time_format")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if ((data as any)?.time_format) {
-        setTimeFormat((data as any).time_format as TimeFormatType);
-      }
-    };
     fetchFormat();
-  }, []);
+
+    // Re-fetch when tab gains focus (e.g. after changing settings)
+    const onFocus = () => fetchFormat();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [fetchFormat]);
 
   const formatTime = useCallback(
     (time: string | null): string => {
