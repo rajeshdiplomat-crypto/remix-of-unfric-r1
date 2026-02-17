@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { 
   PenLine, Bell, Shield, Clock, LayoutDashboard, 
   Download, Trash2, UserX, ChevronRight, Loader2,
-  Plus, RotateCcw, GripVertical, Edit3
+  Plus, RotateCcw, GripVertical, Edit3, Save
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -129,15 +129,43 @@ export default function Settings() {
     })();
   }, [user]);
 
-  // ── Save helper ──────────────────────────────────────────────────
+  // ── Dirty tracking for Save button ──────────────────────────────
+  const [isDirty, setIsDirty] = useState(false);
+  const [pendingSettings, setPendingSettings] = useState<Partial<UserSettings>>({});
 
-  const saveField = async (field: keyof UserSettings, value: any) => {
-    if (!user) return;
+  // ── Local change helper (no DB write) ──────────────────────────
+  const updateField = (field: keyof UserSettings, value: any) => {
     setSettings((prev) => prev ? { ...prev, [field]: value } : prev);
-    await supabase
-      .from("user_settings")
-      .update({ [field]: value })
-      .eq("user_id", user.id);
+    setPendingSettings((prev) => ({ ...prev, [field]: value }));
+    setIsDirty(true);
+  };
+
+  // ── Save all pending changes ───────────────────────────────────
+  const handleSaveAll = async () => {
+    if (!user || !isDirty) return;
+    setSaving(true);
+    try {
+      // Save DB settings
+      if (Object.keys(pendingSettings).length > 0) {
+        await supabase
+          .from("user_settings")
+          .update(pendingSettings)
+          .eq("user_id", user.id);
+      }
+      // Template is saved to localStorage on change already
+      setPendingSettings({});
+      setIsDirty(false);
+      toast.success("Settings saved");
+    } catch {
+      toast.error("Failed to save settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Legacy helper kept for non-settings-page callers
+  const saveField = async (field: keyof UserSettings, value: any) => {
+    updateField(field, value);
   };
 
   // ── Export Data ──────────────────────────────────────────────────
@@ -238,9 +266,17 @@ export default function Settings() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 space-y-8">
-      <div>
-        <h1 className="text-2xl font-light uppercase tracking-[0.15em] text-foreground">Settings</h1>
-        <p className="text-sm text-muted-foreground mt-1">Manage your preferences and data</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-light uppercase tracking-[0.15em] text-foreground">Settings</h1>
+          <p className="text-sm text-muted-foreground mt-1">Manage your preferences and data</p>
+        </div>
+        {isDirty && (
+          <Button onClick={handleSaveAll} disabled={saving} className="gap-1.5">
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            Save Changes
+          </Button>
+        )}
       </div>
 
       {/* ─── Section 1: Journal Preferences ─── */}
@@ -267,6 +303,7 @@ export default function Settings() {
               setTemplate(updated);
               localStorage.setItem("journal_template", JSON.stringify(updated));
               localStorage.setItem("journal_skin_id", v);
+              setIsDirty(true);
             }}
           >
             <SelectTrigger className="w-36 text-xs">
@@ -286,6 +323,7 @@ export default function Settings() {
               const updated = { ...template, defaultLineStyle: v };
               setTemplate(updated);
               localStorage.setItem("journal_template", JSON.stringify(updated));
+              setIsDirty(true);
             }}
           >
             <SelectTrigger className="w-28 text-xs">
@@ -325,6 +363,7 @@ export default function Settings() {
                   const updated = { ...template, questions: newQuestions };
                   setTemplate(updated);
                   localStorage.setItem("journal_template", JSON.stringify(updated));
+                  setIsDirty(true);
                   setDraggedIndex(index);
                 }}
                 onDragEnd={() => setDraggedIndex(null)}
@@ -342,6 +381,7 @@ export default function Settings() {
                         const updated = { ...template, questions: template.questions.map(q => q.id === question.id ? { ...q, text: e.target.value } : q) };
                         setTemplate(updated);
                         localStorage.setItem("journal_template", JSON.stringify(updated));
+                        setIsDirty(true);
                       }}
                       onBlur={() => setEditingQuestionId(null)}
                       onKeyDown={(e) => e.key === "Enter" && setEditingQuestionId(null)}
@@ -364,6 +404,7 @@ export default function Settings() {
                     const updated = { ...template, questions: template.questions.filter(q => q.id !== question.id) };
                     setTemplate(updated);
                     localStorage.setItem("journal_template", JSON.stringify(updated));
+                    setIsDirty(true);
                   }}
                   className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
                 >
@@ -381,6 +422,7 @@ export default function Settings() {
                 const updated = { ...template, questions: [...template.questions, newQ] };
                 setTemplate(updated);
                 localStorage.setItem("journal_template", JSON.stringify(updated));
+                setIsDirty(true);
                 setEditingQuestionId(newQ.id);
               }}
               className="flex-1 text-xs"
@@ -394,6 +436,7 @@ export default function Settings() {
                 const updated = { ...template, questions: [...DEFAULT_QUESTIONS] };
                 setTemplate(updated);
                 localStorage.setItem("journal_template", JSON.stringify(updated));
+                setIsDirty(true);
               }}
               className="text-xs"
             >
@@ -555,8 +598,12 @@ export default function Settings() {
             </SelectContent>
           </Select>
         </SettingsRow>
-        {(settings.default_task_tab || "board") === "board" && (
-          <SettingsRow label="Default Board Mode" description="Which board categorization to use">
+        <div className={cn((settings.default_task_tab || "board") !== "board" && "opacity-50 pointer-events-none")}>
+          <SettingsRow label="Default Board Mode" description={
+            (settings.default_task_tab || "board") !== "board"
+              ? "Switch to Board tab to edit this"
+              : "Which board categorization to use"
+          }>
             <Select
               value={settings.default_task_view || "status"}
               onValueChange={(v) => saveField("default_task_view", v)}
@@ -572,7 +619,7 @@ export default function Settings() {
               </SelectContent>
             </Select>
           </SettingsRow>
-        )}
+        </div>
         <SettingsRow label="Default Notes View" description="Which notes layout to show first">
           <Select
             value={settings.default_notes_view || "atlas"}

@@ -155,6 +155,7 @@ interface Props {
   scribbleStrokes?: string | null;
   onScribbleChange?: (data: string | null) => void;
   defaultLineStyle?: string;
+  onClear?: () => void;
 }
 export interface TiptapEditorRef {
   editor: ReturnType<typeof useEditor> | null;
@@ -241,7 +242,7 @@ interface Stroke {
 }
 
 export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
-  ({ content, onChange, skinStyles, scribbleStrokes: initialStrokes, onScribbleChange, defaultLineStyle }, ref) => {
+  ({ content, onChange, skinStyles, scribbleStrokes: initialStrokes, onScribbleChange, defaultLineStyle, onClear }, ref) => {
     const [font, setFont] = useState("inter");
     const [size, setSize] = useState("16");
     const [editorBg, setEditorBg] = useState("transparent");
@@ -977,6 +978,14 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
                 <DropdownMenuItem onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}>
                   Clear Formatting
                 </DropdownMenuItem>
+                {onClear && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={onClear} className="text-destructive focus:text-destructive">
+                      <Trash2 className="h-4 w-4 mr-2" /> Clear Entry
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -1283,6 +1292,7 @@ export const MemoizedJournalTiptapEditor = React.memo(JournalTiptapEditor, (prev
     prevProps.skinStyles?.mutedText === nextProps.skinStyles?.mutedText &&
     prevProps.defaultLineStyle === nextProps.defaultLineStyle &&
     prevProps.onChange === nextProps.onChange &&
-    prevProps.onScribbleChange === nextProps.onScribbleChange
+    prevProps.onScribbleChange === nextProps.onScribbleChange &&
+    prevProps.onClear === nextProps.onClear
   );
 });

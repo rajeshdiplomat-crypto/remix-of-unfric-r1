@@ -662,6 +662,38 @@ export default function Journal() {
     setSaveStatus("unsaved");
   };
 
+  // Clear the editor back to a fresh state (as if no entry exists)
+  const handleClearEntry = useCallback(async () => {
+    // Delete the entry from DB if it exists
+    if (currentEntry && user) {
+      await supabase.from("journal_answers").delete().eq("journal_entry_id", currentEntry.id);
+      await supabase.from("journal_entries").delete().eq("id", currentEntry.id);
+      setEntries((prev) => prev.filter((e) => e.id !== currentEntry.id));
+      setCurrentEntry(null);
+      setCurrentAnswers([]);
+    }
+    setSelectedMood(null);
+    setEntryPageSettings(null);
+
+    // Re-initialize content based on current settings
+    const isUnstructured = journalMode === "unstructured";
+    const newContent = !isUnstructured
+      ? generateInitialContent(template.questions)
+      : JSON.stringify({
+          type: "doc",
+          content: [
+            { type: "heading", attrs: { level: 1, textAlign: "left" }, content: [] },
+            { type: "paragraph", attrs: { textAlign: "left" }, content: [] },
+          ],
+        });
+    setContent(newContent);
+    lastSavedContentRef.current = newContent;
+    setSaveStatus("saved");
+
+    // Reset skin to default
+    setCurrentSkinId(theme.isDark ? "midnight-dark" : template.defaultSkinId || "minimal-light");
+  }, [currentEntry, user, journalMode, template, theme.isDark]);
+
   if (isLoading && !currentEntry && !content) {
     return <PageLoadingScreen module="journal" />;
   }
@@ -733,6 +765,7 @@ export default function Journal() {
           onChange={handleContentChange}
           skinStyles={{ editorPaperBg: currentSkin.editorPaperBg, text: currentSkin.text, mutedText: currentSkin.mutedText }}
           defaultLineStyle={entryPageSettings?.lineStyle || template.defaultLineStyle || "none"}
+          onClear={handleClearEntry}
         />
       </div>
     </div>
