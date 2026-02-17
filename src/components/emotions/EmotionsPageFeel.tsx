@@ -135,7 +135,7 @@ export function EmotionsPageFeel({
                 <Calendar
                   mode="single"
                   selected={selectedDate}
-                  onSelect={(date) => date && onDateChange(date)}
+                  onSelect={(date) => { if (date) onDateChange(date); }}
                   disabled={(date) => date > new Date()}
                   initialFocus
                   className={cn("p-3 pointer-events-auto")}

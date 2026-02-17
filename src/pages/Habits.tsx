@@ -15,6 +15,7 @@ import {
   getDay,
 } from "date-fns";
 import { computeEndDateForHabitDays } from "@/lib/dateUtils";
+import { UnifiedTimePicker } from "@/components/common/UnifiedTimePicker";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
@@ -1671,7 +1672,7 @@ export default function Habits() {
                       <Calendar
                         mode="single"
                         selected={formStartDate}
-                        onSelect={(date) => date && setFormStartDate(date)}
+                        onSelect={(date) => { if (date) setFormStartDate(date); }}
                         className="pointer-events-auto"
                       />
                     </PopoverContent>
@@ -1712,11 +1713,11 @@ export default function Habits() {
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <p className="text-[11px] text-muted-foreground mb-1.5">Start time</p>
-                    <input
-                      type="time"
+                    <UnifiedTimePicker
                       value={formTime}
-                      onChange={(e) => setFormTime(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      onChange={(v) => setFormTime(v)}
+                      intervalMinutes={30}
+                      triggerClassName="w-full rounded-xl h-10"
                     />
                   </div>
                   <div>
