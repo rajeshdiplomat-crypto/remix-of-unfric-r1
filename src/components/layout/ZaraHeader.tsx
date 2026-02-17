@@ -29,61 +29,55 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
   const navigate = useNavigate();
   const { signOut } = useAuth();
 
-  const handleSignOut = async () => {
-    await signOut();
-  };
-
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen();
-      setIsFullscreen(true);
     } else {
       document.exitFullscreen();
-      setIsFullscreen(false);
     }
   }, []);
 
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
 
   useEffect(() => {
-    const handleScroll = () => {
-      // Trigger after scrolling past ~200px (hero section)
-      setIsScrolled(window.scrollY > 200);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll(); // Check initial state
-
-    return () => window.removeEventListener("scroll", handleScroll);
+    const onScroll = () => setIsScrolled(window.scrollY > 200);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   const isActive = (path: string) => location.pathname === path;
 
+  const iconClass = (scrolled: boolean) =>
+    cn(
+      "h-8 w-8 rounded-full hover:bg-foreground/10 transition-all duration-300",
+      scrolled ? "text-foreground/60 hover:text-foreground" : "text-foreground/70 hover:text-foreground",
+    );
+
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ease-out ${
-        isScrolled ? "bg-background/80 backdrop-blur-md border-b border-border/50" : "bg-transparent"
-      }`}
+      className={cn(
+        "fixed top-0 left-0 right-0 z-40 transition-all duration-300 ease-out",
+        isScrolled ? "bg-background/80 backdrop-blur-md border-b border-border/50" : "bg-transparent",
+      )}
     >
-      <div className="flex items-center justify-between h-14 px-4 lg:px-8">
+      <div className="flex items-center justify-between h-14 px-3 sm:px-4 lg:px-8">
         {/* Left: Hamburger + Logo */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={onMenuClick}
             className={cn(
-              "h-16 w-16 hover:bg-transparent transition-all duration-300",
+              "h-12 w-12 sm:h-16 sm:w-16 hover:bg-transparent transition-all duration-300",
               isScrolled ? "text-foreground" : "text-foreground [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]",
             )}
           >
-            <Menu className="h-10 w-10" strokeWidth={2} />
+            <Menu className="h-7 w-7 sm:h-10 sm:w-10" strokeWidth={2} />
           </Button>
           <NavLink to="/diary" className="flex items-center">
             <UnfricLogo
@@ -96,150 +90,72 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
           </NavLink>
         </div>
 
-        {/* Right: Module Nav + Fullscreen + Sign Out */}
-        <div className="flex items-center gap-2">
-          {/* Module Navigation */}
-          <nav className="hidden md:flex items-center gap-6 mr-4">
-            {modules.map((module) => (
-              <NavLink
-                key={module.path}
-                to={module.path}
-                className={cn(
-                  "text-[11px] font-light uppercase tracking-zara-wide transition-all duration-300",
-                  isActive(module.path)
-                    ? cn(
-                        "border-b pb-0.5",
-                        isScrolled
-                          ? "text-foreground border-foreground"
-                          : "text-foreground border-foreground [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]",
-                      )
-                    : cn(
-                        "hover:text-foreground",
-                        isScrolled
-                          ? "text-foreground/60"
-                          : "text-foreground/70 [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]",
-                      ),
-                )}
-              >
-                {module.name}
-              </NavLink>
-            ))}
-          </nav>
-
-          {/* Action buttons group */}
-          <div className={cn(
-            "hidden md:flex items-center gap-0.5 rounded-full px-1 py-0.5 transition-all duration-300",
-            isScrolled ? "bg-muted/60" : "bg-foreground/10 backdrop-blur-sm",
-          )}>
-            {/* Back */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(-1)}
+        {/* Center: Module Nav — desktop only */}
+        <nav className="hidden lg:flex items-center gap-6">
+          {modules.map((module) => (
+            <NavLink
+              key={module.path}
+              to={module.path}
               className={cn(
-                "h-8 w-8 rounded-full hover:bg-foreground/10 transition-all duration-300",
-                isScrolled ? "text-foreground/60 hover:text-foreground" : "text-foreground/70 hover:text-foreground",
+                "text-[11px] font-light uppercase tracking-zara-wide transition-all duration-300",
+                isActive(module.path)
+                  ? cn(
+                      "border-b pb-0.5",
+                      isScrolled
+                        ? "text-foreground border-foreground"
+                        : "text-foreground border-foreground [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]",
+                    )
+                  : cn(
+                      "hover:text-foreground",
+                      isScrolled
+                        ? "text-foreground/60"
+                        : "text-foreground/70 [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]",
+                    ),
               )}
-              title="Go Back"
             >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-
-            {/* Forward */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(1)}
-              className={cn(
-                "h-8 w-8 rounded-full hover:bg-foreground/10 transition-all duration-300",
-                isScrolled ? "text-foreground/60 hover:text-foreground" : "text-foreground/70 hover:text-foreground",
-              )}
-              title="Go Forward"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-
-            <Separator orientation="vertical" className="h-4 mx-0.5 bg-foreground/15" />
-
-            {/* Settings */}
-            <NavLink to="/settings">
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  "h-8 w-8 rounded-full hover:bg-foreground/10 transition-all duration-300",
-                  isScrolled ? "text-foreground/60 hover:text-foreground" : "text-foreground/70 hover:text-foreground",
-                )}
-                title="Settings"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
+              {module.name}
             </NavLink>
+          ))}
+        </nav>
 
-            {/* Fullscreen */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleFullscreen}
-              className={cn(
-                "h-8 w-8 rounded-full hover:bg-foreground/10 transition-all duration-300",
-                isScrolled ? "text-foreground/60 hover:text-foreground" : "text-foreground/70 hover:text-foreground",
-              )}
-              title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-            >
-              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+        {/* Right: Action buttons */}
+        <div className={cn(
+          "flex items-center gap-0.5 rounded-full px-1 py-0.5 transition-all duration-300",
+          isScrolled ? "bg-muted/60" : "bg-foreground/10 backdrop-blur-sm",
+        )}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className={iconClass(isScrolled)} title="Back">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => navigate(1)} className={iconClass(isScrolled)} title="Forward">
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+
+          <Separator orientation="vertical" className="h-4 mx-0.5 bg-foreground/15 hidden sm:block" />
+
+          {/* Settings — hidden on smallest screens, visible on sm+ */}
+          <NavLink to="/settings" className="hidden sm:block">
+            <Button variant="ghost" size="icon" className={iconClass(isScrolled)} title="Settings">
+              <Settings className="h-4 w-4" />
             </Button>
+          </NavLink>
 
+          {/* Fullscreen — hidden on mobile, visible on sm+ */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleFullscreen}
+            className={cn(iconClass(isScrolled), "hidden sm:flex")}
+            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+          >
+            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </Button>
+
+          {/* Sign out — hidden on mobile, visible on sm+ */}
+          <div className="hidden sm:flex items-center">
             <Separator orientation="vertical" className="h-4 mx-0.5 bg-foreground/15" />
-
-            {/* Sign Out */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleSignOut}
-              className={cn(
-                "h-8 w-8 rounded-full hover:bg-foreground/10 transition-all duration-300",
-                isScrolled ? "text-foreground/60 hover:text-foreground" : "text-foreground/70 hover:text-foreground",
-              )}
-              title="Sign Out"
-            >
+            <Button variant="ghost" size="icon" onClick={() => signOut()} className={iconClass(isScrolled)} title="Sign Out">
               <LogOut className="h-4 w-4" />
             </Button>
-          </div>
-
-          {/* Mobile: Settings link + back/forward */}
-          <div className="flex items-center gap-2 md:hidden">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(-1)}
-              className={cn(
-                "h-8 w-8 hover:bg-transparent transition-all duration-300",
-                isScrolled ? "text-foreground/60" : "text-foreground/70 [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]",
-              )}
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(1)}
-              className={cn(
-                "h-8 w-8 hover:bg-transparent transition-all duration-300",
-                isScrolled ? "text-foreground/60" : "text-foreground/70 [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]",
-              )}
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-            <NavLink
-              to="/settings"
-              className={cn(
-                "text-[11px] font-light uppercase tracking-zara-wide hover:text-foreground transition-all duration-300",
-                isScrolled ? "text-foreground/60" : "text-foreground/70 [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]",
-              )}
-            >
-              Settings
-            </NavLink>
           </div>
         </div>
       </div>
