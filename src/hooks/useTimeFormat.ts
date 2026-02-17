@@ -4,14 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 export type TimeFormatType = "12h" | "24h";
 
 export function useTimeFormat() {
-  const [timeFormat, setTimeFormat] = useState<TimeFormatType>(() => {
-    // Read from localStorage for instant value before async fetch
-    if (typeof window !== "undefined") {
-      const cached = localStorage.getItem("unfric-time-format");
-      if (cached === "12h" || cached === "24h") return cached;
-    }
-    return "24h";
-  });
+  const [timeFormat, setTimeFormat] = useState<TimeFormatType>("24h");
+  const [loaded, setLoaded] = useState(false);
 
   const fetchFormat = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -22,19 +16,38 @@ export function useTimeFormat() {
       .eq("user_id", user.id)
       .maybeSingle();
     if ((data as any)?.time_format) {
-      const fmt = (data as any).time_format as TimeFormatType;
-      setTimeFormat(fmt);
-      localStorage.setItem("unfric-time-format", fmt);
+      setTimeFormat((data as any).time_format as TimeFormatType);
     }
+    setLoaded(true);
   }, []);
 
   useEffect(() => {
     fetchFormat();
 
-    // Re-fetch when tab gains focus (e.g. after changing settings)
-    const onFocus = () => fetchFormat();
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
+    // Re-fetch when navigating back or switching tabs
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") fetchFormat();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    // Also subscribe to realtime changes on user_settings
+    const channel = supabase
+      .channel("time-format-changes")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "user_settings" },
+        (payload) => {
+          if ((payload.new as any)?.time_format) {
+            setTimeFormat((payload.new as any).time_format as TimeFormatType);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      supabase.removeChannel(channel);
+    };
   }, [fetchFormat]);
 
   const formatTime = useCallback(
@@ -64,5 +77,5 @@ export function useTimeFormat() {
     [timeFormat],
   );
 
-  return { timeFormat, formatTime, formatHour };
+  return { timeFormat, formatTime, formatHour, loaded };
 }

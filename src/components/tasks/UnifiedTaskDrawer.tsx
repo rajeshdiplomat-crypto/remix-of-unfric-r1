@@ -507,25 +507,22 @@ export function UnifiedTaskDrawer({
                   <div className="mt-2 relative w-full max-h-56 bg-background rounded-lg border shadow-sm overflow-y-auto flex">
                     {/* Time labels */}
                     <div className="w-12 shrink-0 border-r border-border/40 bg-muted/30 sticky left-0">
-                      {Array.from({ length: 36 }, (_, i) => {
-                        const hour = Math.floor(i / 2) + 6;
-                        const min = i % 2 === 0 ? "00" : "30";
-                        if (hour > 23) return null;
+                      {Array.from({ length: 48 }, (_, i) => {
+                        const hour = Math.floor(i / 2);
                         return (
                           <div
-                            key={`${hour}-${min}`}
+                            key={`${hour}-${i % 2 === 0 ? "00" : "30"}`}
                             className="h-[28px] flex items-center justify-end pr-1.5 text-[9px] font-medium text-muted-foreground border-b border-border/20"
                           >
                             {i % 2 === 0 ? formatHour(hour) : ""}
                           </div>
                         );
-                      }).filter(Boolean)}
+                      })}
                     </div>
                     {/* Schedule area */}
-                    <div className="flex-1 relative" style={{ minHeight: `${36 * 28}px` }}>
-                      {Array.from({ length: 36 }, (_, i) => {
-                        const hour = Math.floor(i / 2) + 6;
-                        if (hour > 23) return null;
+                    <div className="flex-1 relative" style={{ minHeight: `${48 * 28}px` }}>
+                      {Array.from({ length: 48 }, (_, i) => {
+                        const hour = Math.floor(i / 2);
                         return (
                           <button
                             key={i}
@@ -535,7 +532,6 @@ export function UnifiedTaskDrawer({
                               const min = i % 2 === 0 ? "00" : "30";
                               const time = `${hour.toString().padStart(2, "0")}:${min}`;
                               updateField("due_time", time);
-                              // Auto-set end time to +1h
                               const endMins = hour * 60 + (i % 2 === 0 ? 0 : 30) + 60;
                               const endH = Math.floor(endMins / 60) % 24;
                               const endM = endMins % 60;
@@ -543,16 +539,15 @@ export function UnifiedTaskDrawer({
                             }}
                           />
                         );
-                      }).filter(Boolean)}
+                      })}
                       {/* Busy slots */}
                       {busySlots.map((slot) => {
                         const [sh, sm] = slot.start.split(":").map(Number);
                         const [eh, em] = slot.end.split(":").map(Number);
                         const startMins = sh * 60 + sm;
                         const endMins = eh * 60 + em;
-                        const dayStart = 6 * 60;
-                        const totalH = 16 * 60;
-                        const topP = Math.max(0, ((startMins - dayStart) / totalH) * 100);
+                        const totalH = 24 * 60;
+                        const topP = Math.max(0, (startMins / totalH) * 100);
                         const heightP = Math.min(100 - topP, ((endMins - startMins) / totalH) * 100);
                         return (
                           <div
@@ -570,9 +565,8 @@ export function UnifiedTaskDrawer({
                         const [eh, em] = formData.end_time.split(":").map(Number);
                         const startMins = sh * 60 + sm;
                         const endMins = eh * 60 + em;
-                        const dayStart = 6 * 60;
-                        const totalH = 16 * 60;
-                        const topP = Math.max(0, ((startMins - dayStart) / totalH) * 100);
+                        const totalH = 24 * 60;
+                        const topP = Math.max(0, (startMins / totalH) * 100);
                         const heightP = Math.min(100 - topP, ((endMins - startMins) / totalH) * 100);
                         return (
                           <div
