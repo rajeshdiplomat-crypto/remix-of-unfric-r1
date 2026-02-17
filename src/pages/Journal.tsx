@@ -195,7 +195,7 @@ export default function Journal() {
   const [journalMode, setJournalMode] = useState<string>("structured");
 
   // Per-entry page settings state
-  const [entryPageSettings, setEntryPageSettings] = useState<{ skinId?: string; lineStyle?: string } | null>(null);
+  const [entryPageSettings, setEntryPageSettings] = useState<{ skinId?: string; lineStyle?: string; mode?: string } | null>(null);
   const [entrySettingsOpen, setEntrySettingsOpen] = useState(false);
 
   // Load journal mode from DB
@@ -382,7 +382,7 @@ export default function Journal() {
 
           // Load per-entry page settings
           const ps = entryData.page_settings as any;
-          setEntryPageSettings(ps ? { skinId: ps.skinId, lineStyle: ps.lineStyle } : null);
+          setEntryPageSettings(ps ? { skinId: ps.skinId, lineStyle: ps.lineStyle, mode: ps.mode } : null);
 
           // Helper to ensure proper content structure with H1 Title
           const existingTitle = extractTitle(contentJSON);
@@ -402,8 +402,10 @@ export default function Journal() {
             });
 
             if (!hasRealContent) {
-              // Entry has no user content — regenerate based on CURRENT mode
-              const isUnstructured = journalMode === "unstructured";
+              // Entry has no user content — regenerate based on per-entry mode or current global mode
+              const ps = entryData.page_settings as any;
+              const effectiveMode = ps?.mode || journalMode;
+              const isUnstructured = effectiveMode === "unstructured";
               if (isUnstructured) {
                 finalContent = JSON.stringify({
                   type: "doc",
@@ -499,7 +501,7 @@ export default function Journal() {
             text_formatting: content,
             daily_feeling: selectedMood,
             images_data: imagesDataPayload,
-            page_settings: entryPageSettings ? { skinId: currentSkinId, lineStyle: entryPageSettings.lineStyle || template.defaultLineStyle || "none" } : null,
+            page_settings: entryPageSettings ? { skinId: currentSkinId, lineStyle: entryPageSettings.lineStyle || template.defaultLineStyle || "none", mode: entryPageSettings.mode } : null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", currentEntry.id);
@@ -549,7 +551,7 @@ export default function Journal() {
             text_formatting: content,
             daily_feeling: selectedMood,
             images_data: imagesDataPayload,
-            page_settings: entryPageSettings ? { skinId: currentSkinId, lineStyle: entryPageSettings.lineStyle || template.defaultLineStyle || "none" } : null,
+            page_settings: entryPageSettings ? { skinId: currentSkinId, lineStyle: entryPageSettings.lineStyle || template.defaultLineStyle || "none", mode: entryPageSettings.mode } : null,
           })
           .select()
           .single();
@@ -960,9 +962,9 @@ export default function Journal() {
         currentSkinId={currentSkinId}
         onSkinChange={setCurrentSkinId}
         currentLineStyle={entryPageSettings?.lineStyle || template.defaultLineStyle || "none"}
-        entryMode={journalMode as "structured" | "unstructured"}
+        entryMode={(entryPageSettings?.mode || journalMode) as "structured" | "unstructured"}
         onEntryOverrideSave={(skinId, lineStyle, newMode) => {
-          setEntryPageSettings({ skinId, lineStyle });
+          setEntryPageSettings({ skinId, lineStyle, mode: newMode });
           setCurrentSkinId(skinId);
 
           // If mode changed, regenerate content
