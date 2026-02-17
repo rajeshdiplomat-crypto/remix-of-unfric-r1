@@ -758,6 +758,7 @@ export type Database = {
           privacy_blur_sensitive: boolean | null
           privacy_passcode_enabled: boolean | null
           start_of_week: string | null
+          time_format: string | null
           timezone: string | null
           updated_at: string
           user_id: string
@@ -781,6 +782,7 @@ export type Database = {
           privacy_blur_sensitive?: boolean | null
           privacy_passcode_enabled?: boolean | null
           start_of_week?: string | null
+          time_format?: string | null
           timezone?: string | null
           updated_at?: string
           user_id: string
@@ -804,6 +806,7 @@ export type Database = {
           privacy_blur_sensitive?: boolean | null
           privacy_passcode_enabled?: boolean | null
           start_of_week?: string | null
+          time_format?: string | null
           timezone?: string | null
           updated_at?: string
           user_id?: string

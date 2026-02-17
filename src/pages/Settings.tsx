@@ -554,6 +554,20 @@ export default function Settings() {
 
       {/* ─── Section 4: Time & Locale ─── */}
       <SettingsSection icon={Clock} title="Time & Locale">
+        <SettingsRow label="Time Format" description="12-hour (AM/PM) or 24-hour clock">
+          <Select
+            value={(settings as any).time_format || "24h"}
+            onValueChange={(v) => saveField("time_format" as any, v)}
+          >
+            <SelectTrigger className="w-28 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="12h">12-hour</SelectItem>
+              <SelectItem value="24h">24-hour</SelectItem>
+            </SelectContent>
+          </Select>
+        </SettingsRow>
         <SettingsRow label="Timezone" description="Controls all clocks and time displays">
           <Select
             value={settings.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone}

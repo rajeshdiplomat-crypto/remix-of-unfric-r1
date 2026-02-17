@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -65,6 +66,8 @@ import {
   Pencil,
   Brush,
   Circle,
+  Mic,
+  MicOff,
 } from "lucide-react";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 
@@ -187,6 +190,17 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
   const [currentSize, setCurrentSize] = useState("16");
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // Voice input
+  const editorRef = useRef<any>(null);
+  const { isListening, toggleListening } = useVoiceInput(
+    useCallback((text: string) => {
+      if (editorRef.current) {
+        editorRef.current.chain().focus().insertContent(text + " ").run();
+        setSaveStatus("unsaved");
+      }
+    }, [])
+  );
+
   useEffect(() => {
     onFullscreenChange?.(isFullscreen);
   }, [isFullscreen, onFullscreenChange]);
@@ -243,6 +257,9 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
       }
     },
   });
+
+  // Keep editorRef in sync for voice input
+  useEffect(() => { editorRef.current = editor; }, [editor]);
 
   // Get line style CSS - works for any mode
   const getLineStyleCSS = (): React.CSSProperties => {
@@ -895,6 +912,15 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Voice Input */}
+          <ToolBtn
+            onClick={toggleListening}
+            active={isListening}
+            title={isListening ? "Stop voice input" : "Voice input"}
+          >
+            {isListening ? <MicOff className="h-4 w-4 text-destructive" /> : <Mic className="h-4 w-4" />}
+          </ToolBtn>
 
           <div className="flex-1 min-w-4" />
 
