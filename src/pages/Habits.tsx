@@ -1608,18 +1608,22 @@ export default function Habits() {
 
         {/* Create Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
-            <DialogHeader>
-              <DialogTitle>{editingActivity ? "Edit Activity" : "Create New Habit"}</DialogTitle>
-            </DialogHeader>
+          <DialogContent className="max-w-lg p-0 rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            {/* Emerald gradient header — matches Reality/Task modal pattern */}
+            <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-4 text-white flex-shrink-0">
+              <DialogTitle className="text-lg font-semibold text-white">
+                {editingActivity ? "Edit Activity" : "Create New Habit"}
+              </DialogTitle>
+            </div>
 
-            <div className="space-y-4 pt-2">
+            <div className="p-6 overflow-y-auto flex-1 space-y-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">Habit Name</label>
                 <Input
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder="e.g. Drink 2.5L of water"
+                  className="rounded-xl"
                 />
               </div>
 
@@ -1756,15 +1760,15 @@ export default function Habits() {
                 <div className="flex gap-4 items-start">
                   {/* 9:16 Preview */}
                   <div
-                    className="w-16 rounded-lg overflow-hidden bg-slate-900 border-2 border-slate-700 flex-shrink-0"
+                    className="w-16 rounded-lg overflow-hidden bg-muted border-2 border-border flex-shrink-0"
                     style={{ aspectRatio: "9/16" }}
                   >
                     {formImageUrl ? (
                       <img src={formImageUrl} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
-                        <Target className="h-4 w-4 text-slate-600 mb-0.5" />
-                        <p className="text-[6px] text-slate-500 text-center px-1">9:16</p>
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-muted to-muted/80">
+                        <Target className="h-4 w-4 text-muted-foreground mb-0.5" />
+                        <p className="text-[6px] text-muted-foreground text-center px-1">9:16</p>
                       </div>
                     )}
                   </div>
@@ -1790,7 +1794,7 @@ export default function Habits() {
                         "h-9 w-9 rounded-full font-medium text-sm transition-colors",
                         formFrequency[idx]
                           ? "bg-emerald-500 text-white"
-                          : "bg-slate-100 dark:bg-slate-800 text-slate-400",
+                          : "bg-muted text-muted-foreground",
                       )}
                     >
                       {day}
@@ -1800,7 +1804,7 @@ export default function Habits() {
               </div>
 
               {!editingActivity && (
-                <div className="flex items-center space-x-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                <div className="flex items-center space-x-2 p-3 rounded-xl bg-muted/50">
                   <Checkbox
                     id="addToTasks"
                     checked={formAddToTasks}
@@ -1816,7 +1820,7 @@ export default function Habits() {
                 <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button className="flex-1 rounded-xl bg-emerald-500 hover:bg-emerald-600" onClick={handleSave}>
+                <Button className="flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:shadow-lg transition-all" onClick={handleSave}>
                   {editingActivity ? "Save Changes" : "Create Habit"}
                 </Button>
               </div>
