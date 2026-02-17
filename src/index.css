@@ -410,45 +410,46 @@
    ======================================== */
 
 /* Style journal prompts (h2 headings) - clean look */
+/* LINE_HEIGHT = 32px — all elements snap to this grid */
 .tiptap h1 {
   font-size: 2.25rem;
   font-weight: 700;
   color: #0f172a;
-  /* Black title */
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+  padding-top: 8px !important;
+  line-height: 32px !important;
+  min-height: 32px;
   letter-spacing: -0.02em;
 }
 
 .tiptap h2 {
   padding: 0 !important;
-  margin: 1.25rem 0 0.6rem 0 !important;
-  /* Increased bottom margin for Q-A space */
+  margin: 0 !important;
+  padding-top: 32px !important;
   color: #4b5563;
-  /* Darker grey for prompts */
   font-weight: 500;
   font-size: 1.25rem;
+  line-height: 32px !important;
+  min-height: 32px;
   letter-spacing: -0.01em;
 }
 
 .tiptap p {
   margin-top: 0 !important;
-  margin-bottom: 0.4rem !important;
-  /* Slightly tighter space between answer lines */
-  line-height: 1.35 !important;
+  margin-bottom: 0 !important;
+  line-height: 32px !important;
+  min-height: 32px;
   color: #0f172a;
-  /* Black text for answers */
 }
 
 .dark .tiptap h2 {
   color: #94a3b8;
-  /* Lighter grey for dark mode prompts */
 }
 
 .dark .tiptap h1,
 .dark .tiptap p {
   color: #f8fafc;
-  /* Near-white for dark mode "black" things */
 }
 
 /* Placeholder styling */
@@ -469,11 +470,6 @@
   float: left;
   height: 0;
   pointer-events: none;
-}
-
-/* Answer area styling */
-.tiptap h2 + p {
-  min-height: 2rem;
 }
 
 /* Line clamp utility for preview text */

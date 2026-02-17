@@ -232,7 +232,7 @@ const LINE_STYLES = [
   { id: "college", label: "College", preview: "║" },
 ];
 
-const LINE_HEIGHT = 28;
+const LINE_HEIGHT = 32;
 
 interface Stroke {
   points: { x: number; y: number }[];
@@ -310,7 +310,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
       content: content ? JSON.parse(content) : undefined,
       onUpdate: ({ editor }) => onChange(JSON.stringify(editor.getJSON())),
       editorProps: {
-        attributes: { class: "focus:outline-none min-h-[800px] pl-8 pr-6 pt-4 pb-4" },
+        attributes: { class: "focus:outline-none min-h-[800px] pl-8 pr-6 pb-4" },
         handleDrop: (view, event, _slice, moved) => {
           if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0]) {
             const file = event.dataTransfer.files[0];
@@ -1144,7 +1144,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
             />
           )}
           <div
-            className="h-full [&_.ProseMirror]:h-full [&_.ProseMirror]:flex [&_.ProseMirror]:flex-col [&_.ProseMirror]:justify-evenly [&_h2]:my-12 [&_h2]:pb-4"
+            className="h-full [&_.ProseMirror]:h-full"
             style={{ paddingLeft: lineStyle === "college" ? "80px" : undefined }}
           >
             <EditorContent editor={editor} />
