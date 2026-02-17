@@ -205,6 +205,19 @@ export default function Settings() {
   // and notification settings take effect right away
   const saveField = async (field: keyof UserSettings, value: any) => {
     updateField(field, value);
+
+    // When a reminder time changes, clear the "already sent" flag so it can fire again today
+    const reminderTypeMap: Record<string, string> = {
+      reminder_time_diary: "diary",
+      reminder_time_habits: "habits",
+      reminder_time_emotions: "emotions",
+    };
+    const notifType = reminderTypeMap[field];
+    if (notifType) {
+      const today = new Date().toISOString().split("T")[0];
+      localStorage.removeItem(`unfric_notif_sent_${notifType}_${today}`);
+    }
+
     if (user) {
       await supabase
         .from("user_settings")
