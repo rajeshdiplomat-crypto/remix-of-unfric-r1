@@ -165,19 +165,32 @@ export default function Journal() {
     return saved ? JSON.parse(saved) : DEFAULT_TEMPLATE;
   });
 
-  // Re-sync template from localStorage when window regains focus (e.g. after Settings changes)
+  // Re-sync template and journal mode when window regains focus (e.g. after Settings changes)
   useEffect(() => {
-    const syncTemplate = () => {
+    const syncFromSettings = () => {
+      // Sync template from localStorage
       const saved = localStorage.getItem("journal_template");
       if (saved) {
         try {
           setTemplate(JSON.parse(saved));
         } catch { /* ignore parse errors */ }
       }
+      // Sync journal mode from DB
+      if (user) {
+        supabase
+          .from("user_settings")
+          .select("journal_mode")
+          .eq("user_id", user.id)
+          .maybeSingle()
+          .then(({ data }) => {
+            const mode = (data as any)?.journal_mode;
+            if (mode) setJournalMode(mode);
+          });
+      }
     };
-    window.addEventListener("focus", syncTemplate);
-    return () => window.removeEventListener("focus", syncTemplate);
-  }, []);
+    window.addEventListener("focus", syncFromSettings);
+    return () => window.removeEventListener("focus", syncFromSettings);
+  }, [user]);
 
   const [journalMode, setJournalMode] = useState<string>("structured");
 
@@ -388,20 +401,35 @@ export default function Journal() {
               return true;
             });
 
-            if (!hasRealContent && answersData?.length) {
-              finalContent = JSON.stringify({
-                type: "doc",
-                content: [
-                  { type: "heading", attrs: { level: 1, textAlign: "left" }, content: existingTitle ? [{ type: "text", text: existingTitle }] : [] },
-                  ...template.questions.flatMap((q) => {
-                    const answer = answersData.find((a) => a.question_id === q.id);
-                    return [
-                      { type: "heading", attrs: { level: 2, textAlign: "left" }, content: [{ type: "text", text: q.text }] },
-                      { type: "paragraph", attrs: { textAlign: "left" }, content: answer?.answer_text ? [{ type: "text", text: answer.answer_text }] : [] },
-                    ];
-                  }),
-                ],
-              });
+            if (!hasRealContent) {
+              // Entry has no user content — regenerate based on CURRENT mode
+              const isUnstructured = journalMode === "unstructured";
+              if (isUnstructured) {
+                finalContent = JSON.stringify({
+                  type: "doc",
+                  content: [
+                    { type: "heading", attrs: { level: 1, textAlign: "left" }, content: existingTitle ? [{ type: "text", text: existingTitle }] : [] },
+                    { type: "paragraph", attrs: { textAlign: "left" }, content: [] },
+                  ],
+                });
+              } else if (answersData?.length) {
+                finalContent = JSON.stringify({
+                  type: "doc",
+                  content: [
+                    { type: "heading", attrs: { level: 1, textAlign: "left" }, content: existingTitle ? [{ type: "text", text: existingTitle }] : [] },
+                    ...template.questions.flatMap((q) => {
+                      const answer = answersData.find((a) => a.question_id === q.id);
+                      return [
+                        { type: "heading", attrs: { level: 2, textAlign: "left" }, content: [{ type: "text", text: q.text }] },
+                        { type: "paragraph", attrs: { textAlign: "left" }, content: answer?.answer_text ? [{ type: "text", text: answer.answer_text }] : [] },
+                      ];
+                    }),
+                  ],
+                });
+              } else {
+                // Structured mode but no answers — generate fresh template
+                finalContent = generateInitialContent(template.questions);
+              }
             } else {
               const firstNode = parsed.content?.[0];
               if (!firstNode || !(firstNode.type === "heading" && firstNode.attrs?.level === 1)) {
