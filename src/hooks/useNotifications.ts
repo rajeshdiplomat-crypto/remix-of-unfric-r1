@@ -8,11 +8,13 @@ interface ReminderSettings {
   notification_diary_prompt: boolean;
   notification_task_reminder: boolean;
   notification_emotion_checkin: boolean;
-  daily_reset_time: string; // "HH:mm" (legacy fallback)
+  daily_reset_time: string;
   reminder_time_diary: string;
   reminder_time_habits: string;
   reminder_time_emotions: string;
 }
+
+const SETTINGS_CACHE_KEY = "unfric_reminder_settings";
 
 const NOTIFICATION_TITLES: Record<string, { title: string; body: string; tag: string }> = {
   diary: {
@@ -32,7 +34,6 @@ const NOTIFICATION_TITLES: Record<string, { title: string; body: string; tag: st
   },
 };
 
-// Keys used to track which notifications were already sent today
 function getSentKey(type: string): string {
   const today = new Date().toISOString().split("T")[0];
   return `unfric_notif_sent_${type}_${today}`;
@@ -46,7 +47,6 @@ function markSentToday(type: string): void {
   localStorage.setItem(getSentKey(type), "1");
 }
 
-// Clean up old sent keys (older than today)
 function cleanOldKeys(): void {
   const today = new Date().toISOString().split("T")[0];
   for (let i = localStorage.length - 1; i >= 0; i--) {
@@ -54,6 +54,24 @@ function cleanOldKeys(): void {
     if (key?.startsWith("unfric_notif_sent_") && !key.endsWith(today)) {
       localStorage.removeItem(key);
     }
+  }
+}
+
+function cacheSettings(settings: ReminderSettings): void {
+  try {
+    localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(settings));
+  } catch (e) {
+    console.warn("[Notifications] Failed to cache settings:", e);
+  }
+}
+
+function loadCachedSettings(): ReminderSettings | null {
+  try {
+    const raw = localStorage.getItem(SETTINGS_CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as ReminderSettings;
+  } catch {
+    return null;
   }
 }
 
@@ -92,10 +110,21 @@ function isTimeToNotify(reminderTime: string): boolean {
   const nowH = now.getHours();
   const nowM = now.getMinutes();
 
-  // Fire if we're within a 5-minute window after the target time
   const targetMinutes = targetH * 60 + targetM;
   const nowMinutes = nowH * 60 + nowM;
   return nowMinutes >= targetMinutes && nowMinutes < targetMinutes + 5;
+}
+
+function parseSettings(data: any): ReminderSettings {
+  return {
+    notification_diary_prompt: data.notification_diary_prompt ?? true,
+    notification_task_reminder: data.notification_task_reminder ?? true,
+    notification_emotion_checkin: data.notification_emotion_checkin ?? true,
+    daily_reset_time: data.daily_reset_time ?? "08:00",
+    reminder_time_diary: data.reminder_time_diary ?? data.daily_reset_time ?? "08:00",
+    reminder_time_habits: data.reminder_time_habits ?? data.daily_reset_time ?? "08:00",
+    reminder_time_emotions: data.reminder_time_emotions ?? data.daily_reset_time ?? "08:00",
+  };
 }
 
 export function useNotificationPermission(): {
@@ -120,68 +149,61 @@ export function useNotificationPermission(): {
 
 /**
  * Main hook: runs a 60-second interval that checks if it's time to fire reminders.
- * Only fires when the tab is active and permission is granted.
+ * Caches settings in localStorage so reminders work even when logged out.
  */
 export function useNotificationScheduler(): void {
   const { user } = useAuth();
   const settingsRef = useRef<ReminderSettings | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Fetch settings once and keep ref updated
+  // Fetch settings from DB when logged in, or load from cache when logged out
   useEffect(() => {
-    if (!user) return;
+    if (user) {
+      // Logged in: fetch from DB and cache
+      const fetchSettings = async () => {
+        const { data } = await supabase
+          .from("user_settings")
+          .select("notification_diary_prompt, notification_task_reminder, notification_emotion_checkin, daily_reset_time, reminder_time_diary, reminder_time_habits, reminder_time_emotions")
+          .eq("user_id", user.id)
+          .maybeSingle();
 
-    const fetchSettings = async () => {
-      const { data } = await supabase
-        .from("user_settings")
-        .select("notification_diary_prompt, notification_task_reminder, notification_emotion_checkin, daily_reset_time, reminder_time_diary, reminder_time_habits, reminder_time_emotions")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (data) {
-        settingsRef.current = {
-          notification_diary_prompt: data.notification_diary_prompt ?? true,
-          notification_task_reminder: data.notification_task_reminder ?? true,
-          notification_emotion_checkin: data.notification_emotion_checkin ?? true,
-          daily_reset_time: data.daily_reset_time ?? "08:00",
-          reminder_time_diary: (data as any).reminder_time_diary ?? data.daily_reset_time ?? "08:00",
-          reminder_time_habits: (data as any).reminder_time_habits ?? data.daily_reset_time ?? "08:00",
-          reminder_time_emotions: (data as any).reminder_time_emotions ?? data.daily_reset_time ?? "08:00",
-        };
-      }
-    };
-
-    fetchSettings();
-
-    // Also listen for realtime updates to settings
-    const channel = supabase
-      .channel("notif-settings")
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "user_settings",
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const d = payload.new as any;
-          settingsRef.current = {
-            notification_diary_prompt: d.notification_diary_prompt ?? true,
-            notification_task_reminder: d.notification_task_reminder ?? true,
-            notification_emotion_checkin: d.notification_emotion_checkin ?? true,
-            daily_reset_time: d.daily_reset_time ?? "08:00",
-            reminder_time_diary: d.reminder_time_diary ?? d.daily_reset_time ?? "08:00",
-            reminder_time_habits: d.reminder_time_habits ?? d.daily_reset_time ?? "08:00",
-            reminder_time_emotions: d.reminder_time_emotions ?? d.daily_reset_time ?? "08:00",
-          };
+        if (data) {
+          const settings = parseSettings(data);
+          settingsRef.current = settings;
+          cacheSettings(settings);
         }
-      )
-      .subscribe();
+      };
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      fetchSettings();
+
+      const channel = supabase
+        .channel("notif-settings")
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "user_settings",
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            const settings = parseSettings(payload.new);
+            settingsRef.current = settings;
+            cacheSettings(settings);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } else {
+      // Logged out: load from cache
+      const cached = loadCachedSettings();
+      if (cached) {
+        settingsRef.current = cached;
+      }
+    }
   }, [user]);
 
   // Run checker every 60 seconds
@@ -199,12 +221,11 @@ export function useNotificationScheduler(): void {
       if (s.notification_emotion_checkin && isTimeToNotify(s.reminder_time_emotions)) sendNotification("emotions");
     };
 
-    // Check immediately, then every 60s
     check();
     intervalRef.current = setInterval(check, 60_000);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, []);
+  }, [user]);
 }
