@@ -5,7 +5,7 @@ import { useTimeFormat } from "@/hooks/useTimeFormat";
 interface UnifiedTimePickerProps {
   value: string;
   onChange: (value: string) => void;
-  intervalMinutes?: 15 | 30 | 60;
+  intervalMinutes?: 5 | 10 | 15 | 30 | 60;
   placeholder?: string;
   className?: string;
   triggerClassName?: string;
