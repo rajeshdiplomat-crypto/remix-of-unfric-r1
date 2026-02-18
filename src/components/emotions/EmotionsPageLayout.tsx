@@ -13,7 +13,7 @@ export function EmotionsPageLayout({
     <div className="flex-1 flex overflow-hidden">
       {/* Main Content Area - Full Width */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="max-w-[1100px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
           {children}
         </div>
       </div>
