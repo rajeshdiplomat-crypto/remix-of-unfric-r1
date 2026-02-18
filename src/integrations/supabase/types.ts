@@ -738,6 +738,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_inquiries: {
+        Row: {
+          created_at: string
+          gdpr_consent: boolean
+          id: string
+          message: string
+          module: string
+          user_email: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          gdpr_consent?: boolean
+          id?: string
+          message: string
+          module: string
+          user_email: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          gdpr_consent?: boolean
+          id?: string
+          message?: string
+          module?: string
+          user_email?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           created_at: string
