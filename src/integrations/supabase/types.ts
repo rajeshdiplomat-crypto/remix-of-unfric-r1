@@ -14,45 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      clarity_state: {
-        Row: {
-          alignment_score: number | null
-          checkins_score: number | null
-          consistency_score: number | null
-          created_at: string | null
-          fog_value: number
-          id: string
-          recovery_score: number | null
-          reflection_score: number | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          alignment_score?: number | null
-          checkins_score?: number | null
-          consistency_score?: number | null
-          created_at?: string | null
-          fog_value?: number
-          id?: string
-          recovery_score?: number | null
-          reflection_score?: number | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          alignment_score?: number | null
-          checkins_score?: number | null
-          consistency_score?: number | null
-          created_at?: string | null
-          fog_value?: number
-          id?: string
-          recovery_score?: number | null
-          reflection_score?: number | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       emotions: {
         Row: {
           created_at: string
@@ -478,33 +439,6 @@ export type Database = {
           updated_at?: string
           user_id?: string
           zoom?: number
-        }
-        Relationships: []
-      }
-      life_proofs: {
-        Row: {
-          created_at: string | null
-          id: string
-          module: string
-          short_text: string
-          source_id: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          module: string
-          short_text: string
-          source_id?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          module?: string
-          short_text?: string
-          source_id?: string | null
-          user_id?: string
         }
         Relationships: []
       }
