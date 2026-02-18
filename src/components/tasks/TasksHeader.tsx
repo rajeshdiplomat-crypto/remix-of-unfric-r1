@@ -41,7 +41,7 @@ export function TasksHeader({
   onTagFilterChange,
 }: TasksHeaderProps) {
   return (
-    <div className="flex items-center gap-2 flex-wrap justify-between">
+    <div className="flex items-center gap-2 flex-wrap justify-between bg-background/40 backdrop-blur-xl border border-foreground/[0.06] rounded-xl p-2 shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.04)]">
       {/* Left: Search */}
       <div className="flex items-center gap-2">
         <div className="relative w-[200px]">

@@ -62,7 +62,8 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
     <header
       className={cn(
         "fixed top-0 left-0 right-0 z-40 transition-all duration-300 ease-out",
-        isScrolled ? "bg-background/80 backdrop-blur-md border-b border-border/50" : "bg-transparent",
+        "bg-background/10 backdrop-blur-lg border-b border-foreground/[0.06]",
+        "shadow-[inset_0_-1px_0_0_hsl(var(--foreground)/0.04)]",
       )}
     >
       <div className="flex items-center justify-between h-14 px-3 sm:px-4 lg:px-8">

@@ -54,18 +54,17 @@ function KpiCard({
   label: string;
 }) {
   return (
-    <Card className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm shadow-sm">
+    <Card className="rounded-xl border border-foreground/[0.06] bg-card/60 backdrop-blur-xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.04),_0_8px_24px_-4px_hsl(var(--foreground)/0.06)]">
       <CardContent
         className={cn(
           "flex items-center gap-3 min-w-0",
-          "p-3 h-[72px]", // Reduced from p-4 h-[86px]
+          "p-3 h-[72px]",
         )}
       >
         <div
           className={cn(
             "rounded-xl flex items-center justify-center shrink-0",
             "h-8 w-8",
-            // Reduced from h-9 w-9
             iconBg,
           )}
         >
@@ -138,7 +137,7 @@ function ClockKpiCard() {
     return () => clearInterval(t);
   }, []);
   return (
-    <Card className="rounded-2xl border border-primary/20 bg-primary/5 backdrop-blur-sm shadow-sm">
+    <Card className="rounded-xl border border-foreground/[0.06] bg-primary/5 backdrop-blur-xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.04),_0_8px_24px_-4px_hsl(var(--foreground)/0.06)]">
       <CardContent className="h-[86px] px-5 py-3 flex items-center gap-4 min-w-0">
         {/* Bigger icon */}
         <div className="h-14 w-14 rounded-2xl bg-background/60 border border-border/30 flex items-center justify-center shrink-0">

@@ -124,7 +124,7 @@ export function DiaryProfileCard({
   const resolvedAvatar = currentAvatarUrl || avatarUrl;
 
   return (
-    <Card className="bg-card border-border/40 overflow-hidden">
+    <Card className="bg-card/60 backdrop-blur-xl border-foreground/[0.06] overflow-hidden shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.04),_0_8px_24px_-4px_hsl(var(--foreground)/0.06)]">
       <CardContent className="pt-5 space-y-4">
         {/* Avatar with upload + Badge row */}
         <div className="flex items-start justify-between">
