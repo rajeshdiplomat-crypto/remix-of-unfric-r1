@@ -784,7 +784,6 @@ export default function Diary() {
           metrics={metrics}
           timeRange={timeRange}
           onTimeRangeChange={setTimeRange}
-          smartInsight={smartInsight}
         />
       </aside>
       </div>

@@ -1,10 +1,8 @@
 import { useState, useRef } from "react";
-import { Camera, Upload, Sparkles, Loader2, Check } from "lucide-react";
+import { Camera, Upload, Loader2, Check } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,8 +30,6 @@ export function EntryImageUpload({
 
   const [isOpen, setIsOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState("");
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
 
   const displayImage = currentImageUrl || getPresetImage(presetType, category);
@@ -93,51 +89,6 @@ export function EntryImageUpload({
     }
   };
 
-  const handleAiGenerate = async () => {
-    if (!aiPrompt.trim()) {
-      toast({ title: "Please enter a prompt", variant: "destructive" });
-      return;
-    }
-
-    setIsGenerating(true);
-
-    try {
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash-image-preview",
-          messages: [
-            {
-              role: "user",
-              content: `Generate a beautiful, aesthetic cover image for: ${aiPrompt}. Make it suitable as a cover photo with good composition and lighting. Ultra high resolution.`,
-            },
-          ],
-          modalities: ["image", "text"],
-        }),
-      });
-
-      const data = await response.json();
-      const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
-      if (generatedImageUrl) {
-        onImageChange(generatedImageUrl);
-        setIsOpen(false);
-        setAiPrompt("");
-        toast({ title: "Image generated successfully" });
-      } else {
-        throw new Error("No image returned");
-      }
-    } catch (error) {
-      console.error("AI generation error:", error);
-      toast({ title: "Failed to generate image", variant: "destructive" });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   return (
     <>
       <div
@@ -166,10 +117,9 @@ export function EntryImageUpload({
           </DialogHeader>
 
           <Tabs defaultValue="presets" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="presets">Presets</TabsTrigger>
               <TabsTrigger value="upload">Upload</TabsTrigger>
-              <TabsTrigger value="ai">AI Generate</TabsTrigger>
             </TabsList>
 
             <TabsContent value="presets" className="mt-4">
@@ -239,34 +189,6 @@ export function EntryImageUpload({
                 className="hidden"
                 onChange={handleFileUpload}
               />
-            </TabsContent>
-
-            <TabsContent value="ai" className="mt-4">
-              <div className="space-y-4">
-                <Textarea
-                  value={aiPrompt}
-                  onChange={(e) => setAiPrompt(e.target.value)}
-                  placeholder="Describe the image you want to generate... e.g., 'A peaceful mountain landscape at sunrise with golden light'"
-                  className="min-h-24 resize-none"
-                />
-                <Button
-                  onClick={handleAiGenerate}
-                  disabled={isGenerating || !aiPrompt.trim()}
-                  className="w-full"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Generate with AI
-                    </>
-                  )}
-                </Button>
-              </div>
             </TabsContent>
           </Tabs>
         </DialogContent>

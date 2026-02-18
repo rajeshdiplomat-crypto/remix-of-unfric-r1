@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Award, Sparkles, Trophy, Star, Flame, Zap, Camera, Loader2 } from "lucide-react";
+import { Award, Trophy, Star, Flame, Zap, Camera, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
@@ -17,7 +17,6 @@ interface DiaryProfileCardProps {
   metrics: any;
   timeRange: TimeRange;
   onTimeRangeChange: (range: TimeRange) => void;
-  smartInsight: string;
 }
 
 const BADGES = [
@@ -41,7 +40,6 @@ export function DiaryProfileCard({
   metrics,
   timeRange,
   onTimeRangeChange,
-  smartInsight,
 }: DiaryProfileCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -214,11 +212,6 @@ export function DiaryProfileCard({
           </div>
         </div>
 
-        {/* AI Insight */}
-        <div className="flex items-start gap-2 pt-1">
-          <Sparkles className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
-          <p className="text-[11px] text-muted-foreground leading-relaxed">{smartInsight}</p>
-        </div>
       </CardContent>
     </Card>
   );
