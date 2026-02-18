@@ -118,64 +118,6 @@ export function NotesGroupSection({
             <img src={currentImage} alt="" className="w-full h-auto object-cover min-h-[100px] max-h-[120px]" />
             {/* Bottom fade to white/card */}
             <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent" />
-
-            {/* Image change overlay */}
-            {onUpdateGroup && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover/image:bg-black/40 transition-all cursor-pointer">
-                    <div className="opacity-0 group-hover/image:opacity-100 transition-opacity flex flex-col items-center gap-1">
-                      <Camera className="h-5 w-5 text-white drop-shadow-lg" />
-                      <span className="text-[10px] text-white font-medium drop-shadow-lg">Change</span>
-                    </div>
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-64 rounded-xl p-2">
-                  <DropdownMenuLabel className="text-xs text-muted-foreground">Change Cover Image</DropdownMenuLabel>
-
-                  {/* Upload option */}
-                  <DropdownMenuItem
-                    className="rounded-lg cursor-pointer"
-                    onClick={() => imageInputRef.current?.click()}
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload Image
-                  </DropdownMenuItem>
-
-                  {/* Reset to default */}
-                  {group.coverImage && (
-                    <DropdownMenuItem className="rounded-lg cursor-pointer" onClick={handleResetImage}>
-                      <RotateCcw className="h-4 w-4 mr-2" />
-                      Reset to Default
-                    </DropdownMenuItem>
-                  )}
-
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel className="text-xs text-muted-foreground">Preset Images</DropdownMenuLabel>
-
-                  {/* Preset images grid */}
-                  <div className="grid grid-cols-4 gap-1.5 p-1">
-                    {presetImages.map((preset) => (
-                      <button
-                        key={preset.category}
-                        onClick={() => handlePresetSelect(preset.url)}
-                        className={`aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
-                          currentImage === preset.url
-                            ? "border-primary shadow-md"
-                            : "border-transparent hover:border-border"
-                        }`}
-                        title={preset.category}
-                      >
-                        <img src={preset.url} alt={preset.category} className="w-full h-full object-cover" />
-                      </button>
-                    ))}
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-
-            {/* Hidden file input */}
-            <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
           </div>
 
           {/* Right: Header & Content */}

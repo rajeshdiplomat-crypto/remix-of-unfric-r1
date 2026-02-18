@@ -1,4 +1,4 @@
-import { Plus, Search, Sparkles, ArrowUpDown, Filter } from "lucide-react";
+import { Plus, Search, ArrowUpDown, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -54,10 +54,6 @@ export function TasksHeader({
           />
         </div>
 
-        <Button variant="outline" size="sm" className={`${controlBase} px-3 gap-1.5`}>
-          <Sparkles className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline text-[11px]">AI</span>
-        </Button>
       </div>
 
       {/* Right: Filters + New Task */}
