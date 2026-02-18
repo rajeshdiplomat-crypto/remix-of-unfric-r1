@@ -147,10 +147,12 @@ export default function ManifestPractice() {
     return quotes[Math.floor(new Date().getDate() % quotes.length)];
   };
 
-  if (loading) return <PageLoadingScreen module="manifest" />;
+  const showLoading = loading;
   if (!goal) return null;
 
   return (
+    <>
+    {showLoading && <PageLoadingScreen module="manifest" />}
     <div className="flex flex-col w-full flex-1 bg-background min-h-screen overflow-hidden pt-14">
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-3 w-full px-2 sm:px-4 py-2 overflow-hidden">
         {/* ========== LEFT COLUMN: Editorial ========== */}
@@ -293,5 +295,6 @@ export default function ManifestPractice() {
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -511,10 +511,11 @@ export default function Emotions() {
     regulate: !!savedQuadrant && !!savedEmotion,
   };
 
-  if (loading) return <PageLoadingScreen module="emotions" />;
+  const showLoading = loading;
 
   return (
     <TooltipProvider>
+      {showLoading && <PageLoadingScreen module="emotions" />}
       <div className="flex flex-col w-full h-full min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
         {/* Page Hero with Navigation at bottom */}
         <div className="relative">

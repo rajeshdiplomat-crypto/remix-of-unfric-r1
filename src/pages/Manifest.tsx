@@ -389,10 +389,11 @@ export default function Manifest() {
   };
 
 
-  if (loading) return <PageLoadingScreen module="manifest" />;
+  const showLoading = loading;
 
   return (
     <>
+      {showLoading && <PageLoadingScreen module="manifest" />}
       {/* Energy animation styles */}
       <style>{`
         @keyframes energy-entry {
