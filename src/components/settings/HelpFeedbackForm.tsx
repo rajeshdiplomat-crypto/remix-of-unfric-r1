@@ -23,7 +23,6 @@ const MODULE_OPTIONS = [
   { value: "habits", label: "Habits" },
   { value: "notes", label: "Notes" },
   { value: "tasks", label: "Tasks" },
-  { value: "clarity", label: "Clarity" },
   { value: "billing", label: "Billing / Account" },
   { value: "general", label: "General" },
 ];
