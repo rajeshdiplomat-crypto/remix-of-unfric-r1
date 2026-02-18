@@ -121,18 +121,18 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(-45deg, hsl(174 60% 90%), hsl(260 40% 92%), hsl(200 50% 94%), hsl(170 50% 88%))",
+              "linear-gradient(-45deg, hsl(174 40% 85%), hsl(260 30% 88%), hsl(200 40% 90%), hsl(170 40% 84%))",
             backgroundSize: "400% 400%",
             animation: "meshShift 12s ease infinite",
           }}
         />
-        {/* Dark-mode overlay — inherits foreground tint */}
-        <div className="absolute inset-0 bg-background/70 dark:bg-background/85" />
+        {/* Dark-mode overlay */}
+        <div className="absolute inset-0 bg-background/40 dark:bg-background/80" />
 
         {/* Progress line — 1px at very top */}
         <div className="absolute top-0 left-0 right-0 h-px">
           <div
-            className="h-full bg-foreground/30"
+            className="h-full bg-foreground/40"
             style={{
               width: `${progress}%`,
               transition: "width 0.15s linear",
@@ -140,8 +140,8 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
           />
         </div>
 
-        {/* Content */}
-        <div className="relative flex flex-col items-center justify-center gap-8 px-6">
+        {/* Content — centered on screen */}
+        <div className="relative flex flex-col items-center justify-center gap-8 px-6 z-10">
           {/* Breathing logo */}
           <div
             className={cn(
@@ -151,7 +151,7 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
             style={{ animation: isVisible ? "breathe 4s ease-in-out infinite" : "none" }}
           >
             <span
-              className="text-4xl md:text-5xl font-light tracking-[0.15em] lowercase text-foreground select-none"
+              className="text-4xl md:text-5xl font-light tracking-[0.15em] lowercase select-none text-foreground drop-shadow-sm"
               style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
             >
               unfric
@@ -161,7 +161,7 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
           {/* Thin separator */}
           <div
             className={cn(
-              "w-12 h-px bg-foreground/15 transition-all duration-700 delay-200",
+              "w-12 h-px bg-foreground/30 transition-all duration-700 delay-200",
               isVisible ? "opacity-100 scale-x-100" : "opacity-0 scale-x-0",
             )}
           />
@@ -173,10 +173,10 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3",
             )}
           >
-            <p className="text-sm md:text-base font-light text-foreground/70 leading-relaxed tracking-wide">
+            <p className="text-sm md:text-base font-light text-foreground/90 leading-relaxed tracking-wide drop-shadow-sm">
               "{quote.text}"
             </p>
-            <p className="text-[10px] text-muted-foreground/50 tracking-[0.25em] uppercase">
+            <p className="text-[10px] text-foreground/50 tracking-[0.25em] uppercase">
               — {quote.author}
             </p>
           </div>
