@@ -99,3 +99,24 @@ textarea {
     aspect-ratio: 16 / 9;
   }
 }
+
+/* ---- PWA: Safe Area Insets ---- */
+/* Respect notches, home indicators, and rounded corners on modern devices */
+html {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* ---- PWA: Disable Pull-to-Refresh ---- */
+/* Prevent accidental browser pull-to-refresh in standalone mode */
+body {
+  overscroll-behavior-y: contain;
+}
+
+@media all and (display-mode: standalone) {
+  html, body {
+    overscroll-behavior: none;
+  }
+}

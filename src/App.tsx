@@ -13,6 +13,8 @@ import { CustomThemeProvider } from "@/contexts/CustomThemeContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { CursorGradient } from "@/components/motion/CursorGradient";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { useOfflineSync } from "@/hooks/useOfflineSync";
 import Auth from "./pages/Auth";
 import Diary from "./pages/Diary";
 import Emotions from "./pages/Emotions";
@@ -129,6 +131,11 @@ function ProtectedFullscreenRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function OfflineSyncProvider({ children }: { children: React.ReactNode }) {
+  useOfflineSync();
+  return <>{children}</>;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
@@ -141,102 +148,27 @@ const App = () => (
               <Sonner />
               <BrowserRouter>
                 <AuthProvider>
-                  <NotificationScheduler />
-                  <Routes>
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/" element={<HomeRedirect />} />
-                    <Route
-                      path="/diary"
-                      element={
-                        <ProtectedRoute>
-                          <Diary />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/emotions"
-                      element={
-                        <ProtectedRoute>
-                          <Emotions />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/journal"
-                      element={
-                        <ProtectedRoute>
-                          <Journal />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/manifest"
-                      element={
-                        <ProtectedRoute>
-                          <Manifest />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/manifest/practice/:goalId"
-                      element={
-                        <ProtectedRoute>
-                          <ManifestPractice />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/manifest/history/:goalId"
-                      element={
-                        <ProtectedRoute>
-                          <ManifestHistory />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/habits"
-                      element={
-                        <ProtectedRoute>
-                          <Habits />
-                        </ProtectedRoute>
-                      }
-                    />
-                    {/* Legacy route redirect */}
-                    <Route path="/trackers" element={<Navigate to="/habits" replace />} />
-                    <Route
-                      path="/notes"
-                      element={
-                        <ProtectedRoute>
-                          <Notes />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/tasks"
-                      element={
-                        <ProtectedRoute>
-                          <Tasks />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/settings"
-                      element={
-                        <ProtectedRoute>
-                          <Settings />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/tasks/focus/:taskId"
-                      element={
-                        <ProtectedFullscreenRoute>
-                          <TaskFocus />
-                        </ProtectedFullscreenRoute>
-                      }
-                    />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
+                  <OfflineSyncProvider>
+                    <NotificationScheduler />
+                    <InstallPrompt />
+                    <Routes>
+                      <Route path="/auth" element={<Auth />} />
+                      <Route path="/" element={<HomeRedirect />} />
+                      <Route path="/diary" element={<ProtectedRoute><Diary /></ProtectedRoute>} />
+                      <Route path="/emotions" element={<ProtectedRoute><Emotions /></ProtectedRoute>} />
+                      <Route path="/journal" element={<ProtectedRoute><Journal /></ProtectedRoute>} />
+                      <Route path="/manifest" element={<ProtectedRoute><Manifest /></ProtectedRoute>} />
+                      <Route path="/manifest/practice/:goalId" element={<ProtectedRoute><ManifestPractice /></ProtectedRoute>} />
+                      <Route path="/manifest/history/:goalId" element={<ProtectedRoute><ManifestHistory /></ProtectedRoute>} />
+                      <Route path="/habits" element={<ProtectedRoute><Habits /></ProtectedRoute>} />
+                      <Route path="/trackers" element={<Navigate to="/habits" replace />} />
+                      <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
+                      <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+                      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                      <Route path="/tasks/focus/:taskId" element={<ProtectedFullscreenRoute><TaskFocus /></ProtectedFullscreenRoute>} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </OfflineSyncProvider>
                 </AuthProvider>
               </BrowserRouter>
             </TooltipProvider>
