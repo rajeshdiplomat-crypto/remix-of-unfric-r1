@@ -511,11 +511,18 @@ export default function Emotions() {
     regulate: !!savedQuadrant && !!savedEmotion,
   };
 
-  const showLoading = loading;
+  const [loadingFinished, setLoadingFinished] = useState(false);
+  const isDataReady = !loading;
 
   return (
     <TooltipProvider>
-      {showLoading && <PageLoadingScreen module="emotions" />}
+      {!loadingFinished && (
+        <PageLoadingScreen
+          module="emotions"
+          isDataReady={isDataReady}
+          onFinished={() => setLoadingFinished(true)}
+        />
+      )}
       <div className="flex flex-col w-full h-full min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
         {/* Page Hero with Navigation at bottom */}
         <div className="relative">

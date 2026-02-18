@@ -773,7 +773,8 @@ export default function Journal() {
     setCurrentSkinId(latestTemplate.defaultSkinId || (theme.isDark ? "midnight-dark" : "minimal-light"));
   }, [currentEntry, user, journalMode, theme.isDark]);
 
-  const showLoading = isLoading && !currentEntry && !content;
+  const [loadingFinished, setLoadingFinished] = useState(false);
+  const isJournalDataReady = !isLoading || !!currentEntry || !!content;
 
   const journalHeader = (
     <div
@@ -872,7 +873,13 @@ export default function Journal() {
 
   return (
     <>
-    {showLoading && <PageLoadingScreen module="journal" />}
+    {!loadingFinished && (
+      <PageLoadingScreen
+        module="journal"
+        isDataReady={isJournalDataReady}
+        onFinished={() => setLoadingFinished(true)}
+      />
+    )}
     <div className="flex flex-col w-full h-full overflow-hidden">
       {fullscreenView}
 

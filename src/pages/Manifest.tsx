@@ -389,11 +389,18 @@ export default function Manifest() {
   };
 
 
-  const showLoading = loading;
+  const [loadingFinished, setLoadingFinished] = useState(false);
+  const isDataReady = !loading;
 
   return (
     <>
-      {showLoading && <PageLoadingScreen module="manifest" />}
+      {!loadingFinished && (
+        <PageLoadingScreen
+          module="manifest"
+          isDataReady={isDataReady}
+          onFinished={() => setLoadingFinished(true)}
+        />
+      )}
       {/* Energy animation styles */}
       <style>{`
         @keyframes energy-entry {

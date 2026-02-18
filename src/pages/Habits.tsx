@@ -913,7 +913,8 @@ export default function Habits() {
     });
   };
 
-  const showLoading = loading;
+  const [loadingFinished, setLoadingFinished] = useState(false);
+  const isDataReady = !loading;
 
   const renderRow = (activity: ActivityItem, originalIndex: number, isActive: boolean) => {
     const stats = activityStats.find((s) => s.id === activity.id);
@@ -1175,7 +1176,13 @@ export default function Habits() {
 
   return (
     <TooltipProvider>
-      {showLoading && <PageLoadingScreen module="habits" />}
+      {!loadingFinished && (
+        <PageLoadingScreen
+          module="habits"
+          isDataReady={isDataReady}
+          onFinished={() => setLoadingFinished(true)}
+        />
+      )}
       <div className="flex flex-col w-full flex-1 bg-background min-h-screen">
         {/* Hero */}
         <PageHero
