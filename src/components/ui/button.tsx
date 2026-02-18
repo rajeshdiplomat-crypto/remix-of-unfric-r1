@@ -19,9 +19,9 @@ const buttonVariants = cva(
         chipActive: "bg-transparent text-foreground border-b border-foreground rounded-none font-normal",
       },
       size: {
-        default: "h-10 px-6",
+        default: "h-11 sm:h-10 px-6",
         sm: "h-8 px-4",
-        lg: "h-12 px-8",
+        lg: "h-12 sm:h-12 px-8",
         icon: "h-10 w-10",
         chip: "h-8 px-4",
       },

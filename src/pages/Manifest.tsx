@@ -444,7 +444,7 @@ export default function Manifest() {
         />
 
         {/* Content Area - 2-column layout: [Left: Goals+Calendar] [Right: Editorial or Practice] */}
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-3 w-full px-2 sm:px-4 py-2 overflow-hidden min-h-0">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-3 w-full max-w-[1200px] mx-auto px-3 sm:px-4 lg:px-6 py-2 overflow-hidden min-h-0">
           {/* ========== LEFT COLUMN: Goals List + Toggle Panels ========== */}
           <div className="flex flex-col h-full min-h-0 gap-3">
             {/* Goals Container */}
