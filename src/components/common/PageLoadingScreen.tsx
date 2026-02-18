@@ -187,46 +187,44 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
         }
       `}</style>
 
-      {/* Full-screen glass overlay */}
+      {/* VERY LIGHT TRANSPARENT OVERLAY - 2% black */}
       <div
-        className="fixed inset-0 z-[99999] flex items-center justify-center"
         style={{
-          backgroundColor: "hsl(var(--foreground) / 0.06)",
-          backdropFilter: "blur(24px) saturate(1.4)",
-          WebkitBackdropFilter: "blur(24px) saturate(1.4)",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: "100vw",
+          height: "100vh",
+          zIndex: 99999,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          // 2% BLACK TRANSPARENCY - almost clear, just slight tint
+          backgroundColor: "rgba(0, 0, 0, 0.02)",
+          backdropFilter: "blur(2px)",
           transition: "opacity 0.4s ease-out, transform 0.4s ease-out",
           opacity: isExiting ? 0 : isVisible ? 1 : 0,
           transform: isExiting ? "scale(0.98)" : "scale(1)",
           pointerEvents: isExiting ? "none" : "auto",
         }}
       >
-        {/* Ambient mesh gradient behind glass card */}
         <div
-          className="absolute inset-0 pointer-events-none opacity-[0.07] dark:opacity-[0.12]"
           style={{
-            background:
-              "radial-gradient(ellipse at 30% 20%, hsl(200 80% 60%) 0%, transparent 50%), radial-gradient(ellipse at 70% 70%, hsl(280 60% 60%) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, hsl(160 70% 50%) 0%, transparent 60%)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "2rem",
+            padding: "2rem",
           }}
-        />
-
-        {/* Glass card */}
-        <div
-          className={cn(
-            "relative flex flex-col items-center justify-center gap-8 px-12 py-14 rounded-2xl",
-            "bg-background/60 backdrop-blur-2xl",
-            "border-[0.5px] border-foreground/[0.08]",
-            "shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.04),_0_24px_64px_-12px_hsl(var(--foreground)/0.12)]",
-            "max-w-sm w-full mx-4",
-          )}
         >
-          {/* Subtle top highlight edge */}
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-foreground/10 to-transparent rounded-t-2xl" />
-
           {/* Animated unfric logo */}
           <div
             className={cn(
-              "transition-all duration-700 ease-out",
-              isVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-6 scale-95",
+              "transition-all duration-500",
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
             )}
           >
             <AnimatedUnfricLogo />
@@ -234,9 +232,9 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
 
           {/* Animated line separator */}
           <div
-            className="w-12 h-px bg-foreground/15 origin-center"
+            className="w-16 h-px bg-foreground/20 origin-center"
             style={{
-              animation: isVisible ? "lineExpand 0.8s ease-out 0.3s forwards" : "none",
+              animation: isVisible ? "lineExpand 0.6s ease-out 0.3s forwards" : "none",
               transform: "scaleX(0)",
             }}
           />
@@ -244,41 +242,30 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
           {/* Quote section */}
           <div
             className={cn(
-              "flex flex-col items-center gap-2.5 max-w-xs text-center",
-              "transition-all duration-700 ease-out delay-200",
+              "flex flex-col items-center gap-3 max-w-md px-6 text-center",
+              "transition-all duration-500 delay-200",
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
             )}
           >
-            <p className="text-sm md:text-base font-light text-foreground/70 leading-relaxed italic">
-              "{currentQuote.text}"
-            </p>
-            <p className="text-[10px] text-muted-foreground/50 tracking-[0.2em] uppercase">
-              — {currentQuote.author}
-            </p>
+            <p className="text-base md:text-lg font-light text-foreground/80 leading-relaxed">"{currentQuote.text}"</p>
+            <p className="text-xs text-muted-foreground/60 tracking-widest uppercase">— {currentQuote.author}</p>
           </div>
 
           {/* Loading dots */}
-          <div
-            className={cn(
-              "transition-all duration-700 ease-out delay-300",
-              isVisible ? "opacity-100" : "opacity-0",
-            )}
-          >
+          <div className={cn("mt-4 transition-all duration-500 delay-300", isVisible ? "opacity-100" : "opacity-0")}>
             <LoadingDots />
           </div>
 
-          {/* Module indicator pill */}
-          <div
+          {/* Module indicator */}
+          <p
             className={cn(
-              "px-4 py-1 rounded-full bg-foreground/[0.04] border border-foreground/[0.06]",
-              "transition-all duration-700 ease-out delay-[400ms]",
+              "mt-6 text-[10px] text-muted-foreground/40 tracking-[0.3em] uppercase",
+              "transition-all duration-500 delay-400",
               isVisible ? "opacity-100" : "opacity-0",
             )}
           >
-            <p className="text-[9px] text-muted-foreground/50 tracking-[0.3em] uppercase font-light">
-              {module}
-            </p>
-          </div>
+            {module}
+          </p>
         </div>
       </div>
     </>
