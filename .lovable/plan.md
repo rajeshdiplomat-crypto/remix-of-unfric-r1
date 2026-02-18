@@ -1,47 +1,23 @@
 
 
-## Remove Clarity Module and Unused Code
+# Glassmorphic Loading Screen - Show Module Content Behind
 
-The Clarity module (`/clarity` route) is not linked in any navigation and has zero data in both its database tables. This plan removes it entirely.
+## Problem
+The loading screen overlay currently uses `background-color` at 60% opacity combined with a heavy 24px blur, which makes it appear nearly solid. The user wants the current module/page content to be visible underneath, creating an authentic frosted-glass look.
 
-### Files to Delete (7 files)
-- `src/pages/ClarityWindow.tsx`
-- `src/components/clarity/BoyFigure.tsx`
-- `src/components/clarity/FogLayer.tsx`
-- `src/components/clarity/LifeProofPopover.tsx`
-- `src/components/clarity/WindowVignette.tsx`
-- `src/components/clarity/types.ts`
-- `src/lib/clarityMicrocopy.ts`
+## Solution
+Reduce the background opacity from 0.6 to a much lower value (around 0.15-0.2) so the underlying module page content "bleeds" through the blur. This keeps the glass effect while revealing the page structure underneath.
 
-### Files to Edit (3 files)
+## Technical Details
 
-**`src/App.tsx`**
-- Remove `import ClarityWindow` and the `/clarity` route block
+### File: `src/components/common/PageLoadingScreen.tsx`
 
-**`src/hooks/useClarityProgress.ts`**
-- Delete entirely (only used by ClarityWindow)
+Changes to the overlay `div` inline styles:
 
-**`src/components/settings/HelpFeedbackForm.tsx`**
-- Remove the `{ value: "clarity", label: "Clarity" }` option from the dropdown
+1. **Reduce background opacity**: Change `hsl(var(--background) / 0.6)` to `hsl(var(--background) / 0.15)` -- this lets the module's colors and layout show through
+2. **Keep the blur**: Retain `backdrop-blur-2xl` (24px) so content is beautifully diffused but still recognizable
+3. **Keep the border and shadow**: The 0.5px border and inset glow remain for the "lensed" glass edge
+4. **Slightly soften the exit animation**: No changes needed, existing fade-out works well with the transparent look
 
-**`src/components/common/PageLoadingScreen.tsx`**
-- Remove `"clarity"` from the page type union and its quotes array
-
-### Database Cleanup
-
-Drop the two empty tables via a migration:
-
-```sql
-DROP TABLE IF EXISTS public.life_proofs;
-DROP TABLE IF EXISTS public.clarity_state;
-```
-
-Both tables have zero rows in both Test and Live environments, so no data loss.
-
-### Summary
-
-- 9 files removed
-- 2 files edited (App.tsx, HelpFeedbackForm.tsx, PageLoadingScreen.tsx)
-- 2 empty database tables dropped
-- No other unused modules were found -- all other components and pages are actively imported and used
+This single change ensures the Emotions page (or any module) is visible as a soft, colorful backdrop behind the loading text and logo, matching the Liquid Glass design language used throughout the app.
 
