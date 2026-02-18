@@ -11,7 +11,7 @@ interface ActivityImageUploadProps {
   compact?: boolean;
 }
 
-const STORAGE_KEY = "activity-images";
+// Storage key kept for backward compat migration only
 
 async function uploadToStorage(file: File, userId: string): Promise<string | null> {
   const fileExt = file.name.split(".").pop() || "jpg";
@@ -195,29 +195,21 @@ export function ActivityImageUpload({ imageUrl, onImageChange, compact = false }
   );
 }
 
-// Helpers: save/load images from localStorage by activity ID (now stores URLs, not base64)
-export function saveActivityImage(activityId: string, imageUrl: string | null) {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  const images: Record<string, string> = stored ? JSON.parse(stored) : {};
-
-  if (imageUrl) images[activityId] = imageUrl;
-  else delete images[activityId];
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
-}
-
+// Save activity image URL to DB (source of truth)
 export async function saveActivityImageToDb(habitId: string, imageUrl: string | null) {
   await supabase.from("habits").update({ cover_image_url: imageUrl }).eq("id", habitId);
 }
 
-export function loadActivityImage(activityId: string): string | null {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (!stored) return null;
-  const images: Record<string, string> = JSON.parse(stored);
-  return images[activityId] || null;
+// Legacy helpers removed — habits.cover_image_url in DB is the source of truth
+// These no-ops kept for backward compatibility with any remaining callers
+export function saveActivityImage(_activityId: string, _imageUrl: string | null) {
+  // No-op: use saveActivityImageToDb instead
+}
+
+export function loadActivityImage(_activityId: string): string | null {
+  return null;
 }
 
 export function loadAllActivityImages(): Record<string, string> {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  return stored ? JSON.parse(stored) : {};
+  return {};
 }

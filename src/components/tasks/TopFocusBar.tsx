@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
   ChevronDown,
@@ -20,6 +20,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 import { QuadrantTask, computeTaskStatus } from "./types";
 
@@ -28,25 +30,66 @@ interface TopFocusBarProps {
   onStartFocus: (task: QuadrantTask) => void;
 }
 
-// Focus Stats Hook
+// Focus Stats Hook - now reads from DB
 function useFocusStats() {
-  const [data, setData] = useState<{
-    sessions: Array<{ date: string; duration: number; taskCompleted: boolean }>;
-    lastSessionDate: string | null;
-    currentStreak: number;
-  }>(() => {
-    try {
-      const stored = localStorage.getItem("focus-stats-data");
-      if (stored) return JSON.parse(stored);
-    } catch {}
-    return { sessions: [], lastSessionDate: null, currentStreak: 0 };
-  });
-
+  const { user } = useAuth();
+  const [sessions, setSessions] = useState<Array<{ date: string; duration: number; taskCompleted: boolean }>>([]);
+  const [currentStreak, setCurrentStreak] = useState(0);
   const [period, setPeriod] = useState<"today" | "week" | "month">("today");
 
+  // Load from DB on mount, migrate localStorage if needed
   useEffect(() => {
-    localStorage.setItem("focus-stats-data", JSON.stringify(data));
-  }, [data]);
+    if (!user?.id) return;
+    const loadSessions = async () => {
+      const { data, error } = await supabase
+        .from("focus_sessions")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(500);
+
+      if (data && data.length > 0) {
+        setSessions(data.map((s: any) => ({
+          date: s.created_at,
+          duration: s.duration_minutes,
+          taskCompleted: s.task_completed,
+        })));
+      } else {
+        // Migrate from localStorage if DB is empty
+        try {
+          const stored = localStorage.getItem("focus-stats-data");
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed.sessions?.length > 0) {
+              for (const s of parsed.sessions) {
+                await supabase.from("focus_sessions").insert({
+                  user_id: user.id,
+                  duration_minutes: s.duration || 0,
+                  task_completed: s.taskCompleted || false,
+                  created_at: s.date || new Date().toISOString(),
+                });
+              }
+              setSessions(parsed.sessions);
+              setCurrentStreak(parsed.currentStreak || 0);
+              localStorage.removeItem("focus-stats-data");
+            }
+          }
+        } catch {}
+      }
+
+      // Calculate streak
+      const today = startOfDay(new Date());
+      let streak = 0;
+      for (let i = 0; i < 365; i++) {
+        const day = subDays(today, i);
+        const hasSession = (data || []).some((s: any) => isSameDay(parseISO(s.created_at), day));
+        if (hasSession) streak++;
+        else if (i > 0) break;
+      }
+      setCurrentStreak(streak);
+    };
+    loadSessions();
+  }, [user?.id]);
 
   const filteredSessions = useMemo(() => {
     const now = new Date();
@@ -58,11 +101,11 @@ function useFocusStats() {
     } else {
       cutoffDate = startOfDay(subDays(now, 28));
     }
-    return data.sessions.filter((s) => {
+    return sessions.filter((s) => {
       const sessionDate = parseISO(s.date);
       return isAfter(sessionDate, cutoffDate) || isSameDay(sessionDate, cutoffDate);
     });
-  }, [data.sessions, period]);
+  }, [sessions, period]);
 
   const stats = useMemo(() => {
     const totalFocusMinutes = filteredSessions.reduce((sum, s) => sum + s.duration, 0);
@@ -74,7 +117,7 @@ function useFocusStats() {
     const daysInPeriod = period === "today" ? 1 : period === "week" ? 7 : 28;
     const expectedMinutes = dailyTarget * daysInPeriod;
     const timeScore = Math.min(100, (totalFocusMinutes / expectedMinutes) * 100);
-    const streakBonus = Math.min(20, data.currentStreak * 2);
+    const streakBonus = Math.min(20, currentStreak * 2);
     const focusScore = Math.round(Math.min(100, timeScore * 0.8 + streakBonus));
 
     return {
@@ -83,9 +126,9 @@ function useFocusStats() {
       tasksCompleted,
       sessionsCount,
       breakTimeMinutes: breakMinutes,
-      streak: data.currentStreak,
+      streak: currentStreak,
     };
-  }, [filteredSessions, data.currentStreak, period]);
+  }, [filteredSessions, currentStreak, period]);
 
   return { stats, period, setPeriod };
 }

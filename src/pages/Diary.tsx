@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { PenLine, Search, ChevronDown, Filter } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { loadActivityImage } from "@/components/habits/ActivityImageUpload";
 import { DiaryFeedCard } from "@/components/diary/DiaryFeedCard";
 import { DiaryLeftSidebar } from "@/components/diary/DiaryLeftSidebar";
 
@@ -286,7 +285,7 @@ export default function Diary() {
 
     // Trackers (Habits) - use cover_image_url from database
     habitsRes.data?.forEach((habit) => {
-      const habitImage = habit.cover_image_url || loadActivityImage(habit.id);
+      const habitImage = habit.cover_image_url;
       feedEvents.push({
         user_id: user.id,
         type: "create",
@@ -306,7 +305,7 @@ export default function Diary() {
     habitCompletionsRes.data?.forEach((completion) => {
       const habit = habitsMap.get(completion.habit_id);
       const habitName = habit?.name || "Habit";
-      const habitImage = habit?.cover_image_url || loadActivityImage(completion.habit_id);
+      const habitImage = habit?.cover_image_url;
       feedEvents.push({
         user_id: user.id,
         type: "complete",
@@ -338,19 +337,17 @@ export default function Diary() {
       }
     });
 
-    // Manifest Goals - also check localStorage extras for vision images
-    const manifestExtras = JSON.parse(localStorage.getItem("manifest_goal_extras") || "{}");
+    // Manifest Goals - use DB columns for vision images (no localStorage)
     goalsRes.data?.forEach((goal) => {
-      const extras = manifestExtras[goal.id] || {};
-      const visionUrl = goal.cover_image_url || extras.vision_image_url;
-      // Collect all valid image URLs (exclude base64)
       const media: string[] = [];
-      if (visionUrl && typeof visionUrl === "string" && visionUrl.startsWith("http")) media.push(visionUrl);
-      if (extras.vision_images?.length) {
-        extras.vision_images.forEach((img: string) => {
-          if (typeof img === "string" && img.startsWith("http") && !media.includes(img)) media.push(img);
-        });
+      if (goal.cover_image_url && typeof goal.cover_image_url === "string" && goal.cover_image_url.startsWith("http")) {
+        media.push(goal.cover_image_url);
       }
+      // vision_images is now stored in DB as jsonb
+      const visionImages = Array.isArray(goal.vision_images) ? goal.vision_images : [];
+      visionImages.forEach((img: any) => {
+        if (typeof img === "string" && img.startsWith("http") && !media.includes(img)) media.push(img);
+      });
       feedEvents.push({
         user_id: user.id,
         type: goal.is_completed ? "complete" : "create",
@@ -365,42 +362,48 @@ export default function Diary() {
       });
     });
 
-    // Manifest daily practice check-ins (from localStorage)
-    const manifestPractices: Record<string, any> = JSON.parse(localStorage.getItem("manifest_daily_practice") || "{}");
+    // Manifest daily practice check-ins — from DB (manifest_practices table)
+    const { data: practicesData } = await supabase
+      .from("manifest_practices")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(100);
+
     const goalsMap = new Map(goalsRes.data?.map(g => [g.id, g]) || []);
-    Object.values(manifestPractices).forEach((practice: any) => {
-      if (practice.user_id !== user.id || !practice.locked) return;
+    (practicesData || []).forEach((practice: any) => {
+      if (!practice.locked) return;
       const goal = goalsMap.get(practice.goal_id);
       const goalTitle = goal?.title || "Reality";
       const goalImage = goal?.cover_image_url;
-      const extras = manifestExtras[practice.goal_id] || {};
-      const visionUrl = goalImage || extras.vision_image_url;
       const media: string[] = [];
-      if (visionUrl && typeof visionUrl === "string" && visionUrl.startsWith("http")) media.push(visionUrl);
+      if (goalImage && typeof goalImage === "string" && goalImage.startsWith("http")) media.push(goalImage);
 
-      // Collect proof images (can be http URLs or base64 data URIs)
-      if (practice.proofs?.length) {
-        practice.proofs.forEach((p: any) => {
-          if (p.image_url && typeof p.image_url === "string" && !media.includes(p.image_url)) {
-            media.push(p.image_url);
-          }
-        });
-      }
+      // Collect proof images
+      const proofs = Array.isArray(practice.proofs) ? practice.proofs : [];
+      proofs.forEach((p: any) => {
+        if (p.image_url && typeof p.image_url === "string" && !media.includes(p.image_url)) {
+          media.push(p.image_url);
+        }
+      });
 
-      // Build rich content with actual written entries
+      // Build rich content
       const contentLines: string[] = [];
-      if (practice.visualization_count > 0) contentLines.push(`🧘 Visualized ${practice.visualization_count}x`);
-      if (practice.acts?.length > 0) {
+      const visualizations = Array.isArray(practice.visualizations) ? practice.visualizations : [];
+      if (visualizations.length > 0) contentLines.push(`🧘 Visualized ${visualizations.length}x`);
+      const acts = Array.isArray(practice.acts) ? practice.acts : [];
+      if (acts.length > 0) {
         contentLines.push(`⚡ Actions taken:`);
-        practice.acts.forEach((a: any) => { if (a.text) contentLines.push(`  • ${a.text}`); });
+        acts.forEach((a: any) => { if (a.text) contentLines.push(`  • ${a.text}`); });
       }
-      if (practice.proofs?.length > 0) {
+      if (proofs.length > 0) {
         contentLines.push(`📸 Proof logged:`);
-        practice.proofs.forEach((p: any) => { if (p.text) contentLines.push(`  • ${p.text}`); });
+        proofs.forEach((p: any) => { if (p.text) contentLines.push(`  • ${p.text}`); });
       }
-      if (practice.gratitudes?.length > 0) {
+      const gratitudes = Array.isArray(practice.gratitudes) ? practice.gratitudes : [];
+      if (gratitudes.length > 0) {
         contentLines.push(`🙏 Gratitude:`);
-        practice.gratitudes.forEach((g: any) => { if (g.text) contentLines.push(`  • ${g.text}`); });
+        gratitudes.forEach((g: any) => { if (g.text) contentLines.push(`  • ${g.text}`); });
       }
       if (practice.growth_note) contentLines.push(`💡 ${practice.growth_note}`);
 
@@ -416,10 +419,10 @@ export default function Diary() {
         metadata: {
           goal_id: practice.goal_id,
           entry_date: practice.entry_date,
-          visualization_count: practice.visualization_count,
-          act_count: practice.act_count,
-          proofs_count: practice.proofs?.length || 0,
-          gratitudes_count: practice.gratitudes?.length || 0,
+          visualization_count: visualizations.length,
+          act_count: acts.length,
+          proofs_count: proofs.length,
+          gratitudes_count: gratitudes.length,
           growth_note: practice.growth_note,
         },
         created_at: practice.created_at,

@@ -283,10 +283,8 @@ export default function Notes() {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
 
-  const [notes, setNotes] = useState<Note[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_NOTES);
-    return saved ? JSON.parse(saved) : SAMPLE_NOTES;
-  });
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [notesLoaded, setNotesLoaded] = useState(false);
 
   const [groups, setGroups] = useState<NoteGroup[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_GROUPS);
@@ -354,13 +352,15 @@ export default function Notes() {
     loadFromDb();
   }, [user]);
 
+  // Write-ahead cache: save to localStorage for offline access
   useEffect(() => {
+    if (!notesLoaded) return; // Don't overwrite cache before DB load
     try {
       localStorage.setItem(STORAGE_KEY_NOTES, JSON.stringify(notes));
     } catch (e) {
       console.warn("Could not save notes to localStorage - quota exceeded. Data will sync to cloud.");
     }
-  }, [notes]);
+  }, [notes, notesLoaded]);
 
   // Save groups to both localStorage and DB
   useEffect(() => {
@@ -411,65 +411,93 @@ export default function Notes() {
     return () => clearTimeout(timeout);
   }, [folders, user]);
 
-  // Sync notes FROM Supabase on mount — Supabase is the source of truth for content (especially images)
+  // DB is source of truth — load from Supabase, fall back to localStorage cache
   useEffect(() => {
-    if (!user?.id) return;
-    const syncFromSupabase = async () => {
+    if (!user?.id) {
+      // No user — load from localStorage cache
+      const saved = localStorage.getItem(STORAGE_KEY_NOTES);
+      setNotes(saved ? JSON.parse(saved) : SAMPLE_NOTES);
+      setNotesLoaded(true);
+      return;
+    }
+    const loadFromDb = async () => {
       const { data: dbNotes, error } = await supabase
         .from("notes")
         .select("*")
         .eq("user_id", user.id)
         .order("updated_at", { ascending: false });
 
-      if (error || !dbNotes?.length) return;
+      if (error) {
+        console.error("Failed to load notes from DB:", error);
+        // Fall back to localStorage
+        const saved = localStorage.getItem(STORAGE_KEY_NOTES);
+        setNotes(saved ? JSON.parse(saved) : SAMPLE_NOTES);
+        setNotesLoaded(true);
+        return;
+      }
 
-      setNotes((prev) => {
-        const merged = [...prev];
-        for (const dbNote of dbNotes) {
-          const idx = merged.findIndex((n) => n.id === dbNote.id);
-          const localNote: Note = {
-            id: dbNote.id,
-            groupId: dbNote.category === "private" ? "personal" : dbNote.category === "creative" ? "hobby" : "inbox",
-            folderId: null,
-            title: dbNote.title || "Untitled",
-            contentRich: dbNote.content || "",
-            plainText: dbNote.content?.replace(/<[^>]*>/g, "").substring(0, 500) || "",
-            tags: dbNote.tags || [],
-            createdAt: dbNote.created_at,
-            updatedAt: dbNote.updated_at,
-            isPinned: false,
-            isArchived: false,
-            scribbleStrokes: dbNote.scribble_data || undefined,
-            ...(dbNote.skin ? (() => {
-              try {
-                const parsed = JSON.parse(dbNote.skin);
-                return { pageTheme: parsed.pageTheme, lineStyle: parsed.lineStyle };
-              } catch { return {}; }
-            })() : {}),
-          };
-          if (idx >= 0) {
-            // Supabase wins if it has newer data (preserves images even if localStorage lost them)
-            const localUpdated = new Date(merged[idx].updatedAt).getTime();
-            const dbUpdated = new Date(dbNote.updated_at).getTime();
-            if (dbUpdated >= localUpdated) {
-              // Preserve local-only fields (groupId, folderId, isPinned, etc.) but take content from DB
-              merged[idx] = {
-                ...merged[idx],
-                contentRich: dbNote.content || merged[idx].contentRich,
-                plainText: localNote.plainText || merged[idx].plainText,
-                tags: dbNote.tags || merged[idx].tags,
-                updatedAt: dbNote.updated_at,
-              };
-            }
-          } else {
-            // Note exists in Supabase but not localStorage — add it
-            merged.push(localNote);
+      if (!dbNotes?.length) {
+        // Check if there's localStorage data to migrate
+        const saved = localStorage.getItem(STORAGE_KEY_NOTES);
+        const localNotes: Note[] = saved ? JSON.parse(saved) : [];
+        if (localNotes.length > 0 && localNotes[0].id !== "1") {
+          // Migrate localStorage notes to DB
+          for (const note of localNotes) {
+            const category: "thoughts" | "creative" | "private" =
+              note.groupId === "personal" ? "private" : note.groupId === "hobby" ? "creative" : "thoughts";
+            await supabase.from("notes").upsert({
+              id: note.id,
+              user_id: user.id,
+              title: note.title || "Untitled",
+              content: note.contentRich || note.plainText,
+              category,
+              tags: note.tags,
+              group_id: note.groupId || null,
+              folder_id: note.folderId || null,
+              is_pinned: note.isPinned || false,
+              is_archived: note.isArchived || false,
+              sort_order: note.sortOrder || 0,
+              plain_text: note.plainText || null,
+              skin: note.pageTheme && note.lineStyle ? JSON.stringify({ pageTheme: note.pageTheme, lineStyle: note.lineStyle }) : null,
+              scribble_data: note.scribbleStrokes || null,
+              created_at: note.createdAt,
+              updated_at: note.updatedAt,
+            });
           }
+          setNotes(localNotes);
+        } else {
+          setNotes(SAMPLE_NOTES);
         }
-        return merged;
-      });
+        setNotesLoaded(true);
+        return;
+      }
+
+      // Map DB notes to local Note shape
+      const mapped: Note[] = dbNotes.map((dbNote: any) => ({
+        id: dbNote.id,
+        groupId: dbNote.group_id || (dbNote.category === "private" ? "personal" : dbNote.category === "creative" ? "hobby" : "inbox"),
+        folderId: dbNote.folder_id || null,
+        title: dbNote.title || "Untitled",
+        contentRich: dbNote.content || "",
+        plainText: dbNote.plain_text || dbNote.content?.replace(/<[^>]*>/g, "").substring(0, 500) || "",
+        tags: dbNote.tags || [],
+        createdAt: dbNote.created_at,
+        updatedAt: dbNote.updated_at,
+        isPinned: dbNote.is_pinned || false,
+        isArchived: dbNote.is_archived || false,
+        sortOrder: dbNote.sort_order || 0,
+        scribbleStrokes: dbNote.scribble_data || undefined,
+        ...(dbNote.skin ? (() => {
+          try {
+            const parsed = JSON.parse(dbNote.skin);
+            return { pageTheme: parsed.pageTheme, lineStyle: parsed.lineStyle };
+          } catch { return {}; }
+        })() : {}),
+      }));
+      setNotes(mapped);
+      setNotesLoaded(true);
     };
-    syncFromSupabase();
+    loadFromDb();
   }, [user?.id]);
 
   const sortedGroups = useMemo(() => [...groups].sort((a, b) => a.sortOrder - b.sortOrder), [groups]);
@@ -551,6 +579,12 @@ export default function Notes() {
         cover_image_url: coverImageUrl,
         category,
         tags: note.tags,
+        group_id: note.groupId || null,
+        folder_id: note.folderId || null,
+        is_pinned: note.isPinned || false,
+        is_archived: note.isArchived || false,
+        sort_order: note.sortOrder || 0,
+        plain_text: note.plainText || null,
         skin: note.pageTheme && note.lineStyle ? JSON.stringify({ pageTheme: note.pageTheme, lineStyle: note.lineStyle }) : null,
         scribble_data: note.scribbleStrokes || null,
         created_at: note.createdAt,
