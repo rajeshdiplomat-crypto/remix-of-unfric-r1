@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
 type ModuleType = "diary" | "journal" | "notes" | "tasks" | "emotions" | "manifest" | "habits" | "settings";
@@ -114,6 +115,9 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
   const [hasMetMinTime, setHasMetMinTime] = useState(false);
   const [hasExited, setHasExited] = useState(false);
 
+  const onFinishedRef = useRef(onFinished);
+  onFinishedRef.current = onFinished;
+
   const quotes = LOADING_QUOTES[module];
   const currentQuote = quotes[quoteIndex];
 
@@ -148,17 +152,17 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
     if (isExiting && !hasExited) {
       const exitTimer = setTimeout(() => {
         setHasExited(true);
-        onFinished?.();
+        onFinishedRef.current?.();
       }, 400);
       return () => clearTimeout(exitTimer);
     }
-  }, [isExiting, hasExited, onFinished]);
+  }, [isExiting, hasExited]);
 
   if (hasExited) {
     return null;
   }
 
-  return (
+  return createPortal(
     <>
       <style>{`
         @keyframes wave {
@@ -179,7 +183,6 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
         }
       `}</style>
 
-      {/* VERY LIGHT TRANSPARENT OVERLAY - 2% black */}
       <div
         style={{
           position: "fixed",
@@ -214,7 +217,6 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
             padding: "2rem",
           }}
         >
-          {/* Animated unfric logo */}
           <div
             className={cn(
               "transition-all duration-500",
@@ -224,7 +226,6 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
             <AnimatedUnfricLogo />
           </div>
 
-          {/* Animated line separator */}
           <div
             className="w-16 h-px bg-foreground/20 origin-center"
             style={{
@@ -233,7 +234,6 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
             }}
           />
 
-          {/* Quote section */}
           <div
             className={cn(
               "flex flex-col items-center gap-3 max-w-md px-6 text-center",
@@ -245,12 +245,10 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
             <p className="text-xs text-muted-foreground/60 tracking-widest uppercase">— {currentQuote.author}</p>
           </div>
 
-          {/* Loading dots */}
           <div className={cn("mt-4 transition-all duration-500 delay-300", isVisible ? "opacity-100" : "opacity-0")}>
             <LoadingDots />
           </div>
 
-          {/* Module indicator */}
           <p
             className={cn(
               "mt-6 text-[10px] text-muted-foreground/40 tracking-[0.3em] uppercase",
@@ -262,7 +260,8 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
           </p>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
 
