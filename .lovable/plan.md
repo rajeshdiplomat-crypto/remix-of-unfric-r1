@@ -1,58 +1,47 @@
 
 
-## Fix: Reminders Not Firing When Logged Out
+## Remove Clarity Module and Unused Code
 
-### The Problem
+The Clarity module (`/clarity` route) is not linked in any navigation and has zero data in both its database tables. This plan removes it entirely.
 
-The notification scheduler currently requires the user to be **logged in** because:
-- It fetches reminder settings from the database (which requires authentication)
-- When `user` is null (logged out), the settings fetch is skipped entirely, so no reminder times are known
+### Files to Delete (7 files)
+- `src/pages/ClarityWindow.tsx`
+- `src/components/clarity/BoyFigure.tsx`
+- `src/components/clarity/FogLayer.tsx`
+- `src/components/clarity/LifeProofPopover.tsx`
+- `src/components/clarity/WindowVignette.tsx`
+- `src/components/clarity/types.ts`
+- `src/lib/clarityMicrocopy.ts`
 
-### The Solution
+### Files to Edit (3 files)
 
-**Cache the user's reminder settings in `localStorage`** whenever they are fetched (while logged in). Then, when the user is logged out, the scheduler reads from this cache instead of the database. This way, reminders continue to fire even without an active session.
+**`src/App.tsx`**
+- Remove `import ClarityWindow` and the `/clarity` route block
 
-### What Changes
+**`src/hooks/useClarityProgress.ts`**
+- Delete entirely (only used by ClarityWindow)
 
-**File: `src/hooks/useNotifications.ts`**
+**`src/components/settings/HelpFeedbackForm.tsx`**
+- Remove the `{ value: "clarity", label: "Clarity" }` option from the dropdown
 
-1. When settings are fetched from the database (on login or realtime update), also save them to `localStorage` under a key like `unfric_reminder_settings`.
+**`src/components/common/PageLoadingScreen.tsx`**
+- Remove `"clarity"` from the page type union and its quotes array
 
-2. Remove the `if (!user) return` guard from the settings fetch effect. Instead:
-   - If user is logged in: fetch from DB, cache to localStorage
-   - If user is logged out: load from localStorage cache
+### Database Cleanup
 
-3. Make the interval effect depend on `user` so it re-runs when auth state changes, and ensure `settingsRef` is populated from cache before the first check.
+Drop the two empty tables via a migration:
 
-**File: `src/components/NotificationScheduler.tsx`** -- no changes needed.
-
-**File: `src/App.tsx`** -- no changes needed (the scheduler is already mounted outside of protected routes).
-
-### Technical Details
-
-```text
-localStorage key: "unfric_reminder_settings"
-Value: JSON string of ReminderSettings object
-
-Flow when logged in:
-  1. Fetch settings from DB
-  2. Store in settingsRef AND localStorage
-  3. Interval checks settingsRef every 60s
-
-Flow when logged out:
-  1. Read cached settings from localStorage
-  2. Store in settingsRef
-  3. Interval checks settingsRef every 60s
-
-Flow on logout:
-  - Settings remain in localStorage (intentional)
-  - Scheduler continues using cached values
+```sql
+DROP TABLE IF EXISTS public.life_proofs;
+DROP TABLE IF EXISTS public.clarity_state;
 ```
 
-### Edge Cases Handled
+Both tables have zero rows in both Test and Live environments, so no data loss.
 
-- **First-ever use (no cache)**: No notifications fire -- this is correct since no preferences exist yet
-- **User changes settings while logged in**: Cache is updated in real-time via the realtime listener
-- **Multiple users on same browser**: Cache is overwritten on each login, so only the last logged-in user's settings persist -- acceptable for a personal app
-- **Tab in background**: Browser may throttle intervals but notifications will still fire when the tab becomes active within the 5-minute window
+### Summary
+
+- 9 files removed
+- 2 files edited (App.tsx, HelpFeedbackForm.tsx, PageLoadingScreen.tsx)
+- 2 empty database tables dropped
+- No other unused modules were found -- all other components and pages are actively imported and used
 
