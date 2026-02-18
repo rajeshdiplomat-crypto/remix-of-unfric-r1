@@ -25,7 +25,6 @@ import Notes from "./pages/Notes";
 import Tasks from "./pages/Tasks";
 import TaskFocus from "./pages/TaskFocus";
 
-import ClarityWindow from "./pages/ClarityWindow";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
@@ -233,14 +232,6 @@ const App = () => (
                       element={
                         <ProtectedFullscreenRoute>
                           <TaskFocus />
-                        </ProtectedFullscreenRoute>
-                      }
-                    />
-                    <Route
-                      path="/clarity"
-                      element={
-                        <ProtectedFullscreenRoute>
-                          <ClarityWindow />
                         </ProtectedFullscreenRoute>
                       }
                     />

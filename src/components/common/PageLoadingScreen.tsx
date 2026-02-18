@@ -9,8 +9,7 @@ type ModuleType =
   | "emotions"
   | "manifest"
   | "habits"
-  | "settings"
-  | "clarity";
+  | "settings";
 
 interface PageLoadingScreenProps {
   module: ModuleType;
@@ -74,13 +73,6 @@ const LOADING_QUOTES: Record<ModuleType, { text: string; author: string }[]> = {
     { text: "Make it simple, but significant.", author: "Don Draper" },
     { text: "Less is more.", author: "Ludwig Mies van der Rohe" },
     { text: "Perfection is achieved when there is nothing left to take away.", author: "Antoine de Saint-Exupéry" },
-  ],
-  clarity: [
-    { text: "Clarity comes from engagement, not thought.", author: "Marie Forleo" },
-    { text: "The soul always knows what to do to heal itself.", author: "Caroline Myss" },
-    { text: "In the middle of difficulty lies opportunity.", author: "Albert Einstein" },
-    { text: "The clearer you are, the faster you manifest.", author: "Unknown" },
-    { text: "When you let go of what you are, you become what you might be.", author: "Lao Tzu" },
   ],
 };
 
