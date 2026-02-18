@@ -773,9 +773,7 @@ export default function Journal() {
     setCurrentSkinId(latestTemplate.defaultSkinId || (theme.isDark ? "midnight-dark" : "minimal-light"));
   }, [currentEntry, user, journalMode, theme.isDark]);
 
-  if (isLoading && !currentEntry && !content) {
-    return <PageLoadingScreen module="journal" />;
-  }
+  const showLoading = isLoading && !currentEntry && !content;
 
   const journalHeader = (
     <div
@@ -873,6 +871,8 @@ export default function Journal() {
     : null;
 
   return (
+    <>
+    {showLoading && <PageLoadingScreen module="journal" />}
     <div className="flex flex-col w-full h-full overflow-hidden">
       {fullscreenView}
 
@@ -1068,5 +1068,6 @@ export default function Journal() {
         }}
       />
     </div>
+    </>
   );
 }

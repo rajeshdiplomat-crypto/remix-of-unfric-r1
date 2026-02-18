@@ -610,11 +610,11 @@ export default function Diary() {
     }
   }, [loading, events.length]);
 
-  if (loading && events.length === 0) {
-    return <PageLoadingScreen module="diary" />;
-  }
+  const showLoading = loading && events.length === 0;
 
   return (
+    <>
+    {showLoading && <PageLoadingScreen module="diary" />}
     <div
       className={cn(
         "flex flex-col w-full h-full overflow-hidden",
@@ -801,5 +801,6 @@ export default function Diary() {
         onSuccess={handleJournalSuccess}
       />
     </div>
+    </>
   );
 }

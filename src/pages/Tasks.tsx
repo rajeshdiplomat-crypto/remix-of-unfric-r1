@@ -622,11 +622,11 @@ export default function Tasks() {
     }
   }, [loading]);
 
-  if (loading) {
-    return <PageLoadingScreen module="tasks" />;
-  }
+  const showLoading = loading;
 
   return (
+    <>
+    {showLoading && <PageLoadingScreen module="tasks" />}
     <div
       className={cn(
         "h-full w-full flex flex-col bg-background overflow-x-hidden",
@@ -760,5 +760,6 @@ export default function Tasks() {
         </div>
       </div>
     </div>
+    </>
   );
 }

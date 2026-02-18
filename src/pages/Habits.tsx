@@ -913,9 +913,7 @@ export default function Habits() {
     });
   };
 
-  if (loading) {
-    return <PageLoadingScreen module="habits" />;
-  }
+  const showLoading = loading;
 
   const renderRow = (activity: ActivityItem, originalIndex: number, isActive: boolean) => {
     const stats = activityStats.find((s) => s.id === activity.id);
@@ -1177,6 +1175,7 @@ export default function Habits() {
 
   return (
     <TooltipProvider>
+      {showLoading && <PageLoadingScreen module="habits" />}
       <div className="flex flex-col w-full flex-1 bg-background min-h-screen">
         {/* Hero */}
         <PageHero
