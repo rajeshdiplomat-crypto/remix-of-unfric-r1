@@ -16,6 +16,7 @@ export interface UserPreferences {
   focus_settings?: Record<string, any> | null;
   clock_widget_mode?: string;
   journal_template?: Record<string, any> | null;
+  manifest_viz_settings?: Record<string, any> | null;
 }
 
 const PREFS_CACHE_KEY = "unfric-user-prefs-cache";
@@ -93,7 +94,7 @@ export function useUserPreferences() {
 
       const { data } = await supabase
         .from("user_settings")
-        .select("theme_id, font_pair_id, custom_theme_colors, motion_enabled, focus_settings, clock_widget_mode, journal_template")
+        .select("theme_id, font_pair_id, custom_theme_colors, motion_enabled, focus_settings, clock_widget_mode, journal_template, manifest_viz_settings")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -106,6 +107,7 @@ export function useUserPreferences() {
           focus_settings: (data as any).focus_settings ?? prefs.focus_settings,
           clock_widget_mode: (data as any).clock_widget_mode || prefs.clock_widget_mode,
           journal_template: (data as any).journal_template ?? prefs.journal_template,
+          manifest_viz_settings: (data as any).manifest_viz_settings ?? prefs.manifest_viz_settings,
         };
         globalPrefs = dbPrefs;
         saveCachedPrefs(dbPrefs);

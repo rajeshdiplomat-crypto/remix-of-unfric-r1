@@ -164,15 +164,9 @@ export default function TaskFocus() {
   const [markComplete, setMarkComplete] = useState(false);
 
   const [settings, setSettings] = useState<FocusSettings>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-      if (prefs.focus_settings) {
-        return prefs.focus_settings as unknown as FocusSettings;
-      }
-    } catch {}
+    if (prefs.focus_settings) {
+      return prefs.focus_settings as unknown as FocusSettings;
+    }
     return {
       themeType: "gradient",
       themeId: "aurora",
@@ -251,7 +245,6 @@ export default function TaskFocus() {
   }, [taskId, user]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     updatePrefs({ focus_settings: settings as any });
   }, [settings]);
   useEffect(() => {

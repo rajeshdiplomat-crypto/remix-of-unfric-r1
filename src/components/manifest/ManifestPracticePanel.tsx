@@ -31,8 +31,6 @@ import {
   type ActEntry,
   type VisualizationEntry,
   type GratitudeEntry,
-  DAILY_PRACTICE_KEY,
-  GOAL_EXTRAS_KEY,
 } from "./types";
 import { ManifestVisualizationMode } from "./ManifestVisualizationMode";
 import { format, isToday, isBefore, startOfDay } from "date-fns";
@@ -87,12 +85,6 @@ export function ManifestPracticePanel({
           locked: (data as any).locked || false,
         };
       }
-      // Fall back to localStorage for migration
-      const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
-      if (stored) {
-        const all = JSON.parse(stored);
-        return all[`${goal.id}_${date}`] || {};
-      }
     } catch (e) {
       console.warn("Failed to load practice:", e);
     }
@@ -101,13 +93,6 @@ export function ManifestPracticePanel({
 
   const savePractice = async (practice: Partial<ManifestDailyPractice>) => {
     if (!isViewingToday || !user) return;
-    // Save to localStorage as backup
-    try {
-      const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
-      const all = stored ? JSON.parse(stored) : {};
-      all[`${goal.id}_${dateStr}`] = { ...all[`${goal.id}_${dateStr}`], ...practice };
-      localStorage.setItem(DAILY_PRACTICE_KEY, JSON.stringify(all));
-    } catch {}
 
     // Save to DB
     try {

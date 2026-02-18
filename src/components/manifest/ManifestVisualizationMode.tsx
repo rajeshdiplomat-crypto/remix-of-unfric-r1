@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X, Pause, Play, SkipForward, Zap, Settings, Check, Volume2, VolumeX } from "lucide-react";
-import { type ManifestGoal, type ManifestDailyPractice, DAILY_PRACTICE_KEY } from "./types";
+import { type ManifestGoal, type ManifestDailyPractice } from "./types";
+import { useUserPreferences } from "@/hooks/useUserSettings";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ManifestVisualizationModeProps {
   goal: ManifestGoal;
@@ -48,11 +51,12 @@ export function ManifestVisualizationMode({
   const [pulseIntensity, setPulseIntensity] = useState(1);
   const [showSettings, setShowSettings] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const { prefs, updatePrefs } = useUserPreferences();
+  const { user } = useAuth();
   const [settings, setSettings] = useState<VisualizationSettings>(() => {
-    try {
-      const stored = localStorage.getItem("manifest_viz_settings");
-      if (stored) return JSON.parse(stored);
-    } catch {}
+    if (prefs.manifest_viz_settings) {
+      return prefs.manifest_viz_settings as unknown as VisualizationSettings;
+    }
     return { showActions: true, showProofs: true, showNotes: true, showImages: true, soundType: "ocean" };
   });
   const [activeElements, setActiveElements] = useState<FloatingElement[]>([]);
@@ -65,9 +69,9 @@ export function ManifestVisualizationMode({
 
   const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
 
-  // Save settings when they change
+  // Save settings to DB when they change
   useEffect(() => {
-    localStorage.setItem("manifest_viz_settings", JSON.stringify(settings));
+    updatePrefs({ manifest_viz_settings: settings as any });
   }, [settings]);
 
   // Get all vision images
@@ -94,6 +98,29 @@ export function ManifestVisualizationMode({
     }
   };
 
+  // Load today's practice from DB
+  const [todaysPractice, setTodaysPractice] = useState<Partial<ManifestDailyPractice> | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    const today = new Date().toISOString().split("T")[0];
+    supabase
+      .from("manifest_practices")
+      .select("*")
+      .eq("goal_id", goal.id)
+      .eq("entry_date", today)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setTodaysPractice({
+            acts: (data as any).acts || [],
+            proofs: (data as any).proofs || [],
+            growth_note: (data as any).growth_note,
+            gratitudes: (data as any).gratitudes || [],
+          });
+        }
+      });
+  }, [user, goal.id]);
+
   // Create all floating elements - includes today's answers AND previous practice
   const allElements = useMemo(() => {
     const elements: FloatingElement[] = [];
@@ -111,29 +138,11 @@ export function ManifestVisualizationMode({
       });
     }
 
-    // Load today's practice from localStorage for current session
-    const loadTodaysPractice = (): Partial<typeof previousPractice> | null => {
-      try {
-        const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
-        if (stored) {
-          const all = JSON.parse(stored);
-          const today = new Date().toISOString().split("T")[0];
-          const key = `${goal.id}_${today}`;
-          return all[key] || null;
-        }
-      } catch (e) {
-        console.warn("[Viz] Failed to load today practice:", e);
-      }
-      return null;
-    };
-
-    const todaysPractice = loadTodaysPractice();
-
     // Combine today's practice with previous practice
-    const todayActs = Array.isArray(todaysPractice?.acts) ? todaysPractice.acts : [];
-    const prevActs = Array.isArray(previousPractice?.acts) ? previousPractice.acts : [];
-    const todayProofs = Array.isArray(todaysPractice?.proofs) ? todaysPractice.proofs : [];
-    const prevProofs = Array.isArray(previousPractice?.proofs) ? previousPractice.proofs : [];
+    const todayActs = Array.isArray(todaysPractice?.acts) ? todaysPractice!.acts : [];
+    const prevActs = Array.isArray(previousPractice?.acts) ? previousPractice!.acts : [];
+    const todayProofs = Array.isArray(todaysPractice?.proofs) ? todaysPractice!.proofs : [];
+    const prevProofs = Array.isArray(previousPractice?.proofs) ? previousPractice!.proofs : [];
 
     const combinedPractice = {
       acts: [...todayActs, ...prevActs],
@@ -202,7 +211,7 @@ export function ManifestVisualizationMode({
     }
 
     return elements;
-  }, [previousPractice, visionImages, settings, goal.id]);
+  }, [previousPractice, todaysPractice, visionImages, settings, goal.id]);
 
   // Spawn new floating elements one by one
   useEffect(() => {

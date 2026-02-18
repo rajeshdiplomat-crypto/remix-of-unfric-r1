@@ -16,18 +16,9 @@ import { ManifestPracticePanel } from "@/components/manifest/ManifestPracticePan
 import {
   type ManifestGoal,
   type ManifestDailyPractice,
-  GOAL_EXTRAS_KEY,
-  DAILY_PRACTICE_KEY,
 } from "@/components/manifest/types";
 
-function loadAllGoalExtras(): Record<string, Partial<ManifestGoal>> {
-  try { return JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}"); } catch { return {}; }
-}
-// Now reads from DB columns with localStorage fallback
-
-function loadAllPractices(): Record<string, ManifestDailyPractice> {
-  return JSON.parse(localStorage.getItem(DAILY_PRACTICE_KEY) || "{}");
-}
+// All goal data now comes from DB columns directly
 
 export default function ManifestPractice() {
   const { goalId } = useParams<{ goalId: string }>();
@@ -70,37 +61,59 @@ export default function ManifestPractice() {
 
       if (error) throw error;
 
-      const extras = loadAllGoalExtras();
       const g = goalData as any;
       const mergedGoal: ManifestGoal = {
         id: g.id,
         user_id: g.user_id,
         title: g.title,
-        category: g.category || extras[g.id]?.category || "other",
-        vision_image_url: g.cover_image_url || extras[g.id]?.vision_image_url,
-        vision_images: g.vision_images || extras[g.id]?.vision_images || [],
+        category: g.category || "other",
+        vision_image_url: g.cover_image_url,
+        vision_images: g.vision_images || [],
         cover_image_url: g.cover_image_url,
-        start_date: g.start_date || extras[g.id]?.start_date,
-        live_from_end: g.live_from_end || extras[g.id]?.live_from_end,
-        act_as_if: g.act_as_if || extras[g.id]?.act_as_if || "Take one small action",
-        conviction: g.conviction ?? extras[g.id]?.conviction ?? 5,
-        visualization_minutes: g.visualization_minutes || extras[g.id]?.visualization_minutes || 3,
-        daily_affirmation: g.daily_affirmation || extras[g.id]?.daily_affirmation || "",
-        check_in_time: g.check_in_time || extras[g.id]?.check_in_time || "08:00",
-        committed_7_days: g.committed_7_days || extras[g.id]?.committed_7_days || false,
+        start_date: g.start_date,
+        live_from_end: g.live_from_end,
+        act_as_if: g.act_as_if || "Take one small action",
+        conviction: g.conviction ?? 5,
+        visualization_minutes: g.visualization_minutes || 3,
+        daily_affirmation: g.daily_affirmation || "",
+        check_in_time: g.check_in_time || "08:00",
+        committed_7_days: g.committed_7_days || false,
         is_completed: g.is_completed || false,
-        is_locked: g.is_locked || extras[g.id]?.is_locked || false,
+        is_locked: g.is_locked || false,
         created_at: g.created_at,
         updated_at: g.updated_at,
-        reminder_count: g.reminder_count || extras[g.id]?.reminder_count,
-        reminder_times: g.reminder_times || extras[g.id]?.reminder_times,
+        reminder_count: g.reminder_count,
+        reminder_times: g.reminder_times,
       };
 
       setGoal(mergedGoal);
 
-      const allPractices = loadAllPractices();
-      const practicesList = Object.values(allPractices).filter((p) => p.user_id === user.id);
-      setPractices(practicesList);
+      // Load practices from DB
+      const { data: practicesData } = await supabase
+        .from("manifest_practices")
+        .select("*")
+        .eq("goal_id", goalId)
+        .eq("user_id", user.id);
+
+      if (practicesData) {
+        const practicesList: ManifestDailyPractice[] = practicesData.map((p: any) => ({
+          id: p.id,
+          goal_id: p.goal_id,
+          user_id: p.user_id,
+          entry_date: p.entry_date,
+          created_at: p.created_at,
+          visualization_count: Array.isArray(p.visualizations) ? p.visualizations.length : 0,
+          visualizations: p.visualizations || [],
+          act_count: Array.isArray(p.acts) ? p.acts.length : 0,
+          acts: p.acts || [],
+          proofs: p.proofs || [],
+          gratitudes: p.gratitudes || [],
+          alignment: p.alignment,
+          growth_note: p.growth_note,
+          locked: p.locked || false,
+        }));
+        setPractices(practicesList);
+      }
     } catch (error) {
       console.error("Error fetching goal:", error);
       toast.error("Failed to load reality");
@@ -131,9 +144,8 @@ export default function ManifestPractice() {
   const getPreviousDayPractice = useCallback((): ManifestDailyPractice | null => {
     if (!goal) return null;
     const yesterday = format(subDays(selectedDate, 1), "yyyy-MM-dd");
-    const allPractices = loadAllPractices();
-    return allPractices[`${goal.id}_${yesterday}`] || null;
-  }, [goal, selectedDate]);
+    return practices.find((p) => p.goal_id === goal.id && p.entry_date === yesterday) || null;
+  }, [goal, selectedDate, practices]);
 
   const getMotivationalQuote = () => {
     const quotes = [

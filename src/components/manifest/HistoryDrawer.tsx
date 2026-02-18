@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { type ManifestGoal, type ManifestDailyPractice, DAILY_PRACTICE_KEY } from "./types";
+import { type ManifestGoal, type ManifestDailyPractice } from "./types";
 import { HistoryDayCard } from "./HistoryDayCard";
 import { ProofLightbox } from "./ProofLightbox";
 import { supabase } from "@/integrations/supabase/client";
@@ -95,39 +95,9 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
         }));
         goalPractices.sort((a, b) => b.date.localeCompare(a.date));
         setHistoryData(goalPractices);
-        return;
-      }
-
-      // Fallback to localStorage
-      const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
-      if (!stored) {
+      } else {
         setHistoryData([]);
-        return;
       }
-
-      const allPractices = JSON.parse(stored);
-      const goalPractices: HistoryDay[] = [];
-
-      Object.keys(allPractices).forEach((key) => {
-        if (key.startsWith(`${goal.id}_`)) {
-          const practice = allPractices[key] as Partial<ManifestDailyPractice>;
-          const dateStr = key.replace(`${goal.id}_`, "");
-          
-          goalPractices.push({
-            date: dateStr,
-            practiced: practice.locked || false,
-            alignment: practice.alignment || 0,
-            visualizations: practice.visualizations || [],
-            acts: practice.acts || [],
-            proofs: practice.proofs || [],
-            growth_note: practice.growth_note,
-            gratitudes: practice.gratitudes || [],
-          });
-        }
-      });
-
-      goalPractices.sort((a, b) => b.date.localeCompare(a.date));
-      setHistoryData(goalPractices);
     };
 
     loadHistory().then(() => {
