@@ -262,24 +262,16 @@ function StatCard({
 
   return (
     <div
-      className="group relative overflow-hidden rounded-2xl bg-card border border-border shadow-sm hover:shadow-md transition-all duration-500 animate-in fade-in slide-in-from-bottom-2"
+      className="group relative overflow-hidden rounded-xl bg-card/60 backdrop-blur-sm border border-border/50 hover:border-border transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
       style={{ animationDelay: `${index * 75}ms`, animationFillMode: "backwards" }}
     >
-      {/* Gradient glow effect */}
-      <div
-        className={`absolute inset-0 bg-gradient-to-br ${gradients[accentColor] || gradients.primary} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
-      />
-
-      <div className="relative p-5 flex items-center gap-4">
-        {/* Icon with gradient background */}
-        <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center text-primary/70 group-hover:scale-110 transition-transform duration-300 shrink-0">
+      <div className="relative px-3 py-2.5 flex items-center gap-3">
+        <div className="h-8 w-8 rounded-lg bg-primary/5 flex items-center justify-center text-primary/60 shrink-0">
           {icon}
         </div>
-
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">{label}</p>
-          <p className="mt-1 text-2xl font-light text-foreground tracking-tight">{value}</p>
-          {hint && <p className="mt-0.5 text-[10px] text-muted-foreground/40">{hint}</p>}
+          <p className="text-[9px] font-medium uppercase tracking-widest text-muted-foreground/50">{label}</p>
+          <p className="text-lg font-light text-foreground tracking-tight leading-tight">{value}</p>
         </div>
       </div>
     </div>
