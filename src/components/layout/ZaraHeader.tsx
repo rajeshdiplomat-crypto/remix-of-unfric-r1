@@ -147,10 +147,8 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
 
           <Separator orientation="vertical" className="h-4 mx-0.5 bg-foreground/15 hidden sm:block" />
 
-          {/* Notifications */}
-          <div className="hidden sm:block">
-            <NotificationPopover iconClassName={iconClass(isScrolled)} />
-          </div>
+          {/* Notifications — always visible */}
+          <NotificationPopover iconClassName={iconClass(isScrolled)} />
 
           {/* Settings — hidden on smallest screens, visible on sm+ */}
           <NavLink to="/settings" className="hidden sm:block">
