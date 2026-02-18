@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Camera, Play, Pause, Volume2, VolumeX, Sparkles, Loader2 } from "lucide-react";
+import { Camera, Play, Pause, Volume2, VolumeX, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -60,7 +60,6 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const [isHovering, setIsHovering] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -130,42 +129,6 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
     toast.success("Hero media removed");
   };
 
-  const handleGenerateAI = async () => {
-    setIsGenerating(true);
-    try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-hero-image`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ pageType: pageKey }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        if (response.status === 429) { toast.error("Rate limit exceeded. Try again later."); return; }
-        if (response.status === 402) { toast.error("AI credits exhausted."); return; }
-        throw new Error(errorData.error || "Failed to generate image");
-      }
-
-      const data = await response.json();
-      if (data.imageUrl) {
-        setMediaSrc(data.imageUrl);
-        setMediaType("image");
-        await saveToDb(data.imageUrl, "image");
-        setDialogOpen(false);
-        toast.success("AI hero image generated!");
-      } else {
-        throw new Error("No image received");
-      }
-    } catch (error) {
-      console.error("Error generating AI image:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to generate image");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -209,10 +172,6 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
         <div className="grid gap-3 py-4">
           <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, "image")} />
           <input ref={videoInputRef} type="file" accept="video/*" className="hidden" onChange={(e) => handleFileUpload(e, "video")} />
-          <Button variant="default" className="w-full justify-start uppercase tracking-wider text-xs gap-2" onClick={handleGenerateAI} disabled={isGenerating}>
-            {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {isGenerating ? "GENERATING..." : "GENERATE AI IMAGE"}
-          </Button>
           <Button variant="outline" className="w-full justify-start uppercase tracking-wider text-xs" onClick={() => imageInputRef.current?.click()}>UPLOAD IMAGE</Button>
           <Button variant="outline" className="w-full justify-start uppercase tracking-wider text-xs" onClick={() => videoInputRef.current?.click()}>UPLOAD VIDEO</Button>
           {mediaSrc && (
