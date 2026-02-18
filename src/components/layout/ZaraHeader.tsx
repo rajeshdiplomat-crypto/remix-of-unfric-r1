@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { UnfricLogo } from "@/components/common/UnfricLogo";
 import { Separator } from "@/components/ui/separator";
+import { NotificationPopover } from "@/components/layout/NotificationPopover";
 
 interface ZaraHeaderProps {
   onMenuClick: () => void;
@@ -145,6 +146,11 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
           </Button>
 
           <Separator orientation="vertical" className="h-4 mx-0.5 bg-foreground/15 hidden sm:block" />
+
+          {/* Notifications */}
+          <div className="hidden sm:block">
+            <NotificationPopover iconClassName={iconClass(isScrolled)} />
+          </div>
 
           {/* Settings — hidden on smallest screens, visible on sm+ */}
           <NavLink to="/settings" className="hidden sm:block">
