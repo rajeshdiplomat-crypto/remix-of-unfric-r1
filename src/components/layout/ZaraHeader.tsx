@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { UnfricLogo } from "@/components/common/UnfricLogo";
 import { Separator } from "@/components/ui/separator";
 import { NotificationPopover } from "@/components/layout/NotificationPopover";
+import { OfflineBadge } from "@/components/pwa/OfflineBadge";
 
 interface ZaraHeaderProps {
   onMenuClick: () => void;
@@ -90,6 +91,7 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
               )} />
 
           </NavLink>
+          <OfflineBadge />
         </div>
 
         {/* Center: Module Nav — desktop only */}
