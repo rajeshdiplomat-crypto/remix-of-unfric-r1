@@ -201,7 +201,7 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "hsl(var(--background) / 0.6)",
+          backgroundColor: "hsl(var(--background) / 0.15)",
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
           borderBottom: "0.5px solid hsl(var(--foreground) / 0.06)",
