@@ -189,7 +189,7 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
 
       {/* Full-screen glass overlay */}
       <div
-        className="fixed inset-0 z-[99999] flex items-end justify-center pb-[18vh]"
+        className="fixed inset-0 z-[99999] flex items-center justify-center"
         style={{
           backgroundColor: "hsl(var(--foreground) / 0.06)",
           backdropFilter: "blur(24px) saturate(1.4)",
