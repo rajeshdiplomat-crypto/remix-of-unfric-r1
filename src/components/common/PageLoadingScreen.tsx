@@ -1,15 +1,7 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
-type ModuleType =
-  | "diary"
-  | "journal"
-  | "notes"
-  | "tasks"
-  | "emotions"
-  | "manifest"
-  | "habits"
-  | "settings";
+type ModuleType = "diary" | "journal" | "notes" | "tasks" | "emotions" | "manifest" | "habits" | "settings";
 
 interface PageLoadingScreenProps {
   module: ModuleType;
@@ -201,7 +193,7 @@ export function PageLoadingScreen({ module, isDataReady = false, onFinished }: P
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "hsl(var(--background) / 0.15)",
+          backgroundColor: "hsl(var(--background) / 0.30)",
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
           borderBottom: "0.5px solid hsl(var(--foreground) / 0.06)",
