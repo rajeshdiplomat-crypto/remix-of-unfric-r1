@@ -671,7 +671,7 @@ export default function Notes() {
         )}
 
         <div className="relative z-10 w-full">
-          <div className="w-full space-y-4 px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+          <div className="w-full space-y-4 px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 max-w-[1200px] mx-auto">
             {/* Page Header */}
             <div className="py-4">
               <p className="text-[10px] font-medium tracking-[0.3em] text-muted-foreground/70 uppercase mb-2">

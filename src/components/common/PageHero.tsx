@@ -249,7 +249,7 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
     >
       {mediaType === "video" ? (
         <>
-          <video ref={videoRef} src={mediaSrc} autoPlay loop muted={isMuted} playsInline className="w-full h-full object-cover" />
+          <video ref={videoRef} src={mediaSrc} autoPlay loop muted={isMuted} playsInline className="w-full h-full object-cover object-center" />
           <div className={`absolute bottom-4 right-4 z-20 flex gap-2 transition-opacity duration-300 ${isHovering ? "opacity-100" : "opacity-0"}`}>
             <Button variant="ghost" size="icon" className="bg-background/20 hover:bg-background/40 backdrop-blur-sm" onClick={togglePlay}>
               {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
@@ -260,7 +260,7 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
           </div>
         </>
       ) : (
-        <img src={mediaSrc} alt={`${title} hero`} className="w-full h-full object-cover" />
+        <img src={mediaSrc} alt={`${title} hero`} className="w-full h-full object-cover object-center" />
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
       {textOverlay}

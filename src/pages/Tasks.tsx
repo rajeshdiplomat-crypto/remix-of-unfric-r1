@@ -643,7 +643,7 @@ export default function Tasks() {
         subtitle={PAGE_HERO_TEXT.tasks.subtitle}
       />
 
-      <div className="w-full flex-1 min-h-0 px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 overflow-hidden flex flex-col">
+      <div className="w-full flex-1 min-h-0 px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 overflow-hidden flex flex-col max-w-[1200px] mx-auto">
         <div className="w-full min-w-0 flex flex-col gap-4 flex-1 min-h-0 overflow-hidden">
           {/* Toolbar */}
           <TasksHeader
