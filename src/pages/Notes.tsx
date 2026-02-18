@@ -916,42 +916,30 @@ export default function Notes() {
             </div>
 
             {/* Insights Section */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
+            <div className="rounded-xl bg-card/60 backdrop-blur-sm border border-border/50 p-3">
+              <div className="flex items-center gap-3 mb-3">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
                   Quick Stats
                 </span>
                 <div className="flex-1 h-px bg-gradient-to-r from-border/30 to-transparent" />
               </div>
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <StatCard
-                  label="Total notes"
-                  value={`${insights.total}`}
-                  icon={<FileText className="h-5 w-5" />}
-                  index={0}
-                  accentColor="primary"
-                />
-                <StatCard
-                  label="Edited today"
-                  value={`${insights.editedToday}`}
-                  icon={<Clock className="h-5 w-5" />}
-                  index={1}
-                  accentColor="blue"
-                />
-                <StatCard
-                  label="Pinned"
-                  value={`${insights.pinned}`}
-                  icon={<Pin className="h-5 w-5" />}
-                  index={2}
-                  accentColor="orange"
-                />
-                <StatCard
-                  label="Active groups"
-                  value={`${insights.activeGroups}`}
-                  icon={<Layers className="h-5 w-5" />}
-                  index={3}
-                  accentColor="green"
-                />
+              <div className="grid grid-cols-2 xl:grid-cols-4 gap-x-6 gap-y-2">
+                {[
+                  { label: "Total notes", value: insights.total, icon: <FileText className="h-4 w-4" /> },
+                  { label: "Edited today", value: insights.editedToday, icon: <Clock className="h-4 w-4" /> },
+                  { label: "Pinned", value: insights.pinned, icon: <Pin className="h-4 w-4" /> },
+                  { label: "Active groups", value: insights.activeGroups, icon: <Layers className="h-4 w-4" /> },
+                ].map((stat) => (
+                  <div key={stat.label} className="flex items-center gap-2.5 py-1">
+                    <div className="h-7 w-7 rounded-lg bg-primary/5 flex items-center justify-center text-primary/60 shrink-0">
+                      {stat.icon}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-medium uppercase tracking-widest text-muted-foreground/50">{stat.label}</p>
+                      <p className="text-base font-light text-foreground leading-tight">{stat.value}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
