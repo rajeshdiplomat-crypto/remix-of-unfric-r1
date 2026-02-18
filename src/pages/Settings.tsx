@@ -25,7 +25,9 @@ import {
   Edit3,
   Save,
   MessageSquareHeart,
+  ChevronDown,
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -1019,14 +1021,22 @@ export default function Settings() {
 // ── Reusable Sub-components ────────────────────────────────────────
 
 function SettingsSection({ icon: Icon, title, children }: { icon: any; title: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-4">
-        <Icon className="h-4 w-4 text-muted-foreground" />
-        <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{title}</h2>
-      </div>
-      <div className="space-y-1 rounded-xl border border-border bg-card overflow-hidden">{children}</div>
-    </div>
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger asChild>
+        <button className="flex items-center justify-between w-full group">
+          <div className="flex items-center gap-2">
+            <Icon className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{title}</h2>
+          </div>
+          <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", open && "rotate-180")} />
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="space-y-1 rounded-xl border border-border bg-card overflow-hidden mt-4">{children}</div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
