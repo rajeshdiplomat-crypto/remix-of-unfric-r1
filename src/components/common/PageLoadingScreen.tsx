@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 
 type ModuleType =
@@ -17,250 +17,174 @@ interface PageLoadingScreenProps {
   onFinished?: () => void;
 }
 
-const LOADING_QUOTES: Record<ModuleType, { text: string; author: string }[]> = {
-  diary: [
-    { text: "Every moment is a fresh beginning.", author: "T.S. Eliot" },
-    { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
-    { text: "Life is what happens when you're busy making other plans.", author: "John Lennon" },
-    { text: "Today is the first day of the rest of your life.", author: "Charles Dederich" },
-    { text: "Be yourself; everyone else is already taken.", author: "Oscar Wilde" },
-  ],
-  journal: [
-    { text: "Writing is the painting of the voice.", author: "Voltaire" },
-    { text: "I write to discover what I know.", author: "Flannery O'Connor" },
-    { text: "The pen is mightier than the sword.", author: "Edward Bulwer-Lytton" },
-    { text: "There is no greater agony than bearing an untold story.", author: "Maya Angelou" },
-    { text: "Start writing, no matter what.", author: "Louis L'Amour" },
-  ],
-  notes: [
-    { text: "Knowledge is power.", author: "Francis Bacon" },
-    { text: "An investment in knowledge pays the best interest.", author: "Benjamin Franklin" },
-    { text: "The beautiful thing about learning is that no one can take it away.", author: "B.B. King" },
-    { text: "Ideas are the beginning points of all fortunes.", author: "Napoleon Hill" },
-    { text: "The art of simplicity is a puzzle of complexity.", author: "Douglas Horton" },
-  ],
-  tasks: [
-    { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
-    { text: "It always seems impossible until it's done.", author: "Nelson Mandela" },
-    { text: "Focus on being productive instead of busy.", author: "Tim Ferriss" },
-    { text: "What you do today can improve all your tomorrows.", author: "Ralph Marston" },
-    { text: "Action is the foundational key to all success.", author: "Pablo Picasso" },
-  ],
-  emotions: [
-    { text: "Feelings are just visitors, let them come and go.", author: "Mooji" },
-    { text: "The only way out is through.", author: "Robert Frost" },
-    { text: "What lies within us is what matters most.", author: "Ralph Waldo Emerson" },
-    { text: "Vulnerability is the birthplace of connection.", author: "Brené Brown" },
-    { text: "Be gentle with yourself.", author: "Unknown" },
-  ],
-  manifest: [
-    { text: "What you think, you become. What you feel, you attract.", author: "Buddha" },
-    { text: "The universe is not outside of you. Look inside yourself.", author: "Rumi" },
-    { text: "Whatever the mind can conceive, it can achieve.", author: "Napoleon Hill" },
-    { text: "You are the creator of your own destiny.", author: "Swami Vivekananda" },
-    { text: "Dream it. Believe it. Build it.", author: "Unknown" },
-  ],
-  habits: [
-    { text: "We are what we repeatedly do.", author: "Aristotle" },
-    { text: "Small daily improvements lead to stunning results.", author: "Robin Sharma" },
-    { text: "Success is the sum of small efforts repeated daily.", author: "Robert Collier" },
-    { text: "Consistency is more important than perfection.", author: "Unknown" },
-    { text: "Progress, not perfection.", author: "Unknown" },
-  ],
-  settings: [
-    { text: "Simplicity is the ultimate sophistication.", author: "Leonardo da Vinci" },
-    { text: "The details are not the details. They make the design.", author: "Charles Eames" },
-    { text: "Make it simple, but significant.", author: "Don Draper" },
-    { text: "Less is more.", author: "Ludwig Mies van der Rohe" },
-    { text: "Perfection is achieved when there is nothing left to take away.", author: "Antoine de Saint-Exupéry" },
-  ],
-};
+const MINDFULNESS_QUOTES = [
+  { text: "Breathe in calm, breathe out tension.", author: "Thich Nhat Hanh" },
+  { text: "The present moment is filled with joy and happiness. If you are attentive, you will see it.", author: "Thich Nhat Hanh" },
+  { text: "Almost everything will work again if you unplug it for a few minutes — including you.", author: "Anne Lamott" },
+  { text: "Do not dwell in the past, do not dream of the future, concentrate the mind on the present moment.", author: "Buddha" },
+  { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+  { text: "Feelings are just visitors. Let them come and go.", author: "Mooji" },
+  { text: "What you think, you become. What you feel, you attract.", author: "Buddha" },
+  { text: "Simplicity is the ultimate sophistication.", author: "Leonardo da Vinci" },
+  { text: "Small daily improvements lead to stunning results.", author: "Robin Sharma" },
+  { text: "Be where you are, not where you think you should be.", author: "Unknown" },
+];
 
-const AnimatedUnfricLogo = () => {
-  const letters = "unfric".split("");
-
-  return (
-    <div className="flex items-center justify-center gap-0.5">
-      {letters.map((letter, index) => (
-        <span
-          key={index}
-          className="inline-block text-4xl md:text-5xl font-light tracking-[0.15em] lowercase text-foreground"
-          style={{
-            fontFamily: "'Inter', system-ui, sans-serif",
-            animation: `wave 1.5s ease-in-out infinite`,
-            animationDelay: `${index * 0.1}s`,
-          }}
-        >
-          {letter}
-        </span>
-      ))}
-    </div>
-  );
-};
-
-const LoadingDots = () => (
-  <div className="flex gap-1.5 items-center justify-center">
-    {[0, 1, 2].map((i) => (
-      <div
-        key={i}
-        className="w-1.5 h-1.5 rounded-full bg-foreground/50"
-        style={{
-          animation: `dotPulse 1.4s ease-in-out infinite`,
-          animationDelay: `${i * 0.16}s`,
-        }}
-      />
-    ))}
-  </div>
-);
-
-const MIN_DISPLAY_TIME = 2000;
+const MIN_DISPLAY_TIME = 2400;
 
 export function PageLoadingScreen({ module, isDataReady = false, onFinished }: PageLoadingScreenProps) {
-  const [quoteIndex] = useState(() => Math.floor(Math.random() * LOADING_QUOTES[module].length));
+  const quote = useMemo(() => MINDFULNESS_QUOTES[Math.floor(Math.random() * MINDFULNESS_QUOTES.length)], []);
   const [isExiting, setIsExiting] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [hasMetMinTime, setHasMetMinTime] = useState(false);
   const [hasExited, setHasExited] = useState(false);
+  const [progress, setProgress] = useState(0);
 
-  const quotes = LOADING_QUOTES[module];
-  const currentQuote = quotes[quoteIndex];
-
+  // Entrance
   useEffect(() => {
-    const entranceTimer = setTimeout(() => setIsVisible(true), 50);
-    return () => clearTimeout(entranceTimer);
+    const t = setTimeout(() => setIsVisible(true), 50);
+    return () => clearTimeout(t);
   }, []);
 
+  // Min time
   useEffect(() => {
-    const minTimeTimer = setTimeout(() => {
-      setHasMetMinTime(true);
-    }, MIN_DISPLAY_TIME);
-    return () => clearTimeout(minTimeTimer);
+    const t = setTimeout(() => setHasMetMinTime(true), MIN_DISPLAY_TIME);
+    return () => clearTimeout(t);
   }, []);
 
+  // Progress bar simulation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setProgress((p) => {
+        if (p >= 90 && !isDataReady) return p;
+        if (p >= 100) return 100;
+        const increment = p < 60 ? 2 : p < 85 ? 1 : 0.5;
+        return Math.min(p + increment, isDataReady ? 100 : 90);
+      });
+    }, 40);
+    return () => clearInterval(interval);
+  }, [isDataReady]);
+
+  // Trigger exit
   useEffect(() => {
     if (hasMetMinTime && isDataReady && !isExiting && !hasExited) {
+      setProgress(100);
       setIsExiting(true);
     }
   }, [hasMetMinTime, isDataReady, isExiting, hasExited]);
 
   useEffect(() => {
     if (hasMetMinTime && !isExiting && !hasExited) {
-      const autoExitTimer = setTimeout(() => {
-        setIsExiting(true);
-      }, 100);
-      return () => clearTimeout(autoExitTimer);
+      const t = setTimeout(() => setIsExiting(true), 100);
+      return () => clearTimeout(t);
     }
   }, [hasMetMinTime, isExiting, hasExited]);
 
+  // Exit animation
   useEffect(() => {
     if (isExiting && !hasExited) {
-      const exitTimer = setTimeout(() => {
+      const t = setTimeout(() => {
         setHasExited(true);
         onFinished?.();
-      }, 400);
-      return () => clearTimeout(exitTimer);
+      }, 600);
+      return () => clearTimeout(t);
     }
   }, [isExiting, hasExited, onFinished]);
 
-  if (hasExited) {
-    return null;
-  }
+  if (hasExited) return null;
 
   return (
     <>
       <style>{`
-        @keyframes wave {
-          0%, 100% { transform: translateY(0); }
-          25% { transform: translateY(-8px); }
-          50% { transform: translateY(0); }
-          75% { transform: translateY(4px); }
+        @keyframes meshShift {
+          0%   { background-position: 0% 50%; }
+          50%  { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
         }
-        
-        @keyframes dotPulse {
-          0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-          40% { transform: scale(1); opacity: 1; }
-        }
-        
-        @keyframes lineExpand {
-          from { transform: scaleX(0); }
-          to { transform: scaleX(1); }
+        @keyframes breathe {
+          0%, 100% { transform: scale(1); opacity: 0.9; }
+          50%      { transform: scale(1.03); opacity: 1; }
         }
       `}</style>
 
-      {/* VERY LIGHT TRANSPARENT OVERLAY - 2% black */}
+      {/* Full-screen container */}
       <div
+        className="fixed inset-0 z-[99999] flex items-center justify-center"
         style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          width: "100vw",
-          height: "100vh",
-          zIndex: 99999,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          // 2% BLACK TRANSPARENCY - almost clear, just slight tint
-          backgroundColor: "rgba(0, 0, 0, 0.02)",
-          backdropFilter: "blur(2px)",
-          transition: "opacity 0.4s ease-out, transform 0.4s ease-out",
+          transition: "opacity 0.6s ease-out, backdrop-filter 0.6s ease-out",
           opacity: isExiting ? 0 : isVisible ? 1 : 0,
-          transform: isExiting ? "scale(0.98)" : "scale(1)",
           pointerEvents: isExiting ? "none" : "auto",
         }}
       >
+        {/* Mesh gradient background */}
         <div
+          className="absolute inset-0"
           style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "2rem",
-            padding: "2rem",
+            background:
+              "linear-gradient(-45deg, hsl(174 60% 90%), hsl(260 40% 92%), hsl(200 50% 94%), hsl(170 50% 88%))",
+            backgroundSize: "400% 400%",
+            animation: "meshShift 12s ease infinite",
           }}
-        >
-          {/* Animated unfric logo */}
-          <div
-            className={cn(
-              "transition-all duration-500",
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
-            )}
-          >
-            <AnimatedUnfricLogo />
-          </div>
+        />
+        {/* Dark-mode overlay — inherits foreground tint */}
+        <div className="absolute inset-0 bg-background/70 dark:bg-background/85" />
 
-          {/* Animated line separator */}
+        {/* Progress line — 1px at very top */}
+        <div className="absolute top-0 left-0 right-0 h-px">
           <div
-            className="w-16 h-px bg-foreground/20 origin-center"
+            className="h-full bg-foreground/30"
             style={{
-              animation: isVisible ? "lineExpand 0.6s ease-out 0.3s forwards" : "none",
-              transform: "scaleX(0)",
+              width: `${progress}%`,
+              transition: "width 0.15s linear",
             }}
           />
+        </div>
 
-          {/* Quote section */}
+        {/* Content */}
+        <div className="relative flex flex-col items-center justify-center gap-8 px-6">
+          {/* Breathing logo */}
           <div
             className={cn(
-              "flex flex-col items-center gap-3 max-w-md px-6 text-center",
-              "transition-all duration-500 delay-200",
+              "transition-all duration-700",
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
             )}
+            style={{ animation: isVisible ? "breathe 4s ease-in-out infinite" : "none" }}
           >
-            <p className="text-base md:text-lg font-light text-foreground/80 leading-relaxed">"{currentQuote.text}"</p>
-            <p className="text-xs text-muted-foreground/60 tracking-widest uppercase">— {currentQuote.author}</p>
+            <span
+              className="text-4xl md:text-5xl font-light tracking-[0.15em] lowercase text-foreground select-none"
+              style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
+            >
+              unfric
+            </span>
           </div>
 
-          {/* Loading dots */}
-          <div className={cn("mt-4 transition-all duration-500 delay-300", isVisible ? "opacity-100" : "opacity-0")}>
-            <LoadingDots />
+          {/* Thin separator */}
+          <div
+            className={cn(
+              "w-12 h-px bg-foreground/15 transition-all duration-700 delay-200",
+              isVisible ? "opacity-100 scale-x-100" : "opacity-0 scale-x-0",
+            )}
+          />
+
+          {/* Quote */}
+          <div
+            className={cn(
+              "flex flex-col items-center gap-3 max-w-sm text-center transition-all duration-700 delay-300",
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3",
+            )}
+          >
+            <p className="text-sm md:text-base font-light text-foreground/70 leading-relaxed tracking-wide">
+              "{quote.text}"
+            </p>
+            <p className="text-[10px] text-muted-foreground/50 tracking-[0.25em] uppercase">
+              — {quote.author}
+            </p>
           </div>
 
-          {/* Module indicator */}
+          {/* Module label */}
           <p
             className={cn(
-              "mt-6 text-[10px] text-muted-foreground/40 tracking-[0.3em] uppercase",
-              "transition-all duration-500 delay-400",
+              "mt-4 text-[10px] text-muted-foreground/30 tracking-[0.3em] uppercase transition-all duration-500 delay-500",
               isVisible ? "opacity-100" : "opacity-0",
             )}
           >
