@@ -444,40 +444,79 @@ export type Database = {
       }
       manifest_goals: {
         Row: {
+          act_as_if: string | null
           affirmations: string[] | null
+          category: string | null
+          check_in_time: string | null
+          committed_7_days: boolean | null
+          conviction: number | null
           cover_image_url: string | null
           created_at: string
+          daily_affirmation: string | null
           description: string | null
           feeling_when_achieved: string | null
           id: string
           is_completed: boolean | null
+          is_locked: boolean | null
+          live_from_end: string | null
+          reminder_count: number | null
+          reminder_times: Json | null
+          start_date: string | null
           title: string
           updated_at: string
           user_id: string
+          vision_images: Json | null
+          visualization_minutes: number | null
         }
         Insert: {
+          act_as_if?: string | null
           affirmations?: string[] | null
+          category?: string | null
+          check_in_time?: string | null
+          committed_7_days?: boolean | null
+          conviction?: number | null
           cover_image_url?: string | null
           created_at?: string
+          daily_affirmation?: string | null
           description?: string | null
           feeling_when_achieved?: string | null
           id?: string
           is_completed?: boolean | null
+          is_locked?: boolean | null
+          live_from_end?: string | null
+          reminder_count?: number | null
+          reminder_times?: Json | null
+          start_date?: string | null
           title: string
           updated_at?: string
           user_id: string
+          vision_images?: Json | null
+          visualization_minutes?: number | null
         }
         Update: {
+          act_as_if?: string | null
           affirmations?: string[] | null
+          category?: string | null
+          check_in_time?: string | null
+          committed_7_days?: boolean | null
+          conviction?: number | null
           cover_image_url?: string | null
           created_at?: string
+          daily_affirmation?: string | null
           description?: string | null
           feeling_when_achieved?: string | null
           id?: string
           is_completed?: boolean | null
+          is_locked?: boolean | null
+          live_from_end?: string | null
+          reminder_count?: number | null
+          reminder_times?: Json | null
+          start_date?: string | null
           title?: string
           updated_at?: string
           user_id?: string
+          vision_images?: Json | null
+          visualization_minutes?: number | null
         }
         Relationships: []
       }
@@ -519,12 +558,138 @@ export type Database = {
           },
         ]
       }
+      manifest_practices: {
+        Row: {
+          acts: Json | null
+          alignment: number | null
+          created_at: string
+          entry_date: string
+          goal_id: string
+          gratitudes: Json | null
+          growth_note: string | null
+          id: string
+          locked: boolean | null
+          proofs: Json | null
+          updated_at: string
+          user_id: string
+          visualizations: Json | null
+        }
+        Insert: {
+          acts?: Json | null
+          alignment?: number | null
+          created_at?: string
+          entry_date?: string
+          goal_id: string
+          gratitudes?: Json | null
+          growth_note?: string | null
+          id?: string
+          locked?: boolean | null
+          proofs?: Json | null
+          updated_at?: string
+          user_id: string
+          visualizations?: Json | null
+        }
+        Update: {
+          acts?: Json | null
+          alignment?: number | null
+          created_at?: string
+          entry_date?: string
+          goal_id?: string
+          gratitudes?: Json | null
+          growth_note?: string | null
+          id?: string
+          locked?: boolean | null
+          proofs?: Json | null
+          updated_at?: string
+          user_id?: string
+          visualizations?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manifest_practices_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "manifest_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      note_folders: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_folders_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "note_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      note_groups: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notes: {
         Row: {
           category: string | null
           content: string | null
           cover_image_url: string | null
           created_at: string
+          folder_id: string | null
+          group_id: string | null
           has_checklist: boolean | null
           id: string
           scribble_data: string | null
@@ -540,6 +705,8 @@ export type Database = {
           content?: string | null
           cover_image_url?: string | null
           created_at?: string
+          folder_id?: string | null
+          group_id?: string | null
           has_checklist?: boolean | null
           id?: string
           scribble_data?: string | null
@@ -555,6 +722,8 @@ export type Database = {
           content?: string | null
           cover_image_url?: string | null
           created_at?: string
+          folder_id?: string | null
+          group_id?: string | null
           has_checklist?: boolean | null
           id?: string
           scribble_data?: string | null
@@ -565,7 +734,22 @@ export type Database = {
           user_id?: string
           voice_transcript?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notes_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "note_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notes_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "note_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -704,7 +888,9 @@ export type Database = {
       }
       user_settings: {
         Row: {
+          clock_widget_mode: string | null
           created_at: string
+          custom_theme_colors: Json | null
           daily_reset_time: string | null
           date_format: string | null
           default_emotions_tab: string | null
@@ -713,8 +899,12 @@ export type Database = {
           default_task_tab: string | null
           default_task_view: string | null
           diary_show_lines: boolean | null
+          focus_settings: Json | null
+          font_pair_id: string | null
           id: string
           journal_mode: string | null
+          journal_template: Json | null
+          motion_enabled: boolean | null
           note_skin_preference: string | null
           notification_diary_prompt: boolean | null
           notification_emotion_checkin: boolean | null
@@ -725,13 +915,16 @@ export type Database = {
           reminder_time_emotions: string | null
           reminder_time_habits: string | null
           start_of_week: string | null
+          theme_id: string | null
           time_format: string | null
           timezone: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          clock_widget_mode?: string | null
           created_at?: string
+          custom_theme_colors?: Json | null
           daily_reset_time?: string | null
           date_format?: string | null
           default_emotions_tab?: string | null
@@ -740,8 +933,12 @@ export type Database = {
           default_task_tab?: string | null
           default_task_view?: string | null
           diary_show_lines?: boolean | null
+          focus_settings?: Json | null
+          font_pair_id?: string | null
           id?: string
           journal_mode?: string | null
+          journal_template?: Json | null
+          motion_enabled?: boolean | null
           note_skin_preference?: string | null
           notification_diary_prompt?: boolean | null
           notification_emotion_checkin?: boolean | null
@@ -752,13 +949,16 @@ export type Database = {
           reminder_time_emotions?: string | null
           reminder_time_habits?: string | null
           start_of_week?: string | null
+          theme_id?: string | null
           time_format?: string | null
           timezone?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          clock_widget_mode?: string | null
           created_at?: string
+          custom_theme_colors?: Json | null
           daily_reset_time?: string | null
           date_format?: string | null
           default_emotions_tab?: string | null
@@ -767,8 +967,12 @@ export type Database = {
           default_task_tab?: string | null
           default_task_view?: string | null
           diary_show_lines?: boolean | null
+          focus_settings?: Json | null
+          font_pair_id?: string | null
           id?: string
           journal_mode?: string | null
+          journal_template?: Json | null
+          motion_enabled?: boolean | null
           note_skin_preference?: string | null
           notification_diary_prompt?: boolean | null
           notification_emotion_checkin?: boolean | null
@@ -779,6 +983,7 @@ export type Database = {
           reminder_time_emotions?: string | null
           reminder_time_habits?: string | null
           start_of_week?: string | null
+          theme_id?: string | null
           time_format?: string | null
           timezone?: string | null
           updated_at?: string

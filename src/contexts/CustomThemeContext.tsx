@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { useUserPreferences } from "@/hooks/useUserSettings";
 
 export interface CustomColors {
   background: string;
@@ -120,10 +121,18 @@ export function autoFixContrast(colors: CustomColors): CustomColors {
 }
 
 export function CustomThemeProvider({ children }: { children: ReactNode }) {
+  const { prefs, updatePrefs } = useUserPreferences();
   const [customColors, setCustomColorsState] = useState<CustomColors | null>(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     return stored ? JSON.parse(stored) : null;
   });
+
+  // Sync from DB when prefs load
+  useEffect(() => {
+    if (prefs.custom_theme_colors !== undefined) {
+      setCustomColorsState(prefs.custom_theme_colors as unknown as CustomColors | null);
+    }
+  }, [prefs.custom_theme_colors]);
 
   useEffect(() => {
     if (customColors) {
@@ -136,8 +145,8 @@ export function CustomThemeProvider({ children }: { children: ReactNode }) {
 
   const setCustomColors = (colors: CustomColors | null) => {
     setCustomColorsState(colors);
+    updatePrefs({ custom_theme_colors: colors as any });
     if (!colors) {
-      // Reset to theme defaults by removing overrides
       const root = document.documentElement;
       root.style.removeProperty("--background");
       root.style.removeProperty("--card");

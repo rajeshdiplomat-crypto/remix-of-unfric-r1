@@ -17,6 +17,7 @@ import { useTimezone } from "@/hooks/useTimezone";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
 import { Clock, Timer, Hourglass, Calendar, Play, Pause, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useUserPreferences } from "@/hooks/useUserSettings";
 
 type WidgetMode = "digital" | "analog" | "stopwatch" | "timer" | "calendar";
 
@@ -31,6 +32,7 @@ const TIMER_PRESETS = [
 
 export function TasksClockWidget() {
   const { weekStartsOn } = useDatePreferences();
+  const { prefs, updatePrefs } = useUserPreferences();
   const [mode, setMode] = useState<WidgetMode>(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -41,9 +43,17 @@ export function TasksClockWidget() {
     return "digital";
   });
 
-  // Persist mode to localStorage
+  // Sync from DB
+  useEffect(() => {
+    if (prefs.clock_widget_mode && prefs.clock_widget_mode !== mode) {
+      setMode(prefs.clock_widget_mode as WidgetMode);
+    }
+  }, [prefs.clock_widget_mode]);
+
+  // Persist mode
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, mode);
+    updatePrefs({ clock_widget_mode: mode });
   }, [mode]);
   const [now, setNow] = useState(new Date());
   const { timezone, getTimeInTimezone, formatInTimezone } = useTimezone();

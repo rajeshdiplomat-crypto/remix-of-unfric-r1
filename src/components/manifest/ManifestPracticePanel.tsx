@@ -39,6 +39,7 @@ import { format, isToday, isBefore, startOfDay } from "date-fns";
 import confetti from "canvas-confetti";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ManifestPracticePanelProps {
   goal: ManifestGoal;
@@ -60,13 +61,33 @@ export function ManifestPracticePanel({
   onGoalUpdate,
 }: ManifestPracticePanelProps) {
   const { formatDate: fmtDate } = useDatePreferences();
+  const { user } = useAuth();
   const dateStr = format(selectedDate, "yyyy-MM-dd");
   const isViewingToday = isToday(selectedDate);
   const isViewingPast = isBefore(startOfDay(selectedDate), startOfDay(new Date()));
   const proofImageInputRef = useRef<HTMLInputElement>(null);
 
-  const loadPractice = (date: string): Partial<ManifestDailyPractice> => {
+  const loadPractice = async (date: string): Promise<Partial<ManifestDailyPractice>> => {
+    if (!user) return {};
     try {
+      const { data } = await supabase
+        .from("manifest_practices")
+        .select("*")
+        .eq("goal_id", goal.id)
+        .eq("entry_date", date)
+        .maybeSingle();
+      if (data) {
+        return {
+          visualizations: (data as any).visualizations || [],
+          acts: (data as any).acts || [],
+          proofs: (data as any).proofs || [],
+          gratitudes: (data as any).gratitudes || [],
+          alignment: (data as any).alignment,
+          growth_note: (data as any).growth_note,
+          locked: (data as any).locked || false,
+        };
+      }
+      // Fall back to localStorage for migration
       const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
       if (stored) {
         const all = JSON.parse(stored);
@@ -78,36 +99,35 @@ export function ManifestPracticePanel({
     return {};
   };
 
-  const savePractice = (practice: Partial<ManifestDailyPractice>) => {
-    if (!isViewingToday) return; // Don't save for past dates
+  const savePractice = async (practice: Partial<ManifestDailyPractice>) => {
+    if (!isViewingToday || !user) return;
+    // Save to localStorage as backup
     try {
       const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
       const all = stored ? JSON.parse(stored) : {};
-
-      // Clean up old entries (keep only last 7 days to avoid quota issues)
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - 7);
-      const cutoffStr = cutoffDate.toISOString().split("T")[0];
-
-      Object.keys(all).forEach((key) => {
-        const keyDate = key.split("_").pop();
-        if (keyDate && keyDate < cutoffStr) {
-          delete all[key];
-        }
-      });
-
       all[`${goal.id}_${dateStr}`] = { ...all[`${goal.id}_${dateStr}`], ...practice };
       localStorage.setItem(DAILY_PRACTICE_KEY, JSON.stringify(all));
+    } catch {}
+
+    // Save to DB
+    try {
+      const upsertData: any = {
+        goal_id: goal.id,
+        user_id: user.id,
+        entry_date: dateStr,
+        visualizations: JSON.stringify(practice.visualizations ?? []),
+        acts: JSON.stringify(practice.acts ?? []),
+        proofs: JSON.stringify(practice.proofs ?? []),
+        gratitudes: JSON.stringify(practice.gratitudes ?? []),
+        alignment: practice.alignment ?? null,
+        growth_note: practice.growth_note ?? null,
+        locked: practice.locked ?? false,
+      };
+      await supabase
+        .from("manifest_practices")
+        .upsert(upsertData, { onConflict: "goal_id,entry_date" } as any);
     } catch (e) {
-      console.warn("Failed to save practice:", e);
-      // Try clearing old data and saving again
-      try {
-        localStorage.removeItem(DAILY_PRACTICE_KEY);
-        const freshData = { [`${goal.id}_${dateStr}`]: practice };
-        localStorage.setItem(DAILY_PRACTICE_KEY, JSON.stringify(freshData));
-      } catch (e2) {
-        console.error("Storage quota exceeded even after cleanup:", e2);
-      }
+      console.warn("Failed to save practice to DB:", e);
     }
   };
 
@@ -133,7 +153,6 @@ export function ManifestPracticePanel({
   const dateStrRef = useRef(dateStr);
 
   useEffect(() => {
-    // Only reset state when goal or date actually changes
     const goalChanged = goalIdRef.current !== goal.id;
     const dateChanged = dateStrRef.current !== dateStr;
 
@@ -141,7 +160,6 @@ export function ManifestPracticePanel({
       goalIdRef.current = goal.id;
       dateStrRef.current = dateStr;
 
-      // Clear input refs
       if (actInputRef.current) actInputRef.current.value = "";
       if (proofTextRef.current) proofTextRef.current.value = "";
       if (growthNoteRef.current) growthNoteRef.current.value = "";
@@ -157,16 +175,18 @@ export function ManifestPracticePanel({
       setExpandedSection("viz");
       setCurrentImageUrl(goal.cover_image_url || goal.vision_image_url || null);
 
-      const saved = loadPractice(dateStr);
-      if (saved.visualizations) setVisualizations(saved.visualizations);
-      if (saved.acts) setActs(saved.acts);
-      if (saved.proofs) setProofs(saved.proofs);
-      if (saved.gratitudes) setGratitudes(saved.gratitudes);
-      if (saved.growth_note) {
-        setGrowthNoteValue(saved.growth_note);
-        if (growthNoteRef.current) growthNoteRef.current.value = saved.growth_note;
-      }
-      if (saved.locked) setIsLocked(true);
+      (async () => {
+        const saved = await loadPractice(dateStr);
+        if (saved.visualizations) setVisualizations(saved.visualizations);
+        if (saved.acts) setActs(saved.acts);
+        if (saved.proofs) setProofs(saved.proofs);
+        if (saved.gratitudes) setGratitudes(saved.gratitudes);
+        if (saved.growth_note) {
+          setGrowthNoteValue(saved.growth_note);
+          if (growthNoteRef.current) growthNoteRef.current.value = saved.growth_note;
+        }
+        if (saved.locked) setIsLocked(true);
+      })();
     }
   }, [goal.id, dateStr]);
 
@@ -301,16 +321,7 @@ export function ManifestPracticePanel({
   const handleImageChange = async (url: string | null) => {
     setCurrentImageUrl(url);
 
-    // Update local storage
-    try {
-      const extras = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
-      extras[goal.id] = { ...extras[goal.id], vision_image_url: url };
-      localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify(extras));
-    } catch (e) {
-      console.warn("Failed to update local storage:", e);
-    }
-
-    // Update database
+    // Update database directly (no more localStorage extras)
     try {
       const { error } = await supabase.from("manifest_goals").update({ cover_image_url: url }).eq("id", goal.id);
 

@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { useUserPreferences } from "@/hooks/useUserSettings";
 
 export type FontPairId = "classic" | "modern" | "geometric" | "elegant";
 
@@ -90,10 +91,18 @@ function applyFontPair(fontPair: FontPairConfig) {
 }
 
 export function FontProvider({ children }: { children: ReactNode }) {
+  const { prefs, updatePrefs } = useUserPreferences();
   const [fontPairId, setFontPairId] = useState<FontPairId>(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     return (stored as FontPairId) || "elegant";
   });
+
+  // Sync from DB when prefs load
+  useEffect(() => {
+    if (prefs.font_pair_id && prefs.font_pair_id !== fontPairId) {
+      setFontPairId(prefs.font_pair_id as FontPairId);
+    }
+  }, [prefs.font_pair_id]);
 
   const fontPair = FONT_PAIRS.find((f) => f.id === fontPairId) || FONT_PAIRS[3];
 
@@ -104,6 +113,7 @@ export function FontProvider({ children }: { children: ReactNode }) {
 
   const setFontPair = (id: FontPairId) => {
     setFontPairId(id);
+    updatePrefs({ font_pair_id: id });
   };
 
   return <FontContext.Provider value={{ fontPair, fontPairId, setFontPair }}>{children}</FontContext.Provider>;

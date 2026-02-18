@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserPreferences } from "@/hooks/useUserSettings";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -145,6 +146,7 @@ export default function TaskFocus() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { prefs, updatePrefs } = useUserPreferences();
 
   const [task, setTask] = useState<QuadrantTask | null>(null);
   const [loading, setLoading] = useState(true);
@@ -167,6 +169,9 @@ export default function TaskFocus() {
       if (stored) {
         return JSON.parse(stored);
       }
+      if (prefs.focus_settings) {
+        return prefs.focus_settings as unknown as FocusSettings;
+      }
     } catch {}
     return {
       themeType: "gradient",
@@ -181,6 +186,13 @@ export default function TaskFocus() {
       ambientVolumes: {},
     };
   });
+
+  // Sync from DB
+  useEffect(() => {
+    if (prefs.focus_settings) {
+      setSettings(prefs.focus_settings as unknown as FocusSettings);
+    }
+  }, [prefs.focus_settings]);
 
   const [currentQuote, setCurrentQuote] = useState(FOCUS_QUOTES[0]);
   const [quoteVisible, setQuoteVisible] = useState(true);
@@ -240,6 +252,7 @@ export default function TaskFocus() {
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    updatePrefs({ focus_settings: settings as any });
   }, [settings]);
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(new Date()), 1000);

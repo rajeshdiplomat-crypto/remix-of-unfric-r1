@@ -45,39 +45,38 @@ import {
   DAILY_PRACTICE_KEY,
 } from "@/components/manifest/types";
 
-// Local storage helpers
-function saveGoalExtras(goalId: string, extras: Partial<ManifestGoal>) {
+// Save goal extras to DB (with localStorage fallback)
+async function saveGoalExtras(goalId: string, extras: Partial<ManifestGoal>) {
+  // Save to localStorage as cache
   try {
-    const safeExtras = { ...extras };
-    if (safeExtras.vision_image_url && safeExtras.vision_image_url.startsWith("data:")) {
-      safeExtras.vision_image_url = undefined;
-    }
-    if (safeExtras.vision_images) {
-      safeExtras.vision_images = safeExtras.vision_images.filter((img) => !img.startsWith("data:"));
-    }
-
     const all = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
-    all[goalId] = { ...all[goalId], ...safeExtras };
+    all[goalId] = { ...all[goalId], ...extras };
     localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify(all));
-  } catch (e) {
-    console.warn("Failed to save goal extras:", e);
-    if (e instanceof DOMException && e.name === "QuotaExceededError") {
-      try {
-        localStorage.removeItem(GOAL_EXTRAS_KEY);
-        const safeExtras = { ...extras };
-        if (safeExtras.vision_image_url && safeExtras.vision_image_url.startsWith("data:")) {
-          safeExtras.vision_image_url = undefined;
-        }
-        localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify({ [goalId]: safeExtras }));
-      } catch (e2) {
-        console.error("Failed to save after clearing:", e2);
-      }
-    }
-  }
-}
+  } catch {}
 
-function loadAllGoalExtras(): Record<string, Partial<ManifestGoal>> {
-  return JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
+  // Save to DB
+  try {
+    const updateData: any = {};
+    if (extras.category !== undefined) updateData.category = extras.category;
+    if (extras.vision_images !== undefined) updateData.vision_images = JSON.stringify(extras.vision_images);
+    if (extras.start_date !== undefined) updateData.start_date = extras.start_date || null;
+    if (extras.live_from_end !== undefined) updateData.live_from_end = extras.live_from_end;
+    if (extras.act_as_if !== undefined) updateData.act_as_if = extras.act_as_if;
+    if (extras.conviction !== undefined) updateData.conviction = extras.conviction;
+    if (extras.visualization_minutes !== undefined) updateData.visualization_minutes = extras.visualization_minutes;
+    if (extras.daily_affirmation !== undefined) updateData.daily_affirmation = extras.daily_affirmation;
+    if (extras.check_in_time !== undefined) updateData.check_in_time = extras.check_in_time;
+    if (extras.committed_7_days !== undefined) updateData.committed_7_days = extras.committed_7_days;
+    if (extras.is_locked !== undefined) updateData.is_locked = extras.is_locked;
+    if (extras.reminder_count !== undefined) updateData.reminder_count = extras.reminder_count;
+    if (extras.reminder_times !== undefined) updateData.reminder_times = JSON.stringify(extras.reminder_times);
+
+    if (Object.keys(updateData).length > 0) {
+      await supabase.from("manifest_goals").update(updateData).eq("id", goalId);
+    }
+  } catch (e) {
+    console.warn("Failed to save goal extras to DB:", e);
+  }
 }
 
 function loadAllPractices(): Record<string, ManifestDailyPractice> {
@@ -120,35 +119,62 @@ export default function Manifest() {
 
       if (goalsError) throw goalsError;
 
-      const extras = loadAllGoalExtras();
-      const mergedGoals: ManifestGoal[] = (goalsData || []).map((g) => ({
+      // Read extras from DB columns (with localStorage fallback for migration)
+      const localExtras = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
+      const mergedGoals: ManifestGoal[] = (goalsData || []).map((g: any) => ({
         id: g.id,
         user_id: g.user_id,
         title: g.title,
-        category: extras[g.id]?.category || "other",
-        vision_image_url: extras[g.id]?.vision_image_url || g.cover_image_url,
-        vision_images: extras[g.id]?.vision_images || [],
+        category: g.category || localExtras[g.id]?.category || "other",
+        vision_image_url: g.cover_image_url || localExtras[g.id]?.vision_image_url,
+        vision_images: g.vision_images || localExtras[g.id]?.vision_images || [],
         cover_image_url: g.cover_image_url,
-        start_date: extras[g.id]?.start_date,
-        live_from_end: extras[g.id]?.live_from_end,
-        act_as_if: extras[g.id]?.act_as_if || "Take one small action",
-        conviction: extras[g.id]?.conviction ?? 5,
-        visualization_minutes: extras[g.id]?.visualization_minutes || 3,
-        daily_affirmation: extras[g.id]?.daily_affirmation || "",
-        check_in_time: extras[g.id]?.check_in_time || "08:00",
-        committed_7_days: extras[g.id]?.committed_7_days || false,
+        start_date: g.start_date || localExtras[g.id]?.start_date,
+        live_from_end: g.live_from_end || localExtras[g.id]?.live_from_end,
+        act_as_if: g.act_as_if || localExtras[g.id]?.act_as_if || "Take one small action",
+        conviction: g.conviction ?? localExtras[g.id]?.conviction ?? 5,
+        visualization_minutes: g.visualization_minutes || localExtras[g.id]?.visualization_minutes || 3,
+        daily_affirmation: g.daily_affirmation || localExtras[g.id]?.daily_affirmation || "",
+        check_in_time: g.check_in_time || localExtras[g.id]?.check_in_time || "08:00",
+        committed_7_days: g.committed_7_days || localExtras[g.id]?.committed_7_days || false,
         is_completed: g.is_completed || false,
-        is_locked: extras[g.id]?.is_locked || false,
+        is_locked: g.is_locked || localExtras[g.id]?.is_locked || false,
         created_at: g.created_at,
         updated_at: g.updated_at,
-        reminder_count: extras[g.id]?.reminder_count,
-        reminder_times: extras[g.id]?.reminder_times,
+        reminder_count: g.reminder_count || localExtras[g.id]?.reminder_count,
+        reminder_times: g.reminder_times || localExtras[g.id]?.reminder_times,
       }));
 
       setGoals(mergedGoals);
 
-      const allPractices = loadAllPractices();
-      const practicesList = Object.values(allPractices).filter((p) => p.user_id === user.id);
+      // Load practices from DB first, then localStorage fallback
+      const { data: dbPractices } = await supabase
+        .from("manifest_practices")
+        .select("*")
+        .eq("user_id", user.id);
+
+      let practicesList: ManifestDailyPractice[];
+      if (dbPractices && dbPractices.length > 0) {
+        practicesList = dbPractices.map((p: any) => ({
+          id: p.id,
+          goal_id: p.goal_id,
+          user_id: p.user_id,
+          entry_date: p.entry_date,
+          created_at: p.created_at,
+          visualization_count: (p.visualizations || []).length,
+          visualizations: p.visualizations || [],
+          act_count: (p.acts || []).length,
+          acts: p.acts || [],
+          proofs: p.proofs || [],
+          gratitudes: p.gratitudes || [],
+          alignment: p.alignment,
+          growth_note: p.growth_note,
+          locked: p.locked || false,
+        }));
+      } else {
+        const allPractices = loadAllPractices();
+        practicesList = Object.values(allPractices).filter((p) => p.user_id === user.id);
+      }
       setPractices(practicesList);
 
       const extractedProofs: ManifestProof[] = practicesList.flatMap((p) =>
@@ -227,9 +253,13 @@ export default function Manifest() {
   // Get previous day's practice for visualization mode
   const getPreviousDayPractice = useCallback((goalId: string): ManifestDailyPractice | null => {
     const yesterday = format(subDays(new Date(), 1), "yyyy-MM-dd");
+    // Check from loaded practices first
+    const found = practices.find(p => p.goal_id === goalId && p.entry_date === yesterday);
+    if (found) return found;
+    // Fallback to localStorage
     const allPractices = loadAllPractices();
     return allPractices[`${goalId}_${yesterday}`] || null;
-  }, []);
+  }, [practices]);
 
   // Handlers
   const handleSaveGoal = async (goalData: any) => {
@@ -245,7 +275,20 @@ export default function Manifest() {
           .update({
             title: goalData.title,
             cover_image_url: goalData.vision_image_url || editingGoal.cover_image_url || null,
-          })
+            category: goalData.category,
+            vision_images: JSON.stringify(goalData.vision_images || []),
+            start_date: goalData.start_date || null,
+            live_from_end: goalData.live_from_end,
+            act_as_if: goalData.act_as_if,
+            conviction: goalData.conviction,
+            visualization_minutes: goalData.visualization_minutes,
+            daily_affirmation: goalData.daily_affirmation,
+            check_in_time: goalData.check_in_time,
+            committed_7_days: goalData.committed_7_days,
+            is_locked: false,
+            reminder_count: goalData.reminder_count,
+            reminder_times: JSON.stringify(goalData.reminder_times || []),
+          } as any)
           .eq("id", editingGoal.id);
         if (error) throw error;
         goalId = editingGoal.id;
@@ -258,7 +301,19 @@ export default function Manifest() {
             title: goalData.title,
             is_completed: false,
             cover_image_url: goalData.vision_image_url || null,
-          })
+            category: goalData.category,
+            vision_images: JSON.stringify(goalData.vision_images || []),
+            start_date: goalData.start_date || null,
+            live_from_end: goalData.live_from_end,
+            act_as_if: goalData.act_as_if,
+            conviction: goalData.conviction,
+            visualization_minutes: goalData.visualization_minutes,
+            daily_affirmation: goalData.daily_affirmation,
+            check_in_time: goalData.check_in_time,
+            committed_7_days: goalData.committed_7_days,
+            reminder_count: goalData.reminder_count,
+            reminder_times: JSON.stringify(goalData.reminder_times || []),
+          } as any)
           .select()
           .single();
         if (error) throw error;
