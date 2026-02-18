@@ -150,7 +150,15 @@ export default function ManifestPractice() {
   const [loadingFinished, setLoadingFinished] = useState(false);
   const isDataReady = !loading;
 
-  if (!goal && !loading) return null;
+  if (!goal) {
+    return !loadingFinished ? (
+      <PageLoadingScreen
+        module="manifest"
+        isDataReady={false}
+        onFinished={() => setLoadingFinished(true)}
+      />
+    ) : null;
+  }
 
   return (
     <>
