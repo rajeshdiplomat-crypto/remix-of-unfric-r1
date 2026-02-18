@@ -1,4 +1,4 @@
-import { X, Settings, Maximize2, LogOut } from "lucide-react";
+import { X, Settings, Maximize2, LogOut, Bell } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
 import { UnfricLogo } from "@/components/common/UnfricLogo";
 import { useCallback } from "react";
+import { NotificationPopover } from "@/components/layout/NotificationPopover";
 
 const mainNavItems = [
   { title: "Diary", url: "/diary" },
@@ -130,8 +131,14 @@ export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
 
           <div className="my-5 border-t border-foreground/[0.08]" />
 
-          {/* Settings */}
+          {/* Notifications + Settings */}
           <nav className="space-y-1">
+            <div className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-light uppercase tracking-zara-wide text-foreground/70">
+              <span>Notifications</span>
+              <NotificationPopover
+                iconClassName="h-8 w-8 rounded-full hover:bg-foreground/10 text-foreground/70 hover:text-foreground"
+              />
+            </div>
             <button
               onClick={() => handleNav("/settings")}
               className={cn(
