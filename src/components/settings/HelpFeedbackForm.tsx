@@ -17,9 +17,13 @@ import { Loader2, CheckCircle2, MessageSquareHeart } from "lucide-react";
 
 const MODULE_OPTIONS = [
   { value: "diary", label: "Diary" },
-  { value: "habits", label: "Habits" },
-  { value: "tasks", label: "Tasks" },
   { value: "emotions", label: "Emotions" },
+  { value: "journal", label: "Journal" },
+  { value: "manifest", label: "Manifest" },
+  { value: "habits", label: "Habits" },
+  { value: "notes", label: "Notes" },
+  { value: "tasks", label: "Tasks" },
+  { value: "clarity", label: "Clarity" },
   { value: "billing", label: "Billing / Account" },
   { value: "general", label: "General" },
 ];
