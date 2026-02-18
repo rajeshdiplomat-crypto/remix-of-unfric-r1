@@ -11,8 +11,6 @@ import { useDatePreferences } from "@/hooks/useDatePreferences";
 import {
   type ManifestGoal,
   type ManifestDailyPractice,
-  DAILY_PRACTICE_KEY,
-  GOAL_EXTRAS_KEY,
 } from "@/components/manifest/types";
 import { HistoryDayCard } from "@/components/manifest/HistoryDayCard";
 import { ProofLightbox } from "@/components/manifest/ProofLightbox";
@@ -56,15 +54,7 @@ interface WeekGroup {
   proofsCount: number;
 }
 
-// Helper to load goal extras - DB columns are now primary, localStorage is fallback
-function loadGoalExtras(goalId: string): Partial<ManifestGoal> {
-  try {
-    const stored = localStorage.getItem(GOAL_EXTRAS_KEY);
-    if (!stored) return {};
-    const all = JSON.parse(stored);
-    return all[goalId] || {};
-  } catch { return {}; }
-}
+// All goal data now comes from DB columns directly
 
 export default function ManifestHistory() {
   const { goalId } = useParams<{ goalId: string }>();
@@ -97,24 +87,23 @@ export default function ManifestHistory() {
         if (error) throw error;
 
         if (data) {
-          const extras = loadGoalExtras(goalId);
           const d = data as any;
           const mergedGoal: ManifestGoal = {
             id: d.id,
             user_id: d.user_id,
             title: d.title,
-            category: d.category || extras.category || "other",
-            vision_image_url: d.cover_image_url || extras.vision_image_url,
-            start_date: d.start_date || extras.start_date,
-            live_from_end: d.live_from_end || extras.live_from_end,
-            act_as_if: d.act_as_if || extras.act_as_if || "Take one small action",
-            conviction: d.conviction ?? extras.conviction ?? 5,
-            visualization_minutes: d.visualization_minutes || extras.visualization_minutes || 3,
-            daily_affirmation: d.daily_affirmation || extras.daily_affirmation || "",
-            check_in_time: d.check_in_time || extras.check_in_time || "08:00",
-            committed_7_days: d.committed_7_days || extras.committed_7_days || false,
+            category: d.category || "other",
+            vision_image_url: d.cover_image_url,
+            start_date: d.start_date,
+            live_from_end: d.live_from_end,
+            act_as_if: d.act_as_if || "Take one small action",
+            conviction: d.conviction ?? 5,
+            visualization_minutes: d.visualization_minutes || 3,
+            daily_affirmation: d.daily_affirmation || "",
+            check_in_time: d.check_in_time || "08:00",
+            committed_7_days: d.committed_7_days || false,
             is_completed: d.is_completed || false,
-            is_locked: d.is_locked || extras.is_locked || false,
+            is_locked: d.is_locked || false,
             created_at: d.created_at,
             updated_at: d.updated_at,
           };
@@ -155,32 +144,9 @@ export default function ManifestHistory() {
           gratitudes: p.gratitudes || [],
         }));
         setHistoryData(goalPractices);
-        return;
+      } else {
+        setHistoryData([]);
       }
-
-      // Fallback to localStorage
-      const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
-      if (!stored) { setHistoryData([]); return; }
-      const allPractices = JSON.parse(stored);
-      const goalPractices: HistoryDay[] = [];
-      Object.keys(allPractices).forEach((key) => {
-        if (key.startsWith(`${goalId}_`)) {
-          const practice = allPractices[key] as Partial<ManifestDailyPractice>;
-          const dateStr = key.replace(`${goalId}_`, "");
-          goalPractices.push({
-            date: dateStr,
-            practiced: practice.locked || false,
-            alignment: practice.alignment || 0,
-            visualizations: practice.visualizations || [],
-            acts: practice.acts || [],
-            proofs: practice.proofs || [],
-            growth_note: practice.growth_note,
-            gratitudes: practice.gratitudes || [],
-          });
-        }
-      });
-      goalPractices.sort((a, b) => b.date.localeCompare(a.date));
-      setHistoryData(goalPractices);
     };
 
     loadHistory();

@@ -41,20 +41,10 @@ import {
   type ManifestGoal,
   type ManifestProof,
   type ManifestDailyPractice,
-  GOAL_EXTRAS_KEY,
-  DAILY_PRACTICE_KEY,
 } from "@/components/manifest/types";
 
-// Save goal extras to DB (with localStorage fallback)
+// Save goal extras directly to DB
 async function saveGoalExtras(goalId: string, extras: Partial<ManifestGoal>) {
-  // Save to localStorage as cache
-  try {
-    const all = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
-    all[goalId] = { ...all[goalId], ...extras };
-    localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify(all));
-  } catch {}
-
-  // Save to DB
   try {
     const updateData: any = {};
     if (extras.category !== undefined) updateData.category = extras.category;
@@ -77,10 +67,6 @@ async function saveGoalExtras(goalId: string, extras: Partial<ManifestGoal>) {
   } catch (e) {
     console.warn("Failed to save goal extras to DB:", e);
   }
-}
-
-function loadAllPractices(): Record<string, ManifestDailyPractice> {
-  return JSON.parse(localStorage.getItem(DAILY_PRACTICE_KEY) || "{}");
 }
 
 export default function Manifest() {
@@ -119,30 +105,29 @@ export default function Manifest() {
 
       if (goalsError) throw goalsError;
 
-      // Read extras from DB columns (with localStorage fallback for migration)
-      const localExtras = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
+      // All goal data comes from DB columns directly
       const mergedGoals: ManifestGoal[] = (goalsData || []).map((g: any) => ({
         id: g.id,
         user_id: g.user_id,
         title: g.title,
-        category: g.category || localExtras[g.id]?.category || "other",
-        vision_image_url: g.cover_image_url || localExtras[g.id]?.vision_image_url,
-        vision_images: g.vision_images || localExtras[g.id]?.vision_images || [],
+        category: g.category || "other",
+        vision_image_url: g.cover_image_url,
+        vision_images: g.vision_images || [],
         cover_image_url: g.cover_image_url,
-        start_date: g.start_date || localExtras[g.id]?.start_date,
-        live_from_end: g.live_from_end || localExtras[g.id]?.live_from_end,
-        act_as_if: g.act_as_if || localExtras[g.id]?.act_as_if || "Take one small action",
-        conviction: g.conviction ?? localExtras[g.id]?.conviction ?? 5,
-        visualization_minutes: g.visualization_minutes || localExtras[g.id]?.visualization_minutes || 3,
-        daily_affirmation: g.daily_affirmation || localExtras[g.id]?.daily_affirmation || "",
-        check_in_time: g.check_in_time || localExtras[g.id]?.check_in_time || "08:00",
-        committed_7_days: g.committed_7_days || localExtras[g.id]?.committed_7_days || false,
+        start_date: g.start_date,
+        live_from_end: g.live_from_end,
+        act_as_if: g.act_as_if || "Take one small action",
+        conviction: g.conviction ?? 5,
+        visualization_minutes: g.visualization_minutes || 3,
+        daily_affirmation: g.daily_affirmation || "",
+        check_in_time: g.check_in_time || "08:00",
+        committed_7_days: g.committed_7_days || false,
         is_completed: g.is_completed || false,
-        is_locked: g.is_locked || localExtras[g.id]?.is_locked || false,
+        is_locked: g.is_locked || false,
         created_at: g.created_at,
         updated_at: g.updated_at,
-        reminder_count: g.reminder_count || localExtras[g.id]?.reminder_count,
-        reminder_times: g.reminder_times || localExtras[g.id]?.reminder_times,
+        reminder_count: g.reminder_count,
+        reminder_times: g.reminder_times,
       }));
 
       setGoals(mergedGoals);
@@ -172,8 +157,7 @@ export default function Manifest() {
           locked: p.locked || false,
         }));
       } else {
-        const allPractices = loadAllPractices();
-        practicesList = Object.values(allPractices).filter((p) => p.user_id === user.id);
+        practicesList = [];
       }
       setPractices(practicesList);
 
@@ -253,12 +237,7 @@ export default function Manifest() {
   // Get previous day's practice for visualization mode
   const getPreviousDayPractice = useCallback((goalId: string): ManifestDailyPractice | null => {
     const yesterday = format(subDays(new Date(), 1), "yyyy-MM-dd");
-    // Check from loaded practices first
-    const found = practices.find(p => p.goal_id === goalId && p.entry_date === yesterday);
-    if (found) return found;
-    // Fallback to localStorage
-    const allPractices = loadAllPractices();
-    return allPractices[`${goalId}_${yesterday}`] || null;
+    return practices.find(p => p.goal_id === goalId && p.entry_date === yesterday) || null;
   }, [practices]);
 
   // Handlers
@@ -367,10 +346,6 @@ export default function Manifest() {
     try {
       const { error } = await supabase.from("manifest_goals").delete().eq("id", deletingGoal.id);
       if (error) throw error;
-
-      const extras = JSON.parse(localStorage.getItem(GOAL_EXTRAS_KEY) || "{}");
-      delete extras[deletingGoal.id];
-      localStorage.setItem(GOAL_EXTRAS_KEY, JSON.stringify(extras));
 
       // Goal deleted, no selected state needed
 

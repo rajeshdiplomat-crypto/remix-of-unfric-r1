@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Flame, Play, Tag, Pencil, Trash2, CheckCircle, RotateCcw, Clock, CalendarDays } from "lucide-react";
-import { type ManifestGoal, type ManifestDailyPractice, DAILY_PRACTICE_KEY, CATEGORIES } from "./types";
+import { type ManifestGoal, type ManifestDailyPractice, CATEGORIES } from "./types";
 import { format, subDays, parseISO, differenceInDays, formatDistanceToNow } from "date-fns";
 import { useMemo } from "react";
 import { useDatePreferences } from "@/hooks/useDatePreferences";

@@ -104,13 +104,12 @@ export default function Settings() {
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
 
-  // Journal template state - load from DB prefs first, then localStorage fallback
+  // Journal template state - load from DB prefs
   const [template, setTemplate] = useState<JournalTemplate>(() => {
     if (prefs.journal_template) {
       return prefs.journal_template as unknown as JournalTemplate;
     }
-    const saved = localStorage.getItem("journal_template");
-    return saved ? JSON.parse(saved) : DEFAULT_TEMPLATE;
+    return DEFAULT_TEMPLATE;
   });
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -475,8 +474,6 @@ export default function Settings() {
             onValueChange={(v) => {
               const updated = { ...template, defaultSkinId: v };
               setTemplate(updated);
-              localStorage.setItem("journal_template", JSON.stringify(updated));
-              localStorage.setItem("journal_skin_id", v);
               setIsDirty(true);
             }}
           >
@@ -498,7 +495,6 @@ export default function Settings() {
             onValueChange={(v) => {
               const updated = { ...template, defaultLineStyle: v };
               setTemplate(updated);
-              localStorage.setItem("journal_template", JSON.stringify(updated));
               setIsDirty(true);
             }}
           >
@@ -547,7 +543,6 @@ export default function Settings() {
                   newQuestions.splice(index, 0, item);
                   const updated = { ...template, questions: newQuestions };
                   setTemplate(updated);
-                  localStorage.setItem("journal_template", JSON.stringify(updated));
                   setIsDirty(true);
                   setDraggedIndex(index);
                 }}
@@ -570,7 +565,6 @@ export default function Settings() {
                           ),
                         };
                         setTemplate(updated);
-                        localStorage.setItem("journal_template", JSON.stringify(updated));
                         setIsDirty(true);
                       }}
                       onBlur={() => setEditingQuestionId(null)}
@@ -593,7 +587,6 @@ export default function Settings() {
                   onClick={() => {
                     const updated = { ...template, questions: template.questions.filter((q) => q.id !== question.id) };
                     setTemplate(updated);
-                    localStorage.setItem("journal_template", JSON.stringify(updated));
                     setIsDirty(true);
                   }}
                   className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
@@ -611,7 +604,6 @@ export default function Settings() {
                 const newQ: JournalQuestion = { id: `q${Date.now()}`, text: "New question...", type: "heading+answer" };
                 const updated = { ...template, questions: [...template.questions, newQ] };
                 setTemplate(updated);
-                localStorage.setItem("journal_template", JSON.stringify(updated));
                 setIsDirty(true);
                 setEditingQuestionId(newQ.id);
               }}
@@ -625,7 +617,6 @@ export default function Settings() {
               onClick={() => {
                 const updated = { ...template, questions: [...DEFAULT_QUESTIONS] };
                 setTemplate(updated);
-                localStorage.setItem("journal_template", JSON.stringify(updated));
                 setIsDirty(true);
               }}
               className="text-xs"

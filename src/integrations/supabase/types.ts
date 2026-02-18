@@ -951,6 +951,7 @@ export type Database = {
           id: string
           journal_mode: string | null
           journal_template: Json | null
+          manifest_viz_settings: Json | null
           motion_enabled: boolean | null
           note_skin_preference: string | null
           notification_diary_prompt: boolean | null
@@ -985,6 +986,7 @@ export type Database = {
           id?: string
           journal_mode?: string | null
           journal_template?: Json | null
+          manifest_viz_settings?: Json | null
           motion_enabled?: boolean | null
           note_skin_preference?: string | null
           notification_diary_prompt?: boolean | null
@@ -1019,6 +1021,7 @@ export type Database = {
           id?: string
           journal_mode?: string | null
           journal_template?: Json | null
+          manifest_viz_settings?: Json | null
           motion_enabled?: boolean | null
           note_skin_preference?: string | null
           notification_diary_prompt?: boolean | null
