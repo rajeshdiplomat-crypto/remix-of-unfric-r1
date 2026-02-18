@@ -1188,7 +1188,7 @@ export default function Habits() {
         />
 
         {/* Dashboard Content */}
-        <div className="flex-1 px-3 sm:px-4 lg:px-8 py-4 pb-16 flex flex-col overflow-y-auto max-w-[1200px] mx-auto w-full">
+        <div className="flex-1 px-3 sm:px-4 lg:px-8 py-4 pb-16 flex flex-col overflow-y-auto max-w-[1400px] mx-auto w-full">
           {/* Top Section: Header + Stats Dashboard */}
           <div className="flex items-center justify-between mb-4 flex-shrink-0">
             <h2 className="text-sm font-normal uppercase tracking-zara-wide text-foreground">Habits Tracker</h2>
