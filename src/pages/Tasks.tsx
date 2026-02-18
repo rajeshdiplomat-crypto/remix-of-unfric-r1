@@ -613,27 +613,19 @@ export default function Tasks() {
     return result;
   }, [tasks, searchQuery, statusFilter, priorityFilter, tagFilter, sortBy]);
 
-  const [contentReady, setContentReady] = useState(false);
-
-  useEffect(() => {
-    if (!loading) {
-      const timer = setTimeout(() => setContentReady(true), 100);
-      return () => clearTimeout(timer);
-    }
-  }, [loading]);
-
-  const showLoading = loading;
+  const [loadingFinished, setLoadingFinished] = useState(false);
+  const isDataReady = !loading;
 
   return (
     <>
-    {showLoading && <PageLoadingScreen module="tasks" />}
-    <div
-      className={cn(
-        "h-full w-full flex flex-col bg-background overflow-x-hidden",
-        "transition-all duration-500 ease-out",
-        contentReady ? "opacity-100" : "opacity-0",
-      )}
-    >
+    {!loadingFinished && (
+      <PageLoadingScreen
+        module="tasks"
+        isDataReady={isDataReady}
+        onFinished={() => setLoadingFinished(true)}
+      />
+    )}
+    <div className="h-full w-full flex flex-col bg-background overflow-x-hidden">
       {/* Hero */}
       <PageHero
         storageKey="tasks_hero_src"
