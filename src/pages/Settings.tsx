@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useUserPreferences } from "@/hooks/useUserSettings";
 import { useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
@@ -95,6 +96,7 @@ export default function Settings() {
 
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { prefs, updatePrefs } = useUserPreferences();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -102,15 +104,23 @@ export default function Settings() {
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
 
-  // Default views are now stored in DB via settings object
-
-  // Journal template state
+  // Journal template state - load from DB prefs first, then localStorage fallback
   const [template, setTemplate] = useState<JournalTemplate>(() => {
+    if (prefs.journal_template) {
+      return prefs.journal_template as unknown as JournalTemplate;
+    }
     const saved = localStorage.getItem("journal_template");
     return saved ? JSON.parse(saved) : DEFAULT_TEMPLATE;
   });
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  // Sync template from DB when prefs load
+  useEffect(() => {
+    if (prefs.journal_template) {
+      setTemplate(prefs.journal_template as unknown as JournalTemplate);
+    }
+  }, [prefs.journal_template]);
 
   // ── Load Settings ────────────────────────────────────────────────
 
@@ -193,7 +203,8 @@ export default function Settings() {
       if (Object.keys(pendingSettings).length > 0) {
         await supabase.from("user_settings").update(pendingSettings).eq("user_id", user.id);
       }
-      // Template is saved to localStorage on change already
+      // Save journal template to DB
+      await updatePrefs({ journal_template: template as any });
       setPendingSettings({});
       setIsDirty(false);
       toast.success("Settings saved");

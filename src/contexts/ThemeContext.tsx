@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { useUserPreferences } from "@/hooks/useUserSettings";
 
 export type ThemeId = "calm-blue" | "forest-green" | "sunset-coral" | "royal-purple" | "warm-sand" | "midnight-dark";
 
@@ -255,10 +256,18 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 const STORAGE_KEY = "unfric-theme";
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
+  const { prefs, updatePrefs } = useUserPreferences();
   const [themeId, setThemeId] = useState<ThemeId>(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     return (stored as ThemeId) || "calm-blue";
   });
+
+  // Sync from DB when prefs load
+  useEffect(() => {
+    if (prefs.theme_id && prefs.theme_id !== themeId) {
+      setThemeId(prefs.theme_id as ThemeId);
+    }
+  }, [prefs.theme_id]);
 
   const theme = THEMES.find((t) => t.id === themeId) || THEMES[0];
 
@@ -269,6 +278,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setTheme = (newThemeId: ThemeId) => {
     setThemeId(newThemeId);
+    updatePrefs({ theme_id: newThemeId });
   };
 
   return <ThemeContext.Provider value={{ theme, themeId, setTheme }}>{children}</ThemeContext.Provider>;

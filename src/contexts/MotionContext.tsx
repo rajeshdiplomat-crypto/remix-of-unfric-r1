@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { useUserPreferences } from "@/hooks/useUserSettings";
 
 interface MotionContextValue {
   motionEnabled: boolean;
@@ -10,8 +11,8 @@ const MotionContext = createContext<MotionContextValue | null>(null);
 const STORAGE_KEY = "unfric-motion";
 
 export function MotionProvider({ children }: { children: ReactNode }) {
+  const { prefs, updatePrefs } = useUserPreferences();
   const [motionEnabled, setMotionState] = useState<boolean>(() => {
-    // Check system preference first
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReducedMotion) return false;
 
@@ -19,10 +20,16 @@ export function MotionProvider({ children }: { children: ReactNode }) {
     return stored === null ? false : stored === "true";
   });
 
+  // Sync from DB when prefs load
+  useEffect(() => {
+    if (prefs.motion_enabled !== undefined && prefs.motion_enabled !== motionEnabled) {
+      setMotionState(prefs.motion_enabled);
+    }
+  }, [prefs.motion_enabled]);
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, String(motionEnabled));
 
-    // Apply motion class to document
     if (motionEnabled) {
       document.documentElement.classList.add("motion-enabled");
     } else {
@@ -31,7 +38,6 @@ export function MotionProvider({ children }: { children: ReactNode }) {
   }, [motionEnabled]);
 
   useEffect(() => {
-    // Listen for system preference changes
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     const handler = (e: MediaQueryListEvent) => {
       if (e.matches) {
@@ -44,6 +50,7 @@ export function MotionProvider({ children }: { children: ReactNode }) {
 
   const setMotionEnabled = (enabled: boolean) => {
     setMotionState(enabled);
+    updatePrefs({ motion_enabled: enabled });
   };
 
   return <MotionContext.Provider value={{ motionEnabled, setMotionEnabled }}>{children}</MotionContext.Provider>;

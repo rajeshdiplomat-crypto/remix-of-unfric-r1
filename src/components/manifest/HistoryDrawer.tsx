@@ -9,6 +9,8 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { type ManifestGoal, type ManifestDailyPractice, DAILY_PRACTICE_KEY } from "./types";
 import { HistoryDayCard } from "./HistoryDayCard";
 import { ProofLightbox } from "./ProofLightbox";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface HistoryDrawerProps {
   goal: ManifestGoal;
@@ -60,54 +62,78 @@ const ENTRIES_PER_PAGE = 5;
 
 export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: HistoryDrawerProps) {
   const { weekStartsOn, formatDate: fmtDate } = useDatePreferences();
+  const { user } = useAuth();
   const [filter, setFilter] = useState<FilterType>("all");
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [historyData, setHistoryData] = useState<HistoryDay[]>([]);
   const [visibleCount, setVisibleCount] = useState(ENTRIES_PER_PAGE);
   const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set());
 
-  // Load history from localStorage
+  // Load history from DB (with localStorage fallback)
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !user) return;
 
-    const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
-    if (!stored) {
-      setHistoryData([]);
-      return;
-    }
+    const loadHistory = async () => {
+      // Try DB first
+      const { data: dbPractices } = await supabase
+        .from("manifest_practices")
+        .select("*")
+        .eq("goal_id", goal.id)
+        .eq("user_id", user.id)
+        .order("entry_date", { ascending: false });
 
-    const allPractices = JSON.parse(stored);
-    const goalPractices: HistoryDay[] = [];
-
-    Object.keys(allPractices).forEach((key) => {
-      if (key.startsWith(`${goal.id}_`)) {
-        const practice = allPractices[key] as Partial<ManifestDailyPractice>;
-        const dateStr = key.replace(`${goal.id}_`, "");
-        
-        goalPractices.push({
-          date: dateStr,
-          practiced: practice.locked || false,
-          alignment: practice.alignment || 0,
-          visualizations: practice.visualizations || [],
-          acts: practice.acts || [],
-          proofs: practice.proofs || [],
-          growth_note: practice.growth_note,
-          gratitudes: practice.gratitudes || [],
-        });
+      if (dbPractices && dbPractices.length > 0) {
+        const goalPractices: HistoryDay[] = dbPractices.map((p: any) => ({
+          date: p.entry_date,
+          practiced: p.locked || false,
+          alignment: p.alignment || 0,
+          visualizations: p.visualizations || [],
+          acts: p.acts || [],
+          proofs: p.proofs || [],
+          growth_note: p.growth_note,
+          gratitudes: p.gratitudes || [],
+        }));
+        goalPractices.sort((a, b) => b.date.localeCompare(a.date));
+        setHistoryData(goalPractices);
+        return;
       }
-    });
 
-    // Sort by date descending
-    goalPractices.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    setHistoryData(goalPractices);
-    setVisibleCount(ENTRIES_PER_PAGE);
-    // Expand the first week by default
-    if (goalPractices.length > 0) {
-      const firstDate = parseISO(goalPractices[0].date);
-      const firstWeekStart = startOfWeek(firstDate, { weekStartsOn });
-      setExpandedWeeks(new Set([firstWeekStart.toISOString()]));
-    }
-  }, [isOpen, goal.id]);
+      // Fallback to localStorage
+      const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
+      if (!stored) {
+        setHistoryData([]);
+        return;
+      }
+
+      const allPractices = JSON.parse(stored);
+      const goalPractices: HistoryDay[] = [];
+
+      Object.keys(allPractices).forEach((key) => {
+        if (key.startsWith(`${goal.id}_`)) {
+          const practice = allPractices[key] as Partial<ManifestDailyPractice>;
+          const dateStr = key.replace(`${goal.id}_`, "");
+          
+          goalPractices.push({
+            date: dateStr,
+            practiced: practice.locked || false,
+            alignment: practice.alignment || 0,
+            visualizations: practice.visualizations || [],
+            acts: practice.acts || [],
+            proofs: practice.proofs || [],
+            growth_note: practice.growth_note,
+            gratitudes: practice.gratitudes || [],
+          });
+        }
+      });
+
+      goalPractices.sort((a, b) => b.date.localeCompare(a.date));
+      setHistoryData(goalPractices);
+    };
+
+    loadHistory().then(() => {
+      setVisibleCount(ENTRIES_PER_PAGE);
+    });
+  }, [isOpen, goal.id, user]);
 
   // Filter data
   const filteredData = useMemo(() => {

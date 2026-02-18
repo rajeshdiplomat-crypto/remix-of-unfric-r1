@@ -324,6 +324,36 @@ export default function Notes() {
       });
   }, [user]);
 
+  // Sync groups and folders from DB
+  useEffect(() => {
+    if (!user) return;
+    const loadFromDb = async () => {
+      const [groupsRes, foldersRes] = await Promise.all([
+        supabase.from("note_groups").select("*").eq("user_id", user.id).order("sort_order"),
+        supabase.from("note_folders").select("*").eq("user_id", user.id).order("sort_order"),
+      ]);
+      if (groupsRes.data && groupsRes.data.length > 0) {
+        const dbGroups: NoteGroup[] = groupsRes.data.map((g: any) => ({
+          id: g.id,
+          name: g.name,
+          color: g.color,
+          sortOrder: g.sort_order,
+        }));
+        setGroups(dbGroups);
+      }
+      if (foldersRes.data && foldersRes.data.length > 0) {
+        const dbFolders: NoteFolder[] = foldersRes.data.map((f: any) => ({
+          id: f.id,
+          groupId: f.group_id,
+          name: f.name,
+          sortOrder: f.sort_order,
+        }));
+        setFolders(dbFolders);
+      }
+    };
+    loadFromDb();
+  }, [user]);
+
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY_NOTES, JSON.stringify(notes));
@@ -332,21 +362,54 @@ export default function Notes() {
     }
   }, [notes]);
 
+  // Save groups to both localStorage and DB
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY_GROUPS, JSON.stringify(groups));
     } catch (e) {
       console.warn("Could not save groups to localStorage");
     }
-  }, [groups]);
+    if (!user) return;
+    // Debounced DB sync
+    const timeout = setTimeout(async () => {
+      for (const g of groups) {
+        await supabase
+          .from("note_groups")
+          .upsert({
+            id: g.id,
+            user_id: user.id,
+            name: g.name,
+            color: g.color,
+            sort_order: g.sortOrder,
+          } as any, { onConflict: "id" } as any);
+      }
+    }, 1000);
+    return () => clearTimeout(timeout);
+  }, [groups, user]);
 
+  // Save folders to both localStorage and DB
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY_FOLDERS, JSON.stringify(folders));
     } catch (e) {
       console.warn("Could not save folders to localStorage");
     }
-  }, [folders]);
+    if (!user) return;
+    const timeout = setTimeout(async () => {
+      for (const f of folders) {
+        await supabase
+          .from("note_folders")
+          .upsert({
+            id: f.id,
+            user_id: user.id,
+            group_id: f.groupId,
+            name: f.name,
+            sort_order: f.sortOrder,
+          } as any, { onConflict: "id" } as any);
+      }
+    }, 1000);
+    return () => clearTimeout(timeout);
+  }, [folders, user]);
 
   // Sync notes FROM Supabase on mount — Supabase is the source of truth for content (especially images)
   useEffect(() => {

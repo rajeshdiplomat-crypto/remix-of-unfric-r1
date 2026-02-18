@@ -56,12 +56,14 @@ interface WeekGroup {
   proofsCount: number;
 }
 
-// Helper to load goal extras from localStorage
+// Helper to load goal extras - DB columns are now primary, localStorage is fallback
 function loadGoalExtras(goalId: string): Partial<ManifestGoal> {
-  const stored = localStorage.getItem(GOAL_EXTRAS_KEY);
-  if (!stored) return {};
-  const all = JSON.parse(stored);
-  return all[goalId] || {};
+  try {
+    const stored = localStorage.getItem(GOAL_EXTRAS_KEY);
+    if (!stored) return {};
+    const all = JSON.parse(stored);
+    return all[goalId] || {};
+  } catch { return {}; }
 }
 
 export default function ManifestHistory() {
@@ -96,24 +98,25 @@ export default function ManifestHistory() {
 
         if (data) {
           const extras = loadGoalExtras(goalId);
+          const d = data as any;
           const mergedGoal: ManifestGoal = {
-            id: data.id,
-            user_id: data.user_id,
-            title: data.title,
-            category: extras.category || "other",
-            vision_image_url: extras.vision_image_url,
-            start_date: extras.start_date,
-            live_from_end: extras.live_from_end,
-            act_as_if: extras.act_as_if || "Take one small action",
-            conviction: extras.conviction ?? 5,
-            visualization_minutes: extras.visualization_minutes || 3,
-            daily_affirmation: extras.daily_affirmation || "",
-            check_in_time: extras.check_in_time || "08:00",
-            committed_7_days: extras.committed_7_days || false,
-            is_completed: data.is_completed || false,
-            is_locked: extras.is_locked || false,
-            created_at: data.created_at,
-            updated_at: data.updated_at,
+            id: d.id,
+            user_id: d.user_id,
+            title: d.title,
+            category: d.category || extras.category || "other",
+            vision_image_url: d.cover_image_url || extras.vision_image_url,
+            start_date: d.start_date || extras.start_date,
+            live_from_end: d.live_from_end || extras.live_from_end,
+            act_as_if: d.act_as_if || extras.act_as_if || "Take one small action",
+            conviction: d.conviction ?? extras.conviction ?? 5,
+            visualization_minutes: d.visualization_minutes || extras.visualization_minutes || 3,
+            daily_affirmation: d.daily_affirmation || extras.daily_affirmation || "",
+            check_in_time: d.check_in_time || extras.check_in_time || "08:00",
+            committed_7_days: d.committed_7_days || extras.committed_7_days || false,
+            is_completed: d.is_completed || false,
+            is_locked: d.is_locked || extras.is_locked || false,
+            created_at: d.created_at,
+            updated_at: d.updated_at,
           };
           setGoal(mergedGoal);
         }
@@ -127,40 +130,61 @@ export default function ManifestHistory() {
     fetchGoal();
   }, [goalId, user]);
 
-  // Load history data
+  // Load history data from DB (with localStorage fallback)
   useEffect(() => {
-    if (!goalId) return;
+    if (!goalId || !user) return;
 
-    const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
-    if (!stored) {
-      setHistoryData([]);
-      return;
-    }
+    const loadHistory = async () => {
+      // Try DB first
+      const { data: dbPractices } = await supabase
+        .from("manifest_practices")
+        .select("*")
+        .eq("goal_id", goalId)
+        .eq("user_id", user.id)
+        .order("entry_date", { ascending: false });
 
-    const allPractices = JSON.parse(stored);
-    const goalPractices: HistoryDay[] = [];
-
-    Object.keys(allPractices).forEach((key) => {
-      if (key.startsWith(`${goalId}_`)) {
-        const practice = allPractices[key] as Partial<ManifestDailyPractice>;
-        const dateStr = key.replace(`${goalId}_`, "");
-
-        goalPractices.push({
-          date: dateStr,
-          practiced: practice.locked || false,
-          alignment: practice.alignment || 0,
-          visualizations: practice.visualizations || [],
-          acts: practice.acts || [],
-          proofs: practice.proofs || [],
-          growth_note: practice.growth_note,
-          gratitudes: practice.gratitudes || [],
-        });
+      if (dbPractices && dbPractices.length > 0) {
+        const goalPractices: HistoryDay[] = dbPractices.map((p: any) => ({
+          date: p.entry_date,
+          practiced: p.locked || false,
+          alignment: p.alignment || 0,
+          visualizations: p.visualizations || [],
+          acts: p.acts || [],
+          proofs: p.proofs || [],
+          growth_note: p.growth_note,
+          gratitudes: p.gratitudes || [],
+        }));
+        setHistoryData(goalPractices);
+        return;
       }
-    });
 
-    goalPractices.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    setHistoryData(goalPractices);
-  }, [goalId]);
+      // Fallback to localStorage
+      const stored = localStorage.getItem(DAILY_PRACTICE_KEY);
+      if (!stored) { setHistoryData([]); return; }
+      const allPractices = JSON.parse(stored);
+      const goalPractices: HistoryDay[] = [];
+      Object.keys(allPractices).forEach((key) => {
+        if (key.startsWith(`${goalId}_`)) {
+          const practice = allPractices[key] as Partial<ManifestDailyPractice>;
+          const dateStr = key.replace(`${goalId}_`, "");
+          goalPractices.push({
+            date: dateStr,
+            practiced: practice.locked || false,
+            alignment: practice.alignment || 0,
+            visualizations: practice.visualizations || [],
+            acts: practice.acts || [],
+            proofs: practice.proofs || [],
+            growth_note: practice.growth_note,
+            gratitudes: practice.gratitudes || [],
+          });
+        }
+      });
+      goalPractices.sort((a, b) => b.date.localeCompare(a.date));
+      setHistoryData(goalPractices);
+    };
+
+    loadHistory();
+  }, [goalId, user]);
 
   // Filter data
   const filteredData = historyData.filter((day) => {
