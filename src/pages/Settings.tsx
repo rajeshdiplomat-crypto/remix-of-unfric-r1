@@ -429,7 +429,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-8">
+    <div className="max-w-2xl mx-auto px-4 py-8 pb-16 space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-light uppercase tracking-[0.15em] text-foreground">Settings</h1>

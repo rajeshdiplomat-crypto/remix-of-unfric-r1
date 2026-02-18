@@ -632,7 +632,7 @@ export default function Diary() {
       />
 
       {/* 3-Column Layout Below Hero */}
-      <div className="flex flex-1 w-full overflow-hidden min-h-0">
+      <div className="flex flex-1 w-full max-w-[1200px] mx-auto overflow-hidden min-h-0">
         {/* Left Sidebar - Editorial style */}
         <aside className="hidden lg:flex flex-col w-[380px] shrink-0 h-full min-h-0 overflow-y-auto border-r border-border/20">
           <DiaryLeftSidebar 
@@ -726,7 +726,7 @@ export default function Diary() {
               </p>
             </Card>
           ) : (
-            <div className="pb-8 space-y-4">
+            <div className="pb-16 space-y-4">
               {sortedEvents.map((event) =>
                 event.type === "journal_question" ? (
                   <JournalQuestionCard

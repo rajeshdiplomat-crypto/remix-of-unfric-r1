@@ -60,22 +60,25 @@ export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
       {/* Overlay */}
       <div
         className={cn(
-          "fixed inset-0 z-50 bg-foreground/20 transition-opacity duration-200",
+          "fixed inset-0 z-50 bg-foreground/10 backdrop-blur-sm transition-opacity duration-300",
           open ? "opacity-100" : "opacity-0 pointer-events-none",
         )}
         onClick={onClose}
       />
 
-      {/* Drawer */}
+      {/* Drawer — Liquid Glass */}
       <div
         className={cn(
-          "fixed top-0 left-0 z-50 h-full w-full max-w-sm bg-background transition-transform duration-200 ease-out",
+          "fixed top-0 left-0 z-50 h-full w-full max-w-sm transition-transform duration-300 ease-out",
+          "bg-background/20 dark:bg-background/20 backdrop-blur-xl",
+          "border-r border-foreground/[0.06]",
+          "shadow-[inset_1px_0_0_0_hsl(var(--foreground)/0.04),_inset_-1px_0_0_0_hsl(var(--foreground)/0.02),_8px_0_30px_-5px_hsl(var(--foreground)/0.08)]",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
         {/* Close */}
         <div className="absolute top-4 right-4">
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-10 w-10 hover:bg-transparent">
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-10 w-10 hover:bg-foreground/10 text-foreground/80 hover:text-foreground">
             <X className="h-5 w-5" />
           </Button>
         </div>
@@ -88,30 +91,56 @@ export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
           </button>
 
           {/* Main nav */}
-          <nav className="space-y-4">
+          <nav className="space-y-1">
             {mainNavItems.map((item) => (
-              <button key={item.url} onClick={() => handleNav(item.url)} className={linkClass(item.url)}>
+              <button
+                key={item.url}
+                onClick={() => handleNav(item.url)}
+                className={cn(
+                  "w-full text-left px-3 py-2 rounded-lg text-sm font-light uppercase tracking-zara-wide transition-all duration-200",
+                  isActive(item.url)
+                    ? "text-foreground bg-foreground/10 backdrop-blur-sm"
+                    : "text-foreground/70 hover:text-foreground hover:bg-foreground/[0.07]",
+                )}
+              >
                 {item.title}
               </button>
             ))}
           </nav>
 
-          <div className="my-5 border-t border-border" />
+          <div className="my-5 border-t border-foreground/[0.08]" />
 
           {/* Productivity */}
-          <nav className="space-y-4">
+          <nav className="space-y-1">
             {productivityItems.map((item) => (
-              <button key={item.url} onClick={() => handleNav(item.url)} className={linkClass(item.url)}>
+              <button
+                key={item.url}
+                onClick={() => handleNav(item.url)}
+                className={cn(
+                  "w-full text-left px-3 py-2 rounded-lg text-sm font-light uppercase tracking-zara-wide transition-all duration-200",
+                  isActive(item.url)
+                    ? "text-foreground bg-foreground/10 backdrop-blur-sm"
+                    : "text-foreground/70 hover:text-foreground hover:bg-foreground/[0.07]",
+                )}
+              >
                 {item.title}
               </button>
             ))}
           </nav>
 
-          <div className="my-5 border-t border-border" />
+          <div className="my-5 border-t border-foreground/[0.08]" />
 
-          {/* Settings + Fullscreen (visible items that are hidden on mobile header) */}
-          <nav className="space-y-4">
-            <button onClick={() => handleNav("/settings")} className={linkClass("/settings")}>
+          {/* Settings */}
+          <nav className="space-y-1">
+            <button
+              onClick={() => handleNav("/settings")}
+              className={cn(
+                "w-full text-left px-3 py-2 rounded-lg text-sm font-light uppercase tracking-zara-wide transition-all duration-200",
+                isActive("/settings")
+                  ? "text-foreground bg-foreground/10 backdrop-blur-sm"
+                  : "text-foreground/70 hover:text-foreground hover:bg-foreground/[0.07]",
+              )}
+            >
               Settings
             </button>
           </nav>
@@ -119,19 +148,19 @@ export function ZaraDrawer({ open, onClose }: ZaraDrawerProps) {
           {/* Footer */}
           <div className="mt-auto pt-6 space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-light uppercase tracking-zara-wide text-muted-foreground">Theme</span>
+              <span className="text-[11px] font-light uppercase tracking-zara-wide text-foreground/50">Theme</span>
               <ThemeToggle collapsed={false} />
             </div>
 
             {user?.email && (
-              <p className="text-[11px] font-light text-muted-foreground truncate uppercase tracking-zara">
+              <p className="text-[11px] font-light text-foreground/50 truncate uppercase tracking-zara">
                 {user.email}
               </p>
             )}
 
             <button
               onClick={handleSignOut}
-              className="text-sm font-light uppercase tracking-zara-wide text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm font-light uppercase tracking-zara-wide text-foreground/50 hover:text-foreground transition-colors"
             >
               Sign Out
             </button>
