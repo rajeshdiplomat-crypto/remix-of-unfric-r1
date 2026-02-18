@@ -1,4 +1,4 @@
-import { Menu, Maximize2, Minimize, Settings, ChevronLeft, ChevronRight, SquareArrowOutUpRight, Maximize } from "lucide-react";
+import { Menu, Maximize2, Minimize, Settings, ChevronLeft, ChevronRight, Maximize, CircleArrowOutUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavLink } from "@/components/NavLink";
 import { useEffect, useState, useCallback } from "react";
@@ -13,14 +13,14 @@ interface ZaraHeaderProps {
 }
 
 const modules = [
-  { name: "DIARY", path: "/diary" },
-  { name: "EMOTIONS", path: "/emotions" },
-  { name: "JOURNAL", path: "/journal" },
-  { name: "MANIFEST", path: "/manifest" },
-  { name: "HABITS", path: "/habits" },
-  { name: "NOTES", path: "/notes" },
-  { name: "TASKS", path: "/tasks" },
-];
+{ name: "DIARY", path: "/diary" },
+{ name: "EMOTIONS", path: "/emotions" },
+{ name: "JOURNAL", path: "/journal" },
+{ name: "MANIFEST", path: "/manifest" },
+{ name: "HABITS", path: "/habits" },
+{ name: "NOTES", path: "/notes" },
+{ name: "TASKS", path: "/tasks" }];
+
 
 export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -53,19 +53,19 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
   const isActive = (path: string) => location.pathname === path;
 
   const iconClass = (scrolled: boolean) =>
-    cn(
-      "h-8 w-8 rounded-full hover:bg-foreground/10 transition-all duration-300",
-      scrolled ? "text-foreground/60 hover:text-foreground" : "text-foreground/70 hover:text-foreground",
-    );
+  cn(
+    "h-8 w-8 rounded-full hover:bg-foreground/10 transition-all duration-300",
+    scrolled ? "text-foreground/60 hover:text-foreground" : "text-foreground/70 hover:text-foreground"
+  );
 
   return (
     <header
       className={cn(
         "fixed top-0 left-0 right-0 z-40 transition-all duration-300 ease-out",
         "bg-background/10 backdrop-blur-lg border-b border-foreground/[0.06]",
-        "shadow-[inset_0_-1px_0_0_hsl(var(--foreground)/0.04)]",
-      )}
-    >
+        "shadow-[inset_0_-1px_0_0_hsl(var(--foreground)/0.04)]"
+      )}>
+
       <div className="flex items-center justify-between h-14 px-3 sm:px-4 lg:px-8">
         {/* Left: Hamburger + Logo */}
         <div className="flex items-center gap-2 sm:gap-4">
@@ -75,9 +75,9 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
             onClick={onMenuClick}
             className={cn(
               "h-12 w-12 sm:h-16 sm:w-16 hover:bg-transparent transition-all duration-300",
-              isScrolled ? "text-foreground" : "text-foreground [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]",
-            )}
-          >
+              isScrolled ? "text-foreground" : "text-foreground [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
+            )}>
+
             <Menu className="h-7 w-7 sm:h-10 sm:w-10" strokeWidth={2} />
           </Button>
           <NavLink to="/diary" className="flex items-center">
@@ -85,36 +85,36 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
               size="md"
               className={cn(
                 "transition-all duration-300",
-                isScrolled ? "" : "[text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]",
-              )}
-            />
+                isScrolled ? "" : "[text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
+              )} />
+
           </NavLink>
         </div>
 
         {/* Center: Module Nav — desktop only */}
         <nav className="hidden lg:flex items-center gap-6">
-          {modules.map((module) => (
-            <NavLink
-              key={module.path}
-              to={module.path}
-              className={cn(
-                "text-[11px] font-light uppercase tracking-zara-wide transition-all duration-300",
-                isActive(module.path)
-                  ? cn(
-                      "border-b pb-0.5",
-                      isScrolled
-                        ? "text-foreground border-foreground"
-                        : "text-foreground border-foreground [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]",
-                    )
-                  : cn(
-                      "hover:text-foreground",
-                      isScrolled ? "text-foreground/60" : "text-foreground/70 [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]",
-                    ),
-              )}
-            >
+          {modules.map((module) =>
+          <NavLink
+            key={module.path}
+            to={module.path}
+            className={cn(
+              "text-[11px] font-light uppercase tracking-zara-wide transition-all duration-300",
+              isActive(module.path) ?
+              cn(
+                "border-b pb-0.5",
+                isScrolled ?
+                "text-foreground border-foreground" :
+                "text-foreground border-foreground [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
+              ) :
+              cn(
+                "hover:text-foreground",
+                isScrolled ? "text-foreground/60" : "text-foreground/70 [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
+              )
+            )}>
+
               {module.name}
             </NavLink>
-          ))}
+          )}
         </nav>
 
         {/* Right: Action buttons */}
@@ -122,16 +122,16 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
           className={cn(
             "flex items-center gap-0.5 px-1 py-0.5 transition-all duration-300 rounded-sm",
 
-            isScrolled ? "bg-muted/60" : "bg-foreground/10 backdrop-blur-sm",
-          )}
-        >
+            isScrolled ? "bg-muted/60" : "bg-foreground/10 backdrop-blur-sm"
+          )}>
+
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate(-1)}
             className={iconClass(isScrolled)}
-            title="Back"
-          >
+            title="Back">
+
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button
@@ -139,8 +139,8 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
             size="icon"
             onClick={() => navigate(1)}
             className={iconClass(isScrolled)}
-            title="Forward"
-          >
+            title="Forward">
+
             <ChevronRight className="h-4 w-4" />
           </Button>
 
@@ -159,8 +159,8 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
             size="icon"
             onClick={toggleFullscreen}
             className={cn(iconClass(isScrolled), "hidden sm:flex")}
-            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-          >
+            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}>
+
             {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
           </Button>
 
@@ -172,13 +172,13 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
               size="icon"
               onClick={() => signOut()}
               className={iconClass(isScrolled)}
-              title="Sign Out"
-            >
-              <SquareArrowOutUpRight className="h-4 w-4" />
+              title="Sign Out">
+
+              <CircleArrowOutUpRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </div>
-    </header>
-  );
+    </header>);
+
 }
