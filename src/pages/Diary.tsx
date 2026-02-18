@@ -600,27 +600,22 @@ export default function Diary() {
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
-  const [contentReady, setContentReady] = useState(false);
+  const [loadingFinished, setLoadingFinished] = useState(false);
   const userName = user?.email?.split("@")[0] || "User";
 
-  useEffect(() => {
-    if (!loading || events.length > 0) {
-      const timer = setTimeout(() => setContentReady(true), 100);
-      return () => clearTimeout(timer);
-    }
-  }, [loading, events.length]);
-
-  const showLoading = loading && events.length === 0;
+  const isDataReady = !loading || events.length > 0;
 
   return (
     <>
-    {showLoading && <PageLoadingScreen module="diary" />}
+    {!loadingFinished && (
+      <PageLoadingScreen
+        module="diary"
+        isDataReady={isDataReady}
+        onFinished={() => setLoadingFinished(true)}
+      />
+    )}
     <div
-      className={cn(
-        "flex flex-col w-full h-full overflow-hidden",
-        "transition-all duration-500 ease-out",
-        contentReady ? "opacity-100" : "opacity-0",
-      )}
+      className="flex flex-col w-full h-full overflow-hidden"
     >
       {/* Full-width Hero */}
       <PageHero
