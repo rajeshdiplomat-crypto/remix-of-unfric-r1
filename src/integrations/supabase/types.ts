@@ -195,6 +195,41 @@ export type Database = {
           },
         ]
       }
+      focus_sessions: {
+        Row: {
+          created_at: string
+          duration_minutes: number
+          id: string
+          task_completed: boolean
+          task_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          task_completed?: boolean
+          task_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          task_completed?: boolean
+          task_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "focus_sessions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       habit_completions: {
         Row: {
           completed_date: string
@@ -692,8 +727,12 @@ export type Database = {
           group_id: string | null
           has_checklist: boolean | null
           id: string
+          is_archived: boolean | null
+          is_pinned: boolean | null
+          plain_text: string | null
           scribble_data: string | null
           skin: string | null
+          sort_order: number | null
           tags: string[] | null
           title: string
           updated_at: string
@@ -709,8 +748,12 @@ export type Database = {
           group_id?: string | null
           has_checklist?: boolean | null
           id?: string
+          is_archived?: boolean | null
+          is_pinned?: boolean | null
+          plain_text?: string | null
           scribble_data?: string | null
           skin?: string | null
+          sort_order?: number | null
           tags?: string[] | null
           title?: string
           updated_at?: string
@@ -726,8 +769,12 @@ export type Database = {
           group_id?: string | null
           has_checklist?: boolean | null
           id?: string
+          is_archived?: boolean | null
+          is_pinned?: boolean | null
+          plain_text?: string | null
           scribble_data?: string | null
           skin?: string | null
+          sort_order?: number | null
           tags?: string[] | null
           title?: string
           updated_at?: string
