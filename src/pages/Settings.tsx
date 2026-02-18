@@ -24,12 +24,14 @@ import {
   GripVertical,
   Edit3,
   Save,
+  MessageSquareHeart,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UnifiedTimePicker } from "@/components/common/UnifiedTimePicker";
 import { cn } from "@/lib/utils";
+import { HelpFeedbackForm } from "@/components/settings/HelpFeedbackForm";
 import { useNotificationPermission } from "@/hooks/useNotifications";
 import {
   JournalTemplate,
@@ -963,6 +965,13 @@ export default function Settings() {
             </SelectContent>
           </Select>
         </SettingsRow>
+      </SettingsSection>
+
+      {/* ─── Section: Help & Feedback ─── */}
+      <SettingsSection icon={MessageSquareHeart} title="Help & Feedback">
+        <div className="px-4 py-4">
+          <HelpFeedbackForm />
+        </div>
       </SettingsSection>
 
       {/* ─── Dialogs ─── */}
