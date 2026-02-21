@@ -1,8 +1,9 @@
-const CACHE_NAME = 'unfric-shell-v2';
+const CACHE_NAME = 'unfric-shell-v3';
 
 // App Shell assets to pre-cache — UI is always visible
 const APP_SHELL = [
   '/',
+  '/index.html',
   '/manifest.json',
   '/favicon.png',
   '/icons/icon-192x192.png',
@@ -12,6 +13,7 @@ const APP_SHELL = [
 
 // Install: pre-cache app shell
 self.addEventListener('install', (event) => {
+  console.log('[SW] Installing unfric-shell-v3…');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>
       cache.addAll(APP_SHELL).catch((err) => {
@@ -24,12 +26,16 @@ self.addEventListener('install', (event) => {
 
 // Activate: clean old caches
 self.addEventListener('activate', (event) => {
+  console.log('[SW] Activating unfric-shell-v3…');
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
         keys
           .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
+          .map((key) => {
+            console.log('[SW] Deleting old cache:', key);
+            return caches.delete(key);
+          })
       )
     )
   );
@@ -49,18 +55,25 @@ self.addEventListener('fetch', (event) => {
   if (url.hostname.includes('supabase')) return;
   if (url.pathname.startsWith('/rest/') || url.pathname.startsWith('/auth/')) return;
 
-  // Navigation requests → serve cached app shell (SPA fallback)
+  // Navigation requests → Network-first, fallback to cached index.html
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
         .then((response) => {
           if (response.ok) {
             const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put('/', clone));
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put('/', clone.clone());
+              cache.put('/index.html', clone);
+            });
           }
           return response;
         })
-        .catch(() => caches.match('/'))
+        .catch(() => {
+          console.log('[SW] Navigation offline — serving cached /index.html');
+          return caches.match('/index.html')
+            .then((cached) => cached || caches.match('/'));
+        })
     );
     return;
   }

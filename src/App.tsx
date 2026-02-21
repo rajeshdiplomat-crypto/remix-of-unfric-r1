@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { useIsRestoring } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
@@ -32,6 +33,26 @@ import TaskFocus from "./pages/TaskFocus";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
+
+/**
+ * Gate that waits for the IDB cache to be restored before rendering children.
+ * Prevents blank/empty screens while IndexedDB is still loading.
+ */
+function RestorationGate({ children }: { children: React.ReactNode }) {
+  const isRestoring = useIsRestoring();
+
+  if (isRestoring) {
+    console.log("[RestorationGate] ⏳ Restoring cache from IndexedDB…");
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse text-muted-foreground text-sm">Loading your data…</div>
+      </div>
+    );
+  }
+
+  console.log("[RestorationGate] ✅ Cache restored, rendering app");
+  return <>{children}</>;
+}
 
 function HomeRedirect() {
   const { user, loading: authLoading } = useAuth();
@@ -136,6 +157,9 @@ const App = () => (
   <PersistQueryClientProvider
     client={queryClient}
     persistOptions={{ persister: idbPersister }}
+    onSuccess={() => {
+      console.log("[PersistQueryClient] ✅ Cache restoration complete");
+    }}
   >
     <ThemeProvider>
       <CustomThemeProvider>
@@ -148,25 +172,27 @@ const App = () => (
               <BrowserRouter>
                 <AuthProvider>
                   <OfflineSyncProvider>
-                    <NotificationScheduler />
-                    <InstallPrompt />
-                    <Routes>
-                      <Route path="/auth" element={<Auth />} />
-                      <Route path="/" element={<HomeRedirect />} />
-                      <Route path="/diary" element={<ProtectedRoute><Diary /></ProtectedRoute>} />
-                      <Route path="/emotions" element={<ProtectedRoute><Emotions /></ProtectedRoute>} />
-                      <Route path="/journal" element={<ProtectedRoute><Journal /></ProtectedRoute>} />
-                      <Route path="/manifest" element={<ProtectedRoute><Manifest /></ProtectedRoute>} />
-                      <Route path="/manifest/practice/:goalId" element={<ProtectedRoute><ManifestPractice /></ProtectedRoute>} />
-                      <Route path="/manifest/history/:goalId" element={<ProtectedRoute><ManifestHistory /></ProtectedRoute>} />
-                      <Route path="/habits" element={<ProtectedRoute><Habits /></ProtectedRoute>} />
-                      <Route path="/trackers" element={<Navigate to="/habits" replace />} />
-                      <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
-                      <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-                      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                      <Route path="/tasks/focus/:taskId" element={<ProtectedFullscreenRoute><TaskFocus /></ProtectedFullscreenRoute>} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
+                    <RestorationGate>
+                      <NotificationScheduler />
+                      <InstallPrompt />
+                      <Routes>
+                        <Route path="/auth" element={<Auth />} />
+                        <Route path="/" element={<HomeRedirect />} />
+                        <Route path="/diary" element={<ProtectedRoute><Diary /></ProtectedRoute>} />
+                        <Route path="/emotions" element={<ProtectedRoute><Emotions /></ProtectedRoute>} />
+                        <Route path="/journal" element={<ProtectedRoute><Journal /></ProtectedRoute>} />
+                        <Route path="/manifest" element={<ProtectedRoute><Manifest /></ProtectedRoute>} />
+                        <Route path="/manifest/practice/:goalId" element={<ProtectedRoute><ManifestPractice /></ProtectedRoute>} />
+                        <Route path="/manifest/history/:goalId" element={<ProtectedRoute><ManifestHistory /></ProtectedRoute>} />
+                        <Route path="/habits" element={<ProtectedRoute><Habits /></ProtectedRoute>} />
+                        <Route path="/trackers" element={<Navigate to="/habits" replace />} />
+                        <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
+                        <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+                        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                        <Route path="/tasks/focus/:taskId" element={<ProtectedFullscreenRoute><TaskFocus /></ProtectedFullscreenRoute>} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </RestorationGate>
                   </OfflineSyncProvider>
                 </AuthProvider>
               </BrowserRouter>
