@@ -203,7 +203,7 @@ export function DiaryFeedCard({
   };
 
   return (
-    <Card className="overflow-hidden max-w-full bg-card border-border/40 shadow-[0_6px_18px_hsl(210_29%_8%/0.06)] hover:shadow-[0_10px_30px_hsl(210_29%_8%/0.08)] transition-all duration-200 rounded-[10px] mb-6">
+    <Card className="feed-card overflow-hidden max-w-full bg-card border-border/40 shadow-[0_6px_18px_hsl(210_29%_8%/0.06)] hover:shadow-[0_10px_30px_hsl(210_29%_8%/0.08)] transition-all duration-200 rounded-[10px] mb-6">
       {/* All modules now use vertical layout - no left-side images */}
       <div className="flex flex-col">
         <div className="flex-1 min-w-0">
