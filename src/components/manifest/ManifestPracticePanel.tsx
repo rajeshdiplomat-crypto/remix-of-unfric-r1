@@ -69,12 +69,10 @@ export function ManifestPracticePanel({
   const loadPractice = async (date: string): Promise<Partial<ManifestDailyPractice>> => {
     if (!user) return {};
     try {
-      const { data } = await supabase
-        .from("manifest_practices")
-        .select("*")
-        .eq("goal_id", goal.id)
-        .eq("entry_date", date)
-        .maybeSingle();
+      const { data: response, error } = await supabase.functions.invoke('manage-manifest', {
+        body: { action: 'fetch_practice', goalId: goal.id, dateStr: date }
+      });
+      const data = response?.data;
       if (data) {
         return {
           visualizations: (data as any).visualizations || [],
@@ -109,9 +107,12 @@ export function ManifestPracticePanel({
         growth_note: practice.growth_note ?? null,
         locked: practice.locked ?? false,
       };
-      await supabase
-        .from("manifest_practices")
-        .upsert(upsertData, { onConflict: "goal_id,entry_date" } as any);
+      await supabase.functions.invoke('manage-manifest', {
+        body: {
+          action: 'upsert_practice',
+          practice: upsertData
+        }
+      });
     } catch (e) {
       console.warn("Failed to save practice to DB:", e);
     }
@@ -309,7 +310,13 @@ export function ManifestPracticePanel({
 
     // Update database directly (no more localStorage extras)
     try {
-      const { error } = await supabase.from("manifest_goals").update({ cover_image_url: url }).eq("id", goal.id);
+      const { error } = await supabase.functions.invoke('manage-manifest', {
+        body: {
+          action: 'update_goal',
+          goalId: goal.id,
+          updates: { cover_image_url: url }
+        }
+      });
 
       if (error) throw error;
       toast.success("Vision image updated");
@@ -362,19 +369,17 @@ export function ManifestPracticePanel({
     const isExpanded = expandedSection === id;
     return (
       <Card
-        className={`overflow-hidden cursor-pointer transition-all ${
-          done
+        className={`overflow-hidden cursor-pointer transition-all ${done
             ? "border-teal-200 dark:border-teal-800 bg-teal-50/30 dark:bg-teal-900/10"
             : ""
-        } ${disabled ? "opacity-60 pointer-events-none" : ""}`}
+          } ${disabled ? "opacity-60 pointer-events-none" : ""}`}
         onClick={() => !disabled && toggle(id)}
       >
         {/* Square card header */}
         <div className="flex items-center gap-3 p-3">
           <div
-            className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-              done ? "bg-teal-500 text-white" : "bg-muted text-muted-foreground"
-            }`}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${done ? "bg-teal-500 text-white" : "bg-muted text-muted-foreground"
+              }`}
           >
             {done ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
           </div>

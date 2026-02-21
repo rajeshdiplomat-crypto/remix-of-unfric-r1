@@ -160,12 +160,12 @@ export function GuidedVisualization({ strategy, onComplete, onSkip }: GuidedVisu
       try {
         oscillatorRef.current.stop();
         oscillatorRef.current.disconnect();
-      } catch (e) {}
+      } catch (e) { }
     }
     if (audioContextRef.current) {
       try {
         audioContextRef.current.close();
-      } catch (e) {}
+      } catch (e) { }
     }
     oscillatorRef.current = null;
     audioContextRef.current = null;
@@ -227,7 +227,7 @@ export function GuidedVisualization({ strategy, onComplete, onSkip }: GuidedVisu
           {/* Animated circle */}
           <div
             className={cn(
-              "w-32 h-32 rounded-full transition-all duration-[4000ms] ease-in-out",
+              "w-32 h-32 rounded-full transition-all duration-[length:4000ms] ease-in-out",
               isPlaying ? "scale-110 opacity-80" : "scale-100 opacity-40",
               getAnimationClass(),
             )}

@@ -326,27 +326,36 @@ export default function Notes() {
   useEffect(() => {
     if (!user) return;
     const loadFromDb = async () => {
-      const [groupsRes, foldersRes] = await Promise.all([
-        supabase.from("note_groups").select("*").eq("user_id", user.id).order("sort_order"),
-        supabase.from("note_folders").select("*").eq("user_id", user.id).order("sort_order"),
-      ]);
-      if (groupsRes.data && groupsRes.data.length > 0) {
-        const dbGroups: NoteGroup[] = groupsRes.data.map((g: any) => ({
-          id: g.id,
-          name: g.name,
-          color: g.color,
-          sortOrder: g.sort_order,
-        }));
-        setGroups(dbGroups);
-      }
-      if (foldersRes.data && foldersRes.data.length > 0) {
-        const dbFolders: NoteFolder[] = foldersRes.data.map((f: any) => ({
-          id: f.id,
-          groupId: f.group_id,
-          name: f.name,
-          sortOrder: f.sort_order,
-        }));
-        setFolders(dbFolders);
+      try {
+        const { data: response, error } = await supabase.functions.invoke('manage-notes', {
+          body: { action: 'fetch_all' }
+        });
+
+        if (error) throw error;
+
+        const groupsRes = response?.data?.groups || [];
+        const foldersRes = response?.data?.folders || [];
+
+        if (groupsRes.length > 0) {
+          const dbGroups: NoteGroup[] = groupsRes.map((g: any) => ({
+            id: g.id,
+            name: g.name,
+            color: g.color,
+            sortOrder: g.sort_order,
+          }));
+          setGroups(dbGroups);
+        }
+        if (foldersRes.length > 0) {
+          const dbFolders: NoteFolder[] = foldersRes.map((f: any) => ({
+            id: f.id,
+            groupId: f.group_id,
+            name: f.name,
+            sortOrder: f.sort_order,
+          }));
+          setFolders(dbFolders);
+        }
+      } catch (err) {
+        console.error("Failed to fetch groups/folders:", err);
       }
     };
     loadFromDb();
@@ -373,15 +382,17 @@ export default function Notes() {
     // Debounced DB sync
     const timeout = setTimeout(async () => {
       for (const g of groups) {
-        await supabase
-          .from("note_groups")
-          .upsert({
-            id: g.id,
-            user_id: user.id,
-            name: g.name,
-            color: g.color,
-            sort_order: g.sortOrder,
-          } as any, { onConflict: "id" } as any);
+        await supabase.functions.invoke('manage-notes', {
+          body: {
+            action: 'upsert_group',
+            group: {
+              id: g.id,
+              name: g.name,
+              color: g.color,
+              sort_order: g.sortOrder,
+            }
+          }
+        });
       }
     }, 1000);
     return () => clearTimeout(timeout);
@@ -397,15 +408,17 @@ export default function Notes() {
     if (!user) return;
     const timeout = setTimeout(async () => {
       for (const f of folders) {
-        await supabase
-          .from("note_folders")
-          .upsert({
-            id: f.id,
-            user_id: user.id,
-            group_id: f.groupId,
-            name: f.name,
-            sort_order: f.sortOrder,
-          } as any, { onConflict: "id" } as any);
+        await supabase.functions.invoke('manage-notes', {
+          body: {
+            action: 'upsert_folder',
+            folder: {
+              id: f.id,
+              group_id: f.groupId,
+              name: f.name,
+              sort_order: f.sortOrder,
+            }
+          }
+        });
       }
     }, 1000);
     return () => clearTimeout(timeout);
@@ -421,11 +434,10 @@ export default function Notes() {
       return;
     }
     const loadFromDb = async () => {
-      const { data: dbNotes, error } = await supabase
-        .from("notes")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("updated_at", { ascending: false });
+      const { data: response, error } = await supabase.functions.invoke('manage-notes', {
+        body: { action: 'fetch_all' }
+      });
+      const dbNotes = response?.data?.notes;
 
       if (error) {
         console.error("Failed to load notes from DB:", error);
@@ -445,23 +457,27 @@ export default function Notes() {
           for (const note of localNotes) {
             const category: "thoughts" | "creative" | "private" =
               note.groupId === "personal" ? "private" : note.groupId === "hobby" ? "creative" : "thoughts";
-            await supabase.from("notes").upsert({
-              id: note.id,
-              user_id: user.id,
-              title: note.title || "Untitled",
-              content: note.contentRich || note.plainText,
-              category,
-              tags: note.tags,
-              group_id: note.groupId || null,
-              folder_id: note.folderId || null,
-              is_pinned: note.isPinned || false,
-              is_archived: note.isArchived || false,
-              sort_order: note.sortOrder || 0,
-              plain_text: note.plainText || null,
-              skin: note.pageTheme && note.lineStyle ? JSON.stringify({ pageTheme: note.pageTheme, lineStyle: note.lineStyle }) : null,
-              scribble_data: note.scribbleStrokes || null,
-              created_at: note.createdAt,
-              updated_at: note.updatedAt,
+            await supabase.functions.invoke('manage-notes', {
+              body: {
+                action: 'upsert_note',
+                note: {
+                  id: note.id,
+                  title: note.title || "Untitled",
+                  content: note.contentRich || note.plainText,
+                  category,
+                  tags: note.tags,
+                  group_id: note.groupId || null,
+                  folder_id: note.folderId || null,
+                  is_pinned: note.isPinned || false,
+                  is_archived: note.isArchived || false,
+                  sort_order: note.sortOrder || 0,
+                  plain_text: note.plainText || null,
+                  skin: note.pageTheme && note.lineStyle ? JSON.stringify({ pageTheme: note.pageTheme, lineStyle: note.lineStyle }) : null,
+                  scribble_data: note.scribbleStrokes || null,
+                  created_at: note.createdAt,
+                  updated_at: note.updatedAt,
+                }
+              }
             });
           }
           setNotes(localNotes);
@@ -510,8 +526,8 @@ export default function Notes() {
         const q = searchQuery.trim().toLowerCase();
         const matchesSearch = q
           ? note.title.toLowerCase().includes(q) ||
-            note.plainText.toLowerCase().includes(q) ||
-            note.tags.some((tag) => tag.toLowerCase().includes(q))
+          note.plainText.toLowerCase().includes(q) ||
+          note.tags.some((tag) => tag.toLowerCase().includes(q))
           : true;
 
         const matchesFilter = filterGroupId === "all" || note.groupId === filterGroupId;
@@ -566,29 +582,33 @@ export default function Notes() {
           const { extractImagesFromTiptapJSON } = await import("@/lib/editorUtils");
           const jsonImages = extractImagesFromTiptapJSON(note.contentRich);
           if (jsonImages.length > 0) coverImageUrl = jsonImages[0];
-        } catch {}
+        } catch { }
       }
     }
 
     try {
-      const { error } = await supabase.from("notes").upsert({
-        id: note.id,
-        user_id: user.id,
-        title: note.title || "Untitled",
-        content: note.contentRich || note.plainText,
-        cover_image_url: coverImageUrl,
-        category,
-        tags: note.tags,
-        group_id: note.groupId || null,
-        folder_id: note.folderId || null,
-        is_pinned: note.isPinned || false,
-        is_archived: note.isArchived || false,
-        sort_order: note.sortOrder || 0,
-        plain_text: note.plainText || null,
-        skin: note.pageTheme && note.lineStyle ? JSON.stringify({ pageTheme: note.pageTheme, lineStyle: note.lineStyle }) : null,
-        scribble_data: note.scribbleStrokes || null,
-        created_at: note.createdAt,
-        updated_at: note.updatedAt,
+      const { error } = await supabase.functions.invoke('manage-notes', {
+        body: {
+          action: 'upsert_note',
+          note: {
+            id: note.id,
+            title: note.title || "Untitled",
+            content: note.contentRich || note.plainText,
+            cover_image_url: coverImageUrl,
+            category,
+            tags: note.tags,
+            group_id: note.groupId || null,
+            folder_id: note.folderId || null,
+            is_pinned: note.isPinned || false,
+            is_archived: note.isArchived || false,
+            sort_order: note.sortOrder || 0,
+            plain_text: note.plainText || null,
+            skin: note.pageTheme && note.lineStyle ? JSON.stringify({ pageTheme: note.pageTheme, lineStyle: note.lineStyle }) : null,
+            scribble_data: note.scribbleStrokes || null,
+            created_at: note.createdAt,
+            updated_at: note.updatedAt,
+          }
+        }
       });
 
       if (error) {
@@ -699,7 +719,9 @@ export default function Notes() {
     }
 
     if (user?.id) {
-      await supabase.from("notes").delete().eq("id", noteId).eq("user_id", user.id);
+      await supabase.functions.invoke('manage-notes', {
+        body: { action: 'delete_note', noteId }
+      });
     }
 
     toast({ title: "Note deleted" });

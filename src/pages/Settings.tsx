@@ -127,59 +127,43 @@ export default function Settings() {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await supabase.from("user_settings").select("*").eq("user_id", user.id).single();
-
-      if (data) {
-        setSettings({
-          timezone: data.timezone,
-          date_format: data.date_format,
-          start_of_week: data.start_of_week,
-          default_home_screen: data.default_home_screen,
-          daily_reset_time: data.daily_reset_time,
-          notification_diary_prompt: data.notification_diary_prompt,
-          notification_emotion_checkin: data.notification_emotion_checkin,
-          notification_task_reminder: data.notification_task_reminder,
-          privacy_blur_sensitive: data.privacy_blur_sensitive,
-          privacy_passcode_enabled: data.privacy_passcode_enabled,
-          note_skin_preference: data.note_skin_preference,
-          default_task_tab: (data as any).default_task_tab ?? "board",
-          default_task_view: (data as any).default_task_view ?? "status",
-          default_notes_view: (data as any).default_notes_view ?? "list",
-          default_emotions_tab: (data as any).default_emotions_tab ?? "feel",
-          journal_mode: (data as any).journal_mode ?? "structured",
-          time_format: data.time_format ?? "24h",
-          reminder_time_diary: (data as any).reminder_time_diary ?? "08:00",
-          reminder_time_habits: (data as any).reminder_time_habits ?? "08:00",
-          reminder_time_emotions: (data as any).reminder_time_emotions ?? "08:00",
+      try {
+        const { data: response, error } = await supabase.functions.invoke('manage-settings', {
+          body: { action: 'fetch_settings' }
         });
-      } else {
-        // Create default row
-        const defaults: UserSettings = {
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          date_format: "MM/DD",
-          start_of_week: "monday",
-          default_home_screen: "diary",
-          daily_reset_time: "08:00",
-          notification_diary_prompt: true,
-          notification_emotion_checkin: true,
-          notification_task_reminder: true,
-          privacy_blur_sensitive: false,
-          privacy_passcode_enabled: false,
-          note_skin_preference: null,
-          default_task_tab: "board",
-          default_task_view: "status",
-          default_notes_view: "atlas",
-          default_emotions_tab: "feel",
-          journal_mode: "structured",
-          time_format: "24h",
-          reminder_time_diary: "08:00",
-          reminder_time_habits: "08:00",
-          reminder_time_emotions: "08:00",
-        };
-        await supabase.from("user_settings").insert({ user_id: user.id, ...defaults });
-        setSettings(defaults);
+
+        if (error) throw error;
+
+        const data = response?.data;
+        if (data) {
+          setSettings({
+            timezone: data.timezone,
+            date_format: data.date_format,
+            start_of_week: data.start_of_week,
+            default_home_screen: data.default_home_screen,
+            daily_reset_time: data.daily_reset_time,
+            notification_diary_prompt: data.notification_diary_prompt,
+            notification_emotion_checkin: data.notification_emotion_checkin,
+            notification_task_reminder: data.notification_task_reminder,
+            privacy_blur_sensitive: data.privacy_blur_sensitive,
+            privacy_passcode_enabled: data.privacy_passcode_enabled,
+            note_skin_preference: data.note_skin_preference,
+            default_task_tab: data.default_task_tab ?? "board",
+            default_task_view: data.default_task_view ?? "status",
+            default_notes_view: data.default_notes_view ?? "list",
+            default_emotions_tab: data.default_emotions_tab ?? "feel",
+            journal_mode: data.journal_mode ?? "structured",
+            time_format: data.time_format ?? "24h",
+            reminder_time_diary: data.reminder_time_diary ?? "08:00",
+            reminder_time_habits: data.reminder_time_habits ?? "08:00",
+            reminder_time_emotions: data.reminder_time_emotions ?? "08:00",
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load settings:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     })();
   }, [user]);
 
@@ -201,7 +185,12 @@ export default function Settings() {
     try {
       // Save DB settings
       if (Object.keys(pendingSettings).length > 0) {
-        await supabase.from("user_settings").update(pendingSettings).eq("user_id", user.id);
+        await supabase.functions.invoke('manage-settings', {
+          body: {
+            action: 'update_settings',
+            updates: pendingSettings
+          }
+        });
       }
       // Save journal template to DB
       await updatePrefs({ journal_template: template as any });
@@ -238,10 +227,12 @@ export default function Settings() {
     }
 
     if (user) {
-      await supabase
-        .from("user_settings")
-        .update({ [field]: value })
-        .eq("user_id", user.id);
+      await supabase.functions.invoke('manage-settings', {
+        body: {
+          action: 'update_settings',
+          updates: { [field]: value }
+        }
+      });
     }
   };
 
@@ -251,26 +242,13 @@ export default function Settings() {
     if (!user) return;
     setExportLoading(true);
     try {
-      const [emotions, journal, habits, habitCompletions, notes, tasks, goals] = await Promise.all([
-        supabase.from("emotions").select("*").eq("user_id", user.id),
-        supabase.from("journal_entries").select("*").eq("user_id", user.id),
-        supabase.from("habits").select("*").eq("user_id", user.id),
-        supabase.from("habit_completions").select("*").eq("user_id", user.id),
-        supabase.from("notes").select("*").eq("user_id", user.id),
-        supabase.from("tasks").select("*").eq("user_id", user.id),
-        supabase.from("manifest_goals").select("*").eq("user_id", user.id),
-      ]);
+      const { data: response, error } = await supabase.functions.invoke('manage-settings', {
+        body: { action: 'export_data' }
+      });
 
-      const exportData = {
-        exported_at: new Date().toISOString(),
-        emotions: emotions.data || [],
-        journal_entries: journal.data || [],
-        habits: habits.data || [],
-        habit_completions: habitCompletions.data || [],
-        notes: notes.data || [],
-        tasks: tasks.data || [],
-        manifest_goals: goals.data || [],
-      };
+      if (error) throw error;
+      const exportData = response?.data;
+      if (!exportData) throw new Error("No data received");
 
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -293,14 +271,12 @@ export default function Settings() {
     if (!user) return;
     setExportLoading(true);
     try {
-      const [emotions, journal, habits, notes, tasks, goals] = await Promise.all([
-        supabase.from("emotions").select("*").eq("user_id", user.id),
-        supabase.from("journal_entries").select("*").eq("user_id", user.id),
-        supabase.from("habits").select("*").eq("user_id", user.id),
-        supabase.from("notes").select("*").eq("user_id", user.id),
-        supabase.from("tasks").select("*").eq("user_id", user.id),
-        supabase.from("manifest_goals").select("*").eq("user_id", user.id),
-      ]);
+      const { data: response, error } = await supabase.functions.invoke('manage-settings', {
+        body: { action: 'export_data' }
+      });
+
+      if (error) throw error;
+      const data = response?.data || {};
 
       const doc = new jsPDF();
       let y = 20;
@@ -339,43 +315,43 @@ export default function Settings() {
       y += 12;
 
       // Emotions
-      addHeading(`Emotions (${emotions.data?.length || 0})`);
-      (emotions.data || []).forEach((e: any) => {
+      addHeading(`Emotions (${data.emotions?.length || 0})`);
+      (data.emotions || []).forEach((e: any) => {
         addLine(`${e.entry_date} — ${e.emotion}${e.notes ? ': ' + e.notes : ''}`);
       });
       y += 4;
 
       // Journal
-      addHeading(`Journal Entries (${journal.data?.length || 0})`);
-      (journal.data || []).forEach((e: any) => {
+      addHeading(`Journal Entries (${data.journal_entries?.length || 0})`);
+      (data.journal_entries || []).forEach((e: any) => {
         addLine(`${e.entry_date}${e.daily_feeling ? ' — Feeling: ' + e.daily_feeling : ''}${e.daily_gratitude ? ' — Gratitude: ' + e.daily_gratitude : ''}`);
       });
       y += 4;
 
       // Habits
-      addHeading(`Habits (${habits.data?.length || 0})`);
-      (habits.data || []).forEach((h: any) => {
+      addHeading(`Habits (${data.habits?.length || 0})`);
+      (data.habits || []).forEach((h: any) => {
         addLine(`${h.name}${h.description ? ' — ' + h.description : ''} (${h.frequency || 'daily'})`);
       });
       y += 4;
 
       // Notes
-      addHeading(`Notes (${notes.data?.length || 0})`);
-      (notes.data || []).forEach((n: any) => {
+      addHeading(`Notes (${data.notes?.length || 0})`);
+      (data.notes || []).forEach((n: any) => {
         addLine(`${n.title}${n.category ? ' [' + n.category + ']' : ''}`);
       });
       y += 4;
 
       // Tasks
-      addHeading(`Tasks (${tasks.data?.length || 0})`);
-      (tasks.data || []).forEach((t: any) => {
+      addHeading(`Tasks (${data.tasks?.length || 0})`);
+      (data.tasks || []).forEach((t: any) => {
         addLine(`${t.is_completed ? '✓' : '○'} ${t.title}${t.due_date ? ' — Due: ' + new Date(t.due_date).toLocaleDateString() : ''}`);
       });
       y += 4;
 
       // Manifest Goals
-      addHeading(`Manifest Goals (${goals.data?.length || 0})`);
-      (goals.data || []).forEach((g: any) => {
+      addHeading(`Manifest Goals (${data.manifest_goals?.length || 0})`);
+      (data.manifest_goals || []).forEach((g: any) => {
         addLine(`${g.is_completed ? '✓' : '○'} ${g.title}${g.description ? ' — ' + g.description : ''}`);
       });
 
@@ -393,31 +369,12 @@ export default function Settings() {
   const handleClearModule = async (tableKey: string) => {
     if (!user) return;
     try {
-      // Special handling for habits (also clear completions)
-      if (tableKey === "habits") {
-        await supabase.from("habit_completions").delete().eq("user_id", user.id);
-      }
-      // Special handling for journal (also clear answers)
-      if (tableKey === "journal_entries") {
-        const { data: entries } = await supabase.from("journal_entries").select("id").eq("user_id", user.id);
-        if (entries?.length) {
-          const ids = entries.map((e) => e.id);
-          await supabase.from("journal_answers").delete().in("journal_entry_id", ids);
-        }
-      }
-      // Special handling for manifest (also clear journal)
-      if (tableKey === "manifest_goals") {
-        const { data: goals } = await supabase.from("manifest_goals").select("id").eq("user_id", user.id);
-        if (goals?.length) {
-          const ids = goals.map((g) => g.id);
-          await supabase.from("manifest_journal").delete().in("goal_id", ids);
-        }
-      }
+      const { error } = await supabase.functions.invoke('manage-settings', {
+        body: { action: 'clear_module_data', tableKey }
+      });
 
-      await supabase
-        .from(tableKey as any)
-        .delete()
-        .eq("user_id", user.id);
+      if (error) throw error;
+
       toast.success("Module data cleared");
     } catch (e) {
       toast.error("Failed to clear data");
@@ -428,9 +385,21 @@ export default function Settings() {
   // ── Delete Account ───────────────────────────────────────────────
 
   const handleDeleteAccount = async () => {
-    // For now, sign out + notify — actual deletion requires admin function
-    toast.info("Account deletion requested. You will be signed out.");
-    await signOut();
+    try {
+      // Actually request deletion safely via the Edge Function
+      const { error } = await supabase.functions.invoke('manage-settings', {
+        body: { action: 'delete_account' }
+      });
+
+      if (error) throw error;
+
+      toast.success("Your account has been permanently deleted.");
+      await signOut();
+    } catch (e) {
+      toast.error("Failed to delete account. Please try again or contact support.");
+      console.error(e);
+      setDeleteDialog(false);
+    }
   };
 
   // Default views are now saved via saveField to DB
@@ -679,8 +648,8 @@ export default function Settings() {
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="h-7 w-7 rounded-md bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
                   <svg className="h-3.5 w-3.5 text-emerald-500" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-                    <path d="M12 0C5.373 0 0 5.373 0 12c0 2.116.549 4.106 1.513 5.839L.06 23.49l5.824-1.525A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.82c-1.908 0-3.727-.514-5.32-1.483l-.382-.227-3.96 1.039 1.057-3.863-.249-.396A9.808 9.808 0 012.18 12c0-5.422 4.398-9.82 9.82-9.82 5.422 0 9.82 4.398 9.82 9.82 0 5.422-4.398 9.82-9.82 9.82z"/>
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+                    <path d="M12 0C5.373 0 0 5.373 0 12c0 2.116.549 4.106 1.513 5.839L.06 23.49l5.824-1.525A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.82c-1.908 0-3.727-.514-5.32-1.483l-.382-.227-3.96 1.039 1.057-3.863-.249-.396A9.808 9.808 0 012.18 12c0-5.422 4.398-9.82 9.82-9.82 5.422 0 9.82 4.398 9.82 9.82 0 5.422-4.398 9.82-9.82 9.82z" />
                   </svg>
                 </div>
                 <div className="min-w-0">
@@ -696,7 +665,7 @@ export default function Settings() {
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="h-7 w-7 rounded-md bg-blue-500/10 flex items-center justify-center flex-shrink-0">
                   <svg className="h-3.5 w-3.5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                   </svg>
                 </div>
                 <div className="min-w-0">

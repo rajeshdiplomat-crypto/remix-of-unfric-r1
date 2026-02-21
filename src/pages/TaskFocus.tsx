@@ -204,12 +204,10 @@ export default function TaskFocus() {
         setLoading(false);
         return;
       }
-      const { data, error: fetchError } = await supabase
-        .from("tasks")
-        .select("*")
-        .eq("id", taskId)
-        .eq("user_id", user.id)
-        .single();
+      const { data: response, error: fetchError } = await supabase.functions.invoke('manage-tasks', {
+        body: { action: 'fetchSingle', taskId }
+      });
+      const data = response?.data;
       if (fetchError || !data) {
         setError("Task not found");
         setLoading(false);
@@ -304,15 +302,29 @@ export default function TaskFocus() {
   };
   const handleSaveSession = async () => {
     if (!task || !user) return;
-    await supabase
-      .from("tasks")
-      .update({
-        total_focus_minutes: task.total_focus_minutes + sessionMinutes,
-        is_completed: markComplete,
-        completed_at: markComplete ? new Date().toISOString() : null,
-      })
-      .eq("id", task.id)
-      .eq("user_id", user.id);
+    // 1. Update focus minutes
+    await supabase.functions.invoke('manage-tasks', {
+      body: {
+        action: 'update',
+        taskId: task.id,
+        updates: {
+          total_focus_minutes: task.total_focus_minutes + sessionMinutes,
+        }
+      }
+    });
+
+    // 2. Mark complete if checked
+    if (markComplete) {
+      await supabase.functions.invoke('toggle-task-completion', {
+        body: {
+          taskId: task.id,
+          isCompleted: true,
+          taskTitle: task.title,
+          dueDate: task.due_date,
+          tags: task.tags
+        }
+      });
+    }
     toast({ title: "Session saved!", description: `Added ${sessionMinutes} min.` });
     navigate("/tasks");
   };
