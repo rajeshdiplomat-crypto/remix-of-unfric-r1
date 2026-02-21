@@ -12,13 +12,21 @@ const idbStore = createStore("unfric-cache", "query-cache");
  */
 const idbStorage = {
   getItem: async (key: string): Promise<string | null> => {
+    console.log("[IDB-Persister] Reading cache from IndexedDB…");
     const val = await get<string>(key, idbStore);
+    if (val) {
+      console.log(`[IDB-Persister] ✅ Restored cache (${(val.length / 1024).toFixed(1)} KB)`);
+    } else {
+      console.log("[IDB-Persister] ⚠️ No cached data found in IndexedDB");
+    }
     return val ?? null;
   },
   setItem: async (key: string, value: string): Promise<void> => {
+    console.log(`[IDB-Persister] 💾 Writing cache to IndexedDB (${(value.length / 1024).toFixed(1)} KB)`);
     await set(key, value, idbStore);
   },
   removeItem: async (key: string): Promise<void> => {
+    console.log("[IDB-Persister] 🗑️ Removing cache from IndexedDB");
     await del(key, idbStore);
   },
 };
