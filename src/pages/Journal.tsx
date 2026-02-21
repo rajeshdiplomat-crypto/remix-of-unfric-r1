@@ -51,6 +51,7 @@ import {
   Bold,
   Italic,
   Underline as UnderlineIcon,
+  Strikethrough,
   List,
   ListOrdered,
   CheckSquare,
@@ -61,8 +62,14 @@ import {
   Link as LinkIcon,
   Mic,
   MicOff,
-  Type,
+  Undo2,
+  Redo2,
+  Quote,
+  Code,
+  Minus,
+  Highlighter,
   ChevronDown,
+  PenLine,
 } from "lucide-react";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 
@@ -173,71 +180,101 @@ function MobileJournalToolbar({ editorRef }: { editorRef: React.RefObject<Tiptap
 
   if (!isMobile || !editor) return null;
 
-  const ToolBtn = ({ onClick, active, disabled, children, title }: any) => (
+  const Btn = ({ onClick, active, disabled, children, title }: any) => (
     <button
       type="button"
       title={title}
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "h-8 w-8 flex items-center justify-center rounded-lg transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30",
-        active && "bg-muted text-primary shadow-sm",
+        "h-8 w-8 flex items-center justify-center rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-30",
+        active && "bg-accent text-foreground",
       )}
     >
       {children}
     </button>
   );
 
+  const Sep = () => <div className="w-px h-4 bg-border/60 mx-0.5 shrink-0" />;
+
   return (
-    <div className="w-full md:hidden mb-1.5">
-      {/* Toggle button */}
+    <div className="w-full md:hidden mb-1">
+      {/* Minimal toggle */}
       <button
         type="button"
         onClick={() => setOpen(prev => !prev)}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        className={cn(
+          "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs tracking-wide transition-colors",
+          open ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+        )}
       >
-        <Type className="h-3.5 w-3.5" />
-        <span className="uppercase tracking-wider font-medium">Format</span>
+        <PenLine className="h-3.5 w-3.5" />
         <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", open && "rotate-180")} />
       </button>
 
-      {/* Collapsible toolbar */}
+      {/* Two-row toolbar */}
       {open && (
-        <div className="bg-muted/50 border border-border/40 rounded-lg mx-2 px-2 py-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
-          <div className="flex items-center gap-0.5 overflow-x-auto no-scrollbar">
-            <ToolBtn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")} title="Bold">
-              <Bold className="h-4 w-4" />
-            </ToolBtn>
-            <ToolBtn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive("italic")} title="Italic">
-              <Italic className="h-4 w-4" />
-            </ToolBtn>
-            <ToolBtn onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive("underline")} title="Underline">
-              <UnderlineIcon className="h-4 w-4" />
-            </ToolBtn>
-            <div className="w-px h-5 bg-border/50 mx-0.5 shrink-0" />
-            <ToolBtn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")} title="Bullets">
-              <List className="h-4 w-4" />
-            </ToolBtn>
-            <ToolBtn onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive("orderedList")} title="Numbers">
-              <ListOrdered className="h-4 w-4" />
-            </ToolBtn>
-            <ToolBtn onClick={() => editor.chain().focus().toggleTaskList().run()} active={editor.isActive("taskList")} title="Todo">
-              <CheckSquare className="h-4 w-4" />
-            </ToolBtn>
-            <div className="w-px h-5 bg-border/50 mx-0.5 shrink-0" />
-            <ToolBtn onClick={() => editor.chain().focus().setTextAlign("left").run()} active={editor.isActive({ textAlign: "left" })} title="Left">
-              <AlignLeft className="h-4 w-4" />
-            </ToolBtn>
-            <ToolBtn onClick={() => editor.chain().focus().setTextAlign("center").run()} active={editor.isActive({ textAlign: "center" })} title="Center">
-              <AlignCenter className="h-4 w-4" />
-            </ToolBtn>
-            <ToolBtn onClick={() => editor.chain().focus().setTextAlign("right").run()} active={editor.isActive({ textAlign: "right" })} title="Right">
-              <AlignRight className="h-4 w-4" />
-            </ToolBtn>
-            <div className="w-px h-5 bg-border/50 mx-0.5 shrink-0" />
-            <ToolBtn onClick={toggleListening} active={isListening} title={isListening ? "Stop voice" : "Voice input"}>
-              {isListening ? <MicOff className="h-4 w-4 text-destructive" /> : <Mic className="h-4 w-4" />}
-            </ToolBtn>
+        <div className="mx-2 mt-0.5 rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-sm animate-in fade-in slide-in-from-top-1 duration-150">
+          {/* Row 1: Text formatting */}
+          <div className="flex items-center gap-px px-1.5 py-1 border-b border-border/30">
+            <Btn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
+              <Undo2 className="h-3.5 w-3.5" />
+            </Btn>
+            <Btn onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo">
+              <Redo2 className="h-3.5 w-3.5" />
+            </Btn>
+            <Sep />
+            <Btn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")} title="Bold">
+              <Bold className="h-3.5 w-3.5" />
+            </Btn>
+            <Btn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive("italic")} title="Italic">
+              <Italic className="h-3.5 w-3.5" />
+            </Btn>
+            <Btn onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive("underline")} title="Underline">
+              <UnderlineIcon className="h-3.5 w-3.5" />
+            </Btn>
+            <Btn onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive("strike")} title="Strikethrough">
+              <Strikethrough className="h-3.5 w-3.5" />
+            </Btn>
+            <Btn onClick={() => editor.chain().focus().toggleHighlight().run()} active={editor.isActive("highlight")} title="Highlight">
+              <Highlighter className="h-3.5 w-3.5" />
+            </Btn>
+            <Sep />
+            <Btn onClick={() => editor.chain().focus().setTextAlign("left").run()} active={editor.isActive({ textAlign: "left" })} title="Left">
+              <AlignLeft className="h-3.5 w-3.5" />
+            </Btn>
+            <Btn onClick={() => editor.chain().focus().setTextAlign("center").run()} active={editor.isActive({ textAlign: "center" })} title="Center">
+              <AlignCenter className="h-3.5 w-3.5" />
+            </Btn>
+            <Btn onClick={() => editor.chain().focus().setTextAlign("right").run()} active={editor.isActive({ textAlign: "right" })} title="Right">
+              <AlignRight className="h-3.5 w-3.5" />
+            </Btn>
+          </div>
+          {/* Row 2: Blocks & media */}
+          <div className="flex items-center gap-px px-1.5 py-1">
+            <Btn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")} title="Bullet list">
+              <List className="h-3.5 w-3.5" />
+            </Btn>
+            <Btn onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive("orderedList")} title="Numbered list">
+              <ListOrdered className="h-3.5 w-3.5" />
+            </Btn>
+            <Btn onClick={() => editor.chain().focus().toggleTaskList().run()} active={editor.isActive("taskList")} title="Checklist">
+              <CheckSquare className="h-3.5 w-3.5" />
+            </Btn>
+            <Sep />
+            <Btn onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive("blockquote")} title="Quote">
+              <Quote className="h-3.5 w-3.5" />
+            </Btn>
+            <Btn onClick={() => editor.chain().focus().toggleCodeBlock().run()} active={editor.isActive("codeBlock")} title="Code">
+              <Code className="h-3.5 w-3.5" />
+            </Btn>
+            <Btn onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Divider">
+              <Minus className="h-3.5 w-3.5" />
+            </Btn>
+            <Sep />
+            <Btn onClick={toggleListening} active={isListening} title={isListening ? "Stop voice" : "Voice input"}>
+              {isListening ? <MicOff className="h-3.5 w-3.5 text-destructive" /> : <Mic className="h-3.5 w-3.5" />}
+            </Btn>
           </div>
         </div>
       )}
