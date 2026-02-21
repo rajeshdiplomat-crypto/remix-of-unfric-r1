@@ -38,11 +38,13 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
     const newImages: string[] = [];
 
     for (const file of Array.from(files)) {
+      // Validate file type
       if (!file.type.startsWith("image/")) {
         toast({ title: "Invalid file type", description: "Please upload an image file.", variant: "destructive" });
         continue;
       }
 
+      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast({ title: "File too large", description: "Image must be under 5MB.", variant: "destructive" });
         continue;
@@ -72,6 +74,7 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
     setAttachedImages((prev) => [...prev, ...newImages]);
     setIsUploading(false);
     
+    // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -119,13 +122,14 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
     const dateStr = format(new Date(), "yyyy-MM-dd");
 
     try {
+      // Create journal entry with the content as HTML
       const contentHTML = `<p>${content}</p>`;
       const { data: newEntry, error: entryError } = await supabase
         .from("journal_entries")
         .insert({
           user_id: user.id,
           entry_date: dateStr,
-          daily_feeling: content.substring(0, 100),
+          daily_feeling: content.substring(0, 100), // First 100 chars as title
           text_formatting: contentHTML,
           images_data: attachedImages.length > 0 ? attachedImages : null,
         })
@@ -134,6 +138,7 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
 
       if (entryError) throw entryError;
 
+      // Create a journal answer for the main content
       if (newEntry) {
         await supabase.from("journal_answers").insert({
           journal_entry_id: newEntry.id,
@@ -141,6 +146,7 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
           answer_text: content,
         });
 
+        // Create feed event for the new entry
         await supabase.from("feed_events").insert({
           user_id: user.id,
           type: "journal_question",
@@ -162,6 +168,7 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
 
       toast({ title: "Entry saved!", description: "Your journal entry has been posted." });
       
+      // Reset form
       setContent("");
       setAttachedImages([]);
       onOpenChange(false);
@@ -176,13 +183,13 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg flex flex-col max-h-[85vh]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold">New Journal Entry</DialogTitle>
         </DialogHeader>
 
         <div 
-          className="flex-1 overflow-y-auto space-y-4 relative"
+          className="space-y-4 relative"
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
@@ -228,48 +235,49 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
               ))}
             </div>
           )}
-        </div>
 
-        {/* Sticky toolbar pinned to bottom with glass effect */}
-        <div className="sticky bottom-0 -mx-6 -mb-6 px-6 py-3 border-t border-border/30 bg-background/80 backdrop-blur-md flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleImageUpload}
-              className="hidden"
-            />
+          {/* Actions */}
+          <div className="flex items-center justify-between pt-2 border-t border-border/30">
+            <div className="flex items-center gap-2">
+              {/* Image upload button */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="gap-2 text-muted-foreground hover:text-foreground"
+              >
+                {isUploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ImagePlus className="h-4 w-4" />
+                )}
+                <span className="text-sm">Add Photo</span>
+              </Button>
+            </div>
+
             <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-              className="gap-2 text-muted-foreground hover:text-foreground"
+              onClick={handleSubmit}
+              disabled={!content.trim() || isSaving}
+              className="gap-2"
             >
-              {isUploading ? (
+              {isSaving ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <ImagePlus className="h-4 w-4" />
+                <Send className="h-4 w-4" />
               )}
-              <span className="text-sm">Add Photo</span>
+              Post
             </Button>
           </div>
-
-          <Button
-            onClick={handleSubmit}
-            disabled={!content.trim() || isSaving}
-            className="gap-2"
-          >
-            {isSaving ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-            Post
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
