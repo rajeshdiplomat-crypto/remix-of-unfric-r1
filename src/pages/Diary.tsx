@@ -11,7 +11,7 @@ import { DiaryLeftSidebar } from "@/components/diary/DiaryLeftSidebar";
 
 import { DiaryProfileCard } from "@/components/diary/DiaryProfileCard";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
-import { JournalQuestionCard } from "@/components/diary/JournalQuestionCard";
+
 import { DiaryJournalModal } from "@/components/diary/DiaryJournalModal";
 import { useFeedEvents } from "@/components/diary/useFeedEvents";
 import { useDiaryMetrics } from "@/components/diary/useDiaryMetrics";
@@ -725,38 +725,7 @@ export default function Diary() {
             </Card>
           ) : (
             <div className="pb-16 space-y-4">
-              {sortedEvents.map((event) =>
-                event.type === "journal_question" ? (
-                  <JournalQuestionCard
-                    key={event.id}
-                    eventId={event.id}
-                    questionLabel={(event.metadata as any)?.question_label || event.title}
-                    answerContent={(event.metadata as any)?.answer_content || event.content_preview || ""}
-                    contentHtml={(event.metadata as any)?.content_html}
-                    journalDate={(event.metadata as any)?.journal_date || event.created_at}
-                    entryDate={event.created_at}
-                    emotionTag={(event.metadata as any)?.tags?.[0]}
-                    media={event.media}
-                    authorName={userName}
-                    isSaved={saves.has(event.id)}
-                    userReaction={reactions[event.id]?.find((r) => r.user_id === user?.id)?.emoji as any}
-                    reactionCounts={reactions[event.id]?.reduce(
-                      (acc, r) => {
-                        acc[r.emoji as any] = (acc[r.emoji as any] || 0) + 1;
-                        return acc;
-                      },
-                      {} as Record<string, number>,
-                    )}
-                    onToggleSave={() => toggleSave(event.id)}
-                    onEdit={() => handleNavigateToSource(event)}
-                    onNavigate={() => handleNavigateToSource(event)}
-                    onToggleReaction={(eventId, reaction) => toggleReaction(eventId, reaction || "")}
-                    comments={comments[event.id] || []}
-                    currentUserId={user?.id || ""}
-                    onAddComment={(eventId, text) => addComment(eventId, text)}
-                    onDeleteComment={deleteComment}
-                  />
-                ) : (
+              {sortedEvents.map((event) => (
                   <DiaryFeedCard
                     key={event.id}
                     event={event}
@@ -771,8 +740,7 @@ export default function Diary() {
                     onToggleSave={toggleSave}
                     onNavigateToSource={handleNavigateToSource}
                   />
-                ),
-              )}
+              ))}
             </div>
           )}
         </div>
