@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { isOfflineError } from "@/lib/offlineAwareOperation";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -253,7 +254,7 @@ export default function Emotions() {
       await fetchEntries();
     } catch (err) {
       console.error("Error saving emotion:", err);
-      if (navigator.onLine) {
+      if (!isOfflineError()) {
         toast.error("Failed to save check-in");
       } else {
         toast.info("You're offline — check-in will sync when connected");
@@ -314,7 +315,7 @@ export default function Emotions() {
       await fetchEntries(); // Refresh to show in history
     } catch (err) {
       console.error("Error updating strategy conversation:", err);
-      if (navigator.onLine) {
+      if (!isOfflineError()) {
         toast.error("Failed to record strategy");
       } else {
         toast.info("You're offline — changes will sync when connected");
@@ -479,7 +480,7 @@ export default function Emotions() {
       }
     } catch (err) {
       console.error("Error updating emotion:", err);
-      if (navigator.onLine) {
+      if (!isOfflineError()) {
         toast.error("Failed to update check-in");
       } else {
         toast.info("You're offline — changes will sync when connected");
@@ -512,10 +513,10 @@ export default function Emotions() {
       }
     } catch (err) {
       console.error("Error deleting emotion:", err);
-      if (navigator.onLine) {
+      if (!isOfflineError()) {
         toast.error("Failed to delete check-in");
       } else {
-        toast.info("You're offline — changes will sync when connected");
+        toast.info("You're offline — deletions require a connection");
       }
     } finally {
       setIsDeleting(false);

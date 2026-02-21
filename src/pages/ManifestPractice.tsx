@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { isOfflineError } from "@/lib/offlineAwareOperation";
 import { Sparkles, ArrowLeft, ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { subDays, addDays, parseISO, isSameDay, format, isToday } from "date-fns";
@@ -124,7 +125,7 @@ export default function ManifestPractice() {
       }
     } catch (error) {
       console.error("Error fetching goal:", error);
-      if (navigator.onLine) {
+      if (!isOfflineError()) {
         toast.error("Failed to load reality");
         navigate("/manifest");
       }
