@@ -44,6 +44,8 @@ import { JournalRecentEntriesView } from "@/components/journal/JournalRecentEntr
 import { JournalInsightsModal } from "@/components/journal/JournalInsightsModal";
 import { JournalSettingsModal } from "@/components/journal/JournalSettingsModal";
 import { cn } from "@/lib/utils";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Calendar as CalendarWidget } from "@/components/ui/calendar";
 
 interface JournalAnswer {
   id: string;
@@ -160,6 +162,8 @@ export default function Journal() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showRecentEntries, setShowRecentEntries] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
+  const [showMobileDatePicker, setShowMobileDatePicker] = useState(false);
+  const [showMobileInsightsSheet, setShowMobileInsightsSheet] = useState(false);
   const [scribbleData, setScribbleData] = useState<string | null>(null);
 
   const [template, setTemplate] = useState<JournalTemplate>(() => {
@@ -787,27 +791,43 @@ export default function Journal() {
     >
       <div className="px-3 sm:px-6 py-2 flex items-center justify-between gap-3">
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={goToPreviousDay}>
+          {/* Prev arrow - desktop only */}
+          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hidden sm:flex" onClick={goToPreviousDay}>
             <ChevronLeft className="h-3.5 w-3.5" />
           </Button>
+          {/* Date label - opens bottom-sheet calendar on mobile */}
           <button
-            onClick={() => setSelectedDate(new Date())}
+            onClick={() => {
+              if (window.innerWidth < 640) {
+                setShowMobileDatePicker(true);
+              } else {
+                setSelectedDate(new Date());
+              }
+            }}
             className="flex items-center gap-1.5 px-2 py-1 hover:bg-muted rounded-xl transition-all"
           >
             <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-xs font-medium text-foreground">{format(selectedDate, "EEE, MMM d")}</span>
           </button>
-          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={goToNextDay}>
+          {/* Next arrow - desktop only */}
+          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hidden sm:flex" onClick={goToNextDay}>
             <ChevronRight className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => setShowRecentEntries(true)} title="Recent Entries">
+          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hidden sm:flex" onClick={() => setShowRecentEntries(true)} title="Recent Entries">
             <BookOpen className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => setShowInsights(true)} title="Journal Insights">
+          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hidden sm:flex" onClick={() => setShowInsights(true)} title="Journal Insights">
             <BarChart3 className="h-3.5 w-3.5" />
           </Button>
         </div>
         <div className="flex items-center gap-1">
+          {/* Mobile only: Insights & Recent buttons in top-right */}
+          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg sm:hidden" onClick={() => setShowRecentEntries(true)} title="Recent Entries">
+            <BookOpen className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg sm:hidden" onClick={() => setShowMobileInsightsSheet(true)} title="Journal Insights">
+            <BarChart3 className="h-3.5 w-3.5" />
+          </Button>
           <div className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-muted-foreground">
             {saveStatus === "saved" && <Cloud className="h-3 w-3" />}
             {saveStatus === "saving" && <Loader2 className="h-3 w-3 animate-spin" />}
@@ -819,7 +839,7 @@ export default function Journal() {
           <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => setEntrySettingsOpen(true)} title="Entry Appearance">
             <Settings2 className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => setIsFullscreen(!isFullscreen)}>
+          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hidden sm:flex" onClick={() => setIsFullscreen(!isFullscreen)}>
             {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
           </Button>
           <Button variant="outline" size="sm" onClick={handleManualSave} disabled={saveStatus === "saving"} className="h-7 rounded-lg text-[10px] px-2.5">
@@ -985,6 +1005,61 @@ export default function Journal() {
         />
       )}
       <JournalInsightsModal open={showInsights} onOpenChange={setShowInsights} />
+
+      {/* Mobile Date Picker Bottom Sheet */}
+      <Drawer open={showMobileDatePicker} onOpenChange={setShowMobileDatePicker}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Select Date</DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4 pb-6 flex flex-col items-center gap-3">
+            <CalendarWidget
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => {
+                if (date) {
+                  switchDate(date);
+                  setShowMobileDatePicker(false);
+                }
+              }}
+              className="rounded-xl border"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                switchDate(new Date());
+                setShowMobileDatePicker(false);
+              }}
+              className="text-xs"
+            >
+              Go to Today
+            </Button>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Mobile Insights Bottom Sheet */}
+      <Drawer open={showMobileInsightsSheet} onOpenChange={setShowMobileInsightsSheet}>
+        <DrawerContent className="max-h-[85vh]">
+          <DrawerHeader>
+            <DrawerTitle>Journal Insights</DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4 pb-6 overflow-y-auto space-y-4">
+            <JournalSidebarPanel
+              selectedDate={selectedDate}
+              onDateSelect={(date) => { switchDate(date); }}
+              entries={entries}
+              onInsertPrompt={handleInsertPrompt}
+              skin={currentSkin}
+              showSection="calendar"
+              compact
+            />
+            <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="emotions" />
+            <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="progress" />
+          </div>
+        </DrawerContent>
+      </Drawer>
       <JournalSettingsModal
         open={entrySettingsOpen}
         onOpenChange={setEntrySettingsOpen}
