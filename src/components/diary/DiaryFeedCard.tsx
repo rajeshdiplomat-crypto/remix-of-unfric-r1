@@ -210,7 +210,7 @@ export function DiaryFeedCard({
       <div className="flex flex-col">
         <div className="flex-1 min-w-0">
           {/* Header with Avatar - matching JournalQuestionCard */}
-          <div className="px-4 pt-4 pb-2">
+          <div className="px-5 pt-5 pb-2">
             <div className="flex items-center justify-between" role="banner">
               {/* Left: Avatar + Label block */}
               <div className="flex items-center gap-4">
@@ -276,7 +276,7 @@ export function DiaryFeedCard({
       </div>
 
       {/* Body - text content with padding */}
-      <CardContent className="px-4 pb-0 pt-2">
+      <CardContent className="px-5 pb-0 pt-2">
         {/* Title */}
         <h3 
           className="text-base font-medium text-foreground mb-2 cursor-pointer hover:underline"
@@ -377,7 +377,7 @@ export function DiaryFeedCard({
         
         if (count === 1) {
           return (
-            <div className="mt-2 bg-muted flex items-center justify-center min-h-[200px]">
+            <div className="mt-2 bg-muted/30 flex items-center justify-center min-h-[200px]">
               <img src={images[0]} alt="" className="max-w-full max-h-[500px] object-contain block" loading="lazy" />
             </div>
           );
@@ -387,7 +387,7 @@ export function DiaryFeedCard({
           return (
             <div className="mt-2 grid grid-cols-2 gap-0.5">
               {images.map((url, i) => (
-                <div key={i} className="bg-muted flex items-center justify-center min-h-[150px]">
+                <div key={i} className="bg-muted/30 flex items-center justify-center min-h-[150px]">
                   <img src={url} alt="" className="max-w-full max-h-80 object-contain" loading="lazy" />
                 </div>
               ))}
@@ -398,13 +398,13 @@ export function DiaryFeedCard({
         if (count === 3) {
           return (
             <div className="mt-2 grid grid-cols-2 gap-0.5">
-              <div className="row-span-2 bg-muted">
+              <div className="row-span-2 bg-muted/30">
                 <img src={images[0]} alt="" className="w-full h-full object-cover" />
               </div>
-              <div className="bg-muted">
+              <div className="bg-muted/30">
                 <img src={images[1]} alt="" className="w-full aspect-square object-cover" />
               </div>
-              <div className="bg-muted">
+              <div className="bg-muted/30">
                 <img src={images[2]} alt="" className="w-full aspect-square object-cover" />
               </div>
             </div>
@@ -415,7 +415,7 @@ export function DiaryFeedCard({
         return (
           <div className="mt-2 grid grid-cols-2 gap-0.5">
             {images.slice(0, 4).map((url, i) => (
-              <div key={i} className="relative bg-muted">
+              <div key={i} className="relative bg-muted/30">
                 <img src={url} alt="" className="w-full aspect-square object-cover" />
                 {i === 3 && extra > 0 && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -428,7 +428,7 @@ export function DiaryFeedCard({
         );
       })()}
       {/* Facebook-style counts row + action bar */}
-      <div className="px-4 pb-2">
+      <div className="px-5 pb-3">
         <div className="flex items-center justify-between mt-2 px-1">
           <div className="flex items-center gap-1.5">
             {totalReactions > 0 && (
@@ -442,7 +442,7 @@ export function DiaryFeedCard({
               </>
             )}
           </div>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+           <div className="flex items-center gap-3 text-[10px] font-normal text-muted-foreground/50">
             <span>{comments.length} comment{comments.length !== 1 ? 's' : ''}</span>
             <span>0 shares</span>
           </div>
