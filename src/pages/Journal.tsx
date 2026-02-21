@@ -5,14 +5,13 @@ import { extractImagesFromTiptapJSON } from "@/lib/editorUtils";
 import { queryClient } from "@/lib/queryClient";
 import {
   Save,
+  Check,
   ChevronLeft,
   ChevronRight,
   BookOpen,
   Maximize2,
   Minimize2,
   Loader2,
-  Cloud,
-  CloudOff,
   Calendar,
   Heart,
   Smile,
@@ -24,6 +23,30 @@ import {
   Sparkles,
   TrendingUp,
   Settings2,
+  Bold,
+  Italic,
+  Underline as UnderlineIcon,
+  Strikethrough,
+  List,
+  ListOrdered,
+  CheckSquare,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  Mic,
+  MicOff,
+  Undo2,
+  Redo2,
+  Quote,
+  Code,
+  Minus,
+  Highlighter,
+  PenLine,
+  MoreHorizontal,
+  PenTool,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -46,31 +69,14 @@ import { JournalSettingsModal } from "@/components/journal/JournalSettingsModal"
 import { cn } from "@/lib/utils";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Calendar as CalendarWidget } from "@/components/ui/calendar";
-import { useIsMobile } from "@/hooks/use-mobile";
 import {
-  Bold,
-  Italic,
-  Underline as UnderlineIcon,
-  Strikethrough,
-  List,
-  ListOrdered,
-  CheckSquare,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  Image as ImageIcon,
-  Link as LinkIcon,
-  Mic,
-  MicOff,
-  Undo2,
-  Redo2,
-  Quote,
-  Code,
-  Minus,
-  Highlighter,
-  ChevronDown,
-  PenLine,
-} from "lucide-react";
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 
 interface JournalAnswer {
@@ -166,9 +172,8 @@ const getWordCount = (contentJSON: string): number => {
 };
 
 // Standalone mobile formatting toolbar — collapsible, rendered at page level
-function MobileJournalToolbar({ editorRef }: { editorRef: React.RefObject<TiptapEditorRef | null> }) {
+function MobileJournalToolbar({ editorRef, open, onClear }: { editorRef: React.RefObject<TiptapEditorRef | null>; open: boolean; onClear?: () => void }) {
   const isMobile = useIsMobile();
-  const [open, setOpen] = useState(false);
   const editor = editorRef.current?.editor;
 
   const { isListening, toggleListening } = useVoiceInput(
@@ -178,7 +183,7 @@ function MobileJournalToolbar({ editorRef }: { editorRef: React.RefObject<Tiptap
     }, [editorRef])
   );
 
-  if (!isMobile || !editor) return null;
+  if (!isMobile || !editor || !open) return null;
 
   const Btn = ({ onClick, active, disabled, children, title }: any) => (
     <button
@@ -199,85 +204,94 @@ function MobileJournalToolbar({ editorRef }: { editorRef: React.RefObject<Tiptap
 
   return (
     <div className="w-full md:hidden mb-1">
-      {/* Minimal toggle */}
-      <button
-        type="button"
-        onClick={() => setOpen(prev => !prev)}
-        className={cn(
-          "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs tracking-wide transition-colors",
-          open ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-        )}
-      >
-        <PenLine className="h-3.5 w-3.5" />
-        <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", open && "rotate-180")} />
-      </button>
-
-      {/* Two-row toolbar */}
-      {open && (
-        <div className="mx-2 mt-0.5 rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-sm animate-in fade-in slide-in-from-top-1 duration-150">
-          {/* Row 1: Text formatting */}
-          <div className="flex items-center gap-px px-1.5 py-1 border-b border-border/30">
-            <Btn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
-              <Undo2 className="h-3.5 w-3.5" />
-            </Btn>
-            <Btn onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo">
-              <Redo2 className="h-3.5 w-3.5" />
-            </Btn>
-            <Sep />
-            <Btn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")} title="Bold">
-              <Bold className="h-3.5 w-3.5" />
-            </Btn>
-            <Btn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive("italic")} title="Italic">
-              <Italic className="h-3.5 w-3.5" />
-            </Btn>
-            <Btn onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive("underline")} title="Underline">
-              <UnderlineIcon className="h-3.5 w-3.5" />
-            </Btn>
-            <Btn onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive("strike")} title="Strikethrough">
-              <Strikethrough className="h-3.5 w-3.5" />
-            </Btn>
-            <Btn onClick={() => editor.chain().focus().toggleHighlight().run()} active={editor.isActive("highlight")} title="Highlight">
-              <Highlighter className="h-3.5 w-3.5" />
-            </Btn>
-            <Sep />
-            <Btn onClick={() => editor.chain().focus().setTextAlign("left").run()} active={editor.isActive({ textAlign: "left" })} title="Left">
-              <AlignLeft className="h-3.5 w-3.5" />
-            </Btn>
-            <Btn onClick={() => editor.chain().focus().setTextAlign("center").run()} active={editor.isActive({ textAlign: "center" })} title="Center">
-              <AlignCenter className="h-3.5 w-3.5" />
-            </Btn>
-            <Btn onClick={() => editor.chain().focus().setTextAlign("right").run()} active={editor.isActive({ textAlign: "right" })} title="Right">
-              <AlignRight className="h-3.5 w-3.5" />
-            </Btn>
-          </div>
-          {/* Row 2: Blocks & media */}
-          <div className="flex items-center gap-px px-1.5 py-1">
-            <Btn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")} title="Bullet list">
-              <List className="h-3.5 w-3.5" />
-            </Btn>
-            <Btn onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive("orderedList")} title="Numbered list">
-              <ListOrdered className="h-3.5 w-3.5" />
-            </Btn>
-            <Btn onClick={() => editor.chain().focus().toggleTaskList().run()} active={editor.isActive("taskList")} title="Checklist">
-              <CheckSquare className="h-3.5 w-3.5" />
-            </Btn>
-            <Sep />
-            <Btn onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive("blockquote")} title="Quote">
-              <Quote className="h-3.5 w-3.5" />
-            </Btn>
-            <Btn onClick={() => editor.chain().focus().toggleCodeBlock().run()} active={editor.isActive("codeBlock")} title="Code">
-              <Code className="h-3.5 w-3.5" />
-            </Btn>
-            <Btn onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Divider">
-              <Minus className="h-3.5 w-3.5" />
-            </Btn>
-            <Sep />
-            <Btn onClick={toggleListening} active={isListening} title={isListening ? "Stop voice" : "Voice input"}>
-              {isListening ? <MicOff className="h-3.5 w-3.5 text-destructive" /> : <Mic className="h-3.5 w-3.5" />}
-            </Btn>
-          </div>
+      <div className="mx-2 mt-0.5 rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-sm animate-in fade-in slide-in-from-top-1 duration-150">
+        {/* Row 1: Text formatting */}
+        <div className="flex items-center gap-px px-1.5 py-1 border-b border-border/30 overflow-x-auto">
+          <Btn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
+            <Undo2 className="h-3.5 w-3.5" />
+          </Btn>
+          <Btn onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo">
+            <Redo2 className="h-3.5 w-3.5" />
+          </Btn>
+          <Sep />
+          <Btn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")} title="Bold">
+            <Bold className="h-3.5 w-3.5" />
+          </Btn>
+          <Btn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive("italic")} title="Italic">
+            <Italic className="h-3.5 w-3.5" />
+          </Btn>
+          <Btn onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive("underline")} title="Underline">
+            <UnderlineIcon className="h-3.5 w-3.5" />
+          </Btn>
+          <Btn onClick={() => editor.chain().focus().toggleHighlight().run()} active={editor.isActive("highlight")} title="Highlight">
+            <Highlighter className="h-3.5 w-3.5" />
+          </Btn>
+          <Sep />
+          <Btn onClick={() => editor.chain().focus().setTextAlign("left").run()} active={editor.isActive({ textAlign: "left" })} title="Left">
+            <AlignLeft className="h-3.5 w-3.5" />
+          </Btn>
+          <Btn onClick={() => editor.chain().focus().setTextAlign("center").run()} active={editor.isActive({ textAlign: "center" })} title="Center">
+            <AlignCenter className="h-3.5 w-3.5" />
+          </Btn>
+          <Btn onClick={() => editor.chain().focus().setTextAlign("right").run()} active={editor.isActive({ textAlign: "right" })} title="Right">
+            <AlignRight className="h-3.5 w-3.5" />
+          </Btn>
         </div>
-      )}
+        {/* Row 2: Blocks, media & more */}
+        <div className="flex items-center gap-px px-1.5 py-1 overflow-x-auto">
+          <Btn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")} title="Bullet list">
+            <List className="h-3.5 w-3.5" />
+          </Btn>
+          <Btn onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive("orderedList")} title="Numbered list">
+            <ListOrdered className="h-3.5 w-3.5" />
+          </Btn>
+          <Btn onClick={() => editor.chain().focus().toggleTaskList().run()} active={editor.isActive("taskList")} title="Checklist">
+            <CheckSquare className="h-3.5 w-3.5" />
+          </Btn>
+          <Sep />
+          <Btn onClick={toggleListening} active={isListening} title={isListening ? "Stop voice" : "Voice input"}>
+            {isListening ? <MicOff className="h-3.5 w-3.5 text-destructive" /> : <Mic className="h-3.5 w-3.5" />}
+          </Btn>
+          <Sep />
+          {/* 3-dots more menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" className="h-8 w-8 flex items-center justify-center rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-accent" title="More options">
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[160px]">
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleStrike().run()}>
+                <Strikethrough className="h-3.5 w-3.5 mr-2" />
+                Strikethrough
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
+                <Code className="h-3.5 w-3.5 mr-2" />
+                Code Block
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleBlockquote().run()}>
+                <Quote className="h-3.5 w-3.5 mr-2" />
+                Quote
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().setHorizontalRule().run()}>
+                <Minus className="h-3.5 w-3.5 mr-2" />
+                Divider
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}>
+                <X className="h-3.5 w-3.5 mr-2" />
+                Clear Formatting
+              </DropdownMenuItem>
+              {onClear && (
+                <DropdownMenuItem onClick={onClear} className="text-destructive focus:text-destructive">
+                  <Trash2 className="h-3.5 w-3.5 mr-2" />
+                  Clear Entry
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
     </div>
   );
 }
@@ -308,6 +322,7 @@ export default function Journal() {
   const [showMobileDatePicker, setShowMobileDatePicker] = useState(false);
   const [showMobileInsightsSheet, setShowMobileInsightsSheet] = useState(false);
   const [scribbleData, setScribbleData] = useState<string | null>(null);
+  const [mobileToolbarOpen, setMobileToolbarOpen] = useState(false);
 
   const [template, setTemplate] = useState<JournalTemplate>(() => {
     const saved = localStorage.getItem("journal_template");
@@ -971,14 +986,16 @@ export default function Journal() {
           <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg sm:hidden" onClick={() => setShowMobileInsightsSheet(true)} title="Journal Insights">
             <BarChart3 className="h-3.5 w-3.5" />
           </Button>
-          <div className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-muted-foreground">
-            {saveStatus === "saved" && <Cloud className="h-3 w-3" />}
-            {saveStatus === "saving" && <Loader2 className="h-3 w-3 animate-spin" />}
-            {saveStatus === "unsaved" && <CloudOff className="h-3 w-3" />}
-            <span className="hidden sm:inline">
-              {saveStatus === "saving" ? "Saving" : saveStatus === "saved" ? "Saved" : "Unsaved"}
-            </span>
-          </div>
+          {/* Mobile only: Format toolbar toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn("h-7 w-7 rounded-lg sm:hidden", mobileToolbarOpen && "bg-accent text-foreground")}
+            onClick={() => setMobileToolbarOpen(prev => !prev)}
+            title="Format"
+          >
+            <PenLine className="h-3.5 w-3.5" />
+          </Button>
           <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => setEntrySettingsOpen(true)} title="Entry Appearance">
             <Settings2 className="h-3.5 w-3.5" />
           </Button>
@@ -986,8 +1003,8 @@ export default function Journal() {
             {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
           </Button>
           <Button variant="outline" size="sm" onClick={handleManualSave} disabled={saveStatus === "saving"} className="h-7 rounded-lg text-[10px] px-2.5">
-            <Save className="h-3 w-3 mr-1" />
-            Save
+            {saveStatus === "saving" ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : saveStatus === "saved" ? <Check className="h-3 w-3 mr-1" /> : <Save className="h-3 w-3 mr-1" />}
+            {saveStatus === "saving" ? "Saving" : saveStatus === "saved" ? "Saved" : "Save"}
           </Button>
         </div>
       </div>
@@ -996,7 +1013,7 @@ export default function Journal() {
 
   const editorContent = (
     <div className="flex flex-col min-w-0">
-      <MobileJournalToolbar editorRef={editorRef} />
+      <MobileJournalToolbar editorRef={editorRef} open={mobileToolbarOpen} onClear={handleClearEntry} />
       <div
         className={cn("transition-all duration-200 rounded-2xl overflow-hidden shadow-sm border border-border", isLoading && "opacity-50 pointer-events-none")}
         style={{ backgroundColor: currentSkin.cardBg }}
