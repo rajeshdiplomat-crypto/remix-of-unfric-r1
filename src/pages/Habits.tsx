@@ -470,6 +470,13 @@ export default function Habits() {
     return days;
   }, [currentMonth]);
 
+  // Current week days for mobile weekly view
+  const currentWeekDays = useMemo(() => {
+    const today = new Date();
+    const ws = startOfWeek(today, { weekStartsOn });
+    return Array.from({ length: 7 }, (_, i) => addDays(ws, i));
+  }, [weekStartsOn]);
+
   // Calculate stats for each activity
   const activityStats = useMemo(() => {
     return activities.map((activity) => {
@@ -1211,20 +1218,69 @@ export default function Habits() {
 
           {/* Main dashboard — Single wide card with 3 internal sections */}
           <Card className="mb-4 flex-shrink-0 overflow-hidden">
-            {/* Mobile: show compact stats */}
-            <div className="lg:hidden p-3 flex items-center justify-between border-b border-border">
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setCurrentMonth(addDays(startOfMonth(currentMonth), -1))}>
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                </Button>
-                <span className="text-xs font-medium text-foreground">{format(currentMonth, "MMM yyyy")}</span>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setCurrentMonth(addDays(endOfMonth(currentMonth), 1))}>
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </Button>
+            {/* Mobile Command Center */}
+            <div className="lg:hidden">
+              {/* Row 1: Insights + Brand Image */}
+              <div className="flex items-start gap-2.5 p-3 border-b border-border">
+                <div className="flex-1 min-w-0">
+                  {/* Month nav */}
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setCurrentMonth(addDays(startOfMonth(currentMonth), -1))}>
+                      <ChevronLeft className="h-3 w-3" />
+                    </Button>
+                    <span className="text-[10px] font-medium uppercase tracking-zara-wide text-foreground">{format(currentMonth, "MMM yyyy")}</span>
+                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setCurrentMonth(addDays(endOfMonth(currentMonth), 1))}>
+                      <ChevronRight className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  {/* Habit Days cards */}
+                  <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground mb-1">Habit Days</p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <div className="flex flex-col items-center p-1.5 rounded-lg border border-border bg-card shadow-sm">
+                      <span className="text-sm font-bold text-foreground">{activities.reduce((sum, a) => sum + a.habitDays, 0) - overallStats.totalCompleted}</span>
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-zara">Pending</span>
+                    </div>
+                    <div className="flex flex-col items-center p-1.5 rounded-lg border border-border bg-card shadow-sm">
+                      <span className="text-sm font-bold text-primary">{overallStats.totalCompleted}</span>
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-zara">Done</span>
+                    </div>
+                    <div className="flex flex-col items-center p-1.5 rounded-lg border border-border bg-card shadow-sm">
+                      <span className="text-sm font-bold text-foreground">{activities.reduce((sum, a) => sum + a.habitDays, 0)}</span>
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-zara">Total</span>
+                    </div>
+                  </div>
+                </div>
+                {/* Brand image thumbnail */}
+                <div className="w-16 h-20 rounded-lg overflow-hidden shrink-0 border border-border">
+                  {(() => {
+                    const sel = selectedActivityId ? activities.find(a => a.id === selectedActivityId) : null;
+                    const img = sel ? (sel.coverImageUrl || loadActivityImage(sel.id)) : null;
+                    return <img src={img || habitsDefaultImage} alt="Habits" className="w-full h-full object-cover" />;
+                  })()}
+                </div>
               </div>
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                <span><strong className="text-foreground">{activities.filter(a => !a.isArchived).length}</strong> Active</span>
-                <span><strong className="text-foreground">{overallStats.dailyProgress}%</strong> Today</span>
+              {/* Row 2: Progress rings carousel */}
+              <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory px-3 py-2.5 border-b border-border" style={{ scrollbarWidth: 'none' }}>
+                {(() => {
+                  const selectedHabit = selectedActivityId ? activities.find(a => a.id === selectedActivityId) : null;
+                  let totalGoalPercent = 0;
+                  if (selectedHabit) {
+                    const tc = Object.keys(selectedHabit.completions || {}).length;
+                    totalGoalPercent = Math.round((tc / selectedHabit.habitDays) * 100);
+                  } else {
+                    const ta = overallStats.totalCompleted + overallStats.totalRemaining;
+                    totalGoalPercent = ta > 0 ? Math.round((overallStats.totalCompleted / ta) * 100) : 0;
+                  }
+                  return (
+                    <>
+                      <ProgressRing progress={Math.min(totalGoalPercent, 100)} label="Total Goal" color={RING_COLORS[0]} size={68} />
+                      <ProgressRing progress={overallStats.momentum} label="Momentum" color={RING_COLORS[1]} size={68} />
+                      <ProgressRing progress={overallStats.dailyProgress} label="Daily" color={RING_COLORS[2]} size={68} />
+                      <ProgressRing progress={overallStats.weeklyProgress} label="Weekly" color={RING_COLORS[3]} size={68} />
+                      <ProgressRing progress={overallStats.monthlyProgress} label="Overall" color={RING_COLORS[4]} size={68} />
+                    </>
+                  );
+                })()}
               </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_200px] lg:min-h-[280px] gap-0">
@@ -1364,7 +1420,7 @@ export default function Habits() {
                   }
 
                   return (
-                    <div className="flex justify-center gap-3 md:gap-6 lg:gap-8 overflow-x-auto snap-x snap-mandatory pb-1 -mx-2 px-2 md:flex-wrap md:overflow-visible md:snap-none">
+                    <div className="hidden md:flex justify-center gap-3 md:gap-6 lg:gap-8 md:flex-wrap md:overflow-visible pb-1 -mx-2 px-2">
                       <ProgressRing progress={Math.min(totalGoalPercent, 100)} label="Total Goal" color={RING_COLORS[0]} mobileSize={68} />
                       <ProgressRing progress={overallStats.momentum} label="Momentum" color={RING_COLORS[1]} mobileSize={68} />
                       <ProgressRing progress={overallStats.dailyProgress} label="Daily" color={RING_COLORS[2]} mobileSize={68} />
@@ -1431,7 +1487,147 @@ export default function Habits() {
           </Card>
 
           {/* Habits Grid */}
-          <Card className="rounded-xl overflow-hidden" data-habits-table>
+          {/* Mobile Weekly Grid */}
+          <Card className="md:hidden rounded-xl overflow-hidden mb-0">
+            {/* Daily Progress Graph */}
+            <div className="px-4 py-2 border-b border-border">
+              <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground mb-1">Daily Progress</p>
+              <svg viewBox="0 0 700 100" className="w-full" style={{ height: 60 }} preserveAspectRatio="none">
+                {(() => {
+                  const today = new Date();
+                  const dataPoints: { x: number; y: number; value: number; isPast: boolean }[] = [];
+                  const chartActivities = selectedActivityId ? activities.filter(a => a.id === selectedActivityId) : activities.filter(a => !a.isArchived);
+
+                  for (let i = 0; i < 7; i++) {
+                    const day = currentWeekDays[i];
+                    if (!day) continue;
+                    const dayStr = format(day, "yyyy-MM-dd");
+                    const dayOfWeek = (day.getDay() + 6) % 7;
+                    const isPast = isBefore(day, today) || isToday(day);
+                    let completed = 0, total = 0;
+                    chartActivities.forEach(a => {
+                      const hStart = parseISO(a.startDate);
+                      const hEnd = computeEndDateForHabitDays(hStart, a.frequencyPattern, a.habitDays);
+                      if (a.frequencyPattern[dayOfWeek] && !isBefore(day, hStart) && !isAfter(day, hEnd)) {
+                        total++;
+                        if (a.completions[dayStr]) completed++;
+                      }
+                    });
+                    if (total === 0) continue;
+                    const value = (completed / total) * 100;
+                    const x = (i + 0.5) * 100;
+                    const y = 85 - (value / 100) * 70;
+                    dataPoints.push({ x, y, value, isPast });
+                  }
+
+                  if (dataPoints.length < 2) return <text x="350" y="55" textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize="12" opacity="0.5">Not enough data</text>;
+
+                  let path = `M ${dataPoints[0].x} ${dataPoints[0].y}`;
+                  for (let j = 0; j < dataPoints.length - 1; j++) {
+                    const c = dataPoints[j], n = dataPoints[j + 1];
+                    const mx = (c.x + n.x) / 2, my = (c.y + n.y) / 2;
+                    path += ` Q ${c.x + (mx - c.x) * 0.5} ${c.y}, ${mx} ${my}`;
+                    path += ` Q ${mx + (n.x - mx) * 0.5} ${n.y}, ${n.x} ${n.y}`;
+                  }
+                  const area = `${path} L ${dataPoints[dataPoints.length - 1].x} 95 L ${dataPoints[0].x} 95 Z`;
+
+                  return (
+                    <>
+                      <defs>
+                        <linearGradient id="mobileAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.08" />
+                          <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0.02" />
+                        </linearGradient>
+                      </defs>
+                      <path d={area} fill="url(#mobileAreaGrad)" />
+                      <path d={path} fill="none" stroke="hsl(var(--foreground))" strokeWidth="2.5" strokeLinecap="round" opacity="0.7" />
+                      {dataPoints.map((p, i) => (
+                        <circle key={i} cx={p.x} cy={p.y} r="3.5" fill={p.isPast ? "hsl(var(--foreground))" : "hsl(var(--border))"} stroke="hsl(var(--background))" strokeWidth="1.5" />
+                      ))}
+                    </>
+                  );
+                })()}
+              </svg>
+            </div>
+            {/* Weekly Table */}
+            <table className="w-full">
+              <thead>
+                <tr className="bg-muted/50">
+                  <th className="text-left p-1 pl-2 text-[9px] font-medium text-muted-foreground uppercase tracking-zara sticky left-0 bg-muted/50 z-10">Habit</th>
+                  {currentWeekDays.map((day, i) => (
+                    <th key={i} className={cn("p-0.5 text-center text-[9px] font-medium text-muted-foreground w-7", isToday(day) && "bg-primary/10")}>
+                      {DAY_LABELS[(day.getDay() + 6) % 7]}
+                    </th>
+                  ))}
+                  <th className="p-0.5 text-center text-[9px] font-medium text-muted-foreground w-8">%</th>
+                  <th className="p-0.5 text-center text-[9px] font-medium text-muted-foreground w-8">🔥</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activities.filter(a => !a.isArchived).map(activity => {
+                  const stats = activityStats.find(s => s.id === activity.id);
+                  const totalCompletions = Object.keys(activity.completions || {}).length;
+                  const progressPercent = activity.habitDays > 0 ? Math.round((totalCompletions / activity.habitDays) * 100) : 0;
+                  const isSelected = selectedActivityId === activity.id;
+
+                  return (
+                    <tr
+                      key={activity.id}
+                      className={cn("border-b border-border/40 transition-colors", isSelected ? "bg-primary/5" : "hover:bg-muted/30")}
+                      onClick={() => setSelectedActivityId(isSelected ? null : activity.id)}
+                    >
+                      <td className={cn("p-1 pl-2 sticky left-0 z-10", isSelected ? "bg-primary/5" : "bg-background")}>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[11px] font-medium text-foreground truncate max-w-[80px] block">{activity.name}</span>
+                          <span className="text-[9px] text-muted-foreground shrink-0">{activity.habitDays}</span>
+                        </div>
+                      </td>
+                      {currentWeekDays.map((day, i) => {
+                        const dateStr = format(day, "yyyy-MM-dd");
+                        const dayOfWeek = (day.getDay() + 6) % 7;
+                        const isPlanned = activity.frequencyPattern[dayOfWeek];
+                        const isCompleted = activity.completions[dateStr];
+                        const isPast = isBefore(day, new Date()) || isToday(day);
+                        const habitStart = parseISO(activity.startDate);
+                        const habitEnd = computeEndDateForHabitDays(habitStart, activity.frequencyPattern, activity.habitDays);
+                        const isInRange = !isBefore(day, habitStart) && !isAfter(day, habitEnd);
+
+                        return (
+                          <td key={i} className={cn("p-0.5 text-center", isToday(day) && "bg-primary/5")}>
+                            {isPlanned && isInRange ? (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); if (isPast) toggleCompletion(activity.id, day); }}
+                                disabled={!isPast}
+                                className={cn(
+                                  "w-5 h-5 rounded-full flex items-center justify-center mx-auto transition-all",
+                                  isCompleted ? "bg-primary text-primary-foreground" : isPast ? "border border-primary/40" : "border border-border"
+                                )}
+                              >
+                                {isCompleted && <Check className="h-2.5 w-2.5" />}
+                              </button>
+                            ) : (
+                              <span className="text-muted-foreground/30 text-[9px]">-</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                      <td className="p-0.5 text-center text-[10px] text-muted-foreground font-medium">{progressPercent}%</td>
+                      <td className="p-0.5 text-center text-[10px]">
+                        {(stats?.streak || 0) > 0 ? (
+                          <span>🔥{stats?.streak}</span>
+                        ) : (
+                          <span className="text-muted-foreground/40">0</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </Card>
+
+          {/* Desktop Full Month Table */}
+          <Card className="hidden md:block rounded-xl overflow-hidden" data-habits-table>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
