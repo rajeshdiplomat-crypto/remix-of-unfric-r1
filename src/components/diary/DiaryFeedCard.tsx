@@ -203,7 +203,7 @@ export function DiaryFeedCard({
   };
 
   return (
-    <Card className="overflow-hidden max-w-full bg-card border-border/40 shadow-[0_6px_18px_hsl(210_29%_8%/0.06)] hover:shadow-[0_10px_30px_hsl(210_29%_8%/0.08)] transition-all duration-200 rounded-[10px]">
+    <Card className="overflow-hidden max-w-full bg-card border-border/40 shadow-[0_6px_18px_hsl(210_29%_8%/0.06)] hover:shadow-[0_10px_30px_hsl(210_29%_8%/0.08)] transition-all duration-200 rounded-[10px] mb-6">
       {/* All modules now use vertical layout - no left-side images */}
       <div className="flex flex-col">
         <div className="flex-1 min-w-0">
@@ -211,19 +211,19 @@ export function DiaryFeedCard({
           <div className="px-4 pt-4 pb-2">
             <div className="flex items-center justify-between" role="banner">
               {/* Left: Avatar + Label block */}
-              <div className="flex items-center gap-3">
-                <Avatar className="h-8 w-8">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-9 w-9">
                   <AvatarImage src={MODULE_IMAGES[event.source_module]} alt={config.label} className="object-cover" />
                   <AvatarFallback className={cn("text-xs font-medium", config.bgColor, config.color)}>
                     <IconComponent className="h-4 w-4" />
                   </AvatarFallback>
                 </Avatar>
             
-            <div className="flex flex-col">
+            <div className="flex flex-col gap-0.5">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="text-xs font-semibold text-foreground cursor-default tracking-wider">
+                    <span className="text-sm font-semibold text-foreground cursor-default">
                       {config.label} | {formattedDate}
                     </span>
                   </TooltipTrigger>
@@ -236,7 +236,7 @@ export function DiaryFeedCard({
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="text-xs text-muted-foreground cursor-default">
+                    <span className="text-[10px] text-muted-foreground cursor-default uppercase tracking-wider">
                       {formattedTime}
                     </span>
                   </TooltipTrigger>
@@ -300,7 +300,7 @@ export function DiaryFeedCard({
             {needsReadMore && (
               <button 
                 onClick={() => setExpanded(!expanded)}
-                className="text-sm text-primary hover:text-primary/80 underline mt-2"
+                className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 mt-1.5 transition-colors"
               >
                 {expanded ? "Show less" : "Read more"}
               </button>
@@ -453,14 +453,14 @@ export function DiaryFeedCard({
                 <button
                   aria-pressed={!!userReaction}
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
+                    "flex-1 flex items-center justify-center gap-2 py-2.5 text-[12px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
                     userReaction && "text-primary"
                   )}
                 >
                   {userReaction ? (
-                    <span className="text-sm leading-none">{userReaction}</span>
+                    <span className="text-base leading-none">{userReaction}</span>
                   ) : (
-                    <ThumbsUp className="h-3.5 w-3.5" />
+                    <ThumbsUp className="h-[15px] w-[15px]" />
                   )}
                   <span>{userReaction ? REACTION_TYPES.find(r => r.emoji === userReaction)?.label || 'Like' : 'Like'}</span>
                 </button>
@@ -488,18 +488,18 @@ export function DiaryFeedCard({
             <button
               onClick={() => setShowComments(!showComments)}
               className={cn(
-                "flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
+                "flex-1 flex items-center justify-center gap-2 py-2.5 text-[12px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
                 showComments && "text-primary"
               )}
             >
-              <MessageCircle className="h-3.5 w-3.5" />
+              <MessageCircle className="h-[15px] w-[15px]" />
               <span>Comment</span>
             </button>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors">
-                  <Share2 className="h-3.5 w-3.5" />
+                <button className="flex-1 flex items-center justify-center gap-2 py-2.5 text-[12px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors">
+                  <Share2 className="h-[15px] w-[15px]" />
                   <span>Share</span>
                 </button>
               </DropdownMenuTrigger>
