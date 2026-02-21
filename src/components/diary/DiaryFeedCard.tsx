@@ -117,6 +117,7 @@ export function DiaryFeedCard({
   const [replyText, setReplyText] = useState("");
   const [editingComment, setEditingComment] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+  const [reactionOpen, setReactionOpen] = useState(false);
 
   const config = MODULE_CONFIG[event.source_module as keyof typeof MODULE_CONFIG] || MODULE_CONFIG.journal;
   const IconComponent = config.icon;
@@ -179,6 +180,7 @@ export function DiaryFeedCard({
 
   const handleToggleReaction = (emoji: string) => {
     onToggleReaction(event.id, emoji);
+    setReactionOpen(false);
   };
 
   const handleAddComment = () => {
@@ -203,7 +205,7 @@ export function DiaryFeedCard({
   };
 
   return (
-    <Card className="feed-card overflow-hidden max-w-full bg-card border-border/40 shadow-[0_6px_18px_hsl(210_29%_8%/0.06)] hover:shadow-[0_10px_30px_hsl(210_29%_8%/0.08)] transition-all duration-200 rounded-[10px] mb-6">
+    <Card className="feed-card overflow-hidden max-w-full bg-card border-border/40 shadow-[0_4px_24px_hsl(var(--foreground)/0.06)] hover:shadow-[0_8px_32px_hsl(var(--foreground)/0.10)] transition-all duration-200 rounded-[10px] mb-8">
       {/* All modules now use vertical layout - no left-side images */}
       <div className="flex flex-col">
         <div className="flex-1 min-w-0">
@@ -236,7 +238,7 @@ export function DiaryFeedCard({
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="text-[10px] text-muted-foreground cursor-default uppercase tracking-wider">
+                    <span className="text-[10px] text-muted-foreground/60 cursor-default uppercase tracking-tighter">
                       {formattedTime}
                     </span>
                   </TooltipTrigger>
@@ -292,7 +294,7 @@ export function DiaryFeedCard({
                 expanded ? "max-h-[1000px]" : "max-h-[72px]"
               )}
             >
-              <p className="text-[13px] text-foreground/80 leading-relaxed whitespace-pre-wrap">
+              <p className="text-[15px] font-medium text-foreground/80 leading-relaxed whitespace-pre-wrap">
                 {contentPreview}
               </p>
             </div>
@@ -448,7 +450,7 @@ export function DiaryFeedCard({
 
         <div className="border-t border-border/50 mt-1">
           <div className="flex min-h-[44px] items-stretch">
-            <Popover>
+            <Popover open={reactionOpen} onOpenChange={setReactionOpen}>
               <PopoverTrigger asChild>
                 <button
                   aria-pressed={!!userReaction}
@@ -460,9 +462,9 @@ export function DiaryFeedCard({
                   {userReaction ? (
                     <span className="text-base leading-none">{userReaction}</span>
                   ) : (
-                    <ThumbsUp className="h-[15px] w-[15px]" />
+                    <ThumbsUp className="h-[14px] w-[14px]" />
                   )}
-                  <span>{userReaction ? REACTION_TYPES.find(r => r.emoji === userReaction)?.label || 'Like' : 'Like'}</span>
+                  <span className="text-[11px]">{userReaction ? REACTION_TYPES.find(r => r.emoji === userReaction)?.label || 'Like' : 'Like'}</span>
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-1.5" side="top">
@@ -492,15 +494,15 @@ export function DiaryFeedCard({
                 showComments && "text-primary"
               )}
             >
-              <MessageCircle className="h-[15px] w-[15px]" />
-              <span>Comment</span>
+              <MessageCircle className="h-[14px] w-[14px]" />
+              <span className="text-[11px]">Comment</span>
             </button>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex-1 flex items-center justify-center gap-2 py-2.5 text-[12px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors">
-                  <Share2 className="h-[15px] w-[15px]" />
-                  <span>Share</span>
+                  <Share2 className="h-[14px] w-[14px]" />
+                  <span className="text-[11px]">Share</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">

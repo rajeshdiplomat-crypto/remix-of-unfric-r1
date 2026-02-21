@@ -74,7 +74,7 @@ h3 {
   /* Mandatory visual air between feed cards */
   .feed-card + .feed-card,
   .diary-card + .diary-card {
-    margin-top: 1.5rem; /* gap-y-6 equivalent */
+    margin-top: 2rem; /* gap-y-8 equivalent */
   }
 }
 
