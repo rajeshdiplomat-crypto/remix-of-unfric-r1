@@ -197,9 +197,9 @@ export function JournalQuestionCard({
   slice(0, 3);
 
   return (
-    <Card className="overflow-hidden max-w-full bg-card border-border/40 shadow-sm hover:shadow-md transition-shadow rounded-xl">
+    <Card className="feed-card overflow-hidden max-w-full bg-card border-border/40 shadow-[0_4px_24px_hsl(var(--foreground)/0.06)] hover:shadow-[0_8px_32px_hsl(var(--foreground)/0.10)] transition-all duration-200 rounded-[10px] mb-8">
       {/* Header with Avatar */}
-      <div className="px-4 pt-4 pb-2">
+      <div className="px-5 pt-5 pb-2">
         <div className="flex items-center justify-between" role="banner">
           {/* Left: Avatar + Label block */}
           <div className="flex items-center gap-3">
@@ -265,7 +265,7 @@ export function JournalQuestionCard({
       </div>
 
       {/* Body - text content with padding */}
-      <CardContent className="px-4 pb-0 pt-2 py-[4px]">
+      <CardContent className="px-5 pb-0 pt-2">
         {/* Title (Question) */}
         <h3 className="text-base font-medium text-foreground mb-2">
           {questionLabel}
@@ -336,7 +336,7 @@ export function JournalQuestionCard({
 
         if (count === 1) {
           return (
-            <div className="mt-2 bg-muted flex items-center justify-center min-h-[200px]">
+     <div className="mt-2 bg-muted/30 flex items-center justify-center min-h-[200px]">
               <img src={images[0]} alt="" className="max-w-full max-h-[500px] object-contain block" loading="lazy" />
             </div>
           );
@@ -346,7 +346,7 @@ export function JournalQuestionCard({
           return (
             <div className="mt-2 grid grid-cols-2 gap-0.5">
               {images.map((url, i) => (
-                <div key={i} className="bg-muted flex items-center justify-center min-h-[150px]">
+                 <div key={i} className="bg-muted/30 flex items-center justify-center min-h-[150px]">
                   <img src={url} alt="" className="max-w-full max-h-80 object-contain" loading="lazy" />
                 </div>
               ))}
@@ -357,13 +357,13 @@ export function JournalQuestionCard({
         if (count === 3) {
           return (
             <div className="mt-2 grid grid-cols-2 gap-0.5">
-              <div className="row-span-2 bg-muted">
+               <div className="row-span-2 bg-muted/30">
                 <img src={images[0]} alt="" className="w-full h-full object-cover" loading="lazy" />
               </div>
-              <div className="bg-muted">
+              <div className="bg-muted/30">
                 <img src={images[1]} alt="" className="w-full aspect-square object-cover" loading="lazy" />
               </div>
-              <div className="bg-muted">
+              <div className="bg-muted/30">
                 <img src={images[2]} alt="" className="w-full aspect-square object-cover" loading="lazy" />
               </div>
             </div>
@@ -374,7 +374,7 @@ export function JournalQuestionCard({
         return (
           <div className="mt-2 grid grid-cols-2 gap-0.5">
             {images.slice(0, 4).map((url, i) =>
-              <div key={i} className="relative bg-muted">
+              <div key={i} className="relative bg-muted/30">
                 <img src={url} alt="" className="w-full aspect-square object-cover" loading="lazy" />
                 {i === 3 && extra > 0 &&
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -388,7 +388,7 @@ export function JournalQuestionCard({
       })()}
 
       {/* Counts + actions + comments - with padding */}
-      <div className="px-4 pb-2">
+      <div className="px-5 pb-3">
         <div className="flex items-center justify-between mt-2 px-1">
           <div className="flex items-center gap-1.5">
             {totalReactions > 0 &&
@@ -403,7 +403,7 @@ export function JournalQuestionCard({
               </>
             }
           </div>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+           <div className="flex items-center gap-3 text-[10px] font-normal text-muted-foreground/50">
             <span>{feedComments.length} comment{feedComments.length !== 1 ? 's' : ''}</span>
             <span>0 shares</span>
           </div>
