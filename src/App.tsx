@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
@@ -15,6 +15,8 @@ import { PageTransition } from "@/components/layout/PageTransition";
 import { CursorGradient } from "@/components/motion/CursorGradient";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
+import { queryClient } from "@/lib/queryClient";
+import { idbPersister } from "@/lib/idbPersister";
 import Auth from "./pages/Auth";
 import Diary from "./pages/Diary";
 import Emotions from "./pages/Emotions";
@@ -31,21 +33,16 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
 
-const queryClient = new QueryClient();
-
 function HomeRedirect() {
   const { user, loading: authLoading } = useAuth();
   const [target, setTarget] = useState<string | null>(null);
   const hasQueried = React.useRef(false);
 
   useEffect(() => {
-    // Only run once per mount when user is available
     if (!user || hasQueried.current) return;
     hasQueried.current = true;
 
-    // Wait a tick to ensure the session token is propagated to the supabase client
     const timer = setTimeout(async () => {
-      // Verify we have a valid session before querying
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
         console.warn("[HomeRedirect] No active session, defaulting to diary");
@@ -112,7 +109,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Fullscreen route without AppLayout/PageTransition (for focus mode)
 function ProtectedFullscreenRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
@@ -137,7 +133,10 @@ function OfflineSyncProvider({ children }: { children: React.ReactNode }) {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <PersistQueryClientProvider
+    client={queryClient}
+    persistOptions={{ persister: idbPersister }}
+  >
     <ThemeProvider>
       <CustomThemeProvider>
         <FontProvider>
@@ -176,7 +175,7 @@ const App = () => (
         </FontProvider>
       </CustomThemeProvider>
     </ThemeProvider>
-  </QueryClientProvider>
+  </PersistQueryClientProvider>
 );
 
 export default App;

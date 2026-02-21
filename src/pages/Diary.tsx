@@ -78,7 +78,6 @@ export default function Diary() {
   // Seed feed events from existing data
   const seedFeedEvents = async () => {
     if (!user?.id) return;
-    if (!navigator.onLine) return;
 
     // Fetch all module data including journal answers
     const [tasksRes, journalRes, journalAnswersRes, notesRes, habitsRes, habitCompletionsRes, goalsRes, emotionsRes] = await Promise.all([

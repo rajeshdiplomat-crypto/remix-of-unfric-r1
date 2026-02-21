@@ -1,27 +1,23 @@
-const CACHE_NAME = 'unfric-v1';
-const OFFLINE_URL = '/offline.html';
+const CACHE_NAME = 'unfric-shell-v2';
 
-// Core assets to pre-cache for instant app shell loading
-const PRECACHE_ASSETS = [
+// App Shell assets to pre-cache — UI is always visible
+const APP_SHELL = [
   '/',
-  '/diary',
-  '/journal',
-  '/habits',
   '/manifest.json',
+  '/favicon.png',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
   '/icons/apple-touch-icon.png',
-  '/favicon.png',
 ];
 
-// Install: pre-cache core assets
+// Install: pre-cache app shell
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(PRECACHE_ASSETS).catch((err) => {
+    caches.open(CACHE_NAME).then((cache) =>
+      cache.addAll(APP_SHELL).catch((err) => {
         console.warn('[SW] Pre-cache partial failure:', err);
-      });
-    })
+      })
+    )
   );
   self.skipWaiting();
 });
@@ -40,37 +36,36 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: Stale-While-Revalidate for navigation & assets
+// Fetch strategy
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
-  // Skip non-GET requests and Supabase API calls
+  // Only handle GET requests
   if (request.method !== 'GET') return;
+
   const url = new URL(request.url);
+
+  // Skip Supabase API calls — handled by React Query + IndexedDB
   if (url.hostname.includes('supabase')) return;
   if (url.pathname.startsWith('/rest/') || url.pathname.startsWith('/auth/')) return;
 
-  // Navigation requests (HTML pages) — stale-while-revalidate
+  // Navigation requests → serve cached app shell (SPA fallback)
   if (request.mode === 'navigate') {
     event.respondWith(
-      caches.match(request).then((cached) => {
-        const fetchPromise = fetch(request)
-          .then((response) => {
-            if (response.ok) {
-              const clone = response.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-            }
-            return response;
-          })
-          .catch(() => cached || caches.match('/'));
-
-        return cached || fetchPromise;
-      })
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put('/', clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match('/'))
     );
     return;
   }
 
-  // Static assets (JS, CSS, fonts, images) — stale-while-revalidate
+  // Static assets (JS, CSS, fonts, images) — cache-first, network fallback
   if (
     url.pathname.match(/\.(js|css|woff2?|ttf|otf|png|jpg|jpeg|svg|webp|ico)$/) ||
     url.hostname === 'fonts.googleapis.com' ||
@@ -78,24 +73,21 @@ self.addEventListener('fetch', (event) => {
   ) {
     event.respondWith(
       caches.match(request).then((cached) => {
-        const fetchPromise = fetch(request)
-          .then((response) => {
-            if (response.ok) {
-              const clone = response.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-            }
-            return response;
-          })
-          .catch(() => cached);
-
-        return cached || fetchPromise;
+        if (cached) return cached;
+        return fetch(request).then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        }).catch(() => new Response('', { status: 503 }));
       })
     );
     return;
   }
 });
 
-// Listen for sync events to flush the offline queue
+// Listen for skip waiting message
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();

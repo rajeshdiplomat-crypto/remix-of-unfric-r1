@@ -33,10 +33,6 @@ export function useDiaryMetrics(userId: string | undefined, timeRange: TimeRange
 
   const fetchData = async () => {
     if (!userId) return;
-    if (!navigator.onLine) {
-      setLoading(false);
-      return;
-    }
     setLoading(true);
 
     try {
