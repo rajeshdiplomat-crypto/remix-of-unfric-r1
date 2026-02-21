@@ -781,35 +781,34 @@ export default function Journal() {
   const journalHeader = (
     <div
       className={cn(
-        "shrink-0 backdrop-blur-xl border-b border-border/40",
+        "shrink-0 backdrop-blur-md bg-background/80 border-b border-border/40",
         isFullscreen ? "" : "sticky top-0 z-40",
       )}
     >
-      <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={goToPreviousDay}>
-            <ChevronLeft className="h-4 w-4" />
+      <div className="px-3 sm:px-6 py-2 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={goToPreviousDay}>
+            <ChevronLeft className="h-3.5 w-3.5" />
           </Button>
           <button
             onClick={() => setSelectedDate(new Date())}
-            className="flex items-center gap-2 px-3 py-1.5 hover:bg-muted rounded-xl transition-all"
+            className="flex items-center gap-1.5 px-2 py-1 hover:bg-muted rounded-xl transition-all"
           >
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-foreground">{format(selectedDate, "EEE, MMM d")}</span>
+            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-xs font-medium text-foreground">{format(selectedDate, "EEE, MMM d")}</span>
           </button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={goToNextDay}>
-            <ChevronRight className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={goToNextDay}>
+            <ChevronRight className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setShowRecentEntries(true)} title="Recent Entries">
-            <BookOpen className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => setShowRecentEntries(true)} title="Recent Entries">
+            <BookOpen className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setShowInsights(true)} title="Journal Insights">
-            <BarChart3 className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => setShowInsights(true)} title="Journal Insights">
+            <BarChart3 className="h-3.5 w-3.5" />
           </Button>
         </div>
-        {/* Search bar removed */}
-        <div className="flex items-center gap-1.5">
-          <div className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-muted-foreground">
             {saveStatus === "saved" && <Cloud className="h-3 w-3" />}
             {saveStatus === "saving" && <Loader2 className="h-3 w-3 animate-spin" />}
             {saveStatus === "unsaved" && <CloudOff className="h-3 w-3" />}
@@ -817,14 +816,14 @@ export default function Journal() {
               {saveStatus === "saving" ? "Saving" : saveStatus === "saved" ? "Saved" : "Unsaved"}
             </span>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setEntrySettingsOpen(true)} title="Entry Appearance">
-            <Settings2 className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => setEntrySettingsOpen(true)} title="Entry Appearance">
+            <Settings2 className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setIsFullscreen(!isFullscreen)}>
-            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => setIsFullscreen(!isFullscreen)}>
+            {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleManualSave} disabled={saveStatus === "saving"} className="h-8 rounded-lg text-xs px-3">
-            <Save className="h-3.5 w-3.5 mr-1" />
+          <Button variant="outline" size="sm" onClick={handleManualSave} disabled={saveStatus === "saving"} className="h-7 rounded-lg text-[10px] px-2.5">
+            <Save className="h-3 w-3 mr-1" />
             Save
           </Button>
         </div>

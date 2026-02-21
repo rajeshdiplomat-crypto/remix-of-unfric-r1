@@ -323,7 +323,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
       content: content ? JSON.parse(content) : undefined,
       onUpdate: ({ editor }) => onChange(JSON.stringify(editor.getJSON())),
       editorProps: {
-        attributes: { class: "focus:outline-none min-h-[800px] pl-8 pr-6 pb-4 text-[14px]" },
+        attributes: { class: "focus:outline-none min-h-[800px] pl-8 pr-6 pb-4 text-sm leading-relaxed" },
         handleDrop: (view, event, _slice, moved) => {
           if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0]) {
             const file = event.dataTransfer.files[0];
@@ -744,7 +744,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
         disabled={disabled}
         onClick={onClick}
         className={cn(
-          "h-8 w-8 flex items-center justify-center rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100 disabled:opacity-30",
+          "h-7 w-7 flex items-center justify-center rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100 disabled:opacity-30",
           active && "bg-slate-100 text-primary shadow-sm",
         )}
       >
@@ -771,20 +771,20 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
       >
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
-        {/* MAIN TOOLBAR */}
+        {/* MAIN TOOLBAR - hidden on mobile by default, shown via floating toggle */}
         <div
-          className="backdrop-blur-xl border-b relative z-50"
+          className="backdrop-blur-xl border-b relative z-50 hidden md:block"
           style={{
             background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.95) 100%)",
             borderColor: "rgba(148, 163, 184, 0.15)",
           }}
         >
-          <div className="flex items-center h-11 px-4 gap-0.5 overflow-x-auto">
+          <div className="flex items-center h-10 px-3 gap-0.5 overflow-x-auto">
             <ToolBtn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
-              <Undo2 className="h-4 w-4" />
+              <Undo2 className="h-3.5 w-3.5" />
             </ToolBtn>
             <ToolBtn onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo">
-              <Redo2 className="h-4 w-4" />
+              <Redo2 className="h-3.5 w-3.5" />
             </ToolBtn>
             <div className="w-px h-5 bg-slate-200 mx-1" />
 
@@ -1248,6 +1248,7 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
         .ProseMirror .is-empty::before,
         .ProseMirror .is-node-empty::before {
           color: ${skinStyles?.mutedText || "#94a3b8"};
+          opacity: 0.45;
           content: attr(data-placeholder);
           position: absolute;
           pointer-events: none;
@@ -1255,16 +1256,16 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
 
         /* H1 Title — fixed dimensions, no margin collapse, no shift */
         .ProseMirror h1 {
-          font-size: 1.875rem;
-          font-weight: 700;
-          line-height: 2.25rem;
-          min-height: 2.25rem;
+          font-size: 1.5rem;
+          font-weight: 600;
+          line-height: 2rem;
+          min-height: 2rem;
           margin: 0 0 0.25rem 0;
           padding: 0;
           position: relative;
         }
 
-        /* Paragraphs — consistent tight spacing */
+        /* Paragraphs — consistent tight spacing with relaxed line-height */
         .ProseMirror p {
           margin: 0;
           padding: 0.0625rem 0;
@@ -1273,9 +1274,9 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
           position: relative;
         }
 
-        /* H2/H3 keep structured mode spacing */
-        .ProseMirror h2 { font-size: 1.5rem; font-weight: 600; margin: 1.25rem 0 0.5rem; position: relative; }
-        .ProseMirror h3 { font-size: 1.25rem; font-weight: 600; margin: 1rem 0 0.5rem; position: relative; }
+        /* H2 question prompts — gentle, medium weight, tight margin */
+        .ProseMirror h2 { font-size: 1rem; font-weight: 500; margin: 0.75rem 0 0.25rem; position: relative; line-height: 1.5; }
+        .ProseMirror h3 { font-size: 0.9375rem; font-weight: 500; margin: 0.625rem 0 0.25rem; position: relative; line-height: 1.5; }
 
         .ProseMirror strong { font-weight: 700; }
         .ProseMirror ul { list-style: disc; padding-left: 1.5rem; }
@@ -1293,6 +1294,12 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
         .ProseMirror div[style*="display: flex"] { margin: 0.5rem 0; }
         .ProseMirror div[style*="cursor: pointer"] { max-width: 100%; overflow: hidden; }
         .ProseMirror div[style*="cursor: pointer"] img { max-width: 100%; height: auto; object-fit: contain; }
+
+        @media (max-width: 767px) {
+          .ProseMirror h1 { font-size: 1.25rem; line-height: 1.75rem; min-height: 1.75rem; }
+          .ProseMirror h2 { font-size: 0.9375rem; }
+          .ProseMirror h3 { font-size: 0.875rem; }
+        }
       `}</style>
       </div>
     );
