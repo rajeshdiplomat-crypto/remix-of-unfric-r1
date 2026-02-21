@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { format, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay, parseISO } from "date-fns";
 import { extractImagesFromTiptapJSON } from "@/lib/editorUtils";
+import { queryClient } from "@/lib/queryClient";
 import {
   Save,
   ChevronLeft,
@@ -304,15 +305,11 @@ export default function Journal() {
       .eq("user_id", user.id)
       .order("entry_date", { ascending: false })
       .then(({ data }) => {
-        setEntries(
-          (data || []).map((e) => {
+        const mapped = (data || []).map((e) => {
             const contentJSON =
               typeof e.text_formatting === "string" ? e.text_formatting : JSON.stringify(e.text_formatting) || "";
-
-            // Extract preview text and title
             const preview = extractPreview(contentJSON);
             const customTitle = extractTitle(contentJSON);
-
             return {
               id: e.id,
               entryDate: e.entry_date,
@@ -324,8 +321,12 @@ export default function Journal() {
               mood: e.daily_feeling,
               tags: e.tags || [],
             };
-          }),
-        );
+          });
+        setEntries(mapped);
+
+        // Seed React Query cache so IDB persister writes journal entries
+        queryClient.setQueryData(['journal-entries', user.id], mapped);
+        console.log(`[Journal] 💾 Seeded query cache with ${mapped.length} entries`);
       });
   }, [user]);
 

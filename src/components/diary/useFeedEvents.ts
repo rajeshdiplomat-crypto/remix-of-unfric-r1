@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { queryClient } from "@/lib/queryClient";
 import type { FeedEvent, FeedReaction, FeedComment, FeedSave, SourceModule, FeedEventType } from "./types";
 
 interface UseFeedEventsResult {
@@ -57,13 +58,18 @@ export function useFeedEvents(userId: string | undefined): UseFeedEventsResult {
         filteredEvents = filteredEvents.filter(e => savedIds.has(e.id));
       }
 
-      setEvents(filteredEvents.map(e => ({
+      const mappedEvents = filteredEvents.map(e => ({
         ...e,
         type: e.type as FeedEventType,
         source_module: e.source_module as SourceModule,
         media: Array.isArray(e.media) ? e.media as string[] : [],
         metadata: (e.metadata || {}) as Record<string, any>,
-      })));
+      }));
+      setEvents(mappedEvents);
+
+      // Seed React Query cache so IDB persister can write it
+      queryClient.setQueryData(['feed-events', userId, filter], mappedEvents);
+      console.log(`[FeedEvents] 💾 Seeded query cache with ${mappedEvents.length} events`);
 
       if (filteredEvents.length > 0) {
         const eventIds = filteredEvents.map(e => e.id);

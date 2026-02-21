@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { format, subDays, startOfDay, endOfDay, startOfWeek, startOfMonth, isWithinInterval, parseISO, differenceInDays, isSameDay } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { queryClient } from "@/lib/queryClient";
 import type { TimeRange, MetricsSnapshot } from "./types";
 
 interface UseDiaryMetricsResult {
@@ -45,12 +46,25 @@ export function useDiaryMetrics(userId: string | undefined, timeRange: TimeRange
         supabase.from("emotions").select("*").eq("user_id", userId),
       ]);
 
-      setTasks(tasksRes.data || []);
-      setJournalEntries(journalRes.data || []);
-      setManifestGoals(goalsRes.data || []);
-      setManifestJournal(manifestJournalRes.data || []);
-      setNotes(notesRes.data || []);
-      setEmotions(emotionsRes.data || []);
+      const metricsData = {
+        tasks: tasksRes.data || [],
+        journalEntries: journalRes.data || [],
+        manifestGoals: goalsRes.data || [],
+        manifestJournal: manifestJournalRes.data || [],
+        notes: notesRes.data || [],
+        emotions: emotionsRes.data || [],
+      };
+
+      setTasks(metricsData.tasks);
+      setJournalEntries(metricsData.journalEntries);
+      setManifestGoals(metricsData.manifestGoals);
+      setManifestJournal(metricsData.manifestJournal);
+      setNotes(metricsData.notes);
+      setEmotions(metricsData.emotions);
+
+      // Seed React Query cache so IDB persister writes this data
+      queryClient.setQueryData(['diary-metrics', userId], metricsData);
+      console.log(`[DiaryMetrics] 💾 Seeded query cache with metrics data`);
     } catch (error) {
       console.error("Error fetching metrics:", error);
     } finally {
