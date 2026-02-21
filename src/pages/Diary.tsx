@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PenLine, Search, ChevronDown, Filter } from "lucide-react";
+import { PenLine, Search, ChevronDown, Filter, BarChart3 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { DiaryFeedCard } from "@/components/diary/DiaryFeedCard";
@@ -13,12 +13,15 @@ import { DiaryProfileCard } from "@/components/diary/DiaryProfileCard";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 
 import { DiaryJournalModal } from "@/components/diary/DiaryJournalModal";
+import { DiaryInsightsSheet } from "@/components/diary/DiaryInsightsSheet";
+import { DiaryDateSelector } from "@/components/diary/DiaryDateSelector";
 import { useFeedEvents } from "@/components/diary/useFeedEvents";
 import { useDiaryMetrics } from "@/components/diary/useDiaryMetrics";
 import { cn } from "@/lib/utils";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import type { TimeRange, FeedEvent, SourceModule } from "@/components/diary/types";
 import { extractImagesFromHTML, extractImagesFromTiptapJSON } from "@/lib/editorUtils";
+import { isSameDay } from "date-fns";
 
 import {
   DropdownMenu,
@@ -56,6 +59,8 @@ export default function Diary() {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all_time');
   const [sortOption, setSortOption] = useState<SortOption>('latest');
   const [isJournalModalOpen, setIsJournalModalOpen] = useState(false);
+  const [isInsightsOpen, setIsInsightsOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   const {
     events,
@@ -563,8 +568,22 @@ export default function Diary() {
     seedFeedEvents();
   };
 
-  // Filter events based on search and time filter
+  // Filter events based on search, time filter, and selected date
   const filteredEvents = events.filter((event) => {
+    // Date filter - show only events matching selected date
+    const eventDate = new Date(event.created_at);
+    if (!isSameDay(eventDate, selectedDate)) {
+      // Also check metadata entry_date
+      const metadata = event.metadata as any;
+      const entryDateStr = metadata?.entry_date || metadata?.completed_date;
+      if (entryDateStr) {
+        const entryDate = new Date(entryDateStr + 'T12:00:00');
+        if (!isSameDay(entryDate, selectedDate)) return false;
+      } else {
+        return false;
+      }
+    }
+
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -575,7 +594,6 @@ export default function Diary() {
     }
     // Time filter
     if (timeFilter !== 'all_time') {
-      const eventDate = new Date(event.created_at);
       const now = new Date();
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const yesterdayStart = new Date(todayStart.getTime() - 86400000);
@@ -643,6 +661,21 @@ export default function Diary() {
         {/* Center Feed - Scrollable */}
         <main className="flex-1 min-w-0 min-h-0 h-full overflow-y-auto bg-muted/20">
           <div className="w-full px-2 sm:px-4 lg:px-6 py-3 sm:py-4">
+
+          {/* Date Selector + Insights button (mobile) */}
+          <div className="flex items-center justify-center gap-2 mb-4 relative">
+            <DiaryDateSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
+            {/* Insights icon - visible only on mobile/tablet (hidden on xl where sidebar shows) */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="xl:hidden absolute right-0 h-9 w-9 text-muted-foreground hover:text-foreground"
+              onClick={() => setIsInsightsOpen(true)}
+              title="Insights"
+            >
+              <BarChart3 className="h-5 w-5" />
+            </Button>
+          </div>
 
           {/* Search Bar */}
           <div className="mb-4">
@@ -764,6 +797,18 @@ export default function Diary() {
         open={isJournalModalOpen}
         onOpenChange={setIsJournalModalOpen}
         onSuccess={handleJournalSuccess}
+      />
+
+      {/* Insights Bottom Sheet (mobile/tablet) */}
+      <DiaryInsightsSheet
+        open={isInsightsOpen}
+        onOpenChange={setIsInsightsOpen}
+        userName={userName}
+        userEmail={user?.email || ""}
+        avatarUrl={user?.user_metadata?.avatar_url}
+        metrics={metrics}
+        timeRange={timeRange}
+        onTimeRangeChange={setTimeRange}
       />
     </div>
     </>
