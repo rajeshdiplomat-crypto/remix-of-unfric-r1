@@ -124,8 +124,10 @@ export default function ManifestPractice() {
       }
     } catch (error) {
       console.error("Error fetching goal:", error);
-      toast.error("Failed to load reality");
-      navigate("/manifest");
+      if (navigator.onLine) {
+        toast.error("Failed to load reality");
+        navigate("/manifest");
+      }
     } finally {
       setLoading(false);
     }

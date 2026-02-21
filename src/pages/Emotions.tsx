@@ -253,7 +253,11 @@ export default function Emotions() {
       await fetchEntries();
     } catch (err) {
       console.error("Error saving emotion:", err);
-      toast.error("Failed to save check-in");
+      if (navigator.onLine) {
+        toast.error("Failed to save check-in");
+      } else {
+        toast.info("You're offline — check-in will sync when connected");
+      }
     } finally {
       setSaving(false);
     }
@@ -310,7 +314,11 @@ export default function Emotions() {
       await fetchEntries(); // Refresh to show in history
     } catch (err) {
       console.error("Error updating strategy conversation:", err);
-      toast.error("Failed to record strategy");
+      if (navigator.onLine) {
+        toast.error("Failed to record strategy");
+      } else {
+        toast.info("You're offline — changes will sync when connected");
+      }
     }
   };
 
@@ -471,7 +479,11 @@ export default function Emotions() {
       }
     } catch (err) {
       console.error("Error updating emotion:", err);
-      toast.error("Failed to update check-in");
+      if (navigator.onLine) {
+        toast.error("Failed to update check-in");
+      } else {
+        toast.info("You're offline — changes will sync when connected");
+      }
     } finally {
       setSaving(false);
     }
@@ -500,7 +512,11 @@ export default function Emotions() {
       }
     } catch (err) {
       console.error("Error deleting emotion:", err);
-      toast.error("Failed to delete check-in");
+      if (navigator.onLine) {
+        toast.error("Failed to delete check-in");
+      } else {
+        toast.info("You're offline — changes will sync when connected");
+      }
     } finally {
       setIsDeleting(false);
     }

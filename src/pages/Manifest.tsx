@@ -181,7 +181,9 @@ export default function Manifest() {
       setProofs(extractedProofs);
     } catch (error) {
       console.error("Error fetching data:", error);
-      toast.error("Failed to load manifestations");
+      if (navigator.onLine) {
+        toast.error("Failed to load manifestations");
+      }
     } finally {
       setLoading(false);
     }
@@ -332,7 +334,11 @@ export default function Manifest() {
       fetchData();
     } catch (error) {
       console.error("Error saving goal:", error);
-      toast.error("Failed to save reality");
+      if (navigator.onLine) {
+        toast.error("Failed to save reality");
+      } else {
+        toast.info("You're offline — changes will sync when connected");
+      }
     } finally {
       setSaving(false);
     }
@@ -361,7 +367,11 @@ export default function Manifest() {
       fetchData();
     } catch (error) {
       console.error("Error deleting goal:", error);
-      toast.error("Failed to delete");
+      if (navigator.onLine) {
+        toast.error("Failed to delete");
+      } else {
+        toast.info("You're offline — changes will sync when connected");
+      }
     } finally {
       setDeletingGoal(null);
     }
@@ -378,7 +388,11 @@ export default function Manifest() {
       fetchData();
     } catch (error) {
       console.error("Error completing goal:", error);
-      toast.error("Failed to complete reality");
+      if (navigator.onLine) {
+        toast.error("Failed to complete reality");
+      } else {
+        toast.info("You're offline — changes will sync when connected");
+      }
     }
   };
 
@@ -391,7 +405,11 @@ export default function Manifest() {
       fetchData();
     } catch (error) {
       console.error("Error reactivating goal:", error);
-      toast.error("Failed to reactivate reality");
+      if (navigator.onLine) {
+        toast.error("Failed to reactivate reality");
+      } else {
+        toast.info("You're offline — changes will sync when connected");
+      }
     }
   };
 

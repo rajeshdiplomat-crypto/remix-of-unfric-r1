@@ -208,7 +208,11 @@ export default function Settings() {
       setIsDirty(false);
       toast.success("Settings saved");
     } catch {
-      toast.error("Failed to save settings");
+      if (navigator.onLine) {
+        toast.error("Failed to save settings");
+      } else {
+        toast.info("You're offline — settings will sync when connected");
+      }
     } finally {
       setSaving(false);
     }
