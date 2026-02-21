@@ -319,7 +319,11 @@ export function ManifestPracticePanel({
       }
     } catch (error) {
       console.error("Failed to update image in database:", error);
-      toast.error("Failed to save image change");
+      if (navigator.onLine) {
+        toast.error("Failed to save image change");
+      } else {
+        toast.info("You're offline — changes will sync when connected");
+      }
     }
   };
 
