@@ -266,32 +266,37 @@ function ProgressRing({
   strokeWidth = 6,
   label,
   color = "hsl(var(--foreground))",
+  mobileSize,
 }: {
   progress: number;
   size?: number;
   strokeWidth?: number;
   label: string;
   color?: string;
+  mobileSize?: number;
 }) {
-  const radius = (size - strokeWidth) / 2;
+  // Use mobileSize on small screens via CSS, but for SVG we need JS
+  const isMobileView = typeof window !== 'undefined' && window.innerWidth < 768;
+  const effectiveSize = mobileSize && isMobileView ? mobileSize : size;
+  const radius = (effectiveSize - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const offset = circumference - (progress / 100) * circumference;
 
   return (
-    <div className="flex flex-col items-center gap-2 shrink-0">
-      <div className="relative aspect-square" style={{ width: size, height: size }}>
-        <svg width={size} height={size} className="transform -rotate-90">
+    <div className="flex flex-col items-center gap-1.5 shrink-0 snap-center">
+      <div className="relative aspect-square" style={{ width: effectiveSize, height: effectiveSize }}>
+        <svg width={effectiveSize} height={effectiveSize} className="transform -rotate-90">
           <circle
-            cx={size / 2}
-            cy={size / 2}
+            cx={effectiveSize / 2}
+            cy={effectiveSize / 2}
             r={radius}
             fill="none"
             stroke="hsl(var(--border))"
             strokeWidth={strokeWidth}
           />
           <circle
-            cx={size / 2}
-            cy={size / 2}
+            cx={effectiveSize / 2}
+            cy={effectiveSize / 2}
             r={radius}
             fill="none"
             stroke={color}
@@ -303,7 +308,7 @@ function ProgressRing({
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-lg font-light text-foreground tracking-tight">{progress}%</span>
+          <span className="text-sm md:text-lg font-light text-foreground tracking-tight">{progress}%</span>
         </div>
       </div>
       <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground font-normal">{label}</p>
@@ -1196,9 +1201,10 @@ export default function Habits() {
         {/* Dashboard Content */}
         <div className="flex-1 px-3 sm:px-4 lg:px-8 py-4 pb-16 flex flex-col overflow-y-auto max-w-[1400px] mx-auto w-full">
           {/* Top Section: Header + Stats Dashboard */}
-          <div className="flex items-center justify-between mb-4 flex-shrink-0">
+          <div className="flex items-center justify-between mb-3 flex-shrink-0">
             <h2 className="text-sm font-normal uppercase tracking-zara-wide text-foreground">Habits Tracker</h2>
-            <Button onClick={openCreateDialog} variant="outline" size="sm">
+            {/* Desktop: inline button */}
+            <Button onClick={openCreateDialog} variant="outline" size="sm" className="hidden md:inline-flex">
               <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Habit
             </Button>
           </div>
@@ -1358,12 +1364,12 @@ export default function Habits() {
                   }
 
                   return (
-                    <div className="flex justify-center gap-6 lg:gap-8 flex-wrap">
-                      <ProgressRing progress={Math.min(totalGoalPercent, 100)} label="Total Goal" color={RING_COLORS[0]} />
-                      <ProgressRing progress={overallStats.momentum} label="Momentum" color={RING_COLORS[1]} />
-                      <ProgressRing progress={overallStats.dailyProgress} label="Daily" color={RING_COLORS[2]} />
-                      <ProgressRing progress={overallStats.weeklyProgress} label="Weekly" color={RING_COLORS[3]} />
-                      <ProgressRing progress={overallStats.monthlyProgress} label="Overall" color={RING_COLORS[4]} />
+                    <div className="flex justify-center gap-3 md:gap-6 lg:gap-8 overflow-x-auto snap-x snap-mandatory pb-1 -mx-2 px-2 md:flex-wrap md:overflow-visible md:snap-none">
+                      <ProgressRing progress={Math.min(totalGoalPercent, 100)} label="Total Goal" color={RING_COLORS[0]} mobileSize={68} />
+                      <ProgressRing progress={overallStats.momentum} label="Momentum" color={RING_COLORS[1]} mobileSize={68} />
+                      <ProgressRing progress={overallStats.dailyProgress} label="Daily" color={RING_COLORS[2]} mobileSize={68} />
+                      <ProgressRing progress={overallStats.weeklyProgress} label="Weekly" color={RING_COLORS[3]} mobileSize={68} />
+                      <ProgressRing progress={overallStats.monthlyProgress} label="Overall" color={RING_COLORS[4]} mobileSize={68} />
                     </div>
                   );
                 })()}
@@ -1455,11 +1461,12 @@ export default function Habits() {
                             isCurrentWeek && !isToday(day) && "bg-blue-50 dark:bg-blue-900/20",
                           )}
                         >
-                          <div className="text-slate-400">{DAY_NAMES[(day.getDay() + 6) % 7]}</div>
+                          <div className="text-muted-foreground hidden md:block">{DAY_NAMES[(day.getDay() + 6) % 7]}</div>
+                          <div className="text-muted-foreground md:hidden">{DAY_LABELS[(day.getDay() + 6) % 7]}</div>
                           <div
                             className={cn(
-                              "text-slate-600 dark:text-slate-300",
-                              isToday(day) && "text-emerald-600 dark:text-emerald-400 font-bold",
+                              "text-foreground/70",
+                              isToday(day) && "text-primary font-bold",
                             )}
                           >
                             {format(day, "d")}
@@ -1612,6 +1619,16 @@ export default function Habits() {
               </table>
             </div>
           </Card>
+
+          {/* Mobile FAB — Floating Action Button in thumb zone */}
+          <Button
+            onClick={openCreateDialog}
+            className="md:hidden fixed bottom-6 right-6 z-30 h-14 w-14 rounded-full shadow-lg"
+            size="icon"
+            style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+          >
+            <Plus className="h-6 w-6" />
+          </Button>
         </div>
 
         {/* Create Dialog */}
