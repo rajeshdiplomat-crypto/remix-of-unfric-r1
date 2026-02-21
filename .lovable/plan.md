@@ -1,106 +1,48 @@
 
 
-# Rebuild Offline System from Scratch
+## Refactor: Mobile Journal Header and Toolbar
 
-## What's Wrong Now
+### What Changes
 
-The current offline handling is scattered across 8+ files with inconsistent patterns:
-- Some pages silently skip fetches when offline, others show errors
-- Save handlers only show "offline" toasts but never actually queue data for later sync
-- The offline queue infrastructure exists (`offlineQueue.ts`, `useOfflineSync.ts`) but is never actually called from any save handler
-- Each page has its own copy-pasted `if (navigator.onLine)` checks in catch blocks
+**1. Remove Cloud status indicator from the date header; merge its function into the Save button**
 
-## New Architecture
+Currently the header shows a separate Cloud/CloudOff icon with a status label. This will be removed. Instead, the Save button itself will reflect the sync status:
+- Saved state: Save button shows a check icon or subtle "Saved" text
+- Saving state: Save button shows a spinner
+- Unsaved state: Save button shows standard Save icon (indicating action needed)
 
-A clean, centralized offline system with three layers:
+This frees up space in the header.
 
-```text
-+--------------------------------------------------+
-|  Layer 1: Online Status (useOnlineStatus hook)    |
-|  Single source of truth for connectivity          |
-+--------------------------------------------------+
-          |
-+--------------------------------------------------+
-|  Layer 2: Offline-Aware Operations                |
-|  offlineAwareInsert / Update / Upsert / Delete    |
-|  + offlineAwareFetch (graceful loading)           |
-+--------------------------------------------------+
-          |
-+--------------------------------------------------+
-|  Layer 3: Queue + Auto-Sync                       |
-|  offlineQueue.ts stores pending ops in localStorage|
-|  useOfflineSync flushes queue on reconnect        |
-+--------------------------------------------------+
-```
+**2. Move the Format (PenLine) icon into the date header bar**
 
-## Files to Delete and Recreate
+The collapsible format toggle (currently rendered above the editor card via `MobileJournalToolbar`) will be moved into the header's right-side action cluster, next to the other icon buttons (BookOpen, BarChart3, Settings2). Tapping it will expand/collapse the formatting toolbar which will render directly below the header (still above the editor card).
 
-### Keep as-is (working correctly):
-- `src/hooks/useOnlineStatus.ts` -- simple, clean, works
-- `src/hooks/useOfflineSync.ts` -- already handles flush on reconnect
-- `src/lib/offlineQueue.ts` -- queue storage logic is fine
-- `src/components/pwa/OfflineBadge.tsx` -- UI badge is fine
+**3. Add a 3-dots (MoreHorizontal) menu to the mobile toolbar's second row**
 
-### Rewrite completely:
-- `src/lib/offlineAwareOperation.ts` -- add `offlineAwareFetch` helper and `offlineAwareDelete`, improve existing helpers
+The desktop editor toolbar has a `MoreHorizontal` dropdown containing: Strikethrough, Code Block, Quote, Divider, Scribble toggle, Clear Formatting, and Clear Entry. A matching 3-dots button will be added to the mobile toolbar's second row, opening a dropdown with these same options.
 
-### Clean up all pages (remove scattered `navigator.onLine` checks):
-- `src/pages/Manifest.tsx` -- use centralized helpers
-- `src/pages/ManifestPractice.tsx` -- use centralized helpers  
-- `src/pages/Emotions.tsx` -- use centralized helpers
-- `src/pages/Journal.tsx` -- use centralized helpers
-- `src/pages/Settings.tsx` -- use centralized helpers
-- `src/pages/Diary.tsx` -- use centralized helpers
-- `src/components/diary/useFeedEvents.ts` -- use centralized helpers
-- `src/components/diary/useDiaryMetrics.ts` -- use centralized helpers
+### Technical Details
 
-## Detailed Changes
+**File: `src/pages/Journal.tsx`**
 
-### 1. Rewrite `src/lib/offlineAwareOperation.ts`
+1. **Header changes (lines ~966-991)**:
+   - Remove the Cloud/CloudOff/Loader2 status indicator div (lines 974-981)
+   - Add a PenLine icon button (mobile-only, `sm:hidden`) that toggles `mobileToolbarOpen` state
+   - Modify the Save button to show contextual icons: `Check` when saved, `Loader2` when saving, `Save` when unsaved
 
-Keep existing `offlineAwareInsert`, `offlineAwareUpdate`, `offlineAwareUpsert` (they work correctly). Add two new helpers:
+2. **MobileJournalToolbar refactor (lines ~168-283)**:
+   - Move `open` state up to the Journal component as `mobileToolbarOpen` / `setMobileToolbarOpen`
+   - Remove the inline toggle button from within `MobileJournalToolbar` (the header button now controls it)
+   - The toolbar still renders above the editor card but is controlled by the header icon
+   - Add a `MoreHorizontal` dropdown button at the end of the second row containing:
+     - Strikethrough
+     - Code Block
+     - Quote
+     - Divider
+     - Scribble toggle
+     - Clear Formatting
+     - Clear Entry
+   - Import `MoreHorizontal`, `PenTool`, `Trash2` into Journal.tsx
+   - Pass `onClear` (handleClearEntry) and scribble handlers to the toolbar
 
-- **`offlineAwareFetch`**: Wraps any Supabase `.select()` query. When offline, returns `{ data: null, offline: true }` silently (no error toast). When online, executes normally.
-- **`offlineAwareDelete`**: Wraps Supabase `.delete()`. When offline, shows "will sync when connected" toast (deletes can't be easily queued, so we just inform the user).
-
-### 2. Update all pages to use centralized helpers
-
-Replace every `if (navigator.onLine) { toast.error(...) } else { toast.info(...) }` pattern with the appropriate `offlineAware*` helper, or at minimum use the `isOfflineError()` check consistently.
-
-For **fetch operations** (loading data on mount):
-- Replace bare `if (!navigator.onLine) return;` guards with `offlineAwareFetch` that returns empty data gracefully
-
-For **save operations** (creating/updating records):
-- Wire up `offlineAwareInsert` / `offlineAwareUpdate` / `offlineAwareUpsert` so data is actually queued in localStorage when offline
-- Currently the catch blocks only show toasts but never enqueue -- this is the core bug
-
-### 3. Pages breakdown
-
-**Manifest.tsx** (5 operations to fix):
-- `fetchData` catch block: use silent offline check
-- `handleSaveGoal`: wrap insert/update with `offlineAwareInsert`/`offlineAwareUpdate`  
-- `handleDeleteGoal`: wrap with `offlineAwareDelete`
-- `handleCompleteGoal`: wrap with `offlineAwareUpdate`
-- `handleReactivateGoal`: wrap with `offlineAwareUpdate`
-
-**Emotions.tsx** (4 operations to fix):
-- Save emotion handler: wrap with `offlineAwareInsert`
-- Update strategy handler: wrap with `offlineAwareUpdate`
-- Update emotion handler: wrap with `offlineAwareUpdate`
-- Delete emotion handler: wrap with `offlineAwareDelete`
-
-**Journal.tsx** (2 fetches to fix):
-- Entry list fetch on mount: wrap with `offlineAwareFetch`
-- Single entry fetch on date change: wrap with `offlineAwareFetch`
-
-**Settings.tsx** (1 operation):
-- Save settings catch: use `isOfflineError()` consistently
-
-**Diary.tsx** + hooks (3 operations):
-- `seedFeedEvents`: keep early return when offline
-- `useFeedEvents.ts`: use `offlineAwareFetch`
-- `useDiaryMetrics.ts`: use `offlineAwareFetch`
-
-**ManifestPractice.tsx** (1 fetch):
-- Goal fetch: use `offlineAwareFetch` to prevent error + redirect when offline
-
+3. **Imports**: Add `MoreHorizontal`, `Check`, `PenTool`, `Trash2` to the lucide imports; add `DropdownMenu` components import.
