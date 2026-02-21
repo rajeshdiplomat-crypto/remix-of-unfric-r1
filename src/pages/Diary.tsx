@@ -641,7 +641,7 @@ export default function Diary() {
         </aside>
 
         {/* Center Feed - Scrollable */}
-        <main className="flex-1 min-w-0 min-h-0 h-full overflow-y-auto bg-muted/30">
+        <main className="flex-1 min-w-0 min-h-0 h-full overflow-y-auto bg-muted/20">
           <div className="w-full px-2 sm:px-4 lg:px-6 py-3 sm:py-4">
 
           {/* Search Bar */}

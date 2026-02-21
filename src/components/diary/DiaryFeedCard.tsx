@@ -377,8 +377,8 @@ export function DiaryFeedCard({
         
         if (count === 1) {
           return (
-            <div className="mt-2 w-full aspect-video overflow-hidden">
-              <img src={images[0]} alt="" className="w-full h-full object-cover block" loading="lazy" />
+            <div className="mt-2 bg-muted flex items-center justify-center min-h-[200px]">
+              <img src={images[0]} alt="" className="max-w-full max-h-[500px] object-contain block" loading="lazy" />
             </div>
           );
         }
@@ -387,8 +387,8 @@ export function DiaryFeedCard({
           return (
             <div className="mt-2 grid grid-cols-2 gap-0.5">
               {images.map((url, i) => (
-                <div key={i} className="overflow-hidden aspect-square">
-                  <img src={url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                <div key={i} className="bg-muted flex items-center justify-center min-h-[150px]">
+                  <img src={url} alt="" className="max-w-full max-h-80 object-contain" loading="lazy" />
                 </div>
               ))}
             </div>
@@ -442,7 +442,7 @@ export function DiaryFeedCard({
               </>
             )}
           </div>
-          <div className="flex items-center gap-3 text-[10px] font-medium tracking-widest uppercase text-muted-foreground/50">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span>{comments.length} comment{comments.length !== 1 ? 's' : ''}</span>
             <span>0 shares</span>
           </div>
