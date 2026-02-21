@@ -102,7 +102,7 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
             key={module.path}
             to={module.path}
             className={cn(
-              "text-[11px] font-light uppercase tracking-zara-wide transition-all duration-300",
+              "text-xs lg:text-[11px] font-light uppercase tracking-zara-wide transition-all duration-300",
               isActive(module.path) ?
               cn(
                 "border-b pb-0.5",

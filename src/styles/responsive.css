@@ -28,16 +28,18 @@ h3 {
     font-size: 14px;
   }
 
-  /* Mobile typography: 20% reduction — primary 14px, secondary 10px */
+  /* Mobile typography: 14px primary with relaxed leading for legibility */
   p, span, li, td, th {
     font-size: 0.875rem; /* 14px */
+    line-height: 1.625; /* leading-relaxed */
+    font-weight: 500; /* font-medium for sharpness at small sizes */
   }
 
   /* Ensure labels, task names, diary dates never shrink below 13px */
   label,
   .text-sm,
   .text-xs {
-    font-size: max(var(--tw-text-size, 0.75rem), 0.8125rem); /* 13px min on mobile for xs/sm */
+    font-size: max(var(--tw-text-size, 0.75rem), 0.8125rem); /* 13px min */
   }
 
   /* Secondary labels: 10px uppercase tracking */
@@ -48,9 +50,16 @@ h3 {
     text-transform: uppercase;
   }
 
-  /* 15% smaller logo and page titles on mobile */
+  /* Logo scales up on mobile — prominent anchor */
   .unfric-logo-scale {
-    font-size: 95%;
+    font-size: 110%;
+  }
+
+  /* Card minimum padding on mobile */
+  .ui-card,
+  [data-slot="card"],
+  .card {
+    padding: 1.25rem; /* p-5 minimum */
   }
 
   /* Tighten vertical spacing by ~30% on mobile */
@@ -61,6 +70,12 @@ h3 {
   .mb-6 { margin-bottom: 1rem; }
   .mb-4 { margin-bottom: 0.625rem; }
   .py-4 { padding-top: 0.625rem; padding-bottom: 0.625rem; }
+
+  /* Mandatory visual air between feed cards */
+  .feed-card + .feed-card,
+  .diary-card + .diary-card {
+    margin-top: 1.5rem; /* gap-y-6 equivalent */
+  }
 }
 
 /* ---- Group 3: Line Spacing for long-form content ---- */
