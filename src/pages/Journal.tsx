@@ -298,6 +298,7 @@ export default function Journal() {
   // Load all entries on mount
   useEffect(() => {
     if (!user) return;
+    if (!navigator.onLine) return;
     supabase
       .from("journal_entries")
       .select("*")
@@ -342,6 +343,12 @@ export default function Journal() {
 
     // Update current date ref
     currentDateRef.current = dateStr;
+
+    if (!navigator.onLine) {
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
 
     supabase
