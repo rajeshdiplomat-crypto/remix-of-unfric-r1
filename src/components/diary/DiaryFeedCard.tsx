@@ -429,7 +429,7 @@ export function DiaryFeedCard({
       })()}
       {/* Facebook-style counts row + action bar */}
       <div className="px-5 pb-3">
-        <div className="flex items-center justify-between mt-2 px-1">
+        <div className="flex items-center justify-between mt-3 px-1">
           <div className="flex items-center gap-1.5">
             {totalReactions > 0 && (
               <>
@@ -448,7 +448,7 @@ export function DiaryFeedCard({
           </div>
         </div>
 
-        <div className="border-t border-border/50 mt-1">
+        <div className="border-t border-border/50 mt-2 pt-1">
           <div className="flex min-h-[44px] items-stretch">
             <Popover open={reactionOpen} onOpenChange={setReactionOpen}>
               <PopoverTrigger asChild>
