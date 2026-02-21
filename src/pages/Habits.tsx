@@ -345,6 +345,9 @@ export default function Habits() {
   const [formDuration, setFormDuration] = useState(30);
   const [formAddToTasks, setFormAddToTasks] = useState(false);
 
+  // Mobile week navigation offset (0 = current week, -1 = last week, etc.)
+  const [mobileWeekOffset, setMobileWeekOffset] = useState(0);
+
   // Quote rotation state
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [quoteVisible, setQuoteVisible] = useState(true);
@@ -474,8 +477,9 @@ export default function Habits() {
   const currentWeekDays = useMemo(() => {
     const today = new Date();
     const ws = startOfWeek(today, { weekStartsOn });
-    return Array.from({ length: 7 }, (_, i) => addDays(ws, i));
-  }, [weekStartsOn]);
+    const offsetStart = addDays(ws, mobileWeekOffset * 7);
+    return Array.from({ length: 7 }, (_, i) => addDays(offsetStart, i));
+  }, [weekStartsOn, mobileWeekOffset]);
 
   // Calculate stats for each activity
   const activityStats = useMemo(() => {
@@ -1220,11 +1224,11 @@ export default function Habits() {
           <Card className="mb-4 flex-shrink-0 overflow-hidden">
             {/* Mobile Command Center */}
             <div className="lg:hidden">
-              {/* Row 1: Insights + Brand Image */}
-              <div className="flex items-start gap-2.5 p-3 border-b border-border">
-                <div className="flex-1 min-w-0">
-                  {/* Month nav */}
-                  <div className="flex items-center gap-1.5 mb-2">
+              {/* Card 1: Elite Header - two equal halves */}
+              <div className="flex border-b border-border" style={{ minHeight: 120 }}>
+                {/* Left: Stacked metrics */}
+                <div className="flex-1 flex flex-col justify-center p-3 gap-2.5">
+                  <div className="flex items-center gap-1.5 mb-0.5">
                     <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setCurrentMonth(addDays(startOfMonth(currentMonth), -1))}>
                       <ChevronLeft className="h-3 w-3" />
                     </Button>
@@ -1233,25 +1237,21 @@ export default function Habits() {
                       <ChevronRight className="h-3 w-3" />
                     </Button>
                   </div>
-                  {/* Habit Days cards */}
-                  <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground mb-1">Habit Days</p>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <div className="flex flex-col items-center p-1.5 rounded-lg border border-border bg-card shadow-sm">
-                      <span className="text-sm font-bold text-foreground">{activities.reduce((sum, a) => sum + a.habitDays, 0) - overallStats.totalCompleted}</span>
-                      <span className="text-[10px] text-muted-foreground uppercase tracking-zara">Pending</span>
-                    </div>
-                    <div className="flex flex-col items-center p-1.5 rounded-lg border border-border bg-card shadow-sm">
-                      <span className="text-sm font-bold text-primary">{overallStats.totalCompleted}</span>
-                      <span className="text-[10px] text-muted-foreground uppercase tracking-zara">Done</span>
-                    </div>
-                    <div className="flex flex-col items-center p-1.5 rounded-lg border border-border bg-card shadow-sm">
-                      <span className="text-sm font-bold text-foreground">{activities.reduce((sum, a) => sum + a.habitDays, 0)}</span>
-                      <span className="text-[10px] text-muted-foreground uppercase tracking-zara">Total</span>
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase tracking-zara-wide text-muted-foreground">Pending</span>
+                    <span className="text-sm font-bold text-foreground">{activities.reduce((sum, a) => sum + a.habitDays, 0) - overallStats.totalCompleted}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase tracking-zara-wide text-muted-foreground">Done</span>
+                    <span className="text-sm font-bold text-primary">{overallStats.totalCompleted}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase tracking-zara-wide text-muted-foreground">Total</span>
+                    <span className="text-sm font-bold text-foreground">{activities.reduce((sum, a) => sum + a.habitDays, 0)}</span>
                   </div>
                 </div>
-                {/* Brand image thumbnail */}
-                <div className="w-16 h-20 rounded-lg overflow-hidden shrink-0 border border-border">
+                {/* Right: Brand image flush */}
+                <div className="flex-1 overflow-hidden">
                   {(() => {
                     const sel = selectedActivityId ? activities.find(a => a.id === selectedActivityId) : null;
                     const img = sel ? (sel.coverImageUrl || loadActivityImage(sel.id)) : null;
@@ -1259,8 +1259,8 @@ export default function Habits() {
                   })()}
                 </div>
               </div>
-              {/* Row 2: Progress rings carousel */}
-              <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory px-3 py-2.5 border-b border-border" style={{ scrollbarWidth: 'none' }}>
+              {/* Card 2: Metric Rings - fixed row, no scroll */}
+              <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
                 {(() => {
                   const selectedHabit = selectedActivityId ? activities.find(a => a.id === selectedActivityId) : null;
                   let totalGoalPercent = 0;
@@ -1271,13 +1271,14 @@ export default function Habits() {
                     const ta = overallStats.totalCompleted + overallStats.totalRemaining;
                     totalGoalPercent = ta > 0 ? Math.round((overallStats.totalCompleted / ta) * 100) : 0;
                   }
+                  const ringSize = 58;
                   return (
                     <>
-                      <ProgressRing progress={Math.min(totalGoalPercent, 100)} label="Total Goal" color={RING_COLORS[0]} size={68} />
-                      <ProgressRing progress={overallStats.momentum} label="Momentum" color={RING_COLORS[1]} size={68} />
-                      <ProgressRing progress={overallStats.dailyProgress} label="Daily" color={RING_COLORS[2]} size={68} />
-                      <ProgressRing progress={overallStats.weeklyProgress} label="Weekly" color={RING_COLORS[3]} size={68} />
-                      <ProgressRing progress={overallStats.monthlyProgress} label="Overall" color={RING_COLORS[4]} size={68} />
+                      <ProgressRing progress={Math.min(totalGoalPercent, 100)} label="Total Goal" color={RING_COLORS[0]} size={ringSize} strokeWidth={5} />
+                      <ProgressRing progress={overallStats.momentum} label="Momentum" color={RING_COLORS[1]} size={ringSize} strokeWidth={5} />
+                      <ProgressRing progress={overallStats.dailyProgress} label="Daily" color={RING_COLORS[2]} size={ringSize} strokeWidth={5} />
+                      <ProgressRing progress={overallStats.weeklyProgress} label="Weekly" color={RING_COLORS[3]} size={ringSize} strokeWidth={5} />
+                      <ProgressRing progress={overallStats.monthlyProgress} label="Overall" color={RING_COLORS[4]} size={ringSize} strokeWidth={5} />
                     </>
                   );
                 })()}
@@ -1489,82 +1490,99 @@ export default function Habits() {
           {/* Habits Grid */}
           {/* Mobile Weekly Grid */}
           <Card className="md:hidden rounded-xl overflow-hidden mb-0">
-            {/* Daily Progress Graph */}
-            <div className="px-4 py-2 border-b border-border">
-              <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground mb-1">Daily Progress</p>
-              <svg viewBox="0 0 700 100" className="w-full" style={{ height: 60 }} preserveAspectRatio="none">
-                {(() => {
-                  const today = new Date();
-                  const dataPoints: { x: number; y: number; value: number; isPast: boolean }[] = [];
-                  const chartActivities = selectedActivityId ? activities.filter(a => a.id === selectedActivityId) : activities.filter(a => !a.isArchived);
+            {/* Week Navigation + Daily Progress Graph */}
+            <div className="px-4 pt-2 pb-1 border-b border-border">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground">Daily Progress</p>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setMobileWeekOffset(prev => prev - 1)}>
+                    <ChevronLeft className="h-3 w-3" />
+                  </Button>
+                  <span className="text-[9px] text-muted-foreground font-medium min-w-[60px] text-center">
+                    {format(currentWeekDays[0], "MMM d")} – {format(currentWeekDays[6], "d")}
+                  </span>
+                  <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setMobileWeekOffset(prev => prev + 1)} disabled={mobileWeekOffset >= 0}>
+                    <ChevronRight className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+              {/* Graph aligned to table columns: habit col ~90px, then 7 day cols, then % col ~32px, then 🔥 col ~32px */}
+              {/* We use a table-like layout: pad left for habit col, pad right for % + 🔥 cols */}
+              <div className="relative" style={{ paddingLeft: 90, paddingRight: 64 }}>
+                <svg viewBox="0 0 700 100" className="w-full" style={{ height: 56 }} preserveAspectRatio="none">
+                  {(() => {
+                    const today = new Date();
+                    const dataPoints: { x: number; y: number; value: number; isPast: boolean }[] = [];
+                    const chartActivities = selectedActivityId ? activities.filter(a => a.id === selectedActivityId) : activities.filter(a => !a.isArchived);
 
-                  for (let i = 0; i < 7; i++) {
-                    const day = currentWeekDays[i];
-                    if (!day) continue;
-                    const dayStr = format(day, "yyyy-MM-dd");
-                    const dayOfWeek = (day.getDay() + 6) % 7;
-                    const isPast = isBefore(day, today) || isToday(day);
-                    let completed = 0, total = 0;
-                    chartActivities.forEach(a => {
-                      const hStart = parseISO(a.startDate);
-                      const hEnd = computeEndDateForHabitDays(hStart, a.frequencyPattern, a.habitDays);
-                      if (a.frequencyPattern[dayOfWeek] && !isBefore(day, hStart) && !isAfter(day, hEnd)) {
-                        total++;
-                        if (a.completions[dayStr]) completed++;
-                      }
-                    });
-                    if (total === 0) continue;
-                    const value = (completed / total) * 100;
-                    const x = (i + 0.5) * 100;
-                    const y = 85 - (value / 100) * 70;
-                    dataPoints.push({ x, y, value, isPast });
-                  }
+                    for (let i = 0; i < 7; i++) {
+                      const day = currentWeekDays[i];
+                      if (!day) continue;
+                      const dayStr = format(day, "yyyy-MM-dd");
+                      const dayOfWeek = (day.getDay() + 6) % 7;
+                      const isPast = isBefore(day, today) || isToday(day);
+                      let completed = 0, total = 0;
+                      chartActivities.forEach(a => {
+                        const hStart = parseISO(a.startDate);
+                        const hEnd = computeEndDateForHabitDays(hStart, a.frequencyPattern, a.habitDays);
+                        if (a.frequencyPattern[dayOfWeek] && !isBefore(day, hStart) && !isAfter(day, hEnd)) {
+                          total++;
+                          if (a.completions[dayStr]) completed++;
+                        }
+                      });
+                      if (total === 0) { dataPoints.push({ x: (i + 0.5) * 100, y: 85, value: 0, isPast }); continue; }
+                      const value = (completed / total) * 100;
+                      const x = (i + 0.5) * 100;
+                      const y = 85 - (value / 100) * 70;
+                      dataPoints.push({ x, y, value, isPast });
+                    }
 
-                  if (dataPoints.length < 2) return <text x="350" y="55" textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize="12" opacity="0.5">Not enough data</text>;
+                    if (dataPoints.length < 2) return <text x="350" y="55" textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize="12" opacity="0.5">Not enough data</text>;
 
-                  let path = `M ${dataPoints[0].x} ${dataPoints[0].y}`;
-                  for (let j = 0; j < dataPoints.length - 1; j++) {
-                    const c = dataPoints[j], n = dataPoints[j + 1];
-                    const mx = (c.x + n.x) / 2, my = (c.y + n.y) / 2;
-                    path += ` Q ${c.x + (mx - c.x) * 0.5} ${c.y}, ${mx} ${my}`;
-                    path += ` Q ${mx + (n.x - mx) * 0.5} ${n.y}, ${n.x} ${n.y}`;
-                  }
-                  const area = `${path} L ${dataPoints[dataPoints.length - 1].x} 95 L ${dataPoints[0].x} 95 Z`;
+                    let path = `M ${dataPoints[0].x} ${dataPoints[0].y}`;
+                    for (let j = 0; j < dataPoints.length - 1; j++) {
+                      const c = dataPoints[j], n = dataPoints[j + 1];
+                      const mx = (c.x + n.x) / 2, my = (c.y + n.y) / 2;
+                      path += ` Q ${c.x + (mx - c.x) * 0.5} ${c.y}, ${mx} ${my}`;
+                      path += ` Q ${mx + (n.x - mx) * 0.5} ${n.y}, ${n.x} ${n.y}`;
+                    }
+                    const area = `${path} L ${dataPoints[dataPoints.length - 1].x} 95 L ${dataPoints[0].x} 95 Z`;
 
-                  return (
-                    <>
-                      <defs>
-                        <linearGradient id="mobileAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.08" />
-                          <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0.02" />
-                        </linearGradient>
-                      </defs>
-                      <path d={area} fill="url(#mobileAreaGrad)" />
-                      <path d={path} fill="none" stroke="hsl(var(--foreground))" strokeWidth="2.5" strokeLinecap="round" opacity="0.7" />
-                      {dataPoints.map((p, i) => (
-                        <circle key={i} cx={p.x} cy={p.y} r="3.5" fill={p.isPast ? "hsl(var(--foreground))" : "hsl(var(--border))"} stroke="hsl(var(--background))" strokeWidth="1.5" />
-                      ))}
-                    </>
-                  );
-                })()}
-              </svg>
+                    return (
+                      <>
+                        <defs>
+                          <linearGradient id="mobileAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.08" />
+                            <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0.02" />
+                          </linearGradient>
+                        </defs>
+                        <path d={area} fill="url(#mobileAreaGrad)" />
+                        <path d={path} fill="none" stroke="hsl(var(--foreground))" strokeWidth="2.5" strokeLinecap="round" opacity="0.7" />
+                        {dataPoints.map((p, i) => (
+                          <circle key={i} cx={p.x} cy={p.y} r="3.5" fill={p.isPast ? "hsl(var(--foreground))" : "hsl(var(--border))"} stroke="hsl(var(--background))" strokeWidth="1.5" />
+                        ))}
+                      </>
+                    );
+                  })()}
+                </svg>
+              </div>
             </div>
             {/* Weekly Table */}
             <table className="w-full">
               <thead>
                 <tr className="bg-muted/50">
-                  <th className="text-left p-1 pl-2 text-[9px] font-medium text-muted-foreground uppercase tracking-zara sticky left-0 bg-muted/50 z-10">Habit</th>
+                  <th className="text-left p-1 pl-2 text-[9px] font-medium text-muted-foreground uppercase tracking-zara sticky left-0 bg-muted/50 z-10" style={{ width: 90 }}>Habit</th>
                   {currentWeekDays.map((day, i) => (
-                    <th key={i} className={cn("p-0.5 text-center text-[9px] font-medium text-muted-foreground w-7", isToday(day) && "bg-primary/10")}>
+                    <th key={i} className={cn("p-0.5 text-center text-[9px] font-medium text-muted-foreground", isToday(day) && "bg-primary/10")} style={{ width: 'calc((100% - 90px - 64px) / 7)' }}>
                       {DAY_LABELS[(day.getDay() + 6) % 7]}
                     </th>
                   ))}
-                  <th className="p-0.5 text-center text-[9px] font-medium text-muted-foreground w-8">%</th>
-                  <th className="p-0.5 text-center text-[9px] font-medium text-muted-foreground w-8">🔥</th>
+                  <th className="p-0.5 text-center text-[9px] font-medium text-muted-foreground" style={{ width: 32 }}>%</th>
+                  <th className="p-0.5 text-center text-[9px] font-medium text-muted-foreground" style={{ width: 32 }}>🔥</th>
                 </tr>
               </thead>
               <tbody>
-                {activities.filter(a => !a.isArchived).map(activity => {
+                {activities.filter(a => !a.isArchived).map((activity, idx) => {
                   const stats = activityStats.find(s => s.id === activity.id);
                   const totalCompletions = Object.keys(activity.completions || {}).length;
                   const progressPercent = activity.habitDays > 0 ? Math.round((totalCompletions / activity.habitDays) * 100) : 0;
@@ -1573,12 +1591,15 @@ export default function Habits() {
                   return (
                     <tr
                       key={activity.id}
-                      className={cn("border-b border-border/40 transition-colors", isSelected ? "bg-primary/5" : "hover:bg-muted/30")}
+                      className={cn(
+                        "border-b border-border/40 transition-colors",
+                        isSelected ? "bg-primary/5" : idx % 2 === 1 ? "bg-muted/20" : ""
+                      )}
                       onClick={() => setSelectedActivityId(isSelected ? null : activity.id)}
                     >
-                      <td className={cn("p-1 pl-2 sticky left-0 z-10", isSelected ? "bg-primary/5" : "bg-background")}>
+                      <td className={cn("p-1 pl-2 sticky left-0 z-10", isSelected ? "bg-primary/5" : idx % 2 === 1 ? "bg-muted/20" : "bg-background")} style={{ width: 90 }}>
                         <div className="flex items-center gap-1">
-                          <span className="text-[11px] font-medium text-foreground truncate max-w-[80px] block">{activity.name}</span>
+                          <span className="text-[11px] font-medium text-foreground truncate max-w-[65px] block">{activity.name}</span>
                           <span className="text-[9px] text-muted-foreground shrink-0">{activity.habitDays}</span>
                         </div>
                       </td>
