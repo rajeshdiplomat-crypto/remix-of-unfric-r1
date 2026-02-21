@@ -6,6 +6,14 @@ import { toast } from "sonner";
 import { Sparkles, ArrowLeft, ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { subDays, addDays, parseISO, isSameDay, format, isToday } from "date-fns";
+
+function safeJsonArray(val: any): any[] {
+  if (Array.isArray(val)) return val;
+  if (typeof val === "string") {
+    try { const parsed = JSON.parse(val); return Array.isArray(parsed) ? parsed : []; } catch { return []; }
+  }
+  return [];
+}
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { UnifiedDatePicker } from "@/components/common/UnifiedDatePicker";
@@ -102,12 +110,12 @@ export default function ManifestPractice() {
           user_id: p.user_id,
           entry_date: p.entry_date,
           created_at: p.created_at,
-          visualization_count: Array.isArray(p.visualizations) ? p.visualizations.length : 0,
-          visualizations: p.visualizations || [],
-          act_count: Array.isArray(p.acts) ? p.acts.length : 0,
-          acts: p.acts || [],
-          proofs: p.proofs || [],
-          gratitudes: p.gratitudes || [],
+          visualization_count: safeJsonArray(p.visualizations).length,
+          visualizations: safeJsonArray(p.visualizations),
+          act_count: safeJsonArray(p.acts).length,
+          acts: safeJsonArray(p.acts),
+          proofs: safeJsonArray(p.proofs),
+          gratitudes: safeJsonArray(p.gratitudes),
           alignment: p.alignment,
           growth_note: p.growth_note,
           locked: p.locked || false,

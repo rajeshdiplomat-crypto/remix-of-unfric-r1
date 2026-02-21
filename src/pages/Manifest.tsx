@@ -9,6 +9,14 @@ import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { subDays, parseISO, isSameDay, format } from "date-fns";
 
+function safeJsonArray(val: any): any[] {
+  if (Array.isArray(val)) return val;
+  if (typeof val === "string") {
+    try { const parsed = JSON.parse(val); return Array.isArray(parsed) ? parsed : []; } catch { return []; }
+  }
+  return [];
+}
+
 import { ManifestCard } from "@/components/manifest/ManifestCard";
 import { ManifestCreateModal } from "@/components/manifest/ManifestCreateModal";
 import { ManifestSidebarPanel } from "@/components/manifest/ManifestSidebarPanel";
@@ -146,12 +154,12 @@ export default function Manifest() {
           user_id: p.user_id,
           entry_date: p.entry_date,
           created_at: p.created_at,
-          visualization_count: (p.visualizations || []).length,
-          visualizations: p.visualizations || [],
-          act_count: (p.acts || []).length,
-          acts: p.acts || [],
-          proofs: p.proofs || [],
-          gratitudes: p.gratitudes || [],
+          visualization_count: safeJsonArray(p.visualizations).length,
+          visualizations: safeJsonArray(p.visualizations),
+          act_count: safeJsonArray(p.acts).length,
+          acts: safeJsonArray(p.acts),
+          proofs: safeJsonArray(p.proofs),
+          gratitudes: safeJsonArray(p.gratitudes),
           alignment: p.alignment,
           growth_note: p.growth_note,
           locked: p.locked || false,
@@ -162,7 +170,7 @@ export default function Manifest() {
       setPractices(practicesList);
 
       const extractedProofs: ManifestProof[] = practicesList.flatMap((p) =>
-        (p.proofs || []).map((proof) => ({
+        safeJsonArray(p.proofs).map((proof) => ({
           id: proof.id,
           goal_id: p.goal_id,
           text: proof.text,
