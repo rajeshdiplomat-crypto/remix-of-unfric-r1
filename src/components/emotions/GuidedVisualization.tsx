@@ -1,9 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Play, Pause, SkipForward, Check } from "lucide-react";
 import { Strategy } from "./types";
-import { Play, Pause, SkipForward, Volume2, VolumeX, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface GuidedVisualizationProps {
@@ -12,302 +10,173 @@ interface GuidedVisualizationProps {
   onSkip: () => void;
 }
 
-// Duration options in seconds
-const DURATION_OPTIONS = [
-  { label: "2 min", value: 120 },
-  { label: "3 min", value: 180 },
-  { label: "5 min", value: 300 },
+const BREATHING_STEPS = [
+  { label: "Breathe In", duration: 4 },
+  { label: "Hold", duration: 4 },
+  { label: "Breathe Out", duration: 4 },
+  { label: "Hold", duration: 4 },
 ];
 
-// Ambient sounds (using Web Audio API for simple tones)
-const SOUND_TYPES = {
-  breathing: { frequency: 200, type: "sine" as OscillatorType, volume: 0.1 },
-  grounding: { frequency: 150, type: "sine" as OscillatorType, volume: 0.08 },
-  mindfulness: { frequency: 180, type: "sine" as OscillatorType, volume: 0.12 },
-  cognitive: { frequency: 220, type: "sine" as OscillatorType, volume: 0.05 },
-  movement: { frequency: 250, type: "sine" as OscillatorType, volume: 0.08 },
-};
-
-// Visualization prompts for each phase
-const VISUALIZATION_PROMPTS: Record<string, string[]> = {
-  "box-breathing": [
-    "Find a comfortable position and close your eyes...",
-    "Breathe in slowly through your nose... 1... 2... 3... 4...",
-    "Hold your breath gently... 1... 2... 3... 4...",
-    "Exhale slowly through your mouth... 1... 2... 3... 4...",
-    "Hold again... 1... 2... 3... 4...",
-    "Continue this rhythm... let your body relax...",
-    "With each breath, tension melts away...",
-    "You are calm, centered, and present...",
-  ],
-  "5-4-3-2-1": [
-    "Look around you gently...",
-    "Notice 5 things you can see...",
-    "Feel 4 things you can touch...",
-    "Listen for 3 sounds around you...",
-    "Notice 2 things you can smell...",
-    "Become aware of 1 taste in your mouth...",
-    "You are grounded and present...",
-    "Feel the stability of this moment...",
-  ],
-  "body-scan": [
-    "Close your eyes and take a deep breath...",
-    "Focus on the top of your head...",
-    "Move your attention to your face and neck...",
-    "Notice your shoulders... let them drop...",
-    "Feel your arms and hands...",
-    "Bring awareness to your chest and stomach...",
-    "Move down to your legs and feet...",
-    "Your whole body is relaxed and present...",
-  ],
-  default: [
-    "Take a moment to settle into this practice...",
-    "Let your breath flow naturally...",
-    "Notice any thoughts without judgment...",
-    "Gently return your focus to the present...",
-    "You are safe in this moment...",
-    "Feel the peace within you growing...",
-    "Embrace this time for yourself...",
-    "You are doing wonderfully...",
-  ],
-};
+const GROUNDING_STEPS = [
+  { label: "5 things you can SEE", duration: 15 },
+  { label: "4 things you can HEAR", duration: 12 },
+  { label: "3 things you can TOUCH", duration: 10 },
+  { label: "2 things you can SMELL", duration: 8 },
+  { label: "1 thing you can TASTE", duration: 6 },
+];
 
 export function GuidedVisualization({ strategy, onComplete, onSkip }: GuidedVisualizationProps) {
-  const [duration, setDuration] = useState(180);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(duration);
-  const [isMuted, setIsMuted] = useState(false);
-  const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [cycles, setCycles] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const oscillatorRef = useRef<OscillatorNode | null>(null);
-  const gainNodeRef = useRef<GainNode | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isBreathing = strategy.type === "breathing";
+  const isGrounding = strategy.id === "5-4-3-2-1";
+  const steps = isBreathing ? BREATHING_STEPS : isGrounding ? GROUNDING_STEPS : [];
+  const hasSteps = steps.length > 0;
+  const totalCycles = isBreathing ? 3 : 1;
 
-  const prompts = VISUALIZATION_PROMPTS[strategy.id] || VISUALIZATION_PROMPTS["default"];
-  const progress = ((duration - timeRemaining) / duration) * 100;
-  const soundConfig = SOUND_TYPES[strategy.type] || SOUND_TYPES.mindfulness;
-
-  // Cleanup audio on unmount
-  useEffect(() => {
-    return () => {
-      stopAudio();
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
+  const cleanup = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
   }, []);
 
-  // Handle duration change
   useEffect(() => {
-    if (!isPlaying) {
-      setTimeRemaining(duration);
-    }
-  }, [duration, isPlaying]);
+    return cleanup;
+  }, [cleanup]);
 
-  // Timer and prompt cycling
   useEffect(() => {
-    if (isPlaying && timeRemaining > 0) {
-      intervalRef.current = setInterval(() => {
-        setTimeRemaining((prev) => {
-          if (prev <= 1) {
+    if (!isPlaying || !hasSteps) return;
+
+    const step = steps[currentStep];
+    const tickMs = 50;
+    const totalTicks = (step.duration * 1000) / tickMs;
+    let tick = 0;
+
+    intervalRef.current = setInterval(() => {
+      tick++;
+      setProgress((tick / totalTicks) * 100);
+
+      if (tick >= totalTicks) {
+        cleanup();
+        const nextStep = currentStep + 1;
+        if (nextStep < steps.length) {
+          setCurrentStep(nextStep);
+          setProgress(0);
+        } else {
+          const nextCycle = cycles + 1;
+          if (nextCycle < totalCycles) {
+            setCycles(nextCycle);
+            setCurrentStep(0);
+            setProgress(0);
+          } else {
             setIsPlaying(false);
-            stopAudio();
-            onComplete();
-            return 0;
+            setProgress(100);
           }
-          return prev - 1;
-        });
-      }, 1000);
-
-      // Cycle prompts
-      const promptInterval = Math.floor(duration / prompts.length);
-      const elapsed = duration - timeRemaining;
-      const newIndex = Math.min(Math.floor(elapsed / promptInterval), prompts.length - 1);
-      if (newIndex !== currentPromptIndex) {
-        setCurrentPromptIndex(newIndex);
+        }
       }
-    } else if (intervalRef.current) {
-      clearInterval(intervalRef.current);
+    }, tickMs);
+
+    return cleanup;
+  }, [isPlaying, currentStep, cycles, hasSteps, steps, totalCycles, cleanup]);
+
+  const togglePlay = () => {
+    if (!isPlaying && progress >= 100) {
+      setCurrentStep(0);
+      setCycles(0);
+      setProgress(0);
     }
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [isPlaying, timeRemaining, duration, prompts.length, currentPromptIndex, onComplete]);
-
-  const startAudio = () => {
-    if (isMuted) return;
-    try {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      oscillatorRef.current = audioContextRef.current.createOscillator();
-      gainNodeRef.current = audioContextRef.current.createGain();
-
-      oscillatorRef.current.type = soundConfig.type;
-      oscillatorRef.current.frequency.setValueAtTime(soundConfig.frequency, audioContextRef.current.currentTime);
-
-      gainNodeRef.current.gain.setValueAtTime(soundConfig.volume, audioContextRef.current.currentTime);
-
-      oscillatorRef.current.connect(gainNodeRef.current);
-      gainNodeRef.current.connect(audioContextRef.current.destination);
-
-      oscillatorRef.current.start();
-    } catch (e) {
-      console.log("Audio not supported");
-    }
+    setIsPlaying((p) => !p);
   };
 
-  const stopAudio = () => {
-    if (oscillatorRef.current) {
-      try {
-        oscillatorRef.current.stop();
-        oscillatorRef.current.disconnect();
-      } catch (e) {}
-    }
-    if (audioContextRef.current) {
-      try {
-        audioContextRef.current.close();
-      } catch (e) {}
-    }
-    oscillatorRef.current = null;
-    audioContextRef.current = null;
-    gainNodeRef.current = null;
-  };
+  if (!hasSteps) {
+    // Simple text-based strategy (cognitive, movement, mindfulness)
+    return (
+      <div className="p-6 space-y-6">
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          {strategy.description}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Duration: {strategy.duration}
+        </p>
+        <div className="flex gap-3">
+          <Button variant="outline" size="sm" onClick={onSkip} className="flex-1">
+            <SkipForward className="h-4 w-4 mr-1" /> Skip
+          </Button>
+          <Button size="sm" onClick={onComplete} className="flex-1">
+            <Check className="h-4 w-4 mr-1" /> Done
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
-  const handlePlay = () => {
-    if (isPlaying) {
-      setIsPlaying(false);
-      stopAudio();
-    } else {
-      setIsPlaying(true);
-      if (timeRemaining === 0) {
-        setTimeRemaining(duration);
-        setCurrentPromptIndex(0);
-      }
-      startAudio();
-    }
-  };
-
-  const handleMuteToggle = () => {
-    setIsMuted(!isMuted);
-    if (!isMuted && isPlaying) {
-      stopAudio();
-    } else if (isMuted && isPlaying) {
-      startAudio();
-    }
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  // Animation classes based on strategy type
-  const getAnimationClass = () => {
-    if (!isPlaying) return "";
-    switch (strategy.type) {
-      case "breathing":
-        return "animate-pulse";
-      case "grounding":
-        return "animate-bounce";
-      default:
-        return "animate-pulse";
-    }
-  };
+  const step = steps[currentStep];
 
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-0">
-        {/* Visualization area */}
+    <div className="p-6 space-y-6">
+      <p className="text-sm text-muted-foreground">{strategy.description}</p>
+
+      {/* Visual indicator */}
+      <div className="flex flex-col items-center gap-4">
         <div
           className={cn(
-            "relative h-64 flex items-center justify-center transition-colors duration-1000",
-            isPlaying ? "bg-gradient-to-b from-primary/10 to-primary/5" : "bg-muted/30",
+            "rounded-full flex items-center justify-center transition-all duration-500",
+            isBreathing ? "border-2 border-primary/30" : "border-2 border-primary/20"
           )}
+          style={{
+            width: isBreathing ? `${80 + (progress / 100) * 60}px` : "140px",
+            height: isBreathing ? `${80 + (progress / 100) * 60}px` : "140px",
+          }}
         >
-          {/* Animated circle */}
+          <span className="text-sm font-medium text-center px-2">{step.label}</span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="w-full max-w-xs bg-muted rounded-full h-1.5">
           <div
-            className={cn(
-              "w-32 h-32 rounded-full transition-all duration-[4000ms] ease-in-out",
-              isPlaying ? "scale-110 opacity-80" : "scale-100 opacity-40",
-              getAnimationClass(),
-            )}
-            style={{
-              background: `radial-gradient(circle, ${QUADRANT_COLORS[strategy.type] || "hsl(var(--primary))"} 0%, transparent 70%)`,
-            }}
+            className="h-full rounded-full bg-primary transition-all duration-100"
+            style={{ width: `${progress}%` }}
           />
-
-          {/* Current prompt */}
-          <div className="absolute inset-x-4 bottom-8 text-center">
-            <p
-              className={cn(
-                "text-lg font-medium transition-all duration-500",
-                isPlaying ? "text-foreground opacity-100" : "text-muted-foreground opacity-60",
-              )}
-            >
-              {isPlaying ? prompts[currentPromptIndex] : "Press play to begin..."}
-            </p>
-          </div>
         </div>
 
-        {/* Controls */}
-        <div className="p-4 space-y-4 bg-card">
-          {/* Progress bar */}
-          <div className="space-y-2">
-            <Progress value={progress} className="h-2" />
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>{formatTime(duration - timeRemaining)}</span>
-              <span>{formatTime(timeRemaining)}</span>
-            </div>
-          </div>
+        {isBreathing && (
+          <span className="text-xs text-muted-foreground">
+            Cycle {cycles + 1} / {totalCycles}
+          </span>
+        )}
+      </div>
 
-          {/* Duration selector */}
-          {!isPlaying && timeRemaining === duration && (
-            <div className="flex gap-2 justify-center">
-              {DURATION_OPTIONS.map((opt) => (
-                <Button
-                  key={opt.value}
-                  variant={duration === opt.value ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setDuration(opt.value)}
-                >
-                  {opt.label}
-                </Button>
-              ))}
-            </div>
+      {/* Controls */}
+      <div className="flex gap-3">
+        <Button variant="outline" size="sm" onClick={onSkip} className="flex-1">
+          <SkipForward className="h-4 w-4 mr-1" /> Skip
+        </Button>
+        <Button size="sm" onClick={togglePlay} className="flex-1">
+          {isPlaying ? (
+            <>
+              <Pause className="h-4 w-4 mr-1" /> Pause
+            </>
+          ) : progress >= 100 ? (
+            <>
+              <Check className="h-4 w-4 mr-1" /> Complete
+            </>
+          ) : (
+            <>
+              <Play className="h-4 w-4 mr-1" /> Start
+            </>
           )}
-
-          {/* Playback controls */}
-          <div className="flex items-center justify-center gap-4">
-            <Button variant="ghost" size="icon" onClick={handleMuteToggle} className="text-muted-foreground">
-              {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-            </Button>
-
-            <Button size="lg" onClick={handlePlay} className="h-16 w-16 rounded-full shadow-lg">
-              {isPlaying ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7 ml-0.5" />}
-            </Button>
-
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={onComplete}
-                className="text-primary border-primary/20 hover:bg-primary/10"
-                title="Mark as Complete"
-              >
-                <Check className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </Button>
+        {progress >= 100 && (
+          <Button size="sm" onClick={onComplete} className="flex-1">
+            <Check className="h-4 w-4 mr-1" /> Done
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }
-
-const QUADRANT_COLORS: Record<string, string> = {
-  breathing: "hsl(200, 80%, 50%)",
-  grounding: "hsl(30, 70%, 50%)",
-  cognitive: "hsl(280, 60%, 55%)",
-  movement: "hsl(340, 70%, 55%)",
-  mindfulness: "hsl(160, 60%, 45%)",
-};
