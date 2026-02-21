@@ -1,45 +1,106 @@
 
 
-# Fix: "Failed to load manifestations" Error
+# Rebuild Offline System from Scratch
 
-## Root Cause
+## What's Wrong Now
 
-The `manifest_practices` table stores `proofs`, `acts`, `visualizations`, and `gratitudes` as JSONB columns. However, the data returned from the API has these fields as **JSON strings** (e.g., `"[]"`) rather than parsed arrays. 
+The current offline handling is scattered across 8+ files with inconsistent patterns:
+- Some pages silently skip fetches when offline, others show errors
+- Save handlers only show "offline" toasts but never actually queue data for later sync
+- The offline queue infrastructure exists (`offlineQueue.ts`, `useOfflineSync.ts`) but is never actually called from any save handler
+- Each page has its own copy-pasted `if (navigator.onLine)` checks in catch blocks
 
-When the code does `(p.proofs || []).map(...)`, `p.proofs` is the string `"[]"` which is truthy, so the fallback `[]` never triggers. Since strings don't have a `.map()` method, it throws a TypeError, which is caught and displayed as "Failed to load manifestations".
+## New Architecture
 
-## Solution
+A clean, centralized offline system with three layers:
 
-Parse these JSONB fields safely before using them. Add a small helper that handles both cases (already-parsed arrays and JSON strings).
-
-## Changes
-
-### `src/pages/Manifest.tsx`
-
-Add a safe JSON parse helper at the top of the file:
-
-```typescript
-function safeJsonArray(val: any): any[] {
-  if (Array.isArray(val)) return val;
-  if (typeof val === "string") {
-    try { const parsed = JSON.parse(val); return Array.isArray(parsed) ? parsed : []; } catch { return []; }
-  }
-  return [];
-}
+```text
++--------------------------------------------------+
+|  Layer 1: Online Status (useOnlineStatus hook)    |
+|  Single source of truth for connectivity          |
++--------------------------------------------------+
+          |
++--------------------------------------------------+
+|  Layer 2: Offline-Aware Operations                |
+|  offlineAwareInsert / Update / Upsert / Delete    |
+|  + offlineAwareFetch (graceful loading)           |
++--------------------------------------------------+
+          |
++--------------------------------------------------+
+|  Layer 3: Queue + Auto-Sync                       |
+|  offlineQueue.ts stores pending ops in localStorage|
+|  useOfflineSync flushes queue on reconnect        |
++--------------------------------------------------+
 ```
 
-Then replace all direct array accesses in the practices mapping (around lines 143-158) to use this helper:
+## Files to Delete and Recreate
 
-- `p.visualizations || []` becomes `safeJsonArray(p.visualizations)`
-- `p.acts || []` becomes `safeJsonArray(p.acts)`
-- `p.proofs || []` becomes `safeJsonArray(p.proofs)`
-- `p.gratitudes || []` becomes `safeJsonArray(p.gratitudes)`
+### Keep as-is (working correctly):
+- `src/hooks/useOnlineStatus.ts` -- simple, clean, works
+- `src/hooks/useOfflineSync.ts` -- already handles flush on reconnect
+- `src/lib/offlineQueue.ts` -- queue storage logic is fine
+- `src/components/pwa/OfflineBadge.tsx` -- UI badge is fine
 
-Also apply the same fix on line 165 where proofs are extracted via `.flatMap()`.
+### Rewrite completely:
+- `src/lib/offlineAwareOperation.ts` -- add `offlineAwareFetch` helper and `offlineAwareDelete`, improve existing helpers
 
-### `src/pages/ManifestPractice.tsx`
+### Clean up all pages (remove scattered `navigator.onLine` checks):
+- `src/pages/Manifest.tsx` -- use centralized helpers
+- `src/pages/ManifestPractice.tsx` -- use centralized helpers  
+- `src/pages/Emotions.tsx` -- use centralized helpers
+- `src/pages/Journal.tsx` -- use centralized helpers
+- `src/pages/Settings.tsx` -- use centralized helpers
+- `src/pages/Diary.tsx` -- use centralized helpers
+- `src/components/diary/useFeedEvents.ts` -- use centralized helpers
+- `src/components/diary/useDiaryMetrics.ts` -- use centralized helpers
 
-Apply the same `safeJsonArray` helper to the identical mapping logic around lines 96-108, where the same JSONB fields are accessed.
+## Detailed Changes
 
-No database or schema changes needed -- this is purely a client-side parsing fix.
+### 1. Rewrite `src/lib/offlineAwareOperation.ts`
+
+Keep existing `offlineAwareInsert`, `offlineAwareUpdate`, `offlineAwareUpsert` (they work correctly). Add two new helpers:
+
+- **`offlineAwareFetch`**: Wraps any Supabase `.select()` query. When offline, returns `{ data: null, offline: true }` silently (no error toast). When online, executes normally.
+- **`offlineAwareDelete`**: Wraps Supabase `.delete()`. When offline, shows "will sync when connected" toast (deletes can't be easily queued, so we just inform the user).
+
+### 2. Update all pages to use centralized helpers
+
+Replace every `if (navigator.onLine) { toast.error(...) } else { toast.info(...) }` pattern with the appropriate `offlineAware*` helper, or at minimum use the `isOfflineError()` check consistently.
+
+For **fetch operations** (loading data on mount):
+- Replace bare `if (!navigator.onLine) return;` guards with `offlineAwareFetch` that returns empty data gracefully
+
+For **save operations** (creating/updating records):
+- Wire up `offlineAwareInsert` / `offlineAwareUpdate` / `offlineAwareUpsert` so data is actually queued in localStorage when offline
+- Currently the catch blocks only show toasts but never enqueue -- this is the core bug
+
+### 3. Pages breakdown
+
+**Manifest.tsx** (5 operations to fix):
+- `fetchData` catch block: use silent offline check
+- `handleSaveGoal`: wrap insert/update with `offlineAwareInsert`/`offlineAwareUpdate`  
+- `handleDeleteGoal`: wrap with `offlineAwareDelete`
+- `handleCompleteGoal`: wrap with `offlineAwareUpdate`
+- `handleReactivateGoal`: wrap with `offlineAwareUpdate`
+
+**Emotions.tsx** (4 operations to fix):
+- Save emotion handler: wrap with `offlineAwareInsert`
+- Update strategy handler: wrap with `offlineAwareUpdate`
+- Update emotion handler: wrap with `offlineAwareUpdate`
+- Delete emotion handler: wrap with `offlineAwareDelete`
+
+**Journal.tsx** (2 fetches to fix):
+- Entry list fetch on mount: wrap with `offlineAwareFetch`
+- Single entry fetch on date change: wrap with `offlineAwareFetch`
+
+**Settings.tsx** (1 operation):
+- Save settings catch: use `isOfflineError()` consistently
+
+**Diary.tsx** + hooks (3 operations):
+- `seedFeedEvents`: keep early return when offline
+- `useFeedEvents.ts`: use `offlineAwareFetch`
+- `useDiaryMetrics.ts`: use `offlineAwareFetch`
+
+**ManifestPractice.tsx** (1 fetch):
+- Goal fetch: use `offlineAwareFetch` to prevent error + redirect when offline
 
