@@ -68,7 +68,7 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
         "shadow-[inset_0_-1px_0_0_hsl(var(--foreground)/0.04)]"
       )}>
 
-      <div className="flex items-center justify-between h-14 px-3 sm:px-4 lg:px-8">
+      <div className="flex items-center justify-between h-14 px-3 sm:px-4 lg:px-8" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         {/* Left: Hamburger + Logo */}
         <div className="flex items-center gap-2 sm:gap-4">
           <Button

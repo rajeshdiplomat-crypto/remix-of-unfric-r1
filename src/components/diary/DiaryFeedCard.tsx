@@ -223,7 +223,7 @@ export function DiaryFeedCard({
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="text-sm font-semibold text-foreground cursor-default">
+                    <span className="text-xs font-semibold text-foreground cursor-default tracking-wider">
                       {config.label} | {formattedDate}
                     </span>
                   </TooltipTrigger>
@@ -292,7 +292,7 @@ export function DiaryFeedCard({
                 expanded ? "max-h-[1000px]" : "max-h-[72px]"
               )}
             >
-              <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
+              <p className="text-[13px] text-foreground/80 leading-relaxed whitespace-pre-wrap">
                 {contentPreview}
               </p>
             </div>
@@ -453,14 +453,14 @@ export function DiaryFeedCard({
                 <button
                   aria-pressed={!!userReaction}
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-2 py-2.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
+                    "flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
                     userReaction && "text-primary"
                   )}
                 >
                   {userReaction ? (
                     <span className="text-sm leading-none">{userReaction}</span>
                   ) : (
-                    <ThumbsUp className="h-4 w-4" />
+                    <ThumbsUp className="h-3.5 w-3.5" />
                   )}
                   <span>{userReaction ? REACTION_TYPES.find(r => r.emoji === userReaction)?.label || 'Like' : 'Like'}</span>
                 </button>
@@ -488,18 +488,18 @@ export function DiaryFeedCard({
             <button
               onClick={() => setShowComments(!showComments)}
               className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-2.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
+                "flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors",
                 showComments && "text-primary"
               )}
             >
-              <MessageCircle className="h-4 w-4" />
+              <MessageCircle className="h-3.5 w-3.5" />
               <span>Comment</span>
             </button>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex-1 flex items-center justify-center gap-2 py-2.5 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors">
-                  <Share2 className="h-4 w-4" />
+                <button className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-muted-foreground hover:bg-muted/50 rounded transition-colors">
+                  <Share2 className="h-3.5 w-3.5" />
                   <span>Share</span>
                 </button>
               </DropdownMenuTrigger>
