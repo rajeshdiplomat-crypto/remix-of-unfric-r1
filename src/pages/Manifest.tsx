@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDatePreferences } from "@/hooks/useDatePreferences";
 import { toast } from "sonner";
+import { isOfflineError } from "@/lib/offlineAwareOperation";
 import { Sparkles, Plus, ChevronDown, ChevronUp, Calendar, BarChart3, TrendingUp, Clock } from "lucide-react";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
@@ -181,7 +182,7 @@ export default function Manifest() {
       setProofs(extractedProofs);
     } catch (error) {
       console.error("Error fetching data:", error);
-      if (navigator.onLine) {
+      if (!isOfflineError()) {
         toast.error("Failed to load manifestations");
       }
     } finally {
@@ -334,7 +335,7 @@ export default function Manifest() {
       fetchData();
     } catch (error) {
       console.error("Error saving goal:", error);
-      if (navigator.onLine) {
+      if (!isOfflineError()) {
         toast.error("Failed to save reality");
       } else {
         toast.info("You're offline — changes will sync when connected");
@@ -367,10 +368,10 @@ export default function Manifest() {
       fetchData();
     } catch (error) {
       console.error("Error deleting goal:", error);
-      if (navigator.onLine) {
+      if (!isOfflineError()) {
         toast.error("Failed to delete");
       } else {
-        toast.info("You're offline — changes will sync when connected");
+        toast.info("You're offline — deletions require a connection");
       }
     } finally {
       setDeletingGoal(null);
@@ -388,7 +389,7 @@ export default function Manifest() {
       fetchData();
     } catch (error) {
       console.error("Error completing goal:", error);
-      if (navigator.onLine) {
+      if (!isOfflineError()) {
         toast.error("Failed to complete reality");
       } else {
         toast.info("You're offline — changes will sync when connected");
@@ -405,7 +406,7 @@ export default function Manifest() {
       fetchData();
     } catch (error) {
       console.error("Error reactivating goal:", error);
-      if (navigator.onLine) {
+      if (!isOfflineError()) {
         toast.error("Failed to reactivate reality");
       } else {
         toast.info("You're offline — changes will sync when connected");

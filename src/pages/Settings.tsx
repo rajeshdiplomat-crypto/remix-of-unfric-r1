@@ -32,6 +32,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { isOfflineError } from "@/lib/offlineAwareOperation";
 import { UnifiedTimePicker } from "@/components/common/UnifiedTimePicker";
 import { cn } from "@/lib/utils";
 import { HelpFeedbackForm } from "@/components/settings/HelpFeedbackForm";
@@ -208,7 +209,7 @@ export default function Settings() {
       setIsDirty(false);
       toast.success("Settings saved");
     } catch {
-      if (navigator.onLine) {
+      if (!isOfflineError()) {
         toast.error("Failed to save settings");
       } else {
         toast.info("You're offline — settings will sync when connected");
