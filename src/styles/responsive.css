@@ -28,20 +28,7 @@ h3 {
     font-size: 16px;
   }
 
-  /* 15% smaller logo and page titles on mobile */
-  h1 {
-    font-size: clamp(1.53rem, 4.25vw, 2.55rem);
-  }
-
-  h2 {
-    font-size: clamp(1.15rem, 3vw, 1.7rem);
-  }
-
-  h3 {
-    font-size: clamp(0.94rem, 2.1vw, 1.28rem);
-  }
-
-  /* Ensure labels, task names, diary dates never shrink below 13px */
+  /* Ensure labels, task names, diary dates never shrink below 16px */
   label,
   .text-sm,
   .text-xs {
@@ -114,15 +101,12 @@ textarea {
 }
 
 /* ---- PWA: Safe Area Insets ---- */
-/* Respect notches and rounded corners — edge-to-edge layout */
+/* Respect notches, home indicators, and rounded corners on modern devices */
 html {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
-}
-
-/* Bottom safe area for content — prevents home indicator overlap */
-main {
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* ---- PWA: Disable Pull-to-Refresh ---- */

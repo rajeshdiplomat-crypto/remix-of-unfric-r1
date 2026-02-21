@@ -10,7 +10,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col w-full bg-background overflow-x-hidden relative" style={{ minHeight: '100dvh' }}>
+    <div className="min-h-screen flex flex-col w-full bg-background overflow-x-hidden relative">
       {/* Subtle mesh gradient for glass effects */}
       <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.03] dark:opacity-[0.05]" style={{
         background: 'radial-gradient(ellipse at 20% 20%, hsl(200 80% 60%) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, hsl(280 60% 60%) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, hsl(160 70% 50%) 0%, transparent 60%)',

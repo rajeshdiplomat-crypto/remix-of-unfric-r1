@@ -6,10 +6,10 @@ interface UnfricLogoProps {
 }
 
 const sizeClasses = {
-  sm: 'text-base md:text-lg',
-  md: 'text-lg md:text-xl',
-  lg: 'text-xl md:text-2xl',
-  xl: 'text-3xl md:text-4xl lg:text-5xl',
+  sm: 'text-lg',
+  md: 'text-xl',
+  lg: 'text-2xl',
+  xl: 'text-4xl lg:text-5xl',
 };
 
 export function UnfricLogo({ className, size = 'md' }: UnfricLogoProps) {
