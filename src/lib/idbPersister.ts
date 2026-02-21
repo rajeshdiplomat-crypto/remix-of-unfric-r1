@@ -24,6 +24,7 @@ const idbStorage = {
   setItem: async (key: string, value: string): Promise<void> => {
     console.log(`[IDB-Persister] 💾 Writing cache to IndexedDB (${(value.length / 1024).toFixed(1)} KB)`);
     await set(key, value, idbStore);
+    console.log(`[IDB-Persister] ✅ Successfully saved [${key}] to IndexedDB`);
   },
   removeItem: async (key: string): Promise<void> => {
     console.log("[IDB-Persister] 🗑️ Removing cache from IndexedDB");
