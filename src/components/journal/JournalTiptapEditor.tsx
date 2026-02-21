@@ -1194,52 +1194,6 @@ export const JournalTiptapEditor = forwardRef<TiptapEditorRef, Props>(
           />
         </div>
 
-        {/* Mobile Sticky Formatting Toolbar */}
-        <div className="fixed bottom-0 left-0 right-0 z-[100] md:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-          <div className="backdrop-blur-md bg-background/80 border-t border-border/40 px-2 py-1.5">
-            <div className="flex items-center gap-0.5 overflow-x-auto no-scrollbar">
-              <ToolBtn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")} title="Bold">
-                <Bold className="h-4 w-4" />
-              </ToolBtn>
-              <ToolBtn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive("italic")} title="Italic">
-                <Italic className="h-4 w-4" />
-              </ToolBtn>
-              <ToolBtn onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive("underline")} title="Underline">
-                <UnderlineIcon className="h-4 w-4" />
-              </ToolBtn>
-              <div className="w-px h-5 bg-border/50 mx-0.5 shrink-0" />
-              <ToolBtn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")} title="Bullets">
-                <List className="h-4 w-4" />
-              </ToolBtn>
-              <ToolBtn onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive("orderedList")} title="Numbers">
-                <ListOrdered className="h-4 w-4" />
-              </ToolBtn>
-              <ToolBtn onClick={() => editor.chain().focus().toggleTaskList().run()} active={editor.isActive("taskList")} title="Todo">
-                <CheckSquare className="h-4 w-4" />
-              </ToolBtn>
-              <div className="w-px h-5 bg-border/50 mx-0.5 shrink-0" />
-              <ToolBtn onClick={() => editor.chain().focus().setTextAlign("left").run()} active={editor.isActive({ textAlign: "left" })} title="Left">
-                <AlignLeft className="h-4 w-4" />
-              </ToolBtn>
-              <ToolBtn onClick={() => editor.chain().focus().setTextAlign("center").run()} active={editor.isActive({ textAlign: "center" })} title="Center">
-                <AlignCenter className="h-4 w-4" />
-              </ToolBtn>
-              <ToolBtn onClick={() => editor.chain().focus().setTextAlign("right").run()} active={editor.isActive({ textAlign: "right" })} title="Right">
-                <AlignRight className="h-4 w-4" />
-              </ToolBtn>
-              <div className="w-px h-5 bg-border/50 mx-0.5 shrink-0" />
-              <ToolBtn onClick={() => setImageDialogOpen(true)} title="Image">
-                <ImageIcon className="h-4 w-4" />
-              </ToolBtn>
-              <ToolBtn onClick={() => setLinkDialogOpen(true)} active={editor.isActive("link")} title="Link">
-                <LinkIcon className="h-4 w-4" />
-              </ToolBtn>
-              <ToolBtn onClick={toggleListening} active={isListening} title={isListening ? "Stop voice" : "Voice input"}>
-                {isListening ? <MicOff className="h-4 w-4 text-destructive" /> : <Mic className="h-4 w-4" />}
-              </ToolBtn>
-            </div>
-          </div>
-        </div>
 
         <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
           <DialogContent className="max-w-sm z-[99999]">

@@ -46,6 +46,23 @@ import { JournalSettingsModal } from "@/components/journal/JournalSettingsModal"
 import { cn } from "@/lib/utils";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Calendar as CalendarWidget } from "@/components/ui/calendar";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  Bold,
+  Italic,
+  Underline as UnderlineIcon,
+  List,
+  ListOrdered,
+  CheckSquare,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  Mic,
+  MicOff,
+} from "lucide-react";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
 
 interface JournalAnswer {
   id: string;
@@ -138,6 +155,78 @@ const getWordCount = (contentJSON: string): number => {
     return 0;
   }
 };
+
+// Standalone mobile formatting toolbar — rendered at page level outside overflow-hidden containers
+function MobileJournalToolbar({ editorRef }: { editorRef: React.RefObject<TiptapEditorRef | null> }) {
+  const isMobile = useIsMobile();
+  const editor = editorRef.current?.editor;
+
+  const { isListening, toggleListening } = useVoiceInput(
+    useCallback((text: string) => {
+      const ed = editorRef.current?.editor;
+      if (ed) ed.chain().focus().insertContent(text + " ").run();
+    }, [editorRef])
+  );
+
+  if (!isMobile || !editor) return null;
+
+  const ToolBtn = ({ onClick, active, disabled, children, title }: any) => (
+    <button
+      type="button"
+      title={title}
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        "h-7 w-7 flex items-center justify-center rounded-lg transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30",
+        active && "bg-muted text-primary shadow-sm",
+      )}
+    >
+      {children}
+    </button>
+  );
+
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-[100] md:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <div className="backdrop-blur-md bg-background/80 border-t border-border/40 px-2 py-1.5">
+        <div className="flex items-center gap-0.5 overflow-x-auto no-scrollbar">
+          <ToolBtn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")} title="Bold">
+            <Bold className="h-4 w-4" />
+          </ToolBtn>
+          <ToolBtn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive("italic")} title="Italic">
+            <Italic className="h-4 w-4" />
+          </ToolBtn>
+          <ToolBtn onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive("underline")} title="Underline">
+            <UnderlineIcon className="h-4 w-4" />
+          </ToolBtn>
+          <div className="w-px h-5 bg-border/50 mx-0.5 shrink-0" />
+          <ToolBtn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")} title="Bullets">
+            <List className="h-4 w-4" />
+          </ToolBtn>
+          <ToolBtn onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive("orderedList")} title="Numbers">
+            <ListOrdered className="h-4 w-4" />
+          </ToolBtn>
+          <ToolBtn onClick={() => editor.chain().focus().toggleTaskList().run()} active={editor.isActive("taskList")} title="Todo">
+            <CheckSquare className="h-4 w-4" />
+          </ToolBtn>
+          <div className="w-px h-5 bg-border/50 mx-0.5 shrink-0" />
+          <ToolBtn onClick={() => editor.chain().focus().setTextAlign("left").run()} active={editor.isActive({ textAlign: "left" })} title="Left">
+            <AlignLeft className="h-4 w-4" />
+          </ToolBtn>
+          <ToolBtn onClick={() => editor.chain().focus().setTextAlign("center").run()} active={editor.isActive({ textAlign: "center" })} title="Center">
+            <AlignCenter className="h-4 w-4" />
+          </ToolBtn>
+          <ToolBtn onClick={() => editor.chain().focus().setTextAlign("right").run()} active={editor.isActive({ textAlign: "right" })} title="Right">
+            <AlignRight className="h-4 w-4" />
+          </ToolBtn>
+          <div className="w-px h-5 bg-border/50 mx-0.5 shrink-0" />
+          <ToolBtn onClick={toggleListening} active={isListening} title={isListening ? "Stop voice" : "Voice input"}>
+            {isListening ? <MicOff className="h-4 w-4 text-destructive" /> : <Mic className="h-4 w-4" />}
+          </ToolBtn>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Journal() {
   const { user } = useAuth();
@@ -894,6 +983,7 @@ export default function Journal() {
 
   return (
     <>
+    <MobileJournalToolbar editorRef={editorRef} />
     {!loadingFinished && (
       <PageLoadingScreen
         module="journal"
