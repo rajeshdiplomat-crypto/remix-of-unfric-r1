@@ -16,7 +16,7 @@ export function UnfricLogo({ className, size = 'md' }: UnfricLogoProps) {
   return (
     <span
       className={cn(
-        "font-light tracking-[0.2em] lowercase text-foreground select-none",
+        "font-light tracking-[0.2em] lowercase text-foreground select-none unfric-logo-scale",
         sizeClasses[size],
         className
       )}

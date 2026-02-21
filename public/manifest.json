@@ -5,7 +5,7 @@
   "start_url": "/diary",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "theme_color": "#f5f5f5",
+  "theme_color": "#00000000",
   "background_color": "#ffffff",
   "icons": [
     {
