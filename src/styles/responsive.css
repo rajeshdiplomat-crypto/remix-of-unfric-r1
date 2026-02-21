@@ -25,7 +25,12 @@ h3 {
 /* Minimum body text / label size on mobile — 16px floor */
 @media (max-width: 767px) {
   body {
-    font-size: 16px;
+    font-size: 14px;
+  }
+
+  /* Mobile typography: 20% reduction — primary 14px, secondary 10px */
+  p, span, li, td, th {
+    font-size: 0.875rem; /* 14px */
   }
 
   /* Ensure labels, task names, diary dates never shrink below 13px */
@@ -35,10 +40,27 @@ h3 {
     font-size: max(var(--tw-text-size, 0.75rem), 0.8125rem); /* 13px min on mobile for xs/sm */
   }
 
+  /* Secondary labels: 10px uppercase tracking */
+  .zara-label,
+  .text-muted-foreground {
+    font-size: 0.625rem; /* 10px */
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
   /* 15% smaller logo and page titles on mobile */
   .unfric-logo-scale {
     font-size: 95%;
   }
+
+  /* Tighten vertical spacing by ~30% on mobile */
+  .space-y-6 > * + * { margin-top: 1rem; }
+  .space-y-4 > * + * { margin-top: 0.625rem; }
+  .my-6 { margin-top: 1rem; margin-bottom: 1rem; }
+  .my-4 { margin-top: 0.625rem; margin-bottom: 0.625rem; }
+  .mb-6 { margin-bottom: 1rem; }
+  .mb-4 { margin-bottom: 0.625rem; }
+  .py-4 { padding-top: 0.625rem; padding-bottom: 0.625rem; }
 }
 
 /* ---- Group 3: Line Spacing for long-form content ---- */
