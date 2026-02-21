@@ -29,10 +29,6 @@ export function useFeedEvents(userId: string | undefined): UseFeedEventsResult {
 
   const fetchEvents = useCallback(async () => {
     if (!userId) return;
-    if (!navigator.onLine) {
-      setLoading(false);
-      return;
-    }
     setLoading(true);
 
     try {
