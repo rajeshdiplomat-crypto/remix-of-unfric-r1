@@ -1538,10 +1538,11 @@ export default function Habits() {
                         const today = new Date();
                         const dataPoints: { x: number; y: number; value: number; isPast: boolean; isFuture: boolean }[] = [];
                         const chartActivities = selectedActivityId ? activities.filter(a => a.id === selectedActivityId) : activities.filter(a => !a.isArchived);
-                        // Left offset for habit name column (~90px of ~360px total ≈ 225 units of 900)
-                        // Right offset for % column (~32px ≈ 80 units of 900)
-                        const leftOffset = 115;
-                        const rightOffset = 40;
+                        // Left offset for habit name column (90px fixed width)
+                        // Right offset for % column (32px fixed width)
+                        // On mobile ~390px viewport: 90/390 ≈ 23.1%, 32/390 ≈ 8.2%
+                        const leftOffset = 208;
+                        const rightOffset = 74;
                         const chartWidth = 900 - leftOffset - rightOffset;
 
                         for (let i = 0; i < 7; i++) {
