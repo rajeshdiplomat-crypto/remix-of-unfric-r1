@@ -75,7 +75,7 @@ export function NotesNoteRow({
     <div
       onClick={onClick}
       className={`
-        group relative flex items-center gap-3 py-3 px-4 cursor-pointer transition-all duration-200
+        group relative flex items-center gap-2 py-2 px-3 cursor-pointer transition-all duration-200
         hover:bg-gradient-to-r hover:from-muted/40 hover:to-transparent
         ${isIndented ? "ml-4" : ""}
         ${isSelected ? "bg-primary/5 border-l-2 border-l-primary" : ""}
@@ -117,10 +117,12 @@ export function NotesNoteRow({
           {showActivityDot && <NotesActivityDot updatedAt={note.updatedAt} size="sm" className="opacity-60" />}
         </div>
         {note.plainText && <p className="text-xs text-muted-foreground/50 line-clamp-1 mt-0.5">{note.plainText}</p>}
+        {/* Mobile-only: tiny timestamp below content */}
+        <span className="sm:hidden text-[9px] text-muted-foreground/40 mt-0.5">{formatDate(note.updatedAt)}</span>
       </div>
 
-      {/* Time - sleek pill */}
-      <div className="flex items-center gap-2 shrink-0">
+      {/* Time - tiny muted label, bottom-right on mobile */}
+      <div className="hidden sm:flex items-center gap-2 shrink-0">
         <span className="text-[10px] text-muted-foreground/50 bg-muted/50 px-2 py-1 rounded-full flex items-center gap-1 border border-border/50">
           <Clock className="h-2.5 w-2.5" />
           {formatDate(note.updatedAt)}
