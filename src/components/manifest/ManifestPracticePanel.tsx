@@ -469,9 +469,9 @@ export function ManifestPracticePanel({
             <p className="text-xs text-muted-foreground">Suggestion: {goal.act_as_if}</p>
             <div className="flex gap-2">
               <Input ref={actInputRef} defaultValue="" placeholder="What did you do?" className="flex-1 rounded-xl h-9 text-sm" disabled={isViewingPast} />
-              <Button onClick={handleAddAct} className="h-9 w-9 rounded-xl p-0" disabled={isViewingPast}
+              <Button onClick={handleAddAct} className="h-9 px-3 rounded-xl text-xs text-white" disabled={isViewingPast}
                 style={{ background: "hsl(45, 93%, 47%)" }}>
-                <Plus className="h-4 w-4 text-white" />
+                Save
               </Button>
             </div>
             {acts.length > 0 && (
@@ -522,9 +522,9 @@ export function ManifestPracticePanel({
             <p className="text-xs text-muted-foreground">What are you grateful for today?</p>
             <div className="flex gap-2">
               <Input ref={gratitudeInputRef} defaultValue="" placeholder="I'm grateful for..." className="flex-1 rounded-xl h-9 text-sm" disabled={isViewingPast} />
-              <Button onClick={handleAddGratitude} className="h-9 w-9 rounded-xl p-0 text-white" disabled={isViewingPast}
+              <Button onClick={handleAddGratitude} className="h-9 px-3 rounded-xl text-xs text-white" disabled={isViewingPast}
                 style={{ background: "hsl(330, 70%, 55%)" }}>
-                <Plus className="h-4 w-4" />
+                Save
               </Button>
             </div>
             {gratitudes.length > 0 && (
