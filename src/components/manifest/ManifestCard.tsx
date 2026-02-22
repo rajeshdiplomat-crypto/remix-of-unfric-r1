@@ -56,7 +56,7 @@ export function ManifestCard({
   return (
     <Card
       onClick={onClick}
-      className={`overflow-hidden rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg relative antialiased ${
+      className={`overflow-hidden rounded-none sm:rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg relative antialiased ${
         isSelected ? "ring-2 ring-primary shadow-lg" : ""
       } ${isCompleted ? "opacity-60 grayscale" : ""}`}
     >
@@ -67,12 +67,12 @@ export function ManifestCard({
             <img
               src={goal.cover_image_url || goal.vision_image_url || ""}
               alt={goal.title}
-              className="absolute inset-0 w-full h-full object-cover rounded-l-xl"
+              className="absolute inset-0 w-full h-full object-cover sm:rounded-l-xl"
             />
           ) : (
-            <div className="absolute inset-0 w-full h-full bg-muted rounded-l-xl" />
+            <div className="absolute inset-0 w-full h-full bg-muted sm:rounded-l-xl" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background/20 rounded-l-xl" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background/20 sm:rounded-l-xl" />
           <span className="absolute top-1.5 left-1.5 text-[8px] font-semibold px-1.5 py-0.5 rounded-md bg-background/80 backdrop-blur-sm text-foreground/80 leading-none z-10">
             Day {dayNumber}
           </span>
