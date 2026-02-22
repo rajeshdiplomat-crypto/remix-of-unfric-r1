@@ -46,6 +46,7 @@ import { cn } from "@/lib/utils";
 interface ManifestPracticePanelProps {
   goal: ManifestGoal;
   streak: number;
+  totalPracticed?: number;
   selectedDate?: Date;
   previousPractice?: ManifestDailyPractice | null;
   onClose: () => void;
@@ -63,6 +64,7 @@ const RING_CONFIG = [
 export function ManifestPracticePanel({
   goal,
   streak,
+  totalPracticed = 0,
   selectedDate = new Date(),
   previousPractice,
   onClose,
@@ -597,6 +599,11 @@ export function ManifestPracticePanel({
               {streak > 0 && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-foreground/10 text-foreground/70 font-medium flex items-center gap-0.5">
                   <Flame className="h-2.5 w-2.5" /> {streak} day streak
+                </span>
+              )}
+              {totalPracticed > 0 && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-foreground/10 text-foreground/70 font-medium flex items-center gap-0.5">
+                  <Check className="h-2.5 w-2.5" /> {totalPracticed} day{totalPracticed !== 1 ? "s" : ""} practiced
                 </span>
               )}
             </div>
