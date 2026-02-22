@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PenLine, Search, ChevronDown, Filter } from "lucide-react";
+import { PenLine, Search, ChevronDown, Filter, UserCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { DiaryFeedCard } from "@/components/diary/DiaryFeedCard";
@@ -681,15 +681,22 @@ export default function Diary() {
         <main className="flex-1 min-w-0 min-h-0 h-full overflow-y-auto bg-muted/20">
           <div className="w-full px-2 sm:px-4 lg:px-6 py-3 sm:py-4">
 
-          {/* Search Bar */}
-          <div className="mb-4">
-            <div className="flex items-center gap-2 bg-card border border-border/40 rounded-xl px-3 py-1">
-              <Search className="h-4 w-4 text-muted-foreground" />
+          {/* Search Bar with Profile Icon on mobile */}
+          <div className="mb-4 flex items-center gap-2">
+            <button
+              onClick={() => setMobileInsightsOpen(true)}
+              className="md:hidden shrink-0 p-1.5 rounded-full hover:bg-muted transition-colors"
+              aria-label="Open profile & performance"
+            >
+              <UserCircle className="h-7 w-7 text-muted-foreground" />
+            </button>
+            <div className="flex items-center gap-2 bg-card border border-border/40 rounded-xl px-3 py-1 flex-1 md:max-w-none">
+              <Search className="h-4 w-4 text-muted-foreground shrink-0" />
               <Input
                 placeholder="Search your feed..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="border-0 bg-transparent focus-visible:ring-0 px-0 h-9 text-sm placeholder:text-muted-foreground"
+                className="border-0 bg-transparent focus-visible:ring-0 px-0 h-7 md:h-9 text-xs md:text-sm placeholder:text-muted-foreground"
               />
             </div>
           </div>
