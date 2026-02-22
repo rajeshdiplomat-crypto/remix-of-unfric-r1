@@ -56,7 +56,7 @@ export function ManifestCard({
   return (
     <Card
       onClick={onClick}
-      className={`overflow-hidden rounded-none sm:rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg relative antialiased ${
+      className={`overflow-hidden rounded-none sm:rounded-xl border-x-0 sm:border-x cursor-pointer transition-all duration-200 hover:shadow-lg relative antialiased ${
         isSelected ? "ring-2 ring-primary shadow-lg" : ""
       } ${isCompleted ? "opacity-60 grayscale" : ""}`}
     >
