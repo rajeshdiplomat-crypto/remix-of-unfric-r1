@@ -1227,20 +1227,21 @@ export default function Habits() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="md:hidden h-8 w-8 bg-primary text-primary-foreground rounded-full shadow-sm hover:bg-primary/90 hover:text-primary-foreground"
-                onClick={openCreateDialog}
-                aria-label="Create Habit"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
                 className="md:hidden h-8 w-8"
                 onClick={() => setInsightsOpen(true)}
                 aria-label="Open Insights"
               >
                 <BarChart3 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                className="md:hidden h-8 px-3 text-xs gap-1"
+                onClick={openCreateDialog}
+                aria-label="Create Habit"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                New
               </Button>
               {/* Desktop: inline button */}
               <Button onClick={openCreateDialog} variant="outline" size="sm" className="hidden md:inline-flex">
