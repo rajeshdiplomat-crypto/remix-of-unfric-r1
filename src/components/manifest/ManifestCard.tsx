@@ -60,96 +60,96 @@ export function ManifestCard({
         isSelected ? "ring-2 ring-primary shadow-lg" : ""
       } ${isCompleted ? "opacity-60 grayscale" : ""}`}
     >
-      {/* Action buttons */}
-      <div className="absolute top-1.5 right-1.5 z-20 flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-        {onComplete && !isCompleted && (
-          <button onClick={onComplete} className="w-5 h-5 rounded-full bg-background/90 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-accent transition-colors" title="Complete">
-            <CheckCircle className="h-3 w-3 text-primary" />
-          </button>
-        )}
-        {onReactivate && isCompleted && (
-          <button onClick={onReactivate} className="w-5 h-5 rounded-full bg-background/90 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-accent transition-colors" title="Reactivate">
-            <RotateCcw className="h-3 w-3 text-muted-foreground" />
-          </button>
-        )}
-        {onEdit && !isCompleted && (
-          <button onClick={onEdit} className="w-5 h-5 rounded-full bg-background/90 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-accent transition-colors" title="Edit">
-            <Pencil className="h-2.5 w-2.5 text-muted-foreground" />
-          </button>
-        )}
-        {onDelete && (
-          <button onClick={onDelete} className="w-5 h-5 rounded-full bg-background/90 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-destructive/10 transition-colors" title="Delete">
-            <Trash2 className="h-2.5 w-2.5 text-destructive" />
-          </button>
-        )}
-      </div>
-
-      {/* Edge-to-edge cover image */}
-      <div className="relative w-full h-28 flex-shrink-0">
-        {(goal.cover_image_url || goal.vision_image_url) ? (
-          <img
-            src={goal.cover_image_url || goal.vision_image_url || ""}
-            alt={goal.title}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full bg-muted" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent" />
-        <span className="absolute top-1.5 left-1.5 text-[8px] font-semibold px-1.5 py-0.5 rounded-md bg-background/80 backdrop-blur-sm text-foreground/80 leading-none">
-          Day {dayNumber}
-        </span>
-      </div>
-
-      {/* Content */}
-      <div className="p-2 px-2.5 flex flex-col gap-1.5 min-w-0">
-        {/* Title + momentum pill */}
-        <div>
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <h3 className="font-semibold text-foreground text-sm leading-tight line-clamp-1 flex-1 min-w-0 pr-10 antialiased">
-              {goal.title}
-            </h3>
-          </div>
-          <div className="flex items-center gap-1 flex-wrap">
-            <span className="inline-flex items-center text-[9px] font-semibold px-1.5 py-px rounded-full bg-primary/10 text-primary leading-tight">
-              {momentumPct}%
-            </span>
-            {streak > 0 && (
-              <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-px rounded-full bg-destructive/10 text-destructive leading-tight">
-                <Flame className="h-2 w-2" /> {streak}
-              </span>
-            )}
-          </div>
+      <div className="flex flex-row">
+        {/* Left thumbnail — flush, no padding */}
+        <div className="relative w-24 flex-shrink-0">
+          {(goal.cover_image_url || goal.vision_image_url) ? (
+            <img
+              src={goal.cover_image_url || goal.vision_image_url || ""}
+              alt={goal.title}
+              className="absolute inset-0 w-full h-full object-cover rounded-l-xl"
+            />
+          ) : (
+            <div className="absolute inset-0 w-full h-full bg-muted rounded-l-xl" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background/20 rounded-l-xl" />
+          <span className="absolute top-1.5 left-1.5 text-[8px] font-semibold px-1.5 py-0.5 rounded-md bg-background/80 backdrop-blur-sm text-foreground/80 leading-none z-10">
+            Day {dayNumber}
+          </span>
         </div>
 
-        {/* Weekly circles + practice button */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            {["M","T","W","T","F","S","S"].map((day, i) => (
-              <div key={i} className="flex flex-col items-center gap-px">
-                <span className="text-[7px] font-medium text-muted-foreground leading-none">{day}</span>
-                <div
-                  className={`w-3 h-3 rounded-full border flex items-center justify-center transition-colors ${
-                    weekProgress[i]
-                      ? "bg-primary border-primary"
-                      : "border-border bg-transparent"
-                  }`}
-                >
-                  {weekProgress[i] && <Check className="h-1.5 w-1.5 text-primary-foreground" />}
-                </div>
-              </div>
-            ))}
+        {/* Right content */}
+        <div className="flex-1 p-2 flex flex-col justify-between gap-1 min-w-0 relative">
+          {/* Action buttons */}
+          <div className="absolute top-1 right-1 z-20 flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+            {onComplete && !isCompleted && (
+              <button onClick={onComplete} className="w-5 h-5 rounded-full bg-background/90 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-accent transition-colors" title="Complete">
+                <CheckCircle className="h-3 w-3 text-primary" />
+              </button>
+            )}
+            {onReactivate && isCompleted && (
+              <button onClick={onReactivate} className="w-5 h-5 rounded-full bg-background/90 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-accent transition-colors" title="Reactivate">
+                <RotateCcw className="h-3 w-3 text-muted-foreground" />
+              </button>
+            )}
+            {onEdit && !isCompleted && (
+              <button onClick={onEdit} className="w-5 h-5 rounded-full bg-background/90 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-accent transition-colors" title="Edit">
+                <Pencil className="h-2.5 w-2.5 text-muted-foreground" />
+              </button>
+            )}
+            {onDelete && (
+              <button onClick={onDelete} className="w-5 h-5 rounded-full bg-background/90 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-destructive/10 transition-colors" title="Delete">
+                <Trash2 className="h-2.5 w-2.5 text-destructive" />
+              </button>
+            )}
           </div>
-          {!isCompleted && (
-            <Button
-              onClick={(e) => { e.stopPropagation(); onClick(); }}
-              size="sm"
-              className="h-6 px-2.5 rounded-full text-[10px] font-semibold"
-            >
-              <Play className="h-2 w-2 mr-0.5" />
-              Practice
-            </Button>
-          )}
+
+          {/* Title + pills */}
+          <div>
+            <h3 className="font-semibold text-foreground text-sm leading-tight line-clamp-1 pr-16 antialiased">
+              {goal.title}
+            </h3>
+            <div className="flex items-center gap-1 mt-0.5">
+              <span className="inline-flex items-center text-[9px] font-semibold px-1.5 py-px rounded-full bg-primary/10 text-primary leading-tight">
+                {momentumPct}%
+              </span>
+              {streak > 0 && (
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-px rounded-full bg-destructive/10 text-destructive leading-tight">
+                  <Flame className="h-2 w-2" /> {streak}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Weekly circles + practice button */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              {["M","T","W","T","F","S","S"].map((day, i) => (
+                <div key={i} className="flex flex-col items-center gap-px">
+                  <span className="text-[7px] font-medium text-muted-foreground leading-none">{day}</span>
+                  <div
+                    className={`w-3 h-3 rounded-full border flex items-center justify-center transition-colors ${
+                      weekProgress[i]
+                        ? "bg-primary border-primary"
+                        : "border-border bg-transparent"
+                    }`}
+                  >
+                    {weekProgress[i] && <Check className="h-1.5 w-1.5 text-primary-foreground" />}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {!isCompleted && (
+              <Button
+                onClick={(e) => { e.stopPropagation(); onClick(); }}
+                size="sm"
+                className="h-6 px-2.5 rounded-full text-[10px] font-semibold"
+              >
+                <Play className="h-2 w-2 mr-0.5" />
+                Practice
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </Card>
