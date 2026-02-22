@@ -1532,18 +1532,13 @@ export default function Habits() {
               <tbody>
                 {/* Daily Progress Chart Row - aligned with day columns like desktop */}
                 <tr>
-                  <td colSpan={9} className="p-0 bg-muted/30">
-                    <svg viewBox="0 0 900 120" className="w-full" style={{ height: 56 }} preserveAspectRatio="none">
+                  <td className="p-0 bg-muted/30 sticky left-0 z-10" style={{ width: 90 }} />
+                  <td colSpan={7} className="p-0 bg-muted/30">
+                    <svg viewBox="0 0 700 120" className="w-full block" style={{ height: 56 }}>
                       {(() => {
                         const today = new Date();
                         const dataPoints: { x: number; y: number; value: number; isPast: boolean; isFuture: boolean }[] = [];
                         const chartActivities = selectedActivityId ? activities.filter(a => a.id === selectedActivityId) : activities.filter(a => !a.isArchived);
-                        // Left offset for habit name column (90px fixed width)
-                        // Right offset for % column (32px fixed width)
-                        // On mobile ~390px viewport: 90/390 ≈ 23.1%, 32/390 ≈ 8.2%
-                        const leftOffset = 208;
-                        const rightOffset = 74;
-                        const chartWidth = 900 - leftOffset - rightOffset;
 
                         for (let i = 0; i < 7; i++) {
                           const day = currentWeekDays[i];
@@ -1562,13 +1557,13 @@ export default function Habits() {
                             }
                           });
                           const value = total > 0 ? (completed / total) * 100 : -1;
-                          const x = leftOffset + (i + 0.5) * (chartWidth / 7);
+                          const x = (i + 0.5) * 100;
                           if (value < 0) continue;
                           const y = 100 - (value / 100) * 80;
                           dataPoints.push({ x, y: Math.max(10, Math.min(110, y)), value, isPast, isFuture });
                         }
 
-                        if (dataPoints.length < 2) return <text x="450" y="65" textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize="12" opacity="0.5">Not enough data</text>;
+                        if (dataPoints.length < 2) return <text x="350" y="65" textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize="12" opacity="0.5">Not enough data</text>;
 
                         const createSmoothPath = (points: { x: number; y: number }[]) => {
                           if (points.length < 2) return "";
@@ -1608,6 +1603,7 @@ export default function Habits() {
                       })()}
                     </svg>
                   </td>
+                  <td className="p-0 bg-muted/30" style={{ width: 32 }} />
                 </tr>
                 {activities.filter(a => !a.isArchived).map((activity, idx) => {
                   const stats = activityStats.find(s => s.id === activity.id);
