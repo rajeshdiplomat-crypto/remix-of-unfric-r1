@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useDatePreferences } from "@/hooks/useDatePreferences";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   CheckCircle2,
   Circle,
@@ -151,11 +152,14 @@ const getTaskDuration = (startTime: string | null, endTime: string | null): numb
   return endMinutes - startMinutes;
 };
 
-// Height per hour in pixels - reduced for better fit
-const HOUR_HEIGHT = 60;
+// Height per hour in pixels - reduced on mobile
+const HOUR_HEIGHT_DESKTOP = 60;
+const HOUR_HEIGHT_MOBILE = 30; // 50% reduction for empty slots
 
 export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps) {
   const { formatDate: fmtDate } = useDatePreferences();
+  const isMobile = useIsMobile();
+  const HOUR_HEIGHT = isMobile ? HOUR_HEIGHT_MOBILE : HOUR_HEIGHT_DESKTOP;
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState(today);
   const [currentTimeMinutes, setCurrentTimeMinutes] = useState(() => {
@@ -261,79 +265,130 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
     <div className="h-full flex flex-col bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
       {/* Header with date navigation */}
       <div className="shrink-0 border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            <h2 className="font-semibold text-lg text-slate-800 dark:text-slate-100">Day Planner</h2>
-          </div>
-          <div className="flex items-center gap-2">
+        {isMobile ? (
+          /* Compact mobile header — date flipper only */
+          <div className="flex items-center justify-between px-3 py-2">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"
+              className="h-7 w-7 rounded-full"
               onClick={() => setSelectedDate(addDays(selectedDate, -1))}
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
             <button
               onClick={() => setSelectedDate(today)}
               className={cn(
-                "px-4 py-1.5 rounded-full text-sm font-medium transition-all",
+                "px-3 py-1 rounded-full text-xs font-medium transition-all",
                 isToday
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-blue-900/50"
-                  : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200",
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-muted text-foreground",
               )}
             >
               {isToday ? "Today" : fmtDate(selectedDate, "weekday")}
             </button>
+            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+              <span>{dayTasks.length} tasks</span>
+              {isToday && (
+                <span className="text-destructive font-medium">{formatTime(currentTimeMinutes)}</span>
+              )}
+            </div>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"
+              className="h-7 w-7 rounded-full"
               onClick={() => setSelectedDate(addDays(selectedDate, 1))}
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-3.5 w-3.5" />
             </Button>
           </div>
-        </div>
-
-        {/* Stats bar */}
-        <div className="flex items-center gap-6 px-4 pb-3 text-sm">
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-blue-500" />
-            <span className="text-slate-600 dark:text-slate-400">
-              {dayTasks.length} task{dayTasks.length !== 1 ? "s" : ""}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-slate-600 dark:text-slate-400">
-              {dayTasks.filter((t) => t.is_completed).length} completed
-            </span>
-          </div>
-          {isToday && (
-            <div className="flex items-center gap-1.5">
-              <Timer className="h-3.5 w-3.5 text-rose-500" />
-              <span className="text-rose-600 dark:text-rose-400 font-medium">{formatTime(currentTimeMinutes)}</span>
+        ) : (
+          /* Desktop header */
+          <>
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <h2 className="font-semibold text-lg text-slate-800 dark:text-slate-100">Day Planner</h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"
+                  onClick={() => setSelectedDate(addDays(selectedDate, -1))}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <button
+                  onClick={() => setSelectedDate(today)}
+                  className={cn(
+                    "px-4 py-1.5 rounded-full text-sm font-medium transition-all",
+                    isToday
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-blue-900/50"
+                      : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200",
+                  )}
+                >
+                  {isToday ? "Today" : fmtDate(selectedDate, "weekday")}
+                </button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"
+                  onClick={() => setSelectedDate(addDays(selectedDate, 1))}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* Stats bar — desktop only */}
+            <div className="flex items-center gap-6 px-4 pb-3 text-sm">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-blue-500" />
+                <span className="text-slate-600 dark:text-slate-400">
+                  {dayTasks.length} task{dayTasks.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="text-slate-600 dark:text-slate-400">
+                  {dayTasks.filter((t) => t.is_completed).length} completed
+                </span>
+              </div>
+              {isToday && (
+                <div className="flex items-center gap-1.5">
+                  <Timer className="h-3.5 w-3.5 text-rose-500" />
+                  <span className="text-rose-600 dark:text-rose-400 font-medium">{formatTime(currentTimeMinutes)}</span>
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Timeline content */}
       <div className="flex-1 overflow-y-auto">
         <div className="relative flex" style={{ minHeight: `${totalHours * HOUR_HEIGHT}px` }}>
           {/* Hour labels column */}
-          <div className="w-20 shrink-0 border-r border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 pt-2">
-            {hourMarkers.map(({ minutes, label }, index) => (
+          <div className={cn(
+            "shrink-0 border-r border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 pt-2",
+            isMobile ? "w-14" : "w-20"
+          )}>
+            {hourMarkers.map(({ minutes, label }) => (
               <div
                 key={minutes}
-                className="absolute left-0 w-20 flex items-start justify-end pr-3"
+                className={cn(
+                  "absolute left-0 flex items-start justify-end",
+                  isMobile ? "w-14 pr-1.5" : "w-20 pr-3"
+                )}
                 style={{
-                  top: `${getPixelPosition(minutes) + 8}px`, // Add 8px offset for padding
+                  top: `${getPixelPosition(minutes) + 8}px`,
                 }}
               >
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 -translate-y-1/2">{label}</span>
+                <span className={cn(
+                  "font-medium text-slate-500 dark:text-slate-400 -translate-y-1/2",
+                  isMobile ? "text-[9px]" : "text-xs"
+                )}>{label}</span>
               </div>
             ))}
           </div>
@@ -350,25 +405,31 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
             ))}
 
             {/* Timeline spine - vertical line */}
-            <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-300 via-blue-400 to-blue-300 dark:from-blue-600 dark:via-blue-500 dark:to-blue-600" />
+            <div className={cn(
+              "absolute top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-300 via-blue-400 to-blue-300 dark:from-blue-600 dark:via-blue-500 dark:to-blue-600",
+              isMobile ? "left-4" : "left-6"
+            )} />
 
-            {/* Current time indicator - extends full width */}
+            {/* Current time indicator */}
             {isToday && isCurrentTimeVisible && (
               <>
-                {/* Line extending into hour labels area */}
                 <div
-                  className="absolute -left-20 right-0 flex items-center z-30 pointer-events-none"
+                  className={cn(
+                    "absolute right-0 flex items-center z-30 pointer-events-none",
+                    isMobile ? "-left-14" : "-left-20"
+                  )}
                   style={{ top: `${currentTimePosition + 8}px` }}
                 >
-                  <div className="flex-1 h-[2px] bg-rose-500" />
+                  <div className={cn("flex-1", isMobile ? "h-px bg-primary" : "h-[2px] bg-rose-500")} />
                 </div>
-                {/* Pulse dot on the timeline spine */}
-                <div
-                  className="absolute z-30 pointer-events-none"
-                  style={{ top: `${currentTimePosition + 8}px`, left: '18px' }}
-                >
-                  <div className="w-3 h-3 rounded-full bg-rose-500 shadow-lg shadow-rose-300 dark:shadow-rose-900 animate-pulse -translate-y-1/2" />
-                </div>
+                {!isMobile && (
+                  <div
+                    className="absolute z-30 pointer-events-none"
+                    style={{ top: `${currentTimePosition + 8}px`, left: '18px' }}
+                  >
+                    <div className="w-3 h-3 rounded-full bg-rose-500 shadow-lg shadow-rose-300 dark:shadow-rose-900 animate-pulse -translate-y-1/2" />
+                  </div>
+                )}
               </>
             )}
 
@@ -401,35 +462,37 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
               // Task card height = exact duration height (no minimum)
               // 60px per hour, so 15min = 15px, 30min = 30px, 1hr = 60px
               const taskHeight = (duration / 60) * HOUR_HEIGHT;
-              const isCompact = taskHeight < 50; // Compact layout for short tasks
+              const isCompact = isMobile || taskHeight < 50;
 
               return (
                 <div
                   key={task.id}
-                  className="absolute left-10 right-4"
+                  className={cn("absolute", isMobile ? "left-7 right-2" : "left-10 right-4")}
                   style={{
-                    top: `${position + 8}px`, // Add 8px offset to match hour labels
-                    height: `${Math.max(taskHeight, 24)}px`, // Min 24px for very short tasks
+                    top: `${position + 8}px`,
+                    height: `${Math.max(taskHeight, isMobile ? 20 : 24)}px`,
                   }}
                 >
                   {/* Timeline dot */}
                   <div
                     className={cn(
-                      "absolute -left-[14px] w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 shadow-sm z-10",
+                      "absolute w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-900 shadow-sm z-10",
+                      isMobile ? "-left-[11px]" : "-left-[14px]",
                       task.is_completed
                         ? "bg-emerald-500"
                         : isOngoing
                           ? "bg-rose-500 animate-pulse"
                           : bg.replace("bg-gradient-to-br", "bg").split(" ")[1],
                     )}
-                    style={{ top: `${Math.min(8, taskHeight / 2 - 6)}px` }}
+                    style={{ top: `${Math.min(6, taskHeight / 2 - 5)}px` }}
                   />
 
-                  {/* Task card with exact height based on duration */}
+                  {/* Task card */}
                   <div
                     onClick={() => onTaskClick(task)}
                     className={cn(
-                      "group relative ml-4 h-full rounded-lg border-2 cursor-pointer transition-all duration-200 overflow-hidden",
+                      "group relative h-full rounded-lg border cursor-pointer transition-all duration-200 overflow-hidden",
+                      isMobile ? "ml-2 border" : "ml-4 border-2",
                       "hover:shadow-lg hover:scale-[1.01]",
                       task.is_completed
                         ? "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 opacity-70"
