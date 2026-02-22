@@ -878,25 +878,23 @@ export default function Notes() {
               </DropdownMenu>
             </div>
 
-            {/* Mobile: Quick Stats as horizontal scrollable pills */}
-            <div className="md:hidden overflow-x-auto no-scrollbar">
-              <div className="flex gap-2 flex-wrap">
-                {[
-                  { label: "Total", value: insights.total, icon: <FileText className="h-3 w-3" /> },
-                  { label: "Today", value: insights.editedToday, icon: <Clock className="h-3 w-3" /> },
-                  { label: "Pinned", value: insights.pinned, icon: <Pin className="h-3 w-3" /> },
-                  { label: "Groups", value: insights.activeGroups, icon: <Layers className="h-3 w-3" /> },
-                ].map((stat) => (
-                  <div
-                    key={stat.label}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card/80 border border-border/50 backdrop-blur-sm whitespace-nowrap"
-                  >
-                    <span className="text-primary/60">{stat.icon}</span>
-                    <span className="text-xs font-medium text-foreground">{stat.value}</span>
-                    <span className="text-[10px] text-muted-foreground">{stat.label}</span>
-                  </div>
-                ))}
-              </div>
+            {/* Mobile: Quick Stats as compact inline pills */}
+            <div className="md:hidden flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+              {[
+                { label: "Total", value: insights.total, icon: <FileText className="h-2.5 w-2.5" /> },
+                { label: "Today", value: insights.editedToday, icon: <Clock className="h-2.5 w-2.5" /> },
+                { label: "Pinned", value: insights.pinned, icon: <Pin className="h-2.5 w-2.5" /> },
+                { label: "Groups", value: insights.activeGroups, icon: <Layers className="h-2.5 w-2.5" /> },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="flex items-center gap-1 px-2 py-1 rounded-full bg-foreground/5 backdrop-blur-sm whitespace-nowrap shrink-0"
+                >
+                  <span className="text-muted-foreground/60">{stat.icon}</span>
+                  <span className="text-[11px] font-medium text-foreground">{stat.value}</span>
+                  <span className="text-[9px] text-muted-foreground/60">{stat.label}</span>
+                </div>
+              ))}
             </div>
 
             {/* Sticky Navigation & Toolbar */}
@@ -906,23 +904,24 @@ export default function Notes() {
                 {/* Mobile: View switcher hidden - only Atlas view on mobile */}
                 <div className="p-2 md:hidden hidden">
                 </div>
-                {/* Mobile: Search + Sort collapsed row */}
-                <div className="px-2 pb-2 md:pb-0 md:px-0 flex items-center gap-2 md:hidden">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
+                {/* Mobile: Integrated Search + Sort pill + More in one row */}
+                <div className="px-2 pb-2 md:pb-0 md:px-0 flex items-center gap-1.5 md:hidden">
+                  <div className="relative flex-1 min-w-0">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/40" />
                     <Input
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search..."
-                      className="h-9 rounded-xl pl-9 pr-3 text-xs bg-muted/30 border-0 focus:bg-muted/50 focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/40"
+                      className="h-8 rounded-lg pl-7 pr-2 text-xs bg-foreground/5 backdrop-blur-sm border-0 focus:bg-foreground/10 focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/30"
                     />
                   </div>
                   <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                    <SelectTrigger className="h-9 rounded-xl w-[110px] text-xs bg-muted/30 border-0 hover:bg-muted/50 transition-colors gap-1">
-                      <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
+                    <SelectTrigger className="h-8 rounded-lg w-auto min-w-0 px-2.5 text-[11px] bg-foreground/5 backdrop-blur-sm border-0 hover:bg-foreground/10 transition-colors gap-1 shrink-0">
+                      <ArrowUpDown className="h-2.5 w-2.5 text-muted-foreground/50" />
                       <SelectValue placeholder="Sort" />
+                      <ChevronDown className="h-2.5 w-2.5 text-muted-foreground/40" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl border-0 shadow-xl">
+                    <SelectContent className="rounded-xl border-border/50 shadow-xl backdrop-blur-xl">
                       <SelectItem value="updatedAt">Last edited</SelectItem>
                       <SelectItem value="createdAt">Created</SelectItem>
                       <SelectItem value="title">A–Z</SelectItem>
@@ -931,10 +930,10 @@ export default function Notes() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-9 w-9 rounded-lg hover:bg-muted/50 shrink-0"
+                    className="h-8 w-8 rounded-lg hover:bg-foreground/5 shrink-0"
                     onClick={() => setSettingsOpen(true)}
                   >
-                    <MoreHorizontal className="h-4 w-4" />
+                    <MoreHorizontal className="h-3.5 w-3.5" />
                   </Button>
                 </div>
 
@@ -1130,9 +1129,9 @@ export default function Notes() {
                   </div>
                 </div>
 
-                {/* Filter chips - Minimal underline tabs */}
+                {/* Filter chips - Minimal underline tabs, hidden scrollbar */}
                 <div className="px-3 pb-2 border-b border-border/30">
-                  <div className="flex gap-1 overflow-auto no-scrollbar">
+                  <div className="flex gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
                     <button
                       onClick={() => setFilterGroupId("all")}
                       className={cn(
