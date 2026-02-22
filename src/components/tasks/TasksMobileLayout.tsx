@@ -736,7 +736,7 @@ export function TasksMobileLayout({
               <TopFocusBar tasks={filteredTasks} onStartFocus={onStartFocus} />
 
               {/* Split: KPIs left, Clock right */}
-              <div className="flex border-t border-foreground/[0.06]">
+              <div className="flex h-[120px] border-t border-foreground/[0.06]">
                 {/* Left: Time period filter + Metrics */}
                 <div className="flex-1 flex flex-col p-2 gap-1.5">
                   <div className="flex items-center gap-1">
@@ -770,7 +770,7 @@ export function TasksMobileLayout({
                 </div>
 
                 {/* Right: Clock mode icons + Active Clock */}
-                <div className="w-[150px] shrink-0 border-l border-foreground/[0.06] flex flex-col items-center justify-center p-2">
+                <div className="w-[150px] h-[120px] shrink-0 border-l border-foreground/[0.06] flex flex-col items-center justify-center p-2 overflow-hidden">
                   {/* Clock mode shortcut icons */}
                   <div className="flex items-center gap-0.5 mb-2">
                     {CLOCK_MODE_ICONS.map(({ id, icon: ModeIcon }) => (
