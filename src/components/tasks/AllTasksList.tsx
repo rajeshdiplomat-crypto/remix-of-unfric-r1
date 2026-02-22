@@ -188,7 +188,7 @@ export function AllTasksList({
 
       {/* Task list */}
       <ScrollArea className="flex-1">
-        <div className="p-3 space-y-2">
+        <div className="p-2 space-y-1">
           {activeTasks.length === 0 && completedInList.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground text-sm">
               No tasks found
@@ -235,13 +235,13 @@ function TaskRow({ task, onTaskClick, onStartTask, onCompleteTask, onDeleteTask,
     <div
       onClick={() => onTaskClick(task)}
       className={cn(
-        "group p-3 rounded-xl border cursor-pointer transition-all",
+        "group p-2 rounded-lg border cursor-pointer transition-all",
         "hover:shadow-md hover:border-primary/30",
         task.is_completed
           ? "bg-muted/50 border-border"
           : task.status === "overdue"
-            ? "bg-destructive/10 border-destructive/30 shadow-sm"
-            : "bg-background border-border shadow-sm"
+            ? "bg-destructive/10 border-destructive/30"
+            : "bg-background border-border"
       )}
     >
       <div className="flex items-start justify-between gap-2">
