@@ -33,7 +33,6 @@ import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 
-
 export default function Emotions() {
   const { user } = useAuth();
   const isMobile = useIsMobile();
@@ -83,8 +82,6 @@ export default function Emotions() {
   // Saved state (after successful save)
   const [savedQuadrant, setSavedQuadrant] = useState<QuadrantType | null>(null);
   const [savedEmotion, setSavedEmotion] = useState<string | null>(null);
-
-  // For viewing entries by date
 
   // For viewing entries by date
   const [viewingDate, setViewingDate] = useState<string | null>(null);
