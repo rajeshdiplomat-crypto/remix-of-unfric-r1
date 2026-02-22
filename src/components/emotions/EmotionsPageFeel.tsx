@@ -158,7 +158,7 @@ export function EmotionsPageFeel({
                 <>
                   <span className="text-xl">{quadrantEmoji[currentQuadrant]}</span>
                   <div className="flex flex-col items-start">
-                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-normal">Feeling</span>
+                    <span className="text-[10px] text-muted-foreground tracking-wide font-normal">Feeling</span>
                     <span className="text-base font-semibold" style={{ color: quadrantInfo.color }}>
                       {selectedEmotion}
                     </span>
@@ -270,7 +270,7 @@ export function EmotionsPageFeel({
                   <>
                     <span className="text-2xl animate-bounce">{quadrantEmoji[currentQuadrant]}</span>
                     <div className="flex flex-col items-start">
-                      <span className="text-xs text-muted-foreground uppercase tracking-wider">Feeling</span>
+                      <span className="text-xs text-muted-foreground tracking-wide">Feeling</span>
                       <span className="text-lg font-bold" style={{ color: quadrantInfo.color }}>
                         {selectedEmotion}
                       </span>

@@ -314,7 +314,7 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
               </div>
 
               <div className="border-t border-border pt-4 mb-4">
-                <p className="text-[10px] font-normal text-muted-foreground uppercase tracking-wider mb-2">Recent Check-ins</p>
+                <p className="text-[10px] font-normal text-muted-foreground tracking-wide mb-2">Recent check-ins</p>
                 <div className="space-y-1.5">
                   {filteredEntries.slice(0, 4).map((entry, i) => (
                     <div key={i} className="flex items-center justify-between text-xs">
@@ -417,7 +417,7 @@ function PatternInsightsCompact({ entries }: { entries: EmotionEntry[] }) {
 
   return (
     <div className="space-y-2">
-      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Pattern Insights</p>
+      <p className="text-[10px] font-medium text-muted-foreground tracking-wide">Pattern insights</p>
       {insights.map((insight, i) => {
         const Icon = insight.icon;
         return (
