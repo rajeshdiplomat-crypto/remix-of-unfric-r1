@@ -1236,11 +1236,11 @@ export default function Habits() {
               <Button
                 variant="default"
                 size="sm"
-                className="md:hidden h-8 px-3 text-xs gap-1"
+                className="md:hidden h-7 px-2.5 text-[10px] gap-1 rounded-md"
                 onClick={openCreateDialog}
                 aria-label="Create Habit"
               >
-                <Plus className="h-3.5 w-3.5" />
+                <Plus className="h-3 w-3" />
                 New
               </Button>
               {/* Desktop: inline button */}
@@ -1430,12 +1430,12 @@ export default function Habits() {
                   }
 
                   return (
-                    <div className="flex justify-center gap-3 md:gap-6 lg:gap-8 flex-wrap overflow-visible pb-1 -mx-2 px-2">
-                      <ProgressRing progress={Math.min(totalGoalPercent, 100)} label="Total Goal" color={RING_COLORS[0]} mobileSize={68} />
-                      <ProgressRing progress={overallStats.momentum} label="Momentum" color={RING_COLORS[1]} mobileSize={68} />
-                      <ProgressRing progress={overallStats.dailyProgress} label="Daily" color={RING_COLORS[2]} mobileSize={68} />
-                      <ProgressRing progress={overallStats.weeklyProgress} label="Weekly" color={RING_COLORS[3]} mobileSize={68} />
-                      <ProgressRing progress={overallStats.monthlyProgress} label="Overall" color={RING_COLORS[4]} mobileSize={68} />
+                    <div className="grid grid-cols-5 gap-1 md:flex md:justify-center md:gap-6 lg:gap-8 overflow-visible pb-1">
+                      <ProgressRing progress={Math.min(totalGoalPercent, 100)} label="Goal" color={RING_COLORS[0]} mobileSize={58} />
+                      <ProgressRing progress={overallStats.momentum} label="Drive" color={RING_COLORS[1]} mobileSize={58} />
+                      <ProgressRing progress={overallStats.dailyProgress} label="Daily" color={RING_COLORS[2]} mobileSize={58} />
+                      <ProgressRing progress={overallStats.weeklyProgress} label="Weekly" color={RING_COLORS[3]} mobileSize={58} />
+                      <ProgressRing progress={overallStats.monthlyProgress} label="Overall" color={RING_COLORS[4]} mobileSize={58} />
                     </div>
                   );
                 })()}
@@ -1628,7 +1628,7 @@ export default function Habits() {
                           >
                             {activity.name}
                           </button>
-                          <span className="text-[9px] text-muted-foreground shrink-0">{activity.habitDays}</span>
+                          
                         </div>
                       </td>
                       {currentWeekDays.map((day, i) => {
