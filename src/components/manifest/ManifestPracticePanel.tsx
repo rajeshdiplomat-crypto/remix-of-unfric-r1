@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useDatePreferences } from "@/hooks/useDatePreferences";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Play,
@@ -18,8 +17,8 @@ import {
   Flame,
   Eye,
   Zap,
-  ChevronDown,
-  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Image,
   CalendarDays,
   Heart,
@@ -39,6 +38,7 @@ import { toast } from "sonner";
 import { isOfflineError } from "@/lib/offlineAwareOperation";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
 
 interface ManifestPracticePanelProps {
   goal: ManifestGoal;
@@ -49,6 +49,13 @@ interface ManifestPracticePanelProps {
   onPracticeComplete: (practice: ManifestDailyPractice) => void;
   onGoalUpdate?: () => void;
 }
+
+const RING_CONFIG = [
+  { id: "viz", icon: Eye, label: "Visualize", color: "hsl(175, 84%, 40%)", bgClass: "bg-[hsl(175,84%,40%)]" },
+  { id: "act", icon: Zap, label: "Act", color: "hsl(45, 93%, 47%)", bgClass: "bg-[hsl(45,93%,47%)]" },
+  { id: "proof", icon: Camera, label: "Proof", color: "hsl(200, 80%, 50%)", bgClass: "bg-[hsl(200,80%,50%)]" },
+  { id: "gratitude", icon: Heart, label: "Gratitude", color: "hsl(330, 70%, 55%)", bgClass: "bg-[hsl(330,70%,55%)]" },
+];
 
 export function ManifestPracticePanel({
   goal,
@@ -94,8 +101,6 @@ export function ManifestPracticePanel({
 
   const savePractice = async (practice: Partial<ManifestDailyPractice>) => {
     if (!isViewingToday || !user) return;
-
-    // Save to DB
     try {
       const upsertData: any = {
         goal_id: goal.id,
@@ -122,19 +127,18 @@ export function ManifestPracticePanel({
   const [proofs, setProofs] = useState<ProofEntry[]>([]);
   const [gratitudes, setGratitudes] = useState<GratitudeEntry[]>([]);
   const [showVisualization, setShowVisualization] = useState(false);
-  const [expandedSection, setExpandedSection] = useState<string | null>("viz");
+  const [activeRing, setActiveRing] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
   const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
 
-  // Use refs for text inputs to prevent re-render issues
   const actInputRef = useRef<HTMLInputElement>(null);
   const proofTextRef = useRef<HTMLTextAreaElement>(null);
   const growthNoteRef = useRef<HTMLInputElement>(null);
   const gratitudeInputRef = useRef<HTMLInputElement>(null);
   const [currentProofImageUrl, setCurrentProofImageUrl] = useState<string | null>(null);
   const [growthNoteValue, setGrowthNoteValue] = useState("");
+  const proofScrollRef = useRef<HTMLDivElement>(null);
 
-  // Track goal id and date separately to avoid full resets on goal object changes
   const goalIdRef = useRef(goal.id);
   const dateStrRef = useRef(dateStr);
 
@@ -158,7 +162,7 @@ export function ManifestPracticePanel({
       setProofs([]);
       setGratitudes([]);
       setIsLocked(false);
-      setExpandedSection("viz");
+      setActiveRing(null);
       setCurrentImageUrl(goal.cover_image_url || goal.vision_image_url || null);
 
       (async () => {
@@ -184,6 +188,13 @@ export function ManifestPracticePanel({
   const canLock = allDone && growthNoteValue.trim().length > 0;
   const completedCount = [hasViz, hasAct, hasProof, hasGratitude].filter(Boolean).length;
 
+  const stepDone = useMemo(() => ({
+    viz: hasViz,
+    act: hasAct,
+    proof: hasProof,
+    gratitude: hasGratitude,
+  }), [hasViz, hasAct, hasProof, hasGratitude]);
+
   const handleVisualizationComplete = () => {
     const newEntry: VisualizationEntry = {
       id: crypto.randomUUID(),
@@ -195,7 +206,7 @@ export function ManifestPracticePanel({
     setShowVisualization(false);
     savePractice({ visualizations: updated, visualization_count: updated.length });
     toast.success("Visualization complete! ✨");
-    if (!hasAct) setExpandedSection("act");
+    setActiveRing(null);
   };
 
   const handleAddAct = () => {
@@ -206,7 +217,6 @@ export function ManifestPracticePanel({
     if (actInputRef.current) actInputRef.current.value = "";
     savePractice({ acts: updated, act_count: updated.length });
     toast.success("Action logged! 💪");
-    if (!hasProof) setExpandedSection("proof");
   };
 
   const handleRemoveAct = (id: string) => {
@@ -243,7 +253,6 @@ export function ManifestPracticePanel({
     savePractice({ proofs: updated });
     confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
     toast.success("Proof recorded! 🚀");
-    if (!hasGratitude) setExpandedSection("gratitude");
   };
 
   const handleRemoveProof = (id: string) => {
@@ -268,9 +277,6 @@ export function ManifestPracticePanel({
     if (gratitudeInputRef.current) gratitudeInputRef.current.value = "";
     savePractice({ gratitudes: updated });
     toast.success("Gratitude added! 🙏");
-    if (hasViz && hasAct && hasProof && updated.length > 0) {
-      setExpandedSection("complete");
-    }
   };
 
   const handleRemoveGratitude = (id: string) => {
@@ -306,18 +312,11 @@ export function ManifestPracticePanel({
 
   const handleImageChange = async (url: string | null) => {
     setCurrentImageUrl(url);
-
-    // Update database directly (no more localStorage extras)
     try {
       const { error } = await supabase.from("manifest_goals").update({ cover_image_url: url }).eq("id", goal.id);
-
       if (error) throw error;
       toast.success("Vision image updated");
-
-      // Notify parent to refresh
-      if (onGoalUpdate) {
-        onGoalUpdate();
-      }
+      if (onGoalUpdate) onGoalUpdate();
     } catch (error) {
       console.error("Failed to update image in database:", error);
       if (!isOfflineError()) {
@@ -327,8 +326,6 @@ export function ManifestPracticePanel({
       }
     }
   };
-
-  const toggle = (id: string) => setExpandedSection(expandedSection === id ? null : id);
 
   if (showVisualization) {
     return (
@@ -342,152 +339,226 @@ export function ManifestPracticePanel({
     );
   }
 
-  const StepCard = ({
-    id,
-    icon: Icon,
-    title,
-    done,
-    disabled,
-    children,
-    accentColor = "teal",
-  }: {
-    id: string;
-    icon: any;
-    title: string;
-    done: boolean;
-    disabled?: boolean;
-    children: React.ReactNode;
-    accentColor?: string;
+  const allProofs = proofs.filter((p) => p.image_url || p.text);
+
+  const ProgressRing = ({ done, color, icon: Icon, label, id }: {
+    done: boolean; color: string; icon: any; label: string; id: string;
   }) => {
-    const isExpanded = expandedSection === id;
+    const isActive = activeRing === id;
+    const radius = 28;
+    const circumference = 2 * Math.PI * radius;
+    const progress = done ? 1 : 0;
+
     return (
-      <Card
-        className={`overflow-hidden cursor-pointer transition-all ${
-          done
-            ? "border-teal-200 dark:border-teal-800 bg-teal-50/30 dark:bg-teal-900/10"
-            : ""
-        } ${disabled ? "opacity-60 pointer-events-none" : ""}`}
-        onClick={() => !disabled && toggle(id)}
+      <button
+        onClick={() => setActiveRing(isActive ? null : id)}
+        className={cn(
+          "flex flex-col items-center gap-1.5 transition-all duration-300 group",
+          (isViewingPast && !isLocked) && "opacity-50 pointer-events-none"
+        )}
       >
-        {/* Square card header */}
-        <div className="flex items-center gap-3 p-3">
-          <div
-            className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-              done ? "bg-teal-500 text-white" : "bg-muted text-muted-foreground"
-            }`}
-          >
+        <div className={cn(
+          "relative w-16 h-16 flex items-center justify-center rounded-full transition-all duration-300",
+          isActive && "scale-110",
+          isActive && "ring-2 ring-offset-2 ring-offset-background",
+        )} style={isActive ? { boxShadow: `0 0 20px ${color}40` } : {}}>
+          <svg width="64" height="64" className="absolute inset-0 -rotate-90">
+            <circle cx="32" cy="32" r={radius} fill="none" stroke="hsl(var(--border))" strokeWidth="3" />
+            <circle
+              cx="32" cy="32" r={radius} fill="none"
+              stroke={color} strokeWidth="3"
+              strokeDasharray={circumference}
+              strokeDashoffset={circumference * (1 - progress)}
+              strokeLinecap="round"
+              className="transition-all duration-500"
+            />
+          </svg>
+          <div className={cn(
+            "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
+            done ? "text-primary-foreground" : "bg-muted text-muted-foreground",
+          )} style={done ? { background: color } : {}}>
             {done ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
           </div>
-          <div className="flex-1 min-w-0">
-            <span className={`font-medium text-sm leading-tight ${done ? "text-teal-700 dark:text-teal-300" : "text-foreground"}`}>
-              {title}
-            </span>
-            {done && (
-              <span className="ml-2 text-[9px] bg-teal-100 dark:bg-teal-900/50 text-teal-600 dark:text-teal-400 px-1.5 py-0.5 rounded-full">
-                Done
-              </span>
+        </div>
+        <span className={cn(
+          "text-[10px] font-medium transition-colors",
+          isActive ? "text-foreground" : "text-muted-foreground"
+        )}>{label}</span>
+      </button>
+    );
+  };
+
+  const renderActiveInput = () => {
+    if (!activeRing) return null;
+
+    return (
+      <div className="mx-4 mt-3 p-4 rounded-2xl border border-foreground/10 bg-background/60 backdrop-blur-xl animate-in slide-in-from-top-2 duration-300">
+        {activeRing === "viz" && (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Close your eyes and feel your new reality</p>
+            <Button
+              onClick={() => setShowVisualization(true)}
+              className="w-full h-10 rounded-xl"
+              disabled={isViewingPast}
+              style={{ background: "linear-gradient(135deg, hsl(175, 84%, 40%), hsl(185, 85%, 50%))" }}
+            >
+              <Play className="h-4 w-4 mr-2 text-white" />
+              <span className="text-white">{hasViz ? "Add Session" : `Start ${goal.visualization_minutes} min`}</span>
+            </Button>
+            {visualizations.length > 0 && (
+              <div className="space-y-1">
+                {visualizations.map((v, i) => (
+                  <div key={v.id} className="text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                    <Check className="h-3 w-3" style={{ color: "hsl(175, 84%, 40%)" }} /> Session {i + 1} • {format(new Date(v.created_at), "h:mm a")}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
-          {isExpanded ? (
-            <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-          ) : (
-            <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-          )}
-        </div>
-        {isExpanded && !disabled && (
-          <div className="px-3 pb-3 space-y-3 border-t border-border pt-3" onClick={(e) => e.stopPropagation()}>
-            {children}
+        )}
+
+        {activeRing === "act" && (
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">Suggestion: {goal.act_as_if}</p>
+            <div className="flex gap-2">
+              <Input ref={actInputRef} defaultValue="" placeholder="What did you do?" className="flex-1 rounded-xl h-9 text-sm" disabled={isViewingPast} />
+              <Button onClick={handleAddAct} className="h-9 w-9 rounded-xl p-0" disabled={isViewingPast}
+                style={{ background: "hsl(45, 93%, 47%)" }}>
+                <Plus className="h-4 w-4 text-white" />
+              </Button>
+            </div>
+            {acts.length > 0 && (
+              <div className="space-y-1">
+                {acts.map((a) => (
+                  <div key={a.id} className="flex items-center justify-between bg-muted/50 px-3 py-1.5 rounded-lg">
+                    <span className="text-xs text-foreground flex items-center gap-2">
+                      <Check className="h-3 w-3" style={{ color: "hsl(45, 93%, 47%)" }} /> {a.text}
+                    </span>
+                    {isViewingToday && (
+                      <button onClick={() => handleRemoveAct(a.id)} className="text-muted-foreground hover:text-foreground">
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
-      </Card>
+
+        {activeRing === "proof" && (
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">What happened today that proves your reality?</p>
+            <Textarea ref={proofTextRef} defaultValue="" placeholder="I noticed..." rows={2} className="rounded-xl resize-none text-sm" disabled={isViewingPast} />
+            <input ref={proofImageInputRef} type="file" accept="image/*" onChange={handleProofImageUpload} className="hidden" />
+            {currentProofImageUrl ? (
+              <div className="relative">
+                <img src={currentProofImageUrl} alt="Proof" className="w-full h-20 object-cover rounded-xl" />
+                <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-5 w-5 rounded-full" onClick={() => setCurrentProofImageUrl(null)}>
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            ) : (
+              <Button variant="outline" className="w-full rounded-xl border-dashed h-9 text-xs" onClick={() => proofImageInputRef.current?.click()} disabled={isViewingPast}>
+                <ImagePlus className="h-3.5 w-3.5 mr-1.5" /> Add Photo
+              </Button>
+            )}
+            <Button onClick={handleAddProof} disabled={isViewingPast} className="w-full h-9 rounded-xl text-white text-sm"
+              style={{ background: "hsl(200, 80%, 50%)" }}>
+              Save Proof
+            </Button>
+          </div>
+        )}
+
+        {activeRing === "gratitude" && (
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">What are you grateful for today?</p>
+            <div className="flex gap-2">
+              <Input ref={gratitudeInputRef} defaultValue="" placeholder="I'm grateful for..." className="flex-1 rounded-xl h-9 text-sm" disabled={isViewingPast} />
+              <Button onClick={handleAddGratitude} className="h-9 w-9 rounded-xl p-0 text-white" disabled={isViewingPast}
+                style={{ background: "hsl(330, 70%, 55%)" }}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            {gratitudes.length > 0 && (
+              <div className="space-y-1">
+                {gratitudes.map((g) => (
+                  <div key={g.id} className="flex items-center justify-between bg-muted/50 px-3 py-1.5 rounded-lg">
+                    <span className="text-xs text-foreground flex items-center gap-2">
+                      <Heart className="h-3 w-3 fill-current" style={{ color: "hsl(330, 70%, 55%)" }} /> {g.text}
+                    </span>
+                    {isViewingToday && (
+                      <button onClick={() => handleRemoveGratitude(g.id)} className="text-muted-foreground hover:text-foreground">
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     );
   };
 
   return (
-    <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-900 overflow-hidden">
-      {/* Header with Vision Image */}
-      <div className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex-shrink-0">
-        {/* Vision Image - Read-only display */}
-        <div className="relative h-36 w-full overflow-hidden">
-          {currentImageUrl ? (
-            <img src={currentImageUrl} alt={goal.title} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full bg-muted" />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
-        </div>
+    <div className="h-full flex flex-col bg-background overflow-hidden">
+      {/* ===== Immersive Hero Banner ===== */}
+      <div className="relative w-full h-48 sm:h-56 flex-shrink-0 overflow-hidden">
+        {currentImageUrl ? (
+          <img src={currentImageUrl} alt={goal.title} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-muted to-accent" />
+        )}
+        {/* Blur overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+        <div className="absolute inset-0 backdrop-blur-[2px]" />
 
-        <div className="p-3">
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex gap-1.5 flex-wrap">
-              {!isViewingToday && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-600 font-medium flex items-center gap-1">
-                  <CalendarDays className="h-2.5 w-2.5" /> {fmtDate(selectedDate, "full")}
+        {/* Close button */}
+        <Button variant="ghost" size="icon" className="absolute top-3 right-3 h-8 w-8 rounded-full bg-background/40 backdrop-blur-md text-foreground z-10" onClick={onClose}>
+          <X className="h-4 w-4" />
+        </Button>
+
+        {/* Overlay content */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between">
+          <div className="flex-1 min-w-0">
+            {!isViewingToday && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-foreground/10 backdrop-blur-sm text-foreground/80 font-medium inline-flex items-center gap-1 mb-1.5">
+                <CalendarDays className="h-2.5 w-2.5" /> {fmtDate(selectedDate, "full")}
+              </span>
+            )}
+            <h2 className="font-semibold text-foreground text-xl leading-tight line-clamp-1">{goal.title}</h2>
+            <div className="flex items-center gap-2 mt-1">
+              {goal.start_date && (
+                <span className="text-[10px] text-muted-foreground">
+                  Started {fmtDate(new Date(goal.start_date), "full")}
                 </span>
               )}
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 text-teal-600 font-medium">
-                {isLocked ? "Completed" : "Active"}
-              </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 font-medium flex items-center gap-1">
-                <Flame className="h-2.5 w-2.5" /> Day {streak}
-              </span>
+              {streak > 0 && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-foreground/10 text-foreground/70 font-medium flex items-center gap-0.5">
+                  <Flame className="h-2.5 w-2.5" /> {streak} day streak
+                </span>
+              )}
             </div>
-            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={onClose}>
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-          <h2 className="font-semibold text-slate-800 dark:text-white text-base leading-tight">{goal.title}</h2>
-          {goal.check_in_time && (
-            <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
-              <Clock className="h-3 w-3" /> Check-in at {goal.check_in_time}
-            </p>
-          )}
-
-          {/* Start Date & Total Practice Days */}
-          <div className="flex gap-3 mt-2">
-            <div className="text-xs text-slate-500">
-              <span className="text-slate-400">Started:</span>{" "}
-              <span className="font-medium text-slate-600 dark:text-slate-300">
-                {fmtDate(new Date(goal.start_date || goal.created_at), "full")}
-              </span>
-            </div>
-            {goal.created_at && (
-              <div className="text-xs text-slate-500">
-                <span className="text-slate-400">Practice Days:</span>{" "}
-                <span className="font-medium text-slate-600 dark:text-slate-300">{streak}</span>
-              </div>
-            )}
           </div>
 
-          {/* Vision Board - Show additional images - Larger and stretched */}
-          {goal.vision_images && goal.vision_images.length > 0 && (
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-1.5">
-              {goal.vision_images.map((img, i) => (
-                <div
-                  key={i}
-                  className="flex-1 min-w-0 h-16 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-600"
-                >
-                  <img src={img} alt={`Vision ${i + 1}`} className="w-full h-full object-cover" />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Progress */}
-      <div className="px-3 pt-3">
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-          <div className="flex-1">
-            <div className="flex justify-between text-[10px] mb-1">
-              <span className="text-slate-500">{isViewingToday ? "Today's Progress" : "Day Progress"}</span>
-              <span className="font-semibold text-teal-600">{completedCount}/4</span>
-            </div>
-            <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-teal-500 to-cyan-400 transition-all"
-                style={{ width: `${(completedCount / 4) * 100}%` }}
-              />
+          {/* Master Progress Ring */}
+          <div className="flex-shrink-0 ml-3">
+            <div className="relative w-14 h-14 flex items-center justify-center">
+              <svg width="56" height="56" className="-rotate-90">
+                <circle cx="28" cy="28" r="22" fill="none" stroke="hsl(var(--border))" strokeWidth="3" />
+                <circle
+                  cx="28" cy="28" r="22" fill="none"
+                  stroke="hsl(var(--foreground))"
+                  strokeWidth="3"
+                  strokeDasharray={2 * Math.PI * 22}
+                  strokeDashoffset={2 * Math.PI * 22 * (1 - completedCount / 4)}
+                  strokeLinecap="round"
+                  className="transition-all duration-500"
+                />
+              </svg>
+              <span className="absolute text-xs font-bold text-foreground">{completedCount}/4</span>
             </div>
           </div>
         </div>
@@ -495,255 +566,92 @@ export function ManifestPracticePanel({
 
       {/* Past date warning */}
       {isViewingPast && !isLocked && (
-        <div className="mx-3 mt-2 p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-          <p className="text-[10px] text-amber-700 dark:text-amber-300">
+        <div className="mx-4 mt-2 p-2 rounded-lg bg-muted/50 border border-border">
+          <p className="text-[10px] text-muted-foreground">
             You're viewing a past date. This practice was not completed.
           </p>
         </div>
       )}
 
-      {/* Steps - Single scrollable area */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3">
-        <div className="grid grid-cols-2 gap-2">
-          {/* Visualize card */}
-          <StepCard
-            id="viz"
-            icon={Eye}
-            title={`Visualize (${goal.visualization_minutes} min)`}
-            done={hasViz}
-            disabled={isViewingPast && !isLocked}
-          >
-            <p className="text-sm text-muted-foreground mb-3">Close your eyes and feel your new reality</p>
-            <Button
-              onClick={() => setShowVisualization(true)}
-              className="w-full h-11 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
-              disabled={isViewingPast}
-            >
-              <Play className="h-4 w-4 mr-2" /> {hasViz ? "Add Session" : "Start"}
-            </Button>
-            {visualizations.length > 0 && (
-              <div className="mt-3 space-y-1">
-                {visualizations.map((v, i) => (
-                  <div
-                    key={v.id}
-                    className="text-xs text-muted-foreground bg-teal-50 dark:bg-teal-900/30 px-3 py-2 rounded-lg flex items-center gap-2"
-                  >
-                    <Check className="h-3 w-3 text-teal-500" /> Session {i + 1} •{" "}
-                    {format(new Date(v.created_at), "h:mm a")}
-                  </div>
-                ))}
-              </div>
-            )}
-          </StepCard>
-
-          {/* Take Action card */}
-          <StepCard id="act" icon={Zap} title="Take Action" done={hasAct} disabled={isViewingPast && !isLocked}>
-            <p className="text-sm text-muted-foreground mb-2">Suggestion: {goal.act_as_if}</p>
-            <div className="flex gap-2">
-              <Input
-                ref={actInputRef}
-                defaultValue=""
-                placeholder="What did you do?"
-                className="flex-1 rounded-xl h-10"
-                disabled={isViewingPast}
-              />
-              <Button
-                onClick={handleAddAct}
-                className="h-10 w-10 rounded-xl bg-teal-500 text-white p-0"
-                disabled={isViewingPast}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            {acts.length > 0 && (
-              <div className="mt-3 space-y-2">
-                {acts.map((a) => (
-                  <div
-                    key={a.id}
-                    className="flex items-start justify-between bg-teal-50 dark:bg-teal-900/30 px-3 py-2 rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <span className="text-sm text-foreground flex items-center gap-2">
-                        <Check className="h-3 w-3 text-teal-500 flex-shrink-0" /> {a.text}
-                      </span>
-                      <span className="text-[9px] text-muted-foreground ml-5">{format(new Date(a.created_at), "h:mm a")}</span>
-                    </div>
-                    {isViewingToday && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 flex-shrink-0"
-                        onClick={() => handleRemoveAct(a.id)}
-                      >
-                        <Trash2 className="h-3 w-3 text-muted-foreground" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </StepCard>
-
-          {/* Record Proof card */}
-          <StepCard id="proof" icon={Camera} title="Record Proof" done={hasProof} disabled={isViewingPast && !isLocked}>
-            <p className="text-sm text-muted-foreground mb-2">What happened today that proves your reality?</p>
-            <Textarea
-              ref={proofTextRef}
-              defaultValue=""
-              placeholder="I noticed..."
-              rows={2}
-              className="rounded-xl resize-none mb-2"
-              disabled={isViewingPast}
-            />
-            <input
-              ref={proofImageInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleProofImageUpload}
-              className="hidden"
-            />
-            {currentProofImageUrl ? (
-              <div className="relative mb-2">
-                <img src={currentProofImageUrl} alt="Proof" className="w-full h-24 object-cover rounded-xl" />
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-2 right-2 h-6 w-6 rounded-full"
-                  onClick={() => setCurrentProofImageUrl(null)}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            ) : (
-              <Button
-                variant="outline"
-                className="w-full rounded-xl border-dashed mb-2 h-10"
-                onClick={() => proofImageInputRef.current?.click()}
-                disabled={isViewingPast}
-              >
-                <ImagePlus className="h-4 w-4 mr-2" /> Add Photo
-              </Button>
-            )}
-            <Button
-              onClick={handleAddProof}
-              disabled={isViewingPast}
-              className="w-full h-10 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
-            >
-              Save Proof
-            </Button>
-            {proofs.length > 0 && (
-              <div className="mt-3 space-y-2">
-                {proofs.map((p) => (
-                  <div key={p.id} className="bg-teal-50 dark:bg-teal-900/30 p-3 rounded-lg">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <p className="text-sm text-foreground">{p.text}</p>
-                        <span className="text-[9px] text-muted-foreground">{format(new Date(p.created_at), "h:mm a")}</span>
-                      </div>
-                      {isViewingToday && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 flex-shrink-0"
-                          onClick={() => handleRemoveProof(p.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      )}
-                    </div>
-                    {p.image_url && (
-                      <img src={p.image_url} alt="Proof" className="w-full h-20 object-cover rounded-lg mt-2" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </StepCard>
-
-          {/* Gratitude card */}
-          <StepCard
-            id="gratitude"
-            icon={Heart}
-            title="Practice Gratitude"
-            done={hasGratitude}
-            disabled={isViewingPast && !isLocked}
-          >
-            <p className="text-sm text-muted-foreground mb-2">What are you grateful for today?</p>
-            <div className="flex gap-2">
-              <Input
-                ref={gratitudeInputRef}
-                defaultValue=""
-                placeholder="I'm grateful for..."
-                className="flex-1 rounded-xl h-10"
-                disabled={isViewingPast}
-              />
-              <Button
-                onClick={handleAddGratitude}
-                className="h-10 w-10 rounded-xl bg-pink-500 hover:bg-pink-600 text-white p-0"
-                disabled={isViewingPast}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            {gratitudes.length > 0 && (
-              <div className="mt-3 space-y-2">
-                {gratitudes.map((g) => (
-                  <div
-                    key={g.id}
-                    className="flex items-start justify-between bg-pink-50 dark:bg-pink-900/30 px-3 py-2 rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <span className="text-sm text-foreground flex items-center gap-2">
-                        <Heart className="h-3 w-3 text-pink-500 flex-shrink-0 fill-pink-500" /> {g.text}
-                      </span>
-                      <span className="text-[9px] text-muted-foreground ml-5">{format(new Date(g.created_at), "h:mm a")}</span>
-                    </div>
-                    {isViewingToday && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 flex-shrink-0"
-                        onClick={() => handleRemoveGratitude(g.id)}
-                      >
-                        <Trash2 className="h-3 w-3 text-muted-foreground" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </StepCard>
-        </div>
-
-        {/* Complete Day - Full width below the grid */}
-        {allDone && (
-          <div className="mt-2">
-            <StepCard id="complete" icon={Lock} title="Complete Day" done={isLocked} disabled={isViewingPast && !isLocked}>
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">Add a growth note to lock your practice</p>
-                <Input
-                  ref={growthNoteRef}
-                  defaultValue={growthNoteValue}
-                  placeholder="Today I learned that..."
-                  className="rounded-xl h-10"
-                  disabled={isViewingPast || isLocked}
-                  onBlur={(e) => {
-                    setGrowthNoteValue(e.target.value);
-                    savePractice({ growth_note: e.target.value });
-                  }}
-                />
-                <Button
-                  onClick={handleLockToday}
-                  disabled={!canLock || isViewingPast || isLocked}
-                  className="w-full h-11 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-medium"
-                >
-                  <Lock className="h-4 w-4 mr-2" /> Complete Day ✨
-                </Button>
-              </div>
-            </StepCard>
-          </div>
-        )}
+      {/* ===== Precision Practice Rings Row ===== */}
+      <div className="flex items-center justify-center gap-6 sm:gap-8 py-4 px-4 flex-shrink-0">
+        {RING_CONFIG.map((ring) => (
+          <ProgressRing
+            key={ring.id}
+            id={ring.id}
+            done={stepDone[ring.id as keyof typeof stepDone]}
+            color={ring.color}
+            icon={ring.icon}
+            label={ring.label}
+          />
+        ))}
       </div>
+
+      {/* ===== Active Input Area (glassmorphic) ===== */}
+      {renderActiveInput()}
+
+      {/* ===== Complete Day Section ===== */}
+      {allDone && (
+        <div className="mx-4 mt-3 p-4 rounded-2xl border border-foreground/10 bg-background/60 backdrop-blur-xl">
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Lock className="h-4 w-4" /> Complete your day
+            </p>
+            <Input
+              ref={growthNoteRef}
+              defaultValue={growthNoteValue}
+              placeholder="Today I learned that..."
+              className="rounded-xl h-9 text-sm"
+              disabled={isViewingPast || isLocked}
+              onBlur={(e) => {
+                setGrowthNoteValue(e.target.value);
+                savePractice({ growth_note: e.target.value });
+              }}
+            />
+            <Button
+              onClick={handleLockToday}
+              disabled={!canLock || isViewingPast || isLocked}
+              className="w-full h-10 rounded-xl text-white font-medium"
+              style={{ background: "linear-gradient(135deg, hsl(175, 84%, 40%), hsl(185, 85%, 50%))" }}
+            >
+              <Lock className="h-4 w-4 mr-2" /> {isLocked ? "Day Completed ✨" : "Complete Day ✨"}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Proof Timeline Gallery ===== */}
+      {allProofs.length > 0 && (
+        <div className="mt-4 px-4 flex-shrink-0">
+          <h3 className="text-xs font-medium text-muted-foreground mb-2">Proof Timeline</h3>
+          <div ref={proofScrollRef} className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {allProofs.map((p) => (
+              <div key={p.id} className="flex-shrink-0 group relative">
+                {p.image_url ? (
+                  <div className="w-16 h-16 rounded-xl overflow-hidden border border-border">
+                    <img src={p.image_url} alt={p.text} className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 rounded-xl border border-border bg-muted/50 flex items-center justify-center p-1.5">
+                    <p className="text-[8px] text-muted-foreground line-clamp-3 text-center leading-tight">{p.text}</p>
+                  </div>
+                )}
+                {isViewingToday && (
+                  <button
+                    onClick={() => handleRemoveProof(p.id)}
+                    className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Spacer at bottom for scroll breathing room */}
+      <div className="h-4 flex-shrink-0" />
     </div>
   );
 }
