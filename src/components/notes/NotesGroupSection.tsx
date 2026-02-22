@@ -131,7 +131,64 @@ export function NotesGroupSection({
     }
 
     return (
-      <div className="space-y-5">
+      <div className="space-y-4">
+        {/* Add note/section buttons - always at top */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {!isAddingFolder ? (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 md:h-8 rounded-full px-2.5 md:px-3 text-[10px] md:text-[11px] border-dashed border-border/60 hover:border-solid text-muted-foreground"
+                onClick={() => onAddNote(group.id, null)}
+              >
+                <Plus className="h-2.5 md:h-3 w-2.5 md:w-3 mr-1" />
+                Add note
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 md:h-8 rounded-full px-2.5 md:px-3 text-[10px] md:text-[11px] border-dashed border-border/60 hover:border-solid text-muted-foreground"
+                onClick={() => setIsAddingFolder(true)}
+              >
+                <FolderPlus className="h-2.5 md:h-3 w-2.5 md:w-3 mr-1" />
+                Add section
+              </Button>
+            </>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                ref={folderInputRef}
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                placeholder="Section name…"
+                className="h-8 w-36 md:w-44 rounded-xl bg-background text-xs"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleCreateFolder();
+                  if (e.key === "Escape") {
+                    setIsAddingFolder(false);
+                    setNewFolderName("");
+                  }
+                }}
+              />
+              <Button size="sm" className="h-8 rounded-xl text-xs" onClick={handleCreateFolder}>
+                Add
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 rounded-xl text-xs"
+                onClick={() => {
+                  setIsAddingFolder(false);
+                  setNewFolderName("");
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          )}
+        </div>
+
         {groupFolders.length > 0 && (
           <div>
             <div className="flex items-center gap-3 mb-3">
@@ -186,62 +243,6 @@ export function NotesGroupSection({
             </div>
           </div>
         )}
-
-        <div className="pt-2">
-          {!isAddingFolder ? (
-            <div className="flex items-center gap-2 flex-wrap">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 rounded-full px-3 text-[11px] border-dashed border-border/60 hover:border-solid text-muted-foreground"
-                onClick={() => onAddNote(group.id, null)}
-              >
-                <Plus className="h-3 w-3 mr-1.5" />
-                Add note
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 rounded-full px-3 text-[11px] border-dashed border-border/60 hover:border-solid text-muted-foreground"
-                onClick={() => setIsAddingFolder(true)}
-              >
-                <FolderPlus className="h-3 w-3 mr-1.5" />
-                Add section
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-center gap-2">
-              <Input
-                ref={folderInputRef}
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder="Section name…"
-                className="h-9 w-44 rounded-xl bg-background text-xs"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleCreateFolder();
-                  if (e.key === "Escape") {
-                    setIsAddingFolder(false);
-                    setNewFolderName("");
-                  }
-                }}
-              />
-              <Button size="sm" className="h-9 rounded-xl text-xs" onClick={handleCreateFolder}>
-                Add
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-9 rounded-xl text-xs"
-                onClick={() => {
-                  setIsAddingFolder(false);
-                  setNewFolderName("");
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-          )}
-        </div>
       </div>
     );
   };
@@ -290,7 +291,7 @@ export function NotesGroupSection({
                     <span className="text-xs text-muted-foreground/40 italic">No notes yet</span>
                   )}
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
                   {pinnedCount > 0 && (
                     <span className="flex items-center gap-0.5 text-xs text-muted-foreground/50">
                       <Pin className="h-2.5 w-2.5" />
@@ -298,14 +299,6 @@ export function NotesGroupSection({
                     </span>
                   )}
                   {mostRecentUpdate && <NotesActivityDot updatedAt={mostRecentUpdate} size="sm" />}
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    className="h-7 w-7 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-muted cursor-pointer"
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onAddNote(group.id, null); }}
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                  </div>
                   <div className="h-6 w-6 flex items-center justify-center rounded-lg">
                     {isExpanded ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/60" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />}
                   </div>
@@ -344,14 +337,6 @@ export function NotesGroupSection({
                     <Pin className="h-1.5 w-1.5" />{pinnedCount}
                   </span>
                 )}
-                <div
-                  role="button"
-                  tabIndex={0}
-                  className="h-5 w-5 rounded flex items-center justify-center hover:bg-muted/50 cursor-pointer"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onAddNote(group.id, null); }}
-                >
-                  <Plus className="h-2.5 w-2.5 text-muted-foreground/50" />
-                </div>
                 <div className="h-4 w-4 flex items-center justify-center">
                   {isExpanded ? <ChevronDown className="h-2.5 w-2.5 text-muted-foreground/40" /> : <ChevronRight className="h-2.5 w-2.5 text-muted-foreground/40" />}
                 </div>
