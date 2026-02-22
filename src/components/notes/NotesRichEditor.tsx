@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1253,22 +1253,26 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
 
       {/* Dialogs */}
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
-        <DialogContent className="max-w-sm z-[999999]">
-          <DialogHeader>
-            <DialogTitle>Insert Link</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm p-0 rounded-2xl overflow-hidden z-[999999]">
+          <div className="bg-gradient-to-r from-primary to-primary/80 px-5 py-3 flex-shrink-0">
+            <DialogTitle className="text-base font-semibold text-primary-foreground flex items-center gap-2">
+              <Link2 className="h-4 w-4" />
+              Insert Link
+            </DialogTitle>
+          </div>
+          <div className="p-5 space-y-4">
             <Input
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
               placeholder="https://example.com"
+              className="rounded-xl"
               onKeyDown={(e) => e.key === "Enter" && handleInsertLink()}
             />
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setLinkDialogOpen(false)}>
+              <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setLinkDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button className="flex-1" onClick={handleInsertLink}>
+              <Button className="flex-1 rounded-xl" onClick={handleInsertLink}>
                 Insert
               </Button>
             </div>
@@ -1277,25 +1281,29 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
       </Dialog>
 
       <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
-        <DialogContent className="max-w-sm z-[999999]">
-          <DialogHeader>
-            <DialogTitle>Insert Image</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm p-0 rounded-2xl overflow-hidden z-[999999]">
+          <div className="bg-gradient-to-r from-primary to-primary/80 px-5 py-3 flex-shrink-0">
+            <DialogTitle className="text-base font-semibold text-primary-foreground flex items-center gap-2">
+              <ImageIcon className="h-4 w-4" />
+              Insert Image
+            </DialogTitle>
+          </div>
+          <div className="p-5 space-y-4">
             <Input
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
               placeholder="https://example.com/image.jpg"
+              className="rounded-xl"
             />
-            <div className="text-center text-sm text-slate-400">— or —</div>
-            <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
+            <div className="text-center text-sm text-muted-foreground">— or —</div>
+            <Button variant="outline" className="w-full rounded-xl" onClick={() => fileInputRef.current?.click()}>
               <ImageIcon className="h-4 w-4 mr-2" /> Upload from Computer
             </Button>
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setImageDialogOpen(false)}>
+              <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setImageDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button className="flex-1" onClick={handleInsertImage} disabled={!imageUrl}>
+              <Button className="flex-1 rounded-xl" onClick={handleInsertImage} disabled={!imageUrl}>
                 Insert URL
               </Button>
             </div>
