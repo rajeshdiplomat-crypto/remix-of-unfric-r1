@@ -108,6 +108,15 @@ interface NotesRichEditorProps {
   onSave: (note: Note) => void;
   onBack: () => void;
   onFullscreenChange?: (isFullscreen: boolean) => void;
+  /** Expose save/fullscreen handlers to parent (for mobile top bar) */
+  onEditorReady?: (controls: {
+    triggerSave: () => void;
+    saveStatus: "saved" | "saving" | "unsaved";
+    toggleFullscreen: () => void;
+    isFullscreen: boolean;
+  }) => void;
+  /** Hide save/fullscreen from toolbar (parent renders them) */
+  hideTopActions?: boolean;
 }
 
 const FONTS = [
@@ -176,7 +185,7 @@ interface Stroke {
   penType: string;
 }
 
-export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChange }: NotesRichEditorProps) {
+export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChange, onEditorReady, hideTopActions }: NotesRichEditorProps) {
   const [title, setTitle] = useState(note.title);
   const [tags, setTags] = useState<string[]>(note.tags);
   const [newTag, setNewTag] = useState("");
@@ -204,6 +213,16 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
   useEffect(() => {
     onFullscreenChange?.(isFullscreen);
   }, [isFullscreen, onFullscreenChange]);
+
+  // Expose controls to parent
+  useEffect(() => {
+    onEditorReady?.({
+      triggerSave: handleSave,
+      saveStatus,
+      toggleFullscreen: () => setIsFullscreen((v) => !v),
+      isFullscreen,
+    });
+  }, [saveStatus, isFullscreen]);
 
   // Theme & Line Style states
   const [pageTheme, setPageTheme] = useState(note.pageTheme || "white");
@@ -988,45 +1007,49 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
 
           <div className="flex-1 min-w-2" />
 
-          <Button
-            size="sm"
-            onClick={handleSave}
-            className={cn(
-              "h-7 md:h-8 px-2 md:px-3 gap-1 text-xs shrink-0 transition-all duration-300",
-              saveStatus === "saved"
-                ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                : saveStatus === "saving"
-                ? "bg-muted text-muted-foreground pointer-events-none"
-                : "bg-primary hover:bg-primary/90 text-primary-foreground animate-pulse"
-            )}
-          >
-            {saveStatus === "saving" ? (
-              <Loader2 className="h-3 w-3 md:h-3.5 md:w-3.5 animate-spin" />
-            ) : saveStatus === "saved" ? (
-              <Check className="h-3 w-3 md:h-3.5 md:w-3.5" />
-            ) : (
-              <Save className="h-3 w-3 md:h-3.5 md:w-3.5" />
-            )}
-            <span className="hidden md:inline">
-              {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved" : "Save"}
-            </span>
-          </Button>
-          <ToolBtn
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-          >
-            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </ToolBtn>
-          {isFullscreen && (
-            <ToolBtn
-              onClick={() => {
-                setIsFullscreen(false);
-                onBack();
-              }}
-              title="Close"
-            >
-              <X className="h-4 w-4" />
-            </ToolBtn>
+          {!hideTopActions && (
+            <>
+              <Button
+                size="sm"
+                onClick={handleSave}
+                className={cn(
+                  "h-7 md:h-8 px-2 md:px-3 gap-1 text-xs shrink-0 transition-all duration-300",
+                  saveStatus === "saved"
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                    : saveStatus === "saving"
+                    ? "bg-muted text-muted-foreground pointer-events-none"
+                    : "bg-primary hover:bg-primary/90 text-primary-foreground animate-pulse"
+                )}
+              >
+                {saveStatus === "saving" ? (
+                  <Loader2 className="h-3 w-3 md:h-3.5 md:w-3.5 animate-spin" />
+                ) : saveStatus === "saved" ? (
+                  <Check className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                ) : (
+                  <Save className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                )}
+                <span className="hidden md:inline">
+                  {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved" : "Save"}
+                </span>
+              </Button>
+              <ToolBtn
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+              >
+                {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              </ToolBtn>
+              {isFullscreen && (
+                <ToolBtn
+                  onClick={() => {
+                    setIsFullscreen(false);
+                    onBack();
+                  }}
+                  title="Close"
+                >
+                  <X className="h-4 w-4" />
+                </ToolBtn>
+              )}
+            </>
           )}
         </div>
       </div>

@@ -1,15 +1,9 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, MoreHorizontal, Trash2, Pin, PinOff, FolderInput } from "lucide-react";
+import { ChevronLeft, Trash2, Save, Loader2, Check, Maximize2, Minimize2 } from "lucide-react";
 import { NotesRichEditor } from "./NotesRichEditor";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 import { createPortal } from "react-dom";
 
@@ -24,17 +18,29 @@ interface MobileNoteEditorProps {
 
 export function MobileNoteEditor({ note, groups, folders, onSave, onDelete, onBack }: MobileNoteEditorProps) {
   const [, setIsEditorFullscreen] = useState(false);
+  const [editorControls, setEditorControls] = useState<{
+    triggerSave: () => void;
+    saveStatus: "saved" | "saving" | "unsaved";
+    toggleFullscreen: () => void;
+    isFullscreen: boolean;
+  } | null>(null);
+
   const getGroupColor = (groupId: string) => groups.find((g) => g.id === groupId)?.color || "hsl(215, 20%, 65%)";
   const groupName = groups.find((g) => g.id === note.groupId)?.name || "Inbox";
   const folderName = note.folderId ? folders.find((f) => f.id === note.folderId)?.name : null;
 
+  const saveStatus = editorControls?.saveStatus || "saved";
+
+  const handleEditorReady = useCallback((controls: any) => {
+    setEditorControls(controls);
+  }, []);
+
   return createPortal(
     <div className="fixed inset-0 z-[99999] flex flex-col bg-card" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}>
-      {/* Redesigned mobile editor header */}
+      {/* Top row: Back + breadcrumb + save + fullscreen + delete */}
       <div className="shrink-0 border-b border-border/50 bg-card/95 backdrop-blur-md">
-        {/* Top row: Back + location breadcrumb + actions */}
         <div className="flex items-center gap-1 px-2 py-1.5">
-          {/* Back button */}
+          {/* Back */}
           <Button
             variant="ghost"
             size="icon"
@@ -64,37 +70,55 @@ export function MobileNoteEditor({ note, groups, folders, onSave, onDelete, onBa
             )}
           </div>
 
-          {/* Actions */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground shrink-0">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="z-[999999] w-48 rounded-lg">
-              <DropdownMenuItem
-                onClick={() => onSave({ ...note, isPinned: !note.isPinned })}
-                className="cursor-pointer"
-              >
-                {note.isPinned ? (
-                  <><PinOff className="h-4 w-4 mr-2" /> Unpin</>
-                ) : (
-                  <><Pin className="h-4 w-4 mr-2" /> Pin Note</>
-                )}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive cursor-pointer"
-                onClick={() => { onDelete(note.id); onBack(); }}
-              >
-                <Trash2 className="h-4 w-4 mr-2" /> Delete Note
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Save button */}
+          <Button
+            size="sm"
+            onClick={() => editorControls?.triggerSave()}
+            className={cn(
+              "h-7 px-2 gap-1 text-xs shrink-0 transition-all duration-300 rounded-lg",
+              saveStatus === "saved"
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                : saveStatus === "saving"
+                ? "bg-muted text-muted-foreground pointer-events-none"
+                : "bg-primary hover:bg-primary/90 text-primary-foreground animate-pulse"
+            )}
+          >
+            {saveStatus === "saving" ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : saveStatus === "saved" ? (
+              <Check className="h-3 w-3" />
+            ) : (
+              <Save className="h-3 w-3" />
+            )}
+          </Button>
+
+          {/* Fullscreen toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 rounded-lg shrink-0 text-muted-foreground hover:text-foreground"
+            onClick={() => editorControls?.toggleFullscreen()}
+          >
+            {editorControls?.isFullscreen ? (
+              <Minimize2 className="h-3.5 w-3.5" />
+            ) : (
+              <Maximize2 className="h-3.5 w-3.5" />
+            )}
+          </Button>
+
+          {/* Delete */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 rounded-lg shrink-0 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
+            onClick={() => { onDelete(note.id); onBack(); }}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
         </div>
       </div>
 
-      {/* Editor content */}
+      {/* Editor — toolbar becomes row 2 */}
       <div className="flex-1 overflow-hidden">
         <NotesRichEditor
           note={note}
@@ -103,6 +127,8 @@ export function MobileNoteEditor({ note, groups, folders, onSave, onDelete, onBa
           onSave={onSave}
           onBack={onBack}
           onFullscreenChange={setIsEditorFullscreen}
+          onEditorReady={handleEditorReady}
+          hideTopActions
         />
       </div>
     </div>,
