@@ -904,19 +904,19 @@ export default function Notes() {
                 {/* Mobile: View switcher hidden - only Atlas view on mobile */}
                 <div className="p-2 md:hidden hidden">
                 </div>
-                {/* Mobile: Integrated Search + Sort pill + More in one row */}
-                <div className="px-2 pb-1.5 md:pb-0 md:px-0 flex items-center gap-1 md:hidden">
-                  <div className="relative flex-1 min-w-0">
+            {/* Mobile: Integrated Search + Sort pill + More in one row */}
+                <div className="px-2 pb-1.5 md:pb-0 md:px-0 flex items-center gap-1.5 md:hidden">
+                  <div className="relative flex-[0.65] min-w-0">
                     <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/40" />
                     <Input
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search..."
-                      className="h-7 rounded-md pl-6 pr-2 text-[11px] bg-foreground/5 backdrop-blur-md border-0 focus:bg-foreground/10 focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/30"
+                      className="h-7 rounded-full pl-6 pr-2 text-[11px] bg-foreground/5 backdrop-blur-md border border-border/20 focus:bg-foreground/10 focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/30"
                     />
                   </div>
                   <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                    <SelectTrigger className="h-7 rounded-md w-auto min-w-0 px-2 text-[10px] bg-foreground/5 backdrop-blur-md border-0 hover:bg-foreground/10 transition-colors gap-0.5 shrink-0">
+                    <SelectTrigger className="h-7 rounded-full w-auto min-w-0 px-2.5 text-[10px] bg-foreground/5 backdrop-blur-md border border-border/20 hover:bg-foreground/10 transition-colors gap-0.5 shrink-0">
                       <ArrowUpDown className="h-2.5 w-2.5 text-muted-foreground/50" />
                       <SelectValue placeholder="Sort" />
                       <ChevronDown className="h-2 w-2 text-muted-foreground/40" />
@@ -930,7 +930,7 @@ export default function Notes() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 rounded-md hover:bg-foreground/5 shrink-0"
+                    className="h-7 w-7 rounded-full hover:bg-foreground/5 shrink-0"
                     onClick={() => setSettingsOpen(true)}
                   >
                     <MoreHorizontal className="h-3 w-3" />
