@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useDatePreferences } from "@/hooks/useDatePreferences";
 import { toast } from "sonner";
 import { isOfflineError } from "@/lib/offlineAwareOperation";
-import { Sparkles, Plus, ChevronDown, ChevronUp, Calendar, BarChart3, TrendingUp, Clock } from "lucide-react";
+import { Sparkles, Plus, ChevronDown, ChevronUp, Calendar, BarChart3, TrendingUp } from "lucide-react";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { subDays, parseISO, isSameDay, format } from "date-fns";
