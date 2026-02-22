@@ -561,7 +561,7 @@ export default function Emotions() {
           onEditEntry={startEditEntry}
           onDeleteEntry={setDeletingEntryId}
           onDateClick={handleDateClick}
-          standalone
+          standalone={isMobile}
         />
 
         {/* Main Content */}
