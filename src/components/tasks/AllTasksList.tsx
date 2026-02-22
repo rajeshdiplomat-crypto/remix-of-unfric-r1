@@ -4,6 +4,7 @@ import {
   ChevronRight,
   ChevronDown,
   Play,
+  Pause,
   Check,
   Trash2,
   ListChecks,
@@ -323,7 +324,9 @@ function TaskRow({ task, onTaskClick, onStartTask, onCompleteTask, onDeleteTask,
             </button>
           )}
           {task.status === "ongoing" && !task.is_completed && (
-            <Loader2 className="h-4 w-4 text-primary animate-spin" />
+            <button onClick={(e) => { e.stopPropagation(); onStartTask(task); }} className="h-6 w-6 rounded-full flex items-center justify-center text-primary bg-primary/10 transition-colors" title="Pause task">
+              <Pause className="h-3 w-3" />
+            </button>
           )}
           <button onClick={(e) => { e.stopPropagation(); onCompleteTask(task); }} className={cn("h-6 w-6 rounded-full flex items-center justify-center transition-colors", task.is_completed ? "text-emerald-500 bg-emerald-100 dark:bg-emerald-900/30" : "text-muted-foreground hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20")} title={task.is_completed ? "Mark incomplete" : "Mark complete"}>
             <Check className="h-3 w-3" />
