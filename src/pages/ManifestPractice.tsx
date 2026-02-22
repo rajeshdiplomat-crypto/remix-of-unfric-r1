@@ -156,8 +156,8 @@ export default function ManifestPractice() {
       {!loadingFinished && (
         <PageLoadingScreen module="manifest" isDataReady={isDataReady} onFinished={() => setLoadingFinished(true)} />
       )}
-       <div className="flex flex-col w-full flex-1 bg-background antialiased">
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-0 w-full max-w-[1400px] mx-auto pt-0">
+       <div className="flex flex-col w-full flex-1 bg-background antialiased pt-14">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-0 w-full max-w-[1400px] mx-auto">
           {/* ========== LEFT COLUMN: Editorial (desktop only) ========== */}
           <div className="hidden lg:flex flex-col h-full min-h-0 overflow-y-auto">
             <div className="flex flex-col gap-6 py-6 px-5">
