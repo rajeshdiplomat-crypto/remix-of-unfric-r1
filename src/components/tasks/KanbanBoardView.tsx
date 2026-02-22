@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Calendar, Check, Play, Loader2, ChevronDown } from "lucide-react";
+import { Calendar, Check, Play, Pause, Loader2, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -115,7 +115,13 @@ function KanbanCard({
             </button>
           )}
           {task.status === "ongoing" && !task.is_completed && (
-            <Loader2 className="h-4 w-4 text-primary animate-spin" />
+            <button
+              onClick={(e) => { e.stopPropagation(); onStartTask(task); }}
+              className="h-6 w-6 rounded-full flex items-center justify-center text-primary bg-primary/10 transition-colors"
+              title="Pause task"
+            >
+              <Pause className="h-3 w-3" />
+            </button>
           )}
           <button
             onClick={(e) => { e.stopPropagation(); onCompleteTask(task); }}

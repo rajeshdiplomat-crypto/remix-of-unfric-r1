@@ -138,10 +138,12 @@ function MobileTaskCard({
   task,
   onClick,
   onComplete,
+  onStartTask,
 }: {
   task: QuadrantTask;
   onClick: () => void;
   onComplete: () => void;
+  onStartTask?: (task: QuadrantTask) => void;
 }) {
   const dateLabel = task.due_date ? `${new Date(task.due_date).getDate()}/${new Date(task.due_date).getMonth() + 1}` : "";
   const duration = getMobileCardDuration(task);
@@ -203,9 +205,27 @@ function MobileTaskCard({
         </div>
       </div>
 
-      {task.status === "ongoing" && !task.is_completed && (
-        <Loader2 className="h-3.5 w-3.5 text-primary animate-spin shrink-0 mt-1" />
-      )}
+      {/* Action buttons */}
+      <div className="flex items-center gap-1 shrink-0 mt-0.5">
+        {!task.is_completed && task.status !== "ongoing" && onStartTask && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onStartTask(task); }}
+            className="h-6 w-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+            title="Start task"
+          >
+            <Play className="h-3 w-3" />
+          </button>
+        )}
+        {task.status === "ongoing" && !task.is_completed && onStartTask && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onStartTask(task); }}
+            className="h-6 w-6 rounded-full flex items-center justify-center text-primary bg-primary/10 transition-colors"
+            title="Pause task"
+          >
+            <Pause className="h-3 w-3" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -710,6 +730,7 @@ export function TasksMobileLayout({
                       task={task}
                       onClick={() => onTaskClick(task)}
                       onComplete={() => onCompleteTask(task)}
+                      onStartTask={onStartTask}
                     />
                   ))}
                   {completedTasks.length > 0 && (
@@ -725,6 +746,7 @@ export function TasksMobileLayout({
                             task={task}
                             onClick={() => onTaskClick(task)}
                             onComplete={() => onCompleteTask(task)}
+                            onStartTask={onStartTask}
                           />
                         ))}
                       </div>
