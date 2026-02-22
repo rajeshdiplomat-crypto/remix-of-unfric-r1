@@ -9,8 +9,8 @@ interface NotesViewSwitcherProps {
   onViewChange: (view: NotesViewType) => void;
 }
 
-export function NotesViewSwitcher({ currentView, onViewChange }: NotesViewSwitcherProps) {
-  const views: Array<{
+export function NotesViewSwitcher({ currentView, onViewChange, hideMindMap = false }: NotesViewSwitcherProps & { hideMindMap?: boolean }) {
+  const allViews: Array<{
     id: NotesViewType;
     label: string;
     icon: React.ReactNode;
@@ -35,6 +35,8 @@ export function NotesViewSwitcher({ currentView, onViewChange }: NotesViewSwitch
       description: "Visual relationship view",
     },
   ];
+
+  const views = hideMindMap ? allViews.filter(v => v.id !== "mindmap") : allViews;
 
   return (
     <div className="inline-flex items-center bg-background/80 rounded-lg p-1 border border-border/40 shadow-sm backdrop-blur-sm">
