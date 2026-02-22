@@ -196,7 +196,7 @@ export function EmotionsPageFeel({
             <h2 className="text-3xl md:text-4xl font-light leading-tight">
               {EMOTION_CONTENT.title.line1} <span className="font-semibold">{EMOTION_CONTENT.title.line2}</span>
             </h2>
-            <p className="text-muted-foreground text-lg leading-relaxed">{EMOTION_CONTENT.description}</p>
+            <p className="text-sm text-muted-foreground font-medium leading-relaxed">{EMOTION_CONTENT.description}</p>
             <ul className="space-y-3">
               {EMOTION_CONTENT.features.map((feature, i) => (
                 <li key={i} className="flex items-center gap-3 text-muted-foreground">
