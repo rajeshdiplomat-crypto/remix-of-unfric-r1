@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +33,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { NotesSplitView } from "@/components/notes/NotesSplitView";
+import { MobileNoteEditor } from "@/components/notes/MobileNoteEditor";
 import { NotesGroupSettings } from "@/components/notes/NotesGroupSettings";
 import { NotesGroupSection } from "@/components/notes/NotesGroupSection";
 import { NotesLocationPicker } from "@/components/notes/NotesLocationPicker";
@@ -282,6 +284,7 @@ export default function Notes() {
   const { toast } = useToast();
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
+  const isMobile = useIsMobile();
 
   const [notes, setNotes] = useState<Note[]>([]);
   const [notesLoaded, setNotesLoaded] = useState(false);
@@ -317,7 +320,8 @@ export default function Notes() {
       .then(({ data }) => {
         const v = (data as any)?.default_notes_view;
         if (v === "board" || v === "mindmap" || v === "atlas") {
-          setNotesView(v as NotesViewType);
+          // On mobile, fall back from mindmap to atlas
+          setNotesView((isMobile && v === "mindmap") ? "atlas" : v as NotesViewType);
         }
       });
   }, [user]);
@@ -731,6 +735,21 @@ export default function Notes() {
   // =========================
   // OVERVIEW
   // =========================
+
+  // Mobile: full-screen editor rendered at the top level to avoid stacking context issues
+  if (isMobile && viewMode === "editor" && selectedNote) {
+    return (
+      <MobileNoteEditor
+        note={selectedNote}
+        groups={groups}
+        folders={folders}
+        onSave={handleSaveNote}
+        onDelete={handleDeleteNote}
+        onBack={handleBackToOverview}
+      />
+    );
+  }
+
   if (viewMode === "overview") {
     return (
       <div className="w-full flex-1 pb-24 relative min-h-screen">
@@ -842,7 +861,7 @@ export default function Notes() {
               <div className="rounded-2xl bg-card/95 backdrop-blur-md border border-border shadow-sm md:bg-card md:backdrop-blur-none">
                 {/* Mobile: View switcher on its own row */}
                 <div className="p-2 md:hidden">
-                  <NotesViewSwitcher currentView={notesView} onViewChange={setNotesView} />
+                  <NotesViewSwitcher currentView={notesView} onViewChange={setNotesView} hideMindMap />
                 </div>
                 {/* Mobile: Search + Sort collapsed row */}
                 <div className="px-2 pb-2 md:pb-0 md:px-0 flex items-center gap-2 md:hidden">
