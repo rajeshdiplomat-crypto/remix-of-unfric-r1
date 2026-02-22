@@ -96,15 +96,10 @@ export function DiaryMobileInsightsSidebar({
   const displayName = userName.charAt(0).toUpperCase() + userName.slice(1);
   const initials = displayName.slice(0, 2).toUpperCase();
 
-  // Top 3 modules shown alongside profile
-  const topModules = [
+  const allModules = [
     { name: "Tasks", stat: `${metrics.tasks.completed}/${metrics.tasks.planned}`, percent: taskPercent, bar: "[&>div]:bg-emerald-500" },
     { name: "Habits", stat: `${metrics.trackers.completionPercent}%`, percent: habitPercent, bar: "[&>div]:bg-teal-500" },
     { name: "Journal", stat: `${metrics.journal.entriesWritten}`, percent: journalPercent, bar: "[&>div]:bg-amber-500" },
-  ];
-
-  // Bottom modules
-  const bottomModules = [
     { name: "Manifest", stat: `${metrics.manifest.checkInsDone}`, percent: manifestPercent, bar: "[&>div]:bg-purple-500" },
     { name: "Notes", stat: `${metrics.notes.created}`, percent: notesPercent, bar: "[&>div]:bg-sky-500" },
     { name: "Emotions", stat: `${metrics.emotions?.checkIns || 0}`, percent: emotionsPercent, bar: "[&>div]:bg-rose-400" },
@@ -126,7 +121,7 @@ export function DiaryMobileInsightsSidebar({
         onClick={onClose}
       />
 
-      {/* Sidebar panel */}
+      {/* Sidebar */}
       <div
         ref={sidebarRef}
         className="fixed top-0 right-0 z-50 md:hidden h-full flex flex-col bg-card border-l border-border/40 shadow-2xl"
@@ -144,91 +139,87 @@ export function DiaryMobileInsightsSidebar({
           <div className="w-1 h-8 rounded-full bg-muted-foreground/30" />
         </div>
 
-        {/* Scrollable content — ends naturally */}
+        {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto overscroll-contain">
-          <div className="px-5 pt-6 pb-6">
+
+          {/* ========== TOP SECTION: Profile Hero ========== */}
+          <div className="relative px-5 pt-6 pb-5 bg-gradient-to-b from-primary/5 to-transparent">
             {/* Close */}
-            <div className="flex justify-end mb-6">
-              <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+            <div className="flex justify-end mb-4">
+              <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted/80 transition-colors">
                 <X className="h-4 w-4 text-muted-foreground" />
               </button>
             </div>
 
-            {/* === SECTION 1: Profile + Top Stats === */}
-            <div className="flex gap-5 mb-8">
-              {/* Left: Top 3 stats */}
-              <div className="flex-1 space-y-5">
-                {topModules.map((mod) => (
-                  <div key={mod.name} className="space-y-1.5">
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-sm font-semibold text-foreground tracking-tight">{mod.name}</span>
-                      <span className="text-xs text-muted-foreground font-medium">{mod.stat}</span>
-                    </div>
-                    <Progress value={mod.percent} className={cn("h-[5px] bg-secondary rounded-full", mod.bar)} />
-                  </div>
-                ))}
-              </div>
+            {/* Profile card */}
+            <div className="flex flex-col items-center text-center">
+              <Avatar className="h-20 w-20 border-[3px] border-background shadow-lg mb-3">
+                <AvatarImage src={avatarUrl} alt={displayName} />
+                <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <h3 className="text-base font-bold text-foreground tracking-tight mb-1">{displayName}</h3>
+              <span className={cn(
+                "text-[10px] font-semibold px-3 py-1 rounded-full mb-3",
+                badge.bg, badge.color
+              )}>
+                {badge.label}
+              </span>
 
-              {/* Right: Profile */}
-              <div className="flex flex-col items-center justify-center gap-2 shrink-0 w-24">
-                <Avatar className="h-16 w-16 border-2 border-border shadow-sm">
-                  <AvatarImage src={avatarUrl} alt={displayName} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-base font-bold">
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
-                <span className={cn("text-[10px] font-semibold px-2.5 py-0.5 rounded-full whitespace-nowrap", badge.bg, badge.color)}>
-                  {badge.label}
+              {/* Overall score ring */}
+              <div className="relative w-14 h-14 mb-1">
+                <svg viewBox="0 0 48 48" className="w-full h-full -rotate-90">
+                  <circle cx="24" cy="24" r="20" fill="none" strokeWidth="3"
+                    className="stroke-secondary" />
+                  <circle cx="24" cy="24" r="20" fill="none" strokeWidth="3"
+                    className="stroke-primary"
+                    strokeLinecap="round"
+                    strokeDasharray={`${(overallScore / 100) * 125.6} 125.6`}
+                  />
+                </svg>
+                <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-primary">
+                  {overallScore}%
                 </span>
-                <p className="text-xs font-semibold text-foreground text-center leading-tight tracking-tight">
-                  {displayName}
-                </p>
               </div>
+              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Overall</span>
+            </div>
+          </div>
+
+          {/* ========== BOTTOM SECTION: Performance + Filters ========== */}
+          <div className="px-5 pt-4 pb-6">
+            {/* Time filter tabs */}
+            <div className="flex items-center justify-center gap-1 mb-5">
+              {(["today", "week", "month"] as TimeRange[]).map((range) => (
+                <Button
+                  key={range}
+                  variant={timeRange === range ? "default" : "ghost"}
+                  size="sm"
+                  className={cn(
+                    "h-7 text-[11px] px-5 rounded-full font-medium",
+                    timeRange === range
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:bg-muted",
+                  )}
+                  onClick={() => onTimeRangeChange(range)}
+                >
+                  {TIME_LABELS[range]}
+                </Button>
+              ))}
             </div>
 
-            {/* === Divider === */}
-            <div className="h-px bg-border/50 mb-6" />
-
-            {/* === SECTION 2: Performance Stats === */}
-            <div className="space-y-5">
-              {bottomModules.map((mod) => (
+            {/* All module stats */}
+            <div className="space-y-4">
+              {allModules.map((mod) => (
                 <div key={mod.name} className="space-y-1.5">
                   <div className="flex items-baseline justify-between">
-                    <span className="text-sm font-semibold text-foreground tracking-tight">{mod.name}</span>
-                    <span className="text-xs text-muted-foreground font-medium">{mod.stat}</span>
+                    <span className="text-[13px] font-semibold text-foreground tracking-tight">{mod.name}</span>
+                    <span className="text-xs text-muted-foreground font-medium tabular-nums">{mod.stat}</span>
                   </div>
                   <Progress value={mod.percent} className={cn("h-[5px] bg-secondary rounded-full", mod.bar)} />
                 </div>
               ))}
             </div>
-
-            {/* === Overall Score === */}
-            <div className="flex items-center justify-between mt-8 pt-4 border-t border-border/50">
-              <span className="text-sm font-bold text-foreground tracking-tight">Overall</span>
-              <span className="text-base font-bold text-primary">{overallScore}%</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Sticky footer: time toggles */}
-        <div className="shrink-0 px-5 py-4 border-t border-border/40 bg-card">
-          <div className="flex items-center justify-center gap-1">
-            {(["today", "week", "month"] as TimeRange[]).map((range) => (
-              <Button
-                key={range}
-                variant={timeRange === range ? "default" : "ghost"}
-                size="sm"
-                className={cn(
-                  "h-7 text-xs px-4 rounded-full",
-                  timeRange === range
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted",
-                )}
-                onClick={() => onTimeRangeChange(range)}
-              >
-                {TIME_LABELS[range]}
-              </Button>
-            ))}
           </div>
         </div>
       </div>
