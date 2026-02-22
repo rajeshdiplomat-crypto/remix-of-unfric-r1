@@ -28,12 +28,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,13 +37,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -218,7 +207,12 @@ const TIMER_PRESETS = [
 ];
 
 // ─── Inline clock display for each mode ───
-function MobileClockDisplay({ mode, now, is12h, formatInTimezone }: {
+function MobileClockDisplay({
+  mode,
+  now,
+  is12h,
+  formatInTimezone,
+}: {
   mode: ClockMode;
   now: Date;
   is12h: boolean;
@@ -243,7 +237,10 @@ function MobileClockDisplay({ mode, now, is12h, formatInTimezone }: {
     if (!timerRunning || timerLeft <= 0) return;
     const iv = setInterval(() => {
       setTimerLeft((p) => {
-        if (p <= 1) { setTimerRunning(false); return 0; }
+        if (p <= 1) {
+          setTimerRunning(false);
+          return 0;
+        }
         return p - 1;
       });
     }, 1000);
@@ -297,7 +294,10 @@ function MobileClockDisplay({ mode, now, is12h, formatInTimezone }: {
             {swRunning ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
           </button>
           <button
-            onClick={() => { setSwMs(0); setSwRunning(false); }}
+            onClick={() => {
+              setSwMs(0);
+              setSwRunning(false);
+            }}
             className="h-6 w-6 rounded-full bg-muted text-muted-foreground flex items-center justify-center"
           >
             <RotateCcw className="h-3 w-3" />
@@ -312,15 +312,27 @@ function MobileClockDisplay({ mode, now, is12h, formatInTimezone }: {
     const secs = timerLeft % 60;
     return (
       <div className="text-center space-y-1">
-        <p className={cn("text-xl font-mono font-bold tabular-nums", timerLeft === 0 ? "text-destructive" : "text-foreground")}>
+        <p
+          className={cn(
+            "text-xl font-mono font-bold tabular-nums",
+            timerLeft === 0 ? "text-destructive" : "text-foreground",
+          )}
+        >
           {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
         </p>
         <div className="flex items-center justify-center gap-1">
           {TIMER_PRESETS.map((p) => (
             <button
               key={p.label}
-              onClick={() => { setTimerTotal(p.seconds); setTimerLeft(p.seconds); setTimerRunning(false); }}
-              className={cn("text-[8px] px-1.5 py-0.5 rounded-full", timerTotal === p.seconds ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}
+              onClick={() => {
+                setTimerTotal(p.seconds);
+                setTimerLeft(p.seconds);
+                setTimerRunning(false);
+              }}
+              className={cn(
+                "text-[8px] px-1.5 py-0.5 rounded-full",
+                timerTotal === p.seconds ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+              )}
             >
               {p.label}
             </button>
@@ -335,7 +347,10 @@ function MobileClockDisplay({ mode, now, is12h, formatInTimezone }: {
             {timerRunning ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
           </button>
           <button
-            onClick={() => { setTimerLeft(timerTotal); setTimerRunning(false); }}
+            onClick={() => {
+              setTimerLeft(timerTotal);
+              setTimerRunning(false);
+            }}
             className="h-6 w-6 rounded-full bg-muted text-muted-foreground flex items-center justify-center"
           >
             <RotateCcw className="h-3 w-3" />
@@ -360,9 +375,13 @@ function MobileClockDisplay({ mode, now, is12h, formatInTimezone }: {
         </button>
       </div>
       <div className="grid grid-cols-7 gap-0">
-        {(weekStartsOn === 1 ? ["M","T","W","T","F","S","S"] : ["S","M","T","W","T","F","S"]).map((d,i) => (
-          <span key={i} className="text-[6px] text-center text-muted-foreground/50">{d}</span>
-        ))}
+        {(weekStartsOn === 1 ? ["M", "T", "W", "T", "F", "S", "S"] : ["S", "M", "T", "W", "T", "F", "S"]).map(
+          (d, i) => (
+            <span key={i} className="text-[6px] text-center text-muted-foreground/50">
+              {d}
+            </span>
+          ),
+        )}
       </div>
       <div className="grid grid-cols-7 gap-0">
         {calDays.map((day, i) => {
@@ -459,10 +478,14 @@ export function TasksMobileLayout({
       if (!t.due_date) return false;
       const dueDate = startOfDay(new Date(t.due_date));
       switch (timePeriod) {
-        case "today": return isSameDay(dueDate, today);
-        case "tomorrow": return isSameDay(dueDate, tomorrow);
-        case "week": return isWithinInterval(dueDate, { start: today, end: weekEnd });
-        default: return false;
+        case "today":
+          return isSameDay(dueDate, today);
+        case "tomorrow":
+          return isSameDay(dueDate, tomorrow);
+        case "week":
+          return isWithinInterval(dueDate, { start: today, end: weekEnd });
+        default:
+          return false;
       }
     });
   }, [tasks, timePeriod, today, tomorrow, weekEnd]);
@@ -485,7 +508,8 @@ export function TasksMobileLayout({
       }
       case "week":
         return allWithStatus.filter((t) => t.computedStatus === "overdue").length;
-      default: return 0;
+      default:
+        return 0;
     }
   }, [tasks, timePeriod, today]);
 
@@ -521,10 +545,26 @@ export function TasksMobileLayout({
   const quadrantData = useMemo(() => {
     const pending = tasks.filter((t) => !t.is_completed && !t.completed_at);
     return [
-      { name: "U&I", value: pending.filter((t) => t.urgency === "high" && t.importance === "high").length, color: "hsl(var(--destructive))" },
-      { name: "U&NI", value: pending.filter((t) => t.urgency === "high" && t.importance === "low").length, color: "hsl(var(--primary))" },
-      { name: "NU&I", value: pending.filter((t) => t.urgency === "low" && t.importance === "high").length, color: "hsl(var(--chart-1))" },
-      { name: "NU&NI", value: pending.filter((t) => t.urgency === "low" && t.importance === "low").length, color: "hsl(var(--muted))" },
+      {
+        name: "U&I",
+        value: pending.filter((t) => t.urgency === "high" && t.importance === "high").length,
+        color: "hsl(var(--destructive))",
+      },
+      {
+        name: "U&NI",
+        value: pending.filter((t) => t.urgency === "high" && t.importance === "low").length,
+        color: "hsl(var(--primary))",
+      },
+      {
+        name: "NU&I",
+        value: pending.filter((t) => t.urgency === "low" && t.importance === "high").length,
+        color: "hsl(var(--chart-1))",
+      },
+      {
+        name: "NU&NI",
+        value: pending.filter((t) => t.urgency === "low" && t.importance === "low").length,
+        color: "hsl(var(--muted))",
+      },
     ].filter((d) => d.value > 0);
   }, [tasks]);
 
@@ -695,14 +735,28 @@ export function TasksMobileLayout({
               ))}
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="text-[11px]">Priority</DropdownMenuLabel>
-              {["all", "urgent-important", "urgent-not-important", "not-urgent-important", "not-urgent-not-important"].map((p) => (
+              {[
+                "all",
+                "urgent-important",
+                "urgent-not-important",
+                "not-urgent-important",
+                "not-urgent-not-important",
+              ].map((p) => (
                 <DropdownMenuCheckboxItem
                   key={p}
                   checked={priorityFilter === p}
                   onCheckedChange={() => onPriorityFilterChange(p)}
                   className="text-[11px]"
                 >
-                  {p === "all" ? "All" : p === "urgent-important" ? "U&I" : p === "urgent-not-important" ? "U&NI" : p === "not-urgent-important" ? "NU&I" : "NU&NI"}
+                  {p === "all"
+                    ? "All"
+                    : p === "urgent-important"
+                      ? "U&I"
+                      : p === "urgent-not-important"
+                        ? "U&NI"
+                        : p === "not-urgent-important"
+                          ? "NU&I"
+                          : "NU&NI"}
                 </DropdownMenuCheckboxItem>
               ))}
             </DropdownMenuContent>
@@ -736,7 +790,7 @@ export function TasksMobileLayout({
               <TopFocusBar tasks={filteredTasks} onStartFocus={onStartFocus} />
 
               {/* Split: KPIs left, Clock right */}
-              <div className="flex h-[120px] border-t border-foreground/[0.06]">
+              <div className="flex h-[135px] border-t border-foreground/[0.06]">
                 {/* Left: Time period filter + Metrics */}
                 <div className="flex-1 flex flex-col p-2 gap-1.5">
                   <div className="flex items-center gap-1">
@@ -762,7 +816,12 @@ export function TasksMobileLayout({
                     <MobileKpi icon={AlertTriangle} value={overdueCount} label="Overdue" iconClass="text-destructive" />
                     <MobileKpi
                       icon={Clock}
-                      value={<>{totalFocusMin}<span className="text-[10px] font-normal text-muted-foreground">m</span></>}
+                      value={
+                        <>
+                          {totalFocusMin}
+                          <span className="text-[10px] font-normal text-muted-foreground">m</span>
+                        </>
+                      }
                       label="Focus"
                       iconClass="text-chart-2"
                     />
@@ -789,12 +848,7 @@ export function TasksMobileLayout({
                     ))}
                   </div>
 
-                  <MobileClockDisplay
-                    mode={clockMode}
-                    now={now}
-                    is12h={is12h}
-                    formatInTimezone={formatInTimezone}
-                  />
+                  <MobileClockDisplay mode={clockMode} now={now} is12h={is12h} formatInTimezone={formatInTimezone} />
                 </div>
               </div>
             </div>
@@ -805,7 +859,9 @@ export function TasksMobileLayout({
               <div className="snap-start shrink-0 w-[75%] rounded-xl bg-muted/40 border border-border p-2.5 flex flex-col min-h-[120px]">
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <BarChart3 className="h-3 w-3 text-primary" />
-                  <span className="text-[9px] font-medium text-foreground/70 uppercase tracking-wider">Plan vs Actual</span>
+                  <span className="text-[9px] font-medium text-foreground/70 uppercase tracking-wider">
+                    Plan vs Actual
+                  </span>
                 </div>
                 <div className="flex-1 min-h-0">
                   <ResponsiveContainer width="100%" height="100%">
@@ -816,10 +872,27 @@ export function TasksMobileLayout({
                           <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
                         </linearGradient>
                       </defs>
-                      <XAxis dataKey="date" tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
                       <YAxis hide />
-                      <Area type="monotone" dataKey="plan" stroke="hsl(var(--primary))" strokeWidth={1.5} fill="url(#mPlanG)" />
-                      <Line type="monotone" dataKey="actual" stroke="hsl(var(--chart-1))" strokeWidth={1.5} dot={{ r: 2, fill: "hsl(var(--chart-1))" }} />
+                      <Area
+                        type="monotone"
+                        dataKey="plan"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={1.5}
+                        fill="url(#mPlanG)"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="actual"
+                        stroke="hsl(var(--chart-1))"
+                        strokeWidth={1.5}
+                        dot={{ r: 2, fill: "hsl(var(--chart-1))" }}
+                      />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
@@ -840,7 +913,12 @@ export function TasksMobileLayout({
                           <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.5} />
                         </linearGradient>
                       </defs>
-                      <XAxis dataKey="date" tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
                       <YAxis hide />
                       <Bar dataKey="tasks" fill="url(#mBarG)" radius={[3, 3, 0, 0]} />
                     </BarChart>
@@ -860,7 +938,15 @@ export function TasksMobileLayout({
                       <div className="w-[60px] h-[60px] shrink-0">
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
-                            <Pie data={quadrantData} cx="50%" cy="50%" innerRadius={15} outerRadius={28} paddingAngle={3} dataKey="value">
+                            <Pie
+                              data={quadrantData}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={15}
+                              outerRadius={28}
+                              paddingAngle={3}
+                              dataKey="value"
+                            >
                               {quadrantData.map((entry, i) => (
                                 <Cell key={i} fill={entry.color} stroke="none" />
                               ))}
@@ -871,7 +957,10 @@ export function TasksMobileLayout({
                       <div className="flex flex-col gap-1">
                         {quadrantData.map((entry, i) => (
                           <div key={i} className="flex items-center gap-1.5">
-                            <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
+                            <div
+                              className="w-1.5 h-1.5 rounded-full shrink-0"
+                              style={{ backgroundColor: entry.color }}
+                            />
                             <span className="text-[9px] text-muted-foreground">{entry.name}</span>
                             <span className="text-[9px] font-semibold text-foreground">{entry.value}</span>
                           </div>
