@@ -1227,7 +1227,7 @@ export default function Habits() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="md:hidden h-8 w-8"
+                className="md:hidden h-8 w-8 bg-primary text-primary-foreground rounded-full shadow-sm hover:bg-primary/90 hover:text-primary-foreground"
                 onClick={openCreateDialog}
                 aria-label="Create Habit"
               >
@@ -1529,9 +1529,10 @@ export default function Habits() {
                 </tr>
               </thead>
               <tbody>
-                {/* Daily Progress Chart Row - full bleed */}
+                {/* Daily Progress Chart Row - aligned with day columns like desktop */}
                 <tr>
-                  <td colSpan={9} className="p-0 bg-muted/30">
+                  <td className="p-0 sticky left-0 z-10 bg-muted/30" style={{ width: 90 }}></td>
+                  <td colSpan={7} className="p-0 bg-muted/30">
                     <svg viewBox="0 0 700 120" className="w-full" style={{ height: 56 }} preserveAspectRatio="none">
                       {(() => {
                         const today = new Date();
@@ -1601,6 +1602,7 @@ export default function Habits() {
                       })()}
                     </svg>
                   </td>
+                  <td className="p-0 bg-muted/30" style={{ width: 32 }}></td>
                 </tr>
                 {activities.filter(a => !a.isArchived).map((activity, idx) => {
                   const stats = activityStats.find(s => s.id === activity.id);
@@ -1914,14 +1916,7 @@ export default function Habits() {
                 </div>
               </div>
 
-              {/* Brand Image */}
-              <div className="rounded-xl overflow-hidden border border-border aspect-video">
-                {(() => {
-                  const sel = selectedActivityId ? activities.find(a => a.id === selectedActivityId) : null;
-                  const img = sel ? (sel.coverImageUrl || loadActivityImage(sel.id)) : null;
-                  return <img src={img || habitsDefaultImage} alt="Habits" className="w-full h-full object-cover" />;
-                })()}
-              </div>
+              {/* Active Streaks moved up, image removed */}
 
               {/* Top Habits List */}
               <div>
@@ -1989,7 +1984,7 @@ export default function Habits() {
 
           return (
             <Dialog open={!!habitDetailId} onOpenChange={(o) => { if (!o) setHabitDetailId(null); }}>
-              <DialogContent className="max-w-sm p-0 rounded-2xl overflow-hidden">
+              <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm p-0 rounded-2xl overflow-hidden">
                 {/* Image header */}
                 {imgUrl ? (
                   <div className="relative h-40 w-full">
@@ -2104,7 +2099,7 @@ export default function Habits() {
 
         {/* Create Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-lg p-0 rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg p-0 rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
             {/* Emerald gradient header — matches Reality/Task modal pattern */}
             <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-4 text-white flex-shrink-0">
               <DialogTitle className="text-lg font-semibold text-white">
