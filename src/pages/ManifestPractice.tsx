@@ -42,7 +42,11 @@ export default function ManifestPractice() {
   const selectedDate = useMemo(() => {
     const dateParam = searchParams.get("date");
     if (dateParam) {
-      try { return parseISO(dateParam); } catch { return new Date(); }
+      try {
+        return parseISO(dateParam);
+      } catch {
+        return new Date();
+      }
     }
     return new Date();
   }, [searchParams]);
@@ -68,10 +72,14 @@ export default function ManifestPractice() {
 
       const g = goalData as any;
       const mergedGoal: ManifestGoal = {
-        id: g.id, user_id: g.user_id, title: g.title,
+        id: g.id,
+        user_id: g.user_id,
+        title: g.title,
         category: g.category || "other",
-        vision_image_url: g.cover_image_url, vision_images: g.vision_images || [],
-        cover_image_url: g.cover_image_url, start_date: g.start_date,
+        vision_image_url: g.cover_image_url,
+        vision_images: g.vision_images || [],
+        cover_image_url: g.cover_image_url,
+        start_date: g.start_date,
         live_from_end: g.live_from_end,
         act_as_if: g.act_as_if || "Take one small action",
         conviction: g.conviction ?? 5,
@@ -79,34 +87,55 @@ export default function ManifestPractice() {
         daily_affirmation: g.daily_affirmation || "",
         check_in_time: g.check_in_time || "08:00",
         committed_7_days: g.committed_7_days || false,
-        is_completed: g.is_completed || false, is_locked: g.is_locked || false,
-        created_at: g.created_at, updated_at: g.updated_at,
-        reminder_count: g.reminder_count, reminder_times: g.reminder_times,
+        is_completed: g.is_completed || false,
+        is_locked: g.is_locked || false,
+        created_at: g.created_at,
+        updated_at: g.updated_at,
+        reminder_count: g.reminder_count,
+        reminder_times: g.reminder_times,
       };
       setGoal(mergedGoal);
 
       const { data: practicesData } = await supabase
-        .from("manifest_practices").select("*")
-        .eq("goal_id", goalId).eq("user_id", user.id);
+        .from("manifest_practices")
+        .select("*")
+        .eq("goal_id", goalId)
+        .eq("user_id", user.id);
 
       if (practicesData) {
-        setPractices(practicesData.map((p: any) => ({
-          id: p.id, goal_id: p.goal_id, user_id: p.user_id,
-          entry_date: p.entry_date, created_at: p.created_at,
-          visualization_count: safeJsonArray(p.visualizations).length,
-          visualizations: safeJsonArray(p.visualizations),
-          act_count: safeJsonArray(p.acts).length, acts: safeJsonArray(p.acts),
-          proofs: safeJsonArray(p.proofs), gratitudes: safeJsonArray(p.gratitudes),
-          alignment: p.alignment, growth_note: p.growth_note, locked: p.locked || false,
-        })));
+        setPractices(
+          practicesData.map((p: any) => ({
+            id: p.id,
+            goal_id: p.goal_id,
+            user_id: p.user_id,
+            entry_date: p.entry_date,
+            created_at: p.created_at,
+            visualization_count: safeJsonArray(p.visualizations).length,
+            visualizations: safeJsonArray(p.visualizations),
+            act_count: safeJsonArray(p.acts).length,
+            acts: safeJsonArray(p.acts),
+            proofs: safeJsonArray(p.proofs),
+            gratitudes: safeJsonArray(p.gratitudes),
+            alignment: p.alignment,
+            growth_note: p.growth_note,
+            locked: p.locked || false,
+          })),
+        );
       }
     } catch (error) {
       console.error("Error fetching goal:", error);
-      if (!isOfflineError()) { toast.error("Failed to load reality"); navigate("/manifest"); }
-    } finally { setLoading(false); }
+      if (!isOfflineError()) {
+        toast.error("Failed to load reality");
+        navigate("/manifest");
+      }
+    } finally {
+      setLoading(false);
+    }
   }, [user, goalId, navigate]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const streak = useMemo(() => {
     if (!goal) return 0;
@@ -116,7 +145,8 @@ export default function ManifestPractice() {
     for (let i = 0; i < 30; i++) {
       const checkDate = subDays(today, i);
       const hasPractice = goalPractices.some((p) => isSameDay(parseISO(p.entry_date), checkDate));
-      if (hasPractice) s++; else if (i > 0) break;
+      if (hasPractice) s++;
+      else if (i > 0) break;
     }
     return s;
   }, [goal, practices]);
@@ -149,20 +179,21 @@ export default function ManifestPractice() {
     ) : null;
   }
 
-  const totalPracticed = practices.filter(p => p.goal_id === goal.id && p.locked).length;
+  const totalPracticed = practices.filter((p) => p.goal_id === goal.id && p.locked).length;
 
   return (
     <>
       {!loadingFinished && (
         <PageLoadingScreen module="manifest" isDataReady={isDataReady} onFinished={() => setLoadingFinished(true)} />
       )}
-       <div className="flex flex-col w-full flex-1 bg-background antialiased pt-14">
+      <div className="flex flex-col w-full flex-1 bg-background antialiased pt-2">
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-0 w-full max-w-[1400px] mx-auto">
           {/* ========== LEFT COLUMN: Editorial (desktop only) ========== */}
           <div className="hidden lg:flex flex-col h-full min-h-0 overflow-y-auto">
             <div className="flex flex-col gap-6 py-6 px-5">
               <Button
-                variant="ghost" size="sm"
+                variant="ghost"
+                size="sm"
                 className="w-fit gap-1.5 text-muted-foreground hover:text-foreground -ml-2"
                 onClick={() => navigate("/manifest")}
               >
@@ -181,7 +212,8 @@ export default function ManifestPractice() {
               </div>
 
               <p className="text-muted-foreground text-base leading-relaxed max-w-md">
-                Visualization rewires your brain for success. Act as if your dream is already real, collect proof, and watch the universe align.
+                Visualization rewires your brain for success. Act as if your dream is already real, collect proof, and
+                watch the universe align.
               </p>
 
               <div className="h-px bg-border" />
@@ -219,26 +251,52 @@ export default function ManifestPractice() {
           <div className="flex flex-col h-full min-h-0">
             {/* Compact mobile header: back + date nav in one row */}
             <div className="lg:hidden flex items-center justify-between px-2 py-1">
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground" onClick={() => navigate("/manifest")}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-muted-foreground"
+                onClick={() => navigate("/manifest")}
+              >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div className="flex items-center gap-0.5">
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setSelectedDate(subDays(selectedDate, 1))}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  onClick={() => setSelectedDate(subDays(selectedDate, 1))}
+                >
                   <ChevronLeft className="h-3.5 w-3.5" />
                 </Button>
                 <UnifiedDatePicker
                   value={selectedDate}
-                  onChange={(date) => { if (date) setSelectedDate(date); }}
+                  onChange={(date) => {
+                    if (date) setSelectedDate(date);
+                  }}
                   displayFormat={isToday(selectedDate) ? "'Today'" : "MMM d"}
-                  triggerClassName={cn("h-7 px-2 gap-1 rounded-lg text-xs font-medium", isToday(selectedDate) && "border-primary/30")}
+                  triggerClassName={cn(
+                    "h-7 px-2 gap-1 rounded-lg text-xs font-medium",
+                    isToday(selectedDate) && "border-primary/30",
+                  )}
                   icon={<CalendarIcon className="h-3 w-3" />}
                   align="center"
                 />
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setSelectedDate(addDays(selectedDate, 1))} disabled={isToday(selectedDate)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  onClick={() => setSelectedDate(addDays(selectedDate, 1))}
+                  disabled={isToday(selectedDate)}
+                >
                   <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
                 {!isToday(selectedDate) && (
-                  <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[10px] text-primary" onClick={() => setSelectedDate(new Date())}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-1.5 text-[10px] text-primary"
+                    onClick={() => setSelectedDate(new Date())}
+                  >
                     Today
                   </Button>
                 )}
@@ -247,22 +305,43 @@ export default function ManifestPractice() {
 
             {/* Desktop date nav */}
             <div className="hidden lg:flex items-center justify-center gap-1 mb-1 px-1">
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setSelectedDate(subDays(selectedDate, 1))}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => setSelectedDate(subDays(selectedDate, 1))}
+              >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <UnifiedDatePicker
                 value={selectedDate}
-                onChange={(date) => { if (date) setSelectedDate(date); }}
+                onChange={(date) => {
+                  if (date) setSelectedDate(date);
+                }}
                 displayFormat={isToday(selectedDate) ? "'Today'" : "MMM d, yyyy"}
-                triggerClassName={cn("h-8 px-3 gap-1.5 rounded-lg text-sm font-medium", isToday(selectedDate) && "border-primary/30")}
+                triggerClassName={cn(
+                  "h-8 px-3 gap-1.5 rounded-lg text-sm font-medium",
+                  isToday(selectedDate) && "border-primary/30",
+                )}
                 icon={<CalendarIcon className="h-3.5 w-3.5" />}
                 align="center"
               />
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setSelectedDate(addDays(selectedDate, 1))} disabled={isToday(selectedDate)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => setSelectedDate(addDays(selectedDate, 1))}
+                disabled={isToday(selectedDate)}
+              >
                 <ChevronRight className="h-4 w-4" />
               </Button>
               {!isToday(selectedDate) && (
-                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-primary" onClick={() => setSelectedDate(new Date())}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs text-primary"
+                  onClick={() => setSelectedDate(new Date())}
+                >
                   Today
                 </Button>
               )}
