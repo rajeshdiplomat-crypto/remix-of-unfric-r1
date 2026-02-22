@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PenLine, Search, ChevronDown, Filter, UserCircle } from "lucide-react";
+import { PenLine, Search, ChevronDown, Filter, User } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { DiaryFeedCard } from "@/components/diary/DiaryFeedCard";
@@ -607,6 +608,16 @@ export default function Diary() {
   const [loadingFinished, setLoadingFinished] = useState(false);
   const [mobileInsightsOpen, setMobileInsightsOpen] = useState(false);
   const userName = user?.email?.split("@")[0] || "User";
+  const displayInitials = (userName.charAt(0).toUpperCase() + userName.slice(1)).slice(0, 2).toUpperCase();
+
+  // Fetch avatar from profiles table
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | undefined>(user?.user_metadata?.avatar_url);
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from("profiles").select("avatar_url").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+      if (data?.avatar_url) setProfileAvatarUrl(data.avatar_url);
+    });
+  }, [user?.id]);
 
   // Edge-swipe gesture: detect swipe from right edge
   const swipeRef = useRef<{ startX: number; startY: number; active: boolean }>({ startX: 0, startY: 0, active: false });
@@ -685,10 +696,15 @@ export default function Diary() {
           <div className="mb-4 flex items-center gap-2">
             <button
               onClick={() => setMobileInsightsOpen(true)}
-              className="md:hidden shrink-0 p-1.5 rounded-full hover:bg-muted transition-colors"
+              className="md:hidden shrink-0 rounded-full hover:ring-2 hover:ring-primary/30 transition-all"
               aria-label="Open profile & performance"
             >
-              <UserCircle className="h-7 w-7 text-muted-foreground" />
+              <Avatar className="h-8 w-8 border border-border">
+                <AvatarImage src={profileAvatarUrl} alt={userName} />
+                <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-semibold">
+                  {displayInitials}
+                </AvatarFallback>
+              </Avatar>
             </button>
             <div className="flex items-center gap-2 bg-card border border-border/40 rounded-xl px-3 py-1 flex-1 md:max-w-none">
               <Search className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -795,7 +811,7 @@ export default function Diary() {
         <DiaryProfileCard
           userName={userName}
           userEmail={user?.email || ""}
-          avatarUrl={user?.user_metadata?.avatar_url}
+          avatarUrl={profileAvatarUrl}
           metrics={metrics}
           timeRange={timeRange}
           onTimeRangeChange={setTimeRange}
@@ -816,7 +832,7 @@ export default function Diary() {
         onClose={() => setMobileInsightsOpen(false)}
         userName={userName}
         userEmail={user?.email || ""}
-        avatarUrl={user?.user_metadata?.avatar_url}
+        avatarUrl={profileAvatarUrl}
         metrics={metrics}
         timeRange={timeRange}
         onTimeRangeChange={setTimeRange}
