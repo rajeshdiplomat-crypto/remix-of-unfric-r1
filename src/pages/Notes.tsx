@@ -326,7 +326,7 @@ export default function Notes() {
       });
   }, [user]);
 
-  // Sync groups and folders from DB
+  // Sync groups and folders from DB, seed defaults if missing
   useEffect(() => {
     if (!user) return;
     const loadFromDb = async () => {
@@ -334,15 +334,43 @@ export default function Notes() {
         supabase.from("note_groups").select("*").eq("user_id", user.id).order("sort_order"),
         supabase.from("note_folders").select("*").eq("user_id", user.id).order("sort_order"),
       ]);
+
+      let dbGroups: NoteGroup[] = [];
       if (groupsRes.data && groupsRes.data.length > 0) {
-        const dbGroups: NoteGroup[] = groupsRes.data.map((g: any) => ({
+        dbGroups = groupsRes.data.map((g: any) => ({
           id: g.id,
           name: g.name,
           color: g.color,
           sortOrder: g.sort_order,
         }));
+      }
+
+      // Seed any missing default groups
+      const existingNames = new Set(dbGroups.map((g) => g.name.toLowerCase()));
+      const missingDefaults = DEFAULT_GROUPS.filter((dg) => !existingNames.has(dg.name.toLowerCase()));
+      if (missingDefaults.length > 0) {
+        const maxOrder = dbGroups.length > 0 ? Math.max(...dbGroups.map((g) => g.sortOrder)) + 1 : 0;
+        const newGroups: NoteGroup[] = [];
+        for (let i = 0; i < missingDefaults.length; i++) {
+          const dg = missingDefaults[i];
+          const newId = crypto.randomUUID();
+          const sortOrder = maxOrder + i;
+          await supabase.from("note_groups").insert({
+            id: newId,
+            user_id: user.id,
+            name: dg.name,
+            color: dg.color,
+            sort_order: sortOrder,
+          } as any);
+          newGroups.push({ id: newId, name: dg.name, color: dg.color, sortOrder });
+        }
+        dbGroups = [...dbGroups, ...newGroups];
+      }
+
+      if (dbGroups.length > 0) {
         setGroups(dbGroups);
       }
+
       if (foldersRes.data && foldersRes.data.length > 0) {
         const dbFolders: NoteFolder[] = foldersRes.data.map((f: any) => ({
           id: f.id,
