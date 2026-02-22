@@ -399,11 +399,22 @@ export function InsightsPanel({ tasks, compactMode, collapsed, onToggleCollapse 
 
           {/* Charts - fill remaining space */}
           <div className="grid grid-cols-[1fr_1fr_160px] gap-3 flex-1 min-w-0">
-          {/* Plan vs Actual */}
+           {/* Plan vs Actual */}
           <div className="rounded-lg bg-muted/40 border border-border p-2.5 flex flex-col min-h-0">
-            <div className="flex items-center gap-1.5 mb-1 shrink-0">
+            <div className="flex items-center gap-1.5 mb-0.5 shrink-0">
               <TrendingUp className="h-3 w-3 text-primary" />
               <span className="text-[9px] font-medium text-foreground/70 uppercase tracking-wider">Plan vs Actual</span>
+            </div>
+            {/* Legend */}
+            <div className="flex items-center gap-3 mb-1 shrink-0">
+              <div className="flex items-center gap-1">
+                <div className="w-2.5 h-2.5 rounded-sm" style={{ background: "hsl(var(--primary))" }} />
+                <span className="text-[8px] text-muted-foreground">Planned</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2.5 h-2.5 rounded-full" style={{ background: "hsl(var(--chart-1))" }} />
+                <span className="text-[8px] text-muted-foreground">Done</span>
+              </div>
             </div>
             <div className="flex-1 min-h-0">
               <ResponsiveContainer width="100%" height="100%">
@@ -414,6 +425,7 @@ export function InsightsPanel({ tasks, compactMode, collapsed, onToggleCollapse 
                       <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} vertical={false} />
                   <XAxis
                     dataKey="date"
                     tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }}
@@ -427,19 +439,32 @@ export function InsightsPanel({ tasks, compactMode, collapsed, onToggleCollapse 
                     width={14}
                     allowDecimals={false}
                   />
-                  <Area
-                    type="monotone"
+                  <Tooltip
+                    contentStyle={{
+                      background: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 8,
+                      fontSize: 10,
+                      color: "hsl(var(--popover-foreground))",
+                      padding: "4px 8px",
+                    }}
+                    labelStyle={{ fontSize: 9, color: "hsl(var(--muted-foreground))", marginBottom: 2 }}
+                    formatter={(value: number, name: string) => [value, name === "plan" ? "Planned" : "Done"]}
+                  />
+                  <Bar
                     dataKey="plan"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={1.5}
-                    fill="url(#planGradient2)"
+                    fill="hsl(var(--primary))"
+                    opacity={0.2}
+                    radius={[3, 3, 0, 0]}
+                    barSize={16}
                   />
                   <Line
                     type="monotone"
                     dataKey="actual"
                     stroke="hsl(var(--chart-1))"
-                    strokeWidth={1.5}
-                    dot={{ r: 2.5, fill: "hsl(var(--chart-1))" }}
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: "hsl(var(--chart-1))", strokeWidth: 0 }}
+                    activeDot={{ r: 4, fill: "hsl(var(--chart-1))" }}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
