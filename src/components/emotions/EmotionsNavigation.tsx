@@ -125,7 +125,7 @@ export function EmotionsNavigation({
                   "flex-1 h-8 rounded-full transition-all duration-200 text-sm",
                   "hover:scale-[1.03] hover:text-primary",
                   isActive
-                    ? "bg-card shadow-inner font-semibold text-foreground"
+                    ? "bg-primary/15 font-semibold text-primary shadow-sm"
                     : "font-medium text-muted-foreground",
                   !item.enabled && "opacity-40 cursor-not-allowed hover:scale-100 hover:text-muted-foreground"
                 )}
