@@ -711,8 +711,8 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
     <div className={containerClass} style={{ backgroundColor: currentTheme.value }}>
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
-      {/* MAIN TOOLBAR */}
-      <div className="shrink-0 bg-white border-b border-slate-200 relative z-[100]">
+      {/* MAIN TOOLBAR - sticky on mobile for keyboard accessibility */}
+      <div className="shrink-0 bg-white border-b border-slate-200 relative z-[100] sticky top-0 md:static">
         <div className="flex items-center h-11 px-2 gap-0.5 overflow-x-auto">
           <ToolBtn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
             <Undo2 className="h-4 w-4" />

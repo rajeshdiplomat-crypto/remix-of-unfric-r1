@@ -738,7 +738,6 @@ export default function Notes() {
         {backgroundUrl && (
           <div className="fixed inset-0 z-0 pointer-events-none">
             {backgroundUrl.startsWith("linear-gradient") || backgroundUrl.startsWith("data:") ? (
-              // Gradient or data URL background
               <div
                 className="absolute inset-0 transition-all duration-700"
                 style={{
@@ -749,7 +748,6 @@ export default function Notes() {
                 }}
               />
             ) : (
-              // Regular image URL
               <div
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-700"
                 style={{ backgroundImage: `url("${backgroundUrl}")` }}
@@ -761,8 +759,8 @@ export default function Notes() {
 
         <div className="relative z-10 w-full">
           <div className="w-full space-y-4 px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 max-w-[1400px] mx-auto">
-            {/* Page Header */}
-            <div className="py-4">
+            {/* Page Header - Hidden on mobile, compact */}
+            <div className="hidden md:block py-4">
               <p className="text-[10px] font-medium tracking-[0.3em] text-muted-foreground/70 uppercase mb-2">
                 Life Atlas
               </p>
@@ -772,15 +770,115 @@ export default function Notes() {
               </p>
             </div>
 
-            {/* Modern Floating Toolbar */}
-            <div className="relative">
-              {/* Glassmorphism toolbar container */}
-              <div className="rounded-2xl bg-card border border-border shadow-sm">
-                <div className="p-2 flex flex-wrap items-center gap-2">
-                  {/* View Mode Switcher */}
-                  <NotesViewSwitcher currentView={notesView} onViewChange={setNotesView} />
+            {/* Mobile: Compact header with title + New Note button */}
+            <div className="md:hidden flex items-center justify-between py-2">
+              <div>
+                <h1 className="text-xl font-light tracking-wide text-foreground">NOTES</h1>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="sm"
+                    className="h-8 px-3 rounded-lg bg-primary text-primary-foreground shadow-sm gap-1.5"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span className="text-xs font-medium">New</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 rounded-lg p-1">
+                  <DropdownMenuItem onClick={handleNewNoteWithOptions} className="py-2 rounded-lg cursor-pointer">
+                    <FileText className="h-4 w-4 mr-3 text-muted-foreground" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">New Note</span>
+                      <span className="text-xs text-muted-foreground">Choose location</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleQuickNote} className="py-2 rounded-lg cursor-pointer">
+                    <Zap className="h-4 w-4 mr-3 text-muted-foreground" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">Quick Note</span>
+                      <span className="text-xs text-muted-foreground">Send to Inbox</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setSettingsOpen(true)}
+                    className="py-2 rounded-lg cursor-pointer"
+                  >
+                    <FolderPlus className="h-4 w-4 mr-3 text-muted-foreground" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">New Group</span>
+                      <span className="text-xs text-muted-foreground">Organize notes</span>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
-                  {/* Search - Modern floating input */}
+            {/* Mobile: Quick Stats as horizontal scrollable pills */}
+            <div className="md:hidden overflow-x-auto no-scrollbar -mx-3 px-3">
+              <div className="flex gap-2 w-max">
+                {[
+                  { label: "Total", value: insights.total, icon: <FileText className="h-3 w-3" /> },
+                  { label: "Today", value: insights.editedToday, icon: <Clock className="h-3 w-3" /> },
+                  { label: "Pinned", value: insights.pinned, icon: <Pin className="h-3 w-3" /> },
+                  { label: "Groups", value: insights.activeGroups, icon: <Layers className="h-3 w-3" /> },
+                ].map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card/80 border border-border/50 backdrop-blur-sm whitespace-nowrap"
+                  >
+                    <span className="text-primary/60">{stat.icon}</span>
+                    <span className="text-xs font-medium text-foreground">{stat.value}</span>
+                    <span className="text-[10px] text-muted-foreground">{stat.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Sticky Navigation & Toolbar */}
+            <div className="sticky top-0 z-20 md:relative md:z-auto">
+              {/* Glassmorphism toolbar container */}
+              <div className="rounded-2xl bg-card/95 backdrop-blur-md border border-border shadow-sm md:bg-card md:backdrop-blur-none">
+                {/* Mobile: View switcher on its own row */}
+                <div className="p-2 md:hidden">
+                  <NotesViewSwitcher currentView={notesView} onViewChange={setNotesView} />
+                </div>
+                {/* Mobile: Search + Sort collapsed row */}
+                <div className="px-2 pb-2 md:pb-0 md:px-0 flex items-center gap-2 md:hidden">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
+                    <Input
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search..."
+                      className="h-9 rounded-xl pl-9 pr-3 text-xs bg-muted/30 border-0 focus:bg-muted/50 focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/40"
+                    />
+                  </div>
+                  <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+                    <SelectTrigger className="h-9 rounded-xl w-[110px] text-xs bg-muted/30 border-0 hover:bg-muted/50 transition-colors gap-1">
+                      <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
+                      <SelectValue placeholder="Sort" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-0 shadow-xl">
+                      <SelectItem value="updatedAt">Last edited</SelectItem>
+                      <SelectItem value="createdAt">Created</SelectItem>
+                      <SelectItem value="title">A–Z</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 rounded-lg hover:bg-muted/50 shrink-0"
+                    onClick={() => setSettingsOpen(true)}
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Desktop: Full toolbar row */}
+                <div className="hidden md:flex p-2 items-center gap-2">
+                  <NotesViewSwitcher currentView={notesView} onViewChange={setNotesView} />
                   <div className="relative flex-1 min-w-[140px] max-w-[280px]">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
                     <Input
@@ -790,8 +888,6 @@ export default function Notes() {
                       className="h-10 rounded-xl pl-10 pr-4 text-sm bg-muted/30 border-0 focus:bg-muted/50 focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/40"
                     />
                   </div>
-
-                  {/* Sort Select - Minimal style */}
                   <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
                     <SelectTrigger className="h-10 rounded-xl w-[140px] text-xs bg-muted/30 border-0 hover:bg-muted/50 transition-colors gap-2">
                       <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/50" />
@@ -803,29 +899,18 @@ export default function Notes() {
                       <SelectItem value="title">A–Z</SelectItem>
                     </SelectContent>
                   </Select>
-
-                  {/* Spacer */}
                   <div className="flex-1" />
-
-                  {/* Action Buttons */}
                   <div className="flex items-center gap-2">
-                    {/* New Note Button - Creative AI Aurora Animation */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           size="sm"
                           className="group relative h-9 px-4 rounded-lg overflow-hidden bg-gradient-to-r from-slate-600 via-gray-600 to-zinc-600 text-white shadow-lg hover:shadow-xl transition-all duration-500 gap-2 border-0"
                         >
-                          {/* Animated aurora background */}
                           <span className="absolute inset-0 bg-gradient-to-r from-slate-500 via-pink-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse" />
-                          {/* Shimmer sweep */}
                           <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
-                          {/* Sparkle particles */}
-                          <span className="absolute top-1 right-2 w-1 h-1 bg-white rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping" />
-                          <span className="absolute bottom-2 left-3 w-0.5 h-0.5 bg-white rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping animation-delay-200" />
-
                           <Plus className="h-4 w-4 relative z-10" />
-                          <span className="hidden sm:inline text-xs uppercase tracking-wider font-semibold relative z-10">
+                          <span className="text-xs uppercase tracking-wider font-semibold relative z-10">
                             New Note
                           </span>
                           <ChevronDown className="h-3.5 w-3.5 opacity-80 relative z-10" />
@@ -859,8 +944,6 @@ export default function Notes() {
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-
-                    {/* More Options Menu */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -1012,8 +1095,8 @@ export default function Notes() {
               </div>
             </div>
 
-            {/* Insights Section */}
-            <div className="rounded-xl bg-card/60 backdrop-blur-sm border border-border/50 p-3">
+            {/* Insights Section - Desktop only (mobile has pill row above) */}
+            <div className="hidden md:block rounded-xl bg-card/60 backdrop-blur-sm border border-border/50 p-3">
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
                   Quick Stats
