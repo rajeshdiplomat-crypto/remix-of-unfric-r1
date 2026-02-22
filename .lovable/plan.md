@@ -1,48 +1,37 @@
 
+# Fix Remaining Mobile Habits Issues
 
-## Refactor: Mobile Journal Header and Toolbar
+## Issues Found
 
-### What Changes
+1. **Ring label overlap**: The mobile header uses labels "Total Goal" and "Momentum" which are too wide for the 54px ring size in a 5-column grid with no gap. These need shorter labels.
 
-**1. Remove Cloud status indicator from the date header; merge its function into the Save button**
+2. **Daily Progress chart not edge-to-edge**: The chart row has an empty sticky left cell (90px wide) and a right cell (32px wide), creating visible padding. The chart SVG only spans the 7 day columns (`colSpan={7}`), but it should visually bleed edge-to-edge.
 
-Currently the header shows a separate Cloud/CloudOff icon with a status label. This will be removed. Instead, the Save button itself will reflect the sync status:
-- Saved state: Save button shows a check icon or subtle "Saved" text
-- Saving state: Save button shows a spinner
-- Unsaved state: Save button shows standard Save icon (indicating action needed)
+3. **Chart alignment with day columns**: The SVG uses `viewBox="0 0 700 120"` with points at `(i + 0.5) * 100`, which should align with equal-width columns. But the surrounding empty cells break the visual alignment.
 
-This frees up space in the header.
+---
 
-**2. Move the Format (PenLine) icon into the date header bar**
+## Plan
 
-The collapsible format toggle (currently rendered above the editor card via `MobileJournalToolbar`) will be moved into the header's right-side action cluster, next to the other icon buttons (BookOpen, BarChart3, Settings2). Tapping it will expand/collapse the formatting toolbar which will render directly below the header (still above the editor card).
+### 1. Shorten mobile ring labels (lines 1286-1290)
+- Change "Total Goal" to "Goal"
+- Change "Momentum" to "Drive"  
+- These labels already use the shorter versions in the desktop center section (lines 1434-1438), so this makes them consistent
 
-**3. Add a 3-dots (MoreHorizontal) menu to the mobile toolbar's second row**
-
-The desktop editor toolbar has a `MoreHorizontal` dropdown containing: Strikethrough, Code Block, Quote, Divider, Scribble toggle, Clear Formatting, and Clear Entry. A matching 3-dots button will be added to the mobile toolbar's second row, opening a dropdown with these same options.
+### 2. Make daily progress chart full-bleed (lines 1534-1607)
+- Change the chart row to use a single `<td colSpan={9}>` (spanning all columns: habit name + 7 days + % column)
+- Remove the separate empty left/right `<td>` cells
+- Adjust the SVG viewBox so the chart data points still align with the 7 day columns by adding left/right padding within the SVG coordinate system to account for the habit name column width and % column width
+- Use `preserveAspectRatio="none"` and calculate x-offsets so data points center over their respective day columns
 
 ### Technical Details
 
-**File: `src/pages/Journal.tsx`**
+**Ring labels** (src/pages/Habits.tsx, ~line 1286-1290):
+- Replace `label="Total Goal"` with `label="Goal"`
+- Replace `label="Momentum"` with `label="Drive"`
 
-1. **Header changes (lines ~966-991)**:
-   - Remove the Cloud/CloudOff/Loader2 status indicator div (lines 974-981)
-   - Add a PenLine icon button (mobile-only, `sm:hidden`) that toggles `mobileToolbarOpen` state
-   - Modify the Save button to show contextual icons: `Check` when saved, `Loader2` when saving, `Save` when unsaved
-
-2. **MobileJournalToolbar refactor (lines ~168-283)**:
-   - Move `open` state up to the Journal component as `mobileToolbarOpen` / `setMobileToolbarOpen`
-   - Remove the inline toggle button from within `MobileJournalToolbar` (the header button now controls it)
-   - The toolbar still renders above the editor card but is controlled by the header icon
-   - Add a `MoreHorizontal` dropdown button at the end of the second row containing:
-     - Strikethrough
-     - Code Block
-     - Quote
-     - Divider
-     - Scribble toggle
-     - Clear Formatting
-     - Clear Entry
-   - Import `MoreHorizontal`, `PenTool`, `Trash2` into Journal.tsx
-   - Pass `onClear` (handleClearEntry) and scribble handlers to the toolbar
-
-3. **Imports**: Add `MoreHorizontal`, `Check`, `PenTool`, `Trash2` to the lucide imports; add `DropdownMenu` components import.
+**Chart row** (src/pages/Habits.tsx, ~lines 1534-1607):
+- Merge the 3 `<td>` elements into one `<td colSpan={9}>` 
+- The SVG needs to account for the habit name column (~90px) on the left and % column (~32px) on the right as proportional offsets
+- Use a wider viewBox (e.g., `0 0 900 120`) where the first data point starts at x offset matching the center of the first day column, and the last point ends at the center of the last day column
+- This ensures the line graph spans the full row width while data points remain centered over their day columns
