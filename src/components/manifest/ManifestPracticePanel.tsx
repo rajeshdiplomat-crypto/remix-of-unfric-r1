@@ -3,25 +3,27 @@ import { useDatePreferences } from "@/hooks/useDatePreferences";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
 import {
   Play,
   Check,
   Camera,
   Lock,
   X,
-  Clock,
   ImagePlus,
   Trash2,
   Plus,
   Flame,
   Eye,
   Zap,
-  ChevronLeft,
-  ChevronRight,
-  Image,
   CalendarDays,
   Heart,
+  Quote,
+  Sparkles,
+  Clock,
+  Target,
+  TrendingUp,
 } from "lucide-react";
 import {
   type ManifestGoal,
@@ -30,9 +32,10 @@ import {
   type ActEntry,
   type VisualizationEntry,
   type GratitudeEntry,
+  CATEGORIES,
 } from "./types";
 import { ManifestVisualizationMode } from "./ManifestVisualizationMode";
-import { format, isToday, isBefore, startOfDay } from "date-fns";
+import { format, isToday, isBefore, startOfDay, differenceInDays } from "date-fns";
 import confetti from "canvas-confetti";
 import { toast } from "sonner";
 import { isOfflineError } from "@/lib/offlineAwareOperation";
@@ -106,13 +109,13 @@ export function ManifestPracticePanel({
         goal_id: goal.id,
         user_id: user.id,
         entry_date: dateStr,
-        visualizations: JSON.stringify(practice.visualizations ?? []),
-        acts: JSON.stringify(practice.acts ?? []),
-        proofs: JSON.stringify(practice.proofs ?? []),
-        gratitudes: JSON.stringify(practice.gratitudes ?? []),
-        alignment: practice.alignment ?? null,
-        growth_note: practice.growth_note ?? null,
-        locked: practice.locked ?? false,
+        visualizations: JSON.stringify(practice.visualizations ?? visualizations),
+        acts: JSON.stringify(practice.acts ?? acts),
+        proofs: JSON.stringify(practice.proofs ?? proofs),
+        gratitudes: JSON.stringify(practice.gratitudes ?? gratitudes),
+        alignment: practice.alignment ?? alignmentValue,
+        growth_note: practice.growth_note ?? growthNoteValue,
+        locked: practice.locked ?? isLocked,
       };
       await supabase
         .from("manifest_practices")
@@ -130,6 +133,7 @@ export function ManifestPracticePanel({
   const [activeRing, setActiveRing] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
   const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
+  const [alignmentValue, setAlignmentValue] = useState(5);
 
   const actInputRef = useRef<HTMLInputElement>(null);
   const proofTextRef = useRef<HTMLTextAreaElement>(null);
@@ -141,6 +145,15 @@ export function ManifestPracticePanel({
 
   const goalIdRef = useRef(goal.id);
   const dateStrRef = useRef(dateStr);
+
+  const dayNumber = useMemo(() => {
+    if (!goal.start_date) return 0;
+    return differenceInDays(selectedDate, new Date(goal.start_date)) + 1;
+  }, [goal.start_date, selectedDate]);
+
+  const categoryLabel = useMemo(() => {
+    return CATEGORIES.find(c => c.id === goal.category)?.label || goal.category;
+  }, [goal.category]);
 
   useEffect(() => {
     const goalChanged = goalIdRef.current !== goal.id;
@@ -156,6 +169,7 @@ export function ManifestPracticePanel({
       if (gratitudeInputRef.current) gratitudeInputRef.current.value = "";
       setCurrentProofImageUrl(null);
       setGrowthNoteValue("");
+      setAlignmentValue(5);
 
       setVisualizations([]);
       setActs([]);
@@ -171,6 +185,7 @@ export function ManifestPracticePanel({
         if (saved.acts) setActs(saved.acts);
         if (saved.proofs) setProofs(saved.proofs);
         if (saved.gratitudes) setGratitudes(saved.gratitudes);
+        if (saved.alignment !== undefined && saved.alignment !== null) setAlignmentValue(saved.alignment);
         if (saved.growth_note) {
           setGrowthNoteValue(saved.growth_note);
           if (growthNoteRef.current) growthNoteRef.current.value = saved.growth_note;
@@ -299,7 +314,7 @@ export function ManifestPracticePanel({
       acts,
       proofs,
       gratitudes,
-      alignment: 5,
+      alignment: alignmentValue,
       growth_note: growthNoteValue,
       locked: true,
     };
@@ -341,8 +356,18 @@ export function ManifestPracticePanel({
 
   const allProofs = proofs.filter((p) => p.image_url || p.text);
 
-  const ProgressRing = ({ done, color, icon: Icon, label, id }: {
-    done: boolean; color: string; icon: any; label: string; id: string;
+  const ProgressRing = ({
+    done,
+    color,
+    icon: Icon,
+    label,
+    id,
+  }: {
+    done: boolean;
+    color: string;
+    icon: any;
+    label: string;
+    id: string;
   }) => {
     const isActive = activeRing === id;
     const radius = 28;
@@ -357,33 +382,47 @@ export function ManifestPracticePanel({
           (isViewingPast && !isLocked) && "opacity-50 pointer-events-none"
         )}
       >
-        <div className={cn(
-          "relative w-16 h-16 flex items-center justify-center rounded-full transition-all duration-300",
-          isActive && "scale-110",
-          isActive && "ring-2 ring-offset-2 ring-offset-background",
-        )} style={isActive ? { boxShadow: `0 0 20px ${color}40` } : {}}>
+        <div
+          className={cn(
+            "relative w-16 h-16 flex items-center justify-center rounded-full transition-all duration-300",
+            isActive && "scale-110",
+            isActive && "ring-2 ring-offset-2 ring-offset-background",
+          )}
+          style={isActive ? { boxShadow: `0 0 20px ${color}40` } : {}}
+        >
           <svg width="64" height="64" className="absolute inset-0 -rotate-90">
             <circle cx="32" cy="32" r={radius} fill="none" stroke="hsl(var(--border))" strokeWidth="3" />
             <circle
-              cx="32" cy="32" r={radius} fill="none"
-              stroke={color} strokeWidth="3"
+              cx="32"
+              cy="32"
+              r={radius}
+              fill="none"
+              stroke={color}
+              strokeWidth="3"
               strokeDasharray={circumference}
               strokeDashoffset={circumference * (1 - progress)}
               strokeLinecap="round"
               className="transition-all duration-500"
             />
           </svg>
-          <div className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
-            done ? "text-primary-foreground" : "bg-muted text-muted-foreground",
-          )} style={done ? { background: color } : {}}>
+          <div
+            className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
+              done ? "text-primary-foreground" : "bg-muted text-muted-foreground",
+            )}
+            style={done ? { background: color } : {}}
+          >
             {done ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
           </div>
         </div>
-        <span className={cn(
-          "text-[10px] font-medium transition-colors",
-          isActive ? "text-foreground" : "text-muted-foreground"
-        )}>{label}</span>
+        <span
+          className={cn(
+            "text-[10px] font-medium transition-colors",
+            isActive ? "text-foreground" : "text-muted-foreground"
+          )}
+        >
+          {label}
+        </span>
       </button>
     );
   };
@@ -511,7 +550,6 @@ export function ManifestPracticePanel({
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-muted to-accent" />
         )}
-        {/* Blur overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
         <div className="absolute inset-0 backdrop-blur-[2px]" />
 
@@ -523,16 +561,31 @@ export function ManifestPracticePanel({
         {/* Overlay content */}
         <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between">
           <div className="flex-1 min-w-0">
-            {!isViewingToday && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-foreground/10 backdrop-blur-sm text-foreground/80 font-medium inline-flex items-center gap-1 mb-1.5">
-                <CalendarDays className="h-2.5 w-2.5" /> {fmtDate(selectedDate, "full")}
-              </span>
-            )}
+            <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+              {!isViewingToday && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-foreground/10 backdrop-blur-sm text-foreground/80 font-medium inline-flex items-center gap-1">
+                  <CalendarDays className="h-2.5 w-2.5" /> {fmtDate(selectedDate, "full")}
+                </span>
+              )}
+              <Badge variant="secondary" className="rounded-full text-[9px] px-2 py-0.5 h-auto">
+                {categoryLabel}
+              </Badge>
+              {dayNumber > 0 && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-foreground/10 backdrop-blur-sm text-foreground/80 font-medium">
+                  Day {dayNumber}
+                </span>
+              )}
+            </div>
             <h2 className="font-semibold text-foreground text-xl leading-tight line-clamp-1">{goal.title}</h2>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
               {goal.start_date && (
-                <span className="text-[10px] text-muted-foreground">
-                  Started {fmtDate(new Date(goal.start_date), "full")}
+                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                  <CalendarDays className="h-2.5 w-2.5" /> {fmtDate(new Date(goal.start_date), "full")}
+                </span>
+              )}
+              {goal.check_in_time && (
+                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                  <Clock className="h-2.5 w-2.5" /> {goal.check_in_time}
                 </span>
               )}
               {streak > 0 && (
@@ -549,7 +602,10 @@ export function ManifestPracticePanel({
               <svg width="56" height="56" className="-rotate-90">
                 <circle cx="28" cy="28" r="22" fill="none" stroke="hsl(var(--border))" strokeWidth="3" />
                 <circle
-                  cx="28" cy="28" r="22" fill="none"
+                  cx="28"
+                  cy="28"
+                  r="22"
+                  fill="none"
                   stroke="hsl(var(--foreground))"
                   strokeWidth="3"
                   strokeDasharray={2 * Math.PI * 22}
@@ -564,94 +620,184 @@ export function ManifestPracticePanel({
         </div>
       </div>
 
-      {/* Past date warning */}
-      {isViewingPast && !isLocked && (
-        <div className="mx-4 mt-2 p-2 rounded-lg bg-muted/50 border border-border">
-          <p className="text-[10px] text-muted-foreground">
-            You're viewing a past date. This practice was not completed.
-          </p>
-        </div>
-      )}
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+        {/* ===== Daily Affirmation ===== */}
+        {goal.daily_affirmation && (
+          <div className="mx-4 mt-3 p-3 rounded-xl bg-muted/30 border border-border">
+            <div className="flex items-start gap-2">
+              <Quote className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-muted-foreground italic leading-relaxed">{goal.daily_affirmation}</p>
+            </div>
+          </div>
+        )}
 
-      {/* ===== Precision Practice Rings Row ===== */}
-      <div className="flex items-center justify-center gap-6 sm:gap-8 py-4 px-4 flex-shrink-0">
-        {RING_CONFIG.map((ring) => (
-          <ProgressRing
-            key={ring.id}
-            id={ring.id}
-            done={stepDone[ring.id as keyof typeof stepDone]}
-            color={ring.color}
-            icon={ring.icon}
-            label={ring.label}
-          />
-        ))}
-      </div>
-
-      {/* ===== Active Input Area (glassmorphic) ===== */}
-      {renderActiveInput()}
-
-      {/* ===== Complete Day Section ===== */}
-      {allDone && (
-        <div className="mx-4 mt-3 p-4 rounded-2xl border border-foreground/10 bg-background/60 backdrop-blur-xl">
-          <div className="space-y-3">
-            <p className="text-sm font-medium text-foreground flex items-center gap-2">
-              <Lock className="h-4 w-4" /> Complete your day
+        {/* Past date warning */}
+        {isViewingPast && !isLocked && (
+          <div className="mx-4 mt-2 p-2 rounded-lg bg-muted/50 border border-border">
+            <p className="text-[10px] text-muted-foreground">
+              You're viewing a past date. This practice was not completed.
             </p>
-            <Input
-              ref={growthNoteRef}
-              defaultValue={growthNoteValue}
-              placeholder="Today I learned that..."
-              className="rounded-xl h-9 text-sm"
-              disabled={isViewingPast || isLocked}
-              onBlur={(e) => {
-                setGrowthNoteValue(e.target.value);
-                savePractice({ growth_note: e.target.value });
-              }}
-            />
-            <Button
-              onClick={handleLockToday}
-              disabled={!canLock || isViewingPast || isLocked}
-              className="w-full h-10 rounded-xl text-white font-medium"
-              style={{ background: "linear-gradient(135deg, hsl(175, 84%, 40%), hsl(185, 85%, 50%))" }}
-            >
-              <Lock className="h-4 w-4 mr-2" /> {isLocked ? "Day Completed ✨" : "Complete Day ✨"}
-            </Button>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ===== Proof Timeline Gallery ===== */}
-      {allProofs.length > 0 && (
-        <div className="mt-4 px-4 flex-shrink-0">
-          <h3 className="text-xs font-medium text-muted-foreground mb-2">Proof Timeline</h3>
-          <div ref={proofScrollRef} className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {allProofs.map((p) => (
-              <div key={p.id} className="flex-shrink-0 group relative">
-                {p.image_url ? (
-                  <div className="w-16 h-16 rounded-xl overflow-hidden border border-border">
-                    <img src={p.image_url} alt={p.text} className="w-full h-full object-cover" />
-                  </div>
-                ) : (
-                  <div className="w-16 h-16 rounded-xl border border-border bg-muted/50 flex items-center justify-center p-1.5">
-                    <p className="text-[8px] text-muted-foreground line-clamp-3 text-center leading-tight">{p.text}</p>
-                  </div>
-                )}
-                {isViewingToday && (
-                  <button
-                    onClick={() => handleRemoveProof(p.id)}
-                    className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="h-2.5 w-2.5" />
-                  </button>
-                )}
+        {/* ===== Locked Day Summary ===== */}
+        {isLocked && (
+          <div className="mx-4 mt-3 p-4 rounded-2xl border border-primary/20 bg-primary/5">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
+                <Check className="h-3.5 w-3.5 text-primary" />
               </div>
-            ))}
+              <span className="text-sm font-medium text-foreground">Day Complete</span>
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-background/60 rounded-lg p-2.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Eye className="h-3 w-3" style={{ color: "hsl(175, 84%, 40%)" }} />
+                  <span className="text-[10px] font-medium text-muted-foreground">Visualized</span>
+                </div>
+                <p className="text-xs text-foreground">{visualizations.length} session{visualizations.length !== 1 ? "s" : ""}</p>
+              </div>
+              <div className="bg-background/60 rounded-lg p-2.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Zap className="h-3 w-3" style={{ color: "hsl(45, 93%, 47%)" }} />
+                  <span className="text-[10px] font-medium text-muted-foreground">Actions</span>
+                </div>
+                <p className="text-xs text-foreground">{acts.length} action{acts.length !== 1 ? "s" : ""}</p>
+              </div>
+              <div className="bg-background/60 rounded-lg p-2.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Camera className="h-3 w-3" style={{ color: "hsl(200, 80%, 50%)" }} />
+                  <span className="text-[10px] font-medium text-muted-foreground">Proofs</span>
+                </div>
+                <p className="text-xs text-foreground">{proofs.length} proof{proofs.length !== 1 ? "s" : ""}</p>
+              </div>
+              <div className="bg-background/60 rounded-lg p-2.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Heart className="h-3 w-3" style={{ color: "hsl(330, 70%, 55%)" }} />
+                  <span className="text-[10px] font-medium text-muted-foreground">Gratitude</span>
+                </div>
+                <p className="text-xs text-foreground">{gratitudes.length} entr{gratitudes.length !== 1 ? "ies" : "y"}</p>
+              </div>
+            </div>
+            {growthNoteValue && (
+              <div className="mt-2.5 p-2.5 bg-background/60 rounded-lg">
+                <p className="text-[10px] text-muted-foreground mb-0.5 font-medium">Growth Note</p>
+                <p className="text-xs text-foreground leading-relaxed">{growthNoteValue}</p>
+              </div>
+            )}
+            {alignmentValue > 0 && (
+              <div className="mt-2 flex items-center gap-2">
+                <Target className="h-3 w-3 text-muted-foreground" />
+                <span className="text-[10px] text-muted-foreground">Alignment: {alignmentValue}/10</span>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Spacer at bottom for scroll breathing room */}
-      <div className="h-4 flex-shrink-0" />
+        {/* ===== Precision Practice Rings Row ===== */}
+        <div className="flex items-center justify-center gap-6 sm:gap-8 py-4 px-4 flex-shrink-0">
+          {RING_CONFIG.map((ring) => (
+            <ProgressRing
+              key={ring.id}
+              id={ring.id}
+              done={stepDone[ring.id as keyof typeof stepDone]}
+              color={ring.color}
+              icon={ring.icon}
+              label={ring.label}
+            />
+          ))}
+        </div>
+
+        {/* ===== Active Input Area (glassmorphic) ===== */}
+        {renderActiveInput()}
+
+        {/* ===== Complete Day Section ===== */}
+        {allDone && !isLocked && (
+          <div className="mx-4 mt-3 p-4 rounded-2xl border border-foreground/10 bg-background/60 backdrop-blur-xl">
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Lock className="h-4 w-4" /> Complete your day
+              </p>
+
+              {/* Alignment Slider */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <Target className="h-3 w-3" /> How aligned do you feel?
+                  </span>
+                  <span className="text-xs font-medium text-foreground">{alignmentValue}/10</span>
+                </div>
+                <Slider
+                  value={[alignmentValue]}
+                  onValueChange={(v) => setAlignmentValue(v[0])}
+                  min={1}
+                  max={10}
+                  step={1}
+                  className="w-full"
+                  disabled={isViewingPast}
+                />
+              </div>
+
+              <Input
+                ref={growthNoteRef}
+                defaultValue={growthNoteValue}
+                placeholder="Today I learned that..."
+                className="rounded-xl h-9 text-sm"
+                disabled={isViewingPast || isLocked}
+                onBlur={(e) => {
+                  setGrowthNoteValue(e.target.value);
+                  savePractice({ growth_note: e.target.value });
+                }}
+              />
+              <Button
+                onClick={handleLockToday}
+                disabled={!canLock || isViewingPast || isLocked}
+                className="w-full h-10 rounded-xl text-white font-medium"
+                style={{ background: "linear-gradient(135deg, hsl(175, 84%, 40%), hsl(185, 85%, 50%))" }}
+              >
+                <Lock className="h-4 w-4 mr-2" /> Complete Day ✨
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ===== Proof Timeline Gallery ===== */}
+        {allProofs.length > 0 && (
+          <div className="mt-4 px-4 flex-shrink-0">
+            <h3 className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+              <TrendingUp className="h-3 w-3" /> Proof Timeline
+            </h3>
+            <div ref={proofScrollRef} className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              {allProofs.map((p) => (
+                <div key={p.id} className="flex-shrink-0 group relative">
+                  {p.image_url ? (
+                    <div className="w-16 h-16 rounded-xl overflow-hidden border border-border">
+                      <img src={p.image_url} alt={p.text} className="w-full h-full object-cover" />
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl border border-border bg-muted/50 flex items-center justify-center p-1.5">
+                      <p className="text-[8px] text-muted-foreground line-clamp-3 text-center leading-tight">{p.text}</p>
+                    </div>
+                  )}
+                  {isViewingToday && !isLocked && (
+                    <button
+                      onClick={() => handleRemoveProof(p.id)}
+                      className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Spacer at bottom */}
+        <div className="h-6 flex-shrink-0" />
+      </div>
     </div>
   );
 }
