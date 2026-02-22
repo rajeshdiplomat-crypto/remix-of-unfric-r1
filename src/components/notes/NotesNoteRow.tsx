@@ -75,7 +75,7 @@ export function NotesNoteRow({
     <div
       onClick={onClick}
       className={`
-        group relative flex items-center gap-2 py-2 px-3 cursor-pointer transition-all duration-200
+        group relative flex items-center gap-2 py-1.5 px-3 cursor-pointer transition-all duration-200
         hover:bg-gradient-to-r hover:from-muted/40 hover:to-transparent
         ${isIndented ? "ml-4" : ""}
         ${isSelected ? "bg-primary/5 border-l-2 border-l-primary" : ""}
@@ -83,7 +83,7 @@ export function NotesNoteRow({
       `}
     >
       {/* Left accent line on hover */}
-      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-0 bg-primary rounded-full transition-all group-hover:h-8 opacity-0 group-hover:opacity-100" />
+      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-0 bg-primary rounded-full transition-all group-hover:h-6 opacity-0 group-hover:opacity-100" />
 
       {/* Icon with gradient background */}
       <div
@@ -114,11 +114,11 @@ export function NotesNoteRow({
               Pinned
             </span>
           )}
-          {showActivityDot && <NotesActivityDot updatedAt={note.updatedAt} size="sm" className="opacity-60" />}
+          {showActivityDot && <NotesActivityDot updatedAt={note.updatedAt} size="sm" className="opacity-60 !w-2 !h-2" />}
         </div>
-        {note.plainText && <p className="text-xs text-muted-foreground/50 line-clamp-1 mt-0.5">{note.plainText}</p>}
-        {/* Mobile-only: tiny timestamp below content */}
-        <span className="sm:hidden text-[9px] text-muted-foreground/40 mt-0.5">{formatDate(note.updatedAt)}</span>
+        {note.plainText && <p className="text-[11px] text-muted-foreground/50 line-clamp-1 mt-0.5">{note.plainText}</p>}
+        {/* Mobile-only: tiny timestamp flush right */}
+        <span className="sm:hidden text-[11px] text-muted-foreground/40 mt-0.5">{formatDate(note.updatedAt)}</span>
       </div>
 
       {/* Time - tiny muted label, bottom-right on mobile */}

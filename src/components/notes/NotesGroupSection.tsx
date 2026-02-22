@@ -170,7 +170,7 @@ export function NotesGroupSection({
             </div>
             <div className="rounded-2xl bg-card border border-border shadow-sm overflow-hidden">
               {directNotes.map((note, idx) => (
-                <div key={note.id} className={idx > 0 ? "border-t border-border" : ""}>
+                <div key={note.id} className={idx > 0 ? "border-t border-border/40" : ""}>
                   <NotesNoteRow
                     note={note}
                     group={group}
@@ -187,25 +187,25 @@ export function NotesGroupSection({
           </div>
         )}
 
-        <div className="pt-3">
+        <div className="pt-2">
           {!isAddingFolder ? (
             <div className="flex items-center gap-2 flex-wrap">
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 rounded-full px-4 text-xs border-dashed hover:border-solid"
+                className="h-8 rounded-full px-3 text-[11px] border-dashed border-border/60 hover:border-solid text-muted-foreground"
                 onClick={() => onAddNote(group.id, null)}
               >
-                <Plus className="h-3.5 w-3.5 mr-2" />
+                <Plus className="h-3 w-3 mr-1.5" />
                 Add note
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 rounded-full px-4 text-xs border-dashed hover:border-solid"
+                className="h-8 rounded-full px-3 text-[11px] border-dashed border-border/60 hover:border-solid text-muted-foreground"
                 onClick={() => setIsAddingFolder(true)}
               >
-                <FolderPlus className="h-3.5 w-3.5 mr-2" />
+                <FolderPlus className="h-3 w-3 mr-1.5" />
                 Add section
               </Button>
             </div>
