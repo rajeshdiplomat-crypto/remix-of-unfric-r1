@@ -741,6 +741,7 @@ export default function Tasks() {
                   onDrop={handleBoardDrop}
                   onStartTask={handleStartTask}
                   onCompleteTask={handleCompleteTask}
+                  onDeleteTask={(task) => handleDeleteTask(task.id)}
                   defaultMode={defaultBoardMode as any}
                 />
               )}
