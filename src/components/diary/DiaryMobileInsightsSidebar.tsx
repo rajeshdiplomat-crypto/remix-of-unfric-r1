@@ -42,13 +42,11 @@ export function DiaryMobileInsightsSidebar({
   onTimeRangeChange,
 }: DiaryMobileInsightsSidebarProps) {
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const backdropRef = useRef<HTMLDivElement>(null);
-  const [translateX, setTranslateX] = useState(100); // percentage
+  const [translateX, setTranslateX] = useState(100);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartX = useRef(0);
   const dragCurrentX = useRef(0);
 
-  // Open/close animation
   useEffect(() => {
     if (open) {
       requestAnimationFrame(() => setTranslateX(0));
@@ -57,7 +55,6 @@ export function DiaryMobileInsightsSidebar({
     }
   }, [open]);
 
-  // Touch handling for dismissal
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     dragStartX.current = e.touches[0].clientX;
     dragCurrentX.current = e.touches[0].clientX;
@@ -69,8 +66,7 @@ export function DiaryMobileInsightsSidebar({
     dragCurrentX.current = e.touches[0].clientX;
     const diff = dragCurrentX.current - dragStartX.current;
     if (diff > 0) {
-      const pct = (diff / window.innerWidth) * 100;
-      setTranslateX(Math.min(pct, 100));
+      setTranslateX(Math.min((diff / window.innerWidth) * 100, 100));
     }
   }, [isDragging]);
 
@@ -100,10 +96,15 @@ export function DiaryMobileInsightsSidebar({
   const displayName = userName.charAt(0).toUpperCase() + userName.slice(1);
   const initials = displayName.slice(0, 2).toUpperCase();
 
-  const modules = [
+  // Top 3 modules shown alongside profile
+  const topModules = [
     { name: "Tasks", stat: `${metrics.tasks.completed}/${metrics.tasks.planned}`, percent: taskPercent, bar: "[&>div]:bg-emerald-500" },
     { name: "Habits", stat: `${metrics.trackers.completionPercent}%`, percent: habitPercent, bar: "[&>div]:bg-teal-500" },
     { name: "Journal", stat: `${metrics.journal.entriesWritten}`, percent: journalPercent, bar: "[&>div]:bg-amber-500" },
+  ];
+
+  // Bottom modules
+  const bottomModules = [
     { name: "Manifest", stat: `${metrics.manifest.checkInsDone}`, percent: manifestPercent, bar: "[&>div]:bg-purple-500" },
     { name: "Notes", stat: `${metrics.notes.created}`, percent: notesPercent, bar: "[&>div]:bg-sky-500" },
     { name: "Emotions", stat: `${metrics.emotions?.checkIns || 0}`, percent: emotionsPercent, bar: "[&>div]:bg-rose-400" },
@@ -113,9 +114,8 @@ export function DiaryMobileInsightsSidebar({
 
   return (
     <>
-      {/* Backdrop with blur */}
+      {/* Backdrop */}
       <div
-        ref={backdropRef}
         className="fixed inset-0 z-50 md:hidden"
         style={{
           backgroundColor: `hsla(var(--background) / ${0.5 * (1 - translateX / 100)})`,
@@ -126,7 +126,7 @@ export function DiaryMobileInsightsSidebar({
         onClick={onClose}
       />
 
-      {/* Sidebar */}
+      {/* Sidebar panel */}
       <div
         ref={sidebarRef}
         className="fixed top-0 right-0 z-50 md:hidden h-full flex flex-col bg-card border-l border-border/40 shadow-2xl"
@@ -144,67 +144,74 @@ export function DiaryMobileInsightsSidebar({
           <div className="w-1 h-8 rounded-full bg-muted-foreground/30" />
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto px-5 pt-6 pb-24">
-          {/* Close button */}
-          <div className="flex justify-end mb-4">
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
-              <X className="h-4 w-4 text-muted-foreground" />
-            </button>
-          </div>
+        {/* Scrollable content — ends naturally */}
+        <div className="flex-1 overflow-y-auto overscroll-contain">
+          <div className="px-5 pt-6 pb-6">
+            {/* Close */}
+            <div className="flex justify-end mb-6">
+              <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
 
-          {/* Profile + Badge row */}
-          <div className="flex items-start gap-4 mb-6">
-            {/* Left: Stats summary */}
-            <div className="flex-1 space-y-3">
-              {modules.slice(0, 3).map((mod) => (
-                <div key={mod.name} className="space-y-1">
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-xs font-medium text-foreground">{mod.name}</span>
-                    <span className="text-[10px] text-muted-foreground">{mod.stat}</span>
+            {/* === SECTION 1: Profile + Top Stats === */}
+            <div className="flex gap-5 mb-8">
+              {/* Left: Top 3 stats */}
+              <div className="flex-1 space-y-5">
+                {topModules.map((mod) => (
+                  <div key={mod.name} className="space-y-1.5">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-sm font-semibold text-foreground tracking-tight">{mod.name}</span>
+                      <span className="text-xs text-muted-foreground font-medium">{mod.stat}</span>
+                    </div>
+                    <Progress value={mod.percent} className={cn("h-[5px] bg-secondary rounded-full", mod.bar)} />
                   </div>
-                  <Progress value={mod.percent} className={cn("h-1 bg-secondary", mod.bar)} />
+                ))}
+              </div>
+
+              {/* Right: Profile */}
+              <div className="flex flex-col items-center justify-center gap-2 shrink-0 w-24">
+                <Avatar className="h-16 w-16 border-2 border-border shadow-sm">
+                  <AvatarImage src={avatarUrl} alt={displayName} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-base font-bold">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <span className={cn("text-[10px] font-semibold px-2.5 py-0.5 rounded-full whitespace-nowrap", badge.bg, badge.color)}>
+                  {badge.label}
+                </span>
+                <p className="text-xs font-semibold text-foreground text-center leading-tight tracking-tight">
+                  {displayName}
+                </p>
+              </div>
+            </div>
+
+            {/* === Divider === */}
+            <div className="h-px bg-border/50 mb-6" />
+
+            {/* === SECTION 2: Performance Stats === */}
+            <div className="space-y-5">
+              {bottomModules.map((mod) => (
+                <div key={mod.name} className="space-y-1.5">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-sm font-semibold text-foreground tracking-tight">{mod.name}</span>
+                    <span className="text-xs text-muted-foreground font-medium">{mod.stat}</span>
+                  </div>
+                  <Progress value={mod.percent} className={cn("h-[5px] bg-secondary rounded-full", mod.bar)} />
                 </div>
               ))}
             </div>
 
-            {/* Right: Profile */}
-            <div className="flex flex-col items-center gap-2 shrink-0">
-              <Avatar className="h-14 w-14 border-2 border-border shadow-sm">
-                <AvatarImage src={avatarUrl} alt={displayName} />
-                <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", badge.bg, badge.color)}>
-                {badge.label}
-              </span>
-              <p className="text-xs font-medium text-foreground text-center leading-tight">{displayName}</p>
-            </div>
-          </div>
-
-          {/* Remaining modules */}
-          <div className="space-y-3">
-            {modules.slice(3).map((mod) => (
-              <div key={mod.name} className="space-y-1">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-xs font-medium text-foreground">{mod.name}</span>
-                  <span className="text-[10px] text-muted-foreground">{mod.stat}</span>
-                </div>
-                <Progress value={mod.percent} className={cn("h-1 bg-secondary", mod.bar)} />
-              </div>
-            ))}
-
-            {/* Overall */}
-            <div className="flex items-center justify-between pt-2 border-t border-border/50">
-              <span className="text-xs font-semibold text-foreground">Overall</span>
-              <span className="text-xs font-bold text-primary">{overallScore}%</span>
+            {/* === Overall Score === */}
+            <div className="flex items-center justify-between mt-8 pt-4 border-t border-border/50">
+              <span className="text-sm font-bold text-foreground tracking-tight">Overall</span>
+              <span className="text-base font-bold text-primary">{overallScore}%</span>
             </div>
           </div>
         </div>
 
         {/* Sticky footer: time toggles */}
-        <div className="sticky bottom-0 px-5 py-4 border-t border-border/40 bg-card">
+        <div className="shrink-0 px-5 py-4 border-t border-border/40 bg-card">
           <div className="flex items-center justify-center gap-1">
             {(["today", "week", "month"] as TimeRange[]).map((range) => (
               <Button
