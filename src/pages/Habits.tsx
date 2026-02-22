@@ -46,7 +46,9 @@ import {
   X,
   MoreVertical,
   Pencil,
+  BarChart3,
 } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -347,6 +349,12 @@ export default function Habits() {
 
   // Mobile week navigation offset (0 = current week, -1 = last week, etc.)
   const [mobileWeekOffset, setMobileWeekOffset] = useState(0);
+
+  // Mobile insights drawer
+  const [insightsOpen, setInsightsOpen] = useState(false);
+
+  // Mobile habit detail modal
+  const [habitDetailId, setHabitDetailId] = useState<string | null>(null);
 
   // Quote rotation state
   const [quoteIndex, setQuoteIndex] = useState(0);
@@ -1222,45 +1230,33 @@ export default function Habits() {
 
           {/* Main dashboard — Single wide card with 3 internal sections */}
           <Card className="mb-4 flex-shrink-0 overflow-hidden">
-            {/* Mobile Command Center */}
+            {/* Mobile Minimalist Header */}
             <div className="lg:hidden">
-              {/* Card 1: Elite Header - two equal halves */}
-              <div className="flex border-b border-border" style={{ minHeight: 120 }}>
-                {/* Left: Stacked metrics */}
-                <div className="flex-1 flex flex-col justify-center p-3 gap-2.5">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setCurrentMonth(addDays(startOfMonth(currentMonth), -1))}>
-                      <ChevronLeft className="h-3 w-3" />
-                    </Button>
-                    <span className="text-[10px] font-medium uppercase tracking-zara-wide text-foreground">{format(currentMonth, "MMM yyyy")}</span>
-                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setCurrentMonth(addDays(endOfMonth(currentMonth), 1))}>
-                      <ChevronRight className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase tracking-zara-wide text-muted-foreground">Pending</span>
-                    <span className="text-sm font-bold text-foreground">{activities.reduce((sum, a) => sum + a.habitDays, 0) - overallStats.totalCompleted}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase tracking-zara-wide text-muted-foreground">Done</span>
-                    <span className="text-sm font-bold text-primary">{overallStats.totalCompleted}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase tracking-zara-wide text-muted-foreground">Total</span>
-                    <span className="text-sm font-bold text-foreground">{activities.reduce((sum, a) => sum + a.habitDays, 0)}</span>
-                  </div>
+              {/* Quote + Insights button */}
+              <div className="flex items-start justify-between px-3 pt-3 pb-2">
+                <div className={cn(
+                  "flex-1 transition-opacity duration-500 ease-in-out pr-2",
+                  quoteVisible ? "opacity-100" : "opacity-0",
+                )}>
+                  <p className="text-xs italic text-primary leading-relaxed">
+                    "{MOTIVATIONAL_QUOTES[quoteIndex].text}"
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-zara">
+                    — {MOTIVATIONAL_QUOTES[quoteIndex].author}
+                  </p>
                 </div>
-                {/* Right: Brand image flush */}
-                <div className="flex-1 overflow-hidden">
-                  {(() => {
-                    const sel = selectedActivityId ? activities.find(a => a.id === selectedActivityId) : null;
-                    const img = sel ? (sel.coverImageUrl || loadActivityImage(sel.id)) : null;
-                    return <img src={img || habitsDefaultImage} alt="Habits" className="w-full h-full object-cover" />;
-                  })()}
-                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => setInsightsOpen(true)}
+                  aria-label="Open Insights"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                </Button>
               </div>
-              {/* Card 2: Metric Rings - fixed row, no scroll */}
-              <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
+              {/* 5 Progress Rings - fixed row */}
+              <div className="flex items-center justify-between px-3 py-2.5 border-t border-b border-border">
                 {(() => {
                   const selectedHabit = selectedActivityId ? activities.find(a => a.id === selectedActivityId) : null;
                   let totalGoalPercent = 0;
@@ -1599,7 +1595,12 @@ export default function Habits() {
                     >
                       <td className={cn("p-1 pl-2 sticky left-0 z-10", isSelected ? "bg-primary/5" : idx % 2 === 1 ? "bg-muted/20" : "bg-background")} style={{ width: 90 }}>
                         <div className="flex items-center gap-1">
-                          <span className="text-[11px] font-medium text-foreground truncate max-w-[65px] block">{activity.name}</span>
+                          <button
+                            className="text-[11px] font-medium text-foreground truncate max-w-[65px] block text-left"
+                            onClick={(e) => { e.stopPropagation(); setHabitDetailId(activity.id); }}
+                          >
+                            {activity.name}
+                          </button>
                           <span className="text-[9px] text-muted-foreground shrink-0">{activity.habitDays}</span>
                         </div>
                       </td>
@@ -1847,6 +1848,216 @@ export default function Habits() {
             <Plus className="h-6 w-6" />
           </Button>
         </div>
+
+        {/* Mobile Insights Drawer */}
+        <Sheet open={insightsOpen} onOpenChange={setInsightsOpen}>
+          <SheetContent side="right" className="w-[90%] max-w-sm p-0 overflow-y-auto">
+            <SheetHeader className="px-5 pt-5 pb-3 border-b border-border">
+              <SheetTitle>Insights</SheetTitle>
+            </SheetHeader>
+            <div className="px-5 py-4 space-y-5">
+              {/* Month Navigator */}
+              <div className="flex items-center justify-between">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCurrentMonth(addDays(startOfMonth(currentMonth), -1))}>
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </Button>
+                <span className="text-xs font-medium uppercase tracking-zara-wide text-foreground">{format(currentMonth, "MMMM yyyy")}</span>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCurrentMonth(addDays(endOfMonth(currentMonth), 1))}>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+
+              {/* Habit Days Summary Cards */}
+              <div>
+                <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground mb-2">Habit Days</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="flex flex-col items-center p-3 rounded-xl border border-border bg-muted/20">
+                    <span className="text-lg font-semibold text-foreground">{activities.reduce((sum, a) => sum + a.habitDays, 0) - overallStats.totalCompleted}</span>
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-zara">Pending</span>
+                  </div>
+                  <div className="flex flex-col items-center p-3 rounded-xl border border-border bg-muted/20">
+                    <span className="text-lg font-semibold text-primary">{overallStats.totalCompleted}</span>
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-zara">Done</span>
+                  </div>
+                  <div className="flex flex-col items-center p-3 rounded-xl border border-border bg-muted/20">
+                    <span className="text-lg font-semibold text-foreground">{activities.reduce((sum, a) => sum + a.habitDays, 0)}</span>
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-zara">Total</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Brand Image */}
+              <div className="rounded-xl overflow-hidden border border-border aspect-video">
+                {(() => {
+                  const sel = selectedActivityId ? activities.find(a => a.id === selectedActivityId) : null;
+                  const img = sel ? (sel.coverImageUrl || loadActivityImage(sel.id)) : null;
+                  return <img src={img || habitsDefaultImage} alt="Habits" className="w-full h-full object-cover" />;
+                })()}
+              </div>
+
+              {/* Top Habits List */}
+              <div>
+                <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground mb-2">Top Habits</p>
+                {topHabits.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">No habits tracked yet</p>
+                ) : (
+                  <div className="space-y-2">
+                    {topHabits.map((habit, i) => {
+                      const activity = activities.find(a => a.id === habit.id);
+                      const totalCompletions = Object.keys(activity?.completions || {}).length;
+                      const progressPercent = activity && activity.habitDays > 0 ? Math.round((totalCompletions / activity.habitDays) * 100) : 0;
+                      return (
+                        <div key={habit.id} className="flex items-center gap-3">
+                          <span className="text-[10px] text-muted-foreground w-4 shrink-0">{i + 1}.</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-foreground truncate">{habit.name}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                                <div className="h-full bg-primary rounded-full" style={{ width: `${progressPercent}%` }} />
+                              </div>
+                              <span className="text-[10px] text-muted-foreground">{progressPercent}%</span>
+                            </div>
+                          </div>
+                          {(habit.streak || 0) > 0 && (
+                            <span className="text-[10px] text-foreground shrink-0">🔥{habit.streak}</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Active Streaks */}
+              {activeStreaks.length > 0 && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground mb-2">Active Streaks</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {activeStreaks.map(s => (
+                      <span key={s.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-muted text-[10px] text-foreground">
+                        <Flame className="h-3 w-3 text-primary" /> {s.name} <span className="font-semibold">{s.streak}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        {/* Mobile Habit Detail Modal */}
+        {(() => {
+          const detailHabit = habitDetailId ? activities.find(a => a.id === habitDetailId) : null;
+          if (!detailHabit) return null;
+          const startDateStr = format(parseISO(detailHabit.startDate), "MMM d");
+          const endDate = computeEndDateForHabitDays(parseISO(detailHabit.startDate), detailHabit.frequencyPattern, detailHabit.habitDays);
+          const endDateStr = format(endDate, "MMM d");
+          const totalCompletions = Object.keys(detailHabit.completions || {}).length;
+          const progressPercent = detailHabit.habitDays > 0 ? Math.round((totalCompletions / detailHabit.habitDays) * 100) : 0;
+          const todayStr = format(new Date(), "yyyy-MM-dd");
+          const isTodayDone = detailHabit.completions[todayStr];
+          const detailStats = activityStats.find(s => s.id === detailHabit.id);
+          const imgUrl = detailHabit.coverImageUrl || loadActivityImage(detailHabit.id);
+
+          return (
+            <Dialog open={!!habitDetailId} onOpenChange={(o) => { if (!o) setHabitDetailId(null); }}>
+              <DialogContent className="max-w-sm p-0 rounded-2xl overflow-hidden">
+                {/* Image header */}
+                {imgUrl ? (
+                  <div className="relative h-40 w-full">
+                    <img src={imgUrl} alt={detailHabit.name} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
+                    <div className="absolute bottom-3 left-4 right-4">
+                      <h3 className="text-base font-semibold text-foreground">{detailHabit.name}</h3>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-zara">{startDateStr} → {endDateStr}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="px-5 pt-6 pb-2">
+                    <h3 className="text-base font-semibold text-foreground">{detailHabit.name}</h3>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-zara mt-0.5">{startDateStr} → {endDateStr}</p>
+                  </div>
+                )}
+
+                {/* Details */}
+                <div className="px-5 pb-5 space-y-4">
+                  {detailHabit.description && (
+                    <p className="text-xs text-muted-foreground">{detailHabit.description}</p>
+                  )}
+
+                  {/* Progress */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] uppercase tracking-zara-wide text-muted-foreground">Progress</span>
+                      <span className="text-xs font-medium text-foreground">{totalCompletions}/{detailHabit.habitDays} ({progressPercent}%)</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progressPercent}%` }} />
+                    </div>
+                  </div>
+
+                  {/* Stats row */}
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="p-2 rounded-lg bg-muted/50">
+                      <p className="text-sm font-semibold text-foreground">{detailStats?.streak || 0}</p>
+                      <p className="text-[9px] uppercase tracking-zara text-muted-foreground">Streak</p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-muted/50">
+                      <p className="text-sm font-semibold text-foreground">{totalCompletions}</p>
+                      <p className="text-[9px] uppercase tracking-zara text-muted-foreground">Done</p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-muted/50">
+                      <p className="text-sm font-semibold text-foreground">{detailHabit.habitDays - totalCompletions}</p>
+                      <p className="text-[9px] uppercase tracking-zara text-muted-foreground">Remaining</p>
+                    </div>
+                  </div>
+
+                  {/* Frequency */}
+                  <div>
+                    <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground mb-1.5">Schedule</p>
+                    <div className="flex gap-1.5">
+                      {DAY_LABELS.map((d, i) => (
+                        <span key={i} className={cn(
+                          "h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-medium",
+                          detailHabit.frequencyPattern[i] ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                        )}>{d}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => { setHabitDetailId(null); openEditDialog(detailHabit); }}
+                    >
+                      <Pencil className="h-3.5 w-3.5 mr-1.5" /> Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => { toggleCompletion(detailHabit.id, new Date()); }}
+                    >
+                      <Check className="h-3.5 w-3.5 mr-1.5" /> {isTodayDone ? "Undo Today" : "Mark Today"}
+                    </Button>
+                  </div>
+                  {!detailHabit.isArchived && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => { setHabitDetailId(null); handleCompleteHabit(detailHabit.id); }}
+                    >
+                      <CheckCircle className="h-3.5 w-3.5 mr-1.5" /> Complete Habit
+                    </Button>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+          );
+        })()}
 
         {/* Create Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
