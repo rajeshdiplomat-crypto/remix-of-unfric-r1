@@ -193,7 +193,7 @@ export default function ManifestPractice() {
         onFinished={() => setLoadingFinished(true)}
       />
     )}
-    <div className="flex flex-col w-full flex-1 bg-background min-h-screen overflow-hidden pt-14">
+    <div className="flex flex-col w-full flex-1 bg-background min-h-screen overflow-hidden">
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-0 w-full max-w-[1400px] mx-auto overflow-hidden">
         {/* ========== LEFT COLUMN: Editorial ========== */}
         <div className="hidden lg:flex flex-col h-full min-h-0 overflow-y-auto">
@@ -276,11 +276,11 @@ export default function ManifestPractice() {
           </div>
 
           {/* Date Navigation Bar */}
-          <div className="flex items-center justify-between mb-2 px-1">
+          <div className="flex items-center justify-center gap-1 mb-1 px-1">
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 px-2"
+              className="h-8 w-8 p-0"
               onClick={() => setSelectedDate(subDays(selectedDate, 1))}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -298,27 +298,25 @@ export default function ManifestPractice() {
               align="center"
             />
 
-            <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setSelectedDate(addDays(selectedDate, 1))}
+              disabled={isToday(selectedDate)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            {!isToday(selectedDate) && (
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 px-2"
-                onClick={() => setSelectedDate(addDays(selectedDate, 1))}
-                disabled={isToday(selectedDate)}
+                className="h-7 px-2 text-xs text-primary"
+                onClick={() => setSelectedDate(new Date())}
               >
-                <ChevronRight className="h-4 w-4" />
+                Today
               </Button>
-              {!isToday(selectedDate) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-2 text-xs text-teal-600"
-                  onClick={() => setSelectedDate(new Date())}
-                >
-                  Today
-                </Button>
-              )}
-            </div>
+            )}
           </div>
 
           <div className="rounded-2xl shadow-sm border border-border flex-1 overflow-hidden">
