@@ -820,10 +820,13 @@ export default function Notes() {
               </p>
             </div>
 
-            {/* Mobile: Compact header with title + New Note button */}
+            {/* Mobile: Header matching desktop style */}
             <div className="md:hidden flex items-center justify-between py-2">
               <div>
-                <h1 className="text-xl font-light tracking-wide text-foreground">NOTES</h1>
+                <p className="text-[9px] font-medium tracking-[0.3em] text-muted-foreground/70 uppercase mb-0.5">
+                  Life Atlas
+                </p>
+                <h1 className="text-2xl font-light tracking-wide text-foreground">NOTES</h1>
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
