@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { DiaryFeedCard } from "@/components/diary/DiaryFeedCard";
 import { DiaryLeftSidebar } from "@/components/diary/DiaryLeftSidebar";
 
 import { DiaryProfileCard } from "@/components/diary/DiaryProfileCard";
+import { DiaryMobileInsightsSidebar } from "@/components/diary/DiaryMobileInsightsSidebar";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 
 import { DiaryJournalModal } from "@/components/diary/DiaryJournalModal";
@@ -604,7 +605,43 @@ export default function Diary() {
   });
 
   const [loadingFinished, setLoadingFinished] = useState(false);
+  const [mobileInsightsOpen, setMobileInsightsOpen] = useState(false);
   const userName = user?.email?.split("@")[0] || "User";
+
+  // Edge-swipe gesture: detect swipe from right edge
+  const swipeRef = useRef<{ startX: number; startY: number; active: boolean }>({ startX: 0, startY: 0, active: false });
+
+  useEffect(() => {
+    const EDGE_ZONE = 30; // px from right edge
+    const handleTouchStart = (e: TouchEvent) => {
+      const x = e.touches[0].clientX;
+      const screenW = window.innerWidth;
+      if (screenW >= 768) return; // mobile only
+      if (x >= screenW - EDGE_ZONE) {
+        swipeRef.current = { startX: x, startY: e.touches[0].clientY, active: true };
+      }
+    };
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!swipeRef.current.active) return;
+      const dx = swipeRef.current.startX - e.touches[0].clientX;
+      const dy = Math.abs(e.touches[0].clientY - swipeRef.current.startY);
+      if (dy > 50) { swipeRef.current.active = false; return; }
+      if (dx > 50) {
+        swipeRef.current.active = false;
+        setMobileInsightsOpen(true);
+      }
+    };
+    const handleTouchEnd = () => { swipeRef.current.active = false; };
+
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+    window.addEventListener("touchend", handleTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, []);
 
   const isDataReady = !loading || events.length > 0;
 
@@ -764,6 +801,18 @@ export default function Diary() {
         open={isJournalModalOpen}
         onOpenChange={setIsJournalModalOpen}
         onSuccess={handleJournalSuccess}
+      />
+
+      {/* Mobile Edge-Swipe Insights Sidebar */}
+      <DiaryMobileInsightsSidebar
+        open={mobileInsightsOpen}
+        onClose={() => setMobileInsightsOpen(false)}
+        userName={userName}
+        userEmail={user?.email || ""}
+        avatarUrl={user?.user_metadata?.avatar_url}
+        metrics={metrics}
+        timeRange={timeRange}
+        onTimeRangeChange={setTimeRange}
       />
     </div>
     </>
