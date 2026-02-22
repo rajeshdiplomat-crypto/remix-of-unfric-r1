@@ -451,12 +451,14 @@ export function InsightsPanel({ tasks, compactMode, collapsed, onToggleCollapse 
                     labelStyle={{ fontSize: 9, color: "hsl(var(--muted-foreground))", marginBottom: 2 }}
                     formatter={(value: number, name: string) => [value, name === "plan" ? "Planned" : "Done"]}
                   />
-                  <Bar
+                  <Line
+                    type="monotone"
                     dataKey="plan"
-                    fill="hsl(var(--primary))"
-                    opacity={0.2}
-                    radius={[3, 3, 0, 0]}
-                    barSize={16}
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={1.5}
+                    strokeDasharray="5 3"
+                    dot={{ r: 2.5, fill: "hsl(var(--primary))", strokeWidth: 0 }}
+                    activeDot={{ r: 3.5, fill: "hsl(var(--primary))" }}
                   />
                   <Line
                     type="monotone"
