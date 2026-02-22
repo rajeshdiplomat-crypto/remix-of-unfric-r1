@@ -139,7 +139,7 @@ export function EmotionsPageRegulate({
             Recommended
           </div>
 
-          <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-3 mt-2 font-normal">Suggested Strategy</div>
+          <div className="text-[10px] text-muted-foreground tracking-wide mb-3 mt-2 font-normal">Suggested strategy</div>
 
           {recommendedStrategies[0] && (
             <>
@@ -186,7 +186,7 @@ export function EmotionsPageRegulate({
 
         {/* LEFT on desktop → SECOND on mobile: Recent Entries */}
         <div className="border-2 border-border rounded-2xl p-5 bg-card order-2 lg:order-1">
-          <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-3 font-normal">Recent Entries</div>
+          <div className="text-[10px] text-muted-foreground tracking-wide mb-3 font-normal">Recent entries</div>
           <h3 className="text-lg font-semibold mb-1">Your Last 7</h3>
           <p className="text-xs text-muted-foreground mb-4">Click to view details</p>
 
@@ -294,7 +294,7 @@ export function EmotionsPageRegulate({
 
         {/* RIGHT on desktop → THIRD on mobile: All Strategies */}
         <div className="border-2 border-border rounded-2xl p-5 bg-card order-3">
-          <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-3 font-normal">All Strategies</div>
+          <div className="text-[10px] text-muted-foreground tracking-wide mb-3 font-normal">All strategies</div>
           <h3 className="text-lg font-semibold mb-1">Explore More</h3>
           <p className="text-xs text-muted-foreground mb-4">Find the perfect fit for you</p>
 
