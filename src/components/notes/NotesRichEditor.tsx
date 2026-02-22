@@ -1011,13 +1011,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
             {saveStatus === "unsaved" && <span className="hidden md:inline">Unsaved</span>}
             {saveStatus === "unsaved" && <span className="md:hidden">•</span>}
           </span>
-          <Button
-            size="sm"
-            onClick={handleSave}
-            className="h-7 md:h-8 px-2 md:px-3 gap-1 text-xs bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-0 shrink-0"
-          >
-            <Save className="h-3 w-3 md:h-3.5 md:w-3.5" /> <span className="hidden md:inline">Save</span>
-          </Button>
           <ToolBtn
             onClick={() => setIsFullscreen(!isFullscreen)}
             title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
