@@ -56,23 +56,23 @@ export function ManifestCard({
   return (
     <Card
       onClick={onClick}
-      className={`overflow-hidden rounded-none sm:rounded-xl border-0 sm:border cursor-pointer transition-all duration-200 hover:shadow-lg relative antialiased ${
+      className={`overflow-hidden rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg relative antialiased ${
         isSelected ? "ring-2 ring-primary shadow-lg" : ""
       } ${isCompleted ? "opacity-60 grayscale" : ""}`}
     >
-      <div className="flex flex-row">
-        {/* Left thumbnail — flush, no padding */}
-        <div className="relative w-24 flex-shrink-0">
+      <div className="flex flex-row h-24">
+        {/* Left thumbnail — flush to card edge, clipped by Card's overflow-hidden + rounded-xl */}
+        <div className="relative w-24 flex-shrink-0 h-full">
           {(goal.cover_image_url || goal.vision_image_url) ? (
             <img
               src={goal.cover_image_url || goal.vision_image_url || ""}
               alt={goal.title}
-              className="absolute inset-0 w-full h-full object-cover sm:rounded-l-xl"
+              className="absolute inset-0 w-full h-full object-cover"
             />
           ) : (
-            <div className="absolute inset-0 w-full h-full bg-muted sm:rounded-l-xl" />
+            <div className="absolute inset-0 w-full h-full bg-muted" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background/20 sm:rounded-l-xl" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background/20" />
           <span className="absolute top-1.5 left-1.5 text-[8px] font-semibold px-1.5 py-0.5 rounded-md bg-background/80 backdrop-blur-sm text-foreground/80 leading-none z-10">
             Day {dayNumber}
           </span>

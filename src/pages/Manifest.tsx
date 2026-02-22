@@ -509,11 +509,11 @@ export default function Manifest() {
         />
 
         {/* Content Area - 2-column layout: [Left: Goals+Calendar] [Right: Editorial or Practice] */}
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-3 w-full max-w-[1400px] mx-auto px-0 sm:px-4 lg:px-6 py-2 overflow-hidden min-h-0">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-3 w-full max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-6 py-2 overflow-hidden min-h-0">
           {/* ========== LEFT COLUMN: Goals List + Toggle Panels ========== */}
           <div className="flex flex-col h-full min-h-0 gap-3">
             {/* Goals Container */}
-            <div className="bg-card sm:rounded-2xl sm:shadow-sm sm:border sm:border-border flex flex-col overflow-hidden flex-1 min-h-0">
+            <div className="bg-card rounded-2xl shadow-sm border border-border flex flex-col overflow-hidden flex-1 min-h-0">
               {/* Header with Create Button */}
               <div className="p-3 flex items-center justify-between border-b border-border flex-shrink-0">
                 <h2 className="text-base font-semibold text-foreground">Your Realities</h2>
@@ -575,7 +575,7 @@ export default function Manifest() {
                   </Card>
                 </div>
               ) : (
-                <div className="overflow-y-auto flex-1 min-h-0 px-0 sm:p-2 py-2 relative scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+                <div className="overflow-y-auto flex-1 min-h-0 p-2 relative scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
                   <div className="space-y-2">
                     {activeGoals.map((goal) => {
                       const { streak, momentum } = getGoalMetrics(goal);
