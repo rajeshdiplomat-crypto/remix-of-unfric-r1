@@ -575,7 +575,7 @@ export default function Manifest() {
                   </Card>
                 </div>
               ) : (
-                <div className="overflow-y-auto flex-1 min-h-0 px-1 sm:p-2 py-2 relative scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+                <div className="overflow-y-auto flex-1 min-h-0 px-0 sm:p-2 py-2 relative scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
                   <div className="space-y-2">
                     {activeGoals.map((goal) => {
                       const { streak, momentum } = getGoalMetrics(goal);
