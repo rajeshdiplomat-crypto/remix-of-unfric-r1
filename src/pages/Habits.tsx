@@ -1225,12 +1225,13 @@ export default function Habits() {
             <div className="flex items-center gap-2">
               {/* Mobile: Create + Insights buttons in header */}
               <Button
-                variant="outline"
-                size="sm"
-                className="md:hidden h-8"
+                variant="ghost"
+                size="icon"
+                className="md:hidden h-8 w-8 bg-primary text-primary-foreground rounded-full shadow-sm hover:bg-primary/90 hover:text-primary-foreground"
                 onClick={openCreateDialog}
+                aria-label="Create Habit"
               >
-                <Plus className="h-3.5 w-3.5 mr-1" /> New
+                <Plus className="h-4 w-4" />
               </Button>
               <Button
                 variant="ghost"
@@ -1528,10 +1529,11 @@ export default function Habits() {
                 </tr>
               </thead>
               <tbody>
-                {/* Daily Progress Chart Row - full bleed across all columns */}
+                {/* Daily Progress Chart Row - aligned with day columns like desktop */}
                 <tr>
-                  <td colSpan={9} className="p-0 bg-muted/30">
-                    <svg viewBox="0 0 900 120" className="w-full block" style={{ height: 56 }} preserveAspectRatio="none">
+                  <td className="p-0 sticky left-0 z-10 bg-muted/30" style={{ width: 90 }}></td>
+                  <td colSpan={7} className="p-0 bg-muted/30">
+                    <svg viewBox="0 0 700 120" className="w-full" style={{ height: 56 }} preserveAspectRatio="none">
                       {(() => {
                         const today = new Date();
                         const dataPoints: { x: number; y: number; value: number; isPast: boolean; isFuture: boolean }[] = [];
@@ -1600,6 +1602,7 @@ export default function Habits() {
                       })()}
                     </svg>
                   </td>
+                  <td className="p-0 bg-muted/30" style={{ width: 32 }}></td>
                 </tr>
                 {activities.filter(a => !a.isArchived).map((activity, idx) => {
                   const stats = activityStats.find(s => s.id === activity.id);
