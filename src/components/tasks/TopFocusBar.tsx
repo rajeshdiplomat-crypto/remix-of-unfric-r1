@@ -272,20 +272,20 @@ export function TopFocusBar({ tasks, onStartFocus }: TopFocusBarProps) {
 
   return (
     <>
-      <div className="flex items-center gap-3 px-4 py-2">
+      <div className="flex items-center gap-3 px-4 py-2.5 bg-primary/[0.06] border-b border-primary/10">
         {/* Status dot */}
         <div className="relative shrink-0">
-          <div className="h-2 w-2 rounded-full bg-primary" />
-          <div className="absolute inset-0 h-2 w-2 rounded-full bg-primary animate-ping opacity-30" />
+          <div className="h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_6px_hsl(var(--primary)/0.5)]" />
+          <div className="absolute inset-0 h-2.5 w-2.5 rounded-full bg-primary animate-ping opacity-30" />
         </div>
 
         {/* Label */}
-        <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-primary shrink-0">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-primary shrink-0">
           Focus
         </span>
 
         {/* Divider */}
-        <div className="h-3.5 w-px bg-border" />
+        <div className="h-3.5 w-px bg-primary/20" />
 
         {/* Task title */}
         <p className="text-xs font-medium min-w-0 truncate text-foreground flex-1">{topTask.title}</p>

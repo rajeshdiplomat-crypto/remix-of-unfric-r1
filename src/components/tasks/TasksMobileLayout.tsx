@@ -360,41 +360,48 @@ function MobileClockDisplay({
     );
   }
 
-  // calendar
+  // calendar — only show current month days (no outside days) to keep it compact
+  const currentMonthDays = calDays.filter(d => d.getMonth() === calMonth.getMonth());
+  // Pad start with empty slots for alignment
+  const firstDayOfMonth = startOfMonth(calMonth);
+  const startPad = (firstDayOfMonth.getDay() - weekStartsOn + 7) % 7;
+
   return (
-    <div className="w-full space-y-0.5 px-1">
-      <div className="flex items-center justify-between">
+    <div className="w-full px-1 flex flex-col justify-center">
+      <div className="flex items-center justify-between mb-0.5">
         <button onClick={() => setCalMonth(subMonths(calMonth, 1))} className="text-muted-foreground p-0.5">
-          <ChevronDown className="h-3 w-3 rotate-90" />
+          <ChevronDown className="h-2.5 w-2.5 rotate-90" />
         </button>
-        <span className="text-[8px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-[7px] font-semibold uppercase tracking-wider text-muted-foreground">
           {format(calMonth, "MMM yyyy")}
         </span>
         <button onClick={() => setCalMonth(addMonths(calMonth, 1))} className="text-muted-foreground p-0.5">
-          <ChevronDown className="h-3 w-3 -rotate-90" />
+          <ChevronDown className="h-2.5 w-2.5 -rotate-90" />
         </button>
       </div>
-      <div className="grid grid-cols-7 gap-0">
+      <div className="grid grid-cols-7">
         {(weekStartsOn === 1 ? ["M", "T", "W", "T", "F", "S", "S"] : ["S", "M", "T", "W", "T", "F", "S"]).map(
           (d, i) => (
-            <span key={i} className="text-[6px] text-center text-muted-foreground/50">
+            <span key={i} className="text-[6px] text-center text-muted-foreground/50 leading-tight">
               {d}
             </span>
           ),
         )}
       </div>
-      <div className="grid grid-cols-7 gap-0">
-        {calDays.map((day, i) => {
+      <div className="grid grid-cols-7">
+        {/* Empty padding cells */}
+        {Array.from({ length: startPad }).map((_, i) => (
+          <div key={`pad-${i}`} />
+        ))}
+        {currentMonthDays.map((day, i) => {
           const isToday = isSameDay(day, now);
-          const isCurrentMonth = day.getMonth() === calMonth.getMonth();
           return (
             <div
               key={i}
               className={cn(
-                "aspect-square flex items-center justify-center text-[7px] rounded-sm",
+                "h-[11px] flex items-center justify-center text-[7px] rounded-sm leading-none",
                 isToday && "bg-primary text-primary-foreground font-bold",
-                !isToday && isCurrentMonth && "text-foreground/80",
-                !isCurrentMonth && "text-muted-foreground/30",
+                !isToday && "text-foreground/80",
               )}
             >
               {format(day, "d")}
