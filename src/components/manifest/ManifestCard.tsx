@@ -1,9 +1,9 @@
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Flame, Play, Pencil, Trash2, CheckCircle, RotateCcw, Check } from "lucide-react";
 import { type ManifestGoal, type ManifestDailyPractice } from "./types";
 import { format, subDays, parseISO, differenceInDays } from "date-fns";
 import { useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 interface ManifestCardProps {
   goal: ManifestGoal;
@@ -54,11 +54,13 @@ export function ManifestCard({
   const momentumPct = Math.round(momentum);
 
   return (
-    <Card
+    <div
       onClick={onClick}
-      className={`overflow-hidden rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg relative antialiased ${
-        isSelected ? "ring-2 ring-primary shadow-lg" : ""
-      } ${isCompleted ? "opacity-60 grayscale" : ""}`}
+      className={cn(
+        "overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-foreground/20 relative antialiased",
+        isSelected && "ring-2 ring-primary shadow-lg",
+        isCompleted && "opacity-60 grayscale"
+      )}
     >
       <div className="flex flex-row h-24">
         {/* Left thumbnail — flush to card edge, clipped by Card's overflow-hidden + rounded-xl */}
@@ -152,6 +154,6 @@ export function ManifestCard({
           </div>
         </div>
       </div>
-    </Card>
+    </div>
   );
 }
