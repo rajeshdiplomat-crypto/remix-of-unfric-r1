@@ -4,7 +4,7 @@ import {
   CheckCircle,
   AlertTriangle,
   Clock,
-  TrendingUp,
+  BarChart3,
   Search,
   Filter,
   ArrowUpDown,
@@ -105,11 +105,11 @@ function MobileKpi({
   iconClass: string;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg bg-muted/40 border border-border px-3 py-2">
-      <Icon className={cn("h-3.5 w-3.5 shrink-0", iconClass)} />
+    <div className="flex items-center gap-1.5 rounded-md bg-muted/40 border border-border px-2 py-1">
+      <Icon className={cn("h-3 w-3 shrink-0", iconClass)} />
       <div className="min-w-0">
-        <p className="text-sm font-semibold text-foreground leading-none">{value}</p>
-        <p className="text-[8px] text-muted-foreground uppercase tracking-wider mt-0.5">{label}</p>
+        <p className="text-xs font-semibold text-foreground leading-none">{value}</p>
+        <p className="text-[7px] text-muted-foreground uppercase tracking-wider mt-0.5">{label}</p>
       </div>
     </div>
   );
@@ -590,7 +590,7 @@ export function TasksMobileLayout({
         ))}
       </div>
 
-      <Accordion type="multiple" defaultValue={activeQuadrants.map((q) => q.id)} className="space-y-2">
+      <Accordion type="single" collapsible className="space-y-2">
         {activeQuadrants.map((col) => {
           const Icon = QUADRANT_ICONS[col.id] || Calendar;
           const activeTasks = groupedTasks[col.id]?.active || [];
@@ -662,7 +662,7 @@ export function TasksMobileLayout({
             className={cn("h-8 w-8 p-0 shrink-0", headerVisible && "text-primary")}
             onClick={() => setHeaderVisible(!headerVisible)}
           >
-            <TrendingUp className="h-3.5 w-3.5" />
+            <BarChart3 className="h-3.5 w-3.5" />
           </Button>
 
           <div className="relative flex-1">
@@ -738,7 +738,7 @@ export function TasksMobileLayout({
               {/* Split: KPIs left, Clock right */}
               <div className="flex border-t border-foreground/[0.06]">
                 {/* Left: Time period filter + Metrics */}
-                <div className="flex-1 flex flex-col p-3 gap-2">
+                <div className="flex-1 flex flex-col p-2 gap-1.5">
                   <div className="flex items-center gap-1">
                     {(["today", "tomorrow", "week"] as TimePeriod[]).map((period) => (
                       <button
@@ -756,7 +756,7 @@ export function TasksMobileLayout({
                     ))}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-1.5">
+                  <div className="grid grid-cols-2 gap-1">
                     <MobileKpi icon={Calendar} value={plannedCount} label="Planned" iconClass="text-primary" />
                     <MobileKpi icon={CheckCircle} value={doneCount} label="Done" iconClass="text-chart-1" />
                     <MobileKpi icon={AlertTriangle} value={overdueCount} label="Overdue" iconClass="text-destructive" />
@@ -770,7 +770,7 @@ export function TasksMobileLayout({
                 </div>
 
                 {/* Right: Clock mode icons + Active Clock */}
-                <div className="w-[140px] shrink-0 border-l border-foreground/[0.06] flex flex-col items-center justify-center p-3">
+                <div className="w-[150px] shrink-0 border-l border-foreground/[0.06] flex flex-col items-center justify-center p-2">
                   {/* Clock mode shortcut icons */}
                   <div className="flex items-center gap-0.5 mb-2">
                     {CLOCK_MODE_ICONS.map(({ id, icon: ModeIcon }) => (
@@ -804,7 +804,7 @@ export function TasksMobileLayout({
               {/* Plan vs Actual */}
               <div className="snap-start shrink-0 w-[75%] rounded-xl bg-muted/40 border border-border p-2.5 flex flex-col min-h-[120px]">
                 <div className="flex items-center gap-1.5 mb-1.5">
-                  <TrendingUp className="h-3 w-3 text-primary" />
+                  <BarChart3 className="h-3 w-3 text-primary" />
                   <span className="text-[9px] font-medium text-foreground/70 uppercase tracking-wider">Plan vs Actual</span>
                 </div>
                 <div className="flex-1 min-h-0">
