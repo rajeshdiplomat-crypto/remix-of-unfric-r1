@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { NotesActivityDot, getMostRecentUpdate } from "./NotesActivityDot";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { ChevronRight, Plus, FolderPlus, MoreHorizontal, ArrowRight, Trash2, Copy, Pin } from "lucide-react";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 import {
@@ -57,7 +58,9 @@ export function NotesBoardView({
   onReorderFolders,
   onReorderGroups,
 }: NotesBoardViewProps) {
+  const isMobile = useIsMobile();
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [expandedMobileGroups, setExpandedMobileGroups] = useState<Set<string>>(new Set());
   const [newFolderGroupId, setNewFolderGroupId] = useState<string | null>(null);
   const [newFolderName, setNewFolderName] = useState("");
   const [draggedNoteId, setDraggedNoteId] = useState<string | null>(null);
@@ -240,6 +243,118 @@ export function NotesBoardView({
     setNewFolderGroupId(null);
   };
 
+  const toggleMobileGroup = (groupId: string) => {
+    setExpandedMobileGroups((prev) => {
+      const next = new Set(prev);
+      next.has(groupId) ? next.delete(groupId) : next.add(groupId);
+      return next;
+    });
+  };
+
+  // Mobile: vertical accordion layout
+  if (isMobile) {
+    return (
+      <div className="space-y-2">
+        {sortedGroups.map((group) => {
+          const groupNotes = notes.filter((n) => n.groupId === group.id);
+          const groupFolders = folders.filter((f) => f.groupId === group.id);
+          const isExpanded = expandedMobileGroups.has(group.id);
+
+          return (
+            <div key={group.id} className="rounded-xl border border-border bg-card overflow-hidden">
+              <button
+                onClick={() => toggleMobileGroup(group.id)}
+                className="w-full flex items-center gap-3 px-3 py-3 text-left hover:bg-muted/5 transition-colors"
+              >
+                <div
+                  className="w-1 h-6 rounded-full shrink-0"
+                  style={{ background: CATEGORY_GRADIENTS[group.id] || group.color }}
+                />
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-medium text-foreground truncate">{group.name}</h3>
+                </div>
+                <span className="text-xs text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full">{groupNotes.length}</span>
+                <Plus
+                  className="h-4 w-4 text-muted-foreground"
+                  onClick={(e) => { e.stopPropagation(); onAddNote(group.id, null); }}
+                />
+                <ChevronRight className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+              </button>
+
+              {isExpanded && (
+                <div className="px-3 pb-3 space-y-2">
+                  {/* Folders */}
+                  {[...groupFolders].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)).map((folder) => {
+                    const folderNotes = notes.filter((n) => n.folderId === folder.id);
+                    const isFolderExpanded = expandedFolders.has(folder.id);
+                    return (
+                      <div key={folder.id}>
+                        <button
+                          onClick={() => toggleFolder(folder.id)}
+                          className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground rounded-md transition-colors"
+                        >
+                          <ChevronRight className={`h-3 w-3 transition-transform ${isFolderExpanded ? "rotate-90" : ""}`} />
+                          <span className="flex-1 text-left font-medium">{folder.name}</span>
+                          <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">{folderNotes.length}</span>
+                        </button>
+                        {isFolderExpanded && folderNotes.map((note) => (
+                          <div
+                            key={note.id}
+                            className={cn(
+                              "ml-4 p-2.5 rounded-lg border border-border/30 mb-1.5 active:bg-muted/50",
+                              selectedNoteId === note.id && "border-primary/50 bg-primary/5",
+                            )}
+                            onClick={() => onNoteClick(note)}
+                          >
+                            <h4 className="text-sm text-foreground line-clamp-1">{note.title || "Untitled"}</h4>
+                            <span className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(note.updatedAt), { addSuffix: true })}</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+
+                  {/* Direct notes */}
+                  {groupNotes.filter((n) => !n.folderId).map((note) => (
+                    <div
+                      key={note.id}
+                      className={cn(
+                        "p-2.5 rounded-lg border border-border/30 active:bg-muted/50",
+                        selectedNoteId === note.id && "border-primary/50 bg-primary/5",
+                        note.isPinned && "border-l-2 border-l-primary/50",
+                      )}
+                      onClick={() => onNoteClick(note)}
+                    >
+                      <div className="flex items-start gap-2">
+                        {note.isPinned && <Pin className="h-3 w-3 text-primary/70 shrink-0 mt-0.5" />}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm text-foreground line-clamp-1">{note.title || "Untitled"}</h4>
+                          {note.plainText && <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{note.plainText}</p>}
+                          <span className="text-[10px] text-muted-foreground/70 mt-1 block">{formatDistanceToNow(new Date(note.updatedAt), { addSuffix: true })}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {onAddGroup && (
+          <button
+            onClick={onAddGroup}
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-3 text-xs font-medium text-muted-foreground hover:text-foreground rounded-xl border border-dashed border-border/50 hover:border-border transition-colors"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add group
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // Desktop: horizontal columns
   return (
     <ScrollArea className="w-full">
       <div className="flex gap-5 pb-6 pl-1 pr-4 min-w-max">

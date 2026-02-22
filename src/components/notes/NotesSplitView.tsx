@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +40,7 @@ export function NotesSplitView({
   onCreateNote,
 }: NotesSplitViewProps) {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [preEditExpandedState, setPreEditExpandedState] = useState<{
     groups: Set<string>;
@@ -130,6 +132,60 @@ export function NotesSplitView({
   const sortedGroups = [...groups].sort((a, b) => a.sortOrder - b.sortOrder);
   const isInFocusMode = !!selectedNote;
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
+
+  // Mobile: full-screen editor when note is selected
+  if (isMobile && selectedNote) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex flex-col bg-card">
+        {/* Mobile editor header */}
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-card shrink-0 safe-area-top">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2 text-xs gap-1"
+              onClick={handleBack}
+            >
+              <X className="h-4 w-4" />
+              Back
+            </Button>
+            <Badge
+              className="shrink-0 text-[10px]"
+              style={{
+                backgroundColor: `${getGroupColor(selectedNote.groupId)}20`,
+                color: getGroupColor(selectedNote.groupId),
+                border: "none",
+              }}
+            >
+              {groups.find((g) => g.id === selectedNote.groupId)?.name}
+            </Badge>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="z-[99999]">
+              <DropdownMenuItem className="text-red-600" onClick={() => onDeleteNote(selectedNote.id)}>
+                <Trash2 className="h-4 w-4 mr-2" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <div className="flex-1 overflow-hidden">
+          <NotesRichEditor
+            note={selectedNote}
+            groups={groups}
+            folders={folders}
+            onSave={handleSave}
+            onBack={handleBack}
+            onFullscreenChange={setIsEditorFullscreen}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-[calc(100vh-80px)] p-4">
