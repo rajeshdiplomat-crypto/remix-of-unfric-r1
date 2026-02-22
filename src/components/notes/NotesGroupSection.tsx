@@ -320,11 +320,11 @@ export function NotesGroupSection({
         <div className="md:hidden">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full px-2.5 py-2 text-left hover:bg-muted/5 transition-colors"
+            className="w-full px-2 py-1.5 text-left hover:bg-muted/5 transition-colors"
           >
             <div className="flex items-center gap-2.5">
-              {/* Group thumbnail */}
-              <div className="w-9 h-9 rounded-lg overflow-hidden shrink-0 bg-muted/30">
+              {/* Group thumbnail - 20% larger */}
+              <div className="w-11 h-11 rounded-lg overflow-hidden shrink-0 bg-muted/30">
                 <img src={currentImage} alt="" className="w-full h-full object-cover" />
               </div>
               <div className="min-w-0 flex-1">
@@ -338,27 +338,27 @@ export function NotesGroupSection({
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex items-center gap-0.5 shrink-0">
                 {pinnedCount > 0 && (
-                  <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground/40">
-                    <Pin className="h-2 w-2" />{pinnedCount}
+                  <span className="flex items-center gap-0.5 text-[8px] text-muted-foreground/40">
+                    <Pin className="h-1.5 w-1.5" />{pinnedCount}
                   </span>
                 )}
                 <div
                   role="button"
                   tabIndex={0}
-                  className="h-6 w-6 rounded-md flex items-center justify-center hover:bg-muted/50 cursor-pointer"
+                  className="h-5 w-5 rounded flex items-center justify-center hover:bg-muted/50 cursor-pointer"
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); onAddNote(group.id, null); }}
                 >
-                  <Plus className="h-3 w-3 text-muted-foreground/60" />
+                  <Plus className="h-2.5 w-2.5 text-muted-foreground/50" />
                 </div>
-                <div className="h-5 w-5 flex items-center justify-center">
-                  {isExpanded ? <ChevronDown className="h-3 w-3 text-muted-foreground/40" /> : <ChevronRight className="h-3 w-3 text-muted-foreground/40" />}
+                <div className="h-4 w-4 flex items-center justify-center">
+                  {isExpanded ? <ChevronDown className="h-2.5 w-2.5 text-muted-foreground/40" /> : <ChevronRight className="h-2.5 w-2.5 text-muted-foreground/40" />}
                 </div>
               </div>
             </div>
           </button>
-          {isExpanded && <div className="px-2.5 pb-3 pt-1.5">{renderExpandedBody()}</div>}
+          {isExpanded && <div className="px-2 pb-2 pt-1">{renderExpandedBody()}</div>}
         </div>
       </div>
     </div>

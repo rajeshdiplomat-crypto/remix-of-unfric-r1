@@ -878,21 +878,21 @@ export default function Notes() {
               </DropdownMenu>
             </div>
 
-            {/* Mobile: Quick Stats as compact inline pills */}
-            <div className="md:hidden flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            {/* Mobile: Quick Stats as tiny pills - single row */}
+            <div className="md:hidden flex items-center gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {[
-                { label: "Total", value: insights.total, icon: <FileText className="h-2.5 w-2.5" /> },
-                { label: "Today", value: insights.editedToday, icon: <Clock className="h-2.5 w-2.5" /> },
-                { label: "Pinned", value: insights.pinned, icon: <Pin className="h-2.5 w-2.5" /> },
-                { label: "Groups", value: insights.activeGroups, icon: <Layers className="h-2.5 w-2.5" /> },
+                { label: "Total", value: insights.total, icon: <FileText className="h-2 w-2" /> },
+                { label: "Today", value: insights.editedToday, icon: <Clock className="h-2 w-2" /> },
+                { label: "Pinned", value: insights.pinned, icon: <Pin className="h-2 w-2" /> },
+                { label: "Groups", value: insights.activeGroups, icon: <Layers className="h-2 w-2" /> },
               ].map((stat) => (
                 <div
                   key={stat.label}
-                  className="flex items-center gap-1 px-2 py-1 rounded-full bg-foreground/5 backdrop-blur-sm whitespace-nowrap shrink-0"
+                  className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-foreground/5 backdrop-blur-sm whitespace-nowrap shrink-0"
                 >
-                  <span className="text-muted-foreground/60">{stat.icon}</span>
-                  <span className="text-[11px] font-medium text-foreground">{stat.value}</span>
-                  <span className="text-[9px] text-muted-foreground/60">{stat.label}</span>
+                  <span className="text-muted-foreground/50">{stat.icon}</span>
+                  <span className="text-[10px] font-medium text-foreground">{stat.value}</span>
+                  <span className="text-[8px] text-muted-foreground/50">{stat.label}</span>
                 </div>
               ))}
             </div>
@@ -905,21 +905,21 @@ export default function Notes() {
                 <div className="p-2 md:hidden hidden">
                 </div>
                 {/* Mobile: Integrated Search + Sort pill + More in one row */}
-                <div className="px-2 pb-2 md:pb-0 md:px-0 flex items-center gap-1.5 md:hidden">
+                <div className="px-2 pb-1.5 md:pb-0 md:px-0 flex items-center gap-1 md:hidden">
                   <div className="relative flex-1 min-w-0">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/40" />
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/40" />
                     <Input
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search..."
-                      className="h-8 rounded-lg pl-7 pr-2 text-xs bg-foreground/5 backdrop-blur-sm border-0 focus:bg-foreground/10 focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/30"
+                      className="h-7 rounded-md pl-6 pr-2 text-[11px] bg-foreground/5 backdrop-blur-md border-0 focus:bg-foreground/10 focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/30"
                     />
                   </div>
                   <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                    <SelectTrigger className="h-8 rounded-lg w-auto min-w-0 px-2.5 text-[11px] bg-foreground/5 backdrop-blur-sm border-0 hover:bg-foreground/10 transition-colors gap-1 shrink-0">
+                    <SelectTrigger className="h-7 rounded-md w-auto min-w-0 px-2 text-[10px] bg-foreground/5 backdrop-blur-md border-0 hover:bg-foreground/10 transition-colors gap-0.5 shrink-0">
                       <ArrowUpDown className="h-2.5 w-2.5 text-muted-foreground/50" />
                       <SelectValue placeholder="Sort" />
-                      <ChevronDown className="h-2.5 w-2.5 text-muted-foreground/40" />
+                      <ChevronDown className="h-2 w-2 text-muted-foreground/40" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-border/50 shadow-xl backdrop-blur-xl">
                       <SelectItem value="updatedAt">Last edited</SelectItem>
@@ -930,10 +930,10 @@ export default function Notes() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 rounded-lg hover:bg-foreground/5 shrink-0"
+                    className="h-7 w-7 rounded-md hover:bg-foreground/5 shrink-0"
                     onClick={() => setSettingsOpen(true)}
                   >
-                    <MoreHorizontal className="h-3.5 w-3.5" />
+                    <MoreHorizontal className="h-3 w-3" />
                   </Button>
                 </div>
 
@@ -1130,8 +1130,9 @@ export default function Notes() {
                 </div>
 
                 {/* Filter chips - Minimal underline tabs, hidden scrollbar */}
-                <div className="px-3 pb-2 border-b border-border/30">
-                  <div className="flex gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
+                <div className="px-3 pb-1.5 border-b border-border/30">
+                  <div className="flex gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' as any }}>
+                    <style>{`.filter-row::-webkit-scrollbar { display: none; }`}</style>
                     <button
                       onClick={() => setFilterGroupId("all")}
                       className={cn(
