@@ -988,29 +988,6 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
 
           <div className="flex-1 min-w-2" />
 
-          <span
-            className={cn(
-              "text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-full font-medium shrink-0",
-              saveStatus === "saving" && "bg-amber-100 text-amber-700",
-              saveStatus === "saved" && "bg-emerald-100 text-emerald-700",
-              saveStatus === "unsaved" && "bg-slate-100 text-slate-500",
-            )}
-          >
-            {saveStatus === "saving" && (
-              <>
-                <Loader2 className="h-3 w-3 animate-spin inline mr-0.5" />
-                <span className="hidden md:inline">Saving</span>
-              </>
-            )}
-            {saveStatus === "saved" && (
-              <>
-                <Check className="h-3 w-3 inline mr-0.5" />
-                <span className="hidden md:inline">Saved</span>
-              </>
-            )}
-            {saveStatus === "unsaved" && <span className="hidden md:inline">Unsaved</span>}
-            {saveStatus === "unsaved" && <span className="md:hidden">•</span>}
-          </span>
           <Button
             size="sm"
             onClick={handleSave}
