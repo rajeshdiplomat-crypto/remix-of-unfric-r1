@@ -659,10 +659,10 @@ export function TasksMobileLayout({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 shrink-0"
+            className={cn("h-8 w-8 p-0 shrink-0", headerVisible && "text-primary")}
             onClick={() => setHeaderVisible(!headerVisible)}
           >
-            {headerVisible ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            <TrendingUp className="h-3.5 w-3.5" />
           </Button>
 
           <div className="relative flex-1">
@@ -709,9 +709,8 @@ export function TasksMobileLayout({
           </DropdownMenu>
 
           <Select value={sortBy} onValueChange={onSortChange}>
-            <SelectTrigger className="w-[70px] h-8 rounded-lg bg-background border-border shadow-sm text-[10px] px-2">
-              <ArrowUpDown className="h-3 w-3 mr-0.5" />
-              <SelectValue placeholder="Sort" />
+            <SelectTrigger className="w-8 h-8 rounded-lg bg-background border-border shadow-sm p-0 justify-center [&>svg:last-child]:hidden">
+              <ArrowUpDown className="h-3.5 w-3.5" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="newest">Newest</SelectItem>
