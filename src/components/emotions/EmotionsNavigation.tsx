@@ -47,7 +47,7 @@ export function EmotionsNavigation({
         <div className="flex items-center gap-2">
           {/* Segmented Control */}
           <div className="flex-1 flex items-center gap-0 p-1 bg-muted rounded-xl">
-            {navItems.map((item) => {
+           {navItems.map((item) => {
               const isActive = activeView === item.id;
               return (
                 <button
@@ -55,7 +55,7 @@ export function EmotionsNavigation({
                   onClick={() => item.enabled && onViewChange(item.id)}
                   disabled={!item.enabled}
                   className={cn(
-                    "flex-1 h-9 rounded-lg transition-all duration-200 text-xs font-semibold tracking-wide",
+                    "flex-1 h-7 rounded-lg transition-all duration-200 text-[11px] font-semibold tracking-wide",
                     isActive
                       ? "bg-card shadow-sm text-foreground"
                       : "text-muted-foreground",

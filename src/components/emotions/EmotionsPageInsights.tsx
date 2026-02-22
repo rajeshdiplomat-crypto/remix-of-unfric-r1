@@ -201,22 +201,22 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
       {/* Mobile: Vertical feed layout */}
       {isMobile ? (
         <div className="space-y-4">
-          {/* Charts: Mood Distribution + Top Feelings side by side */}
-          <div className="grid grid-cols-2 gap-3">
-            <MoodDistributionChart data={stats.quadrantData} />
-            <MostFrequentFeelings emotions={stats.topEmotions} total={stats.total} />
-          </div>
-
-          {/* Time of Day + Emotional Balance stacked */}
-          <MoodByTimeOfDay entries={filteredEntries} timezone={timezone} />
-          <EmotionalBalance entries={filteredEntries} />
-
           {/* Check-in Activity - full width */}
           <CheckinFrequencyGraph entries={entries} />
 
-          {/* Tab Toggle for Context/Strategies */}
+          {/* Tab Toggle for Moods/Context/Strategies */}
           <div className="p-4 rounded-2xl bg-card border border-border">
             <div className="flex gap-1 p-1 bg-muted/50 rounded-xl mb-4">
+              <button
+                onClick={() => setRightTab("moods")}
+                className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
+                  rightTab === "moods"
+                    ? "bg-card shadow-sm text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Moods
+              </button>
               <button
                 onClick={() => setRightTab("context")}
                 className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
@@ -238,6 +238,16 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
                 Strategies
               </button>
             </div>
+            {rightTab === "moods" && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <MoodDistributionChart data={stats.quadrantData} />
+                  <MostFrequentFeelings emotions={stats.topEmotions} total={stats.total} />
+                </div>
+                <MoodByTimeOfDay entries={filteredEntries} timezone={timezone} />
+                <EmotionalBalance entries={filteredEntries} />
+              </div>
+            )}
             {rightTab === "context" && <ContextInsights entries={filteredEntries} />}
             {rightTab === "strategies" && <StrategiesInsights entries={filteredEntries} />}
           </div>
