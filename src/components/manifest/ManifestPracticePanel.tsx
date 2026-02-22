@@ -86,11 +86,16 @@ export function ManifestPracticePanel({
         .eq("entry_date", date)
         .maybeSingle();
       if (data) {
+        const safeArr = (val: any): any[] => {
+          if (Array.isArray(val)) return val;
+          if (typeof val === "string") { try { const p = JSON.parse(val); return Array.isArray(p) ? p : []; } catch { return []; } }
+          return [];
+        };
         return {
-          visualizations: (data as any).visualizations || [],
-          acts: (data as any).acts || [],
-          proofs: (data as any).proofs || [],
-          gratitudes: (data as any).gratitudes || [],
+          visualizations: safeArr((data as any).visualizations),
+          acts: safeArr((data as any).acts),
+          proofs: safeArr((data as any).proofs),
+          gratitudes: safeArr((data as any).gratitudes),
           alignment: (data as any).alignment,
           growth_note: (data as any).growth_note,
           locked: (data as any).locked || false,
