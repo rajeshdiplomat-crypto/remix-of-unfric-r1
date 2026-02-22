@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,6 +18,7 @@ import { TasksClockWidget } from "@/components/tasks/TasksClockWidget";
 import { InsightsPanel } from "@/components/tasks/InsightsPanel";
 import { UnifiedTaskDrawer } from "@/components/tasks/UnifiedTaskDrawer";
 import { DeepFocusPrompt } from "@/components/tasks/DeepFocusPromptModal";
+import { TasksMobileLayout } from "@/components/tasks/TasksMobileLayout";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 
@@ -189,6 +191,7 @@ export default function Tasks() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const [activeTab, setActiveTab] = useState<TasksViewTab>("board");
   const [defaultBoardMode, setDefaultBoardMode] = useState<string | null>(null);
@@ -635,6 +638,28 @@ export default function Tasks() {
         subtitle={PAGE_HERO_TEXT.tasks.subtitle}
       />
 
+      {/* Mobile Layout */}
+      {isMobile ? (
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <TasksMobileLayout
+            tasks={tasks}
+            filteredTasks={filteredTasks}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            priorityFilter={priorityFilter}
+            onPriorityFilterChange={setPriorityFilter}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            onNewTask={openNewTaskDrawer}
+            onTaskClick={openTaskDetail}
+            onStartTask={handleStartTask}
+            onCompleteTask={handleCompleteTask}
+            onStartFocus={handleStartFocus}
+          />
+        </div>
+      ) : (
       <div className="w-full flex-1 min-h-0 px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 overflow-hidden flex flex-col max-w-[1400px] mx-auto">
         <div className="w-full min-w-0 flex flex-col gap-4 flex-1 min-h-0 overflow-hidden">
           {/* Toolbar */}
@@ -751,6 +776,31 @@ export default function Tasks() {
           />
         </div>
       </div>
+      )}
+
+      {/* Drawers/modals need to be outside the conditional */}
+      {isMobile && (
+        <>
+          <UnifiedTaskDrawer
+            task={selectedTask}
+            isNew={isNewTask}
+            open={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            onSave={handleSaveTask}
+            onDelete={handleDeleteTask}
+            onStartFocus={handleStartFocus}
+            onStartTask={handleStartTask}
+            onCompleteTask={handleCompleteTask}
+          />
+          <DeepFocusPrompt
+            open={focusPromptOpen}
+            task={focusPromptTask}
+            onClose={() => setFocusPromptOpen(false)}
+            onStartFocus={() => focusPromptTask && handleStartFocus(focusPromptTask)}
+            onSkip={() => setFocusPromptOpen(false)}
+          />
+        </>
+      )}
     </div>
     </>
   );
