@@ -123,17 +123,19 @@ export function ManifestCard({
 
           {/* Bottom: timeline + action */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              {weekProgress.map((done, i) => (
-                <div
-                  key={i}
-                  className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
-                    done
-                      ? "bg-primary border-primary"
-                      : "border-border bg-transparent"
-                  }`}
-                >
-                  {done && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
+            <div className="flex items-center gap-1.5">
+              {["M","T","W","T","F","S","S"].map((day, i) => (
+                <div key={i} className="flex flex-col items-center gap-0.5">
+                  <span className="text-[8px] font-medium text-muted-foreground leading-none">{day}</span>
+                  <div
+                    className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-colors ${
+                      weekProgress[i]
+                        ? "bg-primary border-primary"
+                        : "border-border bg-transparent"
+                    }`}
+                  >
+                    {weekProgress[i] && <Check className="h-2 w-2 text-primary-foreground" />}
+                  </div>
                 </div>
               ))}
             </div>
