@@ -13,7 +13,6 @@ import {
   Play,
   Loader2,
   ChevronDown,
-  ChevronUp,
   Flame,
   Sparkles,
   Archive,
@@ -21,8 +20,6 @@ import {
   Hourglass,
   List,
   Columns3,
-  Pause,
-  RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -62,22 +59,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import {
-  format,
-  subDays,
-  addDays,
-  startOfDay,
-  isSameDay,
-  endOfDay,
-  isWithinInterval,
-  startOfMonth,
-  endOfMonth,
-  eachDayOfInterval,
-  startOfWeek,
-  endOfWeek,
-  addMonths,
-  subMonths,
-} from "date-fns";
+import { format, subDays, addDays, startOfDay, isSameDay, isBefore, endOfDay, isWithinInterval } from "date-fns";
 
 import { QuadrantTask, computeTaskStatus, QUADRANT_MODES, QuadrantMode } from "./types";
 import { TopFocusBar } from "./TopFocusBar";
@@ -86,11 +68,33 @@ import { KanbanBoardView } from "./KanbanBoardView";
 import { BoardView } from "./BoardView";
 import { useTimezone } from "@/hooks/useTimezone";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
-import { useDatePreferences } from "@/hooks/useDatePreferences";
 import type { TasksViewTab } from "./TasksViewTabs";
 
 type TimePeriod = "today" | "tomorrow" | "week";
-type ClockMode = "digital" | "timer" | "stopwatch" | "calendar";
+
+interface TasksMobileLayoutProps {
+  tasks: QuadrantTask[];
+  filteredTasks: QuadrantTask[];
+  searchQuery: string;
+  onSearchChange: (q: string) => void;
+  statusFilter: string;
+  onStatusFilterChange: (s: string) => void;
+  priorityFilter: string;
+  onPriorityFilterChange: (p: string) => void;
+  sortBy: string;
+  onSortChange: (s: string) => void;
+  onNewTask: () => void;
+  onTaskClick: (task: QuadrantTask) => void;
+  onStartTask: (task: QuadrantTask) => void;
+  onCompleteTask: (task: QuadrantTask) => void;
+  onStartFocus: (task: QuadrantTask) => void;
+  activeTab: TasksViewTab;
+  onTabChange: (tab: TasksViewTab) => void;
+  defaultBoardMode?: string | null;
+  onBoardDrop?: (columnId: string, task: QuadrantTask) => void;
+  onBoardQuickAdd?: (title: string, columnId: string) => void;
+  onDeleteTask?: (task: QuadrantTask) => void;
+}
 
 // ─── Mini KPI ───
 function MobileKpi({
@@ -197,11 +201,12 @@ const QUADRANT_ICONS: Record<string, React.ElementType> = {
 };
 
 // ─── Clock mode icons ───
-const CLOCK_MODE_ICONS: { id: ClockMode; icon: React.ElementType }[] = [
-  { id: "digital", icon: Clock },
-  { id: "timer", icon: Timer },
-  { id: "stopwatch", icon: Hourglass },
-  { id: "calendar", icon: Calendar },
+const CLOCK_MODE_ICONS = [
+  { id: "digital" as const, icon: Clock },
+  { id: "timer" as const, icon: Timer },
+  { id: "hourglass" as const, icon: Hourglass },
+  { id: "stopwatch" as const, icon: Play },
+  { id: "calendar" as const, icon: Calendar },
 ];
 
 // ─── View tab config ───
@@ -210,206 +215,6 @@ const VIEW_TABS: { id: TasksViewTab; label: string; icon: React.ElementType }[] 
   { id: "board", label: "Board", icon: Columns3 },
   { id: "timeline", label: "Timeline", icon: Clock },
 ];
-
-const TIMER_PRESETS = [
-  { label: "5m", seconds: 5 * 60 },
-  { label: "15m", seconds: 15 * 60 },
-  { label: "25m", seconds: 25 * 60 },
-];
-
-// ─── Inline clock display for each mode ───
-function MobileClockDisplay({ mode, now, is12h, formatInTimezone }: {
-  mode: ClockMode;
-  now: Date;
-  is12h: boolean;
-  formatInTimezone: (d: Date, opts: Intl.DateTimeFormatOptions) => string;
-}) {
-  const { weekStartsOn } = useDatePreferences();
-
-  // Stopwatch
-  const [swMs, setSwMs] = useState(0);
-  const [swRunning, setSwRunning] = useState(false);
-  useEffect(() => {
-    if (!swRunning) return;
-    const iv = setInterval(() => setSwMs((p) => p + 100), 100);
-    return () => clearInterval(iv);
-  }, [swRunning]);
-
-  // Timer
-  const [timerTotal, setTimerTotal] = useState(25 * 60);
-  const [timerLeft, setTimerLeft] = useState(25 * 60);
-  const [timerRunning, setTimerRunning] = useState(false);
-  useEffect(() => {
-    if (!timerRunning || timerLeft <= 0) return;
-    const iv = setInterval(() => {
-      setTimerLeft((p) => {
-        if (p <= 1) { setTimerRunning(false); return 0; }
-        return p - 1;
-      });
-    }, 1000);
-    return () => clearInterval(iv);
-  }, [timerRunning, timerLeft]);
-
-  // Calendar
-  const [calMonth, setCalMonth] = useState(new Date());
-  const calDays = useMemo(() => {
-    const ms = startOfMonth(calMonth);
-    const me = endOfMonth(calMonth);
-    const s = startOfWeek(ms, { weekStartsOn });
-    const e = endOfWeek(me, { weekStartsOn });
-    return eachDayOfInterval({ start: s, end: e });
-  }, [calMonth, weekStartsOn]);
-
-  if (mode === "digital") {
-    return (
-      <div className="text-center">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-          {formatInTimezone(now, { weekday: "short" }).toUpperCase()}
-        </p>
-        <p className="text-2xl font-bold text-foreground tracking-tight leading-none mt-0.5">
-          {formatInTimezone(now, { hour: "numeric", minute: "2-digit", hour12: is12h }).replace(/\s?(AM|PM)$/i, "")}
-          {is12h && (
-            <span className="text-[10px] font-semibold text-primary/60 ml-1">
-              {formatInTimezone(now, { hour: "numeric", hour12: true }).replace(/^[\d:]+\s?/, "")}
-            </span>
-          )}
-        </p>
-        <p className="text-[10px] text-muted-foreground mt-1 text-center">
-          {formatInTimezone(now, { month: "long", day: "numeric", year: "numeric" })}
-        </p>
-      </div>
-    );
-  }
-
-  if (mode === "stopwatch") {
-    const mins = Math.floor(swMs / 60000);
-    const secs = Math.floor((swMs % 60000) / 1000);
-    return (
-      <div className="text-center space-y-1">
-        <p className="text-xl font-mono font-bold text-foreground tabular-nums">
-          {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
-        </p>
-        <div className="flex items-center justify-center gap-1.5">
-          <button
-            onClick={() => setSwRunning(!swRunning)}
-            className="h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center"
-          >
-            {swRunning ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
-          </button>
-          <button
-            onClick={() => { setSwMs(0); setSwRunning(false); }}
-            className="h-6 w-6 rounded-full bg-muted text-muted-foreground flex items-center justify-center"
-          >
-            <RotateCcw className="h-3 w-3" />
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (mode === "timer") {
-    const mins = Math.floor(timerLeft / 60);
-    const secs = timerLeft % 60;
-    return (
-      <div className="text-center space-y-1">
-        <p className={cn("text-xl font-mono font-bold tabular-nums", timerLeft === 0 ? "text-destructive" : "text-foreground")}>
-          {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
-        </p>
-        <div className="flex items-center justify-center gap-1">
-          {TIMER_PRESETS.map((p) => (
-            <button
-              key={p.label}
-              onClick={() => { setTimerTotal(p.seconds); setTimerLeft(p.seconds); setTimerRunning(false); }}
-              className={cn("text-[8px] px-1.5 py-0.5 rounded-full", timerTotal === p.seconds ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center justify-center gap-1.5">
-          <button
-            onClick={() => setTimerRunning(!timerRunning)}
-            disabled={timerLeft === 0}
-            className="h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-50"
-          >
-            {timerRunning ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
-          </button>
-          <button
-            onClick={() => { setTimerLeft(timerTotal); setTimerRunning(false); }}
-            className="h-6 w-6 rounded-full bg-muted text-muted-foreground flex items-center justify-center"
-          >
-            <RotateCcw className="h-3 w-3" />
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // calendar
-  return (
-    <div className="w-full space-y-0.5 px-1">
-      <div className="flex items-center justify-between">
-        <button onClick={() => setCalMonth(subMonths(calMonth, 1))} className="text-muted-foreground p-0.5">
-          <ChevronDown className="h-3 w-3 rotate-90" />
-        </button>
-        <span className="text-[8px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {format(calMonth, "MMM yyyy")}
-        </span>
-        <button onClick={() => setCalMonth(addMonths(calMonth, 1))} className="text-muted-foreground p-0.5">
-          <ChevronDown className="h-3 w-3 -rotate-90" />
-        </button>
-      </div>
-      <div className="grid grid-cols-7 gap-0">
-        {(weekStartsOn === 1 ? ["M","T","W","T","F","S","S"] : ["S","M","T","W","T","F","S"]).map((d,i) => (
-          <span key={i} className="text-[6px] text-center text-muted-foreground/50">{d}</span>
-        ))}
-      </div>
-      <div className="grid grid-cols-7 gap-0">
-        {calDays.map((day, i) => {
-          const isToday = isSameDay(day, now);
-          const isCurrentMonth = day.getMonth() === calMonth.getMonth();
-          return (
-            <div
-              key={i}
-              className={cn(
-                "aspect-square flex items-center justify-center text-[7px] rounded-sm",
-                isToday && "bg-primary text-primary-foreground font-bold",
-                !isToday && isCurrentMonth && "text-foreground/80",
-                !isCurrentMonth && "text-muted-foreground/30",
-              )}
-            >
-              {format(day, "d")}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-interface TasksMobileLayoutProps {
-  tasks: QuadrantTask[];
-  filteredTasks: QuadrantTask[];
-  searchQuery: string;
-  onSearchChange: (q: string) => void;
-  statusFilter: string;
-  onStatusFilterChange: (s: string) => void;
-  priorityFilter: string;
-  onPriorityFilterChange: (p: string) => void;
-  sortBy: string;
-  onSortChange: (s: string) => void;
-  onNewTask: () => void;
-  onTaskClick: (task: QuadrantTask) => void;
-  onStartTask: (task: QuadrantTask) => void;
-  onCompleteTask: (task: QuadrantTask) => void;
-  onStartFocus: (task: QuadrantTask) => void;
-  activeTab: TasksViewTab;
-  onTabChange: (tab: TasksViewTab) => void;
-  defaultBoardMode?: string | null;
-  onBoardDrop?: (columnId: string, task: QuadrantTask) => void;
-  onBoardQuickAdd?: (title: string, columnId: string) => void;
-  onDeleteTask?: (task: QuadrantTask) => void;
-}
 
 export function TasksMobileLayout({
   tasks,
@@ -446,8 +251,7 @@ export function TasksMobileLayout({
 
   const [boardMode, setBoardMode] = useState<QuadrantMode>("urgent-important");
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("today");
-  const [clockMode, setClockMode] = useState<ClockMode>("digital");
-  const [headerVisible, setHeaderVisible] = useState(true);
+  const [activeClockMode, setActiveClockMode] = useState("digital");
 
   const today = startOfDay(new Date());
   const tomorrow = startOfDay(addDays(today, 1));
@@ -573,9 +377,12 @@ export function TasksMobileLayout({
     return groups;
   }, [filteredTasks, boardMode, activeQuadrants, today]);
 
-  // Board accordion content
+  const controlBase = "h-9 rounded-xl bg-background border-border shadow-sm";
+
+  // Board accordion content (reused for board tab)
   const renderBoardAccordions = () => (
     <>
+      {/* Mode Selector */}
       <div className="flex items-center gap-1 overflow-x-auto pb-1">
         {(["urgent-important", "status", "date", "time"] as QuadrantMode[]).map((m) => (
           <Button
@@ -590,6 +397,7 @@ export function TasksMobileLayout({
         ))}
       </div>
 
+      {/* Accordion Quadrants */}
       <Accordion type="multiple" defaultValue={activeQuadrants.map((q) => q.id)} className="space-y-2">
         {activeQuadrants.map((col) => {
           const Icon = QUADRANT_ICONS[col.id] || Calendar;
@@ -652,32 +460,23 @@ export function TasksMobileLayout({
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* ─── Sticky Toolbar ─── */}
-      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-foreground/[0.06] px-3 py-1.5">
-        <div className="flex items-center gap-1.5">
-          {/* Toggle header visibility */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 shrink-0"
-            onClick={() => setHeaderVisible(!headerVisible)}
-          >
-            {headerVisible ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-          </Button>
-
+      {/* ─── Sticky Toolbar + View Switcher ─── */}
+      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-foreground/[0.06] px-3 py-2 space-y-2">
+        {/* Search + Filter + Sort + Add */}
+        <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Search tasks..."
-              className="pl-8 h-8 rounded-lg bg-background border-border shadow-sm text-xs"
+              className={`pl-9 ${controlBase}`}
             />
           </div>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-lg border-border shadow-sm shrink-0">
+              <Button variant="outline" size="sm" className={`${controlBase} px-2.5`}>
                 <Filter className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
@@ -709,8 +508,8 @@ export function TasksMobileLayout({
           </DropdownMenu>
 
           <Select value={sortBy} onValueChange={onSortChange}>
-            <SelectTrigger className="w-[70px] h-8 rounded-lg bg-background border-border shadow-sm text-[10px] px-2">
-              <ArrowUpDown className="h-3 w-3 mr-0.5" />
+            <SelectTrigger className={`w-[90px] ${controlBase} text-[11px]`}>
+              <ArrowUpDown className="h-3.5 w-3.5 mr-1" />
               <SelectValue placeholder="Sort" />
             </SelectTrigger>
             <SelectContent>
@@ -721,190 +520,199 @@ export function TasksMobileLayout({
             </SelectContent>
           </Select>
 
-          <Button onClick={onNewTask} size="sm" className="h-8 w-8 p-0 rounded-lg shadow-sm shrink-0">
+          <Button onClick={onNewTask} size="sm" className="h-9 rounded-xl px-3 shadow-md shrink-0">
             <Plus className="h-4 w-4" />
           </Button>
         </div>
-      </div>
 
-      {/* ─── Scrollable Content ─── */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
-        {/* ─── 1. Collapsible Header Card ─── */}
-        {headerVisible && (
-          <>
-            <div className="rounded-xl border border-foreground/[0.06] bg-background/40 backdrop-blur-xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.04)] overflow-hidden">
-              {/* Focus Bar */}
-              <TopFocusBar tasks={filteredTasks} onStartFocus={onStartFocus} />
-
-              {/* Split: KPIs left, Clock right */}
-              <div className="flex border-t border-foreground/[0.06]">
-                {/* Left: Time period filter + Metrics */}
-                <div className="flex-1 flex flex-col p-3 gap-2">
-                  <div className="flex items-center gap-1">
-                    {(["today", "tomorrow", "week"] as TimePeriod[]).map((period) => (
-                      <button
-                        key={period}
-                        onClick={() => setTimePeriod(period)}
-                        className={cn(
-                          "px-2.5 py-0.5 rounded-full text-[9px] font-medium transition-all",
-                          timePeriod === period
-                            ? "bg-primary text-primary-foreground shadow-sm"
-                            : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted",
-                        )}
-                      >
-                        {period === "today" ? "Today" : period === "tomorrow" ? "Tmrw" : "Week"}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <MobileKpi icon={Calendar} value={plannedCount} label="Planned" iconClass="text-primary" />
-                    <MobileKpi icon={CheckCircle} value={doneCount} label="Done" iconClass="text-chart-1" />
-                    <MobileKpi icon={AlertTriangle} value={overdueCount} label="Overdue" iconClass="text-destructive" />
-                    <MobileKpi
-                      icon={Clock}
-                      value={<>{totalFocusMin}<span className="text-[10px] font-normal text-muted-foreground">m</span></>}
-                      label="Focus"
-                      iconClass="text-chart-2"
-                    />
-                  </div>
-                </div>
-
-                {/* Right: Clock mode icons + Active Clock */}
-                <div className="w-[140px] shrink-0 border-l border-foreground/[0.06] flex flex-col items-center justify-center p-3">
-                  {/* Clock mode shortcut icons */}
-                  <div className="flex items-center gap-0.5 mb-2">
-                    {CLOCK_MODE_ICONS.map(({ id, icon: ModeIcon }) => (
-                      <button
-                        key={id}
-                        onClick={() => setClockMode(id)}
-                        className={cn(
-                          "h-5 w-5 rounded flex items-center justify-center transition-all",
-                          clockMode === id
-                            ? "text-primary bg-primary/10"
-                            : "text-muted-foreground/50 hover:text-muted-foreground",
-                        )}
-                      >
-                        <ModeIcon className="h-3 w-3" />
-                      </button>
-                    ))}
-                  </div>
-
-                  <MobileClockDisplay
-                    mode={clockMode}
-                    now={now}
-                    is12h={is12h}
-                    formatInTimezone={formatInTimezone}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* ─── 2. Analytics Carousel ─── */}
-            <div className="flex gap-2.5 overflow-x-auto pb-1 snap-x snap-mandatory scrollbar-hide">
-              {/* Plan vs Actual */}
-              <div className="snap-start shrink-0 w-[75%] rounded-xl bg-muted/40 border border-border p-2.5 flex flex-col min-h-[120px]">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <TrendingUp className="h-3 w-3 text-primary" />
-                  <span className="text-[9px] font-medium text-foreground/70 uppercase tracking-wider">Plan vs Actual</span>
-                </div>
-                <div className="flex-1 min-h-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={past7Days}>
-                      <defs>
-                        <linearGradient id="mPlanG" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
-                        </linearGradient>
-                      </defs>
-                      <XAxis dataKey="date" tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                      <YAxis hide />
-                      <Area type="monotone" dataKey="plan" stroke="hsl(var(--primary))" strokeWidth={1.5} fill="url(#mPlanG)" />
-                      <Line type="monotone" dataKey="actual" stroke="hsl(var(--chart-1))" strokeWidth={1.5} dot={{ r: 2, fill: "hsl(var(--chart-1))" }} />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Upcoming */}
-              <div className="snap-start shrink-0 w-[75%] rounded-xl bg-muted/40 border border-border p-2.5 flex flex-col min-h-[120px]">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <Calendar className="h-3 w-3 text-chart-1" />
-                  <span className="text-[9px] font-medium text-foreground/70 uppercase tracking-wider">Upcoming</span>
-                </div>
-                <div className="flex-1 min-h-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={future7Days}>
-                      <defs>
-                        <linearGradient id="mBarG" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8} />
-                          <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.5} />
-                        </linearGradient>
-                      </defs>
-                      <XAxis dataKey="date" tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                      <YAxis hide />
-                      <Bar dataKey="tasks" fill="url(#mBarG)" radius={[3, 3, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Priority Pie */}
-              <div className="snap-start shrink-0 w-[75%] rounded-xl bg-muted/40 border border-border p-2.5 flex flex-col min-h-[120px]">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <Clock className="h-3 w-3 text-chart-2" />
-                  <span className="text-[9px] font-medium text-foreground/70 uppercase tracking-wider">Priority</span>
-                </div>
-                <div className="flex-1 flex items-center gap-3">
-                  {quadrantData.length > 0 ? (
-                    <>
-                      <div className="w-[60px] h-[60px] shrink-0">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie data={quadrantData} cx="50%" cy="50%" innerRadius={15} outerRadius={28} paddingAngle={3} dataKey="value">
-                              {quadrantData.map((entry, i) => (
-                                <Cell key={i} fill={entry.color} stroke="none" />
-                              ))}
-                            </Pie>
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        {quadrantData.map((entry, i) => (
-                          <div key={i} className="flex items-center gap-1.5">
-                            <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
-                            <span className="text-[9px] text-muted-foreground">{entry.name}</span>
-                            <span className="text-[9px] font-semibold text-foreground">{entry.value}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  ) : (
-                    <p className="text-[9px] text-muted-foreground">No data</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* ─── View Switcher (below carousel, slim) ─── */}
-        <div className="flex items-center gap-0.5 bg-muted/30 rounded-lg p-0.5 border border-border">
+        {/* ── View Switcher (Lists / Board / Timeline) ── */}
+        <div className="flex items-center gap-1 bg-muted/40 rounded-lg p-0.5 border border-border">
           {VIEW_TABS.map(({ id, label, icon: TabIcon }) => (
             <button
               key={id}
               onClick={() => onTabChange(id)}
               className={cn(
-                "flex-1 flex items-center justify-center gap-1 py-1 rounded-md text-[10px] font-medium transition-all",
+                "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[11px] font-medium transition-all",
                 activeTab === id
                   ? "bg-background text-foreground shadow-sm border border-border"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              <TabIcon className="h-3 w-3" />
+              <TabIcon className="h-3.5 w-3.5" />
               {label}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* ─── Scrollable Content ─── */}
+      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-4">
+        {/* ─── 1. Header Card: Focus + Clock Mode Icons + KPIs + Clock ─── */}
+        <div className="rounded-xl border border-foreground/[0.06] bg-background/40 backdrop-blur-xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.04)] overflow-hidden">
+          {/* Focus Bar */}
+          <TopFocusBar tasks={filteredTasks} onStartFocus={onStartFocus} />
+
+          {/* Split: KPIs left, Clock right */}
+          <div className="flex border-t border-foreground/[0.06]">
+            {/* Left: Time period filter + Metrics */}
+            <div className="flex-1 flex flex-col p-3 gap-2">
+              {/* Today / Tomorrow / Week pills */}
+              <div className="flex items-center gap-1">
+                {(["today", "tomorrow", "week"] as TimePeriod[]).map((period) => (
+                  <button
+                    key={period}
+                    onClick={() => setTimePeriod(period)}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-[10px] font-medium transition-all",
+                      timePeriod === period
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted",
+                    )}
+                  >
+                    {period === "today" ? "Today" : period === "tomorrow" ? "Tomorrow" : "Week"}
+                  </button>
+                ))}
+              </div>
+
+              {/* KPI Grid */}
+              <div className="grid grid-cols-2 gap-1.5">
+                <MobileKpi icon={Calendar} value={plannedCount} label="Planned" iconClass="text-primary" />
+                <MobileKpi icon={CheckCircle} value={doneCount} label="Done" iconClass="text-chart-1" />
+                <MobileKpi icon={AlertTriangle} value={overdueCount} label="Overdue" iconClass="text-destructive" />
+                <MobileKpi
+                  icon={Clock}
+                  value={<>{totalFocusMin}<span className="text-[10px] font-normal text-muted-foreground">m</span></>}
+                  label="Focus"
+                  iconClass="text-chart-2"
+                />
+              </div>
+            </div>
+
+            {/* Right: Clock mode icons + Time */}
+            <div className="w-[140px] shrink-0 border-l border-foreground/[0.06] flex flex-col items-center justify-center p-5">
+              {/* Clock mode shortcut icons */}
+              <div className="flex items-center gap-1 mb-2">
+                {CLOCK_MODE_ICONS.map(({ id, icon: ModeIcon }) => (
+                  <button
+                    key={id}
+                    onClick={() => setActiveClockMode(id)}
+                    className={cn(
+                      "h-5 w-5 rounded flex items-center justify-center transition-all",
+                      activeClockMode === id
+                        ? "text-primary"
+                        : "text-muted-foreground/50 hover:text-muted-foreground",
+                    )}
+                  >
+                    <ModeIcon className="h-3 w-3" />
+                  </button>
+                ))}
+              </div>
+
+              {/* Day label */}
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                {formatInTimezone(now, { weekday: "short" }).toUpperCase()}
+              </p>
+              {/* Time */}
+              <p className="text-2xl font-bold text-foreground tracking-tight leading-none mt-0.5">
+                {formatInTimezone(now, { hour: "numeric", minute: "2-digit", hour12: is12h }).replace(/\s?(AM|PM)$/i, "")}
+                {is12h && (
+                  <span className="text-[10px] font-semibold text-primary/60 ml-1">
+                    {formatInTimezone(now, { hour: "numeric", hour12: true }).replace(/^[\d:]+\s?/, "")}
+                  </span>
+                )}
+              </p>
+              {/* Date */}
+              <p className="text-[10px] text-muted-foreground mt-1 text-center">
+                {formatInTimezone(now, { month: "long", day: "numeric", year: "numeric" })}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ─── 2. Analytics Carousel ─── */}
+        <div className="flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory scrollbar-hide">
+          {/* Plan vs Actual */}
+          <div className="snap-start shrink-0 w-[80%] rounded-xl bg-muted/40 border border-border p-3 flex flex-col min-h-[140px]">
+            <div className="flex items-center gap-1.5 mb-2">
+              <TrendingUp className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[10px] font-medium text-foreground/70 uppercase tracking-wider">Plan vs Actual</span>
+            </div>
+            <div className="flex-1 min-h-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={past7Days}>
+                  <defs>
+                    <linearGradient id="mPlanG" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 8 }} axisLine={false} tickLine={false} width={14} allowDecimals={false} hide />
+                  <Area type="monotone" dataKey="plan" stroke="hsl(var(--primary))" strokeWidth={1.5} fill="url(#mPlanG)" />
+                  <Line type="monotone" dataKey="actual" stroke="hsl(var(--chart-1))" strokeWidth={1.5} dot={{ r: 2.5, fill: "hsl(var(--chart-1))" }} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Upcoming */}
+          <div className="snap-start shrink-0 w-[80%] rounded-xl bg-muted/40 border border-border p-3 flex flex-col min-h-[140px]">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Calendar className="h-3.5 w-3.5 text-chart-1" />
+              <span className="text-[10px] font-medium text-foreground/70 uppercase tracking-wider">Upcoming</span>
+            </div>
+            <div className="flex-1 min-h-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={future7Days}>
+                  <defs>
+                    <linearGradient id="mBarG" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8} />
+                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.5} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 8 }} axisLine={false} tickLine={false} width={14} allowDecimals={false} hide />
+                  <Bar dataKey="tasks" fill="url(#mBarG)" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Priority Pie */}
+          <div className="snap-start shrink-0 w-[80%] rounded-xl bg-muted/40 border border-border p-3 flex flex-col min-h-[140px]">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Clock className="h-3.5 w-3.5 text-chart-2" />
+              <span className="text-[10px] font-medium text-foreground/70 uppercase tracking-wider">Priority</span>
+            </div>
+            <div className="flex-1 flex items-center gap-3">
+              {quadrantData.length > 0 ? (
+                <>
+                  <div className="w-[70px] h-[70px] shrink-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={quadrantData} cx="50%" cy="50%" innerRadius={18} outerRadius={32} paddingAngle={3} dataKey="value">
+                          {quadrantData.map((entry, i) => (
+                            <Cell key={i} fill={entry.color} stroke="none" />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    {quadrantData.map((entry, i) => (
+                      <div key={i} className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
+                        <span className="text-[10px] text-muted-foreground">{entry.name}</span>
+                        <span className="text-[10px] font-semibold text-foreground">{entry.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="text-[10px] text-muted-foreground">No data</p>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* ─── 3. Tab Content ─── */}
