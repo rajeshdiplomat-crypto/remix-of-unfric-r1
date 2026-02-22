@@ -354,7 +354,8 @@ export function ManifestPracticePanel({
     );
   }
 
-  const allProofs = proofs.filter((p) => p.image_url || p.text);
+  const safeProofs = Array.isArray(proofs) ? proofs : [];
+  const allProofs = safeProofs.filter((p) => p.image_url || p.text);
 
   const ProgressRing = ({
     done,
