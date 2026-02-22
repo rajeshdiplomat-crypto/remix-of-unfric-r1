@@ -37,6 +37,7 @@ import { MobileNoteEditor } from "@/components/notes/MobileNoteEditor";
 import { NotesGroupSettings } from "@/components/notes/NotesGroupSettings";
 import { NotesGroupSection } from "@/components/notes/NotesGroupSection";
 import { NotesLocationPicker } from "@/components/notes/NotesLocationPicker";
+import { NotesSectionPicker } from "@/components/notes/NotesSectionPicker";
 import { NotesBoardView } from "@/components/notes/NotesBoardView";
 import { NotesMindMapView } from "@/components/notes/NotesMindMapView";
 import { NotesViewSwitcher, type NotesViewType } from "@/components/notes/NotesViewSwitcher";
@@ -300,6 +301,7 @@ export default function Notes() {
   });
 
   const [viewMode, setViewMode] = useState<ViewMode>("overview");
+  const [sectionPickerOpen, setSectionPickerOpen] = useState(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -859,19 +861,13 @@ export default function Notes() {
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() => {
-                      // Open section creation - trigger on first group
-                      if (sortedGroups.length > 0) {
-                        const folderName = prompt("Section name:");
-                        if (folderName?.trim()) handleCreateFolder(sortedGroups[0].id, folderName.trim());
-                      }
-                    }}
+                    onClick={() => setSectionPickerOpen(true)}
                     className="py-2 rounded-lg cursor-pointer"
                   >
                     <Layers className="h-4 w-4 mr-3 text-muted-foreground" />
                     <div className="flex flex-col">
                       <span className="text-sm font-medium">New Section</span>
-                      <span className="text-xs text-muted-foreground">Add to first group</span>
+                      <span className="text-xs text-muted-foreground">Choose group</span>
                     </div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -1004,18 +1000,13 @@ export default function Notes() {
                           </div>
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => {
-                            if (sortedGroups.length > 0) {
-                              const folderName = prompt("Section name:");
-                              if (folderName?.trim()) handleCreateFolder(sortedGroups[0].id, folderName.trim());
-                            }
-                          }}
+                          onClick={() => setSectionPickerOpen(true)}
                           className="py-2 rounded-lg cursor-pointer"
                         >
                           <Layers className="h-4 w-4 mr-3 text-muted-foreground" />
                           <div className="flex flex-col">
                             <span className="text-sm font-medium">New Section</span>
-                            <span className="text-xs text-muted-foreground">Add to first group</span>
+                            <span className="text-xs text-muted-foreground">Choose group</span>
                           </div>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -1292,6 +1283,14 @@ export default function Notes() {
               groups={groups}
               folders={folders}
               onConfirm={handleCreateNote}
+            />
+
+            {/* Section Picker */}
+            <NotesSectionPicker
+              open={sectionPickerOpen}
+              onOpenChange={setSectionPickerOpen}
+              groups={groups}
+              onConfirm={handleCreateFolder}
             />
           </div>
         </div>

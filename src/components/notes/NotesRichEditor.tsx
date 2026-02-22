@@ -991,7 +991,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
           <Button
             size="sm"
             onClick={handleSave}
-            className="h-7 md:h-8 px-2 md:px-3 gap-1 text-xs bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-0 shrink-0"
+            className="h-7 md:h-8 px-2 md:px-3 gap-1 text-xs bg-primary hover:bg-primary/90 text-primary-foreground shrink-0"
           >
             <Save className="h-3 w-3 md:h-3.5 md:w-3.5" /> <span className="hidden md:inline">Save</span>
           </Button>
