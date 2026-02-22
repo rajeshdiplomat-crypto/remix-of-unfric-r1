@@ -515,7 +515,7 @@ export function ManifestPracticePanel({
 
         {/* Sticky save for proof — pinned to bottom of viewport on mobile */}
         {activeRing === "proof" && (
-          <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 p-3 bg-background/80 backdrop-blur-xl border-t border-border">
+          <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 p-3 bg-background/80 backdrop-blur-xl border-t border-border">
             <Button onClick={handleAddProof} disabled={isViewingPast} className="w-full h-10 rounded-xl text-white text-sm font-semibold"
               style={{ background: "hsl(200, 80%, 50%)" }}>
               Save Proof
@@ -523,7 +523,7 @@ export function ManifestPracticePanel({
           </div>
         )}
         {activeRing === "proof" && (
-          <div className="hidden lg:block">
+          <div className="hidden md:block">
             <Button onClick={handleAddProof} disabled={isViewingPast} className="w-full h-9 rounded-xl text-white text-sm"
               style={{ background: "hsl(200, 80%, 50%)" }}>
               Save Proof

@@ -126,10 +126,10 @@ export function EmotionsPageRegulate({
       </div>
 
       {/* 3-Column Layout - mobile: vertical stack with reorder */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-10">
         {/* CENTER (on desktop) → FIRST on mobile: Suggested Strategy (Featured) */}
         <div
-          className="border-2 rounded-2xl p-5 shadow-lg lg:scale-105 relative order-1 lg:order-2"
+          className="border-2 rounded-2xl p-5 shadow-lg md:scale-105 relative order-1 md:order-2"
           style={{ borderColor: accentColor, backgroundColor: `${accentColor}08` }}
         >
           <div
@@ -185,7 +185,7 @@ export function EmotionsPageRegulate({
         </div>
 
         {/* LEFT on desktop → SECOND on mobile: Recent Entries */}
-        <div className="border-2 border-border rounded-2xl p-5 bg-card order-2 lg:order-1">
+        <div className="border-2 border-border rounded-2xl p-5 bg-card order-2 md:order-1">
           <div className="text-[10px] text-muted-foreground tracking-wide mb-3 font-normal">Recent entries</div>
           <h3 className="text-lg font-semibold mb-1">Your Last 7</h3>
           <p className="text-xs text-muted-foreground mb-4">Click to view details</p>

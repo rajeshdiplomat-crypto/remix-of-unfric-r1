@@ -1074,9 +1074,9 @@ export default function Journal() {
             subtitle={PAGE_HERO_TEXT.journal.subtitle}
           />
           {journalHeader}
-          <div className="flex-1 min-h-0 grid gap-6 lg:gap-12 w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-8 overflow-hidden grid-cols-1 lg:grid-cols-[1fr_2fr] max-w-[1400px] mx-auto">
+          <div className="flex-1 min-h-0 grid gap-6 md:gap-12 w-full px-3 sm:px-6 md:px-8 py-4 sm:py-8 overflow-hidden grid-cols-1 md:grid-cols-[1fr_2fr] max-w-[1400px] mx-auto">
             {/* Left column: Editorial + toggle panels */}
-            <div className="hidden lg:flex flex-col justify-start gap-6 h-full pt-12">
+            <div className="hidden md:flex flex-col justify-start gap-6 h-full pt-12">
               <div className="space-y-6 max-w-md">
                 {/* Badge */}
                 <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
