@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronRight, ChevronDown, Plus, FolderPlus, Pin, Camera, ImageIcon, Upload, RotateCcw } from "lucide-react";
+
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -188,15 +189,26 @@ export function NotesGroupSection({
 
         <div className="pt-3">
           {!isAddingFolder ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 rounded-full px-4 text-xs border-dashed hover:border-solid"
-              onClick={() => onAddNote(group.id, null)}
-            >
-              <Plus className="h-3.5 w-3.5 mr-2" />
-              Add note
-            </Button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 rounded-full px-4 text-xs border-dashed hover:border-solid"
+                onClick={() => onAddNote(group.id, null)}
+              >
+                <Plus className="h-3.5 w-3.5 mr-2" />
+                Add note
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 rounded-full px-4 text-xs border-dashed hover:border-solid"
+                onClick={() => setIsAddingFolder(true)}
+              >
+                <FolderPlus className="h-3.5 w-3.5 mr-2" />
+                Add section
+              </Button>
+            </div>
           ) : (
             <div className="flex flex-wrap items-center gap-2">
               <Input

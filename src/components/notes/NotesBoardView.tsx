@@ -314,6 +314,36 @@ export function NotesBoardView({
                     );
                   })}
 
+                  {/* Add section button for mobile */}
+                  <button
+                    onClick={() => setNewFolderGroupId(group.id)}
+                    className="w-full flex items-center gap-2 px-2 py-2 text-xs text-muted-foreground hover:text-foreground rounded-lg border border-dashed border-border/50 hover:border-border transition-colors"
+                  >
+                    <FolderPlus className="h-3.5 w-3.5" />
+                    Add section
+                  </button>
+
+                  {/* Add section input for mobile */}
+                  {newFolderGroupId === group.id && (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newFolderName}
+                        onChange={(e) => setNewFolderName(e.target.value)}
+                        placeholder="Section name…"
+                        className="flex-1 text-sm px-3 py-1.5 rounded-lg bg-background border border-border/50 focus:outline-none focus:border-primary/40"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleAddFolder(group.id);
+                          if (e.key === "Escape") {
+                            setNewFolderGroupId(null);
+                            setNewFolderName("");
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+
                   {/* Direct notes */}
                   {groupNotes.filter((n) => !n.folderId).map((note) => (
                     <div
