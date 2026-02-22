@@ -84,73 +84,72 @@ export function ManifestCard({
         )}
       </div>
 
-      <div className="flex flex-row h-20">
-        {/* Square thumbnail — w-20 h-20 for high density */}
-        <div className="relative w-20 h-20 flex-shrink-0">
-          {(goal.cover_image_url || goal.vision_image_url) ? (
-            <img
-              src={goal.cover_image_url || goal.vision_image_url || ""}
-              alt={goal.title}
-              className="w-full h-full object-cover rounded-l-xl"
-            />
-          ) : (
-            <div className="w-full h-full bg-muted rounded-l-xl" />
-          )}
-          <span className="absolute bottom-0.5 right-0.5 text-[8px] font-semibold px-1 py-0.5 rounded-md bg-background/80 backdrop-blur-sm text-foreground/80 leading-none">
-            Day {dayNumber}
-          </span>
-        </div>
+      {/* Edge-to-edge cover image */}
+      <div className="relative w-full h-28 flex-shrink-0">
+        {(goal.cover_image_url || goal.vision_image_url) ? (
+          <img
+            src={goal.cover_image_url || goal.vision_image_url || ""}
+            alt={goal.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-muted" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent" />
+        <span className="absolute top-1.5 left-1.5 text-[8px] font-semibold px-1.5 py-0.5 rounded-md bg-background/80 backdrop-blur-sm text-foreground/80 leading-none">
+          Day {dayNumber}
+        </span>
+      </div>
 
-        {/* Content */}
-        <div className="flex-1 p-2 pl-2.5 flex flex-col justify-between min-w-0">
-          {/* Top: title + momentum pill */}
-          <div>
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <h3 className="font-semibold text-foreground text-sm leading-tight line-clamp-1 flex-1 min-w-0 pr-10 antialiased">
-                {goal.title}
-              </h3>
-            </div>
-            <div className="flex items-center gap-1 flex-wrap">
-              <span className="inline-flex items-center text-[9px] font-semibold px-1.5 py-px rounded-full bg-primary/10 text-primary leading-tight">
-                {momentumPct}%
-              </span>
-              {streak > 0 && (
-                <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-px rounded-full bg-destructive/10 text-destructive leading-tight">
-                  <Flame className="h-2 w-2" /> {streak}
-                </span>
-              )}
-            </div>
+      {/* Content */}
+      <div className="p-2 px-2.5 flex flex-col gap-1.5 min-w-0">
+        {/* Title + momentum pill */}
+        <div>
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <h3 className="font-semibold text-foreground text-sm leading-tight line-clamp-1 flex-1 min-w-0 pr-10 antialiased">
+              {goal.title}
+            </h3>
           </div>
-
-          {/* Bottom: weekly circles + practice button */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              {["M","T","W","T","F","S","S"].map((day, i) => (
-                <div key={i} className="flex flex-col items-center gap-px">
-                  <span className="text-[7px] font-medium text-muted-foreground leading-none">{day}</span>
-                  <div
-                    className={`w-3 h-3 rounded-full border flex items-center justify-center transition-colors ${
-                      weekProgress[i]
-                        ? "bg-primary border-primary"
-                        : "border-border bg-transparent"
-                    }`}
-                  >
-                    {weekProgress[i] && <Check className="h-1.5 w-1.5 text-primary-foreground" />}
-                  </div>
-                </div>
-              ))}
-            </div>
-            {!isCompleted && (
-              <Button
-                onClick={(e) => { e.stopPropagation(); onClick(); }}
-                size="sm"
-                className="h-6 px-2.5 rounded-full text-[10px] font-semibold"
-              >
-                <Play className="h-2 w-2 mr-0.5" />
-                Practice
-              </Button>
+          <div className="flex items-center gap-1 flex-wrap">
+            <span className="inline-flex items-center text-[9px] font-semibold px-1.5 py-px rounded-full bg-primary/10 text-primary leading-tight">
+              {momentumPct}%
+            </span>
+            {streak > 0 && (
+              <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-px rounded-full bg-destructive/10 text-destructive leading-tight">
+                <Flame className="h-2 w-2" /> {streak}
+              </span>
             )}
           </div>
+        </div>
+
+        {/* Weekly circles + practice button */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            {["M","T","W","T","F","S","S"].map((day, i) => (
+              <div key={i} className="flex flex-col items-center gap-px">
+                <span className="text-[7px] font-medium text-muted-foreground leading-none">{day}</span>
+                <div
+                  className={`w-3 h-3 rounded-full border flex items-center justify-center transition-colors ${
+                    weekProgress[i]
+                      ? "bg-primary border-primary"
+                      : "border-border bg-transparent"
+                  }`}
+                >
+                  {weekProgress[i] && <Check className="h-1.5 w-1.5 text-primary-foreground" />}
+                </div>
+              </div>
+            ))}
+          </div>
+          {!isCompleted && (
+            <Button
+              onClick={(e) => { e.stopPropagation(); onClick(); }}
+              size="sm"
+              className="h-6 px-2.5 rounded-full text-[10px] font-semibold"
+            >
+              <Play className="h-2 w-2 mr-0.5" />
+              Practice
+            </Button>
+          )}
         </div>
       </div>
     </Card>
