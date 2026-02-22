@@ -124,6 +124,54 @@ button[data-primary],
   }
 }
 
+/* ---- Tablet Touch Target & Hover Parity (768px–1024px) ---- */
+/* Ensure 44px minimum touch targets on tablet-sized touch screens */
+@media (min-width: 768px) and (pointer: coarse) {
+  /* All interactive icon buttons get 44px minimum */
+  button,
+  [role="button"],
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Exception: inline text links and chip/pill buttons */
+  a:not([role="button"]),
+  [data-slot="chip"],
+  button[data-size="chip"] {
+    min-height: unset;
+    min-width: unset;
+  }
+
+  /* Make hover-only actions always visible on touch devices */
+  .group-hover\:opacity-100,
+  .hover\:opacity-100,
+  [class*="group-hover:visible"],
+  [class*="hover:visible"] {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  /* Ensure dropdown triggers are finger-friendly */
+  [data-radix-collection-item] {
+    min-height: 44px;
+  }
+}
+
+/* ---- Sticky Save Buttons Above Virtual Keyboard ---- */
+/* When the visual viewport shrinks (keyboard open), keep save buttons visible */
+@supports (height: 1dvh) {
+  .sticky-save-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 50;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    backdrop-filter: blur(12px);
+    background: hsl(var(--card) / 0.95);
+    border-top: 1px solid hsl(var(--border));
+  }
+}
+
 /* ---- Group 4: Input Focus Scaling — prevent iOS zoom ---- */
 /* Set all inputs to 16px minimum to prevent iOS auto-zoom */
 input,

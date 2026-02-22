@@ -680,7 +680,7 @@ export default function Diary() {
       {/* 3-Column Layout Below Hero */}
       <div className="flex flex-1 w-full max-w-[1400px] mx-auto overflow-hidden min-h-0">
         {/* Left Sidebar - Editorial style */}
-        <aside className="hidden lg:flex flex-col w-[380px] shrink-0 h-full min-h-0 overflow-y-auto border-r border-border/20">
+        <aside className="hidden md:flex flex-col w-[280px] lg:w-[380px] shrink-0 h-full min-h-0 overflow-y-auto border-r border-border/20">
           <DiaryLeftSidebar 
             userName={userName}
             filter={filter}
@@ -807,7 +807,7 @@ export default function Diary() {
       </main>
 
       {/* Right Sidebar */}
-      <aside className="hidden xl:flex flex-col w-[340px] shrink-0 h-full min-h-0 overflow-y-auto border-l border-border/20 bg-background/50 p-4 gap-4">
+      <aside className="hidden lg:flex flex-col w-[280px] xl:w-[340px] shrink-0 h-full min-h-0 overflow-y-auto border-l border-border/20 bg-background/50 p-4 gap-4">
         <DiaryProfileCard
           userName={userName}
           userEmail={user?.email || ""}
