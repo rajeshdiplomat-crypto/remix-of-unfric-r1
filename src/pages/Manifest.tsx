@@ -509,7 +509,7 @@ export default function Manifest() {
         />
 
         {/* Content Area - 2-column layout: [Left: Goals+Calendar] [Right: Editorial or Practice] */}
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-3 w-full max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-6 py-2 overflow-hidden min-h-0">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-[3fr_2fr] gap-3 w-full max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-6 py-2 overflow-hidden min-h-0">
           {/* ========== LEFT COLUMN: Goals List + Toggle Panels ========== */}
           <div className="flex flex-col h-full min-h-0 gap-3">
             {/* Goals Container */}
@@ -662,7 +662,7 @@ export default function Manifest() {
           </div>
 
           {/* ========== RIGHT COLUMN: Editorial ========== */}
-          <div className="hidden lg:flex flex-col h-full min-h-0 overflow-y-auto">
+          <div className="hidden md:flex flex-col h-full min-h-0 overflow-y-auto">
             <div className="flex flex-col gap-6 py-6 px-5">
               {/* Badge */}
               <Badge variant="secondary" className="w-fit rounded-full px-3 py-1 gap-1.5">
