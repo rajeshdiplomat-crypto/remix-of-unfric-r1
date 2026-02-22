@@ -1223,7 +1223,16 @@ export default function Habits() {
           <div className="flex items-center justify-between mb-3 flex-shrink-0">
             <h2 className="text-sm font-normal uppercase tracking-zara-wide text-foreground">Habits Tracker</h2>
             <div className="flex items-center gap-2">
-              {/* Mobile: Insights button in header */}
+              {/* Mobile: Create + Insights buttons in header */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden h-8 w-8"
+                onClick={openCreateDialog}
+                aria-label="Create Habit"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"
@@ -1517,16 +1526,12 @@ export default function Habits() {
                     </th>
                   ))}
                   <th className="p-0.5 text-center text-[9px] font-medium text-muted-foreground" style={{ width: 32 }}>%</th>
-                  <th className="p-0.5 text-center text-[9px] font-medium text-muted-foreground" style={{ width: 32 }}>🔥</th>
                 </tr>
               </thead>
               <tbody>
-                {/* Daily Progress Chart Row - embedded in table for perfect column alignment */}
+                {/* Daily Progress Chart Row - full bleed */}
                 <tr>
-                  <td className="sticky left-0 bg-muted/30 p-1 pl-2 text-[9px] font-medium text-muted-foreground align-bottom">
-                    PROGRESS
-                  </td>
-                  <td colSpan={7} className="p-0 bg-muted/30">
+                  <td colSpan={9} className="p-0 bg-muted/30">
                     <svg viewBox="0 0 700 120" className="w-full" style={{ height: 56 }} preserveAspectRatio="none">
                       {(() => {
                         const today = new Date();
@@ -1596,7 +1601,6 @@ export default function Habits() {
                       })()}
                     </svg>
                   </td>
-                  <td colSpan={2} className="bg-muted/30"></td>
                 </tr>
                 {activities.filter(a => !a.isArchived).map((activity, idx) => {
                   const stats = activityStats.find(s => s.id === activity.id);
@@ -1654,13 +1658,6 @@ export default function Habits() {
                         );
                       })}
                       <td className="p-0.5 text-center text-[10px] text-muted-foreground font-medium">{progressPercent}%</td>
-                      <td className="p-0.5 text-center text-[10px]">
-                        {(stats?.streak || 0) > 0 ? (
-                          <span>🔥{stats?.streak}</span>
-                        ) : (
-                          <span className="text-muted-foreground/40">0</span>
-                        )}
-                      </td>
                     </tr>
                   );
                 })}
@@ -1858,15 +1855,7 @@ export default function Habits() {
             </div>
           </Card>
 
-          {/* Mobile FAB — Floating Action Button in thumb zone */}
-          <Button
-            onClick={openCreateDialog}
-            className="md:hidden fixed bottom-6 right-6 z-30 h-14 w-14 rounded-full shadow-lg"
-            size="icon"
-            style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
-          >
-            <Plus className="h-6 w-6" />
-          </Button>
+          {/* Mobile FAB removed - create button moved to header */}
         </div>
 
         {/* Mobile Insights Drawer */}
@@ -1885,6 +1874,25 @@ export default function Habits() {
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCurrentMonth(addDays(endOfMonth(currentMonth), 1))}>
                   <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
+              </div>
+
+              {/* Habits Count */}
+              <div>
+                <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground mb-2">Habits</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="flex flex-col items-center p-3 rounded-xl border border-border bg-muted/20">
+                    <span className="text-lg font-semibold text-primary">{activities.filter((a) => !a.isArchived).length}</span>
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-zara">Active</span>
+                  </div>
+                  <div className="flex flex-col items-center p-3 rounded-xl border border-border bg-muted/20">
+                    <span className="text-lg font-semibold text-foreground">{activities.filter((a) => a.isArchived).length}</span>
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-zara">Done</span>
+                  </div>
+                  <div className="flex flex-col items-center p-3 rounded-xl border border-border bg-muted/20">
+                    <span className="text-lg font-semibold text-foreground">{activities.length}</span>
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-zara">Total</span>
+                  </div>
+                </div>
               </div>
 
               {/* Habit Days Summary Cards */}
@@ -2063,16 +2071,31 @@ export default function Habits() {
                       <Check className="h-3.5 w-3.5 mr-1.5" /> {isTodayDone ? "Undo Today" : "Mark Today"}
                     </Button>
                   </div>
-                  {!detailHabit.isArchived && (
+                  <div className="flex gap-2">
+                    {!detailHabit.isArchived && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => { setHabitDetailId(null); handleCompleteHabit(detailHabit.id); }}
+                      >
+                        <CheckCircle className="h-3.5 w-3.5 mr-1.5" /> Complete
+                      </Button>
+                    )}
                     <Button
-                      variant="secondary"
+                      variant="destructive"
                       size="sm"
-                      className="w-full"
-                      onClick={() => { setHabitDetailId(null); handleCompleteHabit(detailHabit.id); }}
+                      className="flex-1"
+                      onClick={() => {
+                        if (confirm("Delete this habit?")) {
+                          setHabitDetailId(null);
+                          handleDelete(detailHabit.id);
+                        }
+                      }}
                     >
-                      <CheckCircle className="h-3.5 w-3.5 mr-1.5" /> Complete Habit
+                      <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Delete
                     </Button>
-                  )}
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
