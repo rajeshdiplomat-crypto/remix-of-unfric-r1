@@ -194,7 +194,7 @@ export default function ManifestPractice() {
       />
     )}
     <div className="flex flex-col w-full flex-1 bg-background min-h-screen overflow-hidden pt-14">
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-3 w-full px-2 sm:px-4 py-2 overflow-hidden">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-0 w-full max-w-[1400px] mx-auto overflow-hidden">
         {/* ========== LEFT COLUMN: Editorial ========== */}
         <div className="hidden lg:flex flex-col h-full min-h-0 overflow-y-auto">
           <div className="flex flex-col gap-6 py-6 px-5">
@@ -321,7 +321,7 @@ export default function ManifestPractice() {
             </div>
           </div>
 
-          <div className="bg-card rounded-2xl shadow-sm border border-border flex-1 overflow-hidden">
+          <div className="rounded-2xl shadow-sm border border-border flex-1 overflow-hidden">
             <ManifestPracticePanel
               goal={goal}
               streak={streak}
