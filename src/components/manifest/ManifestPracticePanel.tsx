@@ -495,7 +495,7 @@ export function ManifestPracticePanel({
 
         {activeRing === "proof" && (
           <div className="space-y-3">
-            <p className="text-xs text-muted-foreground">What happened today that proves your reality?</p>
+            <p className="text-sm text-muted-foreground">What happened today that proves your reality?</p>
             <Textarea ref={proofTextRef} defaultValue="" placeholder="I noticed..." rows={2} className="rounded-xl resize-none text-sm" disabled={isViewingPast} />
             <input ref={proofImageInputRef} type="file" accept="image/*" onChange={handleProofImageUpload} className="hidden" />
             {currentProofImageUrl ? (
@@ -510,6 +510,20 @@ export function ManifestPracticePanel({
                 <ImagePlus className="h-3.5 w-3.5 mr-1.5" /> Add Photo
               </Button>
             )}
+          </div>
+        )}
+
+        {/* Sticky save for proof — pinned to bottom of viewport on mobile */}
+        {activeRing === "proof" && (
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 p-3 bg-background/80 backdrop-blur-xl border-t border-border">
+            <Button onClick={handleAddProof} disabled={isViewingPast} className="w-full h-10 rounded-xl text-white text-sm font-semibold"
+              style={{ background: "hsl(200, 80%, 50%)" }}>
+              Save Proof
+            </Button>
+          </div>
+        )}
+        {activeRing === "proof" && (
+          <div className="hidden lg:block">
             <Button onClick={handleAddProof} disabled={isViewingPast} className="w-full h-9 rounded-xl text-white text-sm"
               style={{ background: "hsl(200, 80%, 50%)" }}>
               Save Proof
@@ -550,9 +564,9 @@ export function ManifestPracticePanel({
   };
 
   return (
-    <div className="h-full flex flex-col bg-background overflow-hidden">
+    <div className="h-full flex flex-col bg-background overflow-hidden antialiased">
       {/* ===== Immersive Hero Banner ===== */}
-      <div className="relative w-full h-48 sm:h-56 flex-shrink-0 overflow-hidden">
+      <div className="relative w-full h-40 sm:h-56 flex-shrink-0 overflow-hidden">
         {currentImageUrl ? (
           <img src={currentImageUrl} alt={goal.title} className="w-full h-full object-cover" />
         ) : (

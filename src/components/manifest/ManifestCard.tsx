@@ -1,10 +1,9 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Flame, Play, Tag, Pencil, Trash2, CheckCircle, RotateCcw, Check } from "lucide-react";
-import { type ManifestGoal, type ManifestDailyPractice, CATEGORIES } from "./types";
+import { Flame, Play, Pencil, Trash2, CheckCircle, RotateCcw, Check } from "lucide-react";
+import { type ManifestGoal, type ManifestDailyPractice } from "./types";
 import { format, subDays, parseISO, differenceInDays } from "date-fns";
 import { useMemo } from "react";
-import { useDatePreferences } from "@/hooks/useDatePreferences";
 
 interface ManifestCardProps {
   goal: ManifestGoal;
@@ -57,7 +56,7 @@ export function ManifestCard({
   return (
     <Card
       onClick={onClick}
-      className={`overflow-hidden rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg relative ${
+      className={`overflow-hidden rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg relative antialiased ${
         isSelected ? "ring-2 ring-primary shadow-lg" : ""
       } ${isCompleted ? "opacity-60 grayscale" : ""}`}
     >
@@ -85,9 +84,9 @@ export function ManifestCard({
         )}
       </div>
 
-      <div className="flex flex-row h-24">
-        {/* Square thumbnail */}
-        <div className="relative w-24 h-24 flex-shrink-0">
+      <div className="flex flex-row h-20">
+        {/* Square thumbnail — w-20 h-20 for high density */}
+        <div className="relative w-20 h-20 flex-shrink-0">
           {(goal.cover_image_url || goal.vision_image_url) ? (
             <img
               src={goal.cover_image_url || goal.vision_image_url || ""}
@@ -97,44 +96,46 @@ export function ManifestCard({
           ) : (
             <div className="w-full h-full bg-muted rounded-l-xl" />
           )}
-          <span className="absolute bottom-1 right-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-background/80 backdrop-blur-sm text-foreground/80">
+          <span className="absolute bottom-0.5 right-0.5 text-[8px] font-semibold px-1 py-0.5 rounded-md bg-background/80 backdrop-blur-sm text-foreground/80 leading-none">
             Day {dayNumber}
           </span>
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-2.5 pl-3 flex flex-col justify-between min-w-0">
-          {/* Top: title + pills */}
+        <div className="flex-1 p-2 pl-2.5 flex flex-col justify-between min-w-0">
+          {/* Top: title + momentum pill */}
           <div>
-            <h3 className="font-semibold text-foreground text-sm leading-tight line-clamp-1 pr-14 mb-1.5">
-              {goal.title}
-            </h3>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                {momentumPct}% Momentum
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <h3 className="font-semibold text-foreground text-sm leading-tight line-clamp-1 flex-1 min-w-0 pr-10 antialiased">
+                {goal.title}
+              </h3>
+            </div>
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="inline-flex items-center text-[9px] font-semibold px-1.5 py-px rounded-full bg-primary/10 text-primary leading-tight">
+                {momentumPct}%
               </span>
               {streak > 0 && (
-                <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive">
-                  <Flame className="h-2.5 w-2.5" /> {streak}
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-px rounded-full bg-destructive/10 text-destructive leading-tight">
+                  <Flame className="h-2 w-2" /> {streak}
                 </span>
               )}
             </div>
           </div>
 
-          {/* Bottom: timeline + action */}
+          {/* Bottom: weekly circles + practice button */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1">
               {["M","T","W","T","F","S","S"].map((day, i) => (
-                <div key={i} className="flex flex-col items-center gap-0.5">
-                  <span className="text-[8px] font-medium text-muted-foreground leading-none">{day}</span>
+                <div key={i} className="flex flex-col items-center gap-px">
+                  <span className="text-[7px] font-medium text-muted-foreground leading-none">{day}</span>
                   <div
-                    className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-colors ${
+                    className={`w-3 h-3 rounded-full border flex items-center justify-center transition-colors ${
                       weekProgress[i]
                         ? "bg-primary border-primary"
                         : "border-border bg-transparent"
                     }`}
                   >
-                    {weekProgress[i] && <Check className="h-2 w-2 text-primary-foreground" />}
+                    {weekProgress[i] && <Check className="h-1.5 w-1.5 text-primary-foreground" />}
                   </div>
                 </div>
               ))}
@@ -143,9 +144,9 @@ export function ManifestCard({
               <Button
                 onClick={(e) => { e.stopPropagation(); onClick(); }}
                 size="sm"
-                className="h-7 px-3 rounded-full text-[11px] font-semibold"
+                className="h-6 px-2.5 rounded-full text-[10px] font-semibold"
               >
-                <Play className="h-2.5 w-2.5 mr-0.5" />
+                <Play className="h-2 w-2 mr-0.5" />
                 Practice
               </Button>
             )}

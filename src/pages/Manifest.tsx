@@ -545,7 +545,7 @@ export default function Manifest() {
                   <Button
                     onClick={() => setShowCreateModal(true)}
                     size="sm"
-                    className="rounded-lg h-8 px-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all text-xs"
+                    className="hidden lg:inline-flex rounded-lg h-8 px-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all text-xs"
                   >
                     <Plus className="h-3.5 w-3.5 mr-1" /> New
                   </Button>
@@ -734,6 +734,14 @@ export default function Manifest() {
             </div>
           </div>
         </div>
+
+        {/* Mobile FAB */}
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="lg:hidden fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 text-white shadow-xl hover:shadow-2xl transition-all flex items-center justify-center active:scale-95"
+        >
+          <Plus className="h-6 w-6" />
+        </button>
 
         {/* Modal */}
         <ManifestCreateModal
