@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Calendar, Check, Play, Loader2, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
@@ -37,6 +36,15 @@ function getDuration(task: QuadrantTask) {
   return h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
 }
 
+function getPriorityBorderClass(task: QuadrantTask) {
+  if (task.is_completed) return "border-l-muted-foreground/30";
+  if (task.status === "overdue") return "border-l-destructive";
+  if (task.urgency === "high" && task.importance === "high") return "border-l-destructive";
+  if (task.urgency === "high") return "border-l-orange-500";
+  if (task.importance === "high") return "border-l-amber-500";
+  return "border-l-muted-foreground/20";
+}
+
 function KanbanCard({
   task,
   onClick,
@@ -49,48 +57,46 @@ function KanbanCard({
   onCompleteTask: (task: QuadrantTask) => void;
 }) {
   return (
-    <Card
+    <div
       draggable
       onDragStart={(e) => e.dataTransfer.setData("task-id", task.id)}
       onClick={onClick}
       className={cn(
-        "group p-3 cursor-pointer hover:shadow-md transition-shadow",
+        "group p-2.5 cursor-pointer hover:shadow-md transition-all rounded-lg border-l-4 border-r border-t border-b",
+        getPriorityBorderClass(task),
         task.is_completed
-          ? "bg-muted/50 border-border"
-          : task.status === "overdue"
-            ? "bg-destructive/10 border-destructive/30 shadow-sm"
-            : "bg-background border-border shadow-sm",
+          ? "bg-muted/50 border-border/50"
+          : "bg-background border-border/50 shadow-sm",
       )}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <p className={cn(
-            "text-sm font-medium text-foreground leading-snug mb-1 truncate",
+            "text-[13px] font-medium text-foreground leading-snug mb-1 truncate",
             task.is_completed && "line-through text-muted-foreground"
           )}>{task.title}</p>
 
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide flex-nowrap">
             {task.due_date && (
-              <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                <Calendar className="h-3 w-3" />
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-foreground/5 text-muted-foreground shrink-0">
                 {format(new Date(task.due_date), "d/M")}
               </span>
             )}
             {task.due_time && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                {task.due_time}{task.end_time ? ` - ${task.end_time}` : ""}
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-foreground/5 text-muted-foreground shrink-0">
+                {task.due_time}{task.end_time ? `–${task.end_time}` : ""}
               </span>
             )}
             {getDuration(task) && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-foreground/5 text-muted-foreground shrink-0">
                 {getDuration(task)}
               </span>
             )}
-            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-primary/30 text-primary">
+            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-primary/30 text-primary shrink-0">
               {getQuadrantLabel(task)}
             </Badge>
             {task.tags?.slice(0, 1).map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-[9px] px-1.5 py-0">
+              <Badge key={tag} variant="secondary" className="text-[10px] px-1 py-0 h-4 shrink-0">
                 {tag}
               </Badge>
             ))}
@@ -125,7 +131,7 @@ function KanbanCard({
           </button>
         </div>
       </div>
-    </Card>
+    </div>
   );
 }
 
