@@ -1283,8 +1283,8 @@ export default function Habits() {
                   const ringSize = 54;
                   return (
                     <>
-                      <div className="flex justify-center"><ProgressRing progress={Math.min(totalGoalPercent, 100)} label="Total Goal" color={RING_COLORS[0]} size={ringSize} strokeWidth={5} /></div>
-                      <div className="flex justify-center"><ProgressRing progress={overallStats.momentum} label="Momentum" color={RING_COLORS[1]} size={ringSize} strokeWidth={5} /></div>
+                      <div className="flex justify-center"><ProgressRing progress={Math.min(totalGoalPercent, 100)} label="Goal" color={RING_COLORS[0]} size={ringSize} strokeWidth={5} /></div>
+                      <div className="flex justify-center"><ProgressRing progress={overallStats.momentum} label="Drive" color={RING_COLORS[1]} size={ringSize} strokeWidth={5} /></div>
                       <div className="flex justify-center"><ProgressRing progress={overallStats.dailyProgress} label="Daily" color={RING_COLORS[2]} size={ringSize} strokeWidth={5} /></div>
                       <div className="flex justify-center"><ProgressRing progress={overallStats.weeklyProgress} label="Weekly" color={RING_COLORS[3]} size={ringSize} strokeWidth={5} /></div>
                       <div className="flex justify-center"><ProgressRing progress={overallStats.monthlyProgress} label="Overall" color={RING_COLORS[4]} size={ringSize} strokeWidth={5} /></div>
@@ -1532,13 +1532,17 @@ export default function Habits() {
               <tbody>
                 {/* Daily Progress Chart Row - aligned with day columns like desktop */}
                 <tr>
-                  <td className="p-0 sticky left-0 z-10 bg-muted/30" style={{ width: 90 }}></td>
-                  <td colSpan={7} className="p-0 bg-muted/30">
-                    <svg viewBox="0 0 700 120" className="w-full" style={{ height: 56 }} preserveAspectRatio="none">
+                  <td colSpan={9} className="p-0 bg-muted/30">
+                    <svg viewBox="0 0 900 120" className="w-full" style={{ height: 56 }} preserveAspectRatio="none">
                       {(() => {
                         const today = new Date();
                         const dataPoints: { x: number; y: number; value: number; isPast: boolean; isFuture: boolean }[] = [];
                         const chartActivities = selectedActivityId ? activities.filter(a => a.id === selectedActivityId) : activities.filter(a => !a.isArchived);
+                        // Left offset for habit name column (~90px of ~360px total ≈ 225 units of 900)
+                        // Right offset for % column (~32px ≈ 80 units of 900)
+                        const leftOffset = 115;
+                        const rightOffset = 40;
+                        const chartWidth = 900 - leftOffset - rightOffset;
 
                         for (let i = 0; i < 7; i++) {
                           const day = currentWeekDays[i];
@@ -1557,13 +1561,13 @@ export default function Habits() {
                             }
                           });
                           const value = total > 0 ? (completed / total) * 100 : -1;
-                          const x = (i + 0.5) * 100;
+                          const x = leftOffset + (i + 0.5) * (chartWidth / 7);
                           if (value < 0) continue;
                           const y = 100 - (value / 100) * 80;
                           dataPoints.push({ x, y: Math.max(10, Math.min(110, y)), value, isPast, isFuture });
                         }
 
-                        if (dataPoints.length < 2) return <text x="350" y="65" textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize="12" opacity="0.5">Not enough data</text>;
+                        if (dataPoints.length < 2) return <text x="450" y="65" textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize="12" opacity="0.5">Not enough data</text>;
 
                         const createSmoothPath = (points: { x: number; y: number }[]) => {
                           if (points.length < 2) return "";
@@ -1603,7 +1607,6 @@ export default function Habits() {
                       })()}
                     </svg>
                   </td>
-                  <td className="p-0 bg-muted/30" style={{ width: 32 }}></td>
                 </tr>
                 {activities.filter(a => !a.isArchived).map((activity, idx) => {
                   const stats = activityStats.find(s => s.id === activity.id);
