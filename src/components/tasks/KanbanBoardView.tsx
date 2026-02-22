@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Calendar, Check, Play, Pause, Loader2, ChevronDown } from "lucide-react";
+import { Calendar, Check, Play, Pause, Loader2, ChevronDown, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -13,6 +13,7 @@ interface KanbanBoardViewProps {
   onDrop: (columnId: string, task: QuadrantTask) => void;
   onStartTask: (task: QuadrantTask) => void;
   onCompleteTask: (task: QuadrantTask) => void;
+  onDeleteTask?: (task: QuadrantTask) => void;
   defaultMode?: QuadrantMode;
 }
 
@@ -50,11 +51,13 @@ function KanbanCard({
   onClick,
   onStartTask,
   onCompleteTask,
+  onDeleteTask,
 }: {
   task: QuadrantTask;
   onClick: () => void;
   onStartTask: (task: QuadrantTask) => void;
   onCompleteTask: (task: QuadrantTask) => void;
+  onDeleteTask?: (task: QuadrantTask) => void;
 }) {
   return (
     <div
@@ -135,6 +138,15 @@ function KanbanCard({
           >
             <Check className="h-3 w-3" />
           </button>
+          {onDeleteTask && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDeleteTask(task); }}
+              className="h-6 w-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
+              title="Delete task"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -173,6 +185,7 @@ export function KanbanBoardView({
   onDrop,
   onStartTask,
   onCompleteTask,
+  onDeleteTask,
   defaultMode,
 }: KanbanBoardViewProps) {
   const [boardMode, setBoardMode] = useState<QuadrantMode>(defaultMode || "urgent-important");
@@ -251,7 +264,7 @@ export function KanbanBoardView({
 
             <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
               {columnTasks[col.id]?.map((task) => (
-                <KanbanCard key={task.id} task={task} onClick={() => onTaskClick(task)} onStartTask={onStartTask} onCompleteTask={onCompleteTask} />
+                <KanbanCard key={task.id} task={task} onClick={() => onTaskClick(task)} onStartTask={onStartTask} onCompleteTask={onCompleteTask} onDeleteTask={onDeleteTask} />
               ))}
 
               {columnCompleted[col.id]?.length > 0 && (
@@ -265,7 +278,7 @@ export function KanbanBoardView({
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-2">
                     {columnCompleted[col.id].map((task) => (
-                      <KanbanCard key={task.id} task={task} onClick={() => onTaskClick(task)} onStartTask={onStartTask} onCompleteTask={onCompleteTask} />
+                      <KanbanCard key={task.id} task={task} onClick={() => onTaskClick(task)} onStartTask={onStartTask} onCompleteTask={onCompleteTask} onDeleteTask={onDeleteTask} />
                     ))}
                   </CollapsibleContent>
                 </Collapsible>

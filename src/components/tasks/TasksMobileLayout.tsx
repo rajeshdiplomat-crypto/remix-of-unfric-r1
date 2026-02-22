@@ -23,6 +23,7 @@ import {
   Columns3,
   Pause,
   RotateCcw,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -139,11 +140,13 @@ function MobileTaskCard({
   onClick,
   onComplete,
   onStartTask,
+  onDeleteTask,
 }: {
   task: QuadrantTask;
   onClick: () => void;
   onComplete: () => void;
   onStartTask?: (task: QuadrantTask) => void;
+  onDeleteTask?: (task: QuadrantTask) => void;
 }) {
   const dateLabel = task.due_date ? `${new Date(task.due_date).getDate()}/${new Date(task.due_date).getMonth() + 1}` : "";
   const duration = getMobileCardDuration(task);
@@ -223,6 +226,15 @@ function MobileTaskCard({
             title="Pause task"
           >
             <Pause className="h-3 w-3" />
+          </button>
+        )}
+        {onDeleteTask && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDeleteTask(task); }}
+            className="h-6 w-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
+            title="Delete task"
+          >
+            <Trash2 className="h-3 w-3" />
           </button>
         )}
       </div>
@@ -731,6 +743,7 @@ export function TasksMobileLayout({
                       onClick={() => onTaskClick(task)}
                       onComplete={() => onCompleteTask(task)}
                       onStartTask={onStartTask}
+                      onDeleteTask={onDeleteTask}
                     />
                   ))}
                   {completedTasks.length > 0 && (
@@ -747,6 +760,7 @@ export function TasksMobileLayout({
                             onClick={() => onTaskClick(task)}
                             onComplete={() => onCompleteTask(task)}
                             onStartTask={onStartTask}
+                            onDeleteTask={onDeleteTask}
                           />
                         ))}
                       </div>
