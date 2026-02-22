@@ -96,13 +96,13 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
         </div>
 
         {/* Center: Module Nav — desktop only */}
-        <nav className="hidden lg:flex items-center gap-6">
+        <nav className="hidden md:flex items-center gap-6">
           {modules.map((module) =>
           <NavLink
             key={module.path}
             to={module.path}
             className={cn(
-              "text-xs lg:text-[11px] font-light uppercase tracking-zara-wide transition-all duration-300",
+              "text-xs md:text-[11px] font-light uppercase tracking-zara-wide transition-all duration-300",
               isActive(module.path) ?
               cn(
                 "border-b pb-0.5",

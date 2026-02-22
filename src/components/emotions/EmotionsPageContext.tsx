@@ -103,9 +103,9 @@ export function EmotionsPageContext({
   return (
     <div className="flex flex-col min-h-[calc(100vh-300px)] animate-in fade-in slide-in-from-right-4 duration-400 mx-auto w-full">
       {/* Two-Column Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-14 flex-1">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-14 flex-1">
         {/* Left: FormCards */}
-        <div className="flex flex-col order-2 lg:order-1">
+        <div className="flex flex-col order-2 md:order-1">
           {/* Header Area: Back Button & Journal Toggle */}
           <div className="flex items-center justify-between mb-4">
             <Button
@@ -259,7 +259,7 @@ export function EmotionsPageContext({
         </div>
 
         {/* Right: Info & Context - Clean & Visible */}
-        <div className="flex flex-col order-1 lg:order-2 lg:pl-8 pt-2">
+        <div className="flex flex-col order-1 md:order-2 md:pl-8 pt-2">
           {/* Capture Content - Ensured Visibility */}
           <div className="animate-in slide-in-from-bottom-4 fade-in duration-700 delay-100">
             <div

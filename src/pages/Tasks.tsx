@@ -704,7 +704,7 @@ export default function Tasks() {
                   />
                 </div>
                 {/* Right column: Clock spans full height */}
-                <div className="hidden lg:flex w-[220px] shrink-0 border-l border-border">
+                <div className="hidden md:flex w-[220px] shrink-0 border-l border-border">
                   <TasksClockWidget />
                 </div>
               </div>
