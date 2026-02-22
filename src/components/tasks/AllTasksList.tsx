@@ -238,14 +238,34 @@ function TaskRow({ task, onTaskClick, onStartTask, onCompleteTask, onDeleteTask,
     <div
       onClick={() => onTaskClick(task)}
       className={cn(
-        "group rounded-lg border cursor-pointer transition-all",
-        "hover:shadow-md hover:border-primary/30",
-        isMobile ? "p-2.5" : "p-2",
+        "group rounded-lg cursor-pointer transition-all",
+        "hover:shadow-md",
+        isMobile ? "p-2 border-l-4" : "p-2 border",
         task.is_completed
-          ? "bg-muted/50 border-border"
+          ? isMobile
+            ? "bg-muted/50 border-l-muted-foreground/30"
+            : "bg-muted/50 border-border"
           : task.status === "overdue"
-            ? "bg-destructive/10 border-destructive/30"
-            : "bg-background border-border"
+            ? isMobile
+              ? "bg-background border-l-destructive"
+              : "bg-destructive/10 border-destructive/30"
+            : task.urgency === "high" && task.importance === "high"
+              ? isMobile
+                ? "bg-background border-l-destructive"
+                : "bg-background border-border"
+              : task.urgency === "high"
+                ? isMobile
+                  ? "bg-background border-l-orange-500"
+                  : "bg-background border-border"
+                : task.importance === "high"
+                  ? isMobile
+                    ? "bg-background border-l-amber-500"
+                    : "bg-background border-border"
+                  : isMobile
+                    ? "bg-background border-l-muted-foreground/20"
+                    : "bg-background border-border",
+        !isMobile && "hover:border-primary/30",
+        isMobile && "border-r border-t border-b border-border/50 shadow-sm"
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -264,34 +284,34 @@ function TaskRow({ task, onTaskClick, onStartTask, onCompleteTask, onDeleteTask,
           )}>
             {formatDate(task) && (
               <span className={cn(
-                "px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0",
-                isMobile ? "text-[9px]" : "text-[10px]"
+                "px-1.5 py-0.5 rounded shrink-0",
+                isMobile ? "text-[10px] bg-foreground/5 text-muted-foreground" : "text-[10px] bg-muted text-muted-foreground"
               )}>{formatDate(task)}</span>
             )}
             {task.due_time && (
               <span className={cn(
-                "px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0",
-                isMobile ? "text-[9px]" : "text-[10px]"
+                "px-1.5 py-0.5 rounded shrink-0",
+                isMobile ? "text-[10px] bg-foreground/5 text-muted-foreground" : "text-[10px] bg-muted text-muted-foreground"
               )}>
                 {task.due_time}{task.end_time ? `–${task.end_time}` : ""}
               </span>
             )}
             {getDuration(task) && (
               <span className={cn(
-                "px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0",
-                isMobile ? "text-[9px]" : "text-[10px]"
+                "px-1.5 py-0.5 rounded shrink-0",
+                isMobile ? "text-[10px] bg-foreground/5 text-muted-foreground" : "text-[10px] bg-muted text-muted-foreground"
               )}>{getDuration(task)}</span>
             )}
             <Badge variant="outline" className={cn(
               "px-1 py-0 h-4 border-primary/30 text-primary shrink-0",
-              isMobile ? "text-[9px]" : "text-[10px]"
+              isMobile ? "text-[10px]" : "text-[10px]"
             )}>
               {getQuadrantLabel(task)}
             </Badge>
             {task.tags?.slice(0, 1).map((tag) => (
               <Badge key={tag} variant="secondary" className={cn(
                 "px-1 py-0 h-4 shrink-0",
-                isMobile ? "text-[9px]" : "text-[10px]"
+                isMobile ? "text-[10px]" : "text-[10px]"
               )}>{tag}</Badge>
             ))}
           </div>
