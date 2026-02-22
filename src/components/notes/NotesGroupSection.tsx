@@ -32,6 +32,8 @@ interface NotesGroupSectionProps {
   onUpdateGroup?: (group: NoteGroup) => void;
   isInFocusMode?: boolean;
   isFocusedGroup?: boolean;
+  expandedGroupId?: string | null;
+  onExpandGroup?: (groupId: string | null) => void;
 }
 
 export function NotesGroupSection({
@@ -48,12 +50,25 @@ export function NotesGroupSection({
   onUpdateGroup,
   isInFocusMode = false,
   isFocusedGroup = false,
+  expandedGroupId,
+  onExpandGroup,
 }: NotesGroupSectionProps) {
   const [isExpanded, setIsExpanded] = useState(isFocusedGroup);
   const [isAddingFolder, setIsAddingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const folderInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+
+  // Mobile accordion: if expandedGroupId is managed externally, sync with it
+  const isMobileExpanded = expandedGroupId !== undefined ? expandedGroupId === group.id : isExpanded;
+
+  const handleToggleMobile = () => {
+    if (onExpandGroup) {
+      onExpandGroup(isMobileExpanded ? null : group.id);
+    } else {
+      setIsExpanded(!isExpanded);
+    }
+  };
 
   useEffect(() => {
     if (isFocusedGroup) setIsExpanded(true);
@@ -312,7 +327,7 @@ export function NotesGroupSection({
         {/* Mobile layout: compact card with thumbnail */}
         <div className="md:hidden">
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={handleToggleMobile}
             className="w-full px-2 py-1.5 text-left hover:bg-muted/5 transition-colors"
           >
             <div className="flex items-center gap-2.5">
@@ -338,12 +353,12 @@ export function NotesGroupSection({
                   </span>
                 )}
                 <div className="h-4 w-4 flex items-center justify-center">
-                  {isExpanded ? <ChevronDown className="h-2.5 w-2.5 text-muted-foreground/40" /> : <ChevronRight className="h-2.5 w-2.5 text-muted-foreground/40" />}
+                  {isMobileExpanded ? <ChevronDown className="h-2.5 w-2.5 text-muted-foreground/40" /> : <ChevronRight className="h-2.5 w-2.5 text-muted-foreground/40" />}
                 </div>
               </div>
             </div>
           </button>
-          {isExpanded && <div className="px-2 pb-2 pt-1">{renderExpandedBody()}</div>}
+          {isMobileExpanded && <div className="px-2 pb-2 pt-1">{renderExpandedBody()}</div>}
         </div>
       </div>
     </div>

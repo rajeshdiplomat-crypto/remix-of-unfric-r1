@@ -308,6 +308,7 @@ export default function Notes() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("updatedAt");
   const [filterGroupId, setFilterGroupId] = useState<string>("all");
+  const [mobileExpandedGroupId, setMobileExpandedGroupId] = useState<string | null>(null);
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [notesView, setNotesView] = useState<NotesViewType>("atlas");
 
@@ -875,20 +876,20 @@ export default function Notes() {
             </div>
 
             {/* Mobile: Quick Stats as tiny pills - single row */}
-            <div className="md:hidden flex items-center gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <div className="md:hidden flex items-center gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {[
-                { label: "Total", value: insights.total, icon: <FileText className="h-2 w-2" /> },
-                { label: "Today", value: insights.editedToday, icon: <Clock className="h-2 w-2" /> },
-                { label: "Pinned", value: insights.pinned, icon: <Pin className="h-2 w-2" /> },
-                { label: "Groups", value: insights.activeGroups, icon: <Layers className="h-2 w-2" /> },
+                { label: "Total", value: insights.total, icon: <FileText className="h-2.5 w-2.5" /> },
+                { label: "Today", value: insights.editedToday, icon: <Clock className="h-2.5 w-2.5" /> },
+                { label: "Pinned", value: insights.pinned, icon: <Pin className="h-2.5 w-2.5" /> },
+                { label: "Groups", value: insights.activeGroups, icon: <Layers className="h-2.5 w-2.5" /> },
               ].map((stat) => (
                 <div
                   key={stat.label}
-                  className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-foreground/5 backdrop-blur-sm whitespace-nowrap shrink-0"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-foreground/5 backdrop-blur-sm whitespace-nowrap shrink-0"
                 >
                   <span className="text-muted-foreground/50">{stat.icon}</span>
-                  <span className="text-[10px] font-medium text-foreground">{stat.value}</span>
-                  <span className="text-[8px] text-muted-foreground/50">{stat.label}</span>
+                  <span className="text-[11px] font-medium text-foreground">{stat.value}</span>
+                  <span className="text-[9px] text-muted-foreground/50">{stat.label}</span>
                 </div>
               ))}
             </div>
@@ -922,14 +923,105 @@ export default function Notes() {
                         <SelectItem value="title">A–Z</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 rounded-full hover:bg-foreground/5 shrink-0"
-                      onClick={() => setSettingsOpen(true)}
-                    >
-                      <MoreHorizontal className="h-3 w-3" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 rounded-full hover:bg-foreground/5 shrink-0"
+                        >
+                          <MoreHorizontal className="h-3 w-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-64 rounded-lg p-2">
+                        <DropdownMenuItem
+                          onClick={() => setSettingsOpen(true)}
+                          className="py-2 rounded-lg cursor-pointer"
+                        >
+                          <Settings className="h-4 w-4 mr-3 text-muted-foreground" />
+                          <span>Group Settings</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator className="my-2" />
+                        {/* Color Themes */}
+                        <div className="px-2 py-2">
+                          <div className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                            <Palette className="h-3.5 w-3.5" />
+                            Color Themes
+                          </div>
+                          <div className="grid grid-cols-6 gap-2">
+                            {COLOR_THEMES.map((colorTheme) => (
+                              <button
+                                key={colorTheme.id}
+                                onClick={() => handleBackgroundChange(colorTheme.gradient)}
+                                className={cn(
+                                  "w-8 h-8 rounded-full transition-all hover:scale-110 shadow-sm",
+                                  backgroundUrl === colorTheme.gradient
+                                    ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                                    : "",
+                                )}
+                                style={{ background: colorTheme.gradient }}
+                                title={colorTheme.name}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <DropdownMenuSeparator className="my-2" />
+                        {/* Background Images */}
+                        <div className="px-2 py-2">
+                          <div className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                            <Image className="h-3.5 w-3.5" />
+                            Background Image
+                          </div>
+                          <div className="grid grid-cols-4 gap-2">
+                            {BACKGROUND_PRESETS.map((bg) => (
+                              <button
+                                key={bg.id}
+                                onClick={() => handleBackgroundChange(bg.url)}
+                                className={cn(
+                                  "relative aspect-[4/3] rounded-lg overflow-hidden border-2 transition-all hover:scale-105",
+                                  backgroundUrl === bg.url
+                                    ? "border-primary shadow-lg"
+                                    : "border-transparent hover:border-border",
+                                )}
+                                title={bg.name}
+                              >
+                                {bg.url ? (
+                                  <img src={bg.url} alt={bg.name} className="h-full w-full object-cover" />
+                                ) : (
+                                  <div className="h-full w-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
+                                    <span className="text-[9px] font-medium text-muted-foreground">None</span>
+                                  </div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <DropdownMenuSeparator className="my-2" />
+                        {/* Upload Custom Image */}
+                        <div className="px-2 py-2">
+                          <label className="flex items-center gap-3 py-2 px-2 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                            <Upload className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">Upload Custom Image</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (event) => {
+                                    const dataUrl = event.target?.result as string;
+                                    handleBackgroundChange(dataUrl);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
 
@@ -1217,6 +1309,8 @@ export default function Notes() {
                       onAddNote={handleCreateNote}
                       onAddFolder={handleCreateFolder}
                       onUpdateGroup={handleUpdateGroup}
+                      expandedGroupId={mobileExpandedGroupId}
+                      onExpandGroup={setMobileExpandedGroupId}
                     />
                   ))}
               </div>
