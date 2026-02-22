@@ -104,7 +104,36 @@ function MobileKpi({
   );
 }
 
-// ─── Mobile Task Card (compact) ───
+// ─── Mobile Task Card (compact, matches list view style) ───
+function getMobileCardBorderClass(task: QuadrantTask) {
+  if (task.is_completed) return "border-l-muted-foreground/30";
+  if (task.status === "overdue") return "border-l-destructive";
+  if (task.urgency === "high" && task.importance === "high") return "border-l-destructive";
+  if (task.urgency === "high") return "border-l-orange-500";
+  if (task.importance === "high") return "border-l-amber-500";
+  return "border-l-muted-foreground/20";
+}
+
+function getMobileCardDuration(task: QuadrantTask) {
+  if (!task.due_time || !task.end_time) return "";
+  const [sh, sm] = task.due_time.split(":").map(Number);
+  const [eh, em] = task.end_time.split(":").map(Number);
+  const diff = (eh * 60 + em) - (sh * 60 + sm);
+  if (diff <= 0) return "";
+  const h = Math.floor(diff / 60);
+  const m = diff % 60;
+  return h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
+}
+
+function getMobileCardQuadrant(task: QuadrantTask) {
+  const u = task.urgency === "high";
+  const i = task.importance === "high";
+  if (u && i) return "U&I";
+  if (u && !i) return "U&NI";
+  if (!u && i) return "NU&I";
+  return "NU&NI";
+}
+
 function MobileTaskCard({
   task,
   onClick,
@@ -114,16 +143,18 @@ function MobileTaskCard({
   onClick: () => void;
   onComplete: () => void;
 }) {
+  const dateLabel = task.due_date ? `${new Date(task.due_date).getDate()}/${new Date(task.due_date).getMonth() + 1}` : "";
+  const duration = getMobileCardDuration(task);
+
   return (
     <div
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-all",
+        "group flex items-start gap-2.5 p-2.5 rounded-lg border-l-4 border-r border-t border-b cursor-pointer transition-all hover:shadow-md",
+        getMobileCardBorderClass(task),
         task.is_completed
-          ? "bg-muted/30 border-border opacity-70"
-          : task.status === "overdue"
-            ? "bg-destructive/5 border-destructive/20"
-            : "bg-card border-border shadow-sm",
+          ? "bg-muted/50 border-border/50"
+          : "bg-background border-border/50 shadow-sm",
       )}
     >
       <button
@@ -132,7 +163,7 @@ function MobileTaskCard({
           onComplete();
         }}
         className={cn(
-          "h-6 w-6 rounded-full flex items-center justify-center shrink-0 transition-colors border",
+          "h-6 w-6 rounded-full flex items-center justify-center shrink-0 transition-colors border mt-0.5",
           task.is_completed
             ? "bg-primary text-primary-foreground border-primary"
             : "border-border text-muted-foreground hover:border-primary hover:text-primary",
@@ -144,22 +175,36 @@ function MobileTaskCard({
       <div className="flex-1 min-w-0">
         <p
           className={cn(
-            "text-sm font-medium truncate text-foreground",
+            "text-[13px] font-medium truncate text-foreground",
             task.is_completed && "line-through text-muted-foreground",
           )}
         >
           {task.title}
         </p>
-        {task.due_time && (
-          <p className="text-[10px] text-muted-foreground mt-0.5">
-            {task.due_time}
-            {task.end_time ? ` – ${task.end_time}` : ""}
-          </p>
-        )}
+        <div className="flex items-center gap-1 mt-1 overflow-x-auto scrollbar-hide flex-nowrap">
+          {dateLabel && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-foreground/5 text-muted-foreground shrink-0">
+              {dateLabel}
+            </span>
+          )}
+          {task.due_time && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-foreground/5 text-muted-foreground shrink-0">
+              {task.due_time}{task.end_time ? `–${task.end_time}` : ""}
+            </span>
+          )}
+          {duration && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-foreground/5 text-muted-foreground shrink-0">
+              {duration}
+            </span>
+          )}
+          <span className="text-[10px] px-1 py-0 h-4 inline-flex items-center border border-primary/30 text-primary rounded shrink-0">
+            {getMobileCardQuadrant(task)}
+          </span>
+        </div>
       </div>
 
       {task.status === "ongoing" && !task.is_completed && (
-        <Loader2 className="h-3.5 w-3.5 text-primary animate-spin shrink-0" />
+        <Loader2 className="h-3.5 w-3.5 text-primary animate-spin shrink-0 mt-1" />
       )}
     </div>
   );
