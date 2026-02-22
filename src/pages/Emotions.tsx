@@ -543,45 +543,26 @@ export default function Emotions() {
         />
       )}
       <div className="flex flex-col w-full h-full min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
-        {/* Page Hero with Navigation overlay */}
-        <div className="relative">
-          <PageHero
-            storageKey="emotions-hero-src"
-            typeKey="emotions-hero-type"
-            badge={PAGE_HERO_TEXT.emotions.badge}
-            title={PAGE_HERO_TEXT.emotions.title}
-            subtitle={PAGE_HERO_TEXT.emotions.subtitle}
-          />
+        {/* Page Hero */}
+        <PageHero
+          storageKey="emotions-hero-src"
+          typeKey="emotions-hero-type"
+          badge={PAGE_HERO_TEXT.emotions.badge}
+          title={PAGE_HERO_TEXT.emotions.title}
+          subtitle={PAGE_HERO_TEXT.emotions.subtitle}
+        />
 
-          {/* Navigation overlay at bottom of hero */}
-          <div className="absolute bottom-4 left-0 right-0 z-20 px-4 lg:px-8">
-            <div className="max-w-4xl mx-auto">
-              <EmotionsNavigation
-                activeView={activeView}
-                canNavigate={canNavigate}
-                onViewChange={handleViewChange}
-                entries={entries}
-                onEditEntry={startEditEntry}
-                onDeleteEntry={setDeletingEntryId}
-                onDateClick={handleDateClick}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile: Sticky segmented control below hero */}
-        {isMobile && (
-          <EmotionsNavigation
-            activeView={activeView}
-            canNavigate={canNavigate}
-            onViewChange={handleViewChange}
-            entries={entries}
-            onEditEntry={startEditEntry}
-            onDeleteEntry={setDeletingEntryId}
-            onDateClick={handleDateClick}
-            standalone
-          />
-        )}
+        {/* Segmented control below hero */}
+        <EmotionsNavigation
+          activeView={activeView}
+          canNavigate={canNavigate}
+          onViewChange={handleViewChange}
+          entries={entries}
+          onEditEntry={startEditEntry}
+          onDeleteEntry={setDeletingEntryId}
+          onDateClick={handleDateClick}
+          standalone
+        />
 
         {/* Main Content */}
         <EmotionsPageLayout>

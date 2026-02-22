@@ -41,13 +41,16 @@ export function EmotionsNavigation({
   ];
 
   // Mobile: standalone sticky segmented control
-  if (isMobile && standalone) {
+  if (standalone) {
     return (
-      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border px-3 py-2">
+      <div className={cn(
+        "z-30 bg-background/95 backdrop-blur-md border-b border-border px-3 py-2",
+        isMobile && "sticky top-0"
+      )}>
         <div className="flex items-center gap-2">
           {/* Segmented Control */}
           <div className="flex-1 flex items-center gap-0 p-1 bg-muted rounded-xl">
-           {navItems.map((item) => {
+            {navItems.map((item) => {
               const isActive = activeView === item.id;
               return (
                 <button
