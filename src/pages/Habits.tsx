@@ -1222,20 +1222,32 @@ export default function Habits() {
           {/* Top Section: Header + Stats Dashboard */}
           <div className="flex items-center justify-between mb-3 flex-shrink-0">
             <h2 className="text-sm font-normal uppercase tracking-zara-wide text-foreground">Habits Tracker</h2>
-            {/* Desktop: inline button */}
-            <Button onClick={openCreateDialog} variant="outline" size="sm" className="hidden md:inline-flex">
-              <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Habit
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* Mobile: Insights button in header */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden h-8 w-8"
+                onClick={() => setInsightsOpen(true)}
+                aria-label="Open Insights"
+              >
+                <BarChart3 className="h-4 w-4" />
+              </Button>
+              {/* Desktop: inline button */}
+              <Button onClick={openCreateDialog} variant="outline" size="sm" className="hidden md:inline-flex">
+                <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Habit
+              </Button>
+            </div>
           </div>
 
           {/* Main dashboard — Single wide card with 3 internal sections */}
           <Card className="mb-4 flex-shrink-0 overflow-hidden">
             {/* Mobile Minimalist Header */}
             <div className="lg:hidden">
-              {/* Quote + Insights button */}
-              <div className="flex items-start justify-between px-3 pt-3 pb-2">
+              {/* Quote */}
+              <div className="px-4 pt-3 pb-2">
                 <div className={cn(
-                  "flex-1 transition-opacity duration-500 ease-in-out pr-2",
+                  "transition-opacity duration-500 ease-in-out text-center",
                   quoteVisible ? "opacity-100" : "opacity-0",
                 )}>
                   <p className="text-xs italic text-primary leading-relaxed">
@@ -1245,18 +1257,9 @@ export default function Habits() {
                     — {MOTIVATIONAL_QUOTES[quoteIndex].author}
                   </p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 shrink-0"
-                  onClick={() => setInsightsOpen(true)}
-                  aria-label="Open Insights"
-                >
-                  <BarChart3 className="h-4 w-4" />
-                </Button>
               </div>
-              {/* 5 Progress Rings - fixed row */}
-              <div className="flex items-center justify-between px-3 py-2.5 border-t border-b border-border">
+              {/* 5 Progress Rings - equally spaced */}
+              <div className="grid grid-cols-5 gap-0 py-2.5 border-t border-b border-border">
                 {(() => {
                   const selectedHabit = selectedActivityId ? activities.find(a => a.id === selectedActivityId) : null;
                   let totalGoalPercent = 0;
@@ -1267,14 +1270,14 @@ export default function Habits() {
                     const ta = overallStats.totalCompleted + overallStats.totalRemaining;
                     totalGoalPercent = ta > 0 ? Math.round((overallStats.totalCompleted / ta) * 100) : 0;
                   }
-                  const ringSize = 58;
+                  const ringSize = 54;
                   return (
                     <>
-                      <ProgressRing progress={Math.min(totalGoalPercent, 100)} label="Total Goal" color={RING_COLORS[0]} size={ringSize} strokeWidth={5} />
-                      <ProgressRing progress={overallStats.momentum} label="Momentum" color={RING_COLORS[1]} size={ringSize} strokeWidth={5} />
-                      <ProgressRing progress={overallStats.dailyProgress} label="Daily" color={RING_COLORS[2]} size={ringSize} strokeWidth={5} />
-                      <ProgressRing progress={overallStats.weeklyProgress} label="Weekly" color={RING_COLORS[3]} size={ringSize} strokeWidth={5} />
-                      <ProgressRing progress={overallStats.monthlyProgress} label="Overall" color={RING_COLORS[4]} size={ringSize} strokeWidth={5} />
+                      <div className="flex justify-center"><ProgressRing progress={Math.min(totalGoalPercent, 100)} label="Total Goal" color={RING_COLORS[0]} size={ringSize} strokeWidth={5} /></div>
+                      <div className="flex justify-center"><ProgressRing progress={overallStats.momentum} label="Momentum" color={RING_COLORS[1]} size={ringSize} strokeWidth={5} /></div>
+                      <div className="flex justify-center"><ProgressRing progress={overallStats.dailyProgress} label="Daily" color={RING_COLORS[2]} size={ringSize} strokeWidth={5} /></div>
+                      <div className="flex justify-center"><ProgressRing progress={overallStats.weeklyProgress} label="Weekly" color={RING_COLORS[3]} size={ringSize} strokeWidth={5} /></div>
+                      <div className="flex justify-center"><ProgressRing progress={overallStats.monthlyProgress} label="Overall" color={RING_COLORS[4]} size={ringSize} strokeWidth={5} /></div>
                     </>
                   );
                 })()}
@@ -1345,8 +1348,8 @@ export default function Habits() {
                 </div>
               </div>
 
-              {/* Center section — Quote + Rings + Top Habits */}
-              <div className="p-4 flex flex-col justify-between overflow-hidden">
+              {/* Center section — Quote + Rings + Top Habits (desktop only) */}
+              <div className="p-4 hidden lg:flex flex-col justify-between overflow-hidden">
                 {/* Quote at top center */}
                 {(() => {
                   const currentQuote = MOTIVATIONAL_QUOTES[quoteIndex];
@@ -1417,7 +1420,7 @@ export default function Habits() {
                   }
 
                   return (
-                    <div className="hidden md:flex justify-center gap-3 md:gap-6 lg:gap-8 md:flex-wrap md:overflow-visible pb-1 -mx-2 px-2">
+                    <div className="flex justify-center gap-3 md:gap-6 lg:gap-8 flex-wrap overflow-visible pb-1 -mx-2 px-2">
                       <ProgressRing progress={Math.min(totalGoalPercent, 100)} label="Total Goal" color={RING_COLORS[0]} mobileSize={68} />
                       <ProgressRing progress={overallStats.momentum} label="Momentum" color={RING_COLORS[1]} mobileSize={68} />
                       <ProgressRing progress={overallStats.dailyProgress} label="Daily" color={RING_COLORS[2]} mobileSize={68} />
@@ -1486,9 +1489,9 @@ export default function Habits() {
           {/* Habits Grid */}
           {/* Mobile Weekly Grid */}
           <Card className="md:hidden rounded-xl overflow-hidden mb-0">
-            {/* Week Navigation + Daily Progress Graph */}
+            {/* Week Navigation */}
             <div className="px-4 pt-2 pb-1 border-b border-border">
-              <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center justify-between">
                 <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground">Daily Progress</p>
                 <div className="flex items-center gap-1">
                   <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setMobileWeekOffset(prev => prev - 1)}>
@@ -1502,74 +1505,14 @@ export default function Habits() {
                   </Button>
                 </div>
               </div>
-              {/* Graph aligned to table columns: habit col ~90px, then 7 day cols, then % col ~32px, then 🔥 col ~32px */}
-              {/* We use a table-like layout: pad left for habit col, pad right for % + 🔥 cols */}
-              <div className="relative" style={{ paddingLeft: 90, paddingRight: 64 }}>
-                <svg viewBox="0 0 700 100" className="w-full" style={{ height: 56 }} preserveAspectRatio="none">
-                  {(() => {
-                    const today = new Date();
-                    const dataPoints: { x: number; y: number; value: number; isPast: boolean }[] = [];
-                    const chartActivities = selectedActivityId ? activities.filter(a => a.id === selectedActivityId) : activities.filter(a => !a.isArchived);
-
-                    for (let i = 0; i < 7; i++) {
-                      const day = currentWeekDays[i];
-                      if (!day) continue;
-                      const dayStr = format(day, "yyyy-MM-dd");
-                      const dayOfWeek = (day.getDay() + 6) % 7;
-                      const isPast = isBefore(day, today) || isToday(day);
-                      let completed = 0, total = 0;
-                      chartActivities.forEach(a => {
-                        const hStart = parseISO(a.startDate);
-                        const hEnd = computeEndDateForHabitDays(hStart, a.frequencyPattern, a.habitDays);
-                        if (a.frequencyPattern[dayOfWeek] && !isBefore(day, hStart) && !isAfter(day, hEnd)) {
-                          total++;
-                          if (a.completions[dayStr]) completed++;
-                        }
-                      });
-                      if (total === 0) { dataPoints.push({ x: (i + 0.5) * 100, y: 85, value: 0, isPast }); continue; }
-                      const value = (completed / total) * 100;
-                      const x = (i + 0.5) * 100;
-                      const y = 85 - (value / 100) * 70;
-                      dataPoints.push({ x, y, value, isPast });
-                    }
-
-                    if (dataPoints.length < 2) return <text x="350" y="55" textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize="12" opacity="0.5">Not enough data</text>;
-
-                    let path = `M ${dataPoints[0].x} ${dataPoints[0].y}`;
-                    for (let j = 0; j < dataPoints.length - 1; j++) {
-                      const c = dataPoints[j], n = dataPoints[j + 1];
-                      const mx = (c.x + n.x) / 2, my = (c.y + n.y) / 2;
-                      path += ` Q ${c.x + (mx - c.x) * 0.5} ${c.y}, ${mx} ${my}`;
-                      path += ` Q ${mx + (n.x - mx) * 0.5} ${n.y}, ${n.x} ${n.y}`;
-                    }
-                    const area = `${path} L ${dataPoints[dataPoints.length - 1].x} 95 L ${dataPoints[0].x} 95 Z`;
-
-                    return (
-                      <>
-                        <defs>
-                          <linearGradient id="mobileAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.08" />
-                            <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0.02" />
-                          </linearGradient>
-                        </defs>
-                        <path d={area} fill="url(#mobileAreaGrad)" />
-                        <path d={path} fill="none" stroke="hsl(var(--foreground))" strokeWidth="2.5" strokeLinecap="round" opacity="0.7" />
-                        {dataPoints.map((p, i) => (
-                          <circle key={i} cx={p.x} cy={p.y} r="3.5" fill={p.isPast ? "hsl(var(--foreground))" : "hsl(var(--border))"} stroke="hsl(var(--background))" strokeWidth="1.5" />
-                        ))}
-                      </>
-                    );
-                  })()}
-                </svg>
-              </div>
             </div>
-            {/* Weekly Table */}
+            {/* Weekly Table with embedded graph row */}
             <table className="w-full">
               <thead>
                 <tr className="bg-muted/50">
                   <th className="text-left p-1 pl-2 text-[9px] font-medium text-muted-foreground uppercase tracking-zara sticky left-0 bg-muted/50 z-10" style={{ width: 90 }}>Habit</th>
                   {currentWeekDays.map((day, i) => (
-                    <th key={i} className={cn("p-0.5 text-center text-[9px] font-medium text-muted-foreground", isToday(day) && "bg-primary/10")} style={{ width: 'calc((100% - 90px - 64px) / 7)' }}>
+                    <th key={i} className={cn("p-0.5 text-center text-[9px] font-medium text-muted-foreground", isToday(day) && "bg-primary/10")}>
                       {DAY_LABELS[(day.getDay() + 6) % 7]}
                     </th>
                   ))}
@@ -1578,6 +1521,83 @@ export default function Habits() {
                 </tr>
               </thead>
               <tbody>
+                {/* Daily Progress Chart Row - embedded in table for perfect column alignment */}
+                <tr>
+                  <td className="sticky left-0 bg-muted/30 p-1 pl-2 text-[9px] font-medium text-muted-foreground align-bottom">
+                    PROGRESS
+                  </td>
+                  <td colSpan={7} className="p-0 bg-muted/30">
+                    <svg viewBox="0 0 700 120" className="w-full" style={{ height: 56 }} preserveAspectRatio="none">
+                      {(() => {
+                        const today = new Date();
+                        const dataPoints: { x: number; y: number; value: number; isPast: boolean; isFuture: boolean }[] = [];
+                        const chartActivities = selectedActivityId ? activities.filter(a => a.id === selectedActivityId) : activities.filter(a => !a.isArchived);
+
+                        for (let i = 0; i < 7; i++) {
+                          const day = currentWeekDays[i];
+                          if (!day) continue;
+                          const dayStr = format(day, "yyyy-MM-dd");
+                          const dayOfWeek = (day.getDay() + 6) % 7;
+                          const isPast = isBefore(day, today) || isToday(day);
+                          const isFuture = isAfter(day, today);
+                          let completed = 0, total = 0;
+                          chartActivities.forEach(a => {
+                            const hStart = parseISO(a.startDate);
+                            const hEnd = computeEndDateForHabitDays(hStart, a.frequencyPattern, a.habitDays);
+                            if (a.frequencyPattern[dayOfWeek] && !isBefore(day, hStart) && !isAfter(day, hEnd)) {
+                              total++;
+                              if (a.completions[dayStr]) completed++;
+                            }
+                          });
+                          const value = total > 0 ? (completed / total) * 100 : -1;
+                          const x = (i + 0.5) * 100;
+                          if (value < 0) continue;
+                          const y = 100 - (value / 100) * 80;
+                          dataPoints.push({ x, y: Math.max(10, Math.min(110, y)), value, isPast, isFuture });
+                        }
+
+                        if (dataPoints.length < 2) return <text x="350" y="65" textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize="12" opacity="0.5">Not enough data</text>;
+
+                        const createSmoothPath = (points: { x: number; y: number }[]) => {
+                          if (points.length < 2) return "";
+                          let path = `M ${points[0].x} ${points[0].y}`;
+                          for (let j = 0; j < points.length - 1; j++) {
+                            const current = points[j];
+                            const next = points[j + 1];
+                            const midX = (current.x + next.x) / 2;
+                            const midY = (current.y + next.y) / 2;
+                            path += ` Q ${current.x + (midX - current.x) * 0.5} ${current.y}, ${midX} ${midY}`;
+                            path += ` Q ${midX + (next.x - midX) * 0.5} ${next.y}, ${next.x} ${next.y}`;
+                          }
+                          return path;
+                        };
+
+                        const linePath = createSmoothPath(dataPoints);
+                        const areaPath = `${linePath} L ${dataPoints[dataPoints.length - 1].x} 115 L ${dataPoints[0].x} 115 Z`;
+
+                        return (
+                          <>
+                            <defs>
+                              <linearGradient id="mobileAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.08" />
+                                <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0.02" />
+                              </linearGradient>
+                            </defs>
+                            <path d={areaPath} fill="url(#mobileAreaGrad)" />
+                            <path d={linePath} fill="none" stroke="hsl(var(--foreground))" strokeWidth="2.5" strokeLinecap="round" opacity="0.7" />
+                            {dataPoints.map((p, i) => (
+                              <circle key={i} cx={p.x} cy={p.y} r="4"
+                                fill={p.isFuture ? "hsl(var(--border))" : p.isPast && p.value === 0 ? "hsl(var(--muted-foreground))" : "hsl(var(--foreground))"}
+                                stroke="hsl(var(--background))" strokeWidth="1.5"
+                              />
+                            ))}
+                          </>
+                        );
+                      })()}
+                    </svg>
+                  </td>
+                  <td colSpan={2} className="bg-muted/30"></td>
+                </tr>
                 {activities.filter(a => !a.isArchived).map((activity, idx) => {
                   const stats = activityStats.find(s => s.id === activity.id);
                   const totalCompletions = Object.keys(activity.completions || {}).length;
