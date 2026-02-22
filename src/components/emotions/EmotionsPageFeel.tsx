@@ -185,9 +185,9 @@ export function EmotionsPageFeel({
   // Desktop layout
   return (
     <div className="flex flex-col min-h-[calc(100vh-300px)] animate-in fade-in duration-500">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 flex-1">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 flex-1">
         {/* Left: Emotion Description Card */}
-        <div className="flex flex-col justify-center order-2 md:order-1">
+        <div className="flex flex-col justify-center order-2 lg:order-1">
           <div className="space-y-6 max-w-md text-left">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
               <Sparkles className="h-4 w-4" />
@@ -209,7 +209,7 @@ export function EmotionsPageFeel({
         </div>
 
         {/* Right: Wheel */}
-        <div className="flex flex-col items-center justify-center order-1 md:order-2">
+        <div className="flex flex-col items-center justify-center order-1 lg:order-2">
           <div className="flex items-center gap-2 mb-4">
             <UnifiedDatePicker
               value={selectedDate}

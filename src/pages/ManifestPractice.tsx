@@ -187,9 +187,9 @@ export default function ManifestPractice() {
         <PageLoadingScreen module="manifest" isDataReady={isDataReady} onFinished={() => setLoadingFinished(true)} />
       )}
       <div className="flex flex-col w-full flex-1 bg-background antialiased pt-2">
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-[2fr_3fr] gap-0 w-full max-w-[1400px] mx-auto">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-0 w-full max-w-[1400px] mx-auto">
           {/* ========== LEFT COLUMN: Editorial (desktop only) ========== */}
-          <div className="hidden md:flex flex-col h-full min-h-0 overflow-y-auto">
+          <div className="hidden lg:flex flex-col h-full min-h-0 overflow-y-auto">
             <div className="flex flex-col gap-6 py-6 px-5">
               <Button
                 variant="ghost"
@@ -250,7 +250,7 @@ export default function ManifestPractice() {
           {/* ========== RIGHT COLUMN: Practice Panel ========== */}
           <div className="flex flex-col h-full min-h-0">
             {/* Compact mobile header: back + date nav in one row */}
-            <div className="md:hidden flex items-center justify-between px-2 py-1">
+            <div className="lg:hidden flex items-center justify-between px-2 py-1">
               <Button
                 variant="ghost"
                 size="sm"
@@ -304,7 +304,7 @@ export default function ManifestPractice() {
             </div>
 
             {/* Desktop date nav */}
-            <div className="hidden md:flex items-center justify-center gap-1 mb-1 px-1">
+            <div className="hidden lg:flex items-center justify-center gap-1 mb-1 px-1">
               <Button
                 variant="ghost"
                 size="sm"
@@ -347,7 +347,7 @@ export default function ManifestPractice() {
               )}
             </div>
 
-            <div className="md:rounded-2xl md:shadow-sm md:border md:border-border flex-1 overflow-hidden">
+            <div className="lg:rounded-2xl lg:shadow-sm lg:border lg:border-border flex-1 overflow-hidden">
               <ManifestPracticePanel
                 goal={goal}
                 streak={streak}

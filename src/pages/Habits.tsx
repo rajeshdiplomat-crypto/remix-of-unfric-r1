@@ -1253,7 +1253,7 @@ export default function Habits() {
           {/* Main dashboard — Single wide card with 3 internal sections */}
           <Card className="mb-4 flex-shrink-0 overflow-hidden">
             {/* Mobile Minimalist Header */}
-            <div className="md:hidden">
+            <div className="lg:hidden">
               {/* Quote */}
               <div className="px-4 pt-3 pb-2">
                 <div className={cn(
@@ -1293,9 +1293,9 @@ export default function Habits() {
                 })()}
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-[200px_1fr_200px] md:min-h-[280px] gap-0">
+            <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_200px] lg:min-h-[280px] gap-0">
               {/* Left section — Month nav + Stats */}
-              <div className="p-4 hidden md:block border-r border-border">
+              <div className="p-4 hidden lg:block border-r border-border">
                 {/* Month Navigator */}
                 <div className="flex items-center justify-between mb-4">
                   <Button
@@ -1359,7 +1359,7 @@ export default function Habits() {
               </div>
 
               {/* Center section — Quote + Rings + Top Habits (desktop only) */}
-              <div className="p-4 hidden md:flex flex-col justify-between overflow-hidden">
+              <div className="p-4 hidden lg:flex flex-col justify-between overflow-hidden">
                 {/* Quote at top center */}
                 {(() => {
                   const currentQuote = MOTIVATIONAL_QUOTES[quoteIndex];
@@ -1458,7 +1458,7 @@ export default function Habits() {
               </div>
 
               {/* Right section — Selected habit preview */}
-              <div className="hidden md:flex border-l border-border overflow-hidden relative">
+              <div className="hidden lg:flex border-l border-border overflow-hidden relative">
                 {(() => {
                   const selectedHabit = selectedActivityId ? activities.find((a) => a.id === selectedActivityId) : null;
                   if (selectedHabit) {

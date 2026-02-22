@@ -257,9 +257,9 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
         </div>
       ) : (
         /* Desktop: 2-Column Layout */
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-5 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-5 items-start">
           {/* LEFT: Why + Overview (Narrow) */}
-          <div className="space-y-4 md:self-stretch flex flex-col">
+          <div className="space-y-4 lg:self-stretch flex flex-col">
             <div className="px-1">
               <h3 className="font-semibold text-foreground mb-2 text-sm">Why Track Your Moods?</h3>
               <ul className="space-y-1.5">
