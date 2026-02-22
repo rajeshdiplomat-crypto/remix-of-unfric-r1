@@ -713,7 +713,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
 
       {/* MAIN TOOLBAR - sticky on mobile for keyboard accessibility */}
       <div className="shrink-0 bg-white border-b border-slate-200 relative z-[100] sticky top-0 md:static">
-        <div className="flex items-center h-11 px-2 gap-0.5 overflow-x-auto">
+        <div className="flex items-center h-11 px-1 md:px-2 gap-0.5 overflow-x-auto max-w-full">
           <ToolBtn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
             <Undo2 className="h-4 w-4" />
           </ToolBtn>
@@ -744,7 +744,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
           </DropdownMenu>
 
           <Select value={currentFont} onValueChange={handleFontChange}>
-            <SelectTrigger className="h-8 w-20 text-xs border-0 bg-slate-50 hover:bg-slate-100">
+            <SelectTrigger className="h-8 w-16 md:w-20 text-[10px] md:text-xs border-0 bg-slate-50 hover:bg-slate-100">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="z-[99999]">
@@ -757,7 +757,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
           </Select>
 
           <Select value={currentSize} onValueChange={handleSizeChange}>
-            <SelectTrigger className="h-8 w-14 text-xs border-0 bg-slate-50 hover:bg-slate-100">
+            <SelectTrigger className="h-8 w-12 md:w-14 text-[10px] md:text-xs border-0 bg-slate-50 hover:bg-slate-100">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="z-[99999]">
@@ -816,29 +816,31 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
           </ToolBtn>
           <div className="w-px h-5 bg-slate-200 mx-1" />
 
-          {/* Alignment buttons - on toolbar */}
-          <ToolBtn
-            onClick={() => editor.chain().focus().setTextAlign("left").run()}
-            active={editor.isActive({ textAlign: "left" })}
-            title="Align Left"
-          >
-            <AlignLeft className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn
-            onClick={() => editor.chain().focus().setTextAlign("center").run()}
-            active={editor.isActive({ textAlign: "center" })}
-            title="Align Center"
-          >
-            <AlignCenter className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn
-            onClick={() => editor.chain().focus().setTextAlign("right").run()}
-            active={editor.isActive({ textAlign: "right" })}
-            title="Align Right"
-          >
-            <AlignRight className="h-4 w-4" />
-          </ToolBtn>
-          <div className="w-px h-5 bg-slate-200 mx-1" />
+          {/* Alignment buttons - hidden on mobile, moved to More menu */}
+          <div className="hidden md:contents">
+            <ToolBtn
+              onClick={() => editor.chain().focus().setTextAlign("left").run()}
+              active={editor.isActive({ textAlign: "left" })}
+              title="Align Left"
+            >
+              <AlignLeft className="h-4 w-4" />
+            </ToolBtn>
+            <ToolBtn
+              onClick={() => editor.chain().focus().setTextAlign("center").run()}
+              active={editor.isActive({ textAlign: "center" })}
+              title="Align Center"
+            >
+              <AlignCenter className="h-4 w-4" />
+            </ToolBtn>
+            <ToolBtn
+              onClick={() => editor.chain().focus().setTextAlign("right").run()}
+              active={editor.isActive({ textAlign: "right" })}
+              title="Align Right"
+            >
+              <AlignRight className="h-4 w-4" />
+            </ToolBtn>
+            <div className="w-px h-5 bg-slate-200 mx-1" />
+          </div>
 
           <ToolBtn onClick={() => setLinkDialogOpen(true)} active={editor.isActive("link")} title="Link">
             <Link2 className="h-4 w-4" />
@@ -855,7 +857,20 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
                 <MoreHorizontal className="h-4 w-4 text-slate-500" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="z-[99999] w-56">
+            <DropdownMenuContent align="end" className="z-[99999] w-56 max-h-[70vh] overflow-y-auto">
+              {/* Alignment - mobile only */}
+              <div className="md:hidden">
+                <DropdownMenuItem onClick={() => editor.chain().focus().setTextAlign("left").run()}>
+                  <AlignLeft className="h-4 w-4 mr-2" /> Align Left
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor.chain().focus().setTextAlign("center").run()}>
+                  <AlignCenter className="h-4 w-4 mr-2" /> Align Center
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor.chain().focus().setTextAlign("right").run()}>
+                  <AlignRight className="h-4 w-4 mr-2" /> Align Right
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </div>
               {/* Formatting */}
               <DropdownMenuItem onClick={() => editor.chain().focus().toggleStrike().run()}>
                 <Strikethrough className="h-4 w-4 mr-2" /> Strikethrough

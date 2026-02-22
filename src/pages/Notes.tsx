@@ -320,8 +320,8 @@ export default function Notes() {
       .then(({ data }) => {
         const v = (data as any)?.default_notes_view;
         if (v === "board" || v === "mindmap" || v === "atlas") {
-          // On mobile, fall back from mindmap to atlas
-          setNotesView((isMobile && v === "mindmap") ? "atlas" : v as NotesViewType);
+          // On mobile, fall back from mindmap/board to atlas
+          setNotesView((isMobile && (v === "mindmap" || v === "board")) ? "atlas" : v as NotesViewType);
         }
       });
   }, [user]);
@@ -830,13 +830,29 @@ export default function Notes() {
                       <span className="text-xs text-muted-foreground">Organize notes</span>
                     </div>
                   </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      // Open section creation - trigger on first group
+                      if (sortedGroups.length > 0) {
+                        const folderName = prompt("Section name:");
+                        if (folderName?.trim()) handleCreateFolder(sortedGroups[0].id, folderName.trim());
+                      }
+                    }}
+                    className="py-2 rounded-lg cursor-pointer"
+                  >
+                    <Layers className="h-4 w-4 mr-3 text-muted-foreground" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">New Section</span>
+                      <span className="text-xs text-muted-foreground">Add to first group</span>
+                    </div>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
 
             {/* Mobile: Quick Stats as horizontal scrollable pills */}
-            <div className="md:hidden overflow-x-auto no-scrollbar -mx-3 px-3">
-              <div className="flex gap-2 w-max">
+            <div className="md:hidden overflow-x-auto no-scrollbar">
+              <div className="flex gap-2 flex-wrap">
                 {[
                   { label: "Total", value: insights.total, icon: <FileText className="h-3 w-3" /> },
                   { label: "Today", value: insights.editedToday, icon: <Clock className="h-3 w-3" /> },
@@ -859,9 +875,8 @@ export default function Notes() {
             <div className="sticky top-0 z-20 md:relative md:z-auto">
               {/* Glassmorphism toolbar container */}
               <div className="rounded-2xl bg-card/95 backdrop-blur-md border border-border shadow-sm md:bg-card md:backdrop-blur-none">
-                {/* Mobile: View switcher on its own row */}
-                <div className="p-2 md:hidden">
-                  <NotesViewSwitcher currentView={notesView} onViewChange={setNotesView} hideMindMap />
+                {/* Mobile: View switcher hidden - only Atlas view on mobile */}
+                <div className="p-2 md:hidden hidden">
                 </div>
                 {/* Mobile: Search + Sort collapsed row */}
                 <div className="px-2 pb-2 md:pb-0 md:px-0 flex items-center gap-2 md:hidden">
@@ -959,6 +974,21 @@ export default function Notes() {
                           <div className="flex flex-col">
                             <span className="text-sm font-medium">New Group</span>
                             <span className="text-xs text-muted-foreground">Organize notes</span>
+                          </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            if (sortedGroups.length > 0) {
+                              const folderName = prompt("Section name:");
+                              if (folderName?.trim()) handleCreateFolder(sortedGroups[0].id, folderName.trim());
+                            }
+                          }}
+                          className="py-2 rounded-lg cursor-pointer"
+                        >
+                          <Layers className="h-4 w-4 mr-3 text-muted-foreground" />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">New Section</span>
+                            <span className="text-xs text-muted-foreground">Add to first group</span>
                           </div>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
