@@ -657,6 +657,12 @@ export default function Tasks() {
             onStartTask={handleStartTask}
             onCompleteTask={handleCompleteTask}
             onStartFocus={handleStartFocus}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            defaultBoardMode={defaultBoardMode}
+            onBoardDrop={handleBoardDrop}
+            onBoardQuickAdd={handleBoardQuickAdd}
+            onDeleteTask={(task) => handleDeleteTask(task.id)}
           />
         </div>
       ) : (

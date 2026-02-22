@@ -16,6 +16,10 @@ import {
   Flame,
   Sparkles,
   Archive,
+  Timer,
+  Hourglass,
+  List,
+  Columns3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -59,8 +63,14 @@ import { format, subDays, addDays, startOfDay, isSameDay, isBefore, endOfDay, is
 
 import { QuadrantTask, computeTaskStatus, QUADRANT_MODES, QuadrantMode } from "./types";
 import { TopFocusBar } from "./TopFocusBar";
+import { AllTasksList } from "./AllTasksList";
+import { KanbanBoardView } from "./KanbanBoardView";
+import { BoardView } from "./BoardView";
 import { useTimezone } from "@/hooks/useTimezone";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
+import type { TasksViewTab } from "./TasksViewTabs";
+
+type TimePeriod = "today" | "tomorrow" | "week";
 
 interface TasksMobileLayoutProps {
   tasks: QuadrantTask[];
@@ -78,6 +88,12 @@ interface TasksMobileLayoutProps {
   onStartTask: (task: QuadrantTask) => void;
   onCompleteTask: (task: QuadrantTask) => void;
   onStartFocus: (task: QuadrantTask) => void;
+  activeTab: TasksViewTab;
+  onTabChange: (tab: TasksViewTab) => void;
+  defaultBoardMode?: string | null;
+  onBoardDrop?: (columnId: string, task: QuadrantTask) => void;
+  onBoardQuickAdd?: (title: string, columnId: string) => void;
+  onDeleteTask?: (task: QuadrantTask) => void;
 }
 
 // ─── Mini KPI ───
@@ -125,7 +141,6 @@ function MobileTaskCard({
             : "bg-card border-border shadow-sm",
       )}
     >
-      {/* Checkmark */}
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -141,7 +156,6 @@ function MobileTaskCard({
         <Check className="h-3 w-3" />
       </button>
 
-      {/* Title + Time */}
       <div className="flex-1 min-w-0">
         <p
           className={cn(
@@ -159,7 +173,6 @@ function MobileTaskCard({
         )}
       </div>
 
-      {/* Status indicator */}
       {task.status === "ongoing" && !task.is_completed && (
         <Loader2 className="h-3.5 w-3.5 text-primary animate-spin shrink-0" />
       )}
@@ -187,6 +200,22 @@ const QUADRANT_ICONS: Record<string, React.ElementType> = {
   night: Clock,
 };
 
+// ─── Clock mode icons ───
+const CLOCK_MODE_ICONS = [
+  { id: "digital" as const, icon: Clock },
+  { id: "timer" as const, icon: Timer },
+  { id: "hourglass" as const, icon: Hourglass },
+  { id: "stopwatch" as const, icon: Play },
+  { id: "calendar" as const, icon: Calendar },
+];
+
+// ─── View tab config ───
+const VIEW_TABS: { id: TasksViewTab; label: string; icon: React.ElementType }[] = [
+  { id: "lists", label: "Lists", icon: List },
+  { id: "board", label: "Board", icon: Columns3 },
+  { id: "timeline", label: "Timeline", icon: Clock },
+];
+
 export function TasksMobileLayout({
   tasks,
   filteredTasks,
@@ -203,6 +232,12 @@ export function TasksMobileLayout({
   onStartTask,
   onCompleteTask,
   onStartFocus,
+  activeTab,
+  onTabChange,
+  defaultBoardMode,
+  onBoardDrop,
+  onBoardQuickAdd,
+  onDeleteTask,
 }: TasksMobileLayoutProps) {
   const { getTimeInTimezone, formatInTimezone } = useTimezone();
   const { timeFormat: userTimeFormat } = useTimeFormat();
@@ -215,20 +250,50 @@ export function TasksMobileLayout({
   }, []);
 
   const [boardMode, setBoardMode] = useState<QuadrantMode>("urgent-important");
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>("today");
+  const [activeClockMode, setActiveClockMode] = useState("digital");
 
   const today = startOfDay(new Date());
   const tomorrow = startOfDay(addDays(today, 1));
   const weekEnd = endOfDay(addDays(today, 6));
 
-  // KPI metrics for "today"
-  const todayTasks = useMemo(
-    () => tasks.filter((t) => t.due_date && isSameDay(new Date(t.due_date), today)),
-    [tasks, today],
-  );
-  const plannedCount = todayTasks.filter((t) => !t.is_completed && !t.completed_at).length;
-  const doneCount = todayTasks.filter((t) => t.is_completed || t.completed_at).length;
-  const overdueCount = tasks.filter((t) => computeTaskStatus(t) === "overdue").length;
-  const totalFocusMin = todayTasks.reduce((s, t) => s + (t.total_focus_minutes || 0), 0);
+  // ─── KPI metrics filtered by time period ───
+  const periodTasks = useMemo(() => {
+    return tasks.filter((t) => {
+      if (!t.due_date) return false;
+      const dueDate = startOfDay(new Date(t.due_date));
+      switch (timePeriod) {
+        case "today": return isSameDay(dueDate, today);
+        case "tomorrow": return isSameDay(dueDate, tomorrow);
+        case "week": return isWithinInterval(dueDate, { start: today, end: weekEnd });
+        default: return false;
+      }
+    });
+  }, [tasks, timePeriod, today, tomorrow, weekEnd]);
+
+  const plannedCount = periodTasks.filter((t) => !t.is_completed && !t.completed_at).length;
+  const doneCount = periodTasks.filter((t) => t.is_completed || t.completed_at).length;
+
+  const overdueCount = useMemo(() => {
+    const allWithStatus = tasks.map((t) => ({ ...t, computedStatus: computeTaskStatus(t) }));
+    switch (timePeriod) {
+      case "today":
+        return allWithStatus.filter((t) => t.computedStatus === "overdue").length;
+      case "tomorrow": {
+        const currentlyOverdue = allWithStatus.filter((t) => t.computedStatus === "overdue").length;
+        const todayIncomplete = tasks.filter((t) => {
+          if (!t.due_date) return false;
+          return isSameDay(startOfDay(new Date(t.due_date)), today) && !t.is_completed && !t.completed_at;
+        }).length;
+        return currentlyOverdue + todayIncomplete;
+      }
+      case "week":
+        return allWithStatus.filter((t) => t.computedStatus === "overdue").length;
+      default: return 0;
+    }
+  }, [tasks, timePeriod, today]);
+
+  const totalFocusMin = periodTasks.reduce((s, t) => s + (t.total_focus_minutes || 0), 0);
 
   // ─── Chart data ───
   const past7Days = useMemo(() => {
@@ -267,7 +332,7 @@ export function TasksMobileLayout({
     ].filter((d) => d.value > 0);
   }, [tasks]);
 
-  // ─── Quadrant grouping ───
+  // ─── Quadrant grouping (for board tab) ───
   const activeQuadrants = QUADRANT_MODES[boardMode].quadrants;
   const groupedTasks = useMemo(() => {
     const groups: Record<string, { active: QuadrantTask[]; completed: QuadrantTask[] }> = {};
@@ -314,10 +379,90 @@ export function TasksMobileLayout({
 
   const controlBase = "h-9 rounded-xl bg-background border-border shadow-sm";
 
+  // Board accordion content (reused for board tab)
+  const renderBoardAccordions = () => (
+    <>
+      {/* Mode Selector */}
+      <div className="flex items-center gap-1 overflow-x-auto pb-1">
+        {(["urgent-important", "status", "date", "time"] as QuadrantMode[]).map((m) => (
+          <Button
+            key={m}
+            variant={boardMode === m ? "default" : "ghost"}
+            size="sm"
+            className="h-7 text-[10px] uppercase tracking-wider shrink-0"
+            onClick={() => setBoardMode(m)}
+          >
+            {QUADRANT_MODES[m].label}
+          </Button>
+        ))}
+      </div>
+
+      {/* Accordion Quadrants */}
+      <Accordion type="multiple" defaultValue={activeQuadrants.map((q) => q.id)} className="space-y-2">
+        {activeQuadrants.map((col) => {
+          const Icon = QUADRANT_ICONS[col.id] || Calendar;
+          const activeTasks = groupedTasks[col.id]?.active || [];
+          const completedTasks = groupedTasks[col.id]?.completed || [];
+          const total = activeTasks.length + completedTasks.length;
+
+          return (
+            <AccordionItem key={col.id} value={col.id} className="border-none">
+              <AccordionTrigger className="py-2.5 px-3 rounded-lg bg-muted/40 border border-border hover:no-underline">
+                <div className="flex items-center gap-2 flex-1">
+                  <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: col.color }} />
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-foreground">
+                    {col.title}
+                  </span>
+                  <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 ml-auto mr-2">
+                    {total}
+                  </Badge>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pt-2 pb-0 px-0">
+                <div className="space-y-1.5">
+                  {activeTasks.map((task) => (
+                    <MobileTaskCard
+                      key={task.id}
+                      task={task}
+                      onClick={() => onTaskClick(task)}
+                      onComplete={() => onCompleteTask(task)}
+                    />
+                  ))}
+                  {completedTasks.length > 0 && (
+                    <details className="group">
+                      <summary className="flex items-center gap-1.5 py-1.5 text-[10px] text-muted-foreground hover:text-foreground cursor-pointer list-none">
+                        <ChevronDown className="h-3 w-3 transition-transform group-open:rotate-180" />
+                        <span className="font-medium">Done ({completedTasks.length})</span>
+                      </summary>
+                      <div className="space-y-1.5 mt-1">
+                        {completedTasks.map((task) => (
+                          <MobileTaskCard
+                            key={task.id}
+                            task={task}
+                            onClick={() => onTaskClick(task)}
+                            onComplete={() => onCompleteTask(task)}
+                          />
+                        ))}
+                      </div>
+                    </details>
+                  )}
+                  {activeTasks.length === 0 && completedTasks.length === 0 && (
+                    <p className="text-[10px] text-muted-foreground py-3 text-center">No tasks</p>
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          );
+        })}
+      </Accordion>
+    </>
+  );
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* ─── Sticky Toolbar ─── */}
+      {/* ─── Sticky Toolbar + View Switcher ─── */}
       <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-foreground/[0.06] px-3 py-2 space-y-2">
+        {/* Search + Filter + Sort + Add */}
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -379,31 +524,96 @@ export function TasksMobileLayout({
             <Plus className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* ── View Switcher (Lists / Board / Timeline) ── */}
+        <div className="flex items-center gap-1 bg-muted/40 rounded-lg p-0.5 border border-border">
+          {VIEW_TABS.map(({ id, label, icon: TabIcon }) => (
+            <button
+              key={id}
+              onClick={() => onTabChange(id)}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[11px] font-medium transition-all",
+                activeTab === id
+                  ? "bg-background text-foreground shadow-sm border border-border"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <TabIcon className="h-3.5 w-3.5" />
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ─── Scrollable Content ─── */}
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-4">
-        {/* ─── 1. Header Card: Focus + KPIs + Clock ─── */}
+        {/* ─── 1. Header Card: Focus + Clock Mode Icons + KPIs + Clock ─── */}
         <div className="rounded-xl border border-foreground/[0.06] bg-background/40 backdrop-blur-xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.04)] overflow-hidden">
           {/* Focus Bar */}
           <TopFocusBar tasks={filteredTasks} onStartFocus={onStartFocus} />
 
           {/* Split: KPIs left, Clock right */}
           <div className="flex border-t border-foreground/[0.06]">
-            {/* Left: Metrics */}
-            <div className="flex-1 grid grid-cols-2 gap-1.5 p-3">
-              <MobileKpi icon={Calendar} value={plannedCount} label="Planned" iconClass="text-primary" />
-              <MobileKpi icon={CheckCircle} value={doneCount} label="Done" iconClass="text-chart-1" />
-              <MobileKpi icon={AlertTriangle} value={overdueCount} label="Overdue" iconClass="text-destructive" />
-              <MobileKpi icon={Clock} value={<>{totalFocusMin}<span className="text-[10px] font-normal text-muted-foreground">m</span></>} label="Focus" iconClass="text-chart-2" />
+            {/* Left: Time period filter + Metrics */}
+            <div className="flex-1 flex flex-col p-3 gap-2">
+              {/* Today / Tomorrow / Week pills */}
+              <div className="flex items-center gap-1">
+                {(["today", "tomorrow", "week"] as TimePeriod[]).map((period) => (
+                  <button
+                    key={period}
+                    onClick={() => setTimePeriod(period)}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-[10px] font-medium transition-all",
+                      timePeriod === period
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted",
+                    )}
+                  >
+                    {period === "today" ? "Today" : period === "tomorrow" ? "Tomorrow" : "Week"}
+                  </button>
+                ))}
+              </div>
+
+              {/* KPI Grid */}
+              <div className="grid grid-cols-2 gap-1.5">
+                <MobileKpi icon={Calendar} value={plannedCount} label="Planned" iconClass="text-primary" />
+                <MobileKpi icon={CheckCircle} value={doneCount} label="Done" iconClass="text-chart-1" />
+                <MobileKpi icon={AlertTriangle} value={overdueCount} label="Overdue" iconClass="text-destructive" />
+                <MobileKpi
+                  icon={Clock}
+                  value={<>{totalFocusMin}<span className="text-[10px] font-normal text-muted-foreground">m</span></>}
+                  label="Focus"
+                  iconClass="text-chart-2"
+                />
+              </div>
             </div>
 
-            {/* Right: Clock */}
-            <div className="w-[140px] shrink-0 border-l border-foreground/[0.06] flex flex-col items-center justify-center p-3">
+            {/* Right: Clock mode icons + Time */}
+            <div className="w-[140px] shrink-0 border-l border-foreground/[0.06] flex flex-col items-center justify-center p-5">
+              {/* Clock mode shortcut icons */}
+              <div className="flex items-center gap-1 mb-2">
+                {CLOCK_MODE_ICONS.map(({ id, icon: ModeIcon }) => (
+                  <button
+                    key={id}
+                    onClick={() => setActiveClockMode(id)}
+                    className={cn(
+                      "h-5 w-5 rounded flex items-center justify-center transition-all",
+                      activeClockMode === id
+                        ? "text-primary"
+                        : "text-muted-foreground/50 hover:text-muted-foreground",
+                    )}
+                  >
+                    <ModeIcon className="h-3 w-3" />
+                  </button>
+                ))}
+              </div>
+
+              {/* Day label */}
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                 {formatInTimezone(now, { weekday: "short" }).toUpperCase()}
               </p>
-              <p className="text-2xl font-bold text-foreground tracking-tight leading-none mt-1">
+              {/* Time */}
+              <p className="text-2xl font-bold text-foreground tracking-tight leading-none mt-0.5">
                 {formatInTimezone(now, { hour: "numeric", minute: "2-digit", hour12: is12h }).replace(/\s?(AM|PM)$/i, "")}
                 {is12h && (
                   <span className="text-[10px] font-semibold text-primary/60 ml-1">
@@ -411,7 +621,8 @@ export function TasksMobileLayout({
                   </span>
                 )}
               </p>
-              <p className="text-[11px] text-muted-foreground mt-1">
+              {/* Date */}
+              <p className="text-[10px] text-muted-foreground mt-1 text-center">
                 {formatInTimezone(now, { month: "long", day: "numeric", year: "numeric" })}
               </p>
             </div>
@@ -504,79 +715,33 @@ export function TasksMobileLayout({
           </div>
         </div>
 
-        {/* ─── 3. Mode Selector ─── */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1">
-          {(["urgent-important", "status", "date", "time"] as QuadrantMode[]).map((m) => (
-            <Button
-              key={m}
-              variant={boardMode === m ? "default" : "ghost"}
-              size="sm"
-              className="h-7 text-[10px] uppercase tracking-wider shrink-0"
-              onClick={() => setBoardMode(m)}
-            >
-              {QUADRANT_MODES[m].label}
-            </Button>
-          ))}
-        </div>
+        {/* ─── 3. Tab Content ─── */}
+        {activeTab === "board" && renderBoardAccordions()}
 
-        {/* ─── 4. Accordion Quadrants ─── */}
-        <Accordion type="multiple" defaultValue={activeQuadrants.map((q) => q.id)} className="space-y-2">
-          {activeQuadrants.map((col) => {
-            const Icon = QUADRANT_ICONS[col.id] || Calendar;
-            const activeTasks = groupedTasks[col.id]?.active || [];
-            const completedTasks = groupedTasks[col.id]?.completed || [];
-            const total = activeTasks.length + completedTasks.length;
+        {activeTab === "lists" && (
+          <AllTasksList
+            tasks={filteredTasks}
+            onTaskClick={onTaskClick}
+            onStartTask={onStartTask}
+            onCompleteTask={onCompleteTask}
+            onDeleteTask={onDeleteTask ? (task) => onDeleteTask(task) : undefined}
+            collapsed={false}
+            onToggleCollapse={() => {}}
+          />
+        )}
 
-            return (
-              <AccordionItem key={col.id} value={col.id} className="border-none">
-                <AccordionTrigger className="py-2.5 px-3 rounded-lg bg-muted/40 border border-border hover:no-underline">
-                  <div className="flex items-center gap-2 flex-1">
-                    <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: col.color }} />
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-foreground">
-                      {col.title}
-                    </span>
-                    <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 ml-auto mr-2">
-                      {total}
-                    </Badge>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-2 pb-0 px-0">
-                  <div className="space-y-1.5">
-                    {activeTasks.map((task) => (
-                      <MobileTaskCard
-                        key={task.id}
-                        task={task}
-                        onClick={() => onTaskClick(task)}
-                        onComplete={() => onCompleteTask(task)}
-                      />
-                    ))}
-                    {completedTasks.length > 0 && (
-                      <details className="group">
-                        <summary className="flex items-center gap-1.5 py-1.5 text-[10px] text-muted-foreground hover:text-foreground cursor-pointer list-none">
-                          <ChevronDown className="h-3 w-3 transition-transform group-open:rotate-180" />
-                          <span className="font-medium">Done ({completedTasks.length})</span>
-                        </summary>
-                        <div className="space-y-1.5 mt-1">
-                          {completedTasks.map((task) => (
-                            <MobileTaskCard
-                              key={task.id}
-                              task={task}
-                              onClick={() => onTaskClick(task)}
-                              onComplete={() => onCompleteTask(task)}
-                            />
-                          ))}
-                        </div>
-                      </details>
-                    )}
-                    {activeTasks.length === 0 && completedTasks.length === 0 && (
-                      <p className="text-[10px] text-muted-foreground py-3 text-center">No tasks</p>
-                    )}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            );
-          })}
-        </Accordion>
+        {activeTab === "timeline" && (
+          <BoardView
+            mode="status"
+            tasks={filteredTasks}
+            onTaskClick={onTaskClick}
+            onDragStart={() => {}}
+            onDrop={onBoardDrop || (() => {})}
+            onQuickAdd={onBoardQuickAdd || (() => {})}
+            onStartTask={onStartTask}
+            onCompleteTask={onCompleteTask}
+          />
+        )}
       </div>
     </div>
   );
