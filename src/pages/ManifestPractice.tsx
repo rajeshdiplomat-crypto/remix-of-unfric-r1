@@ -325,6 +325,7 @@ export default function ManifestPractice() {
             <ManifestPracticePanel
               goal={goal}
               streak={streak}
+              totalPracticed={practices.filter(p => p.goal_id === goal.id && p.locked).length}
               selectedDate={selectedDate}
               previousPractice={getPreviousDayPractice()}
               onClose={() => navigate("/manifest")}
