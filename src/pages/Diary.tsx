@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PenLine, Search, ChevronDown, Filter, User } from "lucide-react";
+import { PenLine, Search, ChevronDown, Filter } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -75,7 +75,7 @@ export default function Diary() {
     refetch,
   } = useFeedEvents(user?.id);
 
-  const { metrics, chartData, smartInsight } = useDiaryMetrics(user?.id, timeRange);
+  const { metrics } = useDiaryMetrics(user?.id, timeRange);
 
   // Seed feed events from existing data
   const seedFeedEvents = async () => {
@@ -538,28 +538,6 @@ export default function Diary() {
     }
   };
 
-  const handleQuickAction = (action: string) => {
-    switch (action) {
-      case "task":
-        navigate("/tasks");
-        break;
-      case "journal":
-        setIsJournalModalOpen(true);
-        break;
-      case "note":
-        navigate("/notes");
-        break;
-      case "activity":
-        navigate("/habits");
-        break;
-      case "manifest":
-        navigate("/manifest");
-        break;
-      case "emotions":
-        navigate("/emotions");
-        break;
-    }
-  };
 
   const handleJournalSuccess = () => {
     seedFeedEvents();

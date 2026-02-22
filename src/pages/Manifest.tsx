@@ -245,12 +245,6 @@ export default function Manifest() {
     return Math.round(total / activeGoals.length);
   }, [activeGoals, getGoalMetrics]);
 
-  // Get previous day's practice for visualization mode
-  const getPreviousDayPractice = useCallback((goalId: string): ManifestDailyPractice | null => {
-    const yesterday = format(subDays(new Date(), 1), "yyyy-MM-dd");
-    return practices.find(p => p.goal_id === goalId && p.entry_date === yesterday) || null;
-  }, [practices]);
-
   // Handlers
   const handleSaveGoal = async (goalData: any) => {
     if (!user) return;
