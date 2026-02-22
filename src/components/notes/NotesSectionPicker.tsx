@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FolderPlus } from "lucide-react";
 import type { NoteGroup } from "@/pages/Notes";
 
 interface NotesSectionPickerProps {
@@ -39,24 +40,30 @@ export function NotesSectionPicker({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>New Section</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md p-0 rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        {/* Gradient header */}
+        <div className="bg-gradient-to-r from-primary to-primary/80 px-6 py-4 flex-shrink-0">
+          <DialogTitle className="text-lg font-semibold text-primary-foreground flex items-center gap-2">
+            <FolderPlus className="h-5 w-5" />
+            New Section
+          </DialogTitle>
+          <p className="text-xs text-primary-foreground/70 mt-0.5">Add a section to organize notes within a group</p>
+        </div>
 
-        <div className="space-y-5 pt-2">
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Select Group *</Label>
+        <div className="p-6 overflow-y-auto flex-1 space-y-5">
+          {/* Group Selection */}
+          <div className="space-y-2.5">
+            <Label className="text-sm font-medium">Select Group</Label>
             <div className="flex flex-wrap gap-2">
               {sortedGroups.map((group) => (
                 <button
                   key={group.id}
                   onClick={() => setSelectedGroup(group.id)}
                   className={`
-                    flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all
+                    flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-all
                     ${selectedGroup === group.id
-                      ? "ring-2 ring-primary bg-primary/10"
-                      : "bg-muted/50 hover:bg-muted"}
+                      ? "ring-2 ring-primary bg-primary/10 shadow-sm"
+                      : "bg-muted/50 hover:bg-muted border border-border/30"}
                   `}
                 >
                   <div
@@ -69,9 +76,10 @@ export function NotesSectionPicker({
             </div>
           </div>
 
+          {/* Section Name */}
           {selectedGroup && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Section Name *</Label>
+            <div className="space-y-2.5">
+              <Label className="text-sm font-medium">Section Name</Label>
               <Input
                 value={sectionName}
                 onChange={(e) => setSectionName(e.target.value)}
@@ -85,16 +93,17 @@ export function NotesSectionPicker({
             </div>
           )}
 
-          <div className="flex gap-2 pt-1">
+          {/* Actions */}
+          <div className="flex gap-2 pt-2">
             <Button
-              variant="ghost"
-              className="flex-1"
+              variant="outline"
+              className="flex-1 rounded-xl"
               onClick={() => onOpenChange(false)}
             >
               Cancel
             </Button>
             <Button
-              className="flex-1"
+              className="flex-1 rounded-xl"
               onClick={handleConfirm}
               disabled={!selectedGroup || !sectionName.trim()}
             >
