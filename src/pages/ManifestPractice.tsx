@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { isOfflineError } from "@/lib/offlineAwareOperation";
-import { Sparkles, ArrowLeft, ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react";
+import { Sparkles, ArrowLeft, ChevronLeft, ChevronRight, CalendarIcon, Flame, ImagePlus, Target, TrendingUp } from "lucide-react";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { subDays, addDays, parseISO, isSameDay, format, isToday } from "date-fns";
 
@@ -188,9 +188,9 @@ export default function ManifestPractice() {
       )}
       <div className="flex flex-col w-full flex-1 bg-background antialiased pt-2">
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-0 w-full max-w-[1400px] mx-auto">
-          {/* ========== LEFT COLUMN: Editorial (desktop only) ========== */}
+          {/* ========== LEFT COLUMN: Editorial + Vision Board (desktop only) ========== */}
           <div className="hidden lg:flex flex-col h-full min-h-0 overflow-y-auto">
-            <div className="flex flex-col gap-6 py-6 px-5">
+            <div className="flex flex-col gap-5 py-6 px-5">
               <Button
                 variant="ghost"
                 size="sm"
@@ -211,35 +211,96 @@ export default function ManifestPractice() {
                 <h1 className="text-3xl font-semibold text-foreground tracking-tight leading-tight">Reality</h1>
               </div>
 
-              <p className="text-muted-foreground text-base leading-relaxed max-w-md">
-                Visualization rewires your brain for success. Act as if your dream is already real, collect proof, and
-                watch the universe align.
+              <p className="text-muted-foreground text-sm leading-relaxed max-w-md">
+                Visualization rewires your brain for success. Act as if your dream is already real, collect proof, and watch the universe align.
               </p>
 
               <div className="h-px bg-border" />
 
-              <div className="bg-muted/30 rounded-xl p-4 border border-border">
+              {/* ===== Vision Board ===== */}
+              {(() => {
+                const visionImgs: string[] = [];
+                const vi = goal.vision_images;
+                const parsed = Array.isArray(vi) ? vi : (() => { try { return Array.isArray(JSON.parse(vi as any)) ? JSON.parse(vi as any) : []; } catch { return []; } })();
+                if (goal.cover_image_url) visionImgs.push(goal.cover_image_url);
+                parsed.forEach((img: string) => { if (img && !visionImgs.includes(img)) visionImgs.push(img); });
+                if (goal.vision_image_url && !visionImgs.includes(goal.vision_image_url)) visionImgs.push(goal.vision_image_url);
+
+                if (visionImgs.length > 0) {
+                  return (
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-2">
+                        <ImagePlus className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs font-medium text-muted-foreground tracking-wide">Vision Board</span>
+                      </div>
+                      <div className={cn(
+                        "grid gap-1.5 rounded-xl overflow-hidden",
+                        visionImgs.length === 1 && "grid-cols-1",
+                        visionImgs.length === 2 && "grid-cols-2",
+                        visionImgs.length === 3 && "grid-cols-2 grid-rows-2",
+                        visionImgs.length === 4 && "grid-cols-2 grid-rows-2",
+                        visionImgs.length >= 5 && "grid-cols-3 grid-rows-2",
+                      )}>
+                        {visionImgs.slice(0, 5).map((img, i) => (
+                          <div
+                            key={i}
+                            className={cn(
+                              "relative overflow-hidden rounded-lg group cursor-pointer",
+                              visionImgs.length === 3 && i === 0 && "row-span-2",
+                              visionImgs.length >= 5 && i === 0 && "row-span-2 col-span-2",
+                            )}
+                            style={{ aspectRatio: (visionImgs.length >= 5 && i === 0) ? '16/9' : (visionImgs.length === 1 ? '16/9' : '1/1') }}
+                          >
+                            <img
+                              src={img}
+                              alt={`Vision ${i + 1}`}
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors duration-300" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
+              {/* ===== Motivational Quote ===== */}
+              <div className="bg-muted/30 rounded-xl p-4 border border-border/50">
                 <p className="text-sm text-muted-foreground italic leading-relaxed">"{getMotivationalQuote()}"</p>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Sparkles className="h-4 w-4 text-primary" />
+              {/* ===== Goal Stats ===== */}
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/20 border border-border/30">
+                  <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Target className="h-4 w-4 text-primary" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground line-clamp-1">{goal.title}</p>
-                    <p className="text-xs text-muted-foreground">Current reality in focus</p>
+                    <p className="text-[10px] text-muted-foreground">Current reality in focus</p>
                   </div>
                 </div>
                 {streak > 0 && (
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-destructive/10 flex items-center justify-center">
-                      <span className="text-sm font-bold text-destructive">{streak}</span>
+                  <div className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/20 border border-border/30">
+                    <div className="h-9 w-9 rounded-lg bg-destructive/10 flex items-center justify-center flex-shrink-0">
+                      <Flame className="h-4 w-4 text-destructive" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-foreground">Day Streak</p>
-                      <p className="text-xs text-muted-foreground">Consecutive practice days</p>
+                      <p className="text-sm font-medium text-foreground">{streak} day streak</p>
+                      <p className="text-[10px] text-muted-foreground">Consecutive practice days</p>
+                    </div>
+                  </div>
+                )}
+                {totalPracticed > 0 && (
+                  <div className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/20 border border-border/30">
+                    <div className="h-9 w-9 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+                      <TrendingUp className="h-4 w-4 text-accent-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{totalPracticed} day{totalPracticed !== 1 ? "s" : ""} practiced</p>
+                      <p className="text-[10px] text-muted-foreground">Total sessions completed</p>
                     </div>
                   </div>
                 )}
