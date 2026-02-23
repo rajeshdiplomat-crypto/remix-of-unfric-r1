@@ -1596,9 +1596,9 @@ export default function Habits() {
                               return <path key={`seg-${i}`} d={segmentPath} fill="none" stroke={isRedSegment ? "#EF4444" : "#5EEAD4"} strokeWidth="2.5" strokeLinecap="round" />;
                             })}
                             {dataPoints.map((p, i) => (
-                              <circle key={i} cx={p.x} cy={p.y} r="4"
+                              <circle key={i} cx={p.x} cy={p.y} r="3"
                                 fill={p.isFuture ? "hsl(var(--border))" : p.isPast && p.value === 0 ? "#EF4444" : "#2DD4BF"}
-                                stroke="hsl(var(--background))" strokeWidth="1.5"
+                                stroke="hsl(var(--background))" strokeWidth="1"
                               />
                             ))}
                           </>
@@ -1823,10 +1823,10 @@ export default function Habits() {
                                     key={i}
                                     cx={point.x}
                                     cy={point.y}
-                                    r={isMissed ? "6" : "4"}
+                                    r="3"
                                     fill={point.isFuture ? "hsl(var(--border))" : isMissed ? "#EF4444" : "#2DD4BF"}
                                     stroke="hsl(var(--background))"
-                                    strokeWidth="2"
+                                    strokeWidth="1"
                                   >
                                     <title>{`${Math.round(point.value)}%${isMissed ? " (Missed)" : point.isFuture ? " (Upcoming)" : ""}`}</title>
                                   </circle>
