@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.2";
 import { corsHeaders } from '../_shared/cors.ts'
+import { authenticateUser } from '../_shared/auth.ts'
 
 console.log("manage-notes edge function loaded");
 
@@ -11,37 +11,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // 1. Get the JWT from the Authorization header
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Missing Authorization header' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-
-    // 2. Initialize Supabase Admin Client (Service Role Key)
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
-
-    // 3. Validate the User's JWT against Supabase Auth
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token)
-
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized: Invalid token' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
+    const { user, supabaseAdmin, errorResponse } = await authenticateUser(req);
+    if (errorResponse) return errorResponse;
 
     // We now have the securely validated user ID
     const userId = user.id;

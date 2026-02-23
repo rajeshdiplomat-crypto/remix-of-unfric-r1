@@ -413,19 +413,19 @@ export default function Habits() {
     if (!user) return;
     setLoading(true);
 
-    const { data: habitsData, error: habitsError } = await supabase.from("habits").select("*").eq("user_id", user.id);
+    const { data: response, error } = await supabase.functions.invoke("manage-habits", {
+      body: { action: "fetch_habits" }
+    });
 
-    const { data: completionsData, error: completionsError } = await supabase
-      .from("habit_completions")
-      .select("*")
-      .eq("user_id", user.id);
-
-    if (habitsError || completionsError) {
-      console.error("Error fetching habits:", habitsError || completionsError);
+    if (error || !response?.success) {
+      console.error("Error fetching habits:", error || response?.error);
       setActivities(SAMPLE_ACTIVITIES);
       setLoading(false);
       return;
     }
+
+    const habitsData = response.data.habits;
+    const completionsData = response.data.completions;
 
     const transformedActivities: ActivityItem[] = (habitsData || []).map((habit) => {
       const habitCompletions = (completionsData || [])
@@ -582,8 +582,8 @@ export default function Habits() {
 
     const momentum = Math.round(
       (dailyTotal > 0 ? dailyCompleted / dailyTotal : 0) * 40 +
-        (weeklyTotal > 0 ? weeklyCompleted / weeklyTotal : 0) * 30 +
-        (allTimeTotal > 0 ? allTimeCompleted / allTimeTotal : 0) * 30,
+      (weeklyTotal > 0 ? weeklyCompleted / weeklyTotal : 0) * 30 +
+      (allTimeTotal > 0 ? allTimeCompleted / allTimeTotal : 0) * 30,
     );
 
     return {
@@ -637,87 +637,37 @@ export default function Habits() {
     );
 
     if (user) {
-      if (wasCompleted) {
-        await supabase
-          .from("habit_completions")
-          .delete()
-          .eq("habit_id", activityId)
-          .eq("user_id", user.id)
-          .eq("completed_date", dateStr);
-
-        // SYNC: Uncomplete the corresponding task if it exists
-        const { data: tasks } = await supabase
-          .from("tasks")
-          .select("id")
-          .eq("user_id", user.id)
-          .eq("title", activity.name)
-          .eq("due_date", dateStr);
-
-        if (tasks && tasks.length > 0) {
-          await supabase
-            .from("tasks")
-            .update({
-              is_completed: false,
-              completed_at: null,
-              status: "ongoing", // Reset to ongoing
-            } as any)
-            .in(
-              "id",
-              tasks.map((t) => t.id),
-            );
-        }
-      } else {
-        await supabase.from("habit_completions").insert({
-          habit_id: activityId,
-          user_id: user.id,
-          completed_date: dateStr,
+      try {
+        const { data, error } = await supabase.functions.invoke("manage-habits", {
+          body: {
+            action: "toggle_completion",
+            habitId: activityId,
+            dateStr: dateStr
+          }
         });
 
-        // SYNC: Complete the corresponding task if it exists
-        const { data: tasks } = await supabase
-          .from("tasks")
-          .select("id")
-          .eq("user_id", user.id)
-          .eq("title", activity.name)
-          .eq("due_date", dateStr);
+        if (error) throw error;
 
-        if (tasks && tasks.length > 0) {
-          await supabase
-            .from("tasks")
-            .update({
-              is_completed: true,
-              completed_at: new Date().toISOString(),
-              status: "completed",
-            } as any)
-            .in(
-              "id",
-              tasks.map((t) => t.id),
-            );
-        }
-
-        // Check if all habit days are now completed - auto-archive if so
-        const newCompletionsCount = Object.keys(activity.completions).length + 1; // +1 because we just added one
-        if (newCompletionsCount >= activity.habitDays && !activity.isArchived) {
-          // Auto-archive the habit
+        // Auto archive checking
+        if (data?.data?.autoArchived) {
           setActivities((prev) => prev.map((a) => (a.id === activityId ? { ...a, isArchived: true } : a)));
-
-          // Update in database
-          await supabase
-            .from("habits")
-            .update({ is_archived: true, archived_at: new Date().toISOString() } as any)
-            .eq("id", activityId)
-            .eq("user_id", user.id);
 
           toast({
             title: "🎉 Habit Completed!",
             description: `Congratulations! "${activity.name}" has been moved to completed habits.`,
           });
 
-          // Clear selection if this habit was selected
           if (selectedActivityId === activityId) {
             setSelectedActivityId(null);
           }
         }
+      } catch (err: any) {
+        toast({
+          title: "Error",
+          description: err.message || "Failed to update habit completion",
+          variant: "destructive",
+        });
+        fetchHabits(); // revert UI locally
       }
     }
   };
@@ -796,21 +746,7 @@ export default function Habits() {
           .map((selected, idx) => (selected ? idx + 1 : null))
           .filter((d): d is number => d !== null);
 
-        const { error } = await supabase.from("habits").upsert({
-          id: tempActivity.id,
-          user_id: user.id,
-          name: tempActivity.name,
-          description: tempActivity.description || null,
-          frequency: "custom",
-          target_days: targetDays,
-          habit_days: parseInt(formDays) || 1,
-          start_date: format(formStartDate, "yyyy-MM-dd"),
-          cover_image_url: formImageUrl || null,
-        });
-
-        if (error) {
-          throw error;
-        }
+        let tasksToCreate: any[] = [];
 
         // Create tasks for each scheduled day if enabled
         if (formAddToTasks && !editingActivity) {
@@ -829,9 +765,8 @@ export default function Habits() {
             checkDate = addDays(checkDate, 1);
           }
 
-          const tasks = scheduledDates.map((date) => ({
+          tasksToCreate = scheduledDates.map((date) => ({
             id: crypto.randomUUID(),
-            user_id: user.id,
             title: `${tempActivity.name}`,
             description: tempActivity.description || null,
             due_date: format(date, "yyyy-MM-dd"),
@@ -848,14 +783,34 @@ export default function Habits() {
             is_completed: false,
             tags: ["Habit", formCategory],
           }));
+        }
 
-          if (tasks.length > 0) {
-            await supabase.from("tasks").insert(tasks as any);
-            toast({
-              title: "Activity created",
-              description: `${scheduledDates.length} tasks added to your schedule`,
-            });
+        const { error } = await supabase.functions.invoke("manage-habits", {
+          body: {
+            action: "upsert_habit",
+            habit: {
+              id: tempActivity.id,
+              name: tempActivity.name,
+              description: tempActivity.description || null,
+              frequency: "custom",
+              target_days: targetDays,
+              habit_days: parseInt(formDays) || 1,
+              start_date: format(formStartDate, "yyyy-MM-dd"),
+              cover_image_url: formImageUrl || null,
+            },
+            tasksToCreate
           }
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        if (tasksToCreate.length > 0) {
+          toast({
+            title: "Activity created",
+            description: `${tasksToCreate.length} tasks added to your schedule`,
+          });
         } else {
           toast({ title: editingActivity ? "Activity updated" : "Activity saved to cloud" });
         }
@@ -879,8 +834,9 @@ export default function Habits() {
     setActivities((prev) => prev.filter((a) => a.id !== activityId));
 
     if (user) {
-      await supabase.from("habit_completions").delete().eq("habit_id", activityId).eq("user_id", user.id);
-      await supabase.from("habits").delete().eq("id", activityId).eq("user_id", user.id);
+      await supabase.functions.invoke("manage-habits", {
+        body: { action: "delete_habit", habitId: activityId }
+      });
     }
 
     toast({ title: "Activity deleted" });
@@ -891,12 +847,9 @@ export default function Habits() {
     setActivities((prev) => prev.map((a) => (a.id === activityId ? { ...a, isArchived: true } : a)));
 
     if (user) {
-      // Update the habit in database to mark as archived
-      await supabase
-        .from("habits")
-        .update({ is_archived: true, archived_at: new Date().toISOString() } as any)
-        .eq("id", activityId)
-        .eq("user_id", user.id);
+      await supabase.functions.invoke("manage-habits", {
+        body: { action: "update_archived_status", habitId: activityId, isArchived: true }
+      });
     }
 
     toast({
@@ -915,12 +868,9 @@ export default function Habits() {
     setActivities((prev) => prev.map((a) => (a.id === activityId ? { ...a, isArchived: false } : a)));
 
     if (user) {
-      // Update the habit in database to remove archived status
-      await supabase
-        .from("habits")
-        .update({ is_archived: false, archived_at: null } as any)
-        .eq("id", activityId)
-        .eq("user_id", user.id);
+      await supabase.functions.invoke("manage-habits", {
+        body: { action: "update_archived_status", habitId: activityId, isArchived: false }
+      });
     }
 
     toast({
@@ -962,14 +912,14 @@ export default function Habits() {
         onDrop={
           isActive
             ? () => {
-                if (draggedIndex !== null && draggedIndex !== originalIndex) {
-                  const newActivities = [...activities];
-                  const [removed] = newActivities.splice(draggedIndex, 1);
-                  newActivities.splice(originalIndex, 0, removed);
-                  setActivities(newActivities);
-                }
-                setDraggedIndex(null);
+              if (draggedIndex !== null && draggedIndex !== originalIndex) {
+                const newActivities = [...activities];
+                const [removed] = newActivities.splice(draggedIndex, 1);
+                newActivities.splice(originalIndex, 0, removed);
+                setActivities(newActivities);
               }
+              setDraggedIndex(null);
+            }
             : undefined
         }
       >
@@ -1382,10 +1332,10 @@ export default function Habits() {
                       : "N/A";
                     const endDate = selectedHabit?.startDate
                       ? computeEndDateForHabitDays(
-                          parseISO(selectedHabit.startDate),
-                          selectedHabit.frequencyPattern,
-                          selectedHabit.habitDays,
-                        )
+                        parseISO(selectedHabit.startDate),
+                        selectedHabit.frequencyPattern,
+                        selectedHabit.habitDays,
+                      )
                       : null;
                     const endDateStr = endDate ? format(endDate, "MMM d, yyyy") : "N/A";
 
