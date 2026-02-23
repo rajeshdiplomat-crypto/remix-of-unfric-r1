@@ -1738,69 +1738,66 @@ export default function Habits() {
                       DAILY PROGRESS
                     </td>
                     <td colSpan={daysInMonth.length} className="p-0 bg-muted/30">
-                      <svg viewBox={`0 0 ${daysInMonth.length * 100} 220`} className="w-full" style={{ height: 180 }} preserveAspectRatio="none">
-                        {(() => {
-                          const numDays = daysInMonth.length;
-                          const today = new Date();
-                          const vbWidth = numDays * 100;
-                          const dataPoints: { x: number; y: number; value: number; isPast: boolean; isFuture: boolean }[] = [];
+                      {(() => {
+                        const numDays = daysInMonth.length;
+                        const today = new Date();
+                        const vbWidth = numDays * 100;
+                        const dataPoints: { x: number; y: number; value: number; isPast: boolean; isFuture: boolean }[] = [];
 
-                          for (let i = 0; i < numDays; i++) {
-                            const day = daysInMonth[i];
-                            if (!day) continue;
-                            const dayStr = format(day, "yyyy-MM-dd");
-                            const dayOfWeek = (day.getDay() + 6) % 7;
-                            const isPast = isBefore(day, today) || isToday(day);
-                            const isFuture = isAfter(day, today);
+                        for (let i = 0; i < numDays; i++) {
+                          const day = daysInMonth[i];
+                          if (!day) continue;
+                          const dayStr = format(day, "yyyy-MM-dd");
+                          const dayOfWeek = (day.getDay() + 6) % 7;
+                          const isPast = isBefore(day, today) || isToday(day);
+                          const isFuture = isAfter(day, today);
 
-                            const chartActivities = selectedActivityId
-                              ? activities.filter((a) => a.id === selectedActivityId)
-                              : activities;
+                          const chartActivities = selectedActivityId
+                            ? activities.filter((a) => a.id === selectedActivityId)
+                            : activities;
 
-                            let completed = 0;
-                            let total = 0;
-                            chartActivities.forEach((a) => {
-                              const habitStartDate = parseISO(a.startDate);
-                              const habitEndDate = computeEndDateForHabitDays(habitStartDate, a.frequencyPattern, a.habitDays);
-                              const isWithinHabitRange = !isBefore(day, habitStartDate) && !isAfter(day, habitEndDate);
-                              if (a.frequencyPattern[dayOfWeek] && isWithinHabitRange) {
-                                total++;
-                                if (a.completions[dayStr]) completed++;
-                              }
-                            });
-
-                            const value = total > 0 ? (completed / total) * 100 : -1;
-                            const x = (i + 0.5) * 100;
-                            if (value < 0) {
-                              // No habits scheduled this day — skip data point
-                              continue;
+                          let completed = 0;
+                          let total = 0;
+                          chartActivities.forEach((a) => {
+                            const habitStartDate = parseISO(a.startDate);
+                            const habitEndDate = computeEndDateForHabitDays(habitStartDate, a.frequencyPattern, a.habitDays);
+                            const isWithinHabitRange = !isBefore(day, habitStartDate) && !isAfter(day, habitEndDate);
+                            if (a.frequencyPattern[dayOfWeek] && isWithinHabitRange) {
+                              total++;
+                              if (a.completions[dayStr]) completed++;
                             }
-                            const rawY = 190 - (value / 100) * 160;
-                            const y = Math.max(10, Math.min(200, rawY));
-                            dataPoints.push({ x, y, value, isPast, isFuture });
+                          });
+
+                          const value = total > 0 ? (completed / total) * 100 : -1;
+                          const x = (i + 0.5) * 100;
+                          if (value < 0) continue;
+                          const rawY = 190 - (value / 100) * 160;
+                          const y = Math.max(10, Math.min(200, rawY));
+                          dataPoints.push({ x, y, value, isPast, isFuture });
+                        }
+
+                        if (dataPoints.length < 2) return null;
+
+                        const createSmoothPath = (points: { x: number; y: number }[]) => {
+                          if (points.length < 2) return "";
+                          let path = `M ${points[0].x} ${points[0].y}`;
+                          for (let j = 0; j < points.length - 1; j++) {
+                            const current = points[j];
+                            const next = points[j + 1];
+                            const midX = (current.x + next.x) / 2;
+                            const midY = (current.y + next.y) / 2;
+                            path += ` Q ${current.x + (midX - current.x) * 0.5} ${current.y}, ${midX} ${midY}`;
+                            path += ` Q ${midX + (next.x - midX) * 0.5} ${next.y}, ${next.x} ${next.y}`;
                           }
+                          return path;
+                        };
 
-                          if (dataPoints.length < 2) return null;
+                        const linePath = createSmoothPath(dataPoints);
+                        const areaPath = `${linePath} L ${dataPoints[dataPoints.length - 1].x} 215 L ${dataPoints[0].x} 215 Z`;
 
-                          const createSmoothPath = (points: { x: number; y: number }[]) => {
-                            if (points.length < 2) return "";
-                            let path = `M ${points[0].x} ${points[0].y}`;
-                            for (let j = 0; j < points.length - 1; j++) {
-                              const current = points[j];
-                              const next = points[j + 1];
-                              const midX = (current.x + next.x) / 2;
-                              const midY = (current.y + next.y) / 2;
-                              path += ` Q ${current.x + (midX - current.x) * 0.5} ${current.y}, ${midX} ${midY}`;
-                              path += ` Q ${midX + (next.x - midX) * 0.5} ${next.y}, ${next.x} ${next.y}`;
-                            }
-                            return path;
-                          };
-
-                          const linePath = createSmoothPath(dataPoints);
-                          const areaPath = `${linePath} L ${dataPoints[dataPoints.length - 1].x} 215 L ${dataPoints[0].x} 215 Z`;
-
-                          return (
-                            <>
+                        return (
+                          <div className="relative" style={{ height: 180 }}>
+                            <svg viewBox={`0 0 ${vbWidth} 220`} className="w-full h-full absolute inset-0" preserveAspectRatio="none">
                               <defs>
                                 <linearGradient id="tableAreaGradient" x1="0" y1="0" x2="0" y2="1">
                                   <stop offset="0%" stopColor="#5EEAD4" stopOpacity="0.25" />
@@ -1816,26 +1813,32 @@ export default function Habits() {
                                 return <path key={`seg-${i}`} d={segmentPath} fill="none" stroke={isRedSegment ? "#EF4444" : "#5EEAD4"} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />;
                               })}
                               <line x1="0" y1="210" x2={vbWidth} y2="210" stroke="hsl(var(--border))" strokeWidth="1" strokeDasharray="4 4" />
-                              {dataPoints.map((point, i) => {
-                                const isMissed = point.isPast && point.value === 0;
-                                return (
-                                  <circle
-                                    key={i}
-                                    cx={point.x}
-                                    cy={point.y}
-                                    r="3"
-                                    fill={point.isFuture ? "hsl(var(--border))" : isMissed ? "#EF4444" : "#2DD4BF"}
-                                    stroke="hsl(var(--background))"
-                                    strokeWidth="1"
-                                  >
-                                    <title>{`${Math.round(point.value)}%${isMissed ? " (Missed)" : point.isFuture ? " (Upcoming)" : ""}`}</title>
-                                  </circle>
-                                );
-                              })}
-                            </>
-                          );
-                        })()}
-                      </svg>
+                            </svg>
+                            {/* Dots rendered as HTML to stay perfectly round */}
+                            {dataPoints.map((point, i) => {
+                              const isMissed = point.isPast && point.value === 0;
+                              const leftPercent = (point.x / vbWidth) * 100;
+                              const topPercent = (point.y / 220) * 100;
+                              return (
+                                <div
+                                  key={i}
+                                  className="absolute rounded-full"
+                                  style={{
+                                    width: 6,
+                                    height: 6,
+                                    left: `${leftPercent}%`,
+                                    top: `${topPercent}%`,
+                                    transform: 'translate(-50%, -50%)',
+                                    backgroundColor: point.isFuture ? 'hsl(var(--border))' : isMissed ? '#EF4444' : '#2DD4BF',
+                                    border: '1px solid hsl(var(--background))',
+                                  }}
+                                  title={`${Math.round(point.value)}%${isMissed ? " (Missed)" : point.isFuture ? " (Upcoming)" : ""}`}
+                                />
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td colSpan={2} className="bg-muted/30"></td>
                   </tr>
