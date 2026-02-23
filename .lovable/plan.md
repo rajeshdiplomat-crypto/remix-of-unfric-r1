@@ -1,39 +1,19 @@
 
 
-## Diary Page -- Match Screenshot Card and Background Styling
+## Make Habit Tick Marks Larger and More Visible
 
-Comparing the uploaded screenshot against the current implementation, here are the specific differences:
+The `rounded-md` class was applied, but at `w-5 h-5` (20px), the shape difference from circles is nearly invisible. The screenshot shows significantly larger, clearly square-ish checkboxes.
 
-### 1. Profile Card (`DiaryProfileCard.tsx`) -- Remove glassmorphism, clean card style
-- **Current**: `bg-card/60 backdrop-blur-xl` with complex inset shadow
-- **Screenshot**: Clean solid `bg-card` with standard border/shadow, no blur or transparency
-- Change time filter button labels from "7d" to "Today" and keep "Month" as "Total" to match screenshot
-- Rename "Overall" to "Overall Progress"
+### Changes in `src/pages/Habits.tsx`
 
-### 2. Right Sidebar Background (`Diary.tsx`)
-- **Current**: `bg-background/50` (semi-transparent)
-- **Screenshot**: Clean solid `bg-background` -- no tinted/transparent overlay
+**Desktop table cells (around line 1147):**
+- Increase button size from `w-5 h-5` to `w-7 h-7` (28px)
+- Increase checkmark icon from `h-3 w-3` to `h-4 w-4`
+- Keep `rounded-md`, `bg-emerald-400`, `stroke-[3]`
 
-### 3. Left Sidebar Module Descriptions (`DiaryLeftSidebar.tsx`)
-- Update descriptions to match screenshot:
-  - Manifest: "Set & track goals" (currently "Visualize your goals")
-  - Emotions: "Log feelings & moods" (currently "Understand how you feel")
+**Mobile cells (around line 1651):**
+- Increase button size from `w-5 h-5` to `w-7 h-7`
+- Increase checkmark icon from `h-2.5 w-2.5` to `h-3.5 w-3.5`
+- Keep `rounded-md`, `bg-emerald-400`, `stroke-[3]`
 
-### 4. Feed Card Spacing (`Diary.tsx`)
-- Feed cards container currently uses `space-y-4` -- screenshot shows slightly tighter card gaps matching current spacing, no change needed
-- The `rounded-2xl` on the center feed `bg-muted/20` is correct
-
-### Technical Summary
-
-| File | Change |
-|---|---|
-| `DiaryProfileCard.tsx` | Replace `bg-card/60 backdrop-blur-xl` with `bg-card`. Update time labels: "7d" -> "Today", "Month" -> "Total". Rename "Overall" -> "Overall Progress" |
-| `DiaryLeftSidebar.tsx` | Manifest desc -> "Set & track goals", Emotions desc -> "Log feelings & moods" |
-| `Diary.tsx` | Right sidebar: `bg-background/50` -> `bg-background` |
-
-### What stays the same
-- 3-column layout, PageHero, feed cards, search bar, filter tabs
-- All card rounded corners, shadows, and border styles
-- Avatar, name, email, progress bars in profile card
-- "View My Journey" button at bottom of profile card
-- Module list icons and names in left sidebar
+This will make the rounded-square shape clearly visible and match the reference screenshot's proportions.
