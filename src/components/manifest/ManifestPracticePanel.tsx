@@ -476,7 +476,7 @@ export function ManifestPracticePanel({
     if (!activeRing) return null;
 
     return (
-      <div className="mx-4 mt-3 p-4 rounded-2xl border border-foreground/10 bg-background/60 backdrop-blur-xl animate-in slide-in-from-top-2 duration-300">
+      <div className="mx-4 mt-3 p-4 rounded-2xl border border-foreground/10 bg-background/60 backdrop-blur-xl animate-in slide-in-from-top-2 duration-300" style={{ minHeight: 220 }}>
         {activeRing === "viz" && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">Close your eyes and feel your new reality</p>
