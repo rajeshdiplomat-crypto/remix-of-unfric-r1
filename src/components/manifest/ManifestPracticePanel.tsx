@@ -380,7 +380,7 @@ export function ManifestPracticePanel({
     stepNumber: number;
   }) => {
     const isActive = activeRing === id;
-    const radius = 28;
+    const radius = 26;
     const circumference = 2 * Math.PI * radius;
     const progress = done ? 1 : 0;
 
@@ -388,62 +388,73 @@ export function ManifestPracticePanel({
       <button
         onClick={() => setActiveRing(isActive ? null : id)}
         className={cn(
-          "flex flex-col items-center gap-1 transition-all duration-300 group relative",
+          "flex flex-col items-center transition-all duration-500 group relative",
           (isViewingPast && !isLocked) && "opacity-50 pointer-events-none"
         )}
+        style={{ gap: "6px" }}
       >
-        {/* Step number badge */}
-        <span
-          className={cn(
-            "text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center mb-0.5 transition-colors duration-300",
-            done ? "text-primary-foreground" : "bg-muted text-muted-foreground"
-          )}
-          style={done ? { background: color } : {}}
-        >
-          {stepNumber}
-        </span>
         <div
           className={cn(
-            "relative w-16 h-16 flex items-center justify-center rounded-full transition-all duration-300",
-            isActive && "scale-110",
-            isActive && "ring-2 ring-offset-2 ring-offset-background",
-            done && "animate-in zoom-in-95 duration-300",
+            "relative flex items-center justify-center rounded-full transition-all duration-500",
+            isActive && "scale-105",
           )}
-          style={isActive ? { boxShadow: `0 0 20px ${color}40` } : {}}
+          style={{
+            width: 60, height: 60,
+            ...(isActive ? { boxShadow: `0 0 24px ${color}30, 0 0 8px ${color}15` } : {}),
+          }}
         >
-          <svg width="64" height="64" className="absolute inset-0 -rotate-90">
-            <circle cx="32" cy="32" r={radius} fill="none" stroke="hsl(var(--border))" strokeWidth="3" />
+          {/* Outer ring SVG */}
+          <svg width="60" height="60" className="absolute inset-0 -rotate-90">
+            <circle cx="30" cy="30" r={radius} fill="none" stroke="hsl(var(--border))" strokeWidth="2.5" opacity="0.5" />
             <circle
-              cx="32"
-              cy="32"
+              cx="30"
+              cy="30"
               r={radius}
               fill="none"
-              stroke={color}
-              strokeWidth="3"
+              stroke={done ? color : isActive ? color : "transparent"}
+              strokeWidth="2.5"
               strokeDasharray={circumference}
               strokeDashoffset={circumference * (1 - progress)}
               strokeLinecap="round"
-              className="transition-all duration-500"
+              className="transition-all duration-700 ease-out"
             />
           </svg>
+          {/* Inner circle */}
           <div
             className={cn(
-              "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
-              done ? "text-primary-foreground" : "bg-muted text-muted-foreground",
+              "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 relative",
+              done ? "text-primary-foreground shadow-sm" : "bg-muted/80 text-muted-foreground",
+              isActive && !done && "bg-muted"
             )}
-            style={done ? { background: color } : {}}
+            style={done ? { background: `linear-gradient(135deg, ${color}, ${color}dd)` } : {}}
           >
-            {done ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+            {done ? (
+              <Check className="h-4 w-4" strokeWidth={2.5} />
+            ) : (
+              <Icon className="h-4 w-4" />
+            )}
           </div>
         </div>
-        <span
-          className={cn(
-            "text-[10px] font-medium transition-colors",
-            done ? "text-foreground" : isActive ? "text-foreground" : "text-muted-foreground"
-          )}
-        >
-          {label}
-        </span>
+        {/* Label + step number */}
+        <div className="flex flex-col items-center gap-0">
+          <span
+            className={cn(
+              "text-[10px] font-semibold tracking-wide transition-colors duration-300",
+              done ? "text-foreground" : isActive ? "text-foreground" : "text-muted-foreground"
+            )}
+          >
+            {label}
+          </span>
+          <span
+            className={cn(
+              "text-[8px] font-medium tracking-widest uppercase transition-colors duration-300",
+              done ? "opacity-70" : "text-muted-foreground/50"
+            )}
+            style={done ? { color } : {}}
+          >
+            Step {stepNumber}
+          </span>
+        </div>
       </button>
     );
   };
@@ -732,13 +743,10 @@ export function ManifestPracticePanel({
           </div>
         )}
 
-        {/* ===== Precision Practice Rings Row ===== */}
-        <div className="flex items-center justify-center py-4 px-4 flex-shrink-0">
+        {/* ===== Practice Flow Steps ===== */}
+        <div className="flex items-center justify-center py-5 px-6 flex-shrink-0">
           {RING_CONFIG.map((ring, index) => {
             const done = stepDone[ring.id as keyof typeof stepDone];
-            const nextDone = index < RING_CONFIG.length - 1
-              ? stepDone[RING_CONFIG[index + 1].id as keyof typeof stepDone]
-              : false;
             return (
               <div key={ring.id} className="flex items-center">
                 <ProgressRing
@@ -750,13 +758,24 @@ export function ManifestPracticePanel({
                   stepNumber={index + 1}
                 />
                 {index < RING_CONFIG.length - 1 && (
-                  <div
-                    className={cn(
-                      "w-6 sm:w-10 h-[2px] rounded-full mx-1 transition-all duration-500 self-center -mt-4",
-                      done ? "opacity-100" : "opacity-30 bg-border"
-                    )}
-                    style={done ? { background: ring.color } : {}}
-                  />
+                  <div className="flex items-center mx-1 sm:mx-2 -mt-5">
+                    <div
+                      className={cn(
+                        "h-[1.5px] rounded-full transition-all duration-700 ease-out",
+                        done ? "w-5 sm:w-8 opacity-80" : "w-5 sm:w-8 opacity-20 bg-border"
+                      )}
+                      style={done ? {
+                        background: `linear-gradient(90deg, ${ring.color}, ${RING_CONFIG[index + 1].color})`,
+                      } : {}}
+                    />
+                    <div
+                      className={cn(
+                        "w-1 h-1 rounded-full transition-all duration-500",
+                        done ? "opacity-60" : "opacity-15 bg-border"
+                      )}
+                      style={done ? { background: RING_CONFIG[index + 1].color } : {}}
+                    />
+                  </div>
                 )}
               </div>
             );
