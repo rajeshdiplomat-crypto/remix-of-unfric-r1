@@ -205,7 +205,7 @@ export function DiaryFeedCard({
   };
 
   return (
-    <Card className="feed-card overflow-hidden max-w-full bg-card border-border/40 shadow-[0_4px_24px_hsl(var(--foreground)/0.06)] hover:shadow-[0_8px_32px_hsl(var(--foreground)/0.10)] transition-all duration-200 rounded-[10px] mb-8">
+    <Card className="feed-card overflow-hidden max-w-full border-0 transition-all duration-200 mb-8 hover:-translate-y-0.5" style={{ background: "#FFFFFF", borderRadius: "18px", boxShadow: "0px 10px 35px rgba(15, 23, 42, 0.07)" }}>
       {/* All modules now use vertical layout - no left-side images */}
       <div className="flex flex-col">
         <div className="flex-1 min-w-0">
