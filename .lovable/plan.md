@@ -1,24 +1,42 @@
 
 
-## Manifest Card: Horizontal Layout with Left Thumbnail
+## Diary Page -- Match Screenshot Exactly
 
-Switch the ManifestCard from a vertical (top image) layout to a horizontal (left thumbnail) layout with zero padding around the image.
+The current Diary page is very close to the screenshot reference. After comparing the live app against the screenshot, here are the specific gaps to close:
 
-### Layout Change
+### Changes Required
 
-- Replace the current stacked layout (full-width image on top, content below) with a **horizontal flex row**
-- **Left side**: Thumbnail image flush to the card edge (no padding/margin), fixed width (`w-24`), full card height, with `object-cover`
-- **Right side**: Title, momentum/streak pills, weekly circles, and Practice button stacked vertically with compact padding
-- The "Day X" badge stays overlaid on the thumbnail
-- Action buttons (edit, delete, complete) move to the top-right of the content area
+**1. Left Sidebar (`DiaryLeftSidebar.tsx`) -- Add missing elements**
+- Add a clickable "Your Timeline" row with a chevron-right icon (`>`) below the module list, styled as a navigation-like row
+- Add a "Get Started" button at the bottom of the sidebar with a calendar/sparkle icon, matching the screenshot's teal/primary styled button
+
+**2. Profile Card (`DiaryProfileCard.tsx`) -- Add "View My Journey" button**
+- Add a prominent "View My Journey" call-to-action button at the bottom of the card, below the Overall score row
+- Style it as a full-width rounded button with `bg-primary text-primary-foreground` to match the screenshot's teal/dark button appearance
+
+**3. Filter Tabs area (`Diary.tsx`) -- Remove visible scrollbar**
+- Hide the horizontal scrollbar on the filter tabs row (the green/teal scroll indicator visible in both the current app and screenshot)
+- Use `scrollbar-hide` or CSS `overflow-x: auto` with hidden scrollbar styling
+
+**4. Minor color/spacing tweaks**
+- The feed background `bg-muted/20` matches the screenshot's light grey feed area
+- Cards already use the correct shadow and border radius
+- No major color system changes needed -- the monochrome theme is correct
 
 ### Technical Details
 
-**File: `src/components/manifest/ManifestCard.tsx`**
+| File | Change |
+|---|---|
+| `src/components/diary/DiaryLeftSidebar.tsx` | Add "Your Timeline" nav row with chevron and "Get Started" button |
+| `src/components/diary/DiaryProfileCard.tsx` | Add "View My Journey" button below the Overall score |
+| `src/pages/Diary.tsx` | Hide scrollbar on filter tabs row, minor spacing adjustments |
 
-1. Change the Card's inner structure from vertical to `flex flex-row`
-2. Replace the full-width image block (`w-full h-28`) with a fixed-width thumbnail (`w-24 h-full`) that bleeds edge-to-edge (no padding, rounded only on the left via `rounded-l-xl`)
-3. Move the gradient overlay to be a subtle right-fade (`bg-gradient-to-r from-transparent to-background/20`) instead of bottom-fade
-4. Stack the content (title, pills, weekly row, practice button) in a `flex-1 flex-col` container with small internal padding (`p-2`)
-5. Ensure the card has a consistent compact height across all cards
+### What stays the same
+- 3-column layout structure (left editorial, center feed, right profile)
+- PageHero component at top
+- Feed card design (avatar, title, timestamp, content, Like/Comment/Share)
+- Search bar design
+- Module filter tabs (All, Emotions, Journal, etc.)
+- Profile card avatar, name, email, performance section with progress bars
+- Mobile insights sidebar and edge-swipe gesture
 
