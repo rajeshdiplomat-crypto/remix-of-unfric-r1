@@ -1595,7 +1595,7 @@ export default function Habits() {
                               if (i === 0) return null;
                               const prev = dataPoints[i - 1];
                               const segmentPath = createSmoothPath([prev, p]);
-                              const isRedSegment = (prev.isPast && prev.value === 0) || (p.isPast && p.value === 0);
+                              const isRedSegment = (prev.isPast && prev.value === 0) && (p.isPast && p.value === 0);
                               return <path key={`seg-${i}`} d={segmentPath} fill="none" stroke={isRedSegment ? "#EF4444" : "#5EEAD4"} strokeWidth="2.5" strokeLinecap="round" />;
                             })}
                             {dataPoints.map((p, i) => (
@@ -1805,7 +1805,7 @@ export default function Habits() {
                                 if (i === 0) return null;
                                 const prev = dataPoints[i - 1];
                                 const segmentPath = createSmoothPath([prev, point]);
-                                const isRedSegment = (prev.isPast && prev.value === 0) || (point.isPast && point.value === 0);
+                                const isRedSegment = (prev.isPast && prev.value === 0) && (point.isPast && point.value === 0);
                                 return <path key={`seg-${i}`} d={segmentPath} fill="none" stroke={isRedSegment ? "#EF4444" : "#5EEAD4"} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />;
                               })}
                               <line x1="0" y1="210" x2={vbWidth} y2="210" stroke="hsl(var(--border))" strokeWidth="1" strokeDasharray="4 4" />
