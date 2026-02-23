@@ -2,7 +2,7 @@
 # https://supabase.com/docs/guides/local-development/cli/config
 # A string used to distinguish different Supabase projects on the same host. Defaults to the
 # working directory name when running `supabase init`.
-project_id = "remix-of-unfric-r1"
+project_id = "unfric-v1"
 
 [api]
 enabled = true
@@ -390,7 +390,6 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 [functions.manage-tasks]
 enabled = true
 verify_jwt = true
-import_map = "./functions/manage-tasks/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
 entrypoint = "./functions/manage-tasks/index.ts"
@@ -401,7 +400,6 @@ entrypoint = "./functions/manage-tasks/index.ts"
 [functions.manage-notes]
 enabled = true
 verify_jwt = true
-import_map = "./functions/manage-notes/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
 entrypoint = "./functions/manage-notes/index.ts"
@@ -412,7 +410,6 @@ entrypoint = "./functions/manage-notes/index.ts"
 [functions.manage-manifest]
 enabled = true
 verify_jwt = true
-import_map = "./functions/manage-manifest/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
 entrypoint = "./functions/manage-manifest/index.ts"
@@ -423,7 +420,6 @@ entrypoint = "./functions/manage-manifest/index.ts"
 [functions.manage-settings]
 enabled = true
 verify_jwt = true
-import_map = "./functions/manage-settings/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
 entrypoint = "./functions/manage-settings/index.ts"
@@ -434,7 +430,6 @@ entrypoint = "./functions/manage-settings/index.ts"
 [functions.upload-image]
 enabled = true
 verify_jwt = true
-import_map = "./functions/upload-image/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
 entrypoint = "./functions/upload-image/index.ts"
@@ -445,7 +440,6 @@ entrypoint = "./functions/upload-image/index.ts"
 [functions.manage-habits]
 enabled = true
 verify_jwt = true
-import_map = "./functions/manage-habits/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
 entrypoint = "./functions/manage-habits/index.ts"
