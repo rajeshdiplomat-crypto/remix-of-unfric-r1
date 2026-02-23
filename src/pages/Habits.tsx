@@ -1586,15 +1586,15 @@ export default function Habits() {
                           <>
                             <defs>
                               <linearGradient id="mobileAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.08" />
-                                <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0.02" />
+                                <stop offset="0%" stopColor="#5EEAD4" stopOpacity="0.25" />
+                                <stop offset="100%" stopColor="#5EEAD4" stopOpacity="0.05" />
                               </linearGradient>
                             </defs>
                             <path d={areaPath} fill="url(#mobileAreaGrad)" />
-                            <path d={linePath} fill="none" stroke="hsl(var(--foreground))" strokeWidth="2.5" strokeLinecap="round" opacity="0.7" />
+                            <path d={linePath} fill="none" stroke="#5EEAD4" strokeWidth="2.5" strokeLinecap="round" />
                             {dataPoints.map((p, i) => (
                               <circle key={i} cx={p.x} cy={p.y} r="4"
-                                fill={p.isFuture ? "hsl(var(--border))" : p.isPast && p.value === 0 ? "hsl(var(--muted-foreground))" : "hsl(var(--foreground))"}
+                                fill={p.isFuture ? "hsl(var(--border))" : p.isPast && p.value === 0 ? "#EF4444" : "#2DD4BF"}
                                 stroke="hsl(var(--background))" strokeWidth="1.5"
                               />
                             ))}
@@ -1790,12 +1790,12 @@ export default function Habits() {
                             <>
                               <defs>
                                 <linearGradient id="tableAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.08" />
-                                  <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0.02" />
+                                  <stop offset="0%" stopColor="#5EEAD4" stopOpacity="0.25" />
+                                  <stop offset="100%" stopColor="#5EEAD4" stopOpacity="0.05" />
                                 </linearGradient>
                               </defs>
                               <path d={areaPath} fill="url(#tableAreaGradient)" />
-                              <path d={linePath} fill="none" stroke="hsl(var(--foreground))" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" opacity="0.7" />
+                              <path d={linePath} fill="none" stroke="#5EEAD4" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                               <line x1="0" y1="210" x2={vbWidth} y2="210" stroke="hsl(var(--border))" strokeWidth="1" strokeDasharray="4 4" />
                               {dataPoints.map((point, i) => {
                                 const isMissed = point.isPast && point.value === 0;
@@ -1805,7 +1805,7 @@ export default function Habits() {
                                     cx={point.x}
                                     cy={point.y}
                                     r={isMissed ? "6" : "4"}
-                                    fill={point.isFuture ? "hsl(var(--border))" : isMissed ? "hsl(var(--muted-foreground))" : "hsl(var(--foreground))"}
+                                    fill={point.isFuture ? "hsl(var(--border))" : isMissed ? "#EF4444" : "#2DD4BF"}
                                     stroke="hsl(var(--background))"
                                     strokeWidth="2"
                                   >
