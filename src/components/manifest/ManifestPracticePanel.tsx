@@ -370,12 +370,14 @@ export function ManifestPracticePanel({
     icon: Icon,
     label,
     id,
+    stepNumber,
   }: {
     done: boolean;
     color: string;
     icon: any;
     label: string;
     id: string;
+    stepNumber: number;
   }) => {
     const isActive = activeRing === id;
     const radius = 28;
@@ -386,15 +388,26 @@ export function ManifestPracticePanel({
       <button
         onClick={() => setActiveRing(isActive ? null : id)}
         className={cn(
-          "flex flex-col items-center gap-1.5 transition-all duration-300 group",
+          "flex flex-col items-center gap-1 transition-all duration-300 group relative",
           (isViewingPast && !isLocked) && "opacity-50 pointer-events-none"
         )}
       >
+        {/* Step number badge */}
+        <span
+          className={cn(
+            "text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center mb-0.5 transition-colors duration-300",
+            done ? "text-primary-foreground" : "bg-muted text-muted-foreground"
+          )}
+          style={done ? { background: color } : {}}
+        >
+          {stepNumber}
+        </span>
         <div
           className={cn(
             "relative w-16 h-16 flex items-center justify-center rounded-full transition-all duration-300",
             isActive && "scale-110",
             isActive && "ring-2 ring-offset-2 ring-offset-background",
+            done && "animate-in zoom-in-95 duration-300",
           )}
           style={isActive ? { boxShadow: `0 0 20px ${color}40` } : {}}
         >
@@ -426,7 +439,7 @@ export function ManifestPracticePanel({
         <span
           className={cn(
             "text-[10px] font-medium transition-colors",
-            isActive ? "text-foreground" : "text-muted-foreground"
+            done ? "text-foreground" : isActive ? "text-foreground" : "text-muted-foreground"
           )}
         >
           {label}
@@ -720,17 +733,34 @@ export function ManifestPracticePanel({
         )}
 
         {/* ===== Precision Practice Rings Row ===== */}
-        <div className="flex items-center justify-center gap-6 sm:gap-8 py-4 px-4 flex-shrink-0">
-          {RING_CONFIG.map((ring) => (
-            <ProgressRing
-              key={ring.id}
-              id={ring.id}
-              done={stepDone[ring.id as keyof typeof stepDone]}
-              color={ring.color}
-              icon={ring.icon}
-              label={ring.label}
-            />
-          ))}
+        <div className="flex items-center justify-center py-4 px-4 flex-shrink-0">
+          {RING_CONFIG.map((ring, index) => {
+            const done = stepDone[ring.id as keyof typeof stepDone];
+            const nextDone = index < RING_CONFIG.length - 1
+              ? stepDone[RING_CONFIG[index + 1].id as keyof typeof stepDone]
+              : false;
+            return (
+              <div key={ring.id} className="flex items-center">
+                <ProgressRing
+                  id={ring.id}
+                  done={done}
+                  color={ring.color}
+                  icon={ring.icon}
+                  label={ring.label}
+                  stepNumber={index + 1}
+                />
+                {index < RING_CONFIG.length - 1 && (
+                  <div
+                    className={cn(
+                      "w-6 sm:w-10 h-[2px] rounded-full mx-1 transition-all duration-500 self-center -mt-4",
+                      done ? "opacity-100" : "opacity-30 bg-border"
+                    )}
+                    style={done ? { background: ring.color } : {}}
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* ===== Active Input Area (glassmorphic) ===== */}
