@@ -78,8 +78,21 @@ export function ManifestVisualizationMode({
   const visionImages = useMemo(() => {
     const images: string[] = [];
     if (goal.vision_image_url) images.push(goal.vision_image_url);
-    if (goal.vision_images && goal.vision_images.length > 0) {
-      images.push(...goal.vision_images.filter((img) => img && !images.includes(img)));
+
+    let parsedVisionImages: string[] = [];
+    if (Array.isArray(goal.vision_images)) {
+      parsedVisionImages = goal.vision_images;
+    } else if (typeof goal.vision_images === 'string') {
+      try {
+        const parsed = JSON.parse(goal.vision_images);
+        parsedVisionImages = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        parsedVisionImages = [];
+      }
+    }
+
+    if (parsedVisionImages.length > 0) {
+      images.push(...parsedVisionImages.filter((img) => img && !images.includes(img)));
     }
     if (goal.cover_image_url && !images.includes(goal.cover_image_url)) {
       images.push(goal.cover_image_url);
