@@ -29,8 +29,8 @@ const BADGES = [
 
 const TIME_LABELS: Record<TimeRange, string> = {
   today: "Today",
-  week: "7d",
-  month: "Month",
+  week: "Week",
+  month: "Total",
 };
 
 export function DiaryProfileCard({
@@ -122,7 +122,7 @@ export function DiaryProfileCard({
   const resolvedAvatar = currentAvatarUrl || avatarUrl;
 
   return (
-    <Card className="bg-card/60 backdrop-blur-xl border-foreground/[0.06] overflow-hidden shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.04),_0_8px_24px_-4px_hsl(var(--foreground)/0.06)]">
+    <Card className="bg-card overflow-hidden">
       <CardContent className="pt-5 space-y-4">
         {/* Avatar with upload + Badge row */}
         <div className="flex items-start justify-between">
@@ -207,7 +207,7 @@ export function DiaryProfileCard({
 
           {/* Overall score */}
           <div className="flex items-center justify-between pt-1 border-t border-border/50">
-            <span className="text-xs font-semibold text-foreground">Overall</span>
+            <span className="text-xs font-semibold text-foreground">Overall Progress</span>
             <span className="text-xs font-bold text-primary">{overallScore}%</span>
           </div>
         </div>
