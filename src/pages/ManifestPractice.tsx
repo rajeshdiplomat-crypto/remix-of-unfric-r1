@@ -186,11 +186,11 @@ export default function ManifestPractice() {
       {!loadingFinished && (
         <PageLoadingScreen module="manifest" isDataReady={isDataReady} onFinished={() => setLoadingFinished(true)} />
       )}
-      <div className="flex flex-col w-full flex-1 bg-background antialiased overflow-hidden min-h-0">
+      <div className="flex flex-col w-full h-full bg-background antialiased overflow-hidden min-h-0">
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-0 w-full max-w-[1400px] mx-auto min-h-0 overflow-hidden">
           {/* ========== LEFT COLUMN: Editorial + Vision Board (desktop only) ========== */}
           <div className="hidden lg:flex flex-col min-h-0 overflow-y-auto">
-            <div className="flex flex-col gap-5 py-6 px-5">
+            <div className="flex flex-col gap-3 py-4 px-5">
               <Button
                 variant="ghost"
                 size="sm"
@@ -229,7 +229,7 @@ export default function ManifestPractice() {
                 if (visionImgs.length > 0) {
                   const count = Math.min(visionImgs.length, 5);
                   return (
-                    <div className="space-y-2.5">
+                    <div className="space-y-1.5">
                       <div className="flex items-center gap-2">
                         <ImagePlus className="h-3.5 w-3.5 text-muted-foreground" />
                         <span className="text-xs font-medium text-muted-foreground tracking-wide">Vision Board</span>
@@ -237,7 +237,7 @@ export default function ManifestPractice() {
                       {/* Row 1: hero left + 2 stacked right */}
                       <div className="flex gap-1.5">
                         {/* Main large image */}
-                        <div className="relative overflow-hidden rounded-lg group cursor-pointer flex-[3] aspect-[4/3]">
+                        <div className="relative overflow-hidden rounded-lg group cursor-pointer flex-[3] aspect-[16/10]">
                           <img src={visionImgs[0]} alt="Vision 1" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                         </div>
                         {count >= 2 && (
@@ -257,7 +257,7 @@ export default function ManifestPractice() {
                       {count >= 4 && (
                         <div className="flex gap-1.5">
                           {visionImgs.slice(3, 5).map((img, i) => (
-                            <div key={i} className="relative overflow-hidden rounded-lg group cursor-pointer flex-1 aspect-[3/2]">
+                            <div key={i} className="relative overflow-hidden rounded-lg group cursor-pointer flex-1 aspect-[2/1]">
                               <img src={img} alt={`Vision ${i + 4}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                             </div>
                           ))}
@@ -354,7 +354,7 @@ export default function ManifestPractice() {
             </div>
 
             {/* Desktop date nav */}
-            <div className="hidden lg:flex items-center justify-center gap-1 mb-1 px-1">
+            <div className="hidden lg:flex items-center justify-center gap-1 mb-1 px-1 pt-1">
               <Button
                 variant="ghost"
                 size="sm"
