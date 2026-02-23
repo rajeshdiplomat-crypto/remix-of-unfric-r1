@@ -77,7 +77,7 @@ export default function ManifestPractice() {
         title: g.title,
         category: g.category || "other",
         vision_image_url: g.cover_image_url,
-        vision_images: g.vision_images || [],
+        vision_images: safeJsonArray(g.vision_images),
         cover_image_url: g.cover_image_url,
         start_date: g.start_date,
         live_from_end: g.live_from_end,
@@ -92,7 +92,7 @@ export default function ManifestPractice() {
         created_at: g.created_at,
         updated_at: g.updated_at,
         reminder_count: g.reminder_count,
-        reminder_times: g.reminder_times,
+        reminder_times: safeJsonArray(g.reminder_times),
       };
       setGoal(mergedGoal);
 
