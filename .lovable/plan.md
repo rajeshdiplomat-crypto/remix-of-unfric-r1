@@ -1,44 +1,39 @@
 
-# Fix: Manifest Visualization View Crash
 
-## Problem
-The visualization view crashes with `TypeError: goal.vision_images.filter is not a function`. The `vision_images` field is stored as a JSON **string** (e.g., `"[]"`) in the database, but the code at line 82 of `ManifestVisualizationMode.tsx` calls `.filter()` on it, which only works on arrays.
+## Fix: Manifest Practice Page Layout - Fit to Screen
 
-## Root Cause
-In the database, `vision_images` is stored as `"[]"` (a string), not an actual empty array `[]`. The `visionImages` memo on line 78-88 checks `goal.vision_images.length > 0` and calls `.filter()` without first parsing the string.
+### Problem
+The left column (vision board) overflows the viewport, causing the entire page to scroll. The two columns are not height-aligned -- the left extends beyond the right panel's bottom edge.
 
-## Fix
+### Root Cause
+The AppLayout root uses `min-h-screen` which allows content to grow beyond the viewport. The ManifestPractice page uses `flex-1` but doesn't enforce a hard height cap. The vision board images with aspect ratios push the left column taller than the screen.
 
-**File: `src/components/manifest/ManifestVisualizationMode.tsx`** (lines 78-88)
+### Solution
 
-Parse `goal.vision_images` safely before using it:
+**File: `src/pages/ManifestPractice.tsx`**
 
-```typescript
-const visionImages = useMemo(() => {
-  const images: string[] = [];
-  if (goal.vision_image_url) images.push(goal.vision_image_url);
+1. Change the outermost wrapper from `flex-1` to `h-full` so it fills exactly the available space from AppLayout, not more.
 
-  // Safely parse vision_images which may be a JSON string or an array
-  let parsedVisionImages: string[] = [];
-  if (Array.isArray(goal.vision_images)) {
-    parsedVisionImages = goal.vision_images;
-  } else if (typeof goal.vision_images === 'string') {
-    try {
-      const parsed = JSON.parse(goal.vision_images);
-      parsedVisionImages = Array.isArray(parsed) ? parsed : [];
-    } catch {
-      parsedVisionImages = [];
-    }
-  }
+2. Reduce the vision board image sizes so they fit better within the constrained space:
+   - Reduce the hero image aspect ratio from `aspect-[4/3]` to `aspect-[16/10]`
+   - Reduce the second-row images from `aspect-[3/2]` to `aspect-[2/1]`
 
-  if (parsedVisionImages.length > 0) {
-    images.push(...parsedVisionImages.filter((img) => img && !images.includes(img)));
-  }
-  if (goal.cover_image_url && !images.includes(goal.cover_image_url)) {
-    images.push(goal.cover_image_url);
-  }
-  return images;
-}, [goal]);
-```
+3. Tighten vertical spacing:
+   - Reduce the left column's padding from `py-6 gap-5` to `py-4 gap-3`
+   - Reduce gap between vision board rows from `space-y-2.5` to `space-y-1.5`
 
-This single change will fix the crash and allow the full-screen visualization mode (timer, affirmation, floating elements, ambient sounds) to render correctly.
+4. Add `pt-1` to the desktop date nav area so the right column starts at the same vertical offset as the left column content.
+
+### Technical Details
+
+Changes in `src/pages/ManifestPractice.tsx`:
+
+- Line 189: Change `flex-1` to `h-full` on the outer container
+- Line 193: Reduce padding/gap from `gap-5 py-6` to `gap-3 py-4`
+- Line 232: Reduce vision board `space-y-2.5` to `space-y-1.5`
+- Line 240: Change `aspect-[4/3]` to `aspect-[16/10]`
+- Line 260: Change `aspect-[3/2]` to `aspect-[2/1]`
+- Line 357: Add `pt-1` to desktop date nav for alignment
+
+These changes ensure both columns are bounded within the viewport height, with the left column scrolling internally only if content exceeds the available space, and the right panel aligns vertically with the left.
+
