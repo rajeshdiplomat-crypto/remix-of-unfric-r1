@@ -212,6 +212,11 @@ export function DiaryProfileCard({
           </div>
         </div>
 
+        {/* View My Journey CTA */}
+        <Button className="w-full rounded-xl" size="default">
+          View My Journey
+        </Button>
+
       </CardContent>
     </Card>
   );

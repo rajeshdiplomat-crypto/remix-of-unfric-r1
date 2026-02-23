@@ -1,4 +1,5 @@
-import { BookOpen, CheckSquare, StickyNote, Activity, Sparkles, Heart, Clock, Lightbulb, Layers } from "lucide-react";
+import { BookOpen, CheckSquare, StickyNote, Activity, Sparkles, Heart, Clock, Lightbulb, Layers, ChevronRight, CalendarDays } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { SourceModule } from "./types";
 
 interface DiaryLeftSidebarProps {
@@ -22,7 +23,7 @@ export function DiaryLeftSidebar({
   onFilterChange,
 }: DiaryLeftSidebarProps) {
   return (
-    <div className="flex flex-col justify-center h-full px-6 lg:px-8 gap-8 pt-12">
+    <div className="flex flex-col justify-between h-full px-6 lg:px-8 gap-8 pt-12 pb-6">
       <div className="space-y-6 max-w-sm">
 
         {/* Badge */}
@@ -73,6 +74,22 @@ export function DiaryLeftSidebar({
             </div>
           ))}
         </div>
+
+        <div className="h-px bg-border" />
+
+        {/* Your Timeline nav row */}
+        <button className="flex items-center justify-between w-full py-2.5 px-1 rounded-lg hover:bg-muted/50 transition-colors group">
+          <span className="text-sm font-medium text-foreground">Your Timeline</span>
+          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+        </button>
+      </div>
+
+      {/* Get Started button */}
+      <div className="max-w-sm">
+        <Button className="w-full rounded-xl gap-2" size="default">
+          <CalendarDays className="h-4 w-4" />
+          Get Started
+        </Button>
       </div>
     </div>
   );

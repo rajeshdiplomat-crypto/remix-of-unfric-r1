@@ -696,7 +696,7 @@ export default function Diary() {
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex items-center gap-1 mb-4 overflow-x-auto border-b border-border/40">
+          <div className="flex items-center gap-1 mb-4 overflow-x-auto border-b border-border/40 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {FILTER_TABS.map((tab) => (
               <Button
                 key={tab.value}
