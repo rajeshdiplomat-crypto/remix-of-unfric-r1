@@ -186,10 +186,10 @@ export default function ManifestPractice() {
       {!loadingFinished && (
         <PageLoadingScreen module="manifest" isDataReady={isDataReady} onFinished={() => setLoadingFinished(true)} />
       )}
-      <div className="flex flex-col w-full flex-1 bg-background antialiased pt-2">
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-0 w-full max-w-[1400px] mx-auto">
+      <div className="flex flex-col w-full flex-1 bg-background antialiased overflow-hidden min-h-0">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-0 w-full max-w-[1400px] mx-auto min-h-0 overflow-hidden">
           {/* ========== LEFT COLUMN: Editorial + Vision Board (desktop only) ========== */}
-          <div className="hidden lg:flex flex-col h-full min-h-0 overflow-y-auto">
+          <div className="hidden lg:flex flex-col min-h-0 overflow-y-auto">
             <div className="flex flex-col gap-5 py-6 px-5">
               <Button
                 variant="ghost"
@@ -298,7 +298,7 @@ export default function ManifestPractice() {
           </div>
 
           {/* ========== RIGHT COLUMN: Practice Panel ========== */}
-          <div className="flex flex-col h-full min-h-0">
+          <div className="flex flex-col min-h-0 overflow-hidden">
             {/* Compact mobile header: back + date nav in one row */}
             <div className="lg:hidden flex items-center justify-between px-2 py-1">
               <Button
@@ -397,7 +397,7 @@ export default function ManifestPractice() {
               )}
             </div>
 
-            <div className="lg:rounded-2xl lg:shadow-sm lg:border lg:border-border flex-1 overflow-hidden">
+            <div className="lg:rounded-2xl lg:shadow-sm lg:border lg:border-border flex-1 min-h-0 overflow-hidden">
               <ManifestPracticePanel
                 goal={goal}
                 streak={streak}
