@@ -1144,7 +1144,7 @@ export default function Habits() {
                   }}
                   disabled={!isPast || isArchived}
                   className={cn(
-                    "w-7 h-7 rounded-md flex items-center justify-center transition-all mx-auto",
+                    "w-6 h-6 rounded-md flex items-center justify-center transition-all mx-auto",
                     isCompleted
                       ? isArchived
                         ? "bg-muted-foreground text-background cursor-not-allowed"
@@ -1154,7 +1154,7 @@ export default function Habits() {
                         : "border-2 border-border bg-transparent cursor-not-allowed",
                   )}
                 >
-                  {isCompleted && <Check className="h-4 w-4 stroke-[3]" />}
+                  {isCompleted && <Check className="h-3.5 w-3.5 stroke-[3]" />}
                 </button>
               ) : (
                 <span className="text-muted-foreground/30">-</span>
@@ -1648,11 +1648,11 @@ export default function Habits() {
                                 onClick={(e) => { e.stopPropagation(); if (isPast) toggleCompletion(activity.id, day); }}
                                 disabled={!isPast}
                                 className={cn(
-                                  "w-7 h-7 rounded-md flex items-center justify-center mx-auto transition-all",
+                                  "w-6 h-6 rounded-md flex items-center justify-center mx-auto transition-all",
                                   isCompleted ? "bg-emerald-400 text-white" : isPast ? "border border-muted-foreground/30" : "border border-border"
                                 )}
                               >
-                                {isCompleted && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+                                {isCompleted && <Check className="h-3 w-3 stroke-[3]" />}
                               </button>
                             ) : (
                               <span className="text-muted-foreground/30 text-[9px]">-</span>
