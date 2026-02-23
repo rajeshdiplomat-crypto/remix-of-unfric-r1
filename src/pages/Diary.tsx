@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { DiaryJournalModal } from "@/components/diary/DiaryJournalModal";
 import { useFeedEvents } from "@/components/diary/useFeedEvents";
 import { useDiaryMetrics } from "@/components/diary/useDiaryMetrics";
-import { cn } from "@/lib/utils";
+
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import type { TimeRange, FeedEvent, SourceModule } from "@/components/diary/types";
 import { extractImagesFromHTML, extractImagesFromTiptapJSON } from "@/lib/editorUtils";
@@ -645,6 +645,7 @@ export default function Diary() {
     )}
     <div
       className="flex flex-col w-full h-full overflow-hidden"
+      style={{ background: "linear-gradient(180deg, #EEF2F7 0%, #E8EEF6 100%)" }}
     >
       {/* Full-width Hero */}
       <PageHero
@@ -658,7 +659,7 @@ export default function Diary() {
       {/* 3-Column Layout Below Hero */}
       <div className="flex flex-1 w-full max-w-[1400px] mx-auto overflow-hidden min-h-0">
         {/* Left Sidebar - Editorial style */}
-        <aside className="hidden md:flex flex-col w-[280px] lg:w-[380px] shrink-0 h-full min-h-0 overflow-y-auto border-r border-border/20">
+        <aside className="hidden md:flex flex-col w-[280px] lg:w-[380px] shrink-0 h-full min-h-0 overflow-y-auto" style={{ borderRight: "1px solid #E5EAF2" }}>
           <DiaryLeftSidebar 
             userName={userName}
             filter={filter}
@@ -684,7 +685,7 @@ export default function Diary() {
                 </AvatarFallback>
               </Avatar>
             </button>
-            <div className="flex items-center gap-2 bg-card border border-border/40 rounded-xl px-3 py-1 flex-1 md:max-w-none">
+            <div className="flex items-center gap-2 rounded-[14px] px-3 py-1 flex-1 md:max-w-none" style={{ background: "#F8FAFC", boxShadow: "inset 0 1px 3px rgba(0,0,0,0.06)" }}>
               <Search className="h-4 w-4 text-muted-foreground shrink-0" />
               <Input
                 placeholder="Search your feed..."
@@ -696,7 +697,7 @@ export default function Diary() {
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex items-center gap-1 mb-4 overflow-x-auto border-b border-border/40 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex items-center gap-1 mb-4 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" style={{ borderBottom: "1px solid #E5EAF2" }}>
             {FILTER_TABS.map((tab) => (
               <Button
                 key={tab.value}
@@ -754,7 +755,7 @@ export default function Diary() {
 
           {/* Feed Cards */}
           {sortedEvents.length === 0 ? (
-            <Card className="p-12 text-center bg-card border-border/40">
+            <Card className="p-12 text-center border-0" style={{ background: "#FFFFFF", borderRadius: "18px", boxShadow: "0px 10px 35px rgba(15, 23, 42, 0.07)" }}>
               <PenLine className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground">No entries yet</h3>
               <p className="text-muted-foreground mt-1 text-sm">
@@ -785,7 +786,7 @@ export default function Diary() {
       </main>
 
       {/* Right Sidebar */}
-      <aside className="hidden lg:flex flex-col w-[280px] xl:w-[340px] shrink-0 h-full min-h-0 overflow-y-auto border-l border-border/20 bg-background p-4 gap-4">
+      <aside className="hidden lg:flex flex-col w-[280px] xl:w-[340px] shrink-0 h-full min-h-0 overflow-y-auto border-l border-border/10 p-4 gap-4" style={{ background: "transparent" }}>
         <DiaryProfileCard
           userName={userName}
           userEmail={user?.email || ""}

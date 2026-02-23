@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { Award, Trophy, Star, Flame, Zap, Camera, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
+
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -122,8 +122,8 @@ export function DiaryProfileCard({
   const resolvedAvatar = currentAvatarUrl || avatarUrl;
 
   return (
-    <Card className="bg-card overflow-hidden">
-      <CardContent className="pt-5 space-y-4">
+    <Card className="overflow-hidden border-0" style={{ background: "#FFFFFF", borderRadius: "18px", boxShadow: "0px 10px 35px rgba(15, 23, 42, 0.07)" }}>
+      <CardContent className="pt-6 pb-6 px-5 space-y-4">
         {/* Avatar with upload + Badge row */}
         <div className="flex items-start justify-between">
           <div className="relative group">
@@ -153,7 +153,7 @@ export function DiaryProfileCard({
             />
           </div>
           {/* Performance Badge */}
-          <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold", badge.bg, badge.color)}>
+          <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold", badge.bg, badge.color)} style={{ boxShadow: "0px 4px 10px rgba(0,0,0,0.06)" }}>
             <BadgeIcon className="h-3.5 w-3.5" />
             {badge.label}
           </div>
@@ -169,7 +169,7 @@ export function DiaryProfileCard({
           Tracking your personal growth journey across journaling, habits, emotions, and more.
         </p>
 
-        <div className="h-px bg-border" />
+        <div className="h-px" style={{ background: "#E5EAF2" }} />
 
         {/* Performance section */}
         <div className="space-y-3">
@@ -201,19 +201,35 @@ export function DiaryProfileCard({
                 <span className="text-xs font-medium text-foreground">{mod.name}</span>
                 <span className="text-[10px] text-muted-foreground">{mod.stat}</span>
               </div>
-              <Progress value={mod.percent} className={cn("h-1 bg-secondary", mod.bar)} />
+              <div className="relative h-1.5 w-full rounded-full overflow-hidden" style={{ background: "#E2E8F0" }}>
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${mod.percent}%`,
+                    background: "linear-gradient(90deg, #14B8A6 0%, #0EA5E9 100%)",
+                  }}
+                />
+              </div>
             </div>
           ))}
 
           {/* Overall score */}
-          <div className="flex items-center justify-between pt-1 border-t border-border/50">
+          <div className="flex items-center justify-between pt-1" style={{ borderTop: "1px solid #E5EAF2" }}>
             <span className="text-xs font-semibold text-foreground">Overall Progress</span>
             <span className="text-xs font-bold text-primary">{overallScore}%</span>
           </div>
         </div>
 
         {/* View My Journey CTA */}
-        <Button className="w-full rounded-xl" size="default">
+        <Button
+          className="w-full text-primary-foreground border-0 hover:brightness-110 transition-all"
+          size="default"
+          style={{
+            borderRadius: "14px",
+            background: "linear-gradient(90deg, #0EA5E9 0%, #2563EB 100%)",
+            boxShadow: "0px 8px 20px rgba(37, 99, 235, 0.25)",
+          }}
+        >
           View My Journey
         </Button>
 
