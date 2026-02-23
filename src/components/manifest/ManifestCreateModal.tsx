@@ -212,7 +212,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
       setCheckInTime(editingGoal.check_in_time || "08:00");
       setCommitted(editingGoal.committed_7_days || false);
       setReminderCount(editingGoal.reminder_count || 1);
-      setReminderTimes(editingGoal.reminder_times || ["08:00"]);
+      setReminderTimes(Array.isArray(editingGoal.reminder_times) ? editingGoal.reminder_times : (() => { try { const p = typeof editingGoal.reminder_times === 'string' ? JSON.parse(editingGoal.reminder_times) : null; return Array.isArray(p) ? p : ["08:00"]; } catch { return ["08:00"]; } })());
     } else {
       try {
         const draft = localStorage.getItem(MANIFEST_DRAFT_KEY);
