@@ -1,42 +1,39 @@
 
 
-## Diary Page -- Match Screenshot Exactly
+## Diary Page -- Match Screenshot Card and Background Styling
 
-The current Diary page is very close to the screenshot reference. After comparing the live app against the screenshot, here are the specific gaps to close:
+Comparing the uploaded screenshot against the current implementation, here are the specific differences:
 
-### Changes Required
+### 1. Profile Card (`DiaryProfileCard.tsx`) -- Remove glassmorphism, clean card style
+- **Current**: `bg-card/60 backdrop-blur-xl` with complex inset shadow
+- **Screenshot**: Clean solid `bg-card` with standard border/shadow, no blur or transparency
+- Change time filter button labels from "7d" to "Today" and keep "Month" as "Total" to match screenshot
+- Rename "Overall" to "Overall Progress"
 
-**1. Left Sidebar (`DiaryLeftSidebar.tsx`) -- Add missing elements**
-- Add a clickable "Your Timeline" row with a chevron-right icon (`>`) below the module list, styled as a navigation-like row
-- Add a "Get Started" button at the bottom of the sidebar with a calendar/sparkle icon, matching the screenshot's teal/primary styled button
+### 2. Right Sidebar Background (`Diary.tsx`)
+- **Current**: `bg-background/50` (semi-transparent)
+- **Screenshot**: Clean solid `bg-background` -- no tinted/transparent overlay
 
-**2. Profile Card (`DiaryProfileCard.tsx`) -- Add "View My Journey" button**
-- Add a prominent "View My Journey" call-to-action button at the bottom of the card, below the Overall score row
-- Style it as a full-width rounded button with `bg-primary text-primary-foreground` to match the screenshot's teal/dark button appearance
+### 3. Left Sidebar Module Descriptions (`DiaryLeftSidebar.tsx`)
+- Update descriptions to match screenshot:
+  - Manifest: "Set & track goals" (currently "Visualize your goals")
+  - Emotions: "Log feelings & moods" (currently "Understand how you feel")
 
-**3. Filter Tabs area (`Diary.tsx`) -- Remove visible scrollbar**
-- Hide the horizontal scrollbar on the filter tabs row (the green/teal scroll indicator visible in both the current app and screenshot)
-- Use `scrollbar-hide` or CSS `overflow-x: auto` with hidden scrollbar styling
+### 4. Feed Card Spacing (`Diary.tsx`)
+- Feed cards container currently uses `space-y-4` -- screenshot shows slightly tighter card gaps matching current spacing, no change needed
+- The `rounded-2xl` on the center feed `bg-muted/20` is correct
 
-**4. Minor color/spacing tweaks**
-- The feed background `bg-muted/20` matches the screenshot's light grey feed area
-- Cards already use the correct shadow and border radius
-- No major color system changes needed -- the monochrome theme is correct
-
-### Technical Details
+### Technical Summary
 
 | File | Change |
 |---|---|
-| `src/components/diary/DiaryLeftSidebar.tsx` | Add "Your Timeline" nav row with chevron and "Get Started" button |
-| `src/components/diary/DiaryProfileCard.tsx` | Add "View My Journey" button below the Overall score |
-| `src/pages/Diary.tsx` | Hide scrollbar on filter tabs row, minor spacing adjustments |
+| `DiaryProfileCard.tsx` | Replace `bg-card/60 backdrop-blur-xl` with `bg-card`. Update time labels: "7d" -> "Today", "Month" -> "Total". Rename "Overall" -> "Overall Progress" |
+| `DiaryLeftSidebar.tsx` | Manifest desc -> "Set & track goals", Emotions desc -> "Log feelings & moods" |
+| `Diary.tsx` | Right sidebar: `bg-background/50` -> `bg-background` |
 
 ### What stays the same
-- 3-column layout structure (left editorial, center feed, right profile)
-- PageHero component at top
-- Feed card design (avatar, title, timestamp, content, Like/Comment/Share)
-- Search bar design
-- Module filter tabs (All, Emotions, Journal, etc.)
-- Profile card avatar, name, email, performance section with progress bars
-- Mobile insights sidebar and edge-swipe gesture
-
+- 3-column layout, PageHero, feed cards, search bar, filter tabs
+- All card rounded corners, shadows, and border styles
+- Avatar, name, email, progress bars in profile card
+- "View My Journey" button at bottom of profile card
+- Module list icons and names in left sidebar
