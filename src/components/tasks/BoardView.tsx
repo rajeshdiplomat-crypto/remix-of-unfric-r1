@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useDatePreferences } from "@/hooks/useDatePreferences";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   CheckCircle2,
   Circle,
@@ -42,7 +43,6 @@ interface BoardViewProps {
   onCompleteTask?: (task: QuadrantTask) => void;
 }
 
-// Color palette for different task types
 const TASK_COLORS = [
   { bg: "bg-gradient-to-br from-rose-500 to-pink-600", border: "border-rose-200", light: "bg-rose-50" },
   { bg: "bg-gradient-to-br from-blue-500 to-indigo-600", border: "border-blue-200", light: "bg-blue-50" },
@@ -52,7 +52,6 @@ const TASK_COLORS = [
   { bg: "bg-gradient-to-br from-cyan-500 to-sky-600", border: "border-cyan-200", light: "bg-cyan-50" },
 ];
 
-// Map tags/keywords to icons and colors
 const getTaskStyle = (task: QuadrantTask, index: number) => {
   const title = task.title.toLowerCase();
   const tags = task.tags?.map((t) => t.toLowerCase()) || [];
@@ -66,21 +65,11 @@ const getTaskStyle = (task: QuadrantTask, index: number) => {
     icon = Heart;
   } else if (title.includes("bike") || title.includes("cycle") || title.includes("commute")) {
     icon = Bike;
-  } else if (
-    title.includes("meeting") ||
-    title.includes("call") ||
-    title.includes("team") ||
-    tags.includes("meeting")
-  ) {
+  } else if (title.includes("meeting") || title.includes("call") || title.includes("team") || tags.includes("meeting")) {
     icon = Users;
   } else if (title.includes("email") || title.includes("mail") || tags.includes("email")) {
     icon = Mail;
-  } else if (
-    title.includes("lunch") ||
-    title.includes("dinner") ||
-    title.includes("breakfast") ||
-    title.includes("eat")
-  ) {
+  } else if (title.includes("lunch") || title.includes("dinner") || title.includes("breakfast") || title.includes("eat")) {
     icon = UtensilsCrossed;
   } else if (title.includes("work") || title.includes("project") || tags.includes("work")) {
     icon = Briefcase;
@@ -107,14 +96,12 @@ const getTaskStyle = (task: QuadrantTask, index: number) => {
   return { icon, ...colorSet };
 };
 
-// Parse time string to minutes from midnight
 const parseTimeToMinutes = (timeStr: string | null): number => {
-  if (!timeStr) return 9 * 60; // Default 9 AM
+  if (!timeStr) return 9 * 60;
   const [hours, minutes] = timeStr.split(":").map(Number);
   return hours * 60 + (minutes || 0);
 };
 
-// Format minutes to readable time
 const formatTime = (minutes: number): string => {
   const normalizedMinutes = ((minutes % 1440) + 1440) % 1440;
   const hours = Math.floor(normalizedMinutes / 60);
@@ -124,7 +111,6 @@ const formatTime = (minutes: number): string => {
   return `${displayHours}:${mins.toString().padStart(2, "0")} ${period}`;
 };
 
-// Format duration to readable string
 const formatDuration = (minutes: number): string => {
   if (minutes >= 60) {
     const hours = Math.floor(minutes / 60);
@@ -135,27 +121,26 @@ const formatDuration = (minutes: number): string => {
   return `${minutes} min`;
 };
 
-// Calculate duration in minutes between start and end time
 const getTaskDuration = (startTime: string | null, endTime: string | null): number => {
   if (!startTime) return 30;
-  if (!endTime) return 30; // Default 30 minutes if no end time
-
+  if (!endTime) return 30;
   const startMinutes = parseTimeToMinutes(startTime);
   let endMinutes = parseTimeToMinutes(endTime);
-
-  // Handle overnight tasks
   if (endMinutes <= startMinutes) {
     endMinutes += 24 * 60;
   }
-
   return endMinutes - startMinutes;
 };
 
-// Height per hour in pixels - reduced for better fit
-const HOUR_HEIGHT = 60;
+// Height per hour in pixels
+const HOUR_HEIGHT_DESKTOP = 60;
+const HOUR_HEIGHT_MOBILE_EMPTY = 24;  // 60% reduction for empty slots
+const HOUR_HEIGHT_MOBILE_ACTIVE = 60; // Full height for slots with tasks
 
 export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps) {
   const { formatDate: fmtDate } = useDatePreferences();
+  const isMobile = useIsMobile();
+  const HOUR_HEIGHT = isMobile ? HOUR_HEIGHT_MOBILE_EMPTY : HOUR_HEIGHT_DESKTOP;
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState(today);
   const [currentTimeMinutes, setCurrentTimeMinutes] = useState(() => {
@@ -163,7 +148,6 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
     return now.getHours() * 60 + now.getMinutes();
   });
 
-  // Update current time every minute
   useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date();
@@ -172,7 +156,6 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
     return () => clearInterval(interval);
   }, []);
 
-  // Get tasks for selected date first (needed to calculate dynamic timeline)
   const dayTasks = useMemo(() => {
     return tasks
       .filter((task) => {
@@ -182,50 +165,84 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
       .sort((a, b) => parseTimeToMinutes(a.due_time) - parseTimeToMinutes(b.due_time));
   }, [tasks, selectedDate]);
 
-  // Full 24-hour timeline (12:00 AM to 11:59 PM)
-  const timelineStart = 0; // 12:00 AM (midnight)
-  const timelineEnd = 24 * 60 - 1; // 11:59 PM (1439 minutes)
+  const timelineStart = 0;
+  const timelineEnd = 24 * 60 - 1;
   const totalHours = 24;
 
-  // Generate hour markers dynamically
+  // On mobile, build a set of hours that contain tasks (for dynamic height)
+  const activeHours = useMemo(() => {
+    if (!isMobile) return new Set<number>();
+    const hours = new Set<number>();
+    dayTasks.forEach((task) => {
+      const startMin = parseTimeToMinutes(task.due_time);
+      const duration = getTaskDuration(task.due_time, task.end_time);
+      const endMin = startMin + duration;
+      const startHour = Math.floor(startMin / 60);
+      const endHour = Math.ceil(endMin / 60);
+      for (let h = startHour; h < endHour; h++) {
+        hours.add(h);
+      }
+    });
+    return hours;
+  }, [dayTasks, isMobile]);
+
+  // Calculate cumulative Y position for each hour on mobile (dynamic heights)
+  const hourYPositions = useMemo(() => {
+    const positions: number[] = [];
+    let cumY = 0;
+    for (let h = 0; h < 24; h++) {
+      positions.push(cumY);
+      if (isMobile) {
+        cumY += activeHours.has(h) ? HOUR_HEIGHT_MOBILE_ACTIVE : HOUR_HEIGHT_MOBILE_EMPTY;
+      } else {
+        cumY += HOUR_HEIGHT_DESKTOP;
+      }
+    }
+    positions.push(cumY); // position[24] = total height
+    return positions;
+  }, [isMobile, activeHours]);
+
+  const totalHeight = hourYPositions[24];
+
   const hourMarkers = useMemo(() => {
-    const markers: { minutes: number; label: string }[] = [];
-    const startHour = timelineStart / 60;
-    const endHour = timelineEnd / 60;
-    for (let hour = startHour; hour <= endHour; hour++) {
+    const markers: { minutes: number; label: string; hour: number }[] = [];
+    for (let hour = 0; hour <= 23; hour++) {
       markers.push({
         minutes: hour * 60,
         label: formatTime(hour * 60),
+        hour,
       });
     }
     return markers;
-  }, [timelineStart, timelineEnd]);
+  }, []);
 
-  // Calculate pixel position for a given time
+  // Get pixel position for a given minute value using dynamic hour heights
   const getPixelPosition = (minutes: number): number => {
-    const minutesFromStart = minutes - timelineStart;
-    return (minutesFromStart / 60) * HOUR_HEIGHT;
+    if (!isMobile) {
+      return (minutes / 60) * HOUR_HEIGHT_DESKTOP;
+    }
+    const hour = Math.floor(minutes / 60);
+    const minuteOffset = minutes % 60;
+    const hourHeight = activeHours.has(hour) ? HOUR_HEIGHT_MOBILE_ACTIVE : HOUR_HEIGHT_MOBILE_EMPTY;
+    const baseY = hourYPositions[Math.min(hour, 23)];
+    return baseY + (minuteOffset / 60) * hourHeight;
   };
 
-  // Check if current time is visible in timeline
   const isToday = isSameDay(selectedDate, today);
   const isCurrentTimeVisible = currentTimeMinutes >= timelineStart && currentTimeMinutes <= timelineEnd;
   const currentTimePosition = getPixelPosition(currentTimeMinutes);
 
-  // Get remaining time for ongoing tasks
   const getRemainingTime = (task: QuadrantTask): number | null => {
     if (!isToday) return null;
     const startMinutes = parseTimeToMinutes(task.due_time);
     const duration = getTaskDuration(task.due_time, task.end_time);
     const endMinutes = startMinutes + duration;
-
     if (currentTimeMinutes >= startMinutes && currentTimeMinutes < endMinutes) {
       return endMinutes - currentTimeMinutes;
     }
     return null;
   };
 
-  // Build list of task events only (no gaps to avoid overlapping)
   const timelineEvents = useMemo(() => {
     const events: Array<{
       type: "task";
@@ -235,23 +252,13 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
       taskIndex: number;
     }> = [];
 
-    if (dayTasks.length === 0) {
-      return events;
-    }
+    if (dayTasks.length === 0) return events;
 
-    // Add all tasks
     dayTasks.forEach((task, idx) => {
       const startMinutes = parseTimeToMinutes(task.due_time);
       const duration = getTaskDuration(task.due_time, task.end_time);
       const endMinutes = startMinutes + duration;
-
-      events.push({
-        type: "task",
-        startMinutes,
-        endMinutes,
-        task,
-        taskIndex: idx,
-      });
+      events.push({ type: "task", startMinutes, endMinutes, task, taskIndex: idx });
     });
 
     return events;
@@ -261,79 +268,115 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
     <div className="h-full flex flex-col bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
       {/* Header with date navigation */}
       <div className="shrink-0 border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            <h2 className="font-semibold text-lg text-slate-800 dark:text-slate-100">Day Planner</h2>
-          </div>
-          <div className="flex items-center gap-2">
+        {isMobile ? (
+          /* Compact mobile header — slim date flipper row */
+          <div className="flex items-center justify-between px-3 py-1.5">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"
+              className="h-6 w-6 rounded-full"
               onClick={() => setSelectedDate(addDays(selectedDate, -1))}
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-3 w-3" />
             </Button>
             <button
               onClick={() => setSelectedDate(today)}
               className={cn(
-                "px-4 py-1.5 rounded-full text-sm font-medium transition-all",
+                "px-2.5 py-0.5 rounded-full text-[10px] font-medium transition-all",
                 isToday
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-blue-900/50"
-                  : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200",
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-muted text-foreground",
               )}
             >
               {isToday ? "Today" : fmtDate(selectedDate, "weekday")}
             </button>
+            <span className="text-[9px] text-muted-foreground">
+              {dayTasks.length} tasks
+            </span>
+            {isToday && (
+              <span className="text-[9px] text-destructive font-medium">{formatTime(currentTimeMinutes)}</span>
+            )}
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"
+              className="h-6 w-6 rounded-full"
               onClick={() => setSelectedDate(addDays(selectedDate, 1))}
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-3 w-3" />
             </Button>
           </div>
-        </div>
-
-        {/* Stats bar */}
-        <div className="flex items-center gap-6 px-4 pb-3 text-sm">
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-blue-500" />
-            <span className="text-slate-600 dark:text-slate-400">
-              {dayTasks.length} task{dayTasks.length !== 1 ? "s" : ""}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-slate-600 dark:text-slate-400">
-              {dayTasks.filter((t) => t.is_completed).length} completed
-            </span>
-          </div>
-          {isToday && (
-            <div className="flex items-center gap-1.5">
-              <Timer className="h-3.5 w-3.5 text-rose-500" />
-              <span className="text-rose-600 dark:text-rose-400 font-medium">{formatTime(currentTimeMinutes)}</span>
+        ) : (
+          /* Desktop header */
+          <>
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <h2 className="font-semibold text-lg text-slate-800 dark:text-slate-100">Day Planner</h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700" onClick={() => setSelectedDate(addDays(selectedDate, -1))}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <button
+                  onClick={() => setSelectedDate(today)}
+                  className={cn(
+                    "px-4 py-1.5 rounded-full text-sm font-medium transition-all",
+                    isToday
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-blue-900/50"
+                      : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200",
+                  )}
+                >
+                  {isToday ? "Today" : fmtDate(selectedDate, "weekday")}
+                </button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700" onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          )}
-        </div>
+            {/* Stats bar — desktop only */}
+            <div className="flex items-center gap-6 px-4 pb-3 text-sm">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-blue-500" />
+                <span className="text-slate-600 dark:text-slate-400">{dayTasks.length} task{dayTasks.length !== 1 ? "s" : ""}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="text-slate-600 dark:text-slate-400">{dayTasks.filter((t) => t.is_completed).length} completed</span>
+              </div>
+              {isToday && (
+                <div className="flex items-center gap-1.5">
+                  <Timer className="h-3.5 w-3.5 text-rose-500" />
+                  <span className="text-rose-600 dark:text-rose-400 font-medium">{formatTime(currentTimeMinutes)}</span>
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Timeline content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="relative flex" style={{ minHeight: `${totalHours * HOUR_HEIGHT}px` }}>
+        <div className="relative flex" style={{ minHeight: `${totalHeight}px` }}>
           {/* Hour labels column */}
-          <div className="w-20 shrink-0 border-r border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 pt-2">
-            {hourMarkers.map(({ minutes, label }, index) => (
+          <div className={cn(
+            "shrink-0 border-r border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 pt-2",
+            isMobile ? "w-12" : "w-20"
+          )}>
+            {hourMarkers.map(({ minutes, label, hour }) => (
               <div
                 key={minutes}
-                className="absolute left-0 w-20 flex items-start justify-end pr-3"
+                className={cn(
+                  "absolute left-0 flex items-start justify-end",
+                  isMobile ? "w-12 pr-1" : "w-20 pr-3"
+                )}
                 style={{
-                  top: `${getPixelPosition(minutes) + 8}px`, // Add 8px offset for padding
+                  top: `${hourYPositions[hour] + 8}px`,
                 }}
               >
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 -translate-y-1/2">{label}</span>
+                <span className={cn(
+                  "font-medium text-slate-500 dark:text-slate-400 -translate-y-1/2",
+                  isMobile ? "text-[8px]" : "text-xs"
+                )}>{label}</span>
               </div>
             ))}
           </div>
@@ -341,53 +384,62 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
           {/* Timeline content area */}
           <div className="flex-1 relative pt-2">
             {/* Hour grid lines */}
-            {hourMarkers.map(({ minutes }) => (
+            {hourMarkers.map(({ minutes, hour }) => (
               <div
                 key={minutes}
-                className="absolute left-0 right-0 border-t border-slate-100 dark:border-slate-800"
-                style={{ top: `${getPixelPosition(minutes) + 8}px` }}
+                className={cn(
+                  "absolute left-0 right-0 border-t",
+                  isMobile && activeHours.has(hour)
+                    ? "border-slate-200 dark:border-slate-700"
+                    : "border-slate-100 dark:border-slate-800"
+                )}
+                style={{ top: `${hourYPositions[hour] + 8}px` }}
               />
             ))}
 
-            {/* Timeline spine - vertical line */}
-            <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-300 via-blue-400 to-blue-300 dark:from-blue-600 dark:via-blue-500 dark:to-blue-600" />
+            {/* Timeline spine */}
+            <div className={cn(
+              "absolute top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-300 via-blue-400 to-blue-300 dark:from-blue-600 dark:via-blue-500 dark:to-blue-600",
+              isMobile ? "left-3" : "left-6"
+            )} />
 
-            {/* Current time indicator - extends full width */}
+            {/* Current time indicator */}
             {isToday && isCurrentTimeVisible && (
               <>
-                {/* Line extending into hour labels area */}
                 <div
-                  className="absolute -left-20 right-0 flex items-center z-30 pointer-events-none"
+                  className={cn(
+                    "absolute right-0 flex items-center z-30 pointer-events-none",
+                    isMobile ? "-left-12" : "-left-20"
+                  )}
                   style={{ top: `${currentTimePosition + 8}px` }}
                 >
-                  <div className="flex-1 h-[2px] bg-rose-500" />
+                  <div className={cn("flex-1", isMobile ? "h-px bg-primary" : "h-[2px] bg-rose-500")} />
                 </div>
-                {/* Pulse dot on the timeline spine */}
-                <div
-                  className="absolute z-30 pointer-events-none"
-                  style={{ top: `${currentTimePosition + 8}px`, left: '18px' }}
-                >
-                  <div className="w-3 h-3 rounded-full bg-rose-500 shadow-lg shadow-rose-300 dark:shadow-rose-900 animate-pulse -translate-y-1/2" />
-                </div>
+                {!isMobile && (
+                  <div
+                    className="absolute z-30 pointer-events-none"
+                    style={{ top: `${currentTimePosition + 8}px`, left: '18px' }}
+                  >
+                    <div className="w-3 h-3 rounded-full bg-rose-500 shadow-lg shadow-rose-300 dark:shadow-rose-900 animate-pulse -translate-y-1/2" />
+                  </div>
+                )}
               </>
             )}
 
             {/* Empty state */}
             {dayTasks.length === 0 && (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-                <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
-                  <Calendar className="h-10 w-10 text-slate-300 dark:text-slate-600" />
+                <div className={cn("rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4", isMobile ? "w-14 h-14" : "w-20 h-20")}>
+                  <Calendar className={cn("text-slate-300 dark:text-slate-600", isMobile ? "h-7 w-7" : "h-10 w-10")} />
                 </div>
-                <p className="text-slate-500 dark:text-slate-400 font-medium text-lg">No tasks scheduled</p>
-                <p className="text-sm text-slate-400 dark:text-slate-500 mt-1 max-w-xs">
-                  {isToday
-                    ? "Add tasks with a start time to see them in the planner"
-                    : fmtDate(selectedDate, "weekdayFull")}
+                <p className={cn("text-slate-500 dark:text-slate-400 font-medium", isMobile ? "text-sm" : "text-lg")}>No tasks scheduled</p>
+                <p className={cn("text-slate-400 dark:text-slate-500 mt-1 max-w-xs", isMobile ? "text-[11px]" : "text-sm")}>
+                  {isToday ? "Add tasks with a start time to see them here" : fmtDate(selectedDate, "weekdayFull")}
                 </p>
               </div>
             )}
 
-            {/* Timeline events - Tasks only */}
+            {/* Timeline events */}
             {timelineEvents.map((event) => {
               const task = event.task;
               const taskIndex = event.taskIndex;
@@ -397,39 +449,39 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
               const isOngoing = remaining !== null;
               const duration = event.endMinutes - event.startMinutes;
               const position = getPixelPosition(event.startMinutes);
-
-              // Task card height = exact duration height (no minimum)
-              // 60px per hour, so 15min = 15px, 30min = 30px, 1hr = 60px
-              const taskHeight = (duration / 60) * HOUR_HEIGHT;
-              const isCompact = taskHeight < 50; // Compact layout for short tasks
+              const endPosition = getPixelPosition(event.endMinutes);
+              const taskHeight = endPosition - position;
+              const isCompact = isMobile || taskHeight < 50;
 
               return (
                 <div
                   key={task.id}
-                  className="absolute left-10 right-4"
+                  className={cn("absolute", isMobile ? "left-6 right-1.5" : "left-10 right-4")}
                   style={{
-                    top: `${position + 8}px`, // Add 8px offset to match hour labels
-                    height: `${Math.max(taskHeight, 24)}px`, // Min 24px for very short tasks
+                    top: `${position + 8}px`,
+                    height: `${Math.max(taskHeight, isMobile ? 22 : 24)}px`,
                   }}
                 >
                   {/* Timeline dot */}
                   <div
                     className={cn(
-                      "absolute -left-[14px] w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 shadow-sm z-10",
+                      "absolute w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-900 shadow-sm z-10",
+                      isMobile ? "-left-[11px]" : "-left-[14px]",
                       task.is_completed
                         ? "bg-emerald-500"
                         : isOngoing
                           ? "bg-rose-500 animate-pulse"
                           : bg.replace("bg-gradient-to-br", "bg").split(" ")[1],
                     )}
-                    style={{ top: `${Math.min(8, taskHeight / 2 - 6)}px` }}
+                    style={{ top: `${Math.min(6, taskHeight / 2 - 5)}px` }}
                   />
 
-                  {/* Task card with exact height based on duration */}
+                  {/* Task card */}
                   <div
                     onClick={() => onTaskClick(task)}
                     className={cn(
-                      "group relative ml-4 h-full rounded-lg border-2 cursor-pointer transition-all duration-200 overflow-hidden",
+                      "group relative h-full rounded-lg border cursor-pointer transition-all duration-200 overflow-hidden",
+                      isMobile ? "ml-1.5 border" : "ml-4 border-2",
                       "hover:shadow-lg hover:scale-[1.01]",
                       task.is_completed
                         ? "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 opacity-70"
@@ -439,78 +491,33 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
                     )}
                   >
                     {isCompact ? (
-                      /* Compact layout for short tasks (< 50px height) */
-                      <div className="flex items-center gap-2 px-2 h-full">
-                        {/* Small icon */}
-                        <div
-                          className={cn(
-                            "w-6 h-6 rounded flex items-center justify-center shrink-0",
-                            bg,
-                            task.is_completed && "opacity-50",
-                          )}
-                        >
-                          <Icon className="h-3 w-3 text-white" />
+                      <div className="flex items-center gap-1.5 px-2 h-full">
+                        <div className={cn("w-5 h-5 rounded flex items-center justify-center shrink-0", bg, task.is_completed && "opacity-50")}>
+                          <Icon className="h-2.5 w-2.5 text-white" />
                         </div>
-
-                        {/* Title */}
-                        <span
-                          className={cn(
-                            "text-xs font-medium text-slate-800 dark:text-slate-100 truncate flex-1",
-                            task.is_completed && "line-through opacity-60",
-                          )}
-                        >
+                        <span className={cn("text-[11px] font-medium text-slate-800 dark:text-slate-100 truncate flex-1", task.is_completed && "line-through opacity-60")}>
                           {task.title}
                         </span>
-
-                        {/* Time range */}
-                        <span className="text-[10px] text-slate-400 shrink-0">
+                        <span className="text-[9px] text-slate-400 shrink-0">
                           {formatTime(event.startMinutes)}-{formatTime(event.endMinutes)}
                         </span>
-
-                        {/* Urgency/Importance badges - compact */}
                         {(task.urgency === "high" || task.importance === "high") && (
                           <div className="flex gap-0.5 shrink-0">
-                            {task.urgency === "high" && (
-                              <span className="w-2 h-2 rounded-full bg-red-500" title="Urgent" />
-                            )}
-                            {task.importance === "high" && (
-                              <span className="w-2 h-2 rounded-full bg-amber-500" title="Important" />
-                            )}
+                            {task.urgency === "high" && <span className="w-1.5 h-1.5 rounded-full bg-red-500" title="Urgent" />}
+                            {task.importance === "high" && <span className="w-1.5 h-1.5 rounded-full bg-amber-500" title="Important" />}
                           </div>
                         )}
-
-                        {/* Complete button - small */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onCompleteTask?.(task);
-                          }}
-                          className="shrink-0"
-                        >
-                          {task.is_completed ? (
-                            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                          ) : (
-                            <Circle className="h-4 w-4 text-slate-300 hover:text-blue-500" />
-                          )}
+                        <button onClick={(e) => { e.stopPropagation(); onCompleteTask?.(task); }} className="shrink-0">
+                          {task.is_completed ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> : <Circle className="h-3.5 w-3.5 text-slate-300 hover:text-blue-500" />}
                         </button>
                       </div>
                     ) : (
                       /* Full layout for longer tasks */
                       <div className="flex items-start gap-2 p-2 h-full">
-                        {/* Icon with gradient background */}
-                        <div
-                          className={cn(
-                            "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm",
-                            bg,
-                            task.is_completed && "opacity-50",
-                          )}
-                        >
+                        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm", bg, task.is_completed && "opacity-50")}>
                           <Icon className="h-4 w-4 text-white" />
                         </div>
-
-                        {/* Content */}
                         <div className="flex-1 min-w-0 overflow-hidden">
-                          {/* Time and duration row */}
                           <div className="flex items-center gap-1.5 mb-0.5">
                             <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
                               {formatTime(event.startMinutes)} - {formatTime(event.endMinutes)}
@@ -524,82 +531,42 @@ export function BoardView({ tasks, onTaskClick, onCompleteTask }: BoardViewProps
                               </span>
                             )}
                           </div>
-
-                          {/* Title */}
-                          <h3
-                            className={cn(
-                              "text-sm font-semibold text-slate-800 dark:text-slate-100 truncate",
-                              task.is_completed && "line-through opacity-60",
-                            )}
-                          >
+                          <h3 className={cn("text-sm font-semibold text-slate-800 dark:text-slate-100 truncate", task.is_completed && "line-through opacity-60")}>
                             {task.title}
                           </h3>
-
-                          {/* Urgency/Importance badges - full */}
                           <div className="flex items-center gap-1 mt-1">
                             {task.urgency === "high" && (
                               <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 font-medium flex items-center gap-0.5">
-                                <Zap className="h-2.5 w-2.5" />
-                                Urgent
+                                <Zap className="h-2.5 w-2.5" /> Urgent
                               </span>
                             )}
                             {task.urgency === "low" && (
-                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400">
-                                Not Urgent
-                              </span>
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400">Not Urgent</span>
                             )}
                             {task.importance === "high" && (
                               <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 font-medium flex items-center gap-0.5">
-                                <Star className="h-2.5 w-2.5" />
-                                Important
+                                <Star className="h-2.5 w-2.5" /> Important
                               </span>
                             )}
                             {task.importance === "low" && (
-                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400">
-                                Not Important
-                              </span>
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400">Not Important</span>
                             )}
                           </div>
-
-                          {/* Tags - only show if card is tall enough */}
                           {task.tags && task.tags.length > 0 && taskHeight >= 80 && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {task.tags.slice(0, 2).map((tag, tagIdx) => (
-                                <span
-                                  key={tag}
-                                  className={cn(
-                                    "px-1.5 py-0.5 text-[9px] font-medium rounded-full",
-                                    tagIdx === 0
-                                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                                      : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
-                                  )}
-                                >
+                                <span key={tag} className={cn("px-1.5 py-0.5 text-[9px] font-medium rounded-full", tagIdx === 0 ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300")}>
                                   {tag}
                                 </span>
                               ))}
                             </div>
                           )}
                         </div>
-
-                        {/* Complete button */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onCompleteTask?.(task);
-                          }}
-                          className="shrink-0 transition-transform hover:scale-110 focus:outline-none"
-                        >
+                        <button onClick={(e) => { e.stopPropagation(); onCompleteTask?.(task); }} className="shrink-0 transition-transform hover:scale-110 focus:outline-none">
                           {task.is_completed ? (
                             <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                           ) : (
-                            <Circle
-                              className={cn(
-                                "h-5 w-5 transition-colors",
-                                status === "overdue"
-                                  ? "text-red-400 hover:text-red-500"
-                                  : "text-slate-300 dark:text-slate-600 hover:text-blue-500",
-                              )}
-                            />
+                            <Circle className={cn("h-5 w-5 transition-colors", status === "overdue" ? "text-red-400 hover:text-red-500" : "text-slate-300 dark:text-slate-600 hover:text-blue-500")} />
                           )}
                         </button>
                       </div>

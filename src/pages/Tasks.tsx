@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,6 +18,7 @@ import { TasksClockWidget } from "@/components/tasks/TasksClockWidget";
 import { InsightsPanel } from "@/components/tasks/InsightsPanel";
 import { UnifiedTaskDrawer } from "@/components/tasks/UnifiedTaskDrawer";
 import { DeepFocusPrompt } from "@/components/tasks/DeepFocusPromptModal";
+import { TasksMobileLayout } from "@/components/tasks/TasksMobileLayout";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 
@@ -189,6 +191,7 @@ export default function Tasks() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const [activeTab, setActiveTab] = useState<TasksViewTab>("board");
   const [defaultBoardMode, setDefaultBoardMode] = useState<string | null>(null);
@@ -650,101 +653,156 @@ export default function Tasks() {
           subtitle={PAGE_HERO_TEXT.tasks.subtitle}
         />
 
-        <div className="w-full flex-1 min-h-0 px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 overflow-hidden flex flex-col max-w-[1400px] mx-auto">
-          <div className="w-full min-w-0 flex flex-col gap-4 flex-1 min-h-0 overflow-hidden">
-            {/* Toolbar */}
-            <TasksHeader
+        {/* Mobile Layout */}
+        {isMobile ? (
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <TasksMobileLayout
+              tasks={tasks}
+              filteredTasks={filteredTasks}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
-              onNewTask={openNewTaskDrawer}
               statusFilter={statusFilter}
               onStatusFilterChange={setStatusFilter}
-              sortBy={sortBy}
-              onSortChange={setSortBy}
               priorityFilter={priorityFilter}
               onPriorityFilterChange={setPriorityFilter}
-              tagFilter={tagFilter}
-              onTagFilterChange={setTagFilter}
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              onNewTask={openNewTaskDrawer}
+              onTaskClick={openTaskDetail}
+              onStartTask={handleStartTask}
+              onCompleteTask={handleCompleteTask}
+              onStartFocus={handleStartFocus}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              defaultBoardMode={defaultBoardMode}
+              onBoardDrop={handleBoardDrop}
+              onBoardQuickAdd={handleBoardQuickAdd}
+              onDeleteTask={(task) => handleDeleteTask(task.id)}
             />
+          </div>
+        ) : (
+          <div className="w-full flex-1 min-h-0 px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 overflow-hidden flex flex-col max-w-[1400px] mx-auto">
+            <div className="w-full min-w-0 flex flex-col gap-4 flex-1 min-h-0 overflow-hidden">
+              {/* Toolbar */}
+              <TasksHeader
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                onNewTask={openNewTaskDrawer}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+                priorityFilter={priorityFilter}
+                onPriorityFilterChange={setPriorityFilter}
+                tagFilter={tagFilter}
+                onTagFilterChange={setTagFilter}
+              />
 
-            {/* View Tabs */}
-            <TasksViewTabs activeTab={activeTab} onTabChange={setActiveTab} />
+              {/* View Tabs */}
+              <TasksViewTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-            {/* Unified layout: single column */}
-            <div className="flex flex-col gap-4 flex-1 min-h-0">
-              {/* Combined Card: Focus + Clock + Insights */}
-              {!insightsCollapsed ? (
-                <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden shrink-0 flex items-stretch">
-                  {/* Left column: Focus bar + Insights */}
-                  <div className="flex-1 min-w-0 flex flex-col">
-                    <div className="p-2">
-                      <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
+              {/* Unified layout: single column */}
+              <div className="flex flex-col gap-4 flex-1 min-h-0">
+                {/* Combined Card: Focus + Clock + Insights */}
+                {!insightsCollapsed ? (
+                  <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden shrink-0 flex items-stretch">
+                    {/* Left column: Focus bar + Insights */}
+                    <div className="flex-1 min-w-0 flex flex-col">
+                      <div className="p-2">
+                        <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
+                      </div>
+                      <InsightsPanel
+                        tasks={filteredTasks}
+                        compactMode={true}
+                        collapsed={false}
+                        onToggleCollapse={() => setInsightsCollapsed(true)}
+                      />
                     </div>
-                    <InsightsPanel
+                    {/* Right column: Clock spans full height */}
+                    <div className="hidden lg:flex w-[220px] shrink-0 border-l border-border">
+                      <TasksClockWidget />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="px-3 py-1.5 border border-border rounded-xl bg-card shrink-0">
+                    <button
+                      onClick={() => setInsightsCollapsed(false)}
+                      className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors group"
+                    >
+                      <ChevronUp className="h-3.5 w-3.5 rotate-180 group-hover:translate-y-0.5 transition-transform" />
+                      Show Insights
+                    </button>
+                  </div>
+                )}
+
+                {/* Main tab content */}
+                <div className="flex-1 min-h-0 overflow-y-auto">
+                  {activeTab === "lists" && (
+                    <AllTasksList
                       tasks={filteredTasks}
-                      compactMode={true}
+                      onTaskClick={openTaskDetail}
+                      onStartTask={handleStartTask}
+                      onCompleteTask={handleCompleteTask}
+                      onDeleteTask={(task) => handleDeleteTask(task.id)}
                       collapsed={false}
-                      onToggleCollapse={() => setInsightsCollapsed(true)}
+                      onToggleCollapse={() => { }}
                     />
-                  </div>
-                  {/* Right column: Clock spans full height */}
-                  <div className="hidden lg:flex w-[220px] shrink-0 border-l border-border">
-                    <TasksClockWidget />
-                  </div>
+                  )}
+
+                  {activeTab === "board" && (
+                    <KanbanBoardView
+                      tasks={filteredTasks}
+                      onTaskClick={openTaskDetail}
+                      onDrop={handleBoardDrop}
+                      onStartTask={handleStartTask}
+                      onCompleteTask={handleCompleteTask}
+                      onDeleteTask={(task) => handleDeleteTask(task.id)}
+                      defaultMode={defaultBoardMode as any}
+                    />
+                  )}
+
+                  {activeTab === "timeline" && (
+                    <BoardView
+                      mode="status"
+                      tasks={filteredTasks}
+                      onTaskClick={openTaskDetail}
+                      onDragStart={() => { }}
+                      onDrop={handleBoardDrop}
+                      onQuickAdd={handleBoardQuickAdd}
+                      onStartTask={handleStartTask}
+                      onCompleteTask={handleCompleteTask}
+                    />
+                  )}
+
                 </div>
-              ) : (
-                <div className="px-3 py-1.5 border border-border rounded-xl bg-card shrink-0">
-                  <button
-                    onClick={() => setInsightsCollapsed(false)}
-                    className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors group"
-                  >
-                    <ChevronUp className="h-3.5 w-3.5 rotate-180 group-hover:translate-y-0.5 transition-transform" />
-                    Show Insights
-                  </button>
-                </div>
-              )}
-
-              {/* Main tab content */}
-              <div className="flex-1 min-h-0 overflow-y-auto">
-                {activeTab === "lists" && (
-                  <AllTasksList
-                    tasks={filteredTasks}
-                    onTaskClick={openTaskDetail}
-                    onStartTask={handleStartTask}
-                    onCompleteTask={handleCompleteTask}
-                    onDeleteTask={(task) => handleDeleteTask(task.id)}
-                    collapsed={false}
-                    onToggleCollapse={() => { }}
-                  />
-                )}
-
-                {activeTab === "board" && (
-                  <KanbanBoardView
-                    tasks={filteredTasks}
-                    onTaskClick={openTaskDetail}
-                    onDrop={handleBoardDrop}
-                    onStartTask={handleStartTask}
-                    onCompleteTask={handleCompleteTask}
-                    defaultMode={defaultBoardMode as any}
-                  />
-                )}
-
-                {activeTab === "timeline" && (
-                  <BoardView
-                    mode="status"
-                    tasks={filteredTasks}
-                    onTaskClick={openTaskDetail}
-                    onDragStart={() => { }}
-                    onDrop={handleBoardDrop}
-                    onQuickAdd={handleBoardQuickAdd}
-                    onStartTask={handleStartTask}
-                    onCompleteTask={handleCompleteTask}
-                  />
-                )}
-
               </div>
-            </div>
 
+              <UnifiedTaskDrawer
+                task={selectedTask}
+                isNew={isNewTask}
+                open={drawerOpen}
+                onClose={() => setDrawerOpen(false)}
+                onSave={handleSaveTask}
+                onDelete={handleDeleteTask}
+                onStartFocus={handleStartFocus}
+                onStartTask={handleStartTask}
+                onCompleteTask={handleCompleteTask}
+              />
+
+              <DeepFocusPrompt
+                open={focusPromptOpen}
+                task={focusPromptTask}
+                onClose={() => setFocusPromptOpen(false)}
+                onStartFocus={() => focusPromptTask && handleStartFocus(focusPromptTask)}
+                onSkip={() => setFocusPromptOpen(false)}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Drawers/modals need to be outside the conditional */}
+        {isMobile && (
+          <>
             <UnifiedTaskDrawer
               task={selectedTask}
               isNew={isNewTask}
@@ -756,7 +814,6 @@ export default function Tasks() {
               onStartTask={handleStartTask}
               onCompleteTask={handleCompleteTask}
             />
-
             <DeepFocusPrompt
               open={focusPromptOpen}
               task={focusPromptTask}
@@ -764,8 +821,8 @@ export default function Tasks() {
               onStartFocus={() => focusPromptTask && handleStartFocus(focusPromptTask)}
               onSkip={() => setFocusPromptOpen(false)}
             />
-          </div>
-        </div>
+          </>
+        )}
       </div>
     </>
   );

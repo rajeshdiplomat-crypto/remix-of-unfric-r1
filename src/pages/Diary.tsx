@@ -1,21 +1,23 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PenLine, Search, ChevronDown, Filter } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { DiaryFeedCard } from "@/components/diary/DiaryFeedCard";
 import { DiaryLeftSidebar } from "@/components/diary/DiaryLeftSidebar";
 
 import { DiaryProfileCard } from "@/components/diary/DiaryProfileCard";
+import { DiaryMobileInsightsSidebar } from "@/components/diary/DiaryMobileInsightsSidebar";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 
 import { DiaryJournalModal } from "@/components/diary/DiaryJournalModal";
 import { useFeedEvents } from "@/components/diary/useFeedEvents";
 import { useDiaryMetrics } from "@/components/diary/useDiaryMetrics";
-import { cn } from "@/lib/utils";
+
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import type { TimeRange, FeedEvent, SourceModule } from "@/components/diary/types";
 import { extractImagesFromHTML, extractImagesFromTiptapJSON } from "@/lib/editorUtils";
@@ -73,7 +75,7 @@ export default function Diary() {
     refetch,
   } = useFeedEvents(user?.id);
 
-  const { metrics, chartData, smartInsight } = useDiaryMetrics(user?.id, timeRange);
+  const { metrics } = useDiaryMetrics(user?.id, timeRange);
 
   // Seed feed events from existing data
   const seedFeedEvents = async () => {
@@ -536,28 +538,6 @@ export default function Diary() {
     }
   };
 
-  const handleQuickAction = (action: string) => {
-    switch (action) {
-      case "task":
-        navigate("/tasks");
-        break;
-      case "journal":
-        setIsJournalModalOpen(true);
-        break;
-      case "note":
-        navigate("/notes");
-        break;
-      case "activity":
-        navigate("/habits");
-        break;
-      case "manifest":
-        navigate("/manifest");
-        break;
-      case "emotions":
-        navigate("/emotions");
-        break;
-    }
-  };
 
   const handleJournalSuccess = () => {
     seedFeedEvents();
@@ -604,7 +584,53 @@ export default function Diary() {
   });
 
   const [loadingFinished, setLoadingFinished] = useState(false);
+  const [mobileInsightsOpen, setMobileInsightsOpen] = useState(false);
   const userName = user?.email?.split("@")[0] || "User";
+  const displayInitials = (userName.charAt(0).toUpperCase() + userName.slice(1)).slice(0, 2).toUpperCase();
+
+  // Fetch avatar from profiles table
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | undefined>(user?.user_metadata?.avatar_url);
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from("profiles").select("avatar_url").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+      if (data?.avatar_url) setProfileAvatarUrl(data.avatar_url);
+    });
+  }, [user?.id]);
+
+  // Edge-swipe gesture: detect swipe from right edge
+  const swipeRef = useRef<{ startX: number; startY: number; active: boolean }>({ startX: 0, startY: 0, active: false });
+
+  useEffect(() => {
+    const EDGE_ZONE = 30; // px from right edge
+    const handleTouchStart = (e: TouchEvent) => {
+      const x = e.touches[0].clientX;
+      const screenW = window.innerWidth;
+      if (screenW >= 768) return; // mobile only
+      if (x >= screenW - EDGE_ZONE) {
+        swipeRef.current = { startX: x, startY: e.touches[0].clientY, active: true };
+      }
+    };
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!swipeRef.current.active) return;
+      const dx = swipeRef.current.startX - e.touches[0].clientX;
+      const dy = Math.abs(e.touches[0].clientY - swipeRef.current.startY);
+      if (dy > 50) { swipeRef.current.active = false; return; }
+      if (dx > 50) {
+        swipeRef.current.active = false;
+        setMobileInsightsOpen(true);
+      }
+    };
+    const handleTouchEnd = () => { swipeRef.current.active = false; };
+
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+    window.addEventListener("touchend", handleTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, []);
 
   const isDataReady = !loading || events.length > 0;
 
@@ -619,6 +645,7 @@ export default function Diary() {
     )}
     <div
       className="flex flex-col w-full h-full overflow-hidden"
+      style={{ background: "linear-gradient(180deg, #EEF2F7 0%, #E8EEF6 100%)" }}
     >
       {/* Full-width Hero */}
       <PageHero
@@ -632,7 +659,7 @@ export default function Diary() {
       {/* 3-Column Layout Below Hero */}
       <div className="flex flex-1 w-full max-w-[1400px] mx-auto overflow-hidden min-h-0">
         {/* Left Sidebar - Editorial style */}
-        <aside className="hidden lg:flex flex-col w-[380px] shrink-0 h-full min-h-0 overflow-y-auto border-r border-border/20">
+        <aside className="hidden md:flex flex-col w-[280px] lg:w-[380px] shrink-0 h-full min-h-0 overflow-y-auto" style={{ borderRight: "1px solid #E5EAF2" }}>
           <DiaryLeftSidebar 
             userName={userName}
             filter={filter}
@@ -641,24 +668,36 @@ export default function Diary() {
         </aside>
 
         {/* Center Feed - Scrollable */}
-        <main className="flex-1 min-w-0 min-h-0 h-full overflow-y-auto bg-muted/20">
+        <main className="flex-1 min-w-0 min-h-0 h-full overflow-y-auto bg-muted/20 rounded-2xl">
           <div className="w-full px-2 sm:px-4 lg:px-6 py-3 sm:py-4">
 
-          {/* Search Bar */}
-          <div className="mb-4">
-            <div className="flex items-center gap-2 bg-card border border-border/40 rounded-xl px-3 py-1">
-              <Search className="h-4 w-4 text-muted-foreground" />
+          {/* Search Bar with Profile Icon on mobile */}
+          <div className="mb-4 flex items-center gap-2">
+            <button
+              onClick={() => setMobileInsightsOpen(true)}
+              className="md:hidden shrink-0 rounded-full hover:ring-2 hover:ring-primary/30 transition-all"
+              aria-label="Open profile & performance"
+            >
+              <Avatar className="h-8 w-8 border border-border">
+                <AvatarImage src={profileAvatarUrl} alt={userName} />
+                <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-semibold">
+                  {displayInitials}
+                </AvatarFallback>
+              </Avatar>
+            </button>
+            <div className="flex items-center gap-2 rounded-[14px] px-3 py-1 flex-1 md:max-w-none" style={{ background: "#F8FAFC", boxShadow: "inset 0 1px 3px rgba(0,0,0,0.06)" }}>
+              <Search className="h-4 w-4 text-muted-foreground shrink-0" />
               <Input
                 placeholder="Search your feed..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="border-0 bg-transparent focus-visible:ring-0 px-0 h-9 text-sm placeholder:text-muted-foreground"
+                className="border-0 bg-transparent focus-visible:ring-0 px-0 h-7 md:h-9 text-xs md:text-sm placeholder:text-muted-foreground"
               />
             </div>
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex items-center gap-1 mb-4 overflow-x-auto border-b border-border/40">
+          <div className="flex items-center gap-1 mb-4 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" style={{ borderBottom: "1px solid #E5EAF2" }}>
             {FILTER_TABS.map((tab) => (
               <Button
                 key={tab.value}
@@ -716,7 +755,7 @@ export default function Diary() {
 
           {/* Feed Cards */}
           {sortedEvents.length === 0 ? (
-            <Card className="p-12 text-center bg-card border-border/40">
+            <Card className="p-12 text-center border-0" style={{ background: "#FFFFFF", borderRadius: "18px", boxShadow: "0px 10px 35px rgba(15, 23, 42, 0.07)" }}>
               <PenLine className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground">No entries yet</h3>
               <p className="text-muted-foreground mt-1 text-sm">
@@ -747,11 +786,11 @@ export default function Diary() {
       </main>
 
       {/* Right Sidebar */}
-      <aside className="hidden xl:flex flex-col w-[340px] shrink-0 h-full min-h-0 overflow-y-auto border-l border-border/20 bg-background/50 p-4 gap-4">
+      <aside className="hidden lg:flex flex-col w-[280px] xl:w-[340px] shrink-0 h-full min-h-0 overflow-y-auto border-l border-border/10 p-4 gap-4" style={{ background: "transparent" }}>
         <DiaryProfileCard
           userName={userName}
           userEmail={user?.email || ""}
-          avatarUrl={user?.user_metadata?.avatar_url}
+          avatarUrl={profileAvatarUrl}
           metrics={metrics}
           timeRange={timeRange}
           onTimeRangeChange={setTimeRange}
@@ -764,6 +803,18 @@ export default function Diary() {
         open={isJournalModalOpen}
         onOpenChange={setIsJournalModalOpen}
         onSuccess={handleJournalSuccess}
+      />
+
+      {/* Mobile Edge-Swipe Insights Sidebar */}
+      <DiaryMobileInsightsSidebar
+        open={mobileInsightsOpen}
+        onClose={() => setMobileInsightsOpen(false)}
+        userName={userName}
+        userEmail={user?.email || ""}
+        avatarUrl={profileAvatarUrl}
+        metrics={metrics}
+        timeRange={timeRange}
+        onTimeRangeChange={setTimeRange}
       />
     </div>
     </>

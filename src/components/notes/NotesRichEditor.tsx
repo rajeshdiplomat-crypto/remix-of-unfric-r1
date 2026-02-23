@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -108,6 +108,15 @@ interface NotesRichEditorProps {
   onSave: (note: Note) => void;
   onBack: () => void;
   onFullscreenChange?: (isFullscreen: boolean) => void;
+  /** Expose save/fullscreen handlers to parent (for mobile top bar) */
+  onEditorReady?: (controls: {
+    triggerSave: () => void;
+    saveStatus: "saved" | "saving" | "unsaved";
+    toggleFullscreen: () => void;
+    isFullscreen: boolean;
+  }) => void;
+  /** Hide save/fullscreen from toolbar (parent renders them) */
+  hideTopActions?: boolean;
 }
 
 const FONTS = [
@@ -176,7 +185,7 @@ interface Stroke {
   penType: string;
 }
 
-export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChange }: NotesRichEditorProps) {
+export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChange, onEditorReady, hideTopActions }: NotesRichEditorProps) {
   const [title, setTitle] = useState(note.title);
   const [tags, setTags] = useState<string[]>(note.tags);
   const [newTag, setNewTag] = useState("");
@@ -204,6 +213,16 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
   useEffect(() => {
     onFullscreenChange?.(isFullscreen);
   }, [isFullscreen, onFullscreenChange]);
+
+  // Expose controls to parent
+  useEffect(() => {
+    onEditorReady?.({
+      triggerSave: handleSave,
+      saveStatus,
+      toggleFullscreen: () => setIsFullscreen((v) => !v),
+      isFullscreen,
+    });
+  }, [saveStatus, isFullscreen]);
 
   // Theme & Line Style states
   const [pageTheme, setPageTheme] = useState(note.pageTheme || "white");
@@ -711,22 +730,23 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
     <div className={containerClass} style={{ backgroundColor: currentTheme.value }}>
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
-      {/* MAIN TOOLBAR */}
-      <div className="shrink-0 bg-white border-b border-slate-200 relative z-[100]">
-        <div className="flex items-center h-11 px-2 gap-0.5 overflow-x-auto">
+      {/* MAIN TOOLBAR - sticky on mobile for keyboard accessibility */}
+      <div className="shrink-0 bg-white border-b border-slate-200 relative z-[100] sticky top-0 md:static">
+        {/* Row 1: Core formatting */}
+        <div className="flex items-center h-10 px-1 md:px-2 gap-0.5 flex-nowrap overflow-hidden">
           <ToolBtn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
             <Undo2 className="h-4 w-4" />
           </ToolBtn>
           <ToolBtn onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo">
             <Redo2 className="h-4 w-4" />
           </ToolBtn>
-          <div className="w-px h-5 bg-slate-200 mx-1" />
+          <div className="w-px h-5 bg-slate-200 mx-0.5 shrink-0" />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="h-8 px-2 flex items-center gap-1 rounded-md text-sm text-slate-600 hover:bg-slate-100">
-                <Type className="h-4 w-4" />
-                <ChevronDown className="h-3 w-3" />
+              <button className="h-7 px-1.5 flex items-center gap-0.5 rounded-md text-xs text-slate-600 hover:bg-slate-100 shrink-0">
+                <Type className="h-3.5 w-3.5" />
+                <ChevronDown className="h-2.5 w-2.5" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="z-[99999]">
@@ -743,32 +763,35 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Select value={currentFont} onValueChange={handleFontChange}>
-            <SelectTrigger className="h-8 w-20 text-xs border-0 bg-slate-50 hover:bg-slate-100">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="z-[99999]">
-              {FONTS.map((f) => (
-                <SelectItem key={f.value} value={f.value}>
-                  {f.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Font & size - hidden on mobile, in More menu */}
+          <div className="hidden md:contents">
+            <Select value={currentFont} onValueChange={handleFontChange}>
+              <SelectTrigger className="h-8 w-20 text-xs border-0 bg-slate-50 hover:bg-slate-100">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="z-[99999]">
+                {FONTS.map((f) => (
+                  <SelectItem key={f.value} value={f.value}>
+                    {f.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Select value={currentSize} onValueChange={handleSizeChange}>
-            <SelectTrigger className="h-8 w-14 text-xs border-0 bg-slate-50 hover:bg-slate-100">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="z-[99999]">
-              {SIZES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="w-px h-5 bg-slate-200 mx-1" />
+            <Select value={currentSize} onValueChange={handleSizeChange}>
+              <SelectTrigger className="h-8 w-14 text-xs border-0 bg-slate-50 hover:bg-slate-100">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="z-[99999]">
+                {SIZES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="w-px h-5 bg-slate-200 mx-1" />
+          </div>
 
           <ToolBtn
             onClick={() => editor.chain().focus().toggleBold().run()}
@@ -791,71 +814,131 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
           >
             <UnderlineIcon className="h-4 w-4" />
           </ToolBtn>
-          <div className="w-px h-5 bg-slate-200 mx-1" />
+          <div className="w-px h-5 bg-slate-200 mx-0.5 shrink-0" />
 
-          <ToolBtn
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
-            active={editor.isActive("bulletList")}
-            title="Bullets"
-          >
-            <List className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            active={editor.isActive("orderedList")}
-            title="Numbers"
-          >
-            <ListOrdered className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn
-            onClick={() => editor.chain().focus().toggleTaskList().run()}
-            active={editor.isActive("taskList")}
-            title="Todo"
-          >
-            <CheckSquare className="h-4 w-4" />
-          </ToolBtn>
-          <div className="w-px h-5 bg-slate-200 mx-1" />
+          {/* Lists - hidden on mobile, in More menu */}
+          <div className="hidden md:contents">
+            <ToolBtn
+              onClick={() => editor.chain().focus().toggleBulletList().run()}
+              active={editor.isActive("bulletList")}
+              title="Bullets"
+            >
+              <List className="h-4 w-4" />
+            </ToolBtn>
+            <ToolBtn
+              onClick={() => editor.chain().focus().toggleOrderedList().run()}
+              active={editor.isActive("orderedList")}
+              title="Numbers"
+            >
+              <ListOrdered className="h-4 w-4" />
+            </ToolBtn>
+            <ToolBtn
+              onClick={() => editor.chain().focus().toggleTaskList().run()}
+              active={editor.isActive("taskList")}
+              title="Todo"
+            >
+              <CheckSquare className="h-4 w-4" />
+            </ToolBtn>
+            <div className="w-px h-5 bg-slate-200 mx-1" />
 
-          {/* Alignment buttons - on toolbar */}
-          <ToolBtn
-            onClick={() => editor.chain().focus().setTextAlign("left").run()}
-            active={editor.isActive({ textAlign: "left" })}
-            title="Align Left"
-          >
-            <AlignLeft className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn
-            onClick={() => editor.chain().focus().setTextAlign("center").run()}
-            active={editor.isActive({ textAlign: "center" })}
-            title="Align Center"
-          >
-            <AlignCenter className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn
-            onClick={() => editor.chain().focus().setTextAlign("right").run()}
-            active={editor.isActive({ textAlign: "right" })}
-            title="Align Right"
-          >
-            <AlignRight className="h-4 w-4" />
-          </ToolBtn>
-          <div className="w-px h-5 bg-slate-200 mx-1" />
+            {/* Alignment buttons - desktop only */}
+            <ToolBtn
+              onClick={() => editor.chain().focus().setTextAlign("left").run()}
+              active={editor.isActive({ textAlign: "left" })}
+              title="Align Left"
+            >
+              <AlignLeft className="h-4 w-4" />
+            </ToolBtn>
+            <ToolBtn
+              onClick={() => editor.chain().focus().setTextAlign("center").run()}
+              active={editor.isActive({ textAlign: "center" })}
+              title="Align Center"
+            >
+              <AlignCenter className="h-4 w-4" />
+            </ToolBtn>
+            <ToolBtn
+              onClick={() => editor.chain().focus().setTextAlign("right").run()}
+              active={editor.isActive({ textAlign: "right" })}
+              title="Align Right"
+            >
+              <AlignRight className="h-4 w-4" />
+            </ToolBtn>
+            <div className="w-px h-5 bg-slate-200 mx-1" />
 
-          <ToolBtn onClick={() => setLinkDialogOpen(true)} active={editor.isActive("link")} title="Link">
-            <Link2 className="h-4 w-4" />
-          </ToolBtn>
-          <ToolBtn onClick={() => setImageDialogOpen(true)} title="Image">
-            <ImageIcon className="h-4 w-4" />
-          </ToolBtn>
-          <div className="w-px h-5 bg-slate-200 mx-1" />
+            <ToolBtn onClick={() => setLinkDialogOpen(true)} active={editor.isActive("link")} title="Link">
+              <Link2 className="h-4 w-4" />
+            </ToolBtn>
+            <ToolBtn onClick={() => setImageDialogOpen(true)} title="Image">
+              <ImageIcon className="h-4 w-4" />
+            </ToolBtn>
+            <div className="w-px h-5 bg-slate-200 mx-1" />
+          </div>
 
           {/* Settings/More dropdown — contains formatting extras, scribble, theme, line style */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-slate-100" title="More options">
+              <button className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-slate-100 shrink-0" title="More options">
                 <MoreHorizontal className="h-4 w-4 text-slate-500" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="z-[99999] w-56">
+            <DropdownMenuContent align="end" className="z-[99999] w-56 max-h-[70vh] overflow-y-auto">
+              {/* Mobile-only items: font, size, lists, alignment, link, image */}
+              <div className="md:hidden">
+                <div className="px-2 py-1.5 flex items-center gap-1">
+                  <Select value={currentFont} onValueChange={handleFontChange}>
+                    <SelectTrigger className="h-7 w-24 text-[10px] border-0 bg-slate-50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-[999999]">
+                      {FONTS.map((f) => (
+                        <SelectItem key={f.value} value={f.value}>
+                          {f.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={currentSize} onValueChange={handleSizeChange}>
+                    <SelectTrigger className="h-7 w-14 text-[10px] border-0 bg-slate-50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-[999999]">
+                      {SIZES.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => editor.chain().focus().toggleBulletList().run()}>
+                  <List className="h-4 w-4 mr-2" /> Bullet List
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor.chain().focus().toggleOrderedList().run()}>
+                  <ListOrdered className="h-4 w-4 mr-2" /> Numbered List
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor.chain().focus().toggleTaskList().run()}>
+                  <CheckSquare className="h-4 w-4 mr-2" /> Todo List
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => editor.chain().focus().setTextAlign("left").run()}>
+                  <AlignLeft className="h-4 w-4 mr-2" /> Align Left
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor.chain().focus().setTextAlign("center").run()}>
+                  <AlignCenter className="h-4 w-4 mr-2" /> Align Center
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor.chain().focus().setTextAlign("right").run()}>
+                  <AlignRight className="h-4 w-4 mr-2" /> Align Right
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setLinkDialogOpen(true)}>
+                  <Link2 className="h-4 w-4 mr-2" /> Insert Link
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setImageDialogOpen(true)}>
+                  <ImageIcon className="h-4 w-4 mr-2" /> Insert Image
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </div>
               {/* Formatting */}
               <DropdownMenuItem onClick={() => editor.chain().focus().toggleStrike().run()}>
                 <Strikethrough className="h-4 w-4 mr-2" /> Strikethrough
@@ -922,53 +1005,51 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
             {isListening ? <MicOff className="h-4 w-4 text-destructive" /> : <Mic className="h-4 w-4" />}
           </ToolBtn>
 
-          <div className="flex-1 min-w-4" />
+          <div className="flex-1 min-w-2" />
 
-          <span
-            className={cn(
-              "text-xs px-2 py-1 rounded-full font-medium",
-              saveStatus === "saving" && "bg-amber-100 text-amber-700",
-              saveStatus === "saved" && "bg-emerald-100 text-emerald-700",
-              saveStatus === "unsaved" && "bg-slate-100 text-slate-500",
-            )}
-          >
-            {saveStatus === "saving" && (
-              <>
-                <Loader2 className="h-3 w-3 animate-spin inline mr-1" />
-                Saving
-              </>
-            )}
-            {saveStatus === "saved" && (
-              <>
-                <Check className="h-3 w-3 inline mr-1" />
-                Saved
-              </>
-            )}
-            {saveStatus === "unsaved" && "Unsaved"}
-          </span>
-          <Button
-            size="sm"
-            onClick={handleSave}
-            className="h-8 gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-0"
-          >
-            <Save className="h-3.5 w-3.5" /> Save
-          </Button>
-          <ToolBtn
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-          >
-            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </ToolBtn>
-          {isFullscreen && (
-            <ToolBtn
-              onClick={() => {
-                setIsFullscreen(false);
-                onBack();
-              }}
-              title="Close"
-            >
-              <X className="h-4 w-4" />
-            </ToolBtn>
+          {!hideTopActions && (
+            <>
+              <Button
+                size="sm"
+                onClick={handleSave}
+                className={cn(
+                  "h-7 md:h-8 px-2 md:px-3 gap-1 text-xs shrink-0 transition-all duration-300",
+                  saveStatus === "saved"
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                    : saveStatus === "saving"
+                    ? "bg-muted text-muted-foreground pointer-events-none"
+                    : "bg-primary hover:bg-primary/90 text-primary-foreground animate-pulse"
+                )}
+              >
+                {saveStatus === "saving" ? (
+                  <Loader2 className="h-3 w-3 md:h-3.5 md:w-3.5 animate-spin" />
+                ) : saveStatus === "saved" ? (
+                  <Check className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                ) : (
+                  <Save className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                )}
+                <span className="hidden md:inline">
+                  {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved" : "Save"}
+                </span>
+              </Button>
+              <ToolBtn
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+              >
+                {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              </ToolBtn>
+              {isFullscreen && (
+                <ToolBtn
+                  onClick={() => {
+                    setIsFullscreen(false);
+                    onBack();
+                  }}
+                  title="Close"
+                >
+                  <X className="h-4 w-4" />
+                </ToolBtn>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -1172,22 +1253,26 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
 
       {/* Dialogs */}
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
-        <DialogContent className="max-w-sm z-[999999]">
-          <DialogHeader>
-            <DialogTitle>Insert Link</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm p-0 rounded-2xl overflow-hidden z-[999999]">
+          <div className="bg-gradient-to-r from-primary to-primary/80 px-5 py-3 flex-shrink-0">
+            <DialogTitle className="text-base font-semibold text-primary-foreground flex items-center gap-2">
+              <Link2 className="h-4 w-4" />
+              Insert Link
+            </DialogTitle>
+          </div>
+          <div className="p-5 space-y-4">
             <Input
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
               placeholder="https://example.com"
+              className="rounded-xl"
               onKeyDown={(e) => e.key === "Enter" && handleInsertLink()}
             />
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setLinkDialogOpen(false)}>
+              <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setLinkDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button className="flex-1" onClick={handleInsertLink}>
+              <Button className="flex-1 rounded-xl" onClick={handleInsertLink}>
                 Insert
               </Button>
             </div>
@@ -1196,25 +1281,29 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
       </Dialog>
 
       <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
-        <DialogContent className="max-w-sm z-[999999]">
-          <DialogHeader>
-            <DialogTitle>Insert Image</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm p-0 rounded-2xl overflow-hidden z-[999999]">
+          <div className="bg-gradient-to-r from-primary to-primary/80 px-5 py-3 flex-shrink-0">
+            <DialogTitle className="text-base font-semibold text-primary-foreground flex items-center gap-2">
+              <ImageIcon className="h-4 w-4" />
+              Insert Image
+            </DialogTitle>
+          </div>
+          <div className="p-5 space-y-4">
             <Input
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
               placeholder="https://example.com/image.jpg"
+              className="rounded-xl"
             />
-            <div className="text-center text-sm text-slate-400">— or —</div>
-            <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
+            <div className="text-center text-sm text-muted-foreground">— or —</div>
+            <Button variant="outline" className="w-full rounded-xl" onClick={() => fileInputRef.current?.click()}>
               <ImageIcon className="h-4 w-4 mr-2" /> Upload from Computer
             </Button>
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setImageDialogOpen(false)}>
+              <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setImageDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button className="flex-1" onClick={handleInsertImage} disabled={!imageUrl}>
+              <Button className="flex-1 rounded-xl" onClick={handleInsertImage} disabled={!imageUrl}>
                 Insert URL
               </Button>
             </div>

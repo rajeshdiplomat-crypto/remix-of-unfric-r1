@@ -136,7 +136,7 @@ export function EmotionsPageContext({
           <div className="flex flex-col gap-3 flex-1">
             {/* Notes Card */}
             <div className="p-4 rounded-2xl border border-border bg-card/50">
-              <Label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+              <Label className="flex items-center gap-2 text-xs font-bold tracking-wide text-muted-foreground mb-3">
                 <BookOpen className="h-3.5 w-3.5" />
                 Notes
               </Label>
@@ -151,7 +151,7 @@ export function EmotionsPageContext({
 
             {/* Who Card */}
             <div className="p-4 rounded-2xl border border-border bg-card/50">
-              <Label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+              <Label className="flex items-center gap-2 text-xs font-bold tracking-wide text-muted-foreground mb-3">
                 <Users className="h-3.5 w-3.5" />
                 Who are you with?
               </Label>
@@ -169,7 +169,7 @@ export function EmotionsPageContext({
 
             {/* What Card */}
             <div className="p-4 rounded-2xl border border-border bg-card/50">
-              <Label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+              <Label className="flex items-center gap-2 text-xs font-bold tracking-wide text-muted-foreground mb-3">
                 <Activity className="h-3.5 w-3.5" />
                 What are you doing?
               </Label>
@@ -189,7 +189,7 @@ export function EmotionsPageContext({
             <div className="grid grid-cols-2 gap-3">
               {/* Sleep Card */}
               <div className="p-4 rounded-2xl border border-border bg-card/50">
-                <Label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+                <Label className="flex items-center gap-2 text-xs font-bold tracking-wide text-muted-foreground mb-3">
                   <Moon className="h-3.5 w-3.5" />
                   Sleep
                 </Label>
@@ -207,7 +207,7 @@ export function EmotionsPageContext({
 
               {/* Activity Card */}
               <div className="p-4 rounded-2xl border border-border bg-card/50">
-                <Label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+                <Label className="flex items-center gap-2 text-xs font-bold tracking-wide text-muted-foreground mb-3">
                   <Dumbbell className="h-3.5 w-3.5" />
                   Activity
                 </Label>
@@ -307,7 +307,7 @@ export function EmotionsPageContext({
               <div className="flex items-center gap-5 relative z-10">
                 <div className="text-4xl filter drop-shadow-md pb-1">{quadrantEmoji[selectedQuadrant]}</div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider font-bold text-white/50 mb-0.5">
+                  <p className="text-[10px] tracking-wide font-bold text-white/50 mb-0.5">
                     Currently feeling
                   </p>
                   <p

@@ -150,13 +150,17 @@ export function NotesGroupSettings({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg rounded-2xl">
-        <DialogHeader>
-          <DialogTitle>Manage Groups</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg p-0 rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        {/* Gradient header — matches Habits modal pattern */}
+        <div className="bg-gradient-to-r from-primary to-primary/80 px-6 py-4 flex-shrink-0">
+          <DialogTitle className="text-lg font-semibold text-primary-foreground">
+            Manage Groups
+          </DialogTitle>
+          <p className="text-xs text-primary-foreground/70 mt-0.5">Create, reorder, and customize your groups</p>
+        </div>
 
-        <ScrollArea className="max-h-[480px]">
-          <div className="space-y-4 py-4">
+        <ScrollArea className="flex-1 overflow-y-auto">
+          <div className="space-y-4 p-6">
             {/* Add New Group - At top */}
             <div className="pb-4 border-b">
               <h4 className="text-sm font-medium mb-3">Add New Group</h4>

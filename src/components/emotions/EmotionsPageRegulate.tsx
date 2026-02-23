@@ -106,7 +106,7 @@ export function EmotionsPageRegulate({
   return (
     <div className="animate-in fade-in duration-500">
       {/* Header Section */}
-      <div className="text-center max-w-2xl mx-auto mb-10">
+      <div className="text-center max-w-2xl mx-auto mb-6 md:mb-10">
         <div
           className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-4"
           style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
@@ -115,21 +115,78 @@ export function EmotionsPageRegulate({
           {REGULATE_CONTENT.badge}
         </div>
 
-        <h1 className="text-3xl md:text-4xl font-light mb-4">
+        <h1 className="text-2xl md:text-4xl font-semibold tracking-tight mb-3 md:mb-4">
           {REGULATE_CONTENT.title.line1}{" "}
-          <span className="font-bold" style={{ color: accentColor }}>
+          <span style={{ color: accentColor }}>
             {REGULATE_CONTENT.title.line2}
           </span>
         </h1>
 
-        <p className="text-muted-foreground text-sm leading-relaxed max-w-lg mx-auto">{REGULATE_CONTENT.description}</p>
+        <p className="text-sm text-muted-foreground font-medium leading-relaxed max-w-lg mx-auto">{REGULATE_CONTENT.description}</p>
       </div>
 
-      {/* 3-Column Layout: Recent Entries | Suggested Strategy | All Strategies */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-        {/* LEFT: Recent Entries */}
-        <div className="border-2 border-border rounded-2xl p-5 bg-card">
-          <div className="text-xs text-muted-foreground uppercase tracking-wider mb-3">Recent Entries</div>
+      {/* 3-Column Layout - mobile: vertical stack with reorder */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-10">
+        {/* CENTER (on desktop) → FIRST on mobile: Suggested Strategy (Featured) */}
+        <div
+          className="border-2 rounded-2xl p-5 shadow-lg lg:scale-105 relative order-1 lg:order-2"
+          style={{ borderColor: accentColor, backgroundColor: `${accentColor}08` }}
+        >
+          <div
+            className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-medium text-white"
+            style={{ backgroundColor: accentColor }}
+          >
+            Recommended
+          </div>
+
+          <div className="text-[10px] text-muted-foreground tracking-wide mb-3 mt-2 font-normal">Suggested strategy</div>
+
+          {recommendedStrategies[0] && (
+            <>
+              <div
+                className="w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center text-white shadow-lg mb-3 md:mb-4 mx-auto"
+                style={{
+                  background: `linear-gradient(135deg, ${typeGradients[recommendedStrategies[0].type].from}, ${typeGradients[recommendedStrategies[0].type].to})`,
+                }}
+              >
+                {typeIcons[recommendedStrategies[0].type]}
+              </div>
+
+              <h3 className="text-lg md:text-xl font-semibold text-center mb-1">{recommendedStrategies[0].title}</h3>
+              <p className="text-sm text-muted-foreground text-center mb-2">{recommendedStrategies[0].duration}</p>
+              <p className="text-xs text-muted-foreground text-center mb-4 md:mb-6 line-clamp-2">
+                {recommendedStrategies[0].description}
+              </p>
+
+              <Button
+                className="w-full rounded-lg text-white"
+                style={{ backgroundColor: accentColor }}
+                onClick={() => handleStrategyClick(recommendedStrategies[0])}
+              >
+                Start Session
+              </Button>
+
+              {/* Other recommended as small pills */}
+              {recommendedStrategies.length > 1 && (
+                <div className="flex gap-2 mt-3 md:mt-4 justify-center flex-wrap">
+                  {recommendedStrategies.slice(1).map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => handleStrategyClick(s)}
+                      className="px-3 py-1.5 text-xs rounded-full border hover:bg-muted/50 transition-colors"
+                    >
+                      {s.title.split(" ").slice(0, 2).join(" ")}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* LEFT on desktop → SECOND on mobile: Recent Entries */}
+        <div className="border-2 border-border rounded-2xl p-5 bg-card order-2 lg:order-1">
+          <div className="text-[10px] text-muted-foreground tracking-wide mb-3 font-normal">Recent entries</div>
           <h3 className="text-lg font-semibold mb-1">Your Last 7</h3>
           <p className="text-xs text-muted-foreground mb-4">Click to view details</p>
 
@@ -154,14 +211,13 @@ export function EmotionsPageRegulate({
                       isExpanded ? "border-primary/30 bg-muted/20" : "border-transparent hover:bg-muted/50",
                     )}
                   >
-                    {/* Entry Header (always visible) */}
                     <div className="flex items-center gap-3 p-2.5" onClick={() => toggleEntryExpand(entry.id)}>
                       <span className="text-lg">{quadrantEmoji[entry.quadrant]}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate" style={{ color: entryQuadrant.color }}>
                           {entry.emotion}
                         </p>
-                        <p className="text-[10px] text-muted-foreground">{formatDateTime(entry.created_at)}</p>
+                        <p className="text-[10px] text-muted-foreground font-normal">{formatDateTime(entry.created_at)}</p>
                       </div>
                       <ChevronRight
                         className={cn(
@@ -171,7 +227,6 @@ export function EmotionsPageRegulate({
                       />
                     </div>
 
-                    {/* Expandable Details */}
                     {isExpanded && (
                       <div className="px-3 pb-3 pt-1 border-t border-border/50 animate-in slide-in-from-top-2 duration-200">
                         {hasContext ? (
@@ -211,7 +266,6 @@ export function EmotionsPageRegulate({
                           <p className="text-xs text-muted-foreground italic">No additional details recorded</p>
                         )}
 
-                        {/* Strategy Display in Expanded - Redundant if handled in RecentEntriesList, but nice to have in Regulate view too */}
                         {entry.strategy && (
                           <div className="mt-2 pt-2 border-t border-border/50 flex gap-2 items-center">
                             <Check className="h-3 w-3 text-green-500" />
@@ -238,66 +292,9 @@ export function EmotionsPageRegulate({
           </Button>
         </div>
 
-        {/* CENTER: Suggested Strategy (Featured) */}
-        <div
-          className="border-2 rounded-2xl p-5 shadow-lg scale-105 relative"
-          style={{ borderColor: accentColor, backgroundColor: `${accentColor}08` }}
-        >
-          <div
-            className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-medium text-white"
-            style={{ backgroundColor: accentColor }}
-          >
-            Recommended
-          </div>
-
-          <div className="text-xs text-muted-foreground uppercase tracking-wider mb-3 mt-2">Suggested Strategy</div>
-
-          {recommendedStrategies[0] && (
-            <>
-              <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-lg mb-4 mx-auto"
-                style={{
-                  background: `linear-gradient(135deg, ${typeGradients[recommendedStrategies[0].type].from}, ${typeGradients[recommendedStrategies[0].type].to})`,
-                }}
-              >
-                {typeIcons[recommendedStrategies[0].type]}
-              </div>
-
-              <h3 className="text-xl font-bold text-center mb-1">{recommendedStrategies[0].title}</h3>
-              <p className="text-sm text-muted-foreground text-center mb-2">{recommendedStrategies[0].duration}</p>
-              <p className="text-xs text-muted-foreground text-center mb-6 line-clamp-2">
-                {recommendedStrategies[0].description}
-              </p>
-
-              <Button
-                className="w-full rounded-lg text-white"
-                style={{ backgroundColor: accentColor }}
-                onClick={() => handleStrategyClick(recommendedStrategies[0])}
-              >
-                Start Session
-              </Button>
-
-              {/* Other recommended as small pills */}
-              {recommendedStrategies.length > 1 && (
-                <div className="flex gap-2 mt-4 justify-center flex-wrap">
-                  {recommendedStrategies.slice(1).map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => handleStrategyClick(s)}
-                      className="px-3 py-1.5 text-xs rounded-full border hover:bg-muted/50 transition-colors"
-                    >
-                      {s.title.split(" ").slice(0, 2).join(" ")}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* RIGHT: All Strategies */}
-        <div className="border-2 border-border rounded-2xl p-5 bg-card">
-          <div className="text-xs text-muted-foreground uppercase tracking-wider mb-3">All Strategies</div>
+        {/* RIGHT on desktop → THIRD on mobile: All Strategies */}
+        <div className="border-2 border-border rounded-2xl p-5 bg-card order-3">
+          <div className="text-[10px] text-muted-foreground tracking-wide mb-3 font-normal">All strategies</div>
           <h3 className="text-lg font-semibold mb-1">Explore More</h3>
           <p className="text-xs text-muted-foreground mb-4">Find the perfect fit for you</p>
 
@@ -318,7 +315,7 @@ export function EmotionsPageRegulate({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{strategy.title}</p>
-                    <p className="text-[10px] text-muted-foreground">{strategy.duration}</p>
+                    <p className="text-[10px] text-muted-foreground font-normal">{strategy.duration}</p>
                   </div>
                   <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
                 </button>
@@ -333,17 +330,17 @@ export function EmotionsPageRegulate({
       </div>
 
       {/* Action Buttons */}
-      <div className="flex justify-center gap-4">
-        <Button variant="outline" size="lg" onClick={onNewCheckin} className="h-12 px-8 rounded-xl">
-          NEW CHECK-IN
+      <div className="flex justify-center gap-3 md:gap-4">
+        <Button variant="outline" size="lg" onClick={onNewCheckin} className="h-11 md:h-12 px-6 md:px-8 rounded-xl text-sm">
+          New Check-in
         </Button>
         <Button
           size="lg"
           onClick={onViewInsights}
-          className="h-12 px-8 rounded-xl gap-2"
+          className="h-11 md:h-12 px-6 md:px-8 rounded-xl gap-2 text-sm"
           style={{ backgroundColor: accentColor }}
         >
-          INSIGHTS
+          Insights
           <ArrowRight className="h-4 w-4" />
         </Button>
       </div>

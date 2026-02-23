@@ -12,8 +12,8 @@ const MODULE_INFO = [
   { icon: CheckSquare, name: "Tasks", desc: "Track what you accomplish" },
   { icon: StickyNote, name: "Notes", desc: "Capture ideas & thoughts" },
   { icon: Activity, name: "Habits", desc: "Build consistent habits" },
-  { icon: Sparkles, name: "Manifest", desc: "Visualize your goals" },
-  { icon: Heart, name: "Emotions", desc: "Understand how you feel" },
+  { icon: Sparkles, name: "Manifest", desc: "Set & track goals" },
+  { icon: Heart, name: "Emotions", desc: "Log feelings & moods" },
 ];
 
 export function DiaryLeftSidebar({

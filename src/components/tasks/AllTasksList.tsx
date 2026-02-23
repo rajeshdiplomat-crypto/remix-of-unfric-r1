@@ -4,11 +4,13 @@ import {
   ChevronRight,
   ChevronDown,
   Play,
+  Pause,
   Check,
   Trash2,
   ListChecks,
   Loader2,
 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -188,7 +190,7 @@ export function AllTasksList({
 
       {/* Task list */}
       <ScrollArea className="flex-1">
-        <div className="p-3 space-y-2">
+        <div className="p-2 space-y-1">
           {activeTasks.length === 0 && completedInList.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground text-sm">
               No tasks found
@@ -201,11 +203,11 @@ export function AllTasksList({
 
               {completedInList.length > 0 && (
                 <Collapsible open={completedOpen} onOpenChange={setCompletedOpen}>
-                  <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    <ChevronDown className={cn("h-4 w-4 transition-transform", completedOpen && "rotate-180")} />
-                    <span className="font-medium">Completed ({completedInList.length})</span>
+                  <CollapsibleTrigger className="flex items-center gap-2 w-full py-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                    <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", completedOpen && "rotate-180")} />
+                    <span className="font-medium text-[11px]">Completed ({completedInList.length})</span>
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-2">
+                  <CollapsibleContent className="space-y-1">
                     {completedInList.map((task) => (
                       <TaskRow key={task.id} task={task} onTaskClick={onTaskClick} onStartTask={onStartTask} onCompleteTask={onCompleteTask} onDeleteTask={onDeleteTask} currentUserId="" formatDate={formatDate} getDuration={getDuration} getQuadrantLabel={getQuadrantLabel} />
                     ))}
@@ -231,41 +233,87 @@ function TaskRow({ task, onTaskClick, onStartTask, onCompleteTask, onDeleteTask,
   getDuration: (task: QuadrantTask) => string;
   getQuadrantLabel: (task: QuadrantTask) => string;
 }) {
+  const isMobile = useIsMobile();
+
   return (
     <div
       onClick={() => onTaskClick(task)}
       className={cn(
-        "group p-3 rounded-xl border cursor-pointer transition-all",
-        "hover:shadow-md hover:border-primary/30",
+        "group rounded-lg cursor-pointer transition-all",
+        "hover:shadow-md",
+        isMobile ? "p-2 border-l-4" : "p-2 border",
         task.is_completed
-          ? "bg-muted/50 border-border"
+          ? isMobile
+            ? "bg-muted/50 border-l-muted-foreground/30"
+            : "bg-muted/50 border-border"
           : task.status === "overdue"
-            ? "bg-destructive/10 border-destructive/30 shadow-sm"
-            : "bg-background border-border shadow-sm"
+            ? isMobile
+              ? "bg-background border-l-destructive"
+              : "bg-destructive/10 border-destructive/30"
+            : task.urgency === "high" && task.importance === "high"
+              ? isMobile
+                ? "bg-background border-l-destructive"
+                : "bg-background border-border"
+              : task.urgency === "high"
+                ? isMobile
+                  ? "bg-background border-l-orange-500"
+                  : "bg-background border-border"
+                : task.importance === "high"
+                  ? isMobile
+                    ? "bg-background border-l-amber-500"
+                    : "bg-background border-border"
+                  : isMobile
+                    ? "bg-background border-l-muted-foreground/20"
+                    : "bg-background border-border",
+        !isMobile && "hover:border-primary/30",
+        isMobile && "border-r border-t border-b border-border/50 shadow-sm"
       )}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <p className={cn("font-medium text-sm truncate", task.is_completed && "line-through text-muted-foreground")}>
+          <p className={cn(
+            "font-medium truncate",
+            isMobile ? "text-[13px]" : "text-sm",
+            task.is_completed && "line-through text-muted-foreground"
+          )}>
             {task.title}
           </p>
-          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+          {/* Mobile: horizontal scrollable mini-pills row */}
+          <div className={cn(
+            "flex items-center gap-1 mt-1",
+            isMobile ? "overflow-x-auto scrollbar-hide flex-nowrap" : "flex-wrap gap-1.5"
+          )}>
             {formatDate(task) && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{formatDate(task)}</span>
+              <span className={cn(
+                "px-1.5 py-0.5 rounded shrink-0",
+                isMobile ? "text-[10px] bg-foreground/5 text-muted-foreground" : "text-[10px] bg-muted text-muted-foreground"
+              )}>{formatDate(task)}</span>
             )}
             {task.due_time && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                {task.due_time}{task.end_time ? ` - ${task.end_time}` : ""}
+              <span className={cn(
+                "px-1.5 py-0.5 rounded shrink-0",
+                isMobile ? "text-[10px] bg-foreground/5 text-muted-foreground" : "text-[10px] bg-muted text-muted-foreground"
+              )}>
+                {task.due_time}{task.end_time ? `–${task.end_time}` : ""}
               </span>
             )}
             {getDuration(task) && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{getDuration(task)}</span>
+              <span className={cn(
+                "px-1.5 py-0.5 rounded shrink-0",
+                isMobile ? "text-[10px] bg-foreground/5 text-muted-foreground" : "text-[10px] bg-muted text-muted-foreground"
+              )}>{getDuration(task)}</span>
             )}
-            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-primary/30 text-primary">
+            <Badge variant="outline" className={cn(
+              "px-1 py-0 h-4 border-primary/30 text-primary shrink-0",
+              isMobile ? "text-[10px]" : "text-[10px]"
+            )}>
               {getQuadrantLabel(task)}
             </Badge>
             {task.tags?.slice(0, 1).map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-[10px] px-1 py-0 h-4">{tag}</Badge>
+              <Badge key={tag} variant="secondary" className={cn(
+                "px-1 py-0 h-4 shrink-0",
+                isMobile ? "text-[10px]" : "text-[10px]"
+              )}>{tag}</Badge>
             ))}
           </div>
         </div>
@@ -276,7 +324,9 @@ function TaskRow({ task, onTaskClick, onStartTask, onCompleteTask, onDeleteTask,
             </button>
           )}
           {task.status === "ongoing" && !task.is_completed && (
-            <Loader2 className="h-4 w-4 text-primary animate-spin" />
+            <button onClick={(e) => { e.stopPropagation(); onStartTask(task); }} className="h-6 w-6 rounded-full flex items-center justify-center text-primary bg-primary/10 transition-colors" title="Pause task">
+              <Pause className="h-3 w-3" />
+            </button>
           )}
           <button onClick={(e) => { e.stopPropagation(); onCompleteTask(task); }} className={cn("h-6 w-6 rounded-full flex items-center justify-center transition-colors", task.is_completed ? "text-emerald-500 bg-emerald-100 dark:bg-emerald-900/30" : "text-muted-foreground hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20")} title={task.is_completed ? "Mark incomplete" : "Mark complete"}>
             <Check className="h-3 w-3" />

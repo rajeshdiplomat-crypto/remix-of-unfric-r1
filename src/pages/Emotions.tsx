@@ -30,11 +30,12 @@ import { EmotionSliderPicker } from "@/components/emotions/EmotionSliderPicker";
 import { EmotionContextFieldsEnhanced } from "@/components/emotions/EmotionContextFieldsEnhanced";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
-
+import { useIsMobile } from "@/hooks/use-mobile";
 
 
 export default function Emotions() {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [entries, setEntries] = useState<EmotionEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -81,8 +82,6 @@ export default function Emotions() {
   // Saved state (after successful save)
   const [savedQuadrant, setSavedQuadrant] = useState<QuadrantType | null>(null);
   const [savedEmotion, setSavedEmotion] = useState<string | null>(null);
-
-  // For viewing entries by date
 
   // For viewing entries by date
   const [viewingDate, setViewingDate] = useState<string | null>(null);
@@ -541,31 +540,26 @@ export default function Emotions() {
         />
       )}
       <div className="flex flex-col w-full h-full min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
-        {/* Page Hero with Navigation at bottom */}
-        <div className="relative">
-          <PageHero
-            storageKey="emotions-hero-src"
-            typeKey="emotions-hero-type"
-            badge={PAGE_HERO_TEXT.emotions.badge}
-            title={PAGE_HERO_TEXT.emotions.title}
-            subtitle={PAGE_HERO_TEXT.emotions.subtitle}
-          />
+        {/* Page Hero */}
+        <PageHero
+          storageKey="emotions-hero-src"
+          typeKey="emotions-hero-type"
+          badge={PAGE_HERO_TEXT.emotions.badge}
+          title={PAGE_HERO_TEXT.emotions.title}
+          subtitle={PAGE_HERO_TEXT.emotions.subtitle}
+        />
 
-          {/* Navigation overlay at bottom of hero */}
-          <div className="absolute bottom-4 left-0 right-0 z-20 px-4 lg:px-8">
-            <div className="max-w-4xl mx-auto">
-              <EmotionsNavigation
-                activeView={activeView}
-                canNavigate={canNavigate}
-                onViewChange={handleViewChange}
-                entries={entries}
-                onEditEntry={startEditEntry}
-                onDeleteEntry={setDeletingEntryId}
-                onDateClick={handleDateClick}
-              />
-            </div>
-          </div>
-        </div>
+        {/* Segmented control below hero */}
+        <EmotionsNavigation
+          activeView={activeView}
+          canNavigate={canNavigate}
+          onViewChange={handleViewChange}
+          entries={entries}
+          onEditEntry={startEditEntry}
+          onDeleteEntry={setDeletingEntryId}
+          onDateClick={handleDateClick}
+          standalone={isMobile}
+        />
 
         {/* Main Content */}
         <EmotionsPageLayout>

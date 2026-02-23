@@ -46,7 +46,9 @@ import {
   X,
   MoreVertical,
   Pencil,
+  BarChart3,
 } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -347,6 +349,12 @@ export default function Habits() {
 
   // Mobile week navigation offset (0 = current week, -1 = last week, etc.)
   const [mobileWeekOffset, setMobileWeekOffset] = useState(0);
+
+  // Mobile insights drawer
+  const [insightsOpen, setInsightsOpen] = useState(false);
+
+  // Mobile habit detail modal
+  const [habitDetailId, setHabitDetailId] = useState<string | null>(null);
 
   // Quote rotation state
   const [quoteIndex, setQuoteIndex] = useState(0);
@@ -1086,17 +1094,17 @@ export default function Habits() {
                   }}
                   disabled={!isPast || isArchived}
                   className={cn(
-                    "w-5 h-5 rounded-full flex items-center justify-center transition-all mx-auto",
+                    "w-5 h-5 rounded-[5px] flex items-center justify-center transition-all mx-auto",
                     isCompleted
                       ? isArchived
                         ? "bg-muted-foreground text-background cursor-not-allowed"
-                        : "bg-primary text-primary-foreground"
+                        : "bg-emerald-400 text-white"
                       : isPast && !isArchived
-                        ? "border-2 border-primary/40 hover:border-primary/70 bg-transparent"
+                        ? "border-2 border-muted-foreground/30 hover:border-muted-foreground/50 bg-transparent"
                         : "border-2 border-border bg-transparent cursor-not-allowed",
                   )}
                 >
-                  {isCompleted && <Check className="h-3 w-3" />}
+                  {isCompleted && <Check className="h-3 w-3 stroke-[3]" />}
                 </button>
               ) : (
                 <span className="text-muted-foreground/30">-</span>
@@ -1104,27 +1112,24 @@ export default function Habits() {
             </td>
           );
         })}
-        <td className="p-2">
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-              <div
-                className={cn(
-                  "h-full rounded-full transition-all",
-                  isArchived ? "bg-slate-400" : "bg-gradient-to-r from-emerald-400 to-green-400",
-                )}
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-            <span className="text-slate-600 dark:text-slate-400 w-10 text-right">
+        <td className="p-1">
+          <div className="flex items-center gap-1 whitespace-nowrap">
+            <svg width="16" height="16" viewBox="0 0 20 20" className="shrink-0">
+              <circle cx="10" cy="10" r="9" fill="none" stroke="hsl(var(--border))" strokeWidth="2" />
+              <circle cx="10" cy="10" r="7" fill="none" stroke={isArchived ? "#94A3B8" : "#2DD4BF"} strokeWidth="4"
+                strokeDasharray={`${(progressPercent / 100) * 43.98} 43.98`}
+                strokeLinecap="round" transform="rotate(-90 10 10)" />
+            </svg>
+            <span className="text-slate-600 dark:text-slate-400 text-[11px]">
               {totalCompletions}/{activity.habitDays}
             </span>
-            <span className="text-slate-500 font-medium w-10">{progressPercent}%</span>
+            <span className="text-slate-500 font-medium text-[11px]">{progressPercent}%</span>
           </div>
         </td>
-        <td className="p-2 text-center">
+        <td className="p-1 text-center">
           <span
             className={cn(
-              "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
+              "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium",
               (stats?.streak || 0) > 0
                 ? isArchived
                   ? "bg-slate-200 text-slate-500"
@@ -1164,53 +1169,54 @@ export default function Habits() {
           {/* Top Section: Header + Stats Dashboard */}
           <div className="flex items-center justify-between mb-3 flex-shrink-0">
             <h2 className="text-sm font-normal uppercase tracking-zara-wide text-foreground">Habits Tracker</h2>
-            {/* Desktop: inline button */}
-            <Button onClick={openCreateDialog} variant="outline" size="sm" className="hidden md:inline-flex">
-              <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Habit
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* Mobile: Create + Insights buttons in header */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden h-8 w-8"
+                onClick={() => setInsightsOpen(true)}
+                aria-label="Open Insights"
+              >
+                <BarChart3 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                className="md:hidden h-7 px-2.5 text-[10px] gap-1 rounded-md"
+                onClick={openCreateDialog}
+                aria-label="Create Habit"
+              >
+                <Plus className="h-3 w-3" />
+                New
+              </Button>
+              {/* Desktop: inline button */}
+              <Button onClick={openCreateDialog} variant="outline" size="sm" className="hidden md:inline-flex">
+                <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Habit
+              </Button>
+            </div>
           </div>
 
           {/* Main dashboard — Single wide card with 3 internal sections */}
           <Card className="mb-4 flex-shrink-0 overflow-hidden">
-            {/* Mobile Command Center */}
+            {/* Mobile Minimalist Header */}
             <div className="lg:hidden">
-              {/* Card 1: Elite Header - two equal halves */}
-              <div className="flex border-b border-border" style={{ minHeight: 120 }}>
-                {/* Left: Stacked metrics */}
-                <div className="flex-1 flex flex-col justify-center p-3 gap-2.5">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setCurrentMonth(addDays(startOfMonth(currentMonth), -1))}>
-                      <ChevronLeft className="h-3 w-3" />
-                    </Button>
-                    <span className="text-[10px] font-medium uppercase tracking-zara-wide text-foreground">{format(currentMonth, "MMM yyyy")}</span>
-                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setCurrentMonth(addDays(endOfMonth(currentMonth), 1))}>
-                      <ChevronRight className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase tracking-zara-wide text-muted-foreground">Pending</span>
-                    <span className="text-sm font-bold text-foreground">{activities.reduce((sum, a) => sum + a.habitDays, 0) - overallStats.totalCompleted}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase tracking-zara-wide text-muted-foreground">Done</span>
-                    <span className="text-sm font-bold text-primary">{overallStats.totalCompleted}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase tracking-zara-wide text-muted-foreground">Total</span>
-                    <span className="text-sm font-bold text-foreground">{activities.reduce((sum, a) => sum + a.habitDays, 0)}</span>
-                  </div>
-                </div>
-                {/* Right: Brand image flush */}
-                <div className="flex-1 overflow-hidden">
-                  {(() => {
-                    const sel = selectedActivityId ? activities.find(a => a.id === selectedActivityId) : null;
-                    const img = sel ? (sel.coverImageUrl || loadActivityImage(sel.id)) : null;
-                    return <img src={img || habitsDefaultImage} alt="Habits" className="w-full h-full object-cover" />;
-                  })()}
+              {/* Quote */}
+              <div className="px-4 pt-3 pb-2">
+                <div className={cn(
+                  "transition-opacity duration-500 ease-in-out text-center",
+                  quoteVisible ? "opacity-100" : "opacity-0",
+                )}>
+                  <p className="text-xs italic text-primary leading-relaxed">
+                    "{MOTIVATIONAL_QUOTES[quoteIndex].text}"
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-zara">
+                    — {MOTIVATIONAL_QUOTES[quoteIndex].author}
+                  </p>
                 </div>
               </div>
-              {/* Card 2: Metric Rings - fixed row, no scroll */}
-              <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
+              {/* 5 Progress Rings - equally spaced */}
+              <div className="grid grid-cols-5 gap-0 py-2.5 border-t border-b border-border">
                 {(() => {
                   const selectedHabit = selectedActivityId ? activities.find(a => a.id === selectedActivityId) : null;
                   let totalGoalPercent = 0;
@@ -1221,14 +1227,14 @@ export default function Habits() {
                     const ta = overallStats.totalCompleted + overallStats.totalRemaining;
                     totalGoalPercent = ta > 0 ? Math.round((overallStats.totalCompleted / ta) * 100) : 0;
                   }
-                  const ringSize = 58;
+                  const ringSize = 54;
                   return (
                     <>
-                      <ProgressRing progress={Math.min(totalGoalPercent, 100)} label="Total Goal" color={RING_COLORS[0]} size={ringSize} strokeWidth={5} />
-                      <ProgressRing progress={overallStats.momentum} label="Momentum" color={RING_COLORS[1]} size={ringSize} strokeWidth={5} />
-                      <ProgressRing progress={overallStats.dailyProgress} label="Daily" color={RING_COLORS[2]} size={ringSize} strokeWidth={5} />
-                      <ProgressRing progress={overallStats.weeklyProgress} label="Weekly" color={RING_COLORS[3]} size={ringSize} strokeWidth={5} />
-                      <ProgressRing progress={overallStats.monthlyProgress} label="Overall" color={RING_COLORS[4]} size={ringSize} strokeWidth={5} />
+                      <div className="flex justify-center"><ProgressRing progress={Math.min(totalGoalPercent, 100)} label="Goal" color={RING_COLORS[0]} size={ringSize} strokeWidth={5} /></div>
+                      <div className="flex justify-center"><ProgressRing progress={overallStats.momentum} label="Drive" color={RING_COLORS[1]} size={ringSize} strokeWidth={5} /></div>
+                      <div className="flex justify-center"><ProgressRing progress={overallStats.dailyProgress} label="Daily" color={RING_COLORS[2]} size={ringSize} strokeWidth={5} /></div>
+                      <div className="flex justify-center"><ProgressRing progress={overallStats.weeklyProgress} label="Weekly" color={RING_COLORS[3]} size={ringSize} strokeWidth={5} /></div>
+                      <div className="flex justify-center"><ProgressRing progress={overallStats.monthlyProgress} label="Overall" color={RING_COLORS[4]} size={ringSize} strokeWidth={5} /></div>
                     </>
                   );
                 })()}
@@ -1299,8 +1305,8 @@ export default function Habits() {
                 </div>
               </div>
 
-              {/* Center section — Quote + Rings + Top Habits */}
-              <div className="p-4 flex flex-col justify-between overflow-hidden">
+              {/* Center section — Quote + Rings + Top Habits (desktop only) */}
+              <div className="p-4 hidden lg:flex flex-col justify-between overflow-hidden">
                 {/* Quote at top center */}
                 {(() => {
                   const currentQuote = MOTIVATIONAL_QUOTES[quoteIndex];
@@ -1371,12 +1377,12 @@ export default function Habits() {
                   }
 
                   return (
-                    <div className="hidden md:flex justify-center gap-3 md:gap-6 lg:gap-8 md:flex-wrap md:overflow-visible pb-1 -mx-2 px-2">
-                      <ProgressRing progress={Math.min(totalGoalPercent, 100)} label="Total Goal" color={RING_COLORS[0]} mobileSize={68} />
-                      <ProgressRing progress={overallStats.momentum} label="Momentum" color={RING_COLORS[1]} mobileSize={68} />
-                      <ProgressRing progress={overallStats.dailyProgress} label="Daily" color={RING_COLORS[2]} mobileSize={68} />
-                      <ProgressRing progress={overallStats.weeklyProgress} label="Weekly" color={RING_COLORS[3]} mobileSize={68} />
-                      <ProgressRing progress={overallStats.monthlyProgress} label="Overall" color={RING_COLORS[4]} mobileSize={68} />
+                    <div className="grid grid-cols-5 gap-1 md:flex md:justify-center md:gap-6 lg:gap-8 overflow-visible pb-1">
+                      <ProgressRing progress={Math.min(totalGoalPercent, 100)} label="Goal" color={RING_COLORS[0]} mobileSize={58} />
+                      <ProgressRing progress={overallStats.momentum} label="Drive" color={RING_COLORS[1]} mobileSize={58} />
+                      <ProgressRing progress={overallStats.dailyProgress} label="Daily" color={RING_COLORS[2]} mobileSize={58} />
+                      <ProgressRing progress={overallStats.weeklyProgress} label="Weekly" color={RING_COLORS[3]} mobileSize={58} />
+                      <ProgressRing progress={overallStats.monthlyProgress} label="Overall" color={RING_COLORS[4]} mobileSize={58} />
                     </div>
                   );
                 })()}
@@ -1440,9 +1446,9 @@ export default function Habits() {
           {/* Habits Grid */}
           {/* Mobile Weekly Grid */}
           <Card className="md:hidden rounded-xl overflow-hidden mb-0">
-            {/* Week Navigation + Daily Progress Graph */}
+            {/* Week Navigation */}
             <div className="px-4 pt-2 pb-1 border-b border-border">
-              <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center justify-between">
                 <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground">Daily Progress</p>
                 <div className="flex items-center gap-1">
                   <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setMobileWeekOffset(prev => prev - 1)}>
@@ -1456,82 +1462,102 @@ export default function Habits() {
                   </Button>
                 </div>
               </div>
-              {/* Graph aligned to table columns: habit col ~90px, then 7 day cols, then % col ~32px, then 🔥 col ~32px */}
-              {/* We use a table-like layout: pad left for habit col, pad right for % + 🔥 cols */}
-              <div className="relative" style={{ paddingLeft: 90, paddingRight: 64 }}>
-                <svg viewBox="0 0 700 100" className="w-full" style={{ height: 56 }} preserveAspectRatio="none">
-                  {(() => {
-                    const today = new Date();
-                    const dataPoints: { x: number; y: number; value: number; isPast: boolean }[] = [];
-                    const chartActivities = selectedActivityId ? activities.filter(a => a.id === selectedActivityId) : activities.filter(a => !a.isArchived);
-
-                    for (let i = 0; i < 7; i++) {
-                      const day = currentWeekDays[i];
-                      if (!day) continue;
-                      const dayStr = format(day, "yyyy-MM-dd");
-                      const dayOfWeek = (day.getDay() + 6) % 7;
-                      const isPast = isBefore(day, today) || isToday(day);
-                      let completed = 0, total = 0;
-                      chartActivities.forEach(a => {
-                        const hStart = parseISO(a.startDate);
-                        const hEnd = computeEndDateForHabitDays(hStart, a.frequencyPattern, a.habitDays);
-                        if (a.frequencyPattern[dayOfWeek] && !isBefore(day, hStart) && !isAfter(day, hEnd)) {
-                          total++;
-                          if (a.completions[dayStr]) completed++;
-                        }
-                      });
-                      if (total === 0) { dataPoints.push({ x: (i + 0.5) * 100, y: 85, value: 0, isPast }); continue; }
-                      const value = (completed / total) * 100;
-                      const x = (i + 0.5) * 100;
-                      const y = 85 - (value / 100) * 70;
-                      dataPoints.push({ x, y, value, isPast });
-                    }
-
-                    if (dataPoints.length < 2) return <text x="350" y="55" textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize="12" opacity="0.5">Not enough data</text>;
-
-                    let path = `M ${dataPoints[0].x} ${dataPoints[0].y}`;
-                    for (let j = 0; j < dataPoints.length - 1; j++) {
-                      const c = dataPoints[j], n = dataPoints[j + 1];
-                      const mx = (c.x + n.x) / 2, my = (c.y + n.y) / 2;
-                      path += ` Q ${c.x + (mx - c.x) * 0.5} ${c.y}, ${mx} ${my}`;
-                      path += ` Q ${mx + (n.x - mx) * 0.5} ${n.y}, ${n.x} ${n.y}`;
-                    }
-                    const area = `${path} L ${dataPoints[dataPoints.length - 1].x} 95 L ${dataPoints[0].x} 95 Z`;
-
-                    return (
-                      <>
-                        <defs>
-                          <linearGradient id="mobileAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.08" />
-                            <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0.02" />
-                          </linearGradient>
-                        </defs>
-                        <path d={area} fill="url(#mobileAreaGrad)" />
-                        <path d={path} fill="none" stroke="hsl(var(--foreground))" strokeWidth="2.5" strokeLinecap="round" opacity="0.7" />
-                        {dataPoints.map((p, i) => (
-                          <circle key={i} cx={p.x} cy={p.y} r="3.5" fill={p.isPast ? "hsl(var(--foreground))" : "hsl(var(--border))"} stroke="hsl(var(--background))" strokeWidth="1.5" />
-                        ))}
-                      </>
-                    );
-                  })()}
-                </svg>
-              </div>
             </div>
-            {/* Weekly Table */}
+            {/* Weekly Table with embedded graph row */}
             <table className="w-full">
               <thead>
                 <tr className="bg-muted/50">
                   <th className="text-left p-1 pl-2 text-[9px] font-medium text-muted-foreground uppercase tracking-zara sticky left-0 bg-muted/50 z-10" style={{ width: 90 }}>Habit</th>
                   {currentWeekDays.map((day, i) => (
-                    <th key={i} className={cn("p-0.5 text-center text-[9px] font-medium text-muted-foreground", isToday(day) && "bg-primary/10")} style={{ width: 'calc((100% - 90px - 64px) / 7)' }}>
+                    <th key={i} className={cn("p-0.5 text-center text-[9px] font-medium text-muted-foreground", isToday(day) && "bg-primary/10")}>
                       {DAY_LABELS[(day.getDay() + 6) % 7]}
                     </th>
                   ))}
                   <th className="p-0.5 text-center text-[9px] font-medium text-muted-foreground" style={{ width: 32 }}>%</th>
-                  <th className="p-0.5 text-center text-[9px] font-medium text-muted-foreground" style={{ width: 32 }}>🔥</th>
                 </tr>
               </thead>
               <tbody>
+                {/* Daily Progress Chart Row - aligned with day columns like desktop */}
+                <tr>
+                  <td className="p-0 bg-muted/30 sticky left-0 z-10" style={{ width: 90 }} />
+                  <td colSpan={7} className="p-0 bg-muted/30">
+                    <svg viewBox="0 0 700 120" className="w-full block" style={{ height: 56 }}>
+                      {(() => {
+                        const today = new Date();
+                        const dataPoints: { x: number; y: number; value: number; isPast: boolean; isFuture: boolean }[] = [];
+                        const chartActivities = selectedActivityId ? activities.filter(a => a.id === selectedActivityId) : activities.filter(a => !a.isArchived);
+
+                        for (let i = 0; i < 7; i++) {
+                          const day = currentWeekDays[i];
+                          if (!day) continue;
+                          const dayStr = format(day, "yyyy-MM-dd");
+                          const dayOfWeek = (day.getDay() + 6) % 7;
+                          const isPast = isBefore(day, today) || isToday(day);
+                          const isFuture = isAfter(day, today);
+                          let completed = 0, total = 0;
+                          chartActivities.forEach(a => {
+                            const hStart = parseISO(a.startDate);
+                            const hEnd = computeEndDateForHabitDays(hStart, a.frequencyPattern, a.habitDays);
+                            if (a.frequencyPattern[dayOfWeek] && !isBefore(day, hStart) && !isAfter(day, hEnd)) {
+                              total++;
+                              if (a.completions[dayStr]) completed++;
+                            }
+                          });
+                          const value = total > 0 ? (completed / total) * 100 : -1;
+                          const x = (i + 0.5) * 100;
+                          if (value < 0) continue;
+                          const y = 100 - (value / 100) * 80;
+                          dataPoints.push({ x, y: Math.max(10, Math.min(110, y)), value, isPast, isFuture });
+                        }
+
+                        if (dataPoints.length < 2) return <text x="350" y="65" textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize="12" opacity="0.5">Not enough data</text>;
+
+                        const createSmoothPath = (points: { x: number; y: number }[]) => {
+                          if (points.length < 2) return "";
+                          let path = `M ${points[0].x} ${points[0].y}`;
+                          for (let j = 0; j < points.length - 1; j++) {
+                            const current = points[j];
+                            const next = points[j + 1];
+                            const midX = (current.x + next.x) / 2;
+                            const midY = (current.y + next.y) / 2;
+                            path += ` Q ${current.x + (midX - current.x) * 0.5} ${current.y}, ${midX} ${midY}`;
+                            path += ` Q ${midX + (next.x - midX) * 0.5} ${next.y}, ${next.x} ${next.y}`;
+                          }
+                          return path;
+                        };
+
+                        const linePath = createSmoothPath(dataPoints);
+                        const areaPath = `${linePath} L ${dataPoints[dataPoints.length - 1].x} 115 L ${dataPoints[0].x} 115 Z`;
+
+                        return (
+                          <>
+                            <defs>
+                              <linearGradient id="mobileAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#5EEAD4" stopOpacity="0.25" />
+                                <stop offset="100%" stopColor="#5EEAD4" stopOpacity="0.05" />
+                              </linearGradient>
+                            </defs>
+                            <path d={areaPath} fill="url(#mobileAreaGrad)" />
+                            {dataPoints.map((p, i) => {
+                              if (i === 0) return null;
+                              const prev = dataPoints[i - 1];
+                              const segmentPath = createSmoothPath([prev, p]);
+                              const isRedSegment = (prev.isPast && prev.value === 0) && (p.isPast && p.value === 0);
+                              return <path key={`seg-${i}`} d={segmentPath} fill="none" stroke={isRedSegment ? "#EF4444" : "#5EEAD4"} strokeWidth="2.5" strokeLinecap="round" />;
+                            })}
+                            {dataPoints.map((p, i) => (
+                              <circle key={i} cx={p.x} cy={p.y} r="3"
+                                fill={p.isFuture ? "hsl(var(--border))" : p.isPast && p.value === 0 ? "#EF4444" : "#2DD4BF"}
+                                stroke="hsl(var(--background))" strokeWidth="1"
+                              />
+                            ))}
+                          </>
+                        );
+                      })()}
+                    </svg>
+                  </td>
+                  <td className="p-0 bg-muted/30" style={{ width: 32 }} />
+                </tr>
                 {activities.filter(a => !a.isArchived).map((activity, idx) => {
                   const stats = activityStats.find(s => s.id === activity.id);
                   const totalCompletions = Object.keys(activity.completions || {}).length;
@@ -1549,8 +1575,13 @@ export default function Habits() {
                     >
                       <td className={cn("p-1 pl-2 sticky left-0 z-10", isSelected ? "bg-primary/5" : idx % 2 === 1 ? "bg-muted/20" : "bg-background")} style={{ width: 90 }}>
                         <div className="flex items-center gap-1">
-                          <span className="text-[11px] font-medium text-foreground truncate max-w-[65px] block">{activity.name}</span>
-                          <span className="text-[9px] text-muted-foreground shrink-0">{activity.habitDays}</span>
+                          <button
+                            className="text-[11px] font-medium text-foreground truncate max-w-[65px] block text-left"
+                            onClick={(e) => { e.stopPropagation(); setHabitDetailId(activity.id); }}
+                          >
+                            {activity.name}
+                          </button>
+                          
                         </div>
                       </td>
                       {currentWeekDays.map((day, i) => {
@@ -1570,11 +1601,11 @@ export default function Habits() {
                                 onClick={(e) => { e.stopPropagation(); if (isPast) toggleCompletion(activity.id, day); }}
                                 disabled={!isPast}
                                 className={cn(
-                                  "w-5 h-5 rounded-full flex items-center justify-center mx-auto transition-all",
-                                  isCompleted ? "bg-primary text-primary-foreground" : isPast ? "border border-primary/40" : "border border-border"
+                                  "w-5 h-5 rounded-[5px] flex items-center justify-center mx-auto transition-all",
+                                  isCompleted ? "bg-emerald-400 text-white" : isPast ? "border border-muted-foreground/30" : "border border-border"
                                 )}
                               >
-                                {isCompleted && <Check className="h-2.5 w-2.5" />}
+                                {isCompleted && <Check className="h-3 w-3 stroke-[3]" />}
                               </button>
                             ) : (
                               <span className="text-muted-foreground/30 text-[9px]">-</span>
@@ -1582,13 +1613,16 @@ export default function Habits() {
                           </td>
                         );
                       })}
-                      <td className="p-0.5 text-center text-[10px] text-muted-foreground font-medium">{progressPercent}%</td>
-                      <td className="p-0.5 text-center text-[10px]">
-                        {(stats?.streak || 0) > 0 ? (
-                          <span>🔥{stats?.streak}</span>
-                        ) : (
-                          <span className="text-muted-foreground/40">0</span>
-                        )}
+                      <td className="p-0.5 text-center text-[10px] text-muted-foreground font-medium">
+                        <div className="flex items-center justify-center gap-1">
+                          <svg width="14" height="14" viewBox="0 0 20 20" className="shrink-0">
+                            <circle cx="10" cy="10" r="9" fill="none" stroke="hsl(var(--border))" strokeWidth="2" />
+                            <circle cx="10" cy="10" r="7" fill="none" stroke="#2DD4BF" strokeWidth="4"
+                              strokeDasharray={`${(progressPercent / 100) * 43.98} 43.98`}
+                              strokeLinecap="round" transform="rotate(-90 10 10)" />
+                          </svg>
+                          <span>{progressPercent}%</span>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1641,10 +1675,10 @@ export default function Habits() {
                         </th>
                       );
                     })}
-                    <th className="p-2 text-center font-semibold text-slate-600 dark:text-slate-300 min-w-[80px]">
+                    <th className="p-1 text-center font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">
                       PROGRESS
                     </th>
-                    <th className="p-2 text-center font-semibold text-slate-600 dark:text-slate-300 w-16">STREAK</th>
+                    <th className="p-1 text-center font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">STREAK</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1654,98 +1688,107 @@ export default function Habits() {
                       DAILY PROGRESS
                     </td>
                     <td colSpan={daysInMonth.length} className="p-0 bg-muted/30">
-                      <svg viewBox={`0 0 ${daysInMonth.length * 100} 220`} className="w-full" style={{ height: 180 }} preserveAspectRatio="none">
-                        {(() => {
-                          const numDays = daysInMonth.length;
-                          const today = new Date();
-                          const vbWidth = numDays * 100;
-                          const dataPoints: { x: number; y: number; value: number; isPast: boolean; isFuture: boolean }[] = [];
+                      {(() => {
+                        const numDays = daysInMonth.length;
+                        const today = new Date();
+                        const vbWidth = numDays * 100;
+                        const dataPoints: { x: number; y: number; value: number; isPast: boolean; isFuture: boolean }[] = [];
 
-                          for (let i = 0; i < numDays; i++) {
-                            const day = daysInMonth[i];
-                            if (!day) continue;
-                            const dayStr = format(day, "yyyy-MM-dd");
-                            const dayOfWeek = (day.getDay() + 6) % 7;
-                            const isPast = isBefore(day, today) || isToday(day);
-                            const isFuture = isAfter(day, today);
+                        for (let i = 0; i < numDays; i++) {
+                          const day = daysInMonth[i];
+                          if (!day) continue;
+                          const dayStr = format(day, "yyyy-MM-dd");
+                          const dayOfWeek = (day.getDay() + 6) % 7;
+                          const isPast = isBefore(day, today) || isToday(day);
+                          const isFuture = isAfter(day, today);
 
-                            const chartActivities = selectedActivityId
-                              ? activities.filter((a) => a.id === selectedActivityId)
-                              : activities;
+                          const chartActivities = selectedActivityId
+                            ? activities.filter((a) => a.id === selectedActivityId)
+                            : activities;
 
-                            let completed = 0;
-                            let total = 0;
-                            chartActivities.forEach((a) => {
-                              const habitStartDate = parseISO(a.startDate);
-                              const habitEndDate = computeEndDateForHabitDays(habitStartDate, a.frequencyPattern, a.habitDays);
-                              const isWithinHabitRange = !isBefore(day, habitStartDate) && !isAfter(day, habitEndDate);
-                              if (a.frequencyPattern[dayOfWeek] && isWithinHabitRange) {
-                                total++;
-                                if (a.completions[dayStr]) completed++;
-                              }
-                            });
-
-                            const value = total > 0 ? (completed / total) * 100 : -1;
-                            const x = (i + 0.5) * 100;
-                            if (value < 0) {
-                              // No habits scheduled this day — skip data point
-                              continue;
+                          let completed = 0;
+                          let total = 0;
+                          chartActivities.forEach((a) => {
+                            const habitStartDate = parseISO(a.startDate);
+                            const habitEndDate = computeEndDateForHabitDays(habitStartDate, a.frequencyPattern, a.habitDays);
+                            const isWithinHabitRange = !isBefore(day, habitStartDate) && !isAfter(day, habitEndDate);
+                            if (a.frequencyPattern[dayOfWeek] && isWithinHabitRange) {
+                              total++;
+                              if (a.completions[dayStr]) completed++;
                             }
-                            const rawY = 190 - (value / 100) * 160;
-                            const y = Math.max(10, Math.min(200, rawY));
-                            dataPoints.push({ x, y, value, isPast, isFuture });
+                          });
+
+                          const value = total > 0 ? (completed / total) * 100 : -1;
+                          const x = (i + 0.5) * 100;
+                          if (value < 0) continue;
+                          const rawY = 190 - (value / 100) * 160;
+                          const y = Math.max(10, Math.min(200, rawY));
+                          dataPoints.push({ x, y, value, isPast, isFuture });
+                        }
+
+                        if (dataPoints.length < 2) return null;
+
+                        const createSmoothPath = (points: { x: number; y: number }[]) => {
+                          if (points.length < 2) return "";
+                          let path = `M ${points[0].x} ${points[0].y}`;
+                          for (let j = 0; j < points.length - 1; j++) {
+                            const current = points[j];
+                            const next = points[j + 1];
+                            const midX = (current.x + next.x) / 2;
+                            const midY = (current.y + next.y) / 2;
+                            path += ` Q ${current.x + (midX - current.x) * 0.5} ${current.y}, ${midX} ${midY}`;
+                            path += ` Q ${midX + (next.x - midX) * 0.5} ${next.y}, ${next.x} ${next.y}`;
                           }
+                          return path;
+                        };
 
-                          if (dataPoints.length < 2) return null;
+                        const linePath = createSmoothPath(dataPoints);
+                        const areaPath = `${linePath} L ${dataPoints[dataPoints.length - 1].x} 215 L ${dataPoints[0].x} 215 Z`;
 
-                          const createSmoothPath = (points: { x: number; y: number }[]) => {
-                            if (points.length < 2) return "";
-                            let path = `M ${points[0].x} ${points[0].y}`;
-                            for (let j = 0; j < points.length - 1; j++) {
-                              const current = points[j];
-                              const next = points[j + 1];
-                              const midX = (current.x + next.x) / 2;
-                              const midY = (current.y + next.y) / 2;
-                              path += ` Q ${current.x + (midX - current.x) * 0.5} ${current.y}, ${midX} ${midY}`;
-                              path += ` Q ${midX + (next.x - midX) * 0.5} ${next.y}, ${next.x} ${next.y}`;
-                            }
-                            return path;
-                          };
-
-                          const linePath = createSmoothPath(dataPoints);
-                          const areaPath = `${linePath} L ${dataPoints[dataPoints.length - 1].x} 215 L ${dataPoints[0].x} 215 Z`;
-
-                          return (
-                            <>
+                        return (
+                          <div className="relative" style={{ height: 180 }}>
+                            <svg viewBox={`0 0 ${vbWidth} 220`} className="w-full h-full absolute inset-0" preserveAspectRatio="none">
                               <defs>
                                 <linearGradient id="tableAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.08" />
-                                  <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0.02" />
+                                  <stop offset="0%" stopColor="#5EEAD4" stopOpacity="0.25" />
+                                  <stop offset="100%" stopColor="#5EEAD4" stopOpacity="0.05" />
                                 </linearGradient>
                               </defs>
                               <path d={areaPath} fill="url(#tableAreaGradient)" />
-                              <path d={linePath} fill="none" stroke="hsl(var(--foreground))" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" opacity="0.7" />
-                              <line x1="0" y1="210" x2={vbWidth} y2="210" stroke="hsl(var(--border))" strokeWidth="1" strokeDasharray="4 4" />
                               {dataPoints.map((point, i) => {
-                                const isMissed = point.isPast && point.value === 0;
-                                return (
-                                  <circle
-                                    key={i}
-                                    cx={point.x}
-                                    cy={point.y}
-                                    r={isMissed ? "6" : "4"}
-                                    fill={point.isFuture ? "hsl(var(--border))" : isMissed ? "hsl(var(--muted-foreground))" : "hsl(var(--foreground))"}
-                                    stroke="hsl(var(--background))"
-                                    strokeWidth="2"
-                                  >
-                                    <title>{`${Math.round(point.value)}%${isMissed ? " (Missed)" : point.isFuture ? " (Upcoming)" : ""}`}</title>
-                                  </circle>
-                                );
+                                if (i === 0) return null;
+                                const prev = dataPoints[i - 1];
+                                const segmentPath = createSmoothPath([prev, point]);
+                                const isRedSegment = (prev.isPast && prev.value === 0) && (point.isPast && point.value === 0);
+                                return <path key={`seg-${i}`} d={segmentPath} fill="none" stroke={isRedSegment ? "#EF4444" : "#5EEAD4"} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />;
                               })}
-                            </>
-                          );
-                        })()}
-                      </svg>
+                              <line x1="0" y1="210" x2={vbWidth} y2="210" stroke="hsl(var(--border))" strokeWidth="1" strokeDasharray="4 4" />
+                            </svg>
+                            {/* Dots rendered as HTML to stay perfectly round */}
+                            {dataPoints.map((point, i) => {
+                              const isMissed = point.isPast && point.value === 0;
+                              const leftPercent = (point.x / vbWidth) * 100;
+                              const topPercent = (point.y / 220) * 100;
+                              return (
+                                <div
+                                  key={i}
+                                  className="absolute rounded-full"
+                                  style={{
+                                    width: 6,
+                                    height: 6,
+                                    left: `${leftPercent}%`,
+                                    top: `${topPercent}%`,
+                                    transform: 'translate(-50%, -50%)',
+                                    backgroundColor: point.isFuture ? 'hsl(var(--border))' : isMissed ? '#EF4444' : '#2DD4BF',
+                                    border: '1px solid hsl(var(--background))',
+                                  }}
+                                  title={`${Math.round(point.value)}%${isMissed ? " (Missed)" : point.isFuture ? " (Upcoming)" : ""}`}
+                                />
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td colSpan={2} className="bg-muted/30"></td>
                   </tr>
@@ -1787,20 +1830,249 @@ export default function Habits() {
             </div>
           </Card>
 
-          {/* Mobile FAB — Floating Action Button in thumb zone */}
-          <Button
-            onClick={openCreateDialog}
-            className="md:hidden fixed bottom-6 right-6 z-30 h-14 w-14 rounded-full shadow-lg"
-            size="icon"
-            style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
-          >
-            <Plus className="h-6 w-6" />
-          </Button>
+          {/* Mobile FAB removed - create button moved to header */}
         </div>
+
+        {/* Mobile Insights Drawer */}
+        <Sheet open={insightsOpen} onOpenChange={setInsightsOpen}>
+          <SheetContent side="right" className="w-[90%] max-w-sm p-0 overflow-y-auto">
+            <SheetHeader className="px-5 pt-5 pb-3 border-b border-border">
+              <SheetTitle>Insights</SheetTitle>
+            </SheetHeader>
+            <div className="px-5 py-4 space-y-5">
+              {/* Month Navigator */}
+              <div className="flex items-center justify-between">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCurrentMonth(addDays(startOfMonth(currentMonth), -1))}>
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </Button>
+                <span className="text-xs font-medium uppercase tracking-zara-wide text-foreground">{format(currentMonth, "MMMM yyyy")}</span>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCurrentMonth(addDays(endOfMonth(currentMonth), 1))}>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+
+              {/* Habits Count */}
+              <div>
+                <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground mb-2">Habits</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="flex flex-col items-center p-3 rounded-xl border border-border bg-muted/20">
+                    <span className="text-lg font-semibold text-primary">{activities.filter((a) => !a.isArchived).length}</span>
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-zara">Active</span>
+                  </div>
+                  <div className="flex flex-col items-center p-3 rounded-xl border border-border bg-muted/20">
+                    <span className="text-lg font-semibold text-foreground">{activities.filter((a) => a.isArchived).length}</span>
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-zara">Done</span>
+                  </div>
+                  <div className="flex flex-col items-center p-3 rounded-xl border border-border bg-muted/20">
+                    <span className="text-lg font-semibold text-foreground">{activities.length}</span>
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-zara">Total</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Habit Days Summary Cards */}
+              <div>
+                <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground mb-2">Habit Days</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="flex flex-col items-center p-3 rounded-xl border border-border bg-muted/20">
+                    <span className="text-lg font-semibold text-foreground">{activities.reduce((sum, a) => sum + a.habitDays, 0) - overallStats.totalCompleted}</span>
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-zara">Pending</span>
+                  </div>
+                  <div className="flex flex-col items-center p-3 rounded-xl border border-border bg-muted/20">
+                    <span className="text-lg font-semibold text-primary">{overallStats.totalCompleted}</span>
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-zara">Done</span>
+                  </div>
+                  <div className="flex flex-col items-center p-3 rounded-xl border border-border bg-muted/20">
+                    <span className="text-lg font-semibold text-foreground">{activities.reduce((sum, a) => sum + a.habitDays, 0)}</span>
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-zara">Total</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Active Streaks moved up, image removed */}
+
+              {/* Top Habits List */}
+              <div>
+                <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground mb-2">Top Habits</p>
+                {topHabits.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">No habits tracked yet</p>
+                ) : (
+                  <div className="space-y-2">
+                    {topHabits.map((habit, i) => {
+                      const activity = activities.find(a => a.id === habit.id);
+                      const totalCompletions = Object.keys(activity?.completions || {}).length;
+                      const progressPercent = activity && activity.habitDays > 0 ? Math.round((totalCompletions / activity.habitDays) * 100) : 0;
+                      return (
+                        <div key={habit.id} className="flex items-center gap-3">
+                          <span className="text-[10px] text-muted-foreground w-4 shrink-0">{i + 1}.</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-foreground truncate">{habit.name}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                                <div className="h-full bg-primary rounded-full" style={{ width: `${progressPercent}%` }} />
+                              </div>
+                              <span className="text-[10px] text-muted-foreground">{progressPercent}%</span>
+                            </div>
+                          </div>
+                          {(habit.streak || 0) > 0 && (
+                            <span className="text-[10px] text-foreground shrink-0">🔥{habit.streak}</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Active Streaks */}
+              {activeStreaks.length > 0 && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground mb-2">Active Streaks</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {activeStreaks.map(s => (
+                      <span key={s.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-muted text-[10px] text-foreground">
+                        <Flame className="h-3 w-3 text-primary" /> {s.name} <span className="font-semibold">{s.streak}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        {/* Mobile Habit Detail Modal */}
+        {(() => {
+          const detailHabit = habitDetailId ? activities.find(a => a.id === habitDetailId) : null;
+          if (!detailHabit) return null;
+          const startDateStr = format(parseISO(detailHabit.startDate), "MMM d");
+          const endDate = computeEndDateForHabitDays(parseISO(detailHabit.startDate), detailHabit.frequencyPattern, detailHabit.habitDays);
+          const endDateStr = format(endDate, "MMM d");
+          const totalCompletions = Object.keys(detailHabit.completions || {}).length;
+          const progressPercent = detailHabit.habitDays > 0 ? Math.round((totalCompletions / detailHabit.habitDays) * 100) : 0;
+          const todayStr = format(new Date(), "yyyy-MM-dd");
+          const isTodayDone = detailHabit.completions[todayStr];
+          const detailStats = activityStats.find(s => s.id === detailHabit.id);
+          const imgUrl = detailHabit.coverImageUrl || loadActivityImage(detailHabit.id);
+
+          return (
+            <Dialog open={!!habitDetailId} onOpenChange={(o) => { if (!o) setHabitDetailId(null); }}>
+              <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm p-0 rounded-2xl overflow-hidden">
+                {/* Image header */}
+                {imgUrl ? (
+                  <div className="relative h-40 w-full">
+                    <img src={imgUrl} alt={detailHabit.name} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
+                    <div className="absolute bottom-3 left-4 right-4">
+                      <h3 className="text-base font-semibold text-foreground">{detailHabit.name}</h3>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-zara">{startDateStr} → {endDateStr}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="px-5 pt-6 pb-2">
+                    <h3 className="text-base font-semibold text-foreground">{detailHabit.name}</h3>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-zara mt-0.5">{startDateStr} → {endDateStr}</p>
+                  </div>
+                )}
+
+                {/* Details */}
+                <div className="px-5 pb-5 space-y-4">
+                  {detailHabit.description && (
+                    <p className="text-xs text-muted-foreground">{detailHabit.description}</p>
+                  )}
+
+                  {/* Progress */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] uppercase tracking-zara-wide text-muted-foreground">Progress</span>
+                      <span className="text-xs font-medium text-foreground">{totalCompletions}/{detailHabit.habitDays} ({progressPercent}%)</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progressPercent}%` }} />
+                    </div>
+                  </div>
+
+                  {/* Stats row */}
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="p-2 rounded-lg bg-muted/50">
+                      <p className="text-sm font-semibold text-foreground">{detailStats?.streak || 0}</p>
+                      <p className="text-[9px] uppercase tracking-zara text-muted-foreground">Streak</p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-muted/50">
+                      <p className="text-sm font-semibold text-foreground">{totalCompletions}</p>
+                      <p className="text-[9px] uppercase tracking-zara text-muted-foreground">Done</p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-muted/50">
+                      <p className="text-sm font-semibold text-foreground">{detailHabit.habitDays - totalCompletions}</p>
+                      <p className="text-[9px] uppercase tracking-zara text-muted-foreground">Remaining</p>
+                    </div>
+                  </div>
+
+                  {/* Frequency */}
+                  <div>
+                    <p className="text-[10px] uppercase tracking-zara-wide text-muted-foreground mb-1.5">Schedule</p>
+                    <div className="flex gap-1.5">
+                      {DAY_LABELS.map((d, i) => (
+                        <span key={i} className={cn(
+                          "h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-medium",
+                          detailHabit.frequencyPattern[i] ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                        )}>{d}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => { setHabitDetailId(null); openEditDialog(detailHabit); }}
+                    >
+                      <Pencil className="h-3.5 w-3.5 mr-1.5" /> Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => { toggleCompletion(detailHabit.id, new Date()); }}
+                    >
+                      <Check className="h-3.5 w-3.5 mr-1.5" /> {isTodayDone ? "Undo Today" : "Mark Today"}
+                    </Button>
+                  </div>
+                  <div className="flex gap-2">
+                    {!detailHabit.isArchived && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => { setHabitDetailId(null); handleCompleteHabit(detailHabit.id); }}
+                      >
+                        <CheckCircle className="h-3.5 w-3.5 mr-1.5" /> Complete
+                      </Button>
+                    )}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => {
+                        if (confirm("Delete this habit?")) {
+                          setHabitDetailId(null);
+                          handleDelete(detailHabit.id);
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Delete
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          );
+        })()}
 
         {/* Create Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-lg p-0 rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg p-0 rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
             {/* Emerald gradient header — matches Reality/Task modal pattern */}
             <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-4 text-white flex-shrink-0">
               <DialogTitle className="text-lg font-semibold text-white">

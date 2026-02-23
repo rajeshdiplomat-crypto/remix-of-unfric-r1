@@ -22,6 +22,7 @@ import { format, subDays, differenceInCalendarDays, parseISO } from "date-fns";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { useTimezone } from "@/hooks/useTimezone";
 import { getTimePeriodInTimezone, getStartOfTodayInTimezone } from "@/lib/formatDate";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface EmotionsPageInsightsProps {
   entries: EmotionEntry[];
@@ -47,6 +48,7 @@ const TIME_INFO = {
 
 export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsPageInsightsProps) {
   const { timezone } = useTimezone();
+  const isMobile = useIsMobile();
   const [dateRange, setDateRange] = useState<DateRange>(30);
   const [rightTab, setRightTab] = useState<"moods" | "context" | "strategies">("moods");
 
@@ -133,20 +135,19 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
   }
 
   return (
-    <div className="animate-in fade-in duration-500 space-y-5">
+    <div className="animate-in fade-in duration-500 space-y-4 md:space-y-5">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-2 bg-primary/10 text-primary">
             <Sparkles className="h-3 w-3" />
             Your Patterns
           </div>
-          <h1 className="text-2xl md:text-3xl font-light">
-            Insights & <span className="font-bold text-primary">Analytics</span>
+          <h1 className="text-xl md:text-3xl font-semibold tracking-tight">
+            Insights & <span className="text-primary">Analytics</span>
           </h1>
         </div>
-        <div className="flex items-center gap-3">
-          {/* Date Range Filter */}
+        <div className="flex items-center gap-2 md:gap-3">
           <div className="flex gap-1 p-1 bg-muted rounded-xl">
             {([7, 30, 90] as DateRange[]).map((d) => (
               <button
@@ -160,166 +161,225 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
               </button>
             ))}
           </div>
-          <Button variant="outline" onClick={onBack} className="gap-2 rounded-xl">
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-        </div>
-      </div>
-
-      {/* 2-Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-5 items-start">
-        {/* LEFT: Why + Overview (Narrow) */}
-        <div className="space-y-4 lg:self-stretch flex flex-col">
-          {/* Why Track - Plain Text at TOP */}
-          <div className="px-1">
-            <h3 className="font-semibold text-foreground mb-2 text-sm">Why Track Your Moods?</h3>
-            <ul className="space-y-1.5">
-              <li className="flex items-start gap-2 text-xs text-muted-foreground">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                <span>
-                  Identify <strong className="text-foreground">triggers</strong> that affect your mood
-                </span>
-              </li>
-              <li className="flex items-start gap-2 text-xs text-muted-foreground">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                <span>
-                  Improve <strong className="text-foreground">wellbeing</strong> with data-driven insights
-                </span>
-              </li>
-              <li className="flex items-start gap-2 text-xs text-muted-foreground">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                <span>
-                  Build <strong className="text-foreground">self-awareness</strong> over time
-                </span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Overview Box at BOTTOM */}
-          <div className="p-5 rounded-2xl bg-card border border-border flex-1">
-            <h3 className="font-semibold text-foreground mb-4 uppercase text-xs tracking-wider">Overview</h3>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="p-3 rounded-xl bg-muted/30">
-                <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
-                  <CalendarDays className="h-3.5 w-3.5" />
-                  <span className="text-[10px] font-medium">Total</span>
-                </div>
-                <p className="text-xl font-bold text-foreground">{stats.total}</p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-muted/30">
-                <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  <span className="text-[10px] font-medium">Streak</span>
-                </div>
-                <p className="text-xl font-bold text-foreground">{stats.streak}d</p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-muted/30">
-                <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
-                  <Target className="h-3.5 w-3.5" />
-                  <span className="text-[10px] font-medium">Common</span>
-                </div>
-                <p className="text-sm font-semibold truncate" style={{ color: stats.quadrantData[0]?.color }}>
-                  {stats.quadrantData[0]?.name.split(" ")[0] || "—"}
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-muted/30">
-                <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
-                  <Activity className="h-3.5 w-3.5" />
-                  <span className="text-[10px] font-medium">Top Feel</span>
-                </div>
-                <p className="text-sm font-semibold text-foreground truncate">{stats.topEmotions[0]?.[0] || "—"}</p>
-              </div>
-            </div>
-
-            {/* Recent Emotions Mini List */}
-            <div className="border-t border-border pt-4 mb-4">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                Recent Check-ins
-              </p>
-              <div className="space-y-1.5">
-                {filteredEntries.slice(0, 4).map((entry, i) => (
-                  <div key={i} className="flex items-center justify-between text-xs">
-                    <span className="font-medium" style={{ color: QUADRANT_COLORS[entry.quadrant] }}>
-                      {entry.emotion}
-                    </span>
-                    <span className="text-muted-foreground text-[10px]">
-                      {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </span>
-                  </div>
-                ))}
-                {filteredEntries.length === 0 && <p className="text-xs text-muted-foreground">No recent entries</p>}
-              </div>
-            </div>
-
-            {/* Check-in Frequency Graph */}
-            <CheckinFrequencyGraph entries={entries} />
-
-            {/* Pattern Insights */}
-            <div className="mt-4">
-              <PatternInsightsCompact entries={filteredEntries} />
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT: Moods/Context (Wide) */}
-        <div className="p-5 rounded-2xl bg-card border border-border lg:self-stretch">
-          {/* Tab Toggle */}
-          <div className="flex gap-1 p-1 bg-muted/50 rounded-xl mb-5">
-            <button
-              onClick={() => setRightTab("moods")}
-              className={`flex-1 px-4 py-2 text-xs font-medium rounded-lg transition-all ${
-                rightTab === "moods"
-                  ? "bg-card shadow-sm text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Moods
-            </button>
-            <button
-              onClick={() => setRightTab("context")}
-              className={`flex-1 px-4 py-2 text-xs font-medium rounded-lg transition-all ${
-                rightTab === "context"
-                  ? "bg-card shadow-sm text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Context
-            </button>
-            <button
-              onClick={() => setRightTab("strategies")}
-              className={`flex-1 px-4 py-2 text-xs font-medium rounded-lg transition-all ${
-                rightTab === "strategies"
-                  ? "bg-card shadow-sm text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Strategies
-            </button>
-          </div>
-
-          {/* Tab Content */}
-          {rightTab === "moods" && (
-            <div className="space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <MoodDistributionChart data={stats.quadrantData} />
-                <MostFrequentFeelings emotions={stats.topEmotions} total={stats.total} />
-              </div>
-              <MoodByTimeOfDay entries={filteredEntries} timezone={timezone} />
-              <EmotionalBalance entries={filteredEntries} />
-            </div>
+          {!isMobile && (
+            <Button variant="outline" onClick={onBack} className="gap-2 rounded-xl">
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
           )}
-
-          {rightTab === "context" && <ContextInsights entries={filteredEntries} />}
-
-          {rightTab === "strategies" && <StrategiesInsights entries={filteredEntries} />}
         </div>
       </div>
+
+      {/* Mobile: Overview Stats as horizontal pills */}
+      {isMobile && (
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card border border-border shrink-0">
+            <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-[10px] text-muted-foreground font-normal">Total</span>
+            <span className="text-sm font-semibold text-foreground">{stats.total}</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card border border-border shrink-0">
+            <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-[10px] text-muted-foreground font-normal">Streak</span>
+            <span className="text-sm font-semibold text-foreground">{stats.streak}d</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card border border-border shrink-0">
+            <Target className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-[10px] text-muted-foreground font-normal">Common</span>
+            <span className="text-sm font-semibold truncate" style={{ color: stats.quadrantData[0]?.color }}>
+              {stats.quadrantData[0]?.name.split(" ")[0] || "—"}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card border border-border shrink-0">
+            <Activity className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-[10px] text-muted-foreground font-normal">Top</span>
+            <span className="text-sm font-semibold text-foreground truncate">{stats.topEmotions[0]?.[0] || "—"}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile: Vertical feed layout */}
+      {isMobile ? (
+        <div className="space-y-4">
+          {/* Check-in Activity - full width */}
+          <CheckinFrequencyGraph entries={entries} />
+
+          {/* Tab Toggle for Moods/Context/Strategies */}
+          <div className="p-4 rounded-2xl bg-card border border-border">
+            <div className="flex gap-1 p-1 bg-muted/50 rounded-xl mb-4">
+              <button
+                onClick={() => setRightTab("moods")}
+                className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
+                  rightTab === "moods"
+                    ? "bg-card shadow-sm text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Moods
+              </button>
+              <button
+                onClick={() => setRightTab("context")}
+                className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
+                  rightTab === "context"
+                    ? "bg-card shadow-sm text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Context
+              </button>
+              <button
+                onClick={() => setRightTab("strategies")}
+                className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
+                  rightTab === "strategies"
+                    ? "bg-card shadow-sm text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Strategies
+              </button>
+            </div>
+            {rightTab === "moods" && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <MoodDistributionChart data={stats.quadrantData} />
+                  <MostFrequentFeelings emotions={stats.topEmotions} total={stats.total} />
+                </div>
+                <MoodByTimeOfDay entries={filteredEntries} timezone={timezone} />
+                <EmotionalBalance entries={filteredEntries} />
+              </div>
+            )}
+            {rightTab === "context" && <ContextInsights entries={filteredEntries} />}
+            {rightTab === "strategies" && <StrategiesInsights entries={filteredEntries} />}
+          </div>
+
+          {/* Pattern Insights */}
+          <PatternInsightsCompact entries={filteredEntries} />
+        </div>
+      ) : (
+        /* Desktop: 2-Column Layout */
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-5 items-start">
+          {/* LEFT: Why + Overview (Narrow) */}
+          <div className="space-y-4 lg:self-stretch flex flex-col">
+            <div className="px-1">
+              <h3 className="font-semibold text-foreground mb-2 text-sm">Why Track Your Moods?</h3>
+              <ul className="space-y-1.5">
+                <li className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                  <span>Identify <strong className="text-foreground">triggers</strong> that affect your mood</span>
+                </li>
+                <li className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                  <span>Improve <strong className="text-foreground">wellbeing</strong> with data-driven insights</span>
+                </li>
+                <li className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                  <span>Build <strong className="text-foreground">self-awareness</strong> over time</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-card border border-border flex-1">
+              <h3 className="font-semibold text-foreground mb-4 text-xs tracking-wider">Overview</h3>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="p-3 rounded-xl bg-muted/30">
+                  <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    <span className="text-[10px] font-normal">Total</span>
+                  </div>
+                  <p className="text-xl font-bold text-foreground">{stats.total}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-muted/30">
+                  <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    <span className="text-[10px] font-normal">Streak</span>
+                  </div>
+                  <p className="text-xl font-bold text-foreground">{stats.streak}d</p>
+                </div>
+                <div className="p-3 rounded-xl bg-muted/30">
+                  <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+                    <Target className="h-3.5 w-3.5" />
+                    <span className="text-[10px] font-normal">Common</span>
+                  </div>
+                  <p className="text-sm font-semibold truncate" style={{ color: stats.quadrantData[0]?.color }}>
+                    {stats.quadrantData[0]?.name.split(" ")[0] || "—"}
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-muted/30">
+                  <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+                    <Activity className="h-3.5 w-3.5" />
+                    <span className="text-[10px] font-normal">Top Feel</span>
+                  </div>
+                  <p className="text-sm font-semibold text-foreground truncate">{stats.topEmotions[0]?.[0] || "—"}</p>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-4 mb-4">
+                <p className="text-[10px] font-normal text-muted-foreground tracking-wide mb-2">Recent check-ins</p>
+                <div className="space-y-1.5">
+                  {filteredEntries.slice(0, 4).map((entry, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs">
+                      <span className="font-medium" style={{ color: QUADRANT_COLORS[entry.quadrant] }}>{entry.emotion}</span>
+                      <span className="text-muted-foreground text-[10px] font-normal">
+                        {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </span>
+                    </div>
+                  ))}
+                  {filteredEntries.length === 0 && <p className="text-xs text-muted-foreground">No recent entries</p>}
+                </div>
+              </div>
+
+              <CheckinFrequencyGraph entries={entries} />
+              <div className="mt-4">
+                <PatternInsightsCompact entries={filteredEntries} />
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT: Moods/Context (Wide) */}
+          <div className="p-5 rounded-2xl bg-card border border-border lg:self-stretch">
+            <div className="flex gap-1 p-1 bg-muted/50 rounded-xl mb-5">
+              <button
+                onClick={() => setRightTab("moods")}
+                className={`flex-1 px-4 py-2 text-xs font-medium rounded-lg transition-all ${
+                  rightTab === "moods" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Moods
+              </button>
+              <button
+                onClick={() => setRightTab("context")}
+                className={`flex-1 px-4 py-2 text-xs font-medium rounded-lg transition-all ${
+                  rightTab === "context" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Context
+              </button>
+              <button
+                onClick={() => setRightTab("strategies")}
+                className={`flex-1 px-4 py-2 text-xs font-medium rounded-lg transition-all ${
+                  rightTab === "strategies" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Strategies
+              </button>
+            </div>
+
+            {rightTab === "moods" && (
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <MoodDistributionChart data={stats.quadrantData} />
+                  <MostFrequentFeelings emotions={stats.topEmotions} total={stats.total} />
+                </div>
+                <MoodByTimeOfDay entries={filteredEntries} timezone={timezone} />
+                <EmotionalBalance entries={filteredEntries} />
+              </div>
+            )}
+
+            {rightTab === "context" && <ContextInsights entries={filteredEntries} />}
+            {rightTab === "strategies" && <StrategiesInsights entries={filteredEntries} />}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -357,7 +417,7 @@ function PatternInsightsCompact({ entries }: { entries: EmotionEntry[] }) {
 
   return (
     <div className="space-y-2">
-      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Pattern Insights</p>
+      <p className="text-[10px] font-medium text-muted-foreground tracking-wide">Pattern insights</p>
       {insights.map((insight, i) => {
         const Icon = insight.icon;
         return (

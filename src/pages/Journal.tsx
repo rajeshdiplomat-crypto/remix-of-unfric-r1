@@ -1041,7 +1041,7 @@ export default function Journal() {
   const fullscreenView = isFullscreen
     ? createPortal(
         <div
-          className="fixed inset-0 z-[9999] flex flex-col bg-background text-foreground"
+          className="fixed inset-0 z-[49] flex flex-col bg-background text-foreground"
         >
           {journalHeader}
           <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4 max-w-4xl mx-auto w-full">

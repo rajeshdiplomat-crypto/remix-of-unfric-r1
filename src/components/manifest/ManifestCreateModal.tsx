@@ -203,7 +203,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
       setAssumption(editingGoal.title);
       setCategory(editingGoal.category || "personal");
       setImageUrl(editingGoal.vision_image_url || null);
-      setVisionImages(editingGoal.vision_images || []);
+      setVisionImages(Array.isArray(editingGoal.vision_images) ? editingGoal.vision_images : (() => { try { const p = typeof editingGoal.vision_images === 'string' ? JSON.parse(editingGoal.vision_images) : []; return Array.isArray(p) ? p : []; } catch { return []; } })());
       setStartDate(editingGoal.start_date || "");
       setLiveFromEnd(editingGoal.live_from_end || "");
       setActAsIf(editingGoal.act_as_if || "");
@@ -212,7 +212,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
       setCheckInTime(editingGoal.check_in_time || "08:00");
       setCommitted(editingGoal.committed_7_days || false);
       setReminderCount(editingGoal.reminder_count || 1);
-      setReminderTimes(editingGoal.reminder_times || ["08:00"]);
+      setReminderTimes(Array.isArray(editingGoal.reminder_times) ? editingGoal.reminder_times : (() => { try { const p = typeof editingGoal.reminder_times === 'string' ? JSON.parse(editingGoal.reminder_times) : null; return Array.isArray(p) ? p : ["08:00"]; } catch { return ["08:00"]; } })());
     } else {
       try {
         const draft = localStorage.getItem(MANIFEST_DRAFT_KEY);

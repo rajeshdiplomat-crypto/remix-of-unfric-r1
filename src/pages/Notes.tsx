@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,9 +33,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { NotesSplitView } from "@/components/notes/NotesSplitView";
+import { MobileNoteEditor } from "@/components/notes/MobileNoteEditor";
 import { NotesGroupSettings } from "@/components/notes/NotesGroupSettings";
 import { NotesGroupSection } from "@/components/notes/NotesGroupSection";
 import { NotesLocationPicker } from "@/components/notes/NotesLocationPicker";
+import { NotesSectionPicker } from "@/components/notes/NotesSectionPicker";
 import { NotesBoardView } from "@/components/notes/NotesBoardView";
 import { NotesMindMapView } from "@/components/notes/NotesMindMapView";
 import { NotesViewSwitcher, type NotesViewType } from "@/components/notes/NotesViewSwitcher";
@@ -282,6 +285,7 @@ export default function Notes() {
   const { toast } = useToast();
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
+  const isMobile = useIsMobile();
 
   const [notes, setNotes] = useState<Note[]>([]);
   const [notesLoaded, setNotesLoaded] = useState(false);
@@ -297,12 +301,14 @@ export default function Notes() {
   });
 
   const [viewMode, setViewMode] = useState<ViewMode>("overview");
+  const [sectionPickerOpen, setSectionPickerOpen] = useState(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("updatedAt");
   const [filterGroupId, setFilterGroupId] = useState<string>("all");
+  const [mobileExpandedGroupId, setMobileExpandedGroupId] = useState<string | null>(null);
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [notesView, setNotesView] = useState<NotesViewType>("atlas");
 
@@ -317,12 +323,13 @@ export default function Notes() {
       .then(({ data }) => {
         const v = (data as any)?.default_notes_view;
         if (v === "board" || v === "mindmap" || v === "atlas") {
-          setNotesView(v as NotesViewType);
+          // On mobile, fall back from mindmap/board to atlas
+          setNotesView((isMobile && (v === "mindmap" || v === "board")) ? "atlas" : v as NotesViewType);
         }
       });
   }, [user]);
 
-  // Sync groups and folders from DB
+  // Sync groups and folders from DB, seed defaults if missing
   useEffect(() => {
     if (!user) return;
     const loadFromDb = async () => {
@@ -753,6 +760,21 @@ export default function Notes() {
   // =========================
   // OVERVIEW
   // =========================
+
+  // Mobile: full-screen editor rendered at the top level to avoid stacking context issues
+  if (isMobile && viewMode === "editor" && selectedNote) {
+    return (
+      <MobileNoteEditor
+        note={selectedNote}
+        groups={groups}
+        folders={folders}
+        onSave={handleSaveNote}
+        onDelete={handleDeleteNote}
+        onBack={handleBackToOverview}
+      />
+    );
+  }
+
   if (viewMode === "overview") {
     return (
       <div className="w-full flex-1 pb-24 relative min-h-screen">
@@ -760,7 +782,6 @@ export default function Notes() {
         {backgroundUrl && (
           <div className="fixed inset-0 z-0 pointer-events-none">
             {backgroundUrl.startsWith("linear-gradient") || backgroundUrl.startsWith("data:") ? (
-              // Gradient or data URL background
               <div
                 className="absolute inset-0 transition-all duration-700"
                 style={{
@@ -771,7 +792,6 @@ export default function Notes() {
                 }}
               />
             ) : (
-              // Regular image URL
               <div
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-700"
                 style={{ backgroundImage: `url("${backgroundUrl}")` }}
@@ -783,8 +803,8 @@ export default function Notes() {
 
         <div className="relative z-10 w-full">
           <div className="w-full space-y-4 px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 max-w-[1400px] mx-auto">
-            {/* Page Header */}
-            <div className="py-4">
+            {/* Page Header - Hidden on mobile, compact */}
+            <div className="hidden md:block py-4">
               <p className="text-[10px] font-medium tracking-[0.3em] text-muted-foreground/70 uppercase mb-2">
                 Life Atlas
               </p>
@@ -794,15 +814,217 @@ export default function Notes() {
               </p>
             </div>
 
-            {/* Modern Floating Toolbar */}
-            <div className="relative">
-              {/* Glassmorphism toolbar container */}
-              <div className="rounded-2xl bg-card border border-border shadow-sm">
-                <div className="p-2 flex flex-wrap items-center gap-2">
-                  {/* View Mode Switcher */}
-                  <NotesViewSwitcher currentView={notesView} onViewChange={setNotesView} />
+            {/* Mobile: Header matching desktop style */}
+            <div className="md:hidden flex items-center justify-between py-2">
+              <div>
+                <p className="text-[9px] font-medium tracking-[0.3em] text-muted-foreground/70 uppercase mb-0.5">
+                  Life Atlas
+                </p>
+                <h1 className="text-2xl font-light tracking-wide text-foreground">NOTES</h1>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="sm"
+                    className="h-8 px-3 rounded-lg bg-primary text-primary-foreground shadow-sm gap-1.5"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span className="text-xs font-medium">New</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 rounded-lg p-1">
+                  <DropdownMenuItem onClick={handleNewNoteWithOptions} className="py-2 rounded-lg cursor-pointer">
+                    <FileText className="h-4 w-4 mr-3 text-muted-foreground" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">New Note</span>
+                      <span className="text-xs text-muted-foreground">Choose location</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleQuickNote} className="py-2 rounded-lg cursor-pointer">
+                    <Zap className="h-4 w-4 mr-3 text-muted-foreground" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">Quick Note</span>
+                      <span className="text-xs text-muted-foreground">Send to Inbox</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setSettingsOpen(true)}
+                    className="py-2 rounded-lg cursor-pointer"
+                  >
+                    <FolderPlus className="h-4 w-4 mr-3 text-muted-foreground" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">New Group</span>
+                      <span className="text-xs text-muted-foreground">Organize notes</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setSectionPickerOpen(true)}
+                    className="py-2 rounded-lg cursor-pointer"
+                  >
+                    <Layers className="h-4 w-4 mr-3 text-muted-foreground" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">New Section</span>
+                      <span className="text-xs text-muted-foreground">Choose group</span>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
-                  {/* Search - Modern floating input */}
+            {/* Mobile: Quick Stats as tiny pills - single row */}
+            <div className="md:hidden flex items-center gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {[
+                { label: "Total", value: insights.total, icon: <FileText className="h-2.5 w-2.5" /> },
+                { label: "Today", value: insights.editedToday, icon: <Clock className="h-2.5 w-2.5" /> },
+                { label: "Pinned", value: insights.pinned, icon: <Pin className="h-2.5 w-2.5" /> },
+                { label: "Groups", value: insights.activeGroups, icon: <Layers className="h-2.5 w-2.5" /> },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-foreground/5 backdrop-blur-sm whitespace-nowrap shrink-0"
+                >
+                  <span className="text-muted-foreground/50">{stat.icon}</span>
+                  <span className="text-[11px] font-medium text-foreground">{stat.value}</span>
+                  <span className="text-[9px] text-muted-foreground/50">{stat.label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Sticky Navigation & Toolbar */}
+            <div className="sticky top-0 z-20 md:relative md:z-auto">
+              {/* Glassmorphism toolbar container */}
+              <div className="rounded-2xl bg-card/95 backdrop-blur-md border border-border shadow-sm md:bg-card md:backdrop-blur-none">
+                {/* Mobile: View switcher hidden - only Atlas view on mobile */}
+                <div className="p-2 md:hidden hidden">
+                </div>
+                {/* Mobile: Integrated Search + Sort pill + More in one row */}
+                <div className="px-2 pb-1.5 pt-1 md:pb-0 md:px-0 flex items-center gap-1.5 md:hidden">
+                  <div className="relative flex-1 min-w-0">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/40" />
+                    <Input
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search..."
+                      className="h-7 rounded-full pl-6 pr-2 text-[11px] bg-foreground/5 backdrop-blur-md border border-border/20 focus:bg-foreground/10 focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/30"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0 ml-auto">
+                    <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+                      <SelectTrigger className="h-7 w-7 rounded-full p-0 bg-foreground/5 backdrop-blur-md border border-border/20 hover:bg-foreground/10 transition-colors shrink-0 flex items-center justify-center [&>svg:last-child]:hidden">
+                        <ArrowUpDown className="h-3 w-3 text-muted-foreground/60" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-border/50 shadow-xl backdrop-blur-xl">
+                        <SelectItem value="updatedAt">Last edited</SelectItem>
+                        <SelectItem value="createdAt">Created</SelectItem>
+                        <SelectItem value="title">A–Z</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 rounded-full hover:bg-foreground/5 shrink-0"
+                        >
+                          <MoreHorizontal className="h-3 w-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-64 rounded-lg p-2">
+                        <DropdownMenuItem
+                          onClick={() => setSettingsOpen(true)}
+                          className="py-2 rounded-lg cursor-pointer"
+                        >
+                          <Settings className="h-4 w-4 mr-3 text-muted-foreground" />
+                          <span>Group Settings</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator className="my-2" />
+                        {/* Color Themes */}
+                        <div className="px-2 py-2">
+                          <div className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                            <Palette className="h-3.5 w-3.5" />
+                            Color Themes
+                          </div>
+                          <div className="grid grid-cols-6 gap-2">
+                            {COLOR_THEMES.map((colorTheme) => (
+                              <button
+                                key={colorTheme.id}
+                                onClick={() => handleBackgroundChange(colorTheme.gradient)}
+                                className={cn(
+                                  "w-8 h-8 rounded-full transition-all hover:scale-110 shadow-sm",
+                                  backgroundUrl === colorTheme.gradient
+                                    ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                                    : "",
+                                )}
+                                style={{ background: colorTheme.gradient }}
+                                title={colorTheme.name}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <DropdownMenuSeparator className="my-2" />
+                        {/* Background Images */}
+                        <div className="px-2 py-2">
+                          <div className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                            <Image className="h-3.5 w-3.5" />
+                            Background Image
+                          </div>
+                          <div className="grid grid-cols-4 gap-2">
+                            {BACKGROUND_PRESETS.map((bg) => (
+                              <button
+                                key={bg.id}
+                                onClick={() => handleBackgroundChange(bg.url)}
+                                className={cn(
+                                  "relative aspect-[4/3] rounded-lg overflow-hidden border-2 transition-all hover:scale-105",
+                                  backgroundUrl === bg.url
+                                    ? "border-primary shadow-lg"
+                                    : "border-transparent hover:border-border",
+                                )}
+                                title={bg.name}
+                              >
+                                {bg.url ? (
+                                  <img src={bg.url} alt={bg.name} className="h-full w-full object-cover" />
+                                ) : (
+                                  <div className="h-full w-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
+                                    <span className="text-[9px] font-medium text-muted-foreground">None</span>
+                                  </div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <DropdownMenuSeparator className="my-2" />
+                        {/* Upload Custom Image */}
+                        <div className="px-2 py-2">
+                          <label className="flex items-center gap-3 py-2 px-2 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                            <Upload className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">Upload Custom Image</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (event) => {
+                                    const dataUrl = event.target?.result as string;
+                                    handleBackgroundChange(dataUrl);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+
+                {/* Desktop: Full toolbar row */}
+                <div className="hidden md:flex p-2 items-center gap-2">
+                  <NotesViewSwitcher currentView={notesView} onViewChange={setNotesView} />
                   <div className="relative flex-1 min-w-[140px] max-w-[280px]">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
                     <Input
@@ -812,8 +1034,6 @@ export default function Notes() {
                       className="h-10 rounded-xl pl-10 pr-4 text-sm bg-muted/30 border-0 focus:bg-muted/50 focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/40"
                     />
                   </div>
-
-                  {/* Sort Select - Minimal style */}
                   <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
                     <SelectTrigger className="h-10 rounded-xl w-[140px] text-xs bg-muted/30 border-0 hover:bg-muted/50 transition-colors gap-2">
                       <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/50" />
@@ -825,29 +1045,18 @@ export default function Notes() {
                       <SelectItem value="title">A–Z</SelectItem>
                     </SelectContent>
                   </Select>
-
-                  {/* Spacer */}
                   <div className="flex-1" />
-
-                  {/* Action Buttons */}
                   <div className="flex items-center gap-2">
-                    {/* New Note Button - Creative AI Aurora Animation */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           size="sm"
                           className="group relative h-9 px-4 rounded-lg overflow-hidden bg-gradient-to-r from-slate-600 via-gray-600 to-zinc-600 text-white shadow-lg hover:shadow-xl transition-all duration-500 gap-2 border-0"
                         >
-                          {/* Animated aurora background */}
                           <span className="absolute inset-0 bg-gradient-to-r from-slate-500 via-pink-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse" />
-                          {/* Shimmer sweep */}
                           <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
-                          {/* Sparkle particles */}
-                          <span className="absolute top-1 right-2 w-1 h-1 bg-white rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping" />
-                          <span className="absolute bottom-2 left-3 w-0.5 h-0.5 bg-white rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping animation-delay-200" />
-
                           <Plus className="h-4 w-4 relative z-10" />
-                          <span className="hidden sm:inline text-xs uppercase tracking-wider font-semibold relative z-10">
+                          <span className="text-xs uppercase tracking-wider font-semibold relative z-10">
                             New Note
                           </span>
                           <ChevronDown className="h-3.5 w-3.5 opacity-80 relative z-10" />
@@ -879,10 +1088,18 @@ export default function Notes() {
                             <span className="text-xs text-muted-foreground">Organize notes</span>
                           </div>
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setSectionPickerOpen(true)}
+                          className="py-2 rounded-lg cursor-pointer"
+                        >
+                          <Layers className="h-4 w-4 mr-3 text-muted-foreground" />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">New Section</span>
+                            <span className="text-xs text-muted-foreground">Choose group</span>
+                          </div>
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-
-                    {/* More Options Menu */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -992,9 +1209,10 @@ export default function Notes() {
                   </div>
                 </div>
 
-                {/* Filter chips - Minimal underline tabs */}
-                <div className="px-3 pb-2 border-b border-border/30">
-                  <div className="flex gap-1 overflow-auto no-scrollbar">
+                {/* Filter chips - Minimal underline tabs, hidden scrollbar */}
+                <div className="px-3 pb-1.5 border-b border-border/30">
+                  <div className="flex gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' as any }}>
+                    <style>{`.filter-row::-webkit-scrollbar { display: none; }`}</style>
                     <button
                       onClick={() => setFilterGroupId("all")}
                       className={cn(
@@ -1034,8 +1252,8 @@ export default function Notes() {
               </div>
             </div>
 
-            {/* Insights Section */}
-            <div className="rounded-xl bg-card/60 backdrop-blur-sm border border-border/50 p-3">
+            {/* Insights Section - Desktop only (mobile has pill row above) */}
+            <div className="hidden md:block rounded-xl bg-card/60 backdrop-blur-sm border border-border/50 p-3">
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
                   Quick Stats
@@ -1088,6 +1306,8 @@ export default function Notes() {
                       onAddNote={handleCreateNote}
                       onAddFolder={handleCreateFolder}
                       onUpdateGroup={handleUpdateGroup}
+                      expandedGroupId={mobileExpandedGroupId}
+                      onExpandGroup={setMobileExpandedGroupId}
                     />
                   ))}
               </div>
@@ -1154,6 +1374,14 @@ export default function Notes() {
               groups={groups}
               folders={folders}
               onConfirm={handleCreateNote}
+            />
+
+            {/* Section Picker */}
+            <NotesSectionPicker
+              open={sectionPickerOpen}
+              onOpenChange={setSectionPickerOpen}
+              groups={groups}
+              onConfirm={handleCreateFolder}
             />
           </div>
         </div>

@@ -4,14 +4,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { isOfflineError } from "@/lib/offlineAwareOperation";
-import { Sparkles, ArrowLeft, ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react";
+import { Sparkles, ArrowLeft, ChevronLeft, ChevronRight, CalendarIcon, Flame, ImagePlus, Target, TrendingUp } from "lucide-react";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { subDays, addDays, parseISO, isSameDay, format, isToday } from "date-fns";
 
 function safeJsonArray(val: any): any[] {
   if (Array.isArray(val)) return val;
   if (typeof val === "string") {
-    try { const parsed = JSON.parse(val); return Array.isArray(parsed) ? parsed : []; } catch { return []; }
+    try {
+      const parsed = JSON.parse(val);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
   }
   return [];
 }
@@ -22,12 +27,7 @@ import { cn } from "@/lib/utils";
 
 import { ManifestPracticePanel } from "@/components/manifest/ManifestPracticePanel";
 
-import {
-  type ManifestGoal,
-  type ManifestDailyPractice,
-} from "@/components/manifest/types";
-
-// All goal data now comes from DB columns directly
+import { type ManifestGoal, type ManifestDailyPractice } from "@/components/manifest/types";
 
 export default function ManifestPractice() {
   const { goalId } = useParams<{ goalId: string }>();
@@ -39,7 +39,6 @@ export default function ManifestPractice() {
   const [practices, setPractices] = useState<ManifestDailyPractice[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Parse date from URL or default to today
   const selectedDate = useMemo(() => {
     const dateParam = searchParams.get("date");
     if (dateParam) {
@@ -52,14 +51,16 @@ export default function ManifestPractice() {
     return new Date();
   }, [searchParams]);
 
-  const setSelectedDate = useCallback((date: Date) => {
-    const dateStr = format(date, "yyyy-MM-dd");
-    setSearchParams({ date: dateStr }, { replace: true });
-  }, [setSearchParams]);
+  const setSelectedDate = useCallback(
+    (date: Date) => {
+      const dateStr = format(date, "yyyy-MM-dd");
+      setSearchParams({ date: dateStr }, { replace: true });
+    },
+    [setSearchParams],
+  );
 
   const fetchData = useCallback(async () => {
     if (!user || !goalId) return;
-
     try {
       const { data: response, error } = await supabase.functions.invoke('manage-manifest', {
         body: { action: 'fetch_goal_and_practices', goalId }
@@ -76,7 +77,7 @@ export default function ManifestPractice() {
         title: g.title,
         category: g.category || "other",
         vision_image_url: g.cover_image_url,
-        vision_images: g.vision_images || [],
+        vision_images: safeJsonArray(g.vision_images),
         cover_image_url: g.cover_image_url,
         start_date: g.start_date,
         live_from_end: g.live_from_end,
@@ -91,32 +92,32 @@ export default function ManifestPractice() {
         created_at: g.created_at,
         updated_at: g.updated_at,
         reminder_count: g.reminder_count,
-        reminder_times: g.reminder_times,
+        reminder_times: safeJsonArray(g.reminder_times),
       };
-
       setGoal(mergedGoal);
 
       // Load practices from DB
 
 
       if (practicesData) {
-        const practicesList: ManifestDailyPractice[] = practicesData.map((p: any) => ({
-          id: p.id,
-          goal_id: p.goal_id,
-          user_id: p.user_id,
-          entry_date: p.entry_date,
-          created_at: p.created_at,
-          visualization_count: safeJsonArray(p.visualizations).length,
-          visualizations: safeJsonArray(p.visualizations),
-          act_count: safeJsonArray(p.acts).length,
-          acts: safeJsonArray(p.acts),
-          proofs: safeJsonArray(p.proofs),
-          gratitudes: safeJsonArray(p.gratitudes),
-          alignment: p.alignment,
-          growth_note: p.growth_note,
-          locked: p.locked || false,
-        }));
-        setPractices(practicesList);
+        setPractices(
+          practicesData.map((p: any) => ({
+            id: p.id,
+            goal_id: p.goal_id,
+            user_id: p.user_id,
+            entry_date: p.entry_date,
+            created_at: p.created_at,
+            visualization_count: safeJsonArray(p.visualizations).length,
+            visualizations: safeJsonArray(p.visualizations),
+            act_count: safeJsonArray(p.acts).length,
+            acts: safeJsonArray(p.acts),
+            proofs: safeJsonArray(p.proofs),
+            gratitudes: safeJsonArray(p.gratitudes),
+            alignment: p.alignment,
+            growth_note: p.growth_note,
+            locked: p.locked || false,
+          })),
+        );
       }
     } catch (error) {
       console.error("Error fetching goal:", error);
@@ -171,143 +172,180 @@ export default function ManifestPractice() {
 
   if (!goal) {
     return !loadingFinished ? (
-      <PageLoadingScreen
-        module="manifest"
-        isDataReady={false}
-        onFinished={() => setLoadingFinished(true)}
-      />
+      <PageLoadingScreen module="manifest" isDataReady={false} onFinished={() => setLoadingFinished(true)} />
     ) : null;
   }
+
+  const totalPracticed = practices.filter((p) => p.goal_id === goal.id && p.locked).length;
 
   return (
     <>
       {!loadingFinished && (
-        <PageLoadingScreen
-          module="manifest"
-          isDataReady={isDataReady}
-          onFinished={() => setLoadingFinished(true)}
-        />
+        <PageLoadingScreen module="manifest" isDataReady={isDataReady} onFinished={() => setLoadingFinished(true)} />
       )}
-      <div className="flex flex-col w-full flex-1 bg-background min-h-screen overflow-hidden pt-14">
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-3 w-full px-2 sm:px-4 py-2 overflow-hidden">
-          {/* ========== LEFT COLUMN: Editorial ========== */}
-          <div className="hidden lg:flex flex-col h-full min-h-0 overflow-y-auto">
-            <div className="flex flex-col gap-6 py-6 px-5">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-fit gap-1.5 text-muted-foreground hover:text-foreground -ml-2"
-                onClick={() => navigate("/manifest")}
-              >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                Back to Realities
-              </Button>
+      <div className="flex flex-col w-full h-full bg-background antialiased overflow-hidden min-h-0">
+        <div className="flex-1 flex flex-col lg:flex-row lg:items-stretch gap-0 w-full max-w-[1400px] mx-auto min-h-0 overflow-hidden">
+          {/* ========== LEFT COLUMN: Editorial + Vision Board (desktop only) ========== */}
+          <div className="hidden lg:flex flex-col min-h-0 overflow-hidden shrink-0" style={{ width: '40%' }}>
+            <div className="flex flex-col h-full min-h-0 px-5">
+              {/* Fixed top section */}
+              <div className="flex flex-col gap-2.5 pt-4 pb-2 flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-fit gap-1.5 text-muted-foreground hover:text-foreground -ml-2"
+                  onClick={() => navigate("/manifest")}
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Back to Realities
+                </Button>
 
-              <Badge variant="secondary" className="w-fit rounded-full px-3 py-1 gap-1.5">
-                <Sparkles className="h-3 w-3" />
-                Daily Practice
-              </Badge>
+                <Badge variant="secondary" className="w-fit rounded-full px-3 py-1 gap-1.5">
+                  <Sparkles className="h-3 w-3" />
+                  Daily Practice
+                </Badge>
 
-              <div>
-                <h1 className="text-3xl font-light text-foreground tracking-tight leading-tight">
-                  Practice Your
-                </h1>
-                <h1 className="text-3xl font-semibold text-foreground tracking-tight leading-tight">
-                  Reality
-                </h1>
-              </div>
-
-              <p className="text-muted-foreground text-base leading-relaxed max-w-md">
-                Visualization rewires your brain for success. Act as if your dream is already real, collect proof, and watch the universe align.
-              </p>
-
-              <div className="h-px bg-border" />
-
-              <div className="bg-muted/30 rounded-xl p-4 border border-border">
-                <p className="text-sm text-muted-foreground italic leading-relaxed">
-                  "{getMotivationalQuote()}"
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
-                    <Sparkles className="h-4 w-4 text-teal-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground line-clamp-1">{goal.title}</p>
-                    <p className="text-xs text-muted-foreground">Current reality in focus</p>
-                  </div>
+                <div>
+                  <h1 className="text-3xl font-light text-foreground tracking-tight leading-tight">Practice Your</h1>
+                  <h1 className="text-3xl font-semibold text-foreground tracking-tight leading-tight">Reality</h1>
                 </div>
 
-                {streak > 0 && (
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                      <span className="text-sm font-bold text-orange-600">{streak}</span>
+                <p className="text-muted-foreground text-sm leading-relaxed max-w-md">
+                  Visualization rewires your brain for success. Act as if your dream is already real, collect proof, and watch the universe align.
+                </p>
+
+                <div className="h-px bg-border" />
+              </div>
+
+              {/* Vision Board + Stats: fills remaining height */}
+              <div className="flex-1 min-h-0 flex flex-col gap-2 pb-1 overflow-hidden">
+                {(() => {
+                  const visionImgs: string[] = [];
+                  const vi = goal.vision_images;
+                  const parsed = Array.isArray(vi) ? vi : (() => { try { return Array.isArray(JSON.parse(vi as any)) ? JSON.parse(vi as any) : []; } catch { return []; } })();
+                  if (goal.cover_image_url) visionImgs.push(goal.cover_image_url);
+                  parsed.forEach((img: string) => { if (img && !visionImgs.includes(img)) visionImgs.push(img); });
+                  if (goal.vision_image_url && !visionImgs.includes(goal.vision_image_url)) visionImgs.push(goal.vision_image_url);
+
+                  if (visionImgs.length > 0) {
+                    const count = Math.min(visionImgs.length, 5);
+                    return (
+                      <div className="flex-1 min-h-0 flex flex-col gap-1.5">
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <ImagePlus className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="text-xs font-medium text-muted-foreground tracking-wide">Vision Board</span>
+                        </div>
+                        {/* Row 1: hero left + 2 stacked right */}
+                        <div className="flex gap-1.5 flex-1 min-h-0">
+                          <div className="relative overflow-hidden rounded-lg group cursor-pointer flex-[3]">
+                            <img src={visionImgs[0]} alt="Vision 1" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                          </div>
+                          {count >= 2 && (
+                            <div className="flex flex-col gap-1.5 flex-[2]">
+                              <div className="relative overflow-hidden rounded-lg group cursor-pointer flex-1 min-h-0">
+                                <img src={visionImgs[1]} alt="Vision 2" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                              </div>
+                              {count >= 3 && (
+                                <div className="relative overflow-hidden rounded-lg group cursor-pointer flex-1 min-h-0">
+                                  <img src={visionImgs[2]} alt="Vision 3" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        {/* Row 2: remaining images */}
+                        {count >= 4 && (
+                          <div className="flex gap-1.5 flex-shrink-0" style={{ height: '25%' }}>
+                            {visionImgs.slice(3, 5).map((img, i) => (
+                              <div key={i} className="relative overflow-hidden rounded-lg group cursor-pointer flex-1">
+                                <img src={img} alt={`Vision ${i + 4}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
+                {/* Goal Stats */}
+                <div className="flex-shrink-0 space-y-2">
+                  {streak > 0 && (
+                    <div className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/20 border border-border/30">
+                      <div className="h-9 w-9 rounded-lg bg-destructive/10 flex items-center justify-center flex-shrink-0">
+                        <Flame className="h-4 w-4 text-destructive" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{streak} day streak</p>
+                        <p className="text-[10px] text-muted-foreground">Consecutive practice days</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Day Streak</p>
-                      <p className="text-xs text-muted-foreground">Consecutive practice days</p>
+                  )}
+                  {totalPracticed > 0 && (
+                    <div className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/20 border border-border/30">
+                      <div className="h-9 w-9 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+                        <TrendingUp className="h-4 w-4 text-accent-foreground" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{totalPracticed} day{totalPracticed !== 1 ? "s" : ""} practiced</p>
+                        <p className="text-[10px] text-muted-foreground">Total sessions completed</p>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
           {/* ========== RIGHT COLUMN: Practice Panel ========== */}
-          <div className="flex flex-col h-full min-h-0">
-            {/* Mobile back button */}
-            <div className="lg:hidden mb-2">
+          <div className="flex flex-col min-h-0 overflow-hidden lg:flex-1">
+            {/* Compact mobile header: back + date nav in one row */}
+            <div className="lg:hidden flex items-center justify-between px-2 py-1">
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-fit gap-1.5 text-muted-foreground"
+                className="h-8 w-8 p-0 text-muted-foreground"
                 onClick={() => navigate("/manifest")}
               >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                Back
+                <ArrowLeft className="h-4 w-4" />
               </Button>
-            </div>
-
-            {/* Date Navigation Bar */}
-            <div className="flex items-center justify-between mb-2 px-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2"
-                onClick={() => setSelectedDate(subDays(selectedDate, 1))}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-
-              <UnifiedDatePicker
-                value={selectedDate}
-                onChange={(date) => { if (date) setSelectedDate(date); }}
-                displayFormat={isToday(selectedDate) ? "'Today'" : "MMM d, yyyy"}
-                triggerClassName={cn(
-                  "h-8 px-3 gap-1.5 rounded-lg text-sm font-medium",
-                  isToday(selectedDate) && "border-primary/30"
-                )}
-                icon={<CalendarIcon className="h-3.5 w-3.5" />}
-                align="center"
-              />
-
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0.5">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-2"
+                  className="h-7 w-7 p-0"
+                  onClick={() => setSelectedDate(subDays(selectedDate, 1))}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </Button>
+                <UnifiedDatePicker
+                  value={selectedDate}
+                  onChange={(date) => {
+                    if (date) setSelectedDate(date);
+                  }}
+                  displayFormat={isToday(selectedDate) ? "'Today'" : "MMM d"}
+                  triggerClassName={cn(
+                    "h-7 px-2 gap-1 rounded-lg text-xs font-medium",
+                    isToday(selectedDate) && "border-primary/30",
+                  )}
+                  icon={<CalendarIcon className="h-3 w-3" />}
+                  align="center"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
                   onClick={() => setSelectedDate(addDays(selectedDate, 1))}
                   disabled={isToday(selectedDate)}
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
                 {!isToday(selectedDate) && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 px-2 text-xs text-teal-600"
+                    className="h-6 px-1.5 text-[10px] text-primary"
                     onClick={() => setSelectedDate(new Date())}
                   >
                     Today
@@ -316,10 +354,55 @@ export default function ManifestPractice() {
               </div>
             </div>
 
-            <div className="bg-card rounded-2xl shadow-sm border border-border flex-1 overflow-hidden">
+            {/* Desktop date nav */}
+            <div className="hidden lg:flex items-center justify-center gap-1 mb-1 px-1 pt-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => setSelectedDate(subDays(selectedDate, 1))}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <UnifiedDatePicker
+                value={selectedDate}
+                onChange={(date) => {
+                  if (date) setSelectedDate(date);
+                }}
+                displayFormat={isToday(selectedDate) ? "'Today'" : "MMM d, yyyy"}
+                triggerClassName={cn(
+                  "h-8 px-3 gap-1.5 rounded-lg text-sm font-medium",
+                  isToday(selectedDate) && "border-primary/30",
+                )}
+                icon={<CalendarIcon className="h-3.5 w-3.5" />}
+                align="center"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => setSelectedDate(addDays(selectedDate, 1))}
+                disabled={isToday(selectedDate)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              {!isToday(selectedDate) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs text-primary"
+                  onClick={() => setSelectedDate(new Date())}
+                >
+                  Today
+                </Button>
+              )}
+            </div>
+
+            <div className="lg:rounded-2xl lg:shadow-sm lg:border lg:border-border flex-1 min-h-0 overflow-hidden">
               <ManifestPracticePanel
                 goal={goal}
                 streak={streak}
+                totalPracticed={totalPracticed}
                 selectedDate={selectedDate}
                 previousPractice={getPreviousDayPractice()}
                 onClose={() => navigate("/manifest")}

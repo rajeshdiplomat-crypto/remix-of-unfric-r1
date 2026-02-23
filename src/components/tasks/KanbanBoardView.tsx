@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Calendar, Check, Play, Loader2, ChevronDown } from "lucide-react";
+import { Calendar, Check, Play, Pause, Loader2, ChevronDown, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,7 @@ interface KanbanBoardViewProps {
   onDrop: (columnId: string, task: QuadrantTask) => void;
   onStartTask: (task: QuadrantTask) => void;
   onCompleteTask: (task: QuadrantTask) => void;
+  onDeleteTask?: (task: QuadrantTask) => void;
   defaultMode?: QuadrantMode;
 }
 
@@ -37,60 +37,69 @@ function getDuration(task: QuadrantTask) {
   return h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
 }
 
+function getPriorityBorderClass(task: QuadrantTask) {
+  if (task.is_completed) return "border-l-muted-foreground/30";
+  if (task.status === "overdue") return "border-l-destructive";
+  if (task.urgency === "high" && task.importance === "high") return "border-l-destructive";
+  if (task.urgency === "high") return "border-l-orange-500";
+  if (task.importance === "high") return "border-l-amber-500";
+  return "border-l-muted-foreground/20";
+}
+
 function KanbanCard({
   task,
   onClick,
   onStartTask,
   onCompleteTask,
+  onDeleteTask,
 }: {
   task: QuadrantTask;
   onClick: () => void;
   onStartTask: (task: QuadrantTask) => void;
   onCompleteTask: (task: QuadrantTask) => void;
+  onDeleteTask?: (task: QuadrantTask) => void;
 }) {
   return (
-    <Card
+    <div
       draggable
       onDragStart={(e) => e.dataTransfer.setData("task-id", task.id)}
       onClick={onClick}
       className={cn(
-        "group p-3 cursor-pointer hover:shadow-md transition-shadow",
+        "group p-2.5 cursor-pointer hover:shadow-md transition-all rounded-lg border-l-4 border-r border-t border-b",
+        getPriorityBorderClass(task),
         task.is_completed
-          ? "bg-muted/50 border-border"
-          : task.status === "overdue"
-            ? "bg-destructive/10 border-destructive/30 shadow-sm"
-            : "bg-background border-border shadow-sm",
+          ? "bg-muted/50 border-border/50"
+          : "bg-background border-border/50 shadow-sm",
       )}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <p className={cn(
-            "text-sm font-medium text-foreground leading-snug mb-1 truncate",
+            "text-[13px] font-medium text-foreground leading-snug mb-1 truncate",
             task.is_completed && "line-through text-muted-foreground"
           )}>{task.title}</p>
 
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide flex-nowrap">
             {task.due_date && (
-              <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                <Calendar className="h-3 w-3" />
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-foreground/5 text-muted-foreground shrink-0">
                 {format(new Date(task.due_date), "d/M")}
               </span>
             )}
             {task.due_time && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                {task.due_time}{task.end_time ? ` - ${task.end_time}` : ""}
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-foreground/5 text-muted-foreground shrink-0">
+                {task.due_time}{task.end_time ? `–${task.end_time}` : ""}
               </span>
             )}
             {getDuration(task) && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-foreground/5 text-muted-foreground shrink-0">
                 {getDuration(task)}
               </span>
             )}
-            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-primary/30 text-primary">
+            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-primary/30 text-primary shrink-0">
               {getQuadrantLabel(task)}
             </Badge>
             {task.tags?.slice(0, 1).map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-[9px] px-1.5 py-0">
+              <Badge key={tag} variant="secondary" className="text-[10px] px-1 py-0 h-4 shrink-0">
                 {tag}
               </Badge>
             ))}
@@ -109,7 +118,13 @@ function KanbanCard({
             </button>
           )}
           {task.status === "ongoing" && !task.is_completed && (
-            <Loader2 className="h-4 w-4 text-primary animate-spin" />
+            <button
+              onClick={(e) => { e.stopPropagation(); onStartTask(task); }}
+              className="h-6 w-6 rounded-full flex items-center justify-center text-primary bg-primary/10 transition-colors"
+              title="Pause task"
+            >
+              <Pause className="h-3 w-3" />
+            </button>
           )}
           <button
             onClick={(e) => { e.stopPropagation(); onCompleteTask(task); }}
@@ -123,9 +138,18 @@ function KanbanCard({
           >
             <Check className="h-3 w-3" />
           </button>
+          {onDeleteTask && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDeleteTask(task); }}
+              className="h-6 w-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
+              title="Delete task"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          )}
         </div>
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -161,6 +185,7 @@ export function KanbanBoardView({
   onDrop,
   onStartTask,
   onCompleteTask,
+  onDeleteTask,
   defaultMode,
 }: KanbanBoardViewProps) {
   const [boardMode, setBoardMode] = useState<QuadrantMode>(defaultMode || "urgent-important");
@@ -239,7 +264,7 @@ export function KanbanBoardView({
 
             <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
               {columnTasks[col.id]?.map((task) => (
-                <KanbanCard key={task.id} task={task} onClick={() => onTaskClick(task)} onStartTask={onStartTask} onCompleteTask={onCompleteTask} />
+                <KanbanCard key={task.id} task={task} onClick={() => onTaskClick(task)} onStartTask={onStartTask} onCompleteTask={onCompleteTask} onDeleteTask={onDeleteTask} />
               ))}
 
               {columnCompleted[col.id]?.length > 0 && (
@@ -253,7 +278,7 @@ export function KanbanBoardView({
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-2">
                     {columnCompleted[col.id].map((task) => (
-                      <KanbanCard key={task.id} task={task} onClick={() => onTaskClick(task)} onStartTask={onStartTask} onCompleteTask={onCompleteTask} />
+                      <KanbanCard key={task.id} task={task} onClick={() => onTaskClick(task)} onStartTask={onStartTask} onCompleteTask={onCompleteTask} onDeleteTask={onDeleteTask} />
                     ))}
                   </CollapsibleContent>
                 </Collapsible>

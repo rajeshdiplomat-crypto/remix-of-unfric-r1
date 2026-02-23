@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { FileText, Clock, Trash2, MoreHorizontal, ArrowRight, Pin } from "lucide-react";
+import { FileText, Trash2, MoreHorizontal, ArrowRight, Pin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -75,57 +75,35 @@ export function NotesNoteRow({
     <div
       onClick={onClick}
       className={`
-        group relative flex items-center gap-3 py-3 px-4 cursor-pointer transition-all duration-200
-        hover:bg-gradient-to-r hover:from-muted/40 hover:to-transparent
+        group relative flex items-center gap-2 py-1 px-2.5 cursor-pointer transition-all duration-200
+        hover:bg-muted/30
         ${isIndented ? "ml-4" : ""}
         ${isSelected ? "bg-primary/5 border-l-2 border-l-primary" : ""}
         ${note.isPinned ? "bg-amber-50/30 dark:bg-amber-950/10" : ""}
       `}
     >
-      {/* Left accent line on hover */}
-      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-0 bg-primary rounded-full transition-all group-hover:h-8 opacity-0 group-hover:opacity-100" />
-
-      {/* Icon with gradient background */}
-      <div
-        className={`
-        w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all
-        ${
-          note.isPinned
-            ? "bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-900/30 dark:to-amber-950/20"
-            : "bg-gradient-to-br from-muted/80 to-muted/30 group-hover:from-primary/10 group-hover:to-primary/5"
-        }
-      `}
-      >
+      {/* Icon */}
+      <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 bg-muted/40">
         {note.isPinned ? (
-          <Pin className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+          <Pin className="h-3 w-3 text-amber-600 dark:text-amber-400" />
         ) : (
-          <FileText className="h-3.5 w-3.5 text-muted-foreground/60 group-hover:text-primary/70 transition-colors" />
+          <FileText className="h-3 w-3 text-muted-foreground/50" />
         )}
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <h4 className="text-sm font-medium text-foreground/90 truncate group-hover:text-foreground transition-colors">
+        <div className="flex items-center gap-1.5">
+          <h4 className="text-[12px] font-medium text-foreground/90 truncate">
             {note.title || "Untitled Note"}
           </h4>
-          {note.isPinned && (
-            <span className="text-[9px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-100/50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">
-              Pinned
-            </span>
-          )}
-          {showActivityDot && <NotesActivityDot updatedAt={note.updatedAt} size="sm" className="opacity-60" />}
+          {showActivityDot && <NotesActivityDot updatedAt={note.updatedAt} size="sm" className="opacity-60 !w-1.5 !h-1.5" />}
         </div>
-        {note.plainText && <p className="text-xs text-muted-foreground/50 line-clamp-1 mt-0.5">{note.plainText}</p>}
+        {note.plainText && <p className="text-[10px] text-muted-foreground/40 line-clamp-1">{note.plainText}</p>}
       </div>
 
-      {/* Time - sleek pill */}
-      <div className="flex items-center gap-2 shrink-0">
-        <span className="text-[10px] text-muted-foreground/50 bg-muted/50 px-2 py-1 rounded-full flex items-center gap-1 border border-border/50">
-          <Clock className="h-2.5 w-2.5" />
-          {formatDate(note.updatedAt)}
-        </span>
-      </div>
+      {/* Timestamp - always visible, tiny */}
+      <span className="text-[9px] text-muted-foreground/40 shrink-0">{formatDate(note.updatedAt)}</span>
 
       {/* Tags on hover */}
       {note.tags.length > 0 && (

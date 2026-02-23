@@ -1,28 +1,29 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useDatePreferences } from "@/hooks/useDatePreferences";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
 import {
   Play,
   Check,
   Camera,
   Lock,
   X,
-  Clock,
   ImagePlus,
   Trash2,
   Plus,
   Flame,
   Eye,
   Zap,
-  ChevronDown,
-  ChevronUp,
-  Image,
   CalendarDays,
   Heart,
+  Quote,
+  Sparkles,
+  Clock,
+  Target,
+  TrendingUp,
 } from "lucide-react";
 import {
   type ManifestGoal,
@@ -31,18 +32,21 @@ import {
   type ActEntry,
   type VisualizationEntry,
   type GratitudeEntry,
+  CATEGORIES,
 } from "./types";
 import { ManifestVisualizationMode } from "./ManifestVisualizationMode";
-import { format, isToday, isBefore, startOfDay } from "date-fns";
+import { format, isToday, isBefore, startOfDay, differenceInDays } from "date-fns";
 import confetti from "canvas-confetti";
 import { toast } from "sonner";
 import { isOfflineError } from "@/lib/offlineAwareOperation";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
 
 interface ManifestPracticePanelProps {
   goal: ManifestGoal;
   streak: number;
+  totalPracticed?: number;
   selectedDate?: Date;
   previousPractice?: ManifestDailyPractice | null;
   onClose: () => void;
@@ -50,9 +54,17 @@ interface ManifestPracticePanelProps {
   onGoalUpdate?: () => void;
 }
 
+const RING_CONFIG = [
+  { id: "viz", icon: Eye, label: "Visualize", color: "hsl(175, 84%, 40%)", bgClass: "bg-[hsl(175,84%,40%)]" },
+  { id: "act", icon: Zap, label: "Act", color: "hsl(45, 93%, 47%)", bgClass: "bg-[hsl(45,93%,47%)]" },
+  { id: "proof", icon: Camera, label: "Proof", color: "hsl(200, 80%, 50%)", bgClass: "bg-[hsl(200,80%,50%)]" },
+  { id: "gratitude", icon: Heart, label: "Gratitude", color: "hsl(330, 70%, 55%)", bgClass: "bg-[hsl(330,70%,55%)]" },
+];
+
 export function ManifestPracticePanel({
   goal,
   streak,
+  totalPracticed = 0,
   selectedDate = new Date(),
   previousPractice,
   onClose,
@@ -74,11 +86,16 @@ export function ManifestPracticePanel({
       });
       const data = response?.data;
       if (data) {
+        const safeArr = (val: any): any[] => {
+          if (Array.isArray(val)) return val;
+          if (typeof val === "string") { try { const p = JSON.parse(val); return Array.isArray(p) ? p : []; } catch { return []; } }
+          return [];
+        };
         return {
-          visualizations: (data as any).visualizations || [],
-          acts: (data as any).acts || [],
-          proofs: (data as any).proofs || [],
-          gratitudes: (data as any).gratitudes || [],
+          visualizations: safeArr((data as any).visualizations),
+          acts: safeArr((data as any).acts),
+          proofs: safeArr((data as any).proofs),
+          gratitudes: safeArr((data as any).gratitudes),
           alignment: (data as any).alignment,
           growth_note: (data as any).growth_note,
           locked: (data as any).locked || false,
@@ -92,20 +109,18 @@ export function ManifestPracticePanel({
 
   const savePractice = async (practice: Partial<ManifestDailyPractice>) => {
     if (!isViewingToday || !user) return;
-
-    // Save to DB
     try {
       const upsertData: any = {
         goal_id: goal.id,
         user_id: user.id,
         entry_date: dateStr,
-        visualizations: JSON.stringify(practice.visualizations ?? []),
-        acts: JSON.stringify(practice.acts ?? []),
-        proofs: JSON.stringify(practice.proofs ?? []),
-        gratitudes: JSON.stringify(practice.gratitudes ?? []),
-        alignment: practice.alignment ?? null,
-        growth_note: practice.growth_note ?? null,
-        locked: practice.locked ?? false,
+        visualizations: JSON.stringify(practice.visualizations ?? visualizations),
+        acts: JSON.stringify(practice.acts ?? acts),
+        proofs: JSON.stringify(practice.proofs ?? proofs),
+        gratitudes: JSON.stringify(practice.gratitudes ?? gratitudes),
+        alignment: practice.alignment ?? alignmentValue,
+        growth_note: practice.growth_note ?? growthNoteValue,
+        locked: practice.locked ?? isLocked,
       };
       await supabase.functions.invoke('manage-manifest', {
         body: {
@@ -123,43 +138,58 @@ export function ManifestPracticePanel({
   const [proofs, setProofs] = useState<ProofEntry[]>([]);
   const [gratitudes, setGratitudes] = useState<GratitudeEntry[]>([]);
   const [showVisualization, setShowVisualization] = useState(false);
-  const [expandedSection, setExpandedSection] = useState<string | null>("viz");
+  const [activeRing, setActiveRing] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
-  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
+  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(goal.cover_image_url || goal.vision_image_url || null);
+  const [alignmentValue, setAlignmentValue] = useState(5);
 
-  // Use refs for text inputs to prevent re-render issues
   const actInputRef = useRef<HTMLInputElement>(null);
   const proofTextRef = useRef<HTMLTextAreaElement>(null);
   const growthNoteRef = useRef<HTMLInputElement>(null);
   const gratitudeInputRef = useRef<HTMLInputElement>(null);
   const [currentProofImageUrl, setCurrentProofImageUrl] = useState<string | null>(null);
   const [growthNoteValue, setGrowthNoteValue] = useState("");
+  const proofScrollRef = useRef<HTMLDivElement>(null);
 
-  // Track goal id and date separately to avoid full resets on goal object changes
   const goalIdRef = useRef(goal.id);
   const dateStrRef = useRef(dateStr);
+  const isFirstMount = useRef(true);
+
+  const dayNumber = useMemo(() => {
+    if (!goal.start_date) return 0;
+    return differenceInDays(selectedDate, new Date(goal.start_date)) + 1;
+  }, [goal.start_date, selectedDate]);
+
+  const categoryLabel = useMemo(() => {
+    return CATEGORIES.find(c => c.id === goal.category)?.label || goal.category;
+  }, [goal.category]);
 
   useEffect(() => {
     const goalChanged = goalIdRef.current !== goal.id;
     const dateChanged = dateStrRef.current !== dateStr;
+    const firstMount = isFirstMount.current;
 
-    if (goalChanged || dateChanged) {
+    if (goalChanged || dateChanged || firstMount) {
+      isFirstMount.current = false;
       goalIdRef.current = goal.id;
       dateStrRef.current = dateStr;
 
-      if (actInputRef.current) actInputRef.current.value = "";
-      if (proofTextRef.current) proofTextRef.current.value = "";
-      if (growthNoteRef.current) growthNoteRef.current.value = "";
-      if (gratitudeInputRef.current) gratitudeInputRef.current.value = "";
-      setCurrentProofImageUrl(null);
-      setGrowthNoteValue("");
+      if (!firstMount) {
+        if (actInputRef.current) actInputRef.current.value = "";
+        if (proofTextRef.current) proofTextRef.current.value = "";
+        if (growthNoteRef.current) growthNoteRef.current.value = "";
+        if (gratitudeInputRef.current) gratitudeInputRef.current.value = "";
+        setCurrentProofImageUrl(null);
+        setGrowthNoteValue("");
+        setAlignmentValue(5);
 
-      setVisualizations([]);
-      setActs([]);
-      setProofs([]);
-      setGratitudes([]);
-      setIsLocked(false);
-      setExpandedSection("viz");
+        setVisualizations([]);
+        setActs([]);
+        setProofs([]);
+        setGratitudes([]);
+        setIsLocked(false);
+        setActiveRing(null);
+      }
       setCurrentImageUrl(goal.cover_image_url || goal.vision_image_url || null);
 
       (async () => {
@@ -168,6 +198,7 @@ export function ManifestPracticePanel({
         if (saved.acts) setActs(saved.acts);
         if (saved.proofs) setProofs(saved.proofs);
         if (saved.gratitudes) setGratitudes(saved.gratitudes);
+        if (saved.alignment !== undefined && saved.alignment !== null) setAlignmentValue(saved.alignment);
         if (saved.growth_note) {
           setGrowthNoteValue(saved.growth_note);
           if (growthNoteRef.current) growthNoteRef.current.value = saved.growth_note;
@@ -185,6 +216,13 @@ export function ManifestPracticePanel({
   const canLock = allDone && growthNoteValue.trim().length > 0;
   const completedCount = [hasViz, hasAct, hasProof, hasGratitude].filter(Boolean).length;
 
+  const stepDone = useMemo(() => ({
+    viz: hasViz,
+    act: hasAct,
+    proof: hasProof,
+    gratitude: hasGratitude,
+  }), [hasViz, hasAct, hasProof, hasGratitude]);
+
   const handleVisualizationComplete = () => {
     const newEntry: VisualizationEntry = {
       id: crypto.randomUUID(),
@@ -196,7 +234,7 @@ export function ManifestPracticePanel({
     setShowVisualization(false);
     savePractice({ visualizations: updated, visualization_count: updated.length });
     toast.success("Visualization complete! ✨");
-    if (!hasAct) setExpandedSection("act");
+    setActiveRing(null);
   };
 
   const handleAddAct = () => {
@@ -207,7 +245,6 @@ export function ManifestPracticePanel({
     if (actInputRef.current) actInputRef.current.value = "";
     savePractice({ acts: updated, act_count: updated.length });
     toast.success("Action logged! 💪");
-    if (!hasProof) setExpandedSection("proof");
   };
 
   const handleRemoveAct = (id: string) => {
@@ -244,7 +281,6 @@ export function ManifestPracticePanel({
     savePractice({ proofs: updated });
     confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
     toast.success("Proof recorded! 🚀");
-    if (!hasGratitude) setExpandedSection("gratitude");
   };
 
   const handleRemoveProof = (id: string) => {
@@ -269,9 +305,6 @@ export function ManifestPracticePanel({
     if (gratitudeInputRef.current) gratitudeInputRef.current.value = "";
     savePractice({ gratitudes: updated });
     toast.success("Gratitude added! 🙏");
-    if (hasViz && hasAct && hasProof && updated.length > 0) {
-      setExpandedSection("complete");
-    }
   };
 
   const handleRemoveGratitude = (id: string) => {
@@ -294,7 +327,7 @@ export function ManifestPracticePanel({
       acts,
       proofs,
       gratitudes,
-      alignment: 5,
+      alignment: alignmentValue,
       growth_note: growthNoteValue,
       locked: true,
     };
@@ -307,8 +340,6 @@ export function ManifestPracticePanel({
 
   const handleImageChange = async (url: string | null) => {
     setCurrentImageUrl(url);
-
-    // Update database directly (no more localStorage extras)
     try {
       const { error } = await supabase.functions.invoke('manage-manifest', {
         body: {
@@ -320,11 +351,7 @@ export function ManifestPracticePanel({
 
       if (error) throw error;
       toast.success("Vision image updated");
-
-      // Notify parent to refresh
-      if (onGoalUpdate) {
-        onGoalUpdate();
-      }
+      if (onGoalUpdate) onGoalUpdate();
     } catch (error) {
       console.error("Failed to update image in database:", error);
       if (!isOfflineError()) {
@@ -334,8 +361,6 @@ export function ManifestPracticePanel({
       }
     }
   };
-
-  const toggle = (id: string) => setExpandedSection(expandedSection === id ? null : id);
 
   if (showVisualization) {
     return (
@@ -349,405 +374,522 @@ export function ManifestPracticePanel({
     );
   }
 
-  const StepCard = ({
-    id,
-    icon: Icon,
-    title,
+  const safeProofs = Array.isArray(proofs) ? proofs : [];
+  const allProofs = safeProofs.filter((p) => p.image_url || p.text);
+
+  const ProgressRing = ({
     done,
-    disabled,
-    children,
-    accentColor = "teal",
+    color,
+    icon: Icon,
+    label,
+    id,
+    stepNumber,
   }: {
-    id: string;
-    icon: any;
-    title: string;
     done: boolean;
-    disabled?: boolean;
-    children: React.ReactNode;
-    accentColor?: string;
+    color: string;
+    icon: any;
+    label: string;
+    id: string;
+    stepNumber: number;
   }) => {
-    const isExpanded = expandedSection === id;
+    const isActive = activeRing === id;
+    const radius = 26;
+    const circumference = 2 * Math.PI * radius;
+    const progress = done ? 1 : 0;
+
     return (
-      <Card
-        className={`overflow-hidden cursor-pointer transition-all ${done
-            ? "border-teal-200 dark:border-teal-800 bg-teal-50/30 dark:bg-teal-900/10"
-            : ""
-          } ${disabled ? "opacity-60 pointer-events-none" : ""}`}
-        onClick={() => !disabled && toggle(id)}
+      <button
+        onClick={() => setActiveRing(isActive ? null : id)}
+        className={cn(
+          "flex flex-col items-center transition-all duration-500 group relative",
+          (isViewingPast && !isLocked) && "opacity-50 pointer-events-none"
+        )}
+        style={{ gap: "6px" }}
       >
-        {/* Square card header */}
-        <div className="flex items-center gap-3 p-3">
-          <div
-            className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${done ? "bg-teal-500 text-white" : "bg-muted text-muted-foreground"
-              }`}
-          >
-            {done ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
-          </div>
-          <div className="flex-1 min-w-0">
-            <span className={`font-medium text-sm leading-tight ${done ? "text-teal-700 dark:text-teal-300" : "text-foreground"}`}>
-              {title}
-            </span>
-            {done && (
-              <span className="ml-2 text-[9px] bg-teal-100 dark:bg-teal-900/50 text-teal-600 dark:text-teal-400 px-1.5 py-0.5 rounded-full">
-                Done
-              </span>
+        <div
+          className={cn(
+            "relative flex items-center justify-center rounded-full transition-all duration-500",
+            isActive && "scale-105",
+          )}
+          style={{
+            width: 60, height: 60,
+            ...(isActive ? { boxShadow: `0 0 24px ${color}30, 0 0 8px ${color}15` } : {}),
+          }}
+        >
+          {/* Outer ring SVG */}
+          <svg width="60" height="60" className="absolute inset-0 -rotate-90">
+            <circle cx="30" cy="30" r={radius} fill="none" stroke={done ? color : "hsl(var(--border))"} strokeWidth={done ? "3" : "2.5"} opacity={done ? 1 : 0.5} className="transition-all duration-500" />
+            {isActive && !done && (
+              <circle
+                cx="30"
+                cy="30"
+                r={radius}
+                fill="none"
+                stroke={color}
+                strokeWidth="2.5"
+                strokeDasharray={circumference}
+                strokeDashoffset={circumference * 0.25}
+                strokeLinecap="round"
+                className="transition-all duration-700 ease-out"
+              >
+                <animateTransform attributeName="transform" type="rotate" from="0 30 30" to="360 30 30" dur="3s" repeatCount="indefinite" />
+              </circle>
             )}
+          </svg>
+          {/* Inner circle — always shows the icon */}
+          <div
+            className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 relative",
+              done ? "bg-background shadow-sm" : "bg-muted/80",
+              isActive && !done && "bg-muted"
+            )}
+          >
+            <Icon className={cn("h-4 w-4 transition-colors duration-500")} style={done ? { color } : { color: "hsl(var(--muted-foreground))" }} />
           </div>
-          {isExpanded ? (
-            <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-          ) : (
-            <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          {/* Completion badge */}
+          {done && (
+            <div
+              className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 rounded-full flex items-center justify-center border-2 border-background"
+              style={{ background: color, width: 18, height: 18 }}
+            >
+              <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />
+            </div>
           )}
         </div>
-        {isExpanded && !disabled && (
-          <div className="px-3 pb-3 space-y-3 border-t border-border pt-3" onClick={(e) => e.stopPropagation()}>
-            {children}
-          </div>
-        )}
-      </Card>
+        {/* Label + step number */}
+        <div className="flex flex-col items-center gap-0">
+          <span
+            className={cn(
+              "text-[10px] font-semibold tracking-wide transition-colors duration-300",
+              done ? "text-foreground" : isActive ? "text-foreground" : "text-muted-foreground"
+            )}
+          >
+            {label}
+          </span>
+          <span
+            className={cn(
+              "text-[8px] font-medium tracking-widest uppercase transition-colors duration-300",
+              done ? "opacity-70" : "text-muted-foreground/50"
+            )}
+            style={done ? { color } : {}}
+          >
+            Step {stepNumber}
+          </span>
+        </div>
+      </button>
     );
   };
 
-  return (
-    <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-900 overflow-hidden">
-      {/* Header with Vision Image */}
-      <div className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex-shrink-0">
-        {/* Vision Image - Read-only display */}
-        <div className="relative h-36 w-full overflow-hidden">
-          {currentImageUrl ? (
-            <img src={currentImageUrl} alt={goal.title} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full bg-muted" />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
-        </div>
+  const renderActiveInput = () => {
+    if (!activeRing) return null;
 
-        <div className="p-3">
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex gap-1.5 flex-wrap">
-              {!isViewingToday && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-600 font-medium flex items-center gap-1">
-                  <CalendarDays className="h-2.5 w-2.5" /> {fmtDate(selectedDate, "full")}
-                </span>
-              )}
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 text-teal-600 font-medium">
-                {isLocked ? "Completed" : "Active"}
-              </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 font-medium flex items-center gap-1">
-                <Flame className="h-2.5 w-2.5" /> Day {streak}
-              </span>
-            </div>
-            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={onClose}>
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-          <h2 className="font-semibold text-slate-800 dark:text-white text-base leading-tight">{goal.title}</h2>
-          {goal.check_in_time && (
-            <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
-              <Clock className="h-3 w-3" /> Check-in at {goal.check_in_time}
-            </p>
-          )}
-
-          {/* Start Date & Total Practice Days */}
-          <div className="flex gap-3 mt-2">
-            <div className="text-xs text-slate-500">
-              <span className="text-slate-400">Started:</span>{" "}
-              <span className="font-medium text-slate-600 dark:text-slate-300">
-                {fmtDate(new Date(goal.start_date || goal.created_at), "full")}
-              </span>
-            </div>
-            {goal.created_at && (
-              <div className="text-xs text-slate-500">
-                <span className="text-slate-400">Practice Days:</span>{" "}
-                <span className="font-medium text-slate-600 dark:text-slate-300">{streak}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Vision Board - Show additional images - Larger and stretched */}
-          {goal.vision_images && goal.vision_images.length > 0 && (
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-1.5">
-              {goal.vision_images.map((img, i) => (
-                <div
-                  key={i}
-                  className="flex-1 min-w-0 h-16 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-600"
-                >
-                  <img src={img} alt={`Vision ${i + 1}`} className="w-full h-full object-cover" />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Progress */}
-      <div className="px-3 pt-3">
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-          <div className="flex-1">
-            <div className="flex justify-between text-[10px] mb-1">
-              <span className="text-slate-500">{isViewingToday ? "Today's Progress" : "Day Progress"}</span>
-              <span className="font-semibold text-teal-600">{completedCount}/4</span>
-            </div>
-            <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-teal-500 to-cyan-400 transition-all"
-                style={{ width: `${(completedCount / 4) * 100}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Past date warning */}
-      {isViewingPast && !isLocked && (
-        <div className="mx-3 mt-2 p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-          <p className="text-[10px] text-amber-700 dark:text-amber-300">
-            You're viewing a past date. This practice was not completed.
-          </p>
-        </div>
-      )}
-
-      {/* Steps - Single scrollable area */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3">
-        <div className="grid grid-cols-2 gap-2">
-          {/* Visualize card */}
-          <StepCard
-            id="viz"
-            icon={Eye}
-            title={`Visualize (${goal.visualization_minutes} min)`}
-            done={hasViz}
-            disabled={isViewingPast && !isLocked}
-          >
-            <p className="text-sm text-muted-foreground mb-3">Close your eyes and feel your new reality</p>
+    return (
+      <div className="mx-4 mt-3 p-4 rounded-2xl border border-foreground/10 bg-background/60 backdrop-blur-xl animate-in slide-in-from-top-2 duration-300" style={{ minHeight: 220 }}>
+        {activeRing === "viz" && (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Close your eyes and feel your new reality</p>
             <Button
               onClick={() => setShowVisualization(true)}
-              className="w-full h-11 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
+              className="w-full h-10 rounded-xl"
               disabled={isViewingPast}
+              style={{ background: "linear-gradient(135deg, hsl(175, 84%, 40%), hsl(185, 85%, 50%))" }}
             >
-              <Play className="h-4 w-4 mr-2" /> {hasViz ? "Add Session" : "Start"}
+              <Play className="h-4 w-4 mr-2 text-white" />
+              <span className="text-white">{hasViz ? "Add Session" : `Start ${goal.visualization_minutes} min`}</span>
             </Button>
             {visualizations.length > 0 && (
-              <div className="mt-3 space-y-1">
+              <div className="space-y-1">
                 {visualizations.map((v, i) => (
-                  <div
-                    key={v.id}
-                    className="text-xs text-muted-foreground bg-teal-50 dark:bg-teal-900/30 px-3 py-2 rounded-lg flex items-center gap-2"
-                  >
-                    <Check className="h-3 w-3 text-teal-500" /> Session {i + 1} •{" "}
-                    {format(new Date(v.created_at), "h:mm a")}
+                  <div key={v.id} className="text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                    <Check className="h-3 w-3" style={{ color: "hsl(175, 84%, 40%)" }} /> Session {i + 1} • {format(new Date(v.created_at), "h:mm a")}
                   </div>
                 ))}
               </div>
             )}
-          </StepCard>
+          </div>
+        )}
 
-          {/* Take Action card */}
-          <StepCard id="act" icon={Zap} title="Take Action" done={hasAct} disabled={isViewingPast && !isLocked}>
-            <p className="text-sm text-muted-foreground mb-2">Suggestion: {goal.act_as_if}</p>
+        {activeRing === "act" && (
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">Suggestion: {goal.act_as_if}</p>
             <div className="flex gap-2">
-              <Input
-                ref={actInputRef}
-                defaultValue=""
-                placeholder="What did you do?"
-                className="flex-1 rounded-xl h-10"
-                disabled={isViewingPast}
-              />
-              <Button
-                onClick={handleAddAct}
-                className="h-10 w-10 rounded-xl bg-teal-500 text-white p-0"
-                disabled={isViewingPast}
-              >
-                <Plus className="h-4 w-4" />
+              <Input ref={actInputRef} defaultValue="" placeholder="What did you do?" className="flex-1 rounded-xl h-9 text-sm" disabled={isViewingPast} />
+              <Button onClick={handleAddAct} className="h-9 px-3 rounded-xl text-xs text-white" disabled={isViewingPast}
+                style={{ background: "hsl(45, 93%, 47%)" }}>
+                Save
               </Button>
             </div>
             {acts.length > 0 && (
-              <div className="mt-3 space-y-2">
+              <div className="space-y-1">
                 {acts.map((a) => (
-                  <div
-                    key={a.id}
-                    className="flex items-start justify-between bg-teal-50 dark:bg-teal-900/30 px-3 py-2 rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <span className="text-sm text-foreground flex items-center gap-2">
-                        <Check className="h-3 w-3 text-teal-500 flex-shrink-0" /> {a.text}
-                      </span>
-                      <span className="text-[9px] text-muted-foreground ml-5">{format(new Date(a.created_at), "h:mm a")}</span>
-                    </div>
+                  <div key={a.id} className="flex items-center justify-between bg-muted/50 px-3 py-1.5 rounded-lg">
+                    <span className="text-xs text-foreground flex items-center gap-2">
+                      <Check className="h-3 w-3" style={{ color: "hsl(45, 93%, 47%)" }} /> {a.text}
+                    </span>
                     {isViewingToday && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 flex-shrink-0"
-                        onClick={() => handleRemoveAct(a.id)}
-                      >
-                        <Trash2 className="h-3 w-3 text-muted-foreground" />
-                      </Button>
+                      <button onClick={() => handleRemoveAct(a.id)} className="text-muted-foreground hover:text-foreground">
+                        <Trash2 className="h-3 w-3" />
+                      </button>
                     )}
                   </div>
                 ))}
               </div>
             )}
-          </StepCard>
+          </div>
+        )}
 
-          {/* Record Proof card */}
-          <StepCard id="proof" icon={Camera} title="Record Proof" done={hasProof} disabled={isViewingPast && !isLocked}>
-            <p className="text-sm text-muted-foreground mb-2">What happened today that proves your reality?</p>
-            <Textarea
-              ref={proofTextRef}
-              defaultValue=""
-              placeholder="I noticed..."
-              rows={2}
-              className="rounded-xl resize-none mb-2"
-              disabled={isViewingPast}
-            />
-            <input
-              ref={proofImageInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleProofImageUpload}
-              className="hidden"
-            />
+        {activeRing === "proof" && (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">What happened today that proves your reality?</p>
+            <Textarea ref={proofTextRef} defaultValue="" placeholder="I noticed..." rows={2} className="rounded-xl resize-none text-sm" disabled={isViewingPast} />
+            <input ref={proofImageInputRef} type="file" accept="image/*" onChange={handleProofImageUpload} className="hidden" />
             {currentProofImageUrl ? (
-              <div className="relative mb-2">
-                <img src={currentProofImageUrl} alt="Proof" className="w-full h-24 object-cover rounded-xl" />
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-2 right-2 h-6 w-6 rounded-full"
-                  onClick={() => setCurrentProofImageUrl(null)}
-                >
+              <div className="relative">
+                <img src={currentProofImageUrl} alt="Proof" className="w-full h-20 object-cover rounded-xl" />
+                <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-5 w-5 rounded-full" onClick={() => setCurrentProofImageUrl(null)}>
                   <X className="h-3 w-3" />
                 </Button>
               </div>
             ) : (
-              <Button
-                variant="outline"
-                className="w-full rounded-xl border-dashed mb-2 h-10"
-                onClick={() => proofImageInputRef.current?.click()}
-                disabled={isViewingPast}
-              >
-                <ImagePlus className="h-4 w-4 mr-2" /> Add Photo
+              <Button variant="outline" className="w-full rounded-xl border-dashed h-9 text-xs" onClick={() => proofImageInputRef.current?.click()} disabled={isViewingPast}>
+                <ImagePlus className="h-3.5 w-3.5 mr-1.5" /> Add Photo
               </Button>
             )}
-            <Button
-              onClick={handleAddProof}
-              disabled={isViewingPast}
-              className="w-full h-10 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
-            >
+          </div>
+        )}
+
+        {/* Sticky save for proof — pinned to bottom of viewport on mobile */}
+        {activeRing === "proof" && (
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 p-3 bg-background/80 backdrop-blur-xl border-t border-border">
+            <Button onClick={handleAddProof} disabled={isViewingPast} className="w-full h-10 rounded-xl text-white text-sm font-semibold"
+              style={{ background: "hsl(200, 80%, 50%)" }}>
               Save Proof
             </Button>
-            {proofs.length > 0 && (
-              <div className="mt-3 space-y-2">
-                {proofs.map((p) => (
-                  <div key={p.id} className="bg-teal-50 dark:bg-teal-900/30 p-3 rounded-lg">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <p className="text-sm text-foreground">{p.text}</p>
-                        <span className="text-[9px] text-muted-foreground">{format(new Date(p.created_at), "h:mm a")}</span>
-                      </div>
-                      {isViewingToday && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 flex-shrink-0"
-                          onClick={() => handleRemoveProof(p.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      )}
-                    </div>
-                    {p.image_url && (
-                      <img src={p.image_url} alt="Proof" className="w-full h-20 object-cover rounded-lg mt-2" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </StepCard>
+          </div>
+        )}
+        {activeRing === "proof" && (
+          <div className="hidden lg:block">
+            <Button onClick={handleAddProof} disabled={isViewingPast} className="w-full h-9 rounded-xl text-white text-sm"
+              style={{ background: "hsl(200, 80%, 50%)" }}>
+              Save Proof
+            </Button>
+          </div>
+        )}
 
-          {/* Gratitude card */}
-          <StepCard
-            id="gratitude"
-            icon={Heart}
-            title="Practice Gratitude"
-            done={hasGratitude}
-            disabled={isViewingPast && !isLocked}
-          >
-            <p className="text-sm text-muted-foreground mb-2">What are you grateful for today?</p>
+        {activeRing === "gratitude" && (
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">What are you grateful for today?</p>
             <div className="flex gap-2">
-              <Input
-                ref={gratitudeInputRef}
-                defaultValue=""
-                placeholder="I'm grateful for..."
-                className="flex-1 rounded-xl h-10"
-                disabled={isViewingPast}
-              />
-              <Button
-                onClick={handleAddGratitude}
-                className="h-10 w-10 rounded-xl bg-pink-500 hover:bg-pink-600 text-white p-0"
-                disabled={isViewingPast}
-              >
-                <Plus className="h-4 w-4" />
+              <Input ref={gratitudeInputRef} defaultValue="" placeholder="I'm grateful for..." className="flex-1 rounded-xl h-9 text-sm" disabled={isViewingPast} />
+              <Button onClick={handleAddGratitude} className="h-9 px-3 rounded-xl text-xs text-white" disabled={isViewingPast}
+                style={{ background: "hsl(330, 70%, 55%)" }}>
+                Save
               </Button>
             </div>
             {gratitudes.length > 0 && (
-              <div className="mt-3 space-y-2">
+              <div className="space-y-1">
                 {gratitudes.map((g) => (
-                  <div
-                    key={g.id}
-                    className="flex items-start justify-between bg-pink-50 dark:bg-pink-900/30 px-3 py-2 rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <span className="text-sm text-foreground flex items-center gap-2">
-                        <Heart className="h-3 w-3 text-pink-500 flex-shrink-0 fill-pink-500" /> {g.text}
-                      </span>
-                      <span className="text-[9px] text-muted-foreground ml-5">{format(new Date(g.created_at), "h:mm a")}</span>
-                    </div>
+                  <div key={g.id} className="flex items-center justify-between bg-muted/50 px-3 py-1.5 rounded-lg">
+                    <span className="text-xs text-foreground flex items-center gap-2">
+                      <Heart className="h-3 w-3 fill-current" style={{ color: "hsl(330, 70%, 55%)" }} /> {g.text}
+                    </span>
                     {isViewingToday && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 flex-shrink-0"
-                        onClick={() => handleRemoveGratitude(g.id)}
-                      >
-                        <Trash2 className="h-3 w-3 text-muted-foreground" />
-                      </Button>
+                      <button onClick={() => handleRemoveGratitude(g.id)} className="text-muted-foreground hover:text-foreground">
+                        <Trash2 className="h-3 w-3" />
+                      </button>
                     )}
                   </div>
                 ))}
               </div>
             )}
-          </StepCard>
-        </div>
-
-        {/* Complete Day - Full width below the grid */}
-        {allDone && (
-          <div className="mt-2">
-            <StepCard id="complete" icon={Lock} title="Complete Day" done={isLocked} disabled={isViewingPast && !isLocked}>
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">Add a growth note to lock your practice</p>
-                <Input
-                  ref={growthNoteRef}
-                  defaultValue={growthNoteValue}
-                  placeholder="Today I learned that..."
-                  className="rounded-xl h-10"
-                  disabled={isViewingPast || isLocked}
-                  onBlur={(e) => {
-                    setGrowthNoteValue(e.target.value);
-                    savePractice({ growth_note: e.target.value });
-                  }}
-                />
-                <Button
-                  onClick={handleLockToday}
-                  disabled={!canLock || isViewingPast || isLocked}
-                  className="w-full h-11 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-medium"
-                >
-                  <Lock className="h-4 w-4 mr-2" /> Complete Day ✨
-                </Button>
-              </div>
-            </StepCard>
           </div>
         )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="h-full flex flex-col bg-background overflow-hidden antialiased">
+      {/* ===== Immersive Hero Banner ===== */}
+      <div className="relative w-full h-40 sm:h-56 flex-shrink-0 overflow-hidden">
+        {currentImageUrl ? (
+          <img src={currentImageUrl} alt={goal.title} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-muted to-accent" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+        <div className="absolute inset-0 backdrop-blur-[2px]" />
+
+        {/* Close button */}
+        <Button variant="ghost" size="icon" className="absolute top-3 right-3 h-8 w-8 rounded-full bg-background/40 backdrop-blur-md text-foreground z-10" onClick={onClose}>
+          <X className="h-4 w-4" />
+        </Button>
+
+        {/* Overlay content */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+              {!isViewingToday && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-foreground/10 backdrop-blur-sm text-foreground/80 font-medium inline-flex items-center gap-1">
+                  <CalendarDays className="h-2.5 w-2.5" /> {fmtDate(selectedDate, "full")}
+                </span>
+              )}
+              <Badge variant="secondary" className="rounded-full text-[9px] px-2 py-0.5 h-auto">
+                {categoryLabel}
+              </Badge>
+              {dayNumber > 0 && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-foreground/10 backdrop-blur-sm text-foreground/80 font-medium">
+                  Day {dayNumber}
+                </span>
+              )}
+            </div>
+            <h2 className="font-semibold text-foreground text-xl leading-tight line-clamp-1">{goal.title}</h2>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <CalendarDays className="h-2.5 w-2.5" /> {goal.start_date ? fmtDate(new Date(goal.start_date), "full") : "No start date"}
+              </span>
+              {goal.check_in_time && (
+                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                  <Clock className="h-2.5 w-2.5" /> {goal.check_in_time}
+                </span>
+              )}
+              {streak > 0 && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-foreground/10 text-foreground/70 font-medium flex items-center gap-0.5">
+                  <Flame className="h-2.5 w-2.5" /> {streak} day streak
+                </span>
+              )}
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-foreground/10 text-foreground/70 font-medium flex items-center gap-0.5">
+                <Check className="h-2.5 w-2.5" /> {totalPracticed} day{totalPracticed !== 1 ? "s" : ""} practiced
+              </span>
+            </div>
+          </div>
+
+          {/* Master Progress Ring */}
+          <div className="flex-shrink-0 ml-3">
+            <div className="relative w-14 h-14 flex items-center justify-center">
+              <svg width="56" height="56" className="-rotate-90">
+                <circle cx="28" cy="28" r="22" fill="none" stroke="hsl(var(--border))" strokeWidth="3" />
+                <circle
+                  cx="28"
+                  cy="28"
+                  r="22"
+                  fill="none"
+                  stroke="hsl(var(--foreground))"
+                  strokeWidth="3"
+                  strokeDasharray={2 * Math.PI * 22}
+                  strokeDashoffset={2 * Math.PI * 22 * (1 - completedCount / 4)}
+                  strokeLinecap="round"
+                  className="transition-all duration-500"
+                />
+              </svg>
+              <span className="absolute text-xs font-bold text-foreground">{completedCount}/4</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+        {/* ===== Daily Affirmation ===== */}
+        {goal.daily_affirmation && (
+          <div className="mx-4 mt-3 p-3 rounded-xl bg-muted/30 border border-border">
+            <div className="flex items-start gap-2">
+              <Quote className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-muted-foreground italic leading-relaxed">{goal.daily_affirmation}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Past date warning */}
+        {isViewingPast && !isLocked && (
+          <div className="mx-4 mt-2 p-2 rounded-lg bg-muted/50 border border-border">
+            <p className="text-[10px] text-muted-foreground">
+              You're viewing a past date. This practice was not completed.
+            </p>
+          </div>
+        )}
+
+        {/* ===== Locked Day Summary ===== */}
+        {isLocked && (
+          <div className="mx-4 mt-3 p-4 rounded-2xl border border-primary/20 bg-primary/5">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
+                <Check className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <span className="text-sm font-medium text-foreground">Day Complete</span>
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-background/60 rounded-lg p-2.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Eye className="h-3 w-3" style={{ color: "hsl(175, 84%, 40%)" }} />
+                  <span className="text-[10px] font-medium text-muted-foreground">Visualized</span>
+                </div>
+                <p className="text-xs text-foreground">{visualizations.length} session{visualizations.length !== 1 ? "s" : ""}</p>
+              </div>
+              <div className="bg-background/60 rounded-lg p-2.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Zap className="h-3 w-3" style={{ color: "hsl(45, 93%, 47%)" }} />
+                  <span className="text-[10px] font-medium text-muted-foreground">Actions</span>
+                </div>
+                <p className="text-xs text-foreground">{acts.length} action{acts.length !== 1 ? "s" : ""}</p>
+              </div>
+              <div className="bg-background/60 rounded-lg p-2.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Camera className="h-3 w-3" style={{ color: "hsl(200, 80%, 50%)" }} />
+                  <span className="text-[10px] font-medium text-muted-foreground">Proofs</span>
+                </div>
+                <p className="text-xs text-foreground">{proofs.length} proof{proofs.length !== 1 ? "s" : ""}</p>
+              </div>
+              <div className="bg-background/60 rounded-lg p-2.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Heart className="h-3 w-3" style={{ color: "hsl(330, 70%, 55%)" }} />
+                  <span className="text-[10px] font-medium text-muted-foreground">Gratitude</span>
+                </div>
+                <p className="text-xs text-foreground">{gratitudes.length} entr{gratitudes.length !== 1 ? "ies" : "y"}</p>
+              </div>
+            </div>
+            {growthNoteValue && (
+              <div className="mt-2.5 p-2.5 bg-background/60 rounded-lg">
+                <p className="text-[10px] text-muted-foreground mb-0.5 font-medium">Growth Note</p>
+                <p className="text-xs text-foreground leading-relaxed">{growthNoteValue}</p>
+              </div>
+            )}
+            {alignmentValue > 0 && (
+              <div className="mt-2 flex items-center gap-2">
+                <Target className="h-3 w-3 text-muted-foreground" />
+                <span className="text-[10px] text-muted-foreground">Alignment: {alignmentValue}/10</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ===== Practice Flow Steps ===== */}
+        <div className="flex items-center justify-center py-5 px-6 flex-shrink-0">
+          {RING_CONFIG.map((ring, index) => {
+            const done = stepDone[ring.id as keyof typeof stepDone];
+            return (
+              <div key={ring.id} className="flex items-center">
+                <ProgressRing
+                  id={ring.id}
+                  done={done}
+                  color={ring.color}
+                  icon={ring.icon}
+                  label={ring.label}
+                  stepNumber={index + 1}
+                />
+                {index < RING_CONFIG.length - 1 && (
+                  <div className="flex items-center mx-1 sm:mx-2 -mt-5">
+                    <div
+                      className={cn(
+                        "h-[1.5px] rounded-full transition-all duration-700 ease-out",
+                        done ? "w-5 sm:w-8 opacity-80" : "w-5 sm:w-8 opacity-20 bg-border"
+                      )}
+                      style={done ? {
+                        background: `linear-gradient(90deg, ${ring.color}, ${RING_CONFIG[index + 1].color})`,
+                      } : {}}
+                    />
+                    <div
+                      className={cn(
+                        "w-1 h-1 rounded-full transition-all duration-500",
+                        done ? "opacity-60" : "opacity-15 bg-border"
+                      )}
+                      style={done ? { background: RING_CONFIG[index + 1].color } : {}}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ===== Active Input Area (glassmorphic) ===== */}
+        {renderActiveInput()}
+
+        {/* ===== Complete Day Section ===== */}
+        {allDone && !isLocked && (
+          <div className="mx-4 mt-3 p-4 rounded-2xl border border-foreground/10 bg-background/60 backdrop-blur-xl">
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Lock className="h-4 w-4" /> Complete your day
+              </p>
+
+              {/* Alignment Slider */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <Target className="h-3 w-3" /> How aligned do you feel?
+                  </span>
+                  <span className="text-xs font-medium text-foreground">{alignmentValue}/10</span>
+                </div>
+                <Slider
+                  value={[alignmentValue]}
+                  onValueChange={(v) => setAlignmentValue(v[0])}
+                  min={1}
+                  max={10}
+                  step={1}
+                  className="w-full"
+                  disabled={isViewingPast}
+                />
+              </div>
+
+              <Input
+                ref={growthNoteRef}
+                defaultValue={growthNoteValue}
+                placeholder="Today I learned that..."
+                className="rounded-xl h-9 text-sm"
+                disabled={isViewingPast || isLocked}
+                onBlur={(e) => {
+                  setGrowthNoteValue(e.target.value);
+                  savePractice({ growth_note: e.target.value });
+                }}
+              />
+              <Button
+                onClick={handleLockToday}
+                disabled={!canLock || isViewingPast || isLocked}
+                className="w-full h-10 rounded-xl text-white font-medium"
+                style={{ background: "linear-gradient(135deg, hsl(175, 84%, 40%), hsl(185, 85%, 50%))" }}
+              >
+                <Lock className="h-4 w-4 mr-2" /> Complete Day ✨
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ===== Proof Timeline Gallery ===== */}
+        {allProofs.length > 0 && (
+          <div className="mt-4 px-4 flex-shrink-0">
+            <h3 className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+              <TrendingUp className="h-3 w-3" /> Proof Timeline
+            </h3>
+            <div ref={proofScrollRef} className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              {allProofs.map((p) => (
+                <div key={p.id} className="flex-shrink-0 group relative">
+                  {p.image_url ? (
+                    <div className="w-16 h-16 rounded-xl overflow-hidden border border-border">
+                      <img src={p.image_url} alt={p.text} className="w-full h-full object-cover" />
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl border border-border bg-muted/50 flex items-center justify-center p-1.5">
+                      <p className="text-[8px] text-muted-foreground line-clamp-3 text-center leading-tight">{p.text}</p>
+                    </div>
+                  )}
+                  {isViewingToday && !isLocked && (
+                    <button
+                      onClick={() => handleRemoveProof(p.id)}
+                      className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Spacer at bottom */}
+        <div className="h-6 flex-shrink-0" />
       </div>
     </div>
   );
