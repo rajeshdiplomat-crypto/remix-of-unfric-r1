@@ -187,9 +187,9 @@ export default function ManifestPractice() {
         <PageLoadingScreen module="manifest" isDataReady={isDataReady} onFinished={() => setLoadingFinished(true)} />
       )}
       <div className="flex flex-col w-full h-full bg-background antialiased overflow-hidden min-h-0">
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-0 w-full max-w-[1400px] mx-auto min-h-0 overflow-hidden">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-0 w-full max-w-[1400px] mx-auto min-h-0 overflow-hidden" style={{ gridTemplateRows: '1fr' }}>
           {/* ========== LEFT COLUMN: Editorial + Vision Board (desktop only) ========== */}
-           <div className="hidden lg:flex flex-col min-h-0 overflow-hidden">
+           <div className="hidden lg:flex flex-col min-h-0 overflow-hidden h-full">
             <div className="flex flex-col h-full min-h-0 px-5">
               {/* Fixed top section */}
               <div className="flex flex-col gap-2.5 pt-4 pb-2 flex-shrink-0">
@@ -302,7 +302,7 @@ export default function ManifestPractice() {
           </div>
 
           {/* ========== RIGHT COLUMN: Practice Panel ========== */}
-          <div className="flex flex-col min-h-0 overflow-hidden">
+          <div className="flex flex-col min-h-0 overflow-hidden h-full">
             {/* Compact mobile header: back + date nav in one row */}
             <div className="lg:hidden flex items-center justify-between px-2 py-1">
               <Button
