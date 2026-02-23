@@ -189,110 +189,114 @@ export default function ManifestPractice() {
       <div className="flex flex-col w-full h-full bg-background antialiased overflow-hidden min-h-0">
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-0 w-full max-w-[1400px] mx-auto min-h-0 overflow-hidden">
           {/* ========== LEFT COLUMN: Editorial + Vision Board (desktop only) ========== */}
-          <div className="hidden lg:flex flex-col min-h-0 overflow-y-auto">
-            <div className="flex flex-col gap-3 py-4 px-5">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-fit gap-1.5 text-muted-foreground hover:text-foreground -ml-2"
-                onClick={() => navigate("/manifest")}
-              >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                Back to Realities
-              </Button>
+           <div className="hidden lg:flex flex-col min-h-0 overflow-hidden">
+            <div className="flex flex-col h-full min-h-0 px-5">
+              {/* Fixed top section */}
+              <div className="flex flex-col gap-2.5 pt-4 pb-2 flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-fit gap-1.5 text-muted-foreground hover:text-foreground -ml-2"
+                  onClick={() => navigate("/manifest")}
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Back to Realities
+                </Button>
 
-              <Badge variant="secondary" className="w-fit rounded-full px-3 py-1 gap-1.5">
-                <Sparkles className="h-3 w-3" />
-                Daily Practice
-              </Badge>
+                <Badge variant="secondary" className="w-fit rounded-full px-3 py-1 gap-1.5">
+                  <Sparkles className="h-3 w-3" />
+                  Daily Practice
+                </Badge>
 
-              <div>
-                <h1 className="text-3xl font-light text-foreground tracking-tight leading-tight">Practice Your</h1>
-                <h1 className="text-3xl font-semibold text-foreground tracking-tight leading-tight">Reality</h1>
+                <div>
+                  <h1 className="text-3xl font-light text-foreground tracking-tight leading-tight">Practice Your</h1>
+                  <h1 className="text-3xl font-semibold text-foreground tracking-tight leading-tight">Reality</h1>
+                </div>
+
+                <p className="text-muted-foreground text-sm leading-relaxed max-w-md">
+                  Visualization rewires your brain for success. Act as if your dream is already real, collect proof, and watch the universe align.
+                </p>
+
+                <div className="h-px bg-border" />
               </div>
 
-              <p className="text-muted-foreground text-sm leading-relaxed max-w-md">
-                Visualization rewires your brain for success. Act as if your dream is already real, collect proof, and watch the universe align.
-              </p>
+              {/* Vision Board + Stats: fills remaining height */}
+              <div className="flex-1 min-h-0 flex flex-col gap-2 pb-4 overflow-hidden">
+                {(() => {
+                  const visionImgs: string[] = [];
+                  const vi = goal.vision_images;
+                  const parsed = Array.isArray(vi) ? vi : (() => { try { return Array.isArray(JSON.parse(vi as any)) ? JSON.parse(vi as any) : []; } catch { return []; } })();
+                  if (goal.cover_image_url) visionImgs.push(goal.cover_image_url);
+                  parsed.forEach((img: string) => { if (img && !visionImgs.includes(img)) visionImgs.push(img); });
+                  if (goal.vision_image_url && !visionImgs.includes(goal.vision_image_url)) visionImgs.push(goal.vision_image_url);
 
-              <div className="h-px bg-border" />
-
-              {/* ===== Vision Board ===== */}
-              {(() => {
-                const visionImgs: string[] = [];
-                const vi = goal.vision_images;
-                const parsed = Array.isArray(vi) ? vi : (() => { try { return Array.isArray(JSON.parse(vi as any)) ? JSON.parse(vi as any) : []; } catch { return []; } })();
-                if (goal.cover_image_url) visionImgs.push(goal.cover_image_url);
-                parsed.forEach((img: string) => { if (img && !visionImgs.includes(img)) visionImgs.push(img); });
-                if (goal.vision_image_url && !visionImgs.includes(goal.vision_image_url)) visionImgs.push(goal.vision_image_url);
-
-                if (visionImgs.length > 0) {
-                  const count = Math.min(visionImgs.length, 5);
-                  return (
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <ImagePlus className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-xs font-medium text-muted-foreground tracking-wide">Vision Board</span>
-                      </div>
-                      {/* Row 1: hero left + 2 stacked right */}
-                      <div className="flex gap-1.5">
-                        {/* Main large image */}
-                        <div className="relative overflow-hidden rounded-lg group cursor-pointer flex-[3] aspect-[16/10]">
-                          <img src={visionImgs[0]} alt="Vision 1" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  if (visionImgs.length > 0) {
+                    const count = Math.min(visionImgs.length, 5);
+                    return (
+                      <div className="flex-1 min-h-0 flex flex-col gap-1.5">
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <ImagePlus className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="text-xs font-medium text-muted-foreground tracking-wide">Vision Board</span>
                         </div>
-                        {count >= 2 && (
-                          <div className="flex flex-col gap-1.5 flex-[2]">
-                            <div className="relative overflow-hidden rounded-lg group cursor-pointer flex-1">
-                              <img src={visionImgs[1]} alt="Vision 2" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                            </div>
-                            {count >= 3 && (
-                              <div className="relative overflow-hidden rounded-lg group cursor-pointer flex-1">
-                                <img src={visionImgs[2]} alt="Vision 3" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                        {/* Row 1: hero left + 2 stacked right */}
+                        <div className="flex gap-1.5 flex-1 min-h-0">
+                          <div className="relative overflow-hidden rounded-lg group cursor-pointer flex-[3]">
+                            <img src={visionImgs[0]} alt="Vision 1" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                          </div>
+                          {count >= 2 && (
+                            <div className="flex flex-col gap-1.5 flex-[2]">
+                              <div className="relative overflow-hidden rounded-lg group cursor-pointer flex-1 min-h-0">
+                                <img src={visionImgs[1]} alt="Vision 2" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                               </div>
-                            )}
+                              {count >= 3 && (
+                                <div className="relative overflow-hidden rounded-lg group cursor-pointer flex-1 min-h-0">
+                                  <img src={visionImgs[2]} alt="Vision 3" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        {/* Row 2: remaining images */}
+                        {count >= 4 && (
+                          <div className="flex gap-1.5 flex-shrink-0" style={{ height: '25%' }}>
+                            {visionImgs.slice(3, 5).map((img, i) => (
+                              <div key={i} className="relative overflow-hidden rounded-lg group cursor-pointer flex-1">
+                                <img src={img} alt={`Vision ${i + 4}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
-                      {/* Row 2: remaining images */}
-                      {count >= 4 && (
-                        <div className="flex gap-1.5">
-                          {visionImgs.slice(3, 5).map((img, i) => (
-                            <div key={i} className="relative overflow-hidden rounded-lg group cursor-pointer flex-1 aspect-[2/1]">
-                              <img src={img} alt={`Vision ${i + 4}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
-                return null;
-              })()}
+                    );
+                  }
+                  return null;
+                })()}
 
-              {/* ===== Goal Stats ===== */}
-              <div className="space-y-2.5">
-                {streak > 0 && (
-                  <div className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/20 border border-border/30">
-                    <div className="h-9 w-9 rounded-lg bg-destructive/10 flex items-center justify-center flex-shrink-0">
-                      <Flame className="h-4 w-4 text-destructive" />
+                {/* Goal Stats */}
+                <div className="flex-shrink-0 space-y-2">
+                  {streak > 0 && (
+                    <div className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/20 border border-border/30">
+                      <div className="h-9 w-9 rounded-lg bg-destructive/10 flex items-center justify-center flex-shrink-0">
+                        <Flame className="h-4 w-4 text-destructive" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{streak} day streak</p>
+                        <p className="text-[10px] text-muted-foreground">Consecutive practice days</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{streak} day streak</p>
-                      <p className="text-[10px] text-muted-foreground">Consecutive practice days</p>
+                  )}
+                  {totalPracticed > 0 && (
+                    <div className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/20 border border-border/30">
+                      <div className="h-9 w-9 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+                        <TrendingUp className="h-4 w-4 text-accent-foreground" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{totalPracticed} day{totalPracticed !== 1 ? "s" : ""} practiced</p>
+                        <p className="text-[10px] text-muted-foreground">Total sessions completed</p>
+                      </div>
                     </div>
-                  </div>
-                )}
-                {totalPracticed > 0 && (
-                  <div className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/20 border border-border/30">
-                    <div className="h-9 w-9 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
-                      <TrendingUp className="h-4 w-4 text-accent-foreground" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{totalPracticed} day{totalPracticed !== 1 ? "s" : ""} practiced</p>
-                      <p className="text-[10px] text-muted-foreground">Total sessions completed</p>
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>
