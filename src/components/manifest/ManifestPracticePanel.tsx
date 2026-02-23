@@ -405,35 +405,43 @@ export function ManifestPracticePanel({
         >
           {/* Outer ring SVG */}
           <svg width="60" height="60" className="absolute inset-0 -rotate-90">
-            <circle cx="30" cy="30" r={radius} fill="none" stroke="hsl(var(--border))" strokeWidth="2.5" opacity="0.5" />
-            <circle
-              cx="30"
-              cy="30"
-              r={radius}
-              fill="none"
-              stroke={done ? color : isActive ? color : "transparent"}
-              strokeWidth="2.5"
-              strokeDasharray={circumference}
-              strokeDashoffset={circumference * (1 - progress)}
-              strokeLinecap="round"
-              className="transition-all duration-700 ease-out"
-            />
+            <circle cx="30" cy="30" r={radius} fill="none" stroke={done ? color : "hsl(var(--border))"} strokeWidth={done ? "3" : "2.5"} opacity={done ? 1 : 0.5} className="transition-all duration-500" />
+            {isActive && !done && (
+              <circle
+                cx="30"
+                cy="30"
+                r={radius}
+                fill="none"
+                stroke={color}
+                strokeWidth="2.5"
+                strokeDasharray={circumference}
+                strokeDashoffset={circumference * 0.25}
+                strokeLinecap="round"
+                className="transition-all duration-700 ease-out"
+              >
+                <animateTransform attributeName="transform" type="rotate" from="0 30 30" to="360 30 30" dur="3s" repeatCount="indefinite" />
+              </circle>
+            )}
           </svg>
-          {/* Inner circle */}
+          {/* Inner circle — always shows the icon */}
           <div
             className={cn(
               "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 relative",
-              done ? "text-primary-foreground shadow-sm" : "bg-muted/80 text-muted-foreground",
+              done ? "bg-background shadow-sm" : "bg-muted/80",
               isActive && !done && "bg-muted"
             )}
-            style={done ? { background: `linear-gradient(135deg, ${color}, ${color}dd)` } : {}}
           >
-            {done ? (
-              <Check className="h-4 w-4" strokeWidth={2.5} />
-            ) : (
-              <Icon className="h-4 w-4" />
-            )}
+            <Icon className={cn("h-4 w-4 transition-colors duration-500")} style={done ? { color } : { color: "hsl(var(--muted-foreground))" }} />
           </div>
+          {/* Completion badge */}
+          {done && (
+            <div
+              className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 rounded-full flex items-center justify-center border-2 border-background"
+              style={{ background: color, width: 18, height: 18 }}
+            >
+              <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />
+            </div>
+          )}
         </div>
         {/* Label + step number */}
         <div className="flex flex-col items-center gap-0">
