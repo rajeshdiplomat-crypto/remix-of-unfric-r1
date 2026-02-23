@@ -139,7 +139,7 @@ export function ManifestPracticePanel({
   const [showVisualization, setShowVisualization] = useState(false);
   const [activeRing, setActiveRing] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
-  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
+  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(goal.cover_image_url || goal.vision_image_url || null);
   const [alignmentValue, setAlignmentValue] = useState(5);
 
   const actInputRef = useRef<HTMLInputElement>(null);
@@ -152,6 +152,7 @@ export function ManifestPracticePanel({
 
   const goalIdRef = useRef(goal.id);
   const dateStrRef = useRef(dateStr);
+  const isFirstMount = useRef(true);
 
   const dayNumber = useMemo(() => {
     if (!goal.start_date) return 0;
@@ -165,25 +166,29 @@ export function ManifestPracticePanel({
   useEffect(() => {
     const goalChanged = goalIdRef.current !== goal.id;
     const dateChanged = dateStrRef.current !== dateStr;
+    const firstMount = isFirstMount.current;
 
-    if (goalChanged || dateChanged) {
+    if (goalChanged || dateChanged || firstMount) {
+      isFirstMount.current = false;
       goalIdRef.current = goal.id;
       dateStrRef.current = dateStr;
 
-      if (actInputRef.current) actInputRef.current.value = "";
-      if (proofTextRef.current) proofTextRef.current.value = "";
-      if (growthNoteRef.current) growthNoteRef.current.value = "";
-      if (gratitudeInputRef.current) gratitudeInputRef.current.value = "";
-      setCurrentProofImageUrl(null);
-      setGrowthNoteValue("");
-      setAlignmentValue(5);
+      if (!firstMount) {
+        if (actInputRef.current) actInputRef.current.value = "";
+        if (proofTextRef.current) proofTextRef.current.value = "";
+        if (growthNoteRef.current) growthNoteRef.current.value = "";
+        if (gratitudeInputRef.current) gratitudeInputRef.current.value = "";
+        setCurrentProofImageUrl(null);
+        setGrowthNoteValue("");
+        setAlignmentValue(5);
 
-      setVisualizations([]);
-      setActs([]);
-      setProofs([]);
-      setGratitudes([]);
-      setIsLocked(false);
-      setActiveRing(null);
+        setVisualizations([]);
+        setActs([]);
+        setProofs([]);
+        setGratitudes([]);
+        setIsLocked(false);
+        setActiveRing(null);
+      }
       setCurrentImageUrl(goal.cover_image_url || goal.vision_image_url || null);
 
       (async () => {
