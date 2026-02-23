@@ -203,7 +203,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
       setAssumption(editingGoal.title);
       setCategory(editingGoal.category || "personal");
       setImageUrl(editingGoal.vision_image_url || null);
-      setVisionImages(editingGoal.vision_images || []);
+      setVisionImages(Array.isArray(editingGoal.vision_images) ? editingGoal.vision_images : (() => { try { const p = typeof editingGoal.vision_images === 'string' ? JSON.parse(editingGoal.vision_images) : []; return Array.isArray(p) ? p : []; } catch { return []; } })());
       setStartDate(editingGoal.start_date || "");
       setLiveFromEnd(editingGoal.live_from_end || "");
       setActAsIf(editingGoal.act_as_if || "");
