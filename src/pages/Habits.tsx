@@ -1144,17 +1144,17 @@ export default function Habits() {
                   }}
                   disabled={!isPast || isArchived}
                   className={cn(
-                    "w-5 h-5 rounded-full flex items-center justify-center transition-all mx-auto",
+                    "w-5 h-5 rounded-md flex items-center justify-center transition-all mx-auto",
                     isCompleted
                       ? isArchived
                         ? "bg-muted-foreground text-background cursor-not-allowed"
-                        : "bg-primary text-primary-foreground"
+                        : "bg-emerald-400 text-white"
                       : isPast && !isArchived
-                        ? "border-2 border-primary/40 hover:border-primary/70 bg-transparent"
+                        ? "border-2 border-muted-foreground/30 hover:border-muted-foreground/50 bg-transparent"
                         : "border-2 border-border bg-transparent cursor-not-allowed",
                   )}
                 >
-                  {isCompleted && <Check className="h-3 w-3" />}
+                  {isCompleted && <Check className="h-3 w-3 stroke-[3]" />}
                 </button>
               ) : (
                 <span className="text-muted-foreground/30">-</span>
@@ -1648,11 +1648,11 @@ export default function Habits() {
                                 onClick={(e) => { e.stopPropagation(); if (isPast) toggleCompletion(activity.id, day); }}
                                 disabled={!isPast}
                                 className={cn(
-                                  "w-5 h-5 rounded-full flex items-center justify-center mx-auto transition-all",
-                                  isCompleted ? "bg-primary text-primary-foreground" : isPast ? "border border-primary/40" : "border border-border"
+                                  "w-5 h-5 rounded-md flex items-center justify-center mx-auto transition-all",
+                                  isCompleted ? "bg-emerald-400 text-white" : isPast ? "border border-muted-foreground/30" : "border border-border"
                                 )}
                               >
-                                {isCompleted && <Check className="h-2.5 w-2.5" />}
+                                {isCompleted && <Check className="h-2.5 w-2.5 stroke-[3]" />}
                               </button>
                             ) : (
                               <span className="text-muted-foreground/30 text-[9px]">-</span>
