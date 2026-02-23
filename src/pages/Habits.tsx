@@ -1164,15 +1164,12 @@ export default function Habits() {
         })}
         <td className="p-2">
           <div className="flex items-center gap-2">
-            <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-              <div
-                className={cn(
-                  "h-full rounded-full transition-all",
-                  isArchived ? "bg-slate-400" : "bg-gradient-to-r from-emerald-400 to-green-400",
-                )}
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
+            <svg width="18" height="18" viewBox="0 0 20 20" className="shrink-0">
+              <circle cx="10" cy="10" r="9" fill="none" stroke="hsl(var(--border))" strokeWidth="2" />
+              <circle cx="10" cy="10" r="7" fill="none" stroke={isArchived ? "#94A3B8" : "#2DD4BF"} strokeWidth="4"
+                strokeDasharray={`${(progressPercent / 100) * 43.98} 43.98`}
+                strokeLinecap="round" transform="rotate(-90 10 10)" />
+            </svg>
             <span className="text-slate-600 dark:text-slate-400 w-10 text-right">
               {totalCompletions}/{activity.habitDays}
             </span>
@@ -1666,7 +1663,17 @@ export default function Habits() {
                           </td>
                         );
                       })}
-                      <td className="p-0.5 text-center text-[10px] text-muted-foreground font-medium">{progressPercent}%</td>
+                      <td className="p-0.5 text-center text-[10px] text-muted-foreground font-medium">
+                        <div className="flex items-center justify-center gap-1">
+                          <svg width="14" height="14" viewBox="0 0 20 20" className="shrink-0">
+                            <circle cx="10" cy="10" r="9" fill="none" stroke="hsl(var(--border))" strokeWidth="2" />
+                            <circle cx="10" cy="10" r="7" fill="none" stroke="#2DD4BF" strokeWidth="4"
+                              strokeDasharray={`${(progressPercent / 100) * 43.98} 43.98`}
+                              strokeLinecap="round" transform="rotate(-90 10 10)" />
+                          </svg>
+                          <span>{progressPercent}%</span>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
