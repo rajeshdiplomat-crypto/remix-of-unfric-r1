@@ -1162,24 +1162,24 @@ export default function Habits() {
             </td>
           );
         })}
-        <td className="p-2">
-          <div className="flex items-center gap-2">
-            <svg width="18" height="18" viewBox="0 0 20 20" className="shrink-0">
+        <td className="p-1">
+          <div className="flex items-center gap-1 whitespace-nowrap">
+            <svg width="16" height="16" viewBox="0 0 20 20" className="shrink-0">
               <circle cx="10" cy="10" r="9" fill="none" stroke="hsl(var(--border))" strokeWidth="2" />
               <circle cx="10" cy="10" r="7" fill="none" stroke={isArchived ? "#94A3B8" : "#2DD4BF"} strokeWidth="4"
                 strokeDasharray={`${(progressPercent / 100) * 43.98} 43.98`}
                 strokeLinecap="round" transform="rotate(-90 10 10)" />
             </svg>
-            <span className="text-slate-600 dark:text-slate-400 w-10 text-right">
+            <span className="text-slate-600 dark:text-slate-400 text-[11px]">
               {totalCompletions}/{activity.habitDays}
             </span>
-            <span className="text-slate-500 font-medium w-10">{progressPercent}%</span>
+            <span className="text-slate-500 font-medium text-[11px]">{progressPercent}%</span>
           </div>
         </td>
-        <td className="p-2 text-center">
+        <td className="p-1 text-center">
           <span
             className={cn(
-              "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
+              "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium",
               (stats?.streak || 0) > 0
                 ? isArchived
                   ? "bg-slate-200 text-slate-500"
@@ -1725,10 +1725,10 @@ export default function Habits() {
                         </th>
                       );
                     })}
-                    <th className="p-2 text-center font-semibold text-slate-600 dark:text-slate-300 min-w-[80px]">
+                    <th className="p-1 text-center font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">
                       PROGRESS
                     </th>
-                    <th className="p-2 text-center font-semibold text-slate-600 dark:text-slate-300 w-16">STREAK</th>
+                    <th className="p-1 text-center font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">STREAK</th>
                   </tr>
                 </thead>
                 <tbody>
