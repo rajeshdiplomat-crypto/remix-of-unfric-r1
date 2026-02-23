@@ -227,61 +227,50 @@ export default function ManifestPractice() {
                 if (goal.vision_image_url && !visionImgs.includes(goal.vision_image_url)) visionImgs.push(goal.vision_image_url);
 
                 if (visionImgs.length > 0) {
+                  const count = Math.min(visionImgs.length, 5);
                   return (
                     <div className="space-y-2.5">
                       <div className="flex items-center gap-2">
                         <ImagePlus className="h-3.5 w-3.5 text-muted-foreground" />
                         <span className="text-xs font-medium text-muted-foreground tracking-wide">Vision Board</span>
                       </div>
-                      <div className={cn(
-                        "grid gap-1.5 rounded-xl overflow-hidden",
-                        visionImgs.length === 1 && "grid-cols-1",
-                        visionImgs.length === 2 && "grid-cols-2",
-                        visionImgs.length === 3 && "grid-cols-2 grid-rows-2",
-                        visionImgs.length === 4 && "grid-cols-2 grid-rows-2",
-                        visionImgs.length >= 5 && "grid-cols-3 grid-rows-2",
-                      )}>
-                        {visionImgs.slice(0, 5).map((img, i) => (
-                          <div
-                            key={i}
-                            className={cn(
-                              "relative overflow-hidden rounded-lg group cursor-pointer",
-                              visionImgs.length === 3 && i === 0 && "row-span-2",
-                              visionImgs.length >= 5 && i === 0 && "row-span-2 col-span-2",
+                      {/* Row 1: hero left + 2 stacked right */}
+                      <div className="flex gap-1.5">
+                        {/* Main large image */}
+                        <div className="relative overflow-hidden rounded-lg group cursor-pointer flex-[3] aspect-[4/3]">
+                          <img src={visionImgs[0]} alt="Vision 1" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                        </div>
+                        {count >= 2 && (
+                          <div className="flex flex-col gap-1.5 flex-[2]">
+                            <div className="relative overflow-hidden rounded-lg group cursor-pointer flex-1">
+                              <img src={visionImgs[1]} alt="Vision 2" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                            </div>
+                            {count >= 3 && (
+                              <div className="relative overflow-hidden rounded-lg group cursor-pointer flex-1">
+                                <img src={visionImgs[2]} alt="Vision 3" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                              </div>
                             )}
-                            style={{ aspectRatio: (visionImgs.length >= 5 && i === 0) ? '16/9' : (visionImgs.length === 1 ? '16/9' : '1/1') }}
-                          >
-                            <img
-                              src={img}
-                              alt={`Vision ${i + 1}`}
-                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            />
-                            <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors duration-300" />
                           </div>
-                        ))}
+                        )}
                       </div>
+                      {/* Row 2: remaining images */}
+                      {count >= 4 && (
+                        <div className="flex gap-1.5">
+                          {visionImgs.slice(3, 5).map((img, i) => (
+                            <div key={i} className="relative overflow-hidden rounded-lg group cursor-pointer flex-1 aspect-[3/2]">
+                              <img src={img} alt={`Vision ${i + 4}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   );
                 }
                 return null;
               })()}
 
-              {/* ===== Motivational Quote ===== */}
-              <div className="bg-muted/30 rounded-xl p-4 border border-border/50">
-                <p className="text-sm text-muted-foreground italic leading-relaxed">"{getMotivationalQuote()}"</p>
-              </div>
-
               {/* ===== Goal Stats ===== */}
               <div className="space-y-2.5">
-                <div className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/20 border border-border/30">
-                  <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Target className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground line-clamp-1">{goal.title}</p>
-                    <p className="text-[10px] text-muted-foreground">Current reality in focus</p>
-                  </div>
-                </div>
                 {streak > 0 && (
                   <div className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/20 border border-border/30">
                     <div className="h-9 w-9 rounded-lg bg-destructive/10 flex items-center justify-center flex-shrink-0">
