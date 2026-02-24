@@ -65,7 +65,7 @@ function KanbanCard({
       onDragStart={(e) => e.dataTransfer.setData("task-id", task.id)}
       onClick={onClick}
       className={cn(
-        "group p-2.5 cursor-pointer hover:shadow-md transition-all rounded-lg border-l-4 border-r border-t border-b",
+        "group p-2.5 cursor-pointer hover:shadow-md transition-all rounded-md border-l-4 border-r border-t border-b",
         getPriorityBorderClass(task),
         task.is_completed
           ? "bg-muted/50 border-border/50"
@@ -245,7 +245,7 @@ export function KanbanBoardView({
         {activeQuadrants.map((col) => (
           <div
             key={col.id}
-            className="flex flex-col min-h-0 rounded-xl bg-muted/20 border border-border/60 p-3"
+            className="flex flex-col min-h-0 rounded-lg bg-muted/20 border border-border/60 p-3"
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => handleDrop(col.id, e)}
           >

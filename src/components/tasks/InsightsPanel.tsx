@@ -54,7 +54,7 @@ function KpiCard({
   label: string;
 }) {
   return (
-    <Card className="rounded-xl border border-foreground/[0.06] bg-card/60 backdrop-blur-xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.04),_0_8px_24px_-4px_hsl(var(--foreground)/0.06)]">
+    <Card className="rounded-lg border border-foreground/[0.06] bg-card/60 backdrop-blur-xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.04),_0_8px_24px_-4px_hsl(var(--foreground)/0.06)]">
       <CardContent
         className={cn(
           "flex items-center gap-3 min-w-0",
@@ -63,7 +63,7 @@ function KpiCard({
       >
         <div
           className={cn(
-            "rounded-xl flex items-center justify-center shrink-0",
+            "rounded-lg flex items-center justify-center shrink-0",
             "h-8 w-8",
             iconBg,
           )}
@@ -137,10 +137,10 @@ function ClockKpiCard() {
     return () => clearInterval(t);
   }, []);
   return (
-    <Card className="rounded-xl border border-foreground/[0.06] bg-primary/5 backdrop-blur-xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.04),_0_8px_24px_-4px_hsl(var(--foreground)/0.06)]">
+    <Card className="rounded-lg border border-foreground/[0.06] bg-primary/5 backdrop-blur-xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.04),_0_8px_24px_-4px_hsl(var(--foreground)/0.06)]">
       <CardContent className="h-[86px] px-5 py-3 flex items-center gap-4 min-w-0">
         {/* Bigger icon */}
-        <div className="h-14 w-14 rounded-2xl bg-background/60 border border-border/30 flex items-center justify-center shrink-0">
+        <div className="h-14 w-14 rounded-xl bg-background/60 border border-border/30 flex items-center justify-center shrink-0">
           <CenterAnalogClock now={now} size={60} />
         </div>
 
