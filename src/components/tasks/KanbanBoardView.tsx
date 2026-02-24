@@ -245,7 +245,7 @@ export function KanbanBoardView({
         {activeQuadrants.map((col) => (
           <div
             key={col.id}
-            className="flex flex-col min-h-0 rounded-xl bg-muted/40 border border-border p-3"
+            className="flex flex-col min-h-0 rounded-xl bg-muted/20 border border-border/60 p-3"
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => handleDrop(col.id, e)}
           >
