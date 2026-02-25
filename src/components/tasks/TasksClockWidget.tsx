@@ -33,7 +33,7 @@ const TIMER_PRESETS = [
 export function TasksClockWidget() {
   const { weekStartsOn } = useDatePreferences();
   const { prefs, updatePrefs } = useUserPreferences();
-  const [mode, setMode] = useState<WidgetMode>(() => {
+  const [mode, setModeState] = useState<WidgetMode>(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored && ["digital", "analog", "stopwatch", "timer", "calendar"].includes(stored)) {
@@ -42,19 +42,23 @@ export function TasksClockWidget() {
     }
     return "digital";
   });
+  const [dbSynced, setDbSynced] = useState(false);
 
-  // Sync from DB
+  // Sync from DB once
   useEffect(() => {
-    if (prefs.clock_widget_mode && prefs.clock_widget_mode !== mode) {
-      setMode(prefs.clock_widget_mode as WidgetMode);
+    if (!dbSynced && prefs.clock_widget_mode) {
+      setModeState(prefs.clock_widget_mode as WidgetMode);
+      localStorage.setItem(STORAGE_KEY, prefs.clock_widget_mode);
+      setDbSynced(true);
     }
-  }, [prefs.clock_widget_mode]);
+  }, [prefs.clock_widget_mode, dbSynced]);
 
-  // Persist mode
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, mode);
-    updatePrefs({ clock_widget_mode: mode });
-  }, [mode]);
+  // User-driven mode change
+  const setMode = (newMode: WidgetMode) => {
+    setModeState(newMode);
+    localStorage.setItem(STORAGE_KEY, newMode);
+    updatePrefs({ clock_widget_mode: newMode });
+  };
   const [now, setNow] = useState(new Date());
   const { timezone, getTimeInTimezone, formatInTimezone } = useTimezone();
   const { timeFormat: userTimeFormat } = useTimeFormat();
