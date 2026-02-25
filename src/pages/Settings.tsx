@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useUserPreferences } from "@/hooks/useUserSettings";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -27,6 +27,10 @@ import {
   Save,
   MessageSquareHeart,
   ChevronDown,
+  Scale,
+  ExternalLink,
+  Brain,
+  FileText,
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAuth } from "@/hooks/useAuth";
@@ -103,7 +107,10 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [clearDialog, setClearDialog] = useState<string | null>(null);
   const [deleteDialog, setDeleteDialog] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+  const [doNotSell, setDoNotSell] = useState(false);
 
   // Journal template state - load from DB prefs
   const [template, setTemplate] = useState<JournalTemplate>(() => {
@@ -287,6 +294,56 @@ export default function Settings() {
     }
   };
 
+  // ── Export CSV ────────────────────────────────────────────────────
+
+  const handleExportCsv = async () => {
+    if (!user) return;
+    setExportLoading(true);
+    try {
+      const [emotions, journal, habits, notes, tasks, goals] = await Promise.all([
+        supabase.from("emotions").select("*").eq("user_id", user.id),
+        supabase.from("journal_entries").select("*").eq("user_id", user.id),
+        supabase.from("habits").select("*").eq("user_id", user.id),
+        supabase.from("notes").select("*").eq("user_id", user.id),
+        supabase.from("tasks").select("*").eq("user_id", user.id),
+        supabase.from("manifest_goals").select("*").eq("user_id", user.id),
+      ]);
+
+      const toCsv = (data: any[], name: string) => {
+        if (!data?.length) return `--- ${name} ---\nNo data\n\n`;
+        const headers = Object.keys(data[0]);
+        const rows = data.map(row => headers.map(h => {
+          const val = row[h];
+          const str = typeof val === "object" ? JSON.stringify(val) : String(val ?? "");
+          return `"${str.replace(/"/g, '""')}"`;
+        }).join(","));
+        return `--- ${name} ---\n${headers.join(",")}\n${rows.join("\n")}\n\n`;
+      };
+
+      const csv = [
+        toCsv(emotions.data || [], "Emotions"),
+        toCsv(journal.data || [], "Journal Entries"),
+        toCsv(habits.data || [], "Habits"),
+        toCsv(notes.data || [], "Notes"),
+        toCsv(tasks.data || [], "Tasks"),
+        toCsv(goals.data || [], "Manifest Goals"),
+      ].join("");
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `unfric-export-${new Date().toISOString().split("T")[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("CSV exported successfully");
+    } catch {
+      toast.error("CSV export failed");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   // ── Export PDF ────────────────────────────────────────────────────
 
   const handleExportPdf = async () => {
@@ -428,9 +485,34 @@ export default function Settings() {
   // ── Delete Account ───────────────────────────────────────────────
 
   const handleDeleteAccount = async () => {
-    // For now, sign out + notify — actual deletion requires admin function
-    toast.info("Account deletion requested. You will be signed out.");
-    await signOut();
+    if (deleteConfirmText !== "DELETE") return;
+    setDeletingAccount(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("delete-account");
+      if (error) throw error;
+      toast.success("Account deleted successfully. Goodbye.");
+      await signOut();
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to delete account. Please try again.");
+    } finally {
+      setDeletingAccount(false);
+    }
+  };
+
+  const handleDoNotSellToggle = async (value: boolean) => {
+    setDoNotSell(value);
+    if (user) {
+      try {
+        await supabase.from("consent_logs" as any).insert({
+          user_id: user.id,
+          consent_type: "do_not_sell",
+          granted: !value, // granted=false means they opted OUT of selling
+          user_agent: navigator.userAgent,
+        });
+      } catch {
+        // Best effort
+      }
+    }
   };
 
   // Default views are now saved via saveField to DB
@@ -779,7 +861,7 @@ export default function Settings() {
             <p className="text-sm font-light text-foreground">Export Data</p>
             <p className="text-[11px] text-muted-foreground">Download all your data</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button
               variant="outline"
               size="sm"
@@ -799,6 +881,16 @@ export default function Settings() {
             >
               {exportLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Download className="h-3 w-3 mr-1" />}
               PDF
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCsv}
+              disabled={exportLoading}
+              className="text-xs uppercase tracking-wider"
+            >
+              {exportLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Download className="h-3 w-3 mr-1" />}
+              CSV
             </Button>
           </div>
         </div>
@@ -976,6 +1068,71 @@ export default function Settings() {
         </SettingsRow>
       </SettingsSection>
 
+      {/* ─── Section: Legal & Privacy ─── */}
+      <SettingsSection icon={Scale} title="Legal & Privacy">
+        <div className="px-4 py-3 border-b border-border">
+          <p className="text-sm font-light text-foreground mb-3">Legal Documents</p>
+          <div className="space-y-2">
+            {[
+              { to: "/privacy", label: "Privacy Policy", icon: Shield },
+              { to: "/terms", label: "Terms of Service", icon: FileText },
+              { to: "/refund", label: "Refund Policy", icon: FileText },
+              { to: "/disclaimer", label: "Medical Disclaimer", icon: FileText },
+            ].map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-background hover:bg-muted/50 transition-colors group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <item.icon className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-foreground">{item.label}</span>
+                </div>
+                <ExternalLink className="h-3 w-3 text-muted-foreground/40 group-hover:text-foreground transition-colors" />
+              </Link>
+            ))}
+          </div>
+        </div>
+        <SettingsRow label="Do Not Sell My Info" description="Opt out of data sharing (CCPA)">
+          <Switch checked={doNotSell} onCheckedChange={handleDoNotSellToggle} />
+        </SettingsRow>
+      </SettingsSection>
+
+      {/* ─── Section: AI Transparency ─── */}
+      <SettingsSection icon={Brain} title="How We Use AI">
+        <div className="px-4 py-4 space-y-3">
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            unfric uses AI to provide insights and suggestions based on your entries. Here's what you should know:
+          </p>
+          <div className="space-y-2">
+            <div className="flex items-start gap-2">
+              <span className="text-primary mt-0.5">•</span>
+              <p className="text-xs text-muted-foreground">
+                <strong className="text-foreground">What AI sees:</strong> Your journal text, emotion logs, and habit data — only when generating insights for you.
+              </p>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-primary mt-0.5">•</span>
+              <p className="text-xs text-muted-foreground">
+                <strong className="text-foreground">What AI does:</strong> Generates suggestions, patterns, and reflective prompts to support your wellbeing journey.
+              </p>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-primary mt-0.5">•</span>
+              <p className="text-xs text-muted-foreground">
+                <strong className="text-foreground">What AI doesn't do:</strong> It does not make decisions for you, diagnose conditions, or share your data with third parties. Your data is never used to train external AI models.
+              </p>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-primary mt-0.5">•</span>
+              <p className="text-xs text-muted-foreground">
+                <strong className="text-foreground">No hidden processing:</strong> All AI features are clearly labeled in the interface. There is no background analysis you can't see.
+              </p>
+            </div>
+          </div>
+        </div>
+      </SettingsSection>
+
       {/* ─── Section: Help & Feedback ─── */}
       <SettingsSection icon={MessageSquareHeart} title="Help & Feedback">
         <div className="px-4 py-4">
@@ -1003,20 +1160,38 @@ export default function Settings() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>
+      <Dialog open={deleteDialog} onOpenChange={(open) => { setDeleteDialog(open); if (!open) setDeleteConfirmText(""); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-foreground">Delete Account</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            This will permanently delete your account and all associated data. This cannot be undone.
-          </p>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              This will permanently delete your account and <strong className="text-foreground">all</strong> associated data across every module. This action cannot be undone.
+            </p>
+            <div>
+              <Label className="text-xs text-muted-foreground mb-2 block">
+                Type <strong className="text-foreground">DELETE</strong> to confirm
+              </Label>
+              <Input
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="DELETE"
+                className="text-sm"
+              />
+            </div>
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialog(false)}>
+            <Button variant="outline" onClick={() => { setDeleteDialog(false); setDeleteConfirmText(""); }}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDeleteAccount}>
-              <UserX className="h-3 w-3 mr-1" /> Delete Account
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              disabled={deleteConfirmText !== "DELETE" || deletingAccount}
+            >
+              {deletingAccount ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <UserX className="h-3 w-3 mr-1" />}
+              Delete Account
             </Button>
           </DialogFooter>
         </DialogContent>

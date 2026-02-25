@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +17,7 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
 
   useEffect(() => {
     if (user && !loading) navigate("/");
@@ -34,6 +35,7 @@ export default function Auth() {
         if (error) toast.error(error.message);
         else { toast.success("Password reset link sent!"); setMode("signin"); }
       } else if (mode === "signup") {
+        if (!ageConfirmed) { toast.error("Please confirm you are 18 or older"); setIsSubmitting(false); return; }
         if (!password || password.length < 6) { toast.error("Password must be at least 6 characters"); setIsSubmitting(false); return; }
         const { error } = await signUp(email, password);
         if (error) toast.error(error.message.includes("already registered") ? "Already registered. Please sign in." : error.message);
@@ -164,9 +166,23 @@ export default function Auth() {
                     </div>
                   )}
 
+                  {mode === "signup" && (
+                    <label className="flex items-start gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={ageConfirmed}
+                        onChange={(e) => setAgeConfirmed(e.target.checked)}
+                        className="accent-foreground mt-0.5 h-3.5 w-3.5"
+                      />
+                      <span className="text-[10px] text-muted-foreground leading-relaxed">
+                        I confirm I am 18 years or older
+                      </span>
+                    </label>
+                  )}
+
                   <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || (mode === "signup" && !ageConfirmed)}
                     className={cn(
                       "w-full py-3.5 text-[11px] uppercase tracking-[0.2em] font-light transition-all duration-300 disabled:opacity-50",
                       "bg-foreground text-background hover:opacity-90",
@@ -175,6 +191,15 @@ export default function Auth() {
                     {isSubmitting && <Loader2 className="h-3 w-3 animate-spin inline mr-2" />}
                     {mode === "forgot-password" ? "Send Link" : mode === "signup" ? "Create Account" : "Log In"}
                   </button>
+
+                  {mode === "signup" && (
+                    <p className="text-[9px] text-muted-foreground/60 text-center leading-relaxed">
+                      By creating an account, you agree to our{" "}
+                      <Link to="/terms" className="underline underline-offset-2 hover:text-foreground">Terms</Link>{" "}
+                      and{" "}
+                      <Link to="/privacy" className="underline underline-offset-2 hover:text-foreground">Privacy Policy</Link>
+                    </p>
+                  )}
                 </form>
 
                 <div className="text-center">

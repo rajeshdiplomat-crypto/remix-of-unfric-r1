@@ -32,6 +32,10 @@ import TaskFocus from "./pages/TaskFocus";
 
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import RefundPolicy from "./pages/RefundPolicy";
+import Disclaimer from "./pages/Disclaimer";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
 
 /**
@@ -190,6 +194,10 @@ const App = () => (
                         <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
                         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                         <Route path="/tasks/focus/:taskId" element={<ProtectedFullscreenRoute><TaskFocus /></ProtectedFullscreenRoute>} />
+                        <Route path="/privacy" element={<Privacy />} />
+                        <Route path="/terms" element={<Terms />} />
+                        <Route path="/refund" element={<RefundPolicy />} />
+                        <Route path="/disclaimer" element={<Disclaimer />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                     </RestorationGate>
