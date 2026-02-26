@@ -25,7 +25,7 @@ interface TasksHeaderProps {
   onTagFilterChange?: (tag: string) => void;
 }
 
-const controlBase = "h-9 rounded-xl bg-background border-border shadow-sm";
+const controlBase = "h-9 rounded-lg bg-background border-border shadow-sm";
 
 export function TasksHeader({
   searchQuery,
@@ -41,7 +41,7 @@ export function TasksHeader({
   onTagFilterChange,
 }: TasksHeaderProps) {
   return (
-    <div className="flex items-center gap-2 flex-wrap justify-between bg-background/40 backdrop-blur-xl border border-foreground/[0.06] rounded-xl p-2 shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.04)]">
+    <div className="flex items-center gap-2 flex-wrap justify-between bg-background/40 backdrop-blur-xl border border-foreground/[0.06] rounded-lg p-2 shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.04)]">
       {/* Left: Search */}
       <div className="flex items-center gap-2">
         <div className="relative w-[200px]">
@@ -158,7 +158,7 @@ export function TasksHeader({
 
         <Button
           onClick={onNewTask}
-          className="h-9 rounded-xl px-4 shadow-md"
+          className="h-9 rounded-lg px-4 shadow-md"
         >
           <Plus className="h-4 w-4 mr-1.5" />
           New Task

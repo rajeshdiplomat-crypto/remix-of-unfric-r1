@@ -1,6 +1,8 @@
 import { ReactNode, useState } from "react";
 import { ZaraHeader } from "./ZaraHeader";
 import { ZaraDrawer } from "./ZaraDrawer";
+import { LegalFooter } from "./LegalFooter";
+import { CookieConsent } from "@/components/compliance/CookieConsent";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -8,6 +10,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [cookieSettingsOpen, setCookieSettingsOpen] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col w-full bg-background overflow-x-hidden relative" style={{ minHeight: '100dvh' }}>
@@ -27,6 +30,15 @@ export function AppLayout({ children }: AppLayoutProps) {
           {children}
         </div>
       </main>
+
+      {/* Legal footer */}
+      <LegalFooter onOpenCookieSettings={() => setCookieSettingsOpen(true)} />
+
+      {/* Cookie consent */}
+      <CookieConsent
+        forceOpen={cookieSettingsOpen}
+        onClose={() => setCookieSettingsOpen(false)}
+      />
     </div>
   );
 }
