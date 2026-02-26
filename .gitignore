@@ -25,3 +25,15 @@ dist-ssr
 
 # Environment variables
 .env.local
+
+# Supabase
+.branches
+.temp
+
+# dotenvx
+.env.keys
+.env.local
+.env.*.local
+
+.npmrc
+.deno.json
