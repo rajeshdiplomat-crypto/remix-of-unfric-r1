@@ -65,18 +65,17 @@ export function EntryImageUpload({
     setIsUploading(true);
 
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("bucket", "entry-covers");
 
-      const { error: uploadError } = await supabase.storage
-        .from("entry-covers")
-        .upload(fileName, file);
+      const { data: uploadRes, error: uploadError } = await supabase.functions.invoke("upload-image", {
+        body: formData,
+      });
 
-      if (uploadError) throw uploadError;
+      if (uploadError || !uploadRes?.url) throw uploadError || new Error("Failed to upload image");
 
-      const { data: { publicUrl } } = supabase.storage
-        .from("entry-covers")
-        .getPublicUrl(fileName);
+      const publicUrl = uploadRes.url;
 
       onImageChange(publicUrl);
       setIsOpen(false);

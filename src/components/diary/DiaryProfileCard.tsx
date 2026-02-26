@@ -65,22 +65,21 @@ export function DiaryProfileCard({
 
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop();
-      const filePath = `${user.id}/avatar.${ext}`;
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("bucket", "avatars");
 
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, file, { upsert: true });
+      const { data: uploadRes, error: uploadError } = await supabase.functions.invoke("upload-image", {
+        body: formData,
+      });
 
-      if (uploadError) throw uploadError;
+      if (uploadError || !uploadRes?.url) throw uploadError || new Error("Failed to upload photo");
 
-      const { data: { publicUrl } } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(filePath);
+      const urlWithCacheBust = `${uploadRes.url}?t=${Date.now()}`;
 
-      const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
-
-      await supabase.from("profiles").update({ avatar_url: urlWithCacheBust }).eq("user_id", user.id);
+      await supabase.functions.invoke("manage-settings", {
+        body: { action: "update_profile", profile: { avatar_url: urlWithCacheBust } }
+      });
 
       setCurrentAvatarUrl(urlWithCacheBust);
       toast({ title: "Profile photo updated!" });

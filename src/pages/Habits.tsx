@@ -400,9 +400,20 @@ export default function Habits() {
             const blob = await res.blob();
             const ext = blob.type.split("/")[1] || "jpg";
             const fileName = `${user.id}/${Date.now()}-${habitId}.${ext}`;
-            const { error } = await supabase.storage.from("entry-covers").upload(fileName, blob);
-            if (error) { console.error("Migration upload error:", error); continue; }
-            const { data: { publicUrl } } = supabase.storage.from("entry-covers").getPublicUrl(fileName);
+            const formData = new FormData();
+            formData.append("file", blob, fileName);
+            formData.append("bucketName", "entry-covers");
+            formData.append("fileName", fileName);
+
+            const { data: uploadData, error } = await supabase.functions.invoke("upload-image", {
+              body: formData,
+            });
+
+            if (error || uploadData?.error) {
+              console.error("Migration upload error:", error || uploadData?.error);
+              continue;
+            }
+            const publicUrl = uploadData.publicUrl;
             saveActivityImage(habitId, publicUrl);
             await saveActivityImageToDb(habitId, publicUrl);
           } catch (err) {
@@ -1581,7 +1592,7 @@ export default function Habits() {
                           >
                             {activity.name}
                           </button>
-                          
+
                         </div>
                       </td>
                       {currentWeekDays.map((day, i) => {

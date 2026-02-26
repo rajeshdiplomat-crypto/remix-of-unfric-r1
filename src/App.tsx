@@ -71,15 +71,15 @@ function HomeRedirect() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from("user_settings")
-        .select("default_home_screen")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      const { data: res, error } = await supabase.functions.invoke("manage-settings", {
+        body: { action: "fetch_settings" }
+      });
 
       if (error) {
-        console.error("[HomeRedirect] Failed to fetch default_home_screen:", error);
+        console.error("[HomeRedirect] Failed to fetch settings:", error);
       }
+
+      const data = res?.data;
 
       const home = data?.default_home_screen || "diary";
       console.log("[HomeRedirect] DB value:", data?.default_home_screen, "→ redirecting to:", `/${home}`);

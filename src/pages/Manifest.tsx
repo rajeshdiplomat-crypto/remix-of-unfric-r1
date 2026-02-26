@@ -71,7 +71,9 @@ async function saveGoalExtras(goalId: string, extras: Partial<ManifestGoal>) {
     if (extras.reminder_times !== undefined) updateData.reminder_times = JSON.stringify(extras.reminder_times);
 
     if (Object.keys(updateData).length > 0) {
-      await supabase.from("manifest_goals").update(updateData).eq("id", goalId);
+      await supabase.functions.invoke("manage-manifest", {
+        body: { action: "update_goal", goalId, updates: updateData }
+      });
     }
   } catch (e) {
     console.warn("Failed to save goal extras to DB:", e);
@@ -106,16 +108,17 @@ export default function Manifest() {
     if (!user) return;
 
     try {
-      const { data: goalsData, error: goalsError } = await supabase
-        .from("manifest_goals")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+      const { data: res, error } = await supabase.functions.invoke("manage-manifest", {
+        body: { action: "fetch_all_data" }
+      });
 
-      if (goalsError) throw goalsError;
+      if (error) throw error;
+
+      const goalsData = res?.data?.goals || [];
+      const dbPractices = res?.data?.practices || [];
 
       // All goal data comes from DB columns directly
-      const mergedGoals: ManifestGoal[] = (goalsData || []).map((g: any) => ({
+      const mergedGoals: ManifestGoal[] = goalsData.map((g: any) => ({
         id: g.id,
         user_id: g.user_id,
         title: g.title,
@@ -138,14 +141,6 @@ export default function Manifest() {
         reminder_count: g.reminder_count,
         reminder_times: g.reminder_times,
       }));
-
-      setGoals(mergedGoals);
-
-      // Load practices from DB first, then localStorage fallback
-      const { data: dbPractices } = await supabase
-        .from("manifest_practices")
-        .select("*")
-        .eq("user_id", user.id);
 
       let practicesList: ManifestDailyPractice[];
       if (dbPractices && dbPractices.length > 0) {
@@ -254,53 +249,57 @@ export default function Manifest() {
       let goalId: string;
 
       if (editingGoal) {
-        const { error } = await supabase
-          .from("manifest_goals")
-          .update({
-            title: goalData.title,
-            cover_image_url: goalData.vision_image_url || editingGoal.cover_image_url || null,
-            category: goalData.category,
-            vision_images: JSON.stringify(goalData.vision_images || []),
-            start_date: goalData.start_date || null,
-            live_from_end: goalData.live_from_end,
-            act_as_if: goalData.act_as_if,
-            conviction: goalData.conviction,
-            visualization_minutes: goalData.visualization_minutes,
-            daily_affirmation: goalData.daily_affirmation,
-            check_in_time: goalData.check_in_time,
-            committed_7_days: goalData.committed_7_days,
-            is_locked: false,
-            reminder_count: goalData.reminder_count,
-            reminder_times: JSON.stringify(goalData.reminder_times || []),
-          } as any)
-          .eq("id", editingGoal.id);
+        const { error } = await supabase.functions.invoke("manage-manifest", {
+          body: {
+            action: "update_goal",
+            goalId: editingGoal.id,
+            updates: {
+              title: goalData.title,
+              cover_image_url: goalData.vision_image_url || editingGoal.cover_image_url || null,
+              category: goalData.category,
+              vision_images: JSON.stringify(goalData.vision_images || []),
+              start_date: goalData.start_date || null,
+              live_from_end: goalData.live_from_end,
+              act_as_if: goalData.act_as_if,
+              conviction: goalData.conviction,
+              visualization_minutes: goalData.visualization_minutes,
+              daily_affirmation: goalData.daily_affirmation,
+              check_in_time: goalData.check_in_time,
+              committed_7_days: goalData.committed_7_days,
+              is_locked: false,
+              reminder_count: goalData.reminder_count,
+              reminder_times: JSON.stringify(goalData.reminder_times || []),
+            }
+          }
+        });
         if (error) throw error;
         goalId = editingGoal.id;
         toast.success("Reality updated!");
       } else {
-        const { data, error } = await supabase
-          .from("manifest_goals")
-          .insert({
-            user_id: user.id,
-            title: goalData.title,
-            is_completed: false,
-            cover_image_url: goalData.vision_image_url || null,
-            category: goalData.category,
-            vision_images: JSON.stringify(goalData.vision_images || []),
-            start_date: goalData.start_date || null,
-            live_from_end: goalData.live_from_end,
-            act_as_if: goalData.act_as_if,
-            conviction: goalData.conviction,
-            visualization_minutes: goalData.visualization_minutes,
-            daily_affirmation: goalData.daily_affirmation,
-            check_in_time: goalData.check_in_time,
-            committed_7_days: goalData.committed_7_days,
-            reminder_count: goalData.reminder_count,
-            reminder_times: JSON.stringify(goalData.reminder_times || []),
-          } as any)
-          .select()
-          .single();
+        const { data: res, error } = await supabase.functions.invoke("manage-manifest", {
+          body: {
+            action: "upsert_goal",
+            goal: {
+              title: goalData.title,
+              is_completed: false,
+              cover_image_url: goalData.vision_image_url || null,
+              category: goalData.category,
+              vision_images: JSON.stringify(goalData.vision_images || []),
+              start_date: goalData.start_date || null,
+              live_from_end: goalData.live_from_end,
+              act_as_if: goalData.act_as_if,
+              conviction: goalData.conviction,
+              visualization_minutes: goalData.visualization_minutes,
+              daily_affirmation: goalData.daily_affirmation,
+              check_in_time: goalData.check_in_time,
+              committed_7_days: goalData.committed_7_days,
+              reminder_count: goalData.reminder_count,
+              reminder_times: JSON.stringify(goalData.reminder_times || []),
+            }
+          }
+        });
         if (error) throw error;
+        const data = res?.data;
         goalId = data.id;
         setNewlyCreatedGoalId(goalId);
         setTimeout(() => setNewlyCreatedGoalId(null), 2000);
@@ -339,7 +338,7 @@ export default function Manifest() {
     }
   };
 
-  
+
 
   const handleSelectGoal = (goal: ManifestGoal) => {
     navigate(`/manifest/practice/${goal.id}`);
@@ -353,7 +352,9 @@ export default function Manifest() {
   const handleDeleteGoal = async () => {
     if (!deletingGoal) return;
     try {
-      const { error } = await supabase.from("manifest_goals").delete().eq("id", deletingGoal.id);
+      const { error } = await supabase.functions.invoke("manage-manifest", {
+        body: { action: "delete_goal", goalId: deletingGoal.id }
+      });
       if (error) throw error;
 
       // Goal deleted, no selected state needed
@@ -374,7 +375,9 @@ export default function Manifest() {
 
   const handleCompleteGoal = async (goal: ManifestGoal) => {
     try {
-      const { error } = await supabase.from("manifest_goals").update({ is_completed: true }).eq("id", goal.id);
+      const { error } = await supabase.functions.invoke("manage-manifest", {
+        body: { action: "update_goal", goalId: goal.id, updates: { is_completed: true } }
+      });
       if (error) throw error;
 
       // Goal completed
@@ -393,7 +396,9 @@ export default function Manifest() {
 
   const handleReactivateGoal = async (goal: ManifestGoal) => {
     try {
-      const { error } = await supabase.from("manifest_goals").update({ is_completed: false }).eq("id", goal.id);
+      const { error } = await supabase.functions.invoke("manage-manifest", {
+        body: { action: "update_goal", goalId: goal.id, updates: { is_completed: false } }
+      });
       if (error) throw error;
 
       toast.success("Reality reactivated!");
@@ -852,7 +857,7 @@ export default function Manifest() {
             goal={historyGoal}
             isOpen={!!historyGoal}
             onClose={() => setHistoryGoal(null)}
-            onUseAsMicroAction={() => {}}
+            onUseAsMicroAction={() => { }}
           />
         )}
       </div>

@@ -77,17 +77,14 @@ export default function ManifestHistory() {
       }
 
       try {
-        const { data, error } = await supabase
-          .from("manifest_goals")
-          .select("*")
-          .eq("id", goalId)
-          .eq("user_id", user.id)
-          .maybeSingle();
+        const { data: res, error } = await supabase.functions.invoke("manage-manifest", {
+          body: { action: "fetch_goal_and_practices", goalId }
+        });
 
         if (error) throw error;
 
-        if (data) {
-          const d = data as any;
+        if (res?.data?.goal) {
+          const d = res.data.goal as any;
           const mergedGoal: ManifestGoal = {
             id: d.id,
             user_id: d.user_id,
@@ -125,12 +122,10 @@ export default function ManifestHistory() {
 
     const loadHistory = async () => {
       // Try DB first
-      const { data: dbPractices } = await supabase
-        .from("manifest_practices")
-        .select("*")
-        .eq("goal_id", goalId)
-        .eq("user_id", user.id)
-        .order("entry_date", { ascending: false });
+      const { data: res } = await supabase.functions.invoke("manage-manifest", {
+        body: { action: "fetch_goal_and_practices", goalId }
+      });
+      const dbPractices = res?.data?.practices || [];
 
       if (dbPractices && dbPractices.length > 0) {
         const goalPractices: HistoryDay[] = dbPractices.map((p: any) => ({
@@ -287,11 +282,10 @@ export default function ManifestHistory() {
             <button
               key={key}
               onClick={() => handleFilterChange(key)}
-              className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
-                filter === key
+              className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${filter === key
                   ? "bg-primary text-primary-foreground border-primary"
                   : "bg-background text-muted-foreground border-border hover:border-primary/50"
-              }`}
+                }`}
             >
               {label}
             </button>

@@ -37,22 +37,19 @@ export function useDiaryMetrics(userId: string | undefined, timeRange: TimeRange
     setLoading(true);
 
     try {
-      const [tasksRes, journalRes, goalsRes, manifestJournalRes, notesRes, emotionsRes] = await Promise.all([
-        supabase.from("tasks").select("*").eq("user_id", userId),
-        supabase.from("journal_entries").select("*").eq("user_id", userId).order("entry_date", { ascending: false }),
-        supabase.from("manifest_goals").select("*").eq("user_id", userId),
-        supabase.from("manifest_journal").select("*").eq("user_id", userId),
-        supabase.from("notes").select("*").eq("user_id", userId),
-        supabase.from("emotions").select("*").eq("user_id", userId),
-      ]);
+      const { data: res, error } = await supabase.functions.invoke("manage-diary", {
+        body: { action: "fetch_metrics" }
+      });
 
-      const metricsData = {
-        tasks: tasksRes.data || [],
-        journalEntries: journalRes.data || [],
-        manifestGoals: goalsRes.data || [],
-        manifestJournal: manifestJournalRes.data || [],
-        notes: notesRes.data || [],
-        emotions: emotionsRes.data || [],
+      if (error) throw error;
+      
+      const metricsData = res?.data || {
+        tasks: [],
+        journalEntries: [],
+        manifestGoals: [],
+        manifestJournal: [],
+        notes: [],
+        emotions: [],
       };
 
       setTasks(metricsData.tasks);

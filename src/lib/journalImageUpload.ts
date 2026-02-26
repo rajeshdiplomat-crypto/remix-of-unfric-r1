@@ -8,19 +8,24 @@ export async function uploadJournalImage(
     const fileExt = file.name.split(".").pop();
     const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("journal-images")
-      .upload(fileName, file);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("bucketName", "journal-images");
+    formData.append("fileName", fileName);
+
+    const { data: uploadData, error: uploadError } = await supabase.functions.invoke("upload-image", {
+      body: formData,
+    });
 
     if (uploadError) {
       return { success: false, error: uploadError.message };
     }
 
-    const { data } = supabase.storage
-      .from("journal-images")
-      .getPublicUrl(fileName);
+    if (uploadData?.error) {
+       return { success: false, error: uploadData.error };
+    }
 
-    return { success: true, url: data.publicUrl };
+    return { success: true, url: uploadData.publicUrl };
   } catch (err: any) {
     return { success: false, error: err.message || "Upload failed" };
   }

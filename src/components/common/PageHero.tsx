@@ -87,14 +87,14 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
   // Save to database
   const saveToDb = useCallback(async (url: string | null, type: MediaType) => {
     if (!user) return;
-    if (url && type) {
-      await supabase.from("hero_media").upsert(
-        { user_id: user.id, page_key: pageKey, media_url: url, media_type: type },
-        { onConflict: "user_id,page_key" }
-      );
-    } else {
-      await supabase.from("hero_media").delete().eq("user_id", user.id).eq("page_key", pageKey);
-    }
+
+    await supabase.functions.invoke("manage-settings", {
+      body: {
+        action: "update_hero_media",
+        pageKey,
+        mediaUrl: url || null,
+      }
+    });
   }, [user, pageKey]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: "image" | "video") => {
@@ -103,13 +103,17 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
     if (file.size > 50 * 1024 * 1024) { toast.error("File too large. Max 50MB."); return; }
 
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${user.id}/hero-${pageKey}-${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from("entry-covers").upload(fileName, file);
-      if (uploadError) throw uploadError;
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("bucket", "entry-covers");
 
-      const { data } = supabase.storage.from("entry-covers").getPublicUrl(fileName);
-      const url = data.publicUrl;
+      const { data: uploadRes, error: uploadError } = await supabase.functions.invoke("upload-image", {
+        body: formData,
+      });
+
+      if (uploadError || !uploadRes?.url) throw uploadError || new Error("Failed to upload media");
+
+      const url = uploadRes.url;
 
       setMediaSrc(url);
       setMediaType(type);
@@ -158,9 +162,8 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
         <Button
           variant="ghost"
           size="icon"
-          className={`absolute top-[4.5rem] right-4 z-20 bg-background/20 hover:bg-background/40 backdrop-blur-sm transition-opacity duration-300 ${
-            hovering ? (isHovering ? "opacity-100" : "opacity-0") : ""
-          }`}
+          className={`absolute top-[4.5rem] right-4 z-20 bg-background/20 hover:bg-background/40 backdrop-blur-sm transition-opacity duration-300 ${hovering ? (isHovering ? "opacity-100" : "opacity-0") : ""
+            }`}
         >
           <Camera className="h-4 w-4" />
         </Button>

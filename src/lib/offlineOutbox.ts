@@ -55,46 +55,24 @@ export async function flushOutbox(): Promise<{ synced: number; failed: number }>
   const queue = await getOutbox();
   if (queue.length === 0) return { synced: 0, failed: 0 };
 
-  let synced = 0;
-  let failed = 0;
-  const remaining: OutboxOperation[] = [];
+  try {
+    const { data: res, error } = await supabase.functions.invoke("sync-offline", {
+      body: { operations: queue }
+    });
 
-  for (const op of queue) {
-    try {
-      let result: any;
-      const tableName = op.table as any;
-
-      switch (op.operation) {
-        case "insert":
-          result = await (supabase.from(tableName) as any).insert(op.data);
-          break;
-        case "update": {
-          const { id, ...rest } = op.data;
-          result = await (supabase.from(tableName) as any).update(rest).eq("id", id);
-          break;
-        }
-        case "upsert":
-          result = await (supabase.from(tableName) as any).upsert(op.data);
-          break;
-        case "delete":
-          result = await (supabase.from(tableName) as any).delete().eq("id", op.data.id);
-          break;
-      }
-
-      if (result?.error) {
-        console.warn("[Outbox] Sync error:", result.error);
-        remaining.push(op);
-        failed++;
-      } else {
-        synced++;
-      }
-    } catch (err) {
-      console.warn("[Outbox] Network error:", err);
-      remaining.push(op);
-      failed++;
+    if (error) {
+      console.warn("[Outbox] Network error invoking sync-offline:", error);
+      return { synced: 0, failed: queue.length };
     }
-  }
 
-  await set(OUTBOX_KEY, remaining, outboxStore);
-  return { synced, failed };
+    const { synced = 0, failed = queue.length, remaining = queue } = res?.data || {};
+    
+    // Save remaining operations back to outbox
+    await set(OUTBOX_KEY, remaining, outboxStore);
+    
+    return { synced, failed };
+  } catch (err) {
+    console.warn("[Outbox] Network error:", err);
+    return { synced: 0, failed: queue.length };
+  }
 }
