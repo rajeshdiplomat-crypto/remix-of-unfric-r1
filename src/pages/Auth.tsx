@@ -120,7 +120,7 @@ export default function Auth() {
       }} />
 
       {/* Left: Editorial image — desktop only */}
-      <div className="hidden lg:block lg:w-[55%] relative overflow-hidden">
+      <div className="hidden lg:block lg:w-[55%] relative overflow-hidden h-screen sticky top-0">
         <img src={authImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-foreground/5" />
         {/* Overlay branding */}
