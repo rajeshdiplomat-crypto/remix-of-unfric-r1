@@ -83,7 +83,7 @@ export default function Auth() {
   const subtitle = mode === "signup" ? "Create your account to begin" : mode === "forgot-password" ? "We'll send you a reset link" : mode === "verify-email" ? "Tap the link we sent you" : "Sign in to continue your journey";
 
   return (
-    <div className="h-screen flex flex-col md:flex-row bg-background overflow-hidden">
+    <div className="flex flex-col md:flex-row bg-background overflow-hidden" style={{ height: '100dvh', minHeight: '100vh' }}>
       {/* Left: Editorial image — fixed to viewport height */}
       <div className="hidden md:block md:w-[55%] relative">
         <img
