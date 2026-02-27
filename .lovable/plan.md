@@ -1,55 +1,27 @@
 
 
-# Fix: "Failed to fetch" Auth Error — Root Cause & Solution
+# Fix: Login Still Failing — Health Check Timeout
 
-## Root Cause
+## Problem
 
-The `window.fetch` in the preview environment is intercepted by `lovable.js`, which can cause transient "Failed to fetch" errors. The current retry logic (2 retries, 800ms) is insufficient — the requests hang indefinitely before failing, and there's no reachability pre-check.
+Network logs show the `/auth/v1/health` pre-flight check is consistently timing out in the preview environment (`signal timed out`, `signal is aborted without reason`). This causes `guardReachability()` to return `false`, which blocks login with "Unable to reach the server" — even though the actual auth endpoint works fine (the earlier test showed `/token` returning proper 400 responses).
 
-## Solution: Three-layer defense
+The reachability guard is causing the very problem it was meant to prevent.
 
-### 1. Add fetch timeout wrapper (`useAuth.tsx`)
-Wrap every auth fetch with a hard 10-second timeout using `AbortController`. Currently, failed requests hang for 30+ seconds before the browser gives up.
+## Fix
 
-### 2. Add reachability guard (`useAuth.tsx`)
-Before any `signIn`/`signUp` call, ping the auth health endpoint (`/auth/v1/health`) with a 5-second timeout. If unreachable, immediately show a friendly error — no wasted retries.
+**Remove the reachability pre-flight check from the login/signup flow entirely.** Instead, rely solely on the retry logic with proper timeouts on the actual auth calls. If the server is truly unreachable, the retry logic will catch it after 3 attempts and show the friendly error.
 
-### 3. Increase retry resilience (`useAuth.tsx`)
-- Increase retries from 2 to 3
-- Increase base delay from 800ms to 1500ms
-- Catch `AbortError` (from timeout) alongside `TypeError`
+### Changes to `src/hooks/useAuth.tsx`
 
-### 4. Apply same protection to `Auth.tsx` direct calls
-The `resetPasswordForEmail` and `resend` calls in `Auth.tsx` bypass `useAuth` entirely — they call `supabase.auth.*` directly without any retry or timeout protection. Wrap those too.
+- Remove `guardReachability()` calls from `signIn()` and `signUp()`
+- Keep `guardReachability()` exported (Auth.tsx uses it for forgot-password/resend, but we'll remove it there too)
+- Let `withRetry()` handle all failure scenarios directly
 
-## Files Modified
-- `src/hooks/useAuth.tsx` — timeout wrapper, reachability guard, stronger retries
-- `src/pages/Auth.tsx` — wrap direct supabase calls with same protection
+### Changes to `src/pages/Auth.tsx`
 
-## Implementation Detail
+- Remove `guardReachability()` pre-flight from `handleSubmit` (forgot-password) and `handleResend`
+- Wrap those calls with `withRetry()` only — if the server is down, retries will fail and show the error
 
-```typescript
-// Timeout wrapper
-function fetchWithTimeout<T>(fn: () => Promise<T>, ms = 10000): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('Request timed out')), ms);
-    fn().then(resolve, reject).finally(() => clearTimeout(timer));
-  });
-}
-
-// Reachability guard
-async function guardReachability(): Promise<boolean> {
-  try {
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/health`, { 
-      signal: AbortSignal.timeout(5000) 
-    });
-    return res.ok;
-  } catch { return false; }
-}
-
-// Used in signIn/signUp:
-if (!(await guardReachability())) {
-  return { error: new Error('Unable to reach the server...') };
-}
-```
+This is a 2-file, ~10-line change. No new logic — just removing the pre-flight that's blocking login.
 
