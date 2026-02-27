@@ -9,60 +9,6 @@ export interface AuthErrorState {
   message: string;
 }
 
-function classifyAuthError(error: any): AuthErrorState {
-  if (!error) return { type: 'auth_other', message: 'Unknown error' };
-  const msg = error?.message ?? String(error);
-  const status = error?.status ?? error?.statusCode;
-
-  if (
-    error instanceof TypeError ||
-    status === 0 ||
-    msg.includes('Failed to fetch') ||
-    msg.includes('NetworkError') ||
-    msg.includes('Network request failed') ||
-    msg.includes('ERR_NETWORK') ||
-    msg.includes('FETCH_ERROR') ||
-    msg.includes('Load failed') ||
-    msg.includes('net::') ||
-    msg.includes('AbortError') ||
-    msg.includes('NetworkError when attempting to fetch resource')
-  ) {
-    return {
-      type: 'network_unreachable',
-      message: 'Connection issue reaching authentication service. Check your network and try again.',
-    };
-  }
-
-  if (msg.includes('Invalid login')) {
-    return { type: 'auth_invalid_credentials', message: 'Invalid email or password.' };
-  }
-
-  return { type: 'auth_other', message: msg };
-}
-
-const SUPABASE_AUTH_PREFIX = 'sb-';
-const SUPABASE_AUTH_SUFFIX = '-auth-token';
-
-function clearAllSupabaseAuthTokens() {
-  const keysToRemove: string[] = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (!key) continue;
-
-    const isSupabaseAuthToken = key.startsWith(SUPABASE_AUTH_PREFIX) && key.endsWith(SUPABASE_AUTH_SUFFIX);
-    const isLegacyToken = key === 'supabase.auth.token' || key.endsWith('.supabase.auth.token');
-
-    if (isSupabaseAuthToken || isLegacyToken) {
-      keysToRemove.push(key);
-    }
-  }
-
-  keysToRemove.forEach((key) => {
-    localStorage.removeItem(key);
-    console.log('[Auth] Cleared stale token:', key);
-  });
-}
-
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -79,6 +25,84 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const AUTH_STORAGE_PREFIX = 'sb-';
+const AUTH_STORAGE_SUFFIX = '-auth-token';
+
+function getProjectRefFromUrl(url?: string): string | null {
+  if (!url) return null;
+  try {
+    const hostname = new URL(url).hostname;
+    return hostname.split('.')[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function clearProjectAuthTokens() {
+  const currentProjectRef = getProjectRefFromUrl(import.meta.env.VITE_SUPABASE_URL);
+  const keysToRemove: string[] = [];
+
+  for (let i = 0; i < localStorage.length; i += 1) {
+    const key = localStorage.key(i);
+    if (!key) continue;
+
+    const isProjectToken =
+      key.startsWith(`${AUTH_STORAGE_PREFIX}${currentProjectRef ?? ''}`) &&
+      key.endsWith(AUTH_STORAGE_SUFFIX);
+
+    const isLegacyToken =
+      key === 'supabase.auth.token' ||
+      key.endsWith('.supabase.auth.token') ||
+      key.includes('-auth-token');
+
+    if (isProjectToken || isLegacyToken) {
+      keysToRemove.push(key);
+    }
+  }
+
+  keysToRemove.forEach((key) => localStorage.removeItem(key));
+}
+
+function isNetworkLikeError(error: unknown): boolean {
+  if (error instanceof TypeError) return true;
+
+  const maybeObject = error as { message?: string; status?: number; statusCode?: number } | null;
+  const message = String(maybeObject?.message ?? '').toLowerCase();
+  const status = maybeObject?.status ?? maybeObject?.statusCode;
+
+  if (status === 0) return true;
+
+  return (
+    message.includes('failed to fetch') ||
+    message.includes('networkerror') ||
+    message.includes('network request failed') ||
+    message.includes('load failed') ||
+    message.includes('err_network') ||
+    message.includes('aborterror') ||
+    message.includes('cors') ||
+    message.includes('net::')
+  );
+}
+
+function classifyAuthError(error: unknown): AuthErrorState {
+  if (!error) return { type: 'auth_other', message: 'Unknown authentication error' };
+
+  if (isNetworkLikeError(error)) {
+    return {
+      type: 'network_unreachable',
+      message: 'Connection issue reaching authentication service. Check your network and try again.',
+    };
+  }
+
+  const message = String((error as { message?: string })?.message ?? error);
+
+  if (message.toLowerCase().includes('invalid login')) {
+    return { type: 'auth_invalid_credentials', message: 'Invalid email or password.' };
+  }
+
+  return { type: 'auth_other', message };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -106,22 +130,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (shouldRun && !autoRefreshRunningRef.current) {
       try {
-        (supabase.auth as any).startAutoRefresh?.();
+        (supabase.auth as { startAutoRefresh?: () => void }).startAutoRefresh?.();
         autoRefreshRunningRef.current = true;
-        console.log('[Auth] Auto-refresh enabled');
       } catch {
-        // ignore
+        // no-op
       }
       return;
     }
 
     if (!shouldRun && autoRefreshRunningRef.current) {
       try {
-        (supabase.auth as any).stopAutoRefresh?.();
+        (supabase.auth as { stopAutoRefresh?: () => void }).stopAutoRefresh?.();
         autoRefreshRunningRef.current = false;
-        console.log('[Auth] Auto-refresh disabled');
       } catch {
-        // ignore
+        // no-op
       }
     }
   }, []);
@@ -138,66 +160,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hardResetLocalSession = useCallback(async () => {
     pauseAutoRefresh();
-    clearAllSupabaseAuthTokens();
+    clearProjectAuthTokens();
+
     try {
       await supabase.auth.signOut({ scope: 'local' });
     } catch {
       // ignore
     }
+
     setAuthState(null);
     syncAutoRefresh(null);
   }, [pauseAutoRefresh, setAuthState, syncAutoRefresh]);
 
   useEffect(() => {
     mountedRef.current = true;
-
-    // Bootstrap with refresh paused to avoid startup refresh storms.
     pauseAutoRefresh();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setAuthState(nextSession);
       if (nextSession) setAuthError(null);
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
       syncAutoRefresh(nextSession);
     });
 
-    const initialize = async () => {
+    const initializeAuth = async () => {
       try {
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
 
         if (error) {
           const classified = classifyAuthError(error);
-          console.warn('[Auth] getSession failed:', classified.message);
+          setAuthError(classified);
 
           if (classified.type === 'network_unreachable' && !startupRecoveryAttemptedRef.current) {
             startupRecoveryAttemptedRef.current = true;
             await hardResetLocalSession();
           }
-
-          if (classified.type !== 'network_unreachable') {
-            setAuthError(classified);
-          } else {
-            setAuthError(classified);
-          }
         }
 
         setAuthState(currentSession ?? null);
-      } catch (err: any) {
-        const classified = classifyAuthError(err);
-        console.warn('[Auth] getSession unexpected error:', classified.message);
+      } catch (error) {
+        const classified = classifyAuthError(error);
+        setAuthError(classified);
+
         if (classified.type === 'network_unreachable' && !startupRecoveryAttemptedRef.current) {
           startupRecoveryAttemptedRef.current = true;
           await hardResetLocalSession();
         }
-        setAuthError(classified);
       } finally {
         if (mountedRef.current) setLoading(false);
-        // Release bootstrap pause. If Auth page is mounted, it still keeps a pause lock.
         resumeAutoRefresh();
       }
     };
 
-    initialize();
+    initializeAuth();
 
     return () => {
       mountedRef.current = false;
@@ -211,6 +226,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
+
       if (error) {
         const classified = classifyAuthError(error);
         setAuthError(classified);
@@ -224,10 +240,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       resumeAutoRefresh();
       return { error: null };
-    } catch (err: any) {
-      const classified = classifyAuthError(err);
+    } catch (error) {
+      const classified = classifyAuthError(error);
       setAuthError(classified);
-      return { error: err };
+      return { error: error as Error };
     }
   }, [pauseAutoRefresh, resumeAutoRefresh]);
 
@@ -235,35 +251,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthError(null);
 
     try {
-      const redirectUrl = `${window.location.origin}/`;
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: redirectUrl },
+        options: { emailRedirectTo: `${window.location.origin}/` },
       });
 
       if (error) {
-        const classified = classifyAuthError(error);
-        setAuthError(classified);
+        setAuthError(classifyAuthError(error));
         return { error };
       }
 
       return { error: null };
-    } catch (err: any) {
-      const classified = classifyAuthError(err);
-      setAuthError(classified);
-      return { error: err };
+    } catch (error) {
+      setAuthError(classifyAuthError(error));
+      return { error: error as Error };
     }
   }, []);
 
   const signOut = useCallback(async () => {
+    pauseAutoRefresh();
     await supabase.auth.signOut();
     setAuthState(null);
     syncAutoRefresh(null);
-  }, [setAuthState, syncAutoRefresh]);
+  }, [pauseAutoRefresh, setAuthState, syncAutoRefresh]);
 
   const recoverAuthSession = useCallback(async () => {
-    console.log('[Auth] Recovering auth session...');
     setRecovering(true);
     setAuthError(null);
     setLoading(true);
@@ -273,28 +286,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
-        console.warn('[Auth] Session still present after recovery, forcing cleanup again');
         await hardResetLocalSession();
       }
     } catch {
-      // ignore probe failure
+      // ignore
+    } finally {
+      if (mountedRef.current) {
+        setLoading(false);
+        setRecovering(false);
+      }
     }
-
-    if (mountedRef.current) {
-      setLoading(false);
-      setRecovering(false);
-    }
-
-    console.log('[Auth] Session recovered — ready for fresh login');
   }, [hardResetLocalSession]);
 
   const probeAuthReachability = useCallback(async (): Promise<boolean> => {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 5000);
+    const timeout = setTimeout(() => controller.abort(), 5000);
 
     try {
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/health`;
-      const res = await fetch(url, {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/health`, {
         method: 'GET',
         headers: {
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
@@ -302,11 +311,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
         signal: controller.signal,
       });
-      return res.ok;
+
+      return response.ok;
     } catch {
       return false;
     } finally {
-      clearTimeout(timer);
+      clearTimeout(timeout);
     }
   }, []);
 
