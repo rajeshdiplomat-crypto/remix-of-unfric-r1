@@ -1,27 +1,17 @@
 
 
-# Fix: Login Still Failing — Health Check Timeout
+# Fix: Remove Artificial Timeout Wrapper from Auth Calls
 
-## Problem
+## Root Cause (definitive)
 
-Network logs show the `/auth/v1/health` pre-flight check is consistently timing out in the preview environment (`signal timed out`, `signal is aborted without reason`). This causes `guardReachability()` to return `false`, which blocks login with "Unable to reach the server" — even though the actual auth endpoint works fine (the earlier test showed `/token` returning proper 400 responses).
+`withRetry()` on line 73 of `useAuth.tsx` wraps every auth call in `fetchWithTimeout(fn)` — a hard 10-second timeout. The Lovable preview proxies all `window.fetch` calls through `lovable.js`, adding latency that regularly exceeds 10 seconds. This artificial timeout kills requests that would otherwise succeed, then retries hit the same wall. The Supabase SDK already has its own internal timeout handling (60-90s).
 
-The reachability guard is causing the very problem it was meant to prevent.
+## Fix — Single file, single line
 
-## Fix
+**File: `src/hooks/useAuth.tsx`**
 
-**Remove the reachability pre-flight check from the login/signup flow entirely.** Instead, rely solely on the retry logic with proper timeouts on the actual auth calls. If the server is truly unreachable, the retry logic will catch it after 3 attempts and show the friendly error.
+1. **Line 73**: Change `return await fetchWithTimeout(fn);` to `return await fn();` — let the browser and SDK handle timeouts natively
+2. **Lines 68-69**: Increase retries from 3 to 5, delay from 1500ms to 2000ms — more resilience against transient proxy failures
 
-### Changes to `src/hooks/useAuth.tsx`
-
-- Remove `guardReachability()` calls from `signIn()` and `signUp()`
-- Keep `guardReachability()` exported (Auth.tsx uses it for forgot-password/resend, but we'll remove it there too)
-- Let `withRetry()` handle all failure scenarios directly
-
-### Changes to `src/pages/Auth.tsx`
-
-- Remove `guardReachability()` pre-flight from `handleSubmit` (forgot-password) and `handleResend`
-- Wrap those calls with `withRetry()` only — if the server is down, retries will fail and show the error
-
-This is a 2-file, ~10-line change. No new logic — just removing the pre-flight that's blocking login.
+No other changes needed. `fetchWithTimeout` and `guardReachability` remain exported but unused in the critical path — no breaking changes.
 
