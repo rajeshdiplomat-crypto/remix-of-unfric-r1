@@ -27,14 +27,19 @@ function fetchWithTimeout<T>(fn: () => Promise<T>, ms = 10_000): Promise<T> {
 
 /**
  * Pre-flight reachability check — pings the auth health endpoint.
- * Returns true if the server is reachable, false otherwise.
+ * A 401 still means the server is reachable (just needs an API key).
+ * Only return false on actual network failures.
  */
 async function guardReachability(): Promise<boolean> {
   try {
     const res = await fetch(`${SUPABASE_URL}/auth/v1/health`, {
       signal: AbortSignal.timeout(5_000),
+      headers: {
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
     });
-    return res.ok;
+    // Any HTTP response (even 4xx) means the server is reachable
+    return true;
   } catch {
     return false;
   }
