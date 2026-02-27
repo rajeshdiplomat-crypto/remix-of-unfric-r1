@@ -85,11 +85,11 @@ export default function Auth() {
   return (
     <div className="flex flex-col md:flex-row bg-background overflow-hidden" style={{ height: '100dvh', minHeight: '100vh' }}>
       {/* Left: Editorial image — fixed to viewport height */}
-      <div className="hidden md:block md:w-[55%] relative flex-shrink-0">
+      <div className="hidden md:block md:w-[55%] relative flex-shrink-0 bg-[#8B7355]">
         <img
           src={authImage}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover object-[70%_center]"
+          className="absolute inset-0 w-full h-full object-contain"
         />
         {/* Gradient overlay for text legibility */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
