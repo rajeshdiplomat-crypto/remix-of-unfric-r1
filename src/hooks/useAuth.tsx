@@ -26,7 +26,7 @@ interface AuthContextType {
   probeAuthReachability: () => Promise<boolean>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_STORAGE_PREFIX = 'sb-';
 const AUTH_STORAGE_SUFFIX = '-auth-token';
