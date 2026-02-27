@@ -17,6 +17,8 @@ interface AuthContextType {
   recovering: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
+  resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  resendVerification: (email: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   recoverAuthSession: () => Promise<void>;
   pauseAutoRefresh: () => void;
@@ -104,6 +106,10 @@ function classifyAuthError(error: unknown): AuthErrorState {
   return { type: 'auth_other', message };
 }
 
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -158,6 +164,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     syncAutoRefresh();
   }, [syncAutoRefresh]);
 
+  const probeAuthReachability = useCallback(async (): Promise<boolean> => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/health`, {
+        method: 'GET',
+        headers: {
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          'cache-control': 'no-store',
+        },
+        signal: controller.signal,
+      });
+
+      return response.ok;
+    } catch {
+      return false;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }, []);
+
   const hardResetLocalSession = useCallback(async () => {
     pauseAutoRefresh();
     clearProjectAuthTokens();
@@ -171,6 +199,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthState(null);
     syncAutoRefresh(null);
   }, [pauseAutoRefresh, setAuthState, syncAutoRefresh]);
+
+  const guardReachability = useCallback(async (): Promise<boolean> => {
+    const reachable = await probeAuthReachability();
+    if (!reachable) {
+      setAuthError({
+        type: 'network_unreachable',
+        message: 'Authentication service unreachable from this browser session.',
+      });
+      return false;
+    }
+    return true;
+  }, [probeAuthReachability]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -224,18 +264,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthError(null);
     pauseAutoRefresh();
 
-    try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const reachable = await guardReachability();
+    if (!reachable) {
+      return { error: new Error('Authentication service unreachable from this browser session.') };
+    }
 
-      if (error) {
-        const classified = classifyAuthError(error);
+    try {
+      const attempt = async () => supabase.auth.signInWithPassword({ email, password });
+      let result = await attempt();
+
+      if (result.error && isNetworkLikeError(result.error)) {
+        await wait(700);
+        result = await attempt();
+      }
+
+      if (result.error) {
+        const classified = classifyAuthError(result.error);
         setAuthError(classified);
 
         if (classified.type !== 'network_unreachable') {
           resumeAutoRefresh();
         }
 
-        return { error };
+        return { error: result.error };
       }
 
       resumeAutoRefresh();
@@ -245,10 +296,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthError(classified);
       return { error: error as Error };
     }
-  }, [pauseAutoRefresh, resumeAutoRefresh]);
+  }, [guardReachability, pauseAutoRefresh, resumeAutoRefresh]);
 
   const signUp = useCallback(async (email: string, password: string) => {
     setAuthError(null);
+
+    const reachable = await guardReachability();
+    if (!reachable) {
+      return { error: new Error('Authentication service unreachable from this browser session.') };
+    }
 
     try {
       const { error } = await supabase.auth.signUp({
@@ -267,7 +323,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthError(classifyAuthError(error));
       return { error: error as Error };
     }
-  }, []);
+  }, [guardReachability]);
+
+  const resetPassword = useCallback(async (email: string) => {
+    setAuthError(null);
+
+    const reachable = await guardReachability();
+    if (!reachable) {
+      return { error: new Error('Authentication service unreachable from this browser session.') };
+    }
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth?mode=reset`,
+      });
+      if (error) {
+        setAuthError(classifyAuthError(error));
+        return { error };
+      }
+      return { error: null };
+    } catch (error) {
+      setAuthError(classifyAuthError(error));
+      return { error: error as Error };
+    }
+  }, [guardReachability]);
+
+  const resendVerification = useCallback(async (email: string) => {
+    setAuthError(null);
+
+    const reachable = await guardReachability();
+    if (!reachable) {
+      return { error: new Error('Authentication service unreachable from this browser session.') };
+    }
+
+    try {
+      const { error } = await supabase.auth.resend({ type: 'signup', email });
+      if (error) {
+        setAuthError(classifyAuthError(error));
+        return { error };
+      }
+      return { error: null };
+    } catch (error) {
+      setAuthError(classifyAuthError(error));
+      return { error: error as Error };
+    }
+  }, [guardReachability]);
 
   const signOut = useCallback(async () => {
     pauseAutoRefresh();
@@ -298,28 +398,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [hardResetLocalSession]);
 
-  const probeAuthReachability = useCallback(async (): Promise<boolean> => {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-
-    try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/health`, {
-        method: 'GET',
-        headers: {
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          'cache-control': 'no-store',
-        },
-        signal: controller.signal,
-      });
-
-      return response.ok;
-    } catch {
-      return false;
-    } finally {
-      clearTimeout(timeout);
-    }
-  }, []);
-
   return (
     <AuthContext.Provider
       value={{
@@ -330,6 +408,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         recovering,
         signIn,
         signUp,
+        resetPassword,
+        resendVerification,
         signOut,
         recoverAuthSession,
         pauseAutoRefresh,
