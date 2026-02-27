@@ -1,74 +1,220 @@
 
-Goal: Resolve the persistent “Unable to fetch” login failure by hardening the auth client flow against network outages/session-lock loops and improving recovery UX on `/auth`.
 
-What I observed from diagnostics:
-- The login request and refresh-token requests are failing at the network layer (`TypeError: Failed to fetch`, status `0`) before any backend auth validation.
-- This happens repeatedly (refresh storm) and is followed by lock timeout errors:
-  - `Acquiring ... lock "lock:sb-...-auth-token" timed out waiting 10000ms`
-- It reproduces even in incognito, so this is not only a normal-profile cache issue.
-- Current auth code (`useAuth.tsx` + `Auth.tsx`) does not classify network errors separately, so users get raw “Failed to fetch” toasts.
-- Service worker is not intentionally proxying auth POSTs, but the app still needs stronger auth-failure recovery logic.
+# Compliance, Legal & Security Layer for Unfric
 
-Implementation plan
+This is a large, multi-phase implementation. Given the scope, I recommend breaking it into **3 phases** to keep things manageable and shippable. Here is the full plan.
 
-1) Add resilient auth error normalization in `useAuth.tsx`
-- Wrap all auth calls in try/catch and normalize errors into user-safe categories:
-  - `network_unreachable` (fetch failed, status 0)
-  - `auth_invalid_credentials`
-  - `auth_other`
-- Expose an additional context field like `authErrorState` (or `lastAuthErrorType`) for UI display.
-- Ensure initial `getSession()` failure does not leave the app in ambiguous loading states.
+---
 
-2) Add session-lock recovery utilities in `useAuth.tsx`
-- Add a helper to clear stale auth token storage keys for this project (targeted key prefix, not full localStorage wipe).
-- Add a `recoverAuthSession()` method that:
-  - stops in-flight auth retry loops,
-  - clears stale local auth token state,
-  - re-initializes session safely.
-- Keep this as a deliberate user-triggered recovery, not automatic destructive behavior.
+## Phase 1: Legal Pages + Settings Enhancements + Age Gate
 
-3) Reduce refresh-loop pressure while on `/auth` in `Auth.tsx`
-- On auth page mount, temporarily pause auto-refresh attempts (to prevent refresh-token storms while user is actively signing in).
-- Resume auto-refresh on unmount/after successful sign-in.
-- This avoids lock contention from repeated background refresh attempts when network is unstable.
+### 1.1 New Pages (Static Legal Content)
 
-4) Improve `/auth` UX for network failures
-- Replace raw “Failed to fetch” toast with clear messaging:
-  - “Connection issue reaching authentication service. Check network/VPN/firewall and try again.”
-- Add two explicit actions in UI:
-  - Retry connection
-  - Reset local session and retry
-- If offline (`useOnlineStatus` false), show a visible offline hint and disable submit with guidance.
+Create four new route pages, all following the existing Zara-inspired minimal aesthetic (max-w-2xl, uppercase tracking headers, light font weights):
 
-5) Add global unhandled rejection safety net in `src/main.tsx`
-- Register a lightweight `unhandledrejection` handler to prevent silent auth lock errors from degrading UX.
-- Log structured diagnostics and optionally show a non-technical toast.
-- Do not swallow all errors globally; filter to auth/network lock patterns for signal over noise.
+- **`/privacy`** — Privacy Policy page
+  - Data collected (minimal: email, journal entries, emotions, habits, tasks, notes, manifest goals)
+  - AI usage disclosure (transparent: what data, how decisions are made)
+  - Vendor list (Stripe, infrastructure providers)
+  - Contact: privacy@unfric.com
+  - "Operated by [Founder Name], not yet incorporated"
 
-6) Validation and rollout checklist
-- Test login flow end-to-end on:
-  - regular browser profile,
-  - incognito,
-  - after toggling offline/online.
-- Verify no repeated refresh requests flood while sitting on `/auth`.
-- Verify lock timeout no longer appears during normal retries.
-- Verify successful login restores normal token refresh behavior after leaving `/auth`.
-- Verify incorrect password still shows credential-specific message (not network message).
+- **`/terms`** — Terms of Service
+  - No scraping / reverse engineering clause
+  - Subscription terms placeholder
+  - Governing law clause
+  - Liability disclaimer
+  - IP clause: no copying product logic
 
-Technical details (for implementation)
-- Files to update:
-  - `src/hooks/useAuth.tsx`
-  - `src/pages/Auth.tsx`
-  - `src/main.tsx`
-- No database schema, migration, RLS, storage, or backend function changes required.
-- No changes to generated backend client files.
-- Error classification heuristics:
-  - message includes `Failed to fetch` OR auth error status `0` => network class
-  - auth message includes `Invalid login` => credential class
-- Recovery action should be scoped to auth token keys only; avoid clearing unrelated app data.
+- **`/refund`** — Refund Policy (simple, short)
 
-Acceptance criteria
-- Users no longer see raw “Failed to fetch” as the primary feedback.
-- Users have a one-click recovery path from auth lock/network loops.
-- Auth page does not continuously hammer refresh-token requests during failure conditions.
-- Login works reliably once connectivity is restored, without requiring manual full-site data purge.
+- **`/disclaimer`** — Medical Disclaimer
+  - Not medical advice, not therapy replacement
+
+All pages will be **public routes** (no auth required), added to `App.tsx` routes.
+
+### 1.2 Footer Component
+
+Create a minimal **`LegalFooter`** component rendered inside `AppLayout` below `<main>`:
+- "© 2025 unfric — All rights reserved"
+- Links: Privacy · Terms · Cookie Settings
+- Render on all authenticated pages
+
+### 1.3 Auth Page Updates
+
+- Add **18+ age confirmation checkbox** on the signup form
+- Block form submission if not checked
+- Add links to Privacy Policy and Terms of Service below the signup button
+- Small text: "By creating an account, you agree to our Terms and Privacy Policy"
+
+### 1.4 Settings Page — New "Legal & Privacy" Section
+
+Add a new collapsible section in Settings with icon `Scale` (from lucide):
+- Link to Privacy Policy
+- Link to Terms of Service  
+- Link to Refund Policy
+- Link to Medical Disclaimer
+- Cookie Settings button (opens consent manager)
+- "Do Not Sell My Info" toggle (for CCPA)
+
+### 1.5 Account Deletion — Backend Implementation
+
+Create an edge function **`delete-account`** that:
+- Verifies the user's auth token
+- Deletes all user data from every table (emotions, journal_entries, journal_answers, habits, habit_completions, notes, note_folders, note_groups, tasks, focus_sessions, manifest_goals, manifest_journal, manifest_practices, feed_events, feed_comments, feed_reactions, feed_saves, hero_media, journal_prompts, journal_settings, user_settings, profiles)
+- Calls `supabase.auth.admin.deleteUser(userId)` to remove the auth record
+- Logs the deletion request timestamp
+- Returns success
+
+Update the Settings delete account dialog to:
+- Require typing "DELETE" to confirm
+- Call the edge function
+- Sign out on success
+
+---
+
+## Phase 2: Consent Management + Consent Logging
+
+### 2.1 Database — New Table
+
+**`consent_logs`** table:
+- `id` (uuid, PK)
+- `user_id` (uuid, nullable — for anonymous cookie consent)
+- `consent_type` (text — "cookies_analytics", "cookies_marketing", "do_not_sell", "age_verification", "terms_accepted")
+- `granted` (boolean)
+- `ip_country` (text, nullable)
+- `user_agent` (text, nullable)
+- `created_at` (timestamptz)
+
+RLS: Users can read own consent logs. Insert allowed for authenticated users.
+
+### 2.2 Cookie Consent Banner
+
+Create a **`CookieConsent`** component:
+- Shown at bottom of screen (not a popup — a slim bar)
+- "Accept All" and "Reject All" buttons with **equal visual weight**
+- "Customize" link to expand categories (Analytics, Marketing)
+- Persisted to localStorage + logged to `consent_logs` table
+- Respects **Global Privacy Control** (GPC) — check `navigator.globalPrivacyControl`
+- If GPC is true, auto-reject non-essential cookies
+- No tracking scripts loaded before consent
+- "Cookie Settings" button in footer re-opens this
+
+### 2.3 Consent Logging
+
+Every consent action (cookie accept/reject, age confirmation, DNSMPI toggle) writes an immutable row to `consent_logs`.
+
+---
+
+## Phase 3: Data Export Enhancement + AI Transparency
+
+### 3.1 Enhanced Data Export
+
+- Add **CSV export** option alongside existing JSON and PDF
+- Add a **re-authentication step** before export: user must re-enter password
+- Show a brief "Your export is being prepared..." state
+
+### 3.2 AI Transparency Section
+
+Add to Settings (under Legal & Privacy):
+- "How We Use AI" expandable section
+- Simple explanation: what data AI sees, what it does, what it doesn't do
+- No hidden processing disclosure
+
+### 3.3 Data Breach Preparation
+
+Create an internal-facing document/component (not user-visible) that documents:
+- Detection workflow
+- Logging incident procedure  
+- User notification template
+
+This will be a markdown file in the repo for now — no UI needed.
+
+---
+
+## Phase 4: Stripe Payments (Separate Phase)
+
+Stripe integration is a significant standalone feature. I recommend implementing the compliance/legal layer first, then tackling Stripe separately. When ready:
+- Enable Stripe via the Lovable Stripe tool
+- Create subscription plans
+- Add subscription management UI in Settings
+- Handle webhooks for status sync
+
+---
+
+## Technical Details
+
+### New Files to Create
+```text
+src/pages/Privacy.tsx
+src/pages/Terms.tsx  
+src/pages/RefundPolicy.tsx
+src/pages/Disclaimer.tsx
+src/components/layout/LegalFooter.tsx
+src/components/compliance/CookieConsent.tsx
+supabase/functions/delete-account/index.ts
+```
+
+### Files to Modify
+```text
+src/App.tsx                    — Add new routes
+src/pages/Auth.tsx             — Age gate checkbox + legal links
+src/pages/Settings.tsx         — New Legal & Privacy section, enhanced delete flow
+src/components/layout/AppLayout.tsx — Add LegalFooter
+```
+
+### Database Migration
+```sql
+-- consent_logs table
+CREATE TABLE public.consent_logs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  consent_type text NOT NULL,
+  granted boolean NOT NULL,
+  ip_country text,
+  user_agent text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.consent_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own consent logs"
+  ON public.consent_logs FOR SELECT
+  TO authenticated
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert consent logs"
+  ON public.consent_logs FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
+-- Allow anonymous inserts for cookie consent before login
+CREATE POLICY "Anon can insert consent logs"
+  ON public.consent_logs FOR INSERT
+  TO anon
+  WITH CHECK (user_id IS NULL);
+```
+
+### UX Approach
+- All legal pages use the same minimal layout: centered content, max-w-2xl, serif headings, light body text
+- Cookie banner is a non-intrusive bottom bar, not a modal
+- Settings sections use existing `SettingsSection` / `SettingsRow` pattern
+- No aggressive popups anywhere
+- Footer is a single-line, ultra-minimal design
+
+---
+
+## Recommended Implementation Order
+
+1. **Legal pages** (Privacy, Terms, Refund, Disclaimer) + routes
+2. **Footer component** + integration into AppLayout
+3. **Auth page** age gate + legal links
+4. **Settings** Legal & Privacy section
+5. **Delete account** edge function + enhanced UI
+6. **Cookie consent** banner + consent logging table
+7. **AI transparency** section in Settings
+8. **Data export** CSV + re-auth step
+9. **Stripe** (separate phase)
+
+Shall I proceed with implementation?
+
