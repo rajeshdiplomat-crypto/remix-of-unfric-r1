@@ -1,30 +1,26 @@
 
 
-## Changes
+## Fix: Show Full Image on Desktop (No Cropping)
 
-### 1. Auth page — match app's liquid glass + glassmorphism theme
+**Problem:** The image uses `object-cover` which crops it to fill the container. User wants the entire image visible (like tablet view) without any part being hidden.
 
-The current auth page is plain white with no ambient effects. The rest of the app uses backdrop-blur, mesh gradients, and glass cards. Updates:
+**Change — `src/pages/Auth.tsx` (line 88-93):**
 
-**`src/pages/Auth.tsx`:**
-- Add the same ambient mesh gradient overlay used in `AppLayout` behind the form side
-- Apply glassmorphic card treatment to the form container (`backdrop-blur-xl`, subtle border, soft shadow)
-- Add the same fixed header glass aesthetic (`bg-background/75 backdrop-blur-xl`) to the mobile top bar
-- Style the submit button with rounded-md to match the app's button system
-- Add `LegalFooter` at the bottom of the auth page for consistency
-- Keep the editorial image panel but add a subtle gradient overlay matching the glass aesthetic
+Replace the image container approach:
+- Change image from `object-cover` to `object-contain` so the full image is always visible
+- Add a matching background color behind the image so the letterbox areas blend seamlessly (using a warm tone sampled from the editorial image edges)
+- Keep the container at `md:w-[55%]` with full height
+- Result: entire image visible at all screen widths, no cropping, background fills any empty space
 
-### 2. LegalFooter — reduce height to minimal single-line bar
+```
+<!-- Before -->
+<div className="hidden md:block md:w-[55%] relative flex-shrink-0">
+  <img ... className="absolute inset-0 w-full h-full object-cover object-[70%_center]" />
 
-**`src/components/layout/LegalFooter.tsx`:**
-- Reduce padding from `py-4` to `py-2`
-- Remove `flex-col` stacking on mobile — force single horizontal row always
-- Reduce gap from `gap-2`/`gap-4` to `gap-3`
-- This cuts the footer height roughly in half
+<!-- After -->
+<div className="hidden md:block md:w-[55%] relative flex-shrink-0 bg-[#8B7355]">
+  <img ... className="absolute inset-0 w-full h-full object-contain" />
+```
 
-### 3. CookieConsent banner — reduce vertical footprint
-
-**`src/components/compliance/CookieConsent.tsx`:**
-- Reduce inner padding from `py-4` to `py-3`
-- Tighten the customize panel spacing from `space-y-4` to `space-y-3`
+The warm brown background (`#8B7355`, sampled from the image palette) fills any letterbox gaps so it looks intentional and seamless at any aspect ratio.
 
