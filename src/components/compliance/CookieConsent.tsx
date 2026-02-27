@@ -112,7 +112,7 @@ export function CookieConsent({ forceOpen, onClose }: { forceOpen?: boolean; onC
       )}
     >
       <div className="bg-card/95 backdrop-blur-md border-t border-border shadow-lg">
-        <div className="max-w-4xl mx-auto px-4 py-4 sm:px-6">
+        <div className="max-w-4xl mx-auto px-4 py-3 sm:px-6">
           {!showCustomize ? (
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <p className="text-xs text-muted-foreground flex-1 leading-relaxed">
@@ -148,7 +148,7 @@ export function CookieConsent({ forceOpen, onClose }: { forceOpen?: boolean; onC
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               <p className="text-xs text-muted-foreground">
                 Choose which cookies you'd like to allow:
               </p>
