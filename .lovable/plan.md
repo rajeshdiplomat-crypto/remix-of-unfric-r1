@@ -1,29 +1,31 @@
 
 
-## Show Full Image Without Background Color
+## Fix Tablet Vertical Background Gap
 
-**Problem:** `object-contain` leaves letterbox gaps that need a background color. User doesn't want any background color.
+**Problem:** On tablet, the viewport is tall relative to the image width, so the image doesn't fill the container height — leaving gray gaps top/bottom.
 
-**Best solution:** Make the image container **width flexible** instead of fixed at 55%. Use the image as a natural-sized element that dictates its own width, so there are no gaps to fill.
+**Solution:** Instead of forcing the image container to full viewport height, let the image panel scroll-independently with `overflow-hidden` and use `object-cover` but with a `min-height` and `max-height` approach that prioritizes showing the full image.
 
-**Change — `src/pages/Auth.tsx` (lines 88-93):**
+**Best approach (same as current flexible width, but fix the height gap):**
 
-Replace the fixed-width absolute-positioned image approach with a flexible layout:
+Change the image container to use `overflow-hidden` and switch to `object-cover` — but cap the container width so it doesn't take too much space. The image will fill the container completely (no gaps), with minimal cropping that scales gracefully:
+
+**`src/pages/Auth.tsx` line 88-93:**
 
 ```tsx
-{/* Before: fixed 55% container with absolute image */}
-<div className="hidden md:block md:w-[55%] relative flex-shrink-0 bg-[#8B7355]">
-  <img className="absolute inset-0 w-full h-full object-contain" />
-
-{/* After: image sizes itself naturally, no gaps, no bg color */}
+// Before
 <div className="hidden md:flex md:max-w-[55%] relative flex-shrink-0 items-center">
-  <img className="h-full w-auto max-w-full object-contain" />
+  <img src={authImage} alt="" className="h-full w-auto max-w-full object-contain" />
+
+// After  
+<div className="hidden md:block md:w-[45%] lg:w-[50%] relative flex-shrink-0 overflow-hidden">
+  <img src={authImage} alt="" className="absolute inset-0 w-full h-full object-cover object-center" />
 ```
 
-- Remove `bg-[#8B7355]` — no background color
-- Image uses `h-full w-auto` so it fills the height and takes only the width it needs
-- Container uses `max-w-[55%]` instead of `w-[55%]` so it shrinks to fit the image
-- No letterbox gaps because the container matches the image width exactly
-- At wide viewports the image stays tall and proportional; at narrow ones it naturally reduces
-- Gradient overlay adjusted to cover only the image area
+- **`object-cover`** fills container fully — no gaps, no background color needed
+- **`object-center`** keeps focal point centered
+- **`md:w-[45%]` / `lg:w-[50%]`** — narrower on tablet (less crop), wider on desktop
+- On tablet: container is narrower so the tall portrait image fits with minimal side crop
+- On desktop: container is wider, image shows more width naturally
+- This matches BotPenguin's approach — image fills its panel completely at all sizes
 
