@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 function isBase64Image(src: string): boolean {
@@ -44,9 +44,14 @@ async function processNode(
     return { updated: false, node };
   }
 
+  // Check if this is an imageResize node with base64 src
   if (node.type === "imageResize" && node.attrs?.src && isBase64Image(node.attrs.src)) {
+    console.log("Found base64 imageResize, converting...");
+    
     try {
       const { blob, mimeType } = base64ToBlob(node.attrs.src);
+      console.log(`Blob: ${blob.size} bytes`);
+      
       const ext = getExtension(mimeType);
       const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${ext}`;
       
@@ -59,7 +64,7 @@ async function processNode(
         });
       
       if (error) {
-        console.error("Upload failed");
+        console.error("Upload error:", error);
         return { updated: false, node };
       }
       
@@ -67,18 +72,25 @@ async function processNode(
         .from("journal-images")
         .getPublicUrl(data.path);
       
+      console.log("Uploaded to:", urlData.publicUrl);
+      
       return {
         updated: true,
         node: {
           ...node,
-          attrs: { ...node.attrs, src: urlData.publicUrl },
+          attrs: {
+            ...node.attrs,
+            src: urlData.publicUrl,
+          },
         },
       };
-    } catch {
+    } catch (err) {
+      console.error("Conversion error:", err);
       return { updated: false, node };
     }
   }
   
+  // Recursively process content array
   if (node.content && Array.isArray(node.content)) {
     let anyUpdated = false;
     const newContent = [];
@@ -103,43 +115,21 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Authenticate the caller
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: { user }, error: authError } = await userClient.auth.getUser();
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Use service role for storage operations but scope queries to authenticated user
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const body = await req.json().catch(() => ({}));
     const entryId = body.entryId;
     
     if (entryId) {
-      // Process single entry - verify ownership first
-      const { data: entry, error: fetchError } = await adminClient
+      // Process single entry
+      console.log(`Processing single entry: ${entryId}`);
+      
+      const { data: entry, error: fetchError } = await supabase
         .from("journal_entries")
         .select("id, user_id, text_formatting")
         .eq("id", entryId)
-        .eq("user_id", user.id) // Only allow access to own entries
         .single();
 
       if (fetchError || !entry) {
@@ -149,30 +139,32 @@ Deno.serve(async (req) => {
         );
       }
 
+      // Parse text_formatting if it's a string
       let doc = entry.text_formatting;
       if (typeof doc === 'string') {
         try {
           doc = JSON.parse(doc);
-        } catch {
+        } catch (e) {
+          console.error("Failed to parse text_formatting as JSON");
           return new Response(
-            JSON.stringify({ success: false, error: "Invalid format" }),
+            JSON.stringify({ success: false, error: "Invalid text_formatting format" }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
       }
 
-      const result = await processNode(doc, adminClient, user.id);
+      console.log("Document type:", doc?.type);
+      const result = await processNode(doc, supabase, entry.user_id);
       
       if (result.updated) {
-        const { error: updateError } = await adminClient
+        const { error: updateError } = await supabase
           .from("journal_entries")
           .update({ text_formatting: result.node })
-          .eq("id", entry.id)
-          .eq("user_id", user.id); // Double-check ownership on update
+          .eq("id", entry.id);
         
         if (updateError) {
           return new Response(
-            JSON.stringify({ success: false, error: "Update failed" }),
+            JSON.stringify({ success: false, error: updateError.message }),
             { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
@@ -189,25 +181,24 @@ Deno.serve(async (req) => {
       );
     }
     
-    // List entries with base64 images - only for the authenticated user
-    const { data: entries, error: fetchError } = await adminClient
+    // List entries with base64 images
+    const { data: entries, error: fetchError } = await supabase
       .from("journal_entries")
       .select("id, entry_date")
-      .eq("user_id", user.id) // Only own entries
       .not("text_formatting", "is", null);
 
     if (fetchError) {
-      throw new Error("Failed to fetch entries");
+      throw new Error(`Fetch error: ${fetchError.message}`);
     }
 
+    // Filter to find which ones have base64
     const entriesWithBase64: string[] = [];
     
     for (const entry of entries || []) {
-      const { data: fullEntry } = await adminClient
+      const { data: fullEntry } = await supabase
         .from("journal_entries")
         .select("text_formatting")
         .eq("id", entry.id)
-        .eq("user_id", user.id)
         .single();
         
       if (fullEntry?.text_formatting) {
@@ -222,14 +213,15 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         entriesWithBase64,
-        message: `Found ${entriesWithBase64.length} entries with base64 images.`,
+        message: `Found ${entriesWithBase64.length} entries with base64 images. Call with {"entryId": "xxx"} to migrate each one.`,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
-    console.error("Migration error:", error instanceof Error ? error.message : "Unknown");
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("Migration error:", error);
     return new Response(
-      JSON.stringify({ success: false, error: "Internal server error" }),
+      JSON.stringify({ success: false, error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
