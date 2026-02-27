@@ -112,9 +112,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    if (!(await guardReachability())) {
-      return { error: new Error(UNREACHABLE_MSG) };
-    }
     try {
       const { error } = await withRetry(() =>
         supabase.auth.signInWithPassword({ email, password })
@@ -129,9 +126,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = useCallback(async (email: string, password: string) => {
-    if (!(await guardReachability())) {
-      return { error: new Error(UNREACHABLE_MSG) };
-    }
     const redirectUrl = `${window.location.origin}/`;
     try {
       const { error } = await withRetry(() =>

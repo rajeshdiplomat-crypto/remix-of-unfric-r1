@@ -29,7 +29,6 @@ export default function Auth() {
     setIsSubmitting(true);
     try {
       if (mode === "forgot-password") {
-        if (!(await guardReachability())) { toast.error(UNREACHABLE_MSG); setIsSubmitting(false); return; }
         const { error } = await withRetry(() =>
           supabase.auth.resetPasswordForEmail(email, {
             redirectTo: `${window.location.origin}/auth?mode=reset`,
@@ -61,7 +60,6 @@ export default function Auth() {
   const handleResend = async () => {
     setIsSubmitting(true);
     try {
-      if (!(await guardReachability())) { toast.error(UNREACHABLE_MSG); setIsSubmitting(false); return; }
       const { error } = await withRetry(() =>
         supabase.auth.resend({ type: "signup", email })
       );
