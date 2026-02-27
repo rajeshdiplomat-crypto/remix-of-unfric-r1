@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, withRetry, guardReachability, UNREACHABLE_MSG } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UnfricLogo } from "@/components/common/UnfricLogo";
@@ -29,9 +29,12 @@ export default function Auth() {
     setIsSubmitting(true);
     try {
       if (mode === "forgot-password") {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/auth?mode=reset`,
-        });
+        if (!(await guardReachability())) { toast.error(UNREACHABLE_MSG); setIsSubmitting(false); return; }
+        const { error } = await withRetry(() =>
+          supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/auth?mode=reset`,
+          })
+        );
         if (error) toast.error(error.message);
         else { toast.success("Password reset link sent!"); setMode("signin"); }
       } else if (mode === "signup") {
@@ -58,7 +61,10 @@ export default function Auth() {
   const handleResend = async () => {
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.auth.resend({ type: "signup", email });
+      if (!(await guardReachability())) { toast.error(UNREACHABLE_MSG); setIsSubmitting(false); return; }
+      const { error } = await withRetry(() =>
+        supabase.auth.resend({ type: "signup", email })
+      );
       if (error) toast.error(error.message);
       else toast.success("Verification email sent!");
     } finally {
