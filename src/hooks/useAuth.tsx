@@ -65,12 +65,12 @@ function isNetworkError(err: any): boolean {
  */
 async function withRetry<T>(
   fn: () => Promise<T>,
-  retries = 3,
-  delayMs = 1500,
+  retries = 5,
+  delayMs = 2000,
 ): Promise<T> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      return await fetchWithTimeout(fn);
+      return await fn();
     } catch (err: any) {
       if (!isNetworkError(err) || attempt === retries) {
         throw err;
