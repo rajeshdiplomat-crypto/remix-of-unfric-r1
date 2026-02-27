@@ -1,6 +1,6 @@
-import { useEffect, useRef, useCallback, useState, useContext } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { AuthContext } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 
 type NotificationPermissionState = "default" | "granted" | "denied";
 
@@ -152,10 +152,7 @@ export function useNotificationPermission(): {
  * Caches settings in localStorage so reminders work even when logged out.
  */
 export function useNotificationScheduler(): void {
-  // Safely access auth context – if rendered outside AuthProvider (e.g. during
-  // HMR boundary re-evaluation), fall back gracefully instead of crashing.
-  const authContext = useContext(AuthContext);
-  const user = authContext?.user ?? null;
+  const { user } = useAuth();
   const settingsRef = useRef<ReminderSettings | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 

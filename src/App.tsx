@@ -37,7 +37,6 @@ import Terms from "./pages/Terms";
 import RefundPolicy from "./pages/RefundPolicy";
 import Disclaimer from "./pages/Disclaimer";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
-import { DevAutoLogin } from "@/components/DevAutoLogin";
 
 /**
  * Gate that waits for the IDB cache to be restored before rendering children.
@@ -179,30 +178,28 @@ const App = () => (
                   <OfflineSyncProvider>
                     <RestorationGate>
                       <NotificationScheduler />
-                      <DevAutoLogin>
-                        <InstallPrompt />
-                        <Routes>
-                          <Route path="/auth" element={<Auth />} />
-                          <Route path="/" element={<HomeRedirect />} />
-                          <Route path="/diary" element={<ProtectedRoute><Diary /></ProtectedRoute>} />
-                          <Route path="/emotions" element={<ProtectedRoute><Emotions /></ProtectedRoute>} />
-                          <Route path="/journal" element={<ProtectedRoute><Journal /></ProtectedRoute>} />
-                          <Route path="/manifest" element={<ProtectedRoute><Manifest /></ProtectedRoute>} />
-                          <Route path="/manifest/practice/:goalId" element={<ProtectedRoute><ManifestPractice /></ProtectedRoute>} />
-                          <Route path="/manifest/history/:goalId" element={<ProtectedRoute><ManifestHistory /></ProtectedRoute>} />
-                          <Route path="/habits" element={<ProtectedRoute><Habits /></ProtectedRoute>} />
-                          <Route path="/trackers" element={<Navigate to="/habits" replace />} />
-                          <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
-                          <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-                          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                          <Route path="/tasks/focus/:taskId" element={<ProtectedFullscreenRoute><TaskFocus /></ProtectedFullscreenRoute>} />
-                          <Route path="/privacy" element={<Privacy />} />
-                          <Route path="/terms" element={<Terms />} />
-                          <Route path="/refund" element={<RefundPolicy />} />
-                          <Route path="/disclaimer" element={<Disclaimer />} />
-                          <Route path="*" element={<NotFound />} />
-                        </Routes>
-                      </DevAutoLogin>
+                      <InstallPrompt />
+                      <Routes>
+                        <Route path="/auth" element={<Auth />} />
+                        <Route path="/" element={<HomeRedirect />} />
+                        <Route path="/diary" element={<ProtectedRoute><Diary /></ProtectedRoute>} />
+                        <Route path="/emotions" element={<ProtectedRoute><Emotions /></ProtectedRoute>} />
+                        <Route path="/journal" element={<ProtectedRoute><Journal /></ProtectedRoute>} />
+                        <Route path="/manifest" element={<ProtectedRoute><Manifest /></ProtectedRoute>} />
+                        <Route path="/manifest/practice/:goalId" element={<ProtectedRoute><ManifestPractice /></ProtectedRoute>} />
+                        <Route path="/manifest/history/:goalId" element={<ProtectedRoute><ManifestHistory /></ProtectedRoute>} />
+                        <Route path="/habits" element={<ProtectedRoute><Habits /></ProtectedRoute>} />
+                        <Route path="/trackers" element={<Navigate to="/habits" replace />} />
+                        <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
+                        <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+                        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                        <Route path="/tasks/focus/:taskId" element={<ProtectedFullscreenRoute><TaskFocus /></ProtectedFullscreenRoute>} />
+                        <Route path="/privacy" element={<Privacy />} />
+                        <Route path="/terms" element={<Terms />} />
+                        <Route path="/refund" element={<RefundPolicy />} />
+                        <Route path="/disclaimer" element={<Disclaimer />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
                     </RestorationGate>
                   </OfflineSyncProvider>
                 </AuthProvider>

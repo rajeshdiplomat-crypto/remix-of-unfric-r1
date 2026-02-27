@@ -5,19 +5,10 @@ import "./styles/responsive.css";
 
 // Global safety net for unhandled auth/lock rejections
 window.addEventListener("unhandledrejection", (event: PromiseRejectionEvent) => {
-  const reason = event.reason;
-  const msg = reason?.message ?? String(reason ?? "");
-
-  // Suppress auth-specific lock timeouts and fetch failures from Supabase refresh flows
-  const isAuthLock = msg.includes("lock:sb-") || msg.includes("navigator.locks.request");
-  const isAuthFetch = (reason instanceof TypeError && msg === "Failed to fetch") ||
-    msg.includes("Failed to fetch") ||
-    msg.includes("NetworkError") ||
-    msg.includes("Load failed");
-  const isRefreshToken = msg.includes("refresh_token") || msg.includes("token");
-
-  if (isAuthLock || (isAuthFetch && isRefreshToken) || (reason instanceof TypeError && msg === "Failed to fetch")) {
-    console.warn("[Auth] Suppressed unhandled rejection:", msg.slice(0, 120));
+  const msg = event.reason?.message ?? String(event.reason ?? "");
+  // Only intercept auth lock timeouts and fetch failures to avoid noise
+  if (msg.includes("lock:sb-") || (msg.includes("Failed to fetch") && msg.includes("auth"))) {
+    console.warn("[Auth] Suppressed unhandled rejection:", msg);
     event.preventDefault();
   }
 });
