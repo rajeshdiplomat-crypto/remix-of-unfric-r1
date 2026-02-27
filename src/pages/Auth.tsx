@@ -43,7 +43,12 @@ export default function Auth() {
       } else {
         if (!password) { toast.error("Please enter your password"); setIsSubmitting(false); return; }
         const { error } = await signIn(email, password);
-        if (error) toast.error(error.message.includes("Invalid login") ? "Invalid email or password" : error.message);
+        if (error) {
+          const msg = error.message;
+          if (msg.includes("Invalid login")) toast.error("Invalid email or password");
+          else if (msg.includes("Unable to reach")) toast.error(msg);
+          else toast.error(msg);
+        }
       }
     } finally {
       setIsSubmitting(false);
