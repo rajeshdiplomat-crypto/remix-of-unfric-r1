@@ -12,7 +12,11 @@ import authImage from "@/assets/auth-editorial.jpg";
 type AuthMode = "signin" | "signup" | "forgot-password" | "verify-email";
 
 export default function Auth() {
-  const { user, loading, signIn, signUp, authError, pauseAutoRefresh, resumeAutoRefresh, recoverAuthSession } = useAuth();
+  const {
+    user, loading, signIn, signUp, authError, recovering,
+    pauseAutoRefresh, resumeAutoRefresh, recoverAuthSession,
+    probeAuthReachability,
+  } = useAuth();
   const navigate = useNavigate();
   const isOnline = useOnlineStatus();
   const [mode, setMode] = useState<AuthMode>("signin");
@@ -21,7 +25,9 @@ export default function Auth() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [probing, setProbing] = useState(false);
 
+  // Pause auto-refresh while auth screen is mounted to prevent storms
   useEffect(() => {
     pauseAutoRefresh();
     return () => { resumeAutoRefresh(); };
@@ -41,7 +47,9 @@ export default function Auth() {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/auth?mode=reset`,
         });
-        if (error) { showAuthError(error); } else {
+        if (error) {
+          handleAuthError(error);
+        } else {
           toast.success("Password reset link sent!");
           setMode("signin");
         }
@@ -49,15 +57,18 @@ export default function Auth() {
         if (!ageConfirmed) { toast.error("Please confirm you are 18 or older"); setIsSubmitting(false); return; }
         if (!password || password.length < 6) { toast.error("Password must be at least 6 characters"); setIsSubmitting(false); return; }
         const { error } = await signUp(email, password);
-        if (error) { showAuthError(error); } else {
+        if (error) {
+          handleAuthError(error);
+        } else {
           setMode("verify-email");
           toast.success("Check your email to verify!");
         }
       } else {
         if (!password) { toast.error("Please enter your password"); setIsSubmitting(false); return; }
         const { error } = await signIn(email, password);
-        if (error && !error.message?.includes('Failed to fetch')) {
-          showAuthError(error);
+        // signIn sets authError in context; only toast non-network errors
+        if (error) {
+          handleAuthError(error);
         }
       }
     } finally {
@@ -65,9 +76,11 @@ export default function Auth() {
     }
   };
 
-  const showAuthError = (error: any) => {
+  // Unified error handler — relies on classified authError for network issues
+  const handleAuthError = (error: any) => {
     const msg = error?.message ?? "An error occurred";
-    if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) return;
+    // Network errors are shown via the banner, not toasts
+    if (msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("Load failed") || error instanceof TypeError) return;
     if (msg.includes("Invalid login")) toast.error("Invalid email or password");
     else if (msg.includes("already registered")) toast.error("Already registered. Please sign in.");
     else toast.error(msg);
@@ -82,7 +95,17 @@ export default function Auth() {
     } finally { setIsSubmitting(false); }
   };
 
-  const handleRetry = () => window.location.reload();
+  const handleRetry = async () => {
+    setProbing(true);
+    const reachable = await probeAuthReachability();
+    setProbing(false);
+    if (reachable) {
+      toast.success("Connection restored. Try again.");
+    } else {
+      toast.error("Auth service still unreachable. Check VPN, firewall, or ad-blockers.");
+    }
+  };
+
   const handleResetSession = async () => {
     await recoverAuthSession();
     toast.success("Session reset. Please try logging in again.");
@@ -97,6 +120,7 @@ export default function Auth() {
   }
 
   const showNetworkBanner = !isOnline || authError?.type === 'network_unreachable';
+  const isActionDisabled = isSubmitting || recovering || probing;
 
   const title = {
     signin: "Welcome back",
@@ -123,7 +147,6 @@ export default function Auth() {
       <div className="hidden lg:block lg:w-[55%] relative overflow-hidden h-screen sticky top-0">
         <img src={authImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-foreground/5" />
-        {/* Overlay branding */}
         <div className="absolute inset-0 flex flex-col justify-between p-10">
           <UnfricLogo size="lg" className="text-background [text-shadow:_0_1px_6px_rgba(0,0,0,0.3)]" />
           <div className="max-w-md">
@@ -136,12 +159,10 @@ export default function Auth() {
 
       {/* Right: Auth panel */}
       <div className="flex-1 flex flex-col min-h-screen lg:w-[45%] relative z-10">
-        {/* Mobile header */}
         <div className="flex items-center justify-center h-16 lg:hidden">
           <UnfricLogo size="md" />
         </div>
 
-        {/* Centered form */}
         <div className="flex-1 flex items-center justify-center px-6 sm:px-12 lg:px-16 xl:px-24">
           <div className="w-full max-w-sm space-y-8">
             {/* Network banner */}
@@ -152,17 +173,17 @@ export default function Auth() {
                   <p className="text-xs leading-relaxed font-light">
                     {!isOnline
                       ? "You're offline. Connect to the internet to continue."
-                      : "Connection issue. Check your network, VPN, or firewall."}
+                      : "Auth service unreachable. Check VPN, firewall, or ad-blockers."}
                   </p>
                 </div>
                 <div className="flex gap-3 pl-7">
-                  <button onClick={handleRetry}
-                    className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground hover:text-foreground transition-colors">
-                    <RefreshCw className="h-3 w-3" /> Retry
+                  <button onClick={handleRetry} disabled={probing}
+                    className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50">
+                    {probing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />} {probing ? "Checking…" : "Retry"}
                   </button>
-                  <button onClick={handleResetSession}
-                    className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground hover:text-foreground transition-colors">
-                    <Trash2 className="h-3 w-3" /> Reset session
+                  <button onClick={handleResetSession} disabled={recovering}
+                    className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50">
+                    <Trash2 className="h-3 w-3" /> {recovering ? "Resetting…" : "Reset session"}
                   </button>
                 </div>
               </div>
@@ -170,12 +191,8 @@ export default function Auth() {
 
             {/* Header */}
             <div className="space-y-2">
-              <h1 className="text-2xl font-light tracking-tight text-foreground">
-                {title}
-              </h1>
-              <p className="text-sm font-light text-muted-foreground tracking-wide">
-                {subtitle}
-              </p>
+              <h1 className="text-2xl font-light tracking-tight text-foreground">{title}</h1>
+              <p className="text-sm font-light text-muted-foreground tracking-wide">{subtitle}</p>
             </div>
 
             {mode === "verify-email" ? (
@@ -184,7 +201,7 @@ export default function Auth() {
                   <p className="text-xs text-muted-foreground font-light">Verification sent to</p>
                   <p className="text-sm text-foreground font-normal tracking-wide">{email}</p>
                 </div>
-                <button onClick={handleResend} disabled={isSubmitting}
+                <button onClick={handleResend} disabled={isActionDisabled}
                   className="w-full py-3.5 text-[11px] uppercase tracking-[0.2em] font-light border border-border/60 text-foreground hover:bg-muted/50 transition-all duration-300 rounded-lg disabled:opacity-50">
                   {isSubmitting ? "Sending…" : "Resend verification"}
                 </button>
@@ -196,25 +213,19 @@ export default function Auth() {
             ) : (
               <>
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Email field */}
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-normal">
-                      Email
-                    </label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-normal">Email</label>
                     <input
-                      type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isSubmitting}
+                      type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isActionDisabled}
                       className="w-full bg-muted/30 border border-border/60 focus:border-foreground/40 focus:bg-background outline-none rounded-lg px-4 py-3 text-sm text-foreground font-light transition-all duration-200 placeholder:text-muted-foreground/40"
                       placeholder="you@example.com"
                     />
                   </div>
 
-                  {/* Password field */}
                   {mode !== "forgot-password" && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-normal">
-                          Password
-                        </label>
+                        <label className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-normal">Password</label>
                         {mode === "signin" && (
                           <button type="button" onClick={() => setMode("forgot-password")}
                             className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground/60 hover:text-foreground transition-colors">
@@ -224,7 +235,7 @@ export default function Auth() {
                       </div>
                       <div className="relative">
                         <input
-                          type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} disabled={isSubmitting}
+                          type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} disabled={isActionDisabled}
                           className="w-full bg-muted/30 border border-border/60 focus:border-foreground/40 focus:bg-background outline-none rounded-lg px-4 py-3 pr-11 text-sm text-foreground font-light transition-all duration-200"
                           placeholder="••••••••"
                         />
@@ -236,7 +247,6 @@ export default function Auth() {
                     </div>
                   )}
 
-                  {/* Age confirmation */}
                   {mode === "signup" && (
                     <label className="flex items-start gap-3 cursor-pointer group">
                       <input type="checkbox" checked={ageConfirmed} onChange={(e) => setAgeConfirmed(e.target.checked)}
@@ -247,10 +257,9 @@ export default function Auth() {
                     </label>
                   )}
 
-                  {/* Submit */}
                   <button
                     type="submit"
-                    disabled={isSubmitting || (mode === "signup" && !ageConfirmed) || !isOnline}
+                    disabled={isActionDisabled || (mode === "signup" && !ageConfirmed) || !isOnline}
                     className={cn(
                       "w-full py-3.5 text-[11px] uppercase tracking-[0.2em] font-light transition-all duration-300 disabled:opacity-40 rounded-lg",
                       "bg-foreground text-background hover:opacity-90 hover:shadow-lg",
@@ -260,7 +269,6 @@ export default function Auth() {
                     {mode === "forgot-password" ? "Send reset link" : mode === "signup" ? "Create account" : "Sign in"}
                   </button>
 
-                  {/* Terms */}
                   {mode === "signup" && (
                     <p className="text-[10px] text-muted-foreground/50 text-center leading-relaxed font-light">
                       By creating an account, you agree to our{" "}
@@ -271,14 +279,12 @@ export default function Auth() {
                   )}
                 </form>
 
-                {/* Divider */}
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-border/40" />
                   </div>
                 </div>
 
-                {/* Mode toggle */}
                 <div className="text-center pt-2">
                   {mode === "forgot-password" ? (
                     <button onClick={() => setMode("signin")}
@@ -298,7 +304,6 @@ export default function Auth() {
           </div>
         </div>
 
-        {/* Bottom tagline — desktop only */}
         <div className="hidden lg:flex items-center justify-center h-16 text-[10px] uppercase tracking-[0.2em] text-muted-foreground/40 font-light">
           Mindfulness · Productivity · Growth
         </div>
