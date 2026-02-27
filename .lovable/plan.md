@@ -1,38 +1,38 @@
 
-Implementation plan to fix login failure on `/auth`:
 
-1. Stabilize auth client initialization (`src/hooks/useAuth.tsx`)
-- Remove unused `originalAutoRefresh` ref.
-- Ensure `onAuthStateChange` + `getSession` startup path always resolves `loading` deterministically.
-- Harden network error classification to catch all fetch/CORS-style failures (`TypeError`, status `0`, missing response).
+## Plan: Auto-sign-in for development
 
-2. Stop refresh storm at the source (`src/integrations usage via useAuth`)
-- Add an internal guard in `pauseAutoRefresh()` / `resumeAutoRefresh()` so refresh never restarts while auth screen is mounted.
-- Prevent concurrent refresh pause/resume races using a single shared boolean lock/ref.
+**Goal**: Skip the login screen by automatically signing in with a dev account when no user session exists.
 
-3. Make sign-in flow fail-fast and clean (`src/hooks/useAuth.tsx`, `src/pages/Auth.tsx`)
-- In `signIn`, if auth error is network class, immediately stop refresh retries and return a normalized user-safe error.
-- In `Auth.tsx`, remove duplicate error filtering and rely on normalized auth error state for consistent UI messaging.
+### Approach
+Add a `DevAutoLogin` wrapper component in `App.tsx` that:
+1. Checks if a dev email/password pair is set via environment variables (`VITE_DEV_EMAIL`, `VITE_DEV_PASSWORD`)
+2. If set and no user is logged in, automatically calls `signIn()` silently
+3. If not set, falls through to normal auth flow (no behavior change in production)
 
-4. Improve session recovery action (`src/hooks/useAuth.tsx`)
-- Expand targeted token cleanup to remove both current and legacy auth token key variants for this project only.
-- After local sign-out + cleanup, run a safe `getSession()` re-check to confirm a null clean state before returning.
+This keeps the auth system intact (RLS still works) while removing the login friction during development.
 
-5. Add deterministic network diagnostics trigger on auth page (`src/pages/Auth.tsx`)
-- On network banner display, show a short actionable status (“Auth service unreachable from this browser session”).
-- Keep “Retry” and “Reset session”, but wire Retry to a lightweight auth reachability probe before full reload.
-- Keep submit disabled while offline and while recovery is in progress.
+### Implementation steps
 
-6. Tighten global rejection filter (`src/main.tsx`)
-- Match auth refresh lock/fetch errors more reliably (including non-“auth” message variants from refresh token flow).
-- Suppress only known auth-network noise; keep other unhandled rejections visible.
+1. **`src/components/DevAutoLogin.tsx`** (new file)
+   - Uses `useAuth()` to get `user`, `loading`, `signIn`
+   - On mount, if `VITE_DEV_EMAIL` and `VITE_DEV_PASSWORD` are set and no user exists, calls `signIn()` automatically
+   - Shows a loading spinner while auto-signing in
+   - Renders children once user is available or env vars are not set
 
-7. Validation checklist
-- Verify no continuous `grant_type=refresh_token` flood while idling on `/auth`.
-- Verify: wrong password shows credential error; network failure shows connection error.
-- Verify Reset session clears stuck state and allows fresh login attempt.
-- Verify behavior in normal window + incognito + offline/online toggle.
+2. **`src/App.tsx`**
+   - Wrap `<Routes>` with `<DevAutoLogin>` inside `<AuthProvider>` and `<RestorationGate>`
+   - The component sits between auth provider and routes, intercepting the unauthenticated state
 
-Technical scope
-- Files: `src/hooks/useAuth.tsx`, `src/pages/Auth.tsx`, `src/main.tsx`
-- No backend schema/function/policy changes required.
+3. **`.env`** — user manually adds:
+   ```
+   VITE_DEV_EMAIL=your-dev@email.com
+   VITE_DEV_PASSWORD=your-password
+   ```
+
+### Technical notes
+- Environment variables prefixed with `VITE_` are exposed to the client bundle — this is intentional for **development only**
+- The `.env` file is gitignored, so credentials won't leak
+- Production builds without these vars behave identically to current behavior
+- RLS policies remain fully functional since a real authenticated session is created
+
