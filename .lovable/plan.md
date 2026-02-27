@@ -1,17 +1,30 @@
 
 
-# Fix: Remove Artificial Timeout Wrapper from Auth Calls
+## Changes
 
-## Root Cause (definitive)
+### 1. Auth page — match app's liquid glass + glassmorphism theme
 
-`withRetry()` on line 73 of `useAuth.tsx` wraps every auth call in `fetchWithTimeout(fn)` — a hard 10-second timeout. The Lovable preview proxies all `window.fetch` calls through `lovable.js`, adding latency that regularly exceeds 10 seconds. This artificial timeout kills requests that would otherwise succeed, then retries hit the same wall. The Supabase SDK already has its own internal timeout handling (60-90s).
+The current auth page is plain white with no ambient effects. The rest of the app uses backdrop-blur, mesh gradients, and glass cards. Updates:
 
-## Fix — Single file, single line
+**`src/pages/Auth.tsx`:**
+- Add the same ambient mesh gradient overlay used in `AppLayout` behind the form side
+- Apply glassmorphic card treatment to the form container (`backdrop-blur-xl`, subtle border, soft shadow)
+- Add the same fixed header glass aesthetic (`bg-background/75 backdrop-blur-xl`) to the mobile top bar
+- Style the submit button with rounded-md to match the app's button system
+- Add `LegalFooter` at the bottom of the auth page for consistency
+- Keep the editorial image panel but add a subtle gradient overlay matching the glass aesthetic
 
-**File: `src/hooks/useAuth.tsx`**
+### 2. LegalFooter — reduce height to minimal single-line bar
 
-1. **Line 73**: Change `return await fetchWithTimeout(fn);` to `return await fn();` — let the browser and SDK handle timeouts natively
-2. **Lines 68-69**: Increase retries from 3 to 5, delay from 1500ms to 2000ms — more resilience against transient proxy failures
+**`src/components/layout/LegalFooter.tsx`:**
+- Reduce padding from `py-4` to `py-2`
+- Remove `flex-col` stacking on mobile — force single horizontal row always
+- Reduce gap from `gap-2`/`gap-4` to `gap-3`
+- This cuts the footer height roughly in half
 
-No other changes needed. `fetchWithTimeout` and `guardReachability` remain exported but unused in the critical path — no breaking changes.
+### 3. CookieConsent banner — reduce vertical footprint
+
+**`src/components/compliance/CookieConsent.tsx`:**
+- Reduce inner padding from `py-4` to `py-3`
+- Tighten the customize panel spacing from `space-y-4` to `space-y-3`
 
