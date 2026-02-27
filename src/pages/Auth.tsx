@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { Loader2, RefreshCw, Trash2, WifiOff, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +19,8 @@ export default function Auth() {
     loading,
     signIn,
     signUp,
+    resetPassword,
+    resendVerification,
     authError,
     recovering,
     pauseAutoRefresh,
@@ -97,10 +98,7 @@ export default function Auth() {
 
     try {
       if (mode === "forgot-password") {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/auth?mode=reset`,
-        });
-
+        const { error } = await resetPassword(email);
         if (error) {
           handleAuthErrorToast(error);
           return;
@@ -219,7 +217,7 @@ export default function Auth() {
                   onClick={async () => {
                     setIsSubmitting(true);
                     try {
-                      const { error } = await supabase.auth.resend({ type: "signup", email });
+                      const { error } = await resendVerification(email);
                       if (error) toast.error(error.message);
                       else toast.success("Verification email sent.");
                     } finally {
