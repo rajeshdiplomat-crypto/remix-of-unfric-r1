@@ -85,7 +85,7 @@ export default function Auth() {
   return (
     <div className="flex flex-col md:flex-row bg-background overflow-hidden" style={{ height: '100dvh', minHeight: '100vh' }}>
       {/* Left: Editorial image — fixed to viewport height */}
-      <div className="hidden md:block md:w-[45%] lg:w-[50%] relative flex-shrink-0 overflow-hidden h-full">
+      <div className="hidden md:block md:w-[45%] lg:w-[40%] relative flex-shrink-0 overflow-hidden h-full">
         <img
           src={authImage}
           alt=""
