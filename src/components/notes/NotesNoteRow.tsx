@@ -75,15 +75,15 @@ export function NotesNoteRow({
     <div
       onClick={onClick}
       className={`
-        group relative flex items-center gap-2 py-1.5 px-2.5 cursor-pointer transition-all duration-200
-        hover:bg-white/[0.02] border-b border-white/[0.05]
+        group relative flex items-center gap-2 py-1 px-2.5 cursor-pointer transition-all duration-200
+        hover:bg-muted/30
         ${isIndented ? "ml-4" : ""}
-        ${isSelected ? "bg-[hsl(215,15%,40%)]/10 border-l-2 border-l-[hsl(215,15%,40%)]" : ""}
-        ${note.isPinned ? "bg-amber-50/5 dark:bg-amber-950/5" : ""}
+        ${isSelected ? "bg-primary/5 border-l-2 border-l-primary" : ""}
+        ${note.isPinned ? "bg-amber-50/30 dark:bg-amber-950/10" : ""}
       `}
     >
       {/* Icon */}
-      <div className="w-6 h-6 rounded-[6px] flex items-center justify-center shrink-0 bg-white/[0.03]">
+      <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 bg-muted/40">
         {note.isPinned ? (
           <Pin className="h-3 w-3 text-amber-600 dark:text-amber-400" />
         ) : (
@@ -94,7 +94,7 @@ export function NotesNoteRow({
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          <h4 className="text-[12px] font-light text-foreground/90 truncate">
+          <h4 className="text-[12px] font-medium text-foreground/90 truncate">
             {note.title || "Untitled Note"}
           </h4>
           {showActivityDot && <NotesActivityDot updatedAt={note.updatedAt} size="sm" className="opacity-60 !w-1.5 !h-1.5" />}
@@ -103,7 +103,7 @@ export function NotesNoteRow({
       </div>
 
       {/* Timestamp - always visible, tiny */}
-      <span className="text-[11px] font-light tracking-[0.3em] text-muted-foreground/40 shrink-0">{formatDate(note.updatedAt)}</span>
+      <span className="text-[9px] text-muted-foreground/40 shrink-0">{formatDate(note.updatedAt)}</span>
 
       {/* Tags on hover */}
       {note.tags.length > 0 && (
@@ -112,7 +112,7 @@ export function NotesNoteRow({
             <Badge
               key={tag}
               variant="secondary"
-              className="text-[11px] font-light tracking-[0.3em] px-2 py-0.5 bg-white/[0.03] text-muted-foreground/50 border-0 rounded-[6px]"
+              className="text-[10px] px-2 py-0.5 bg-primary/5 text-primary/70 border-0 rounded-full"
             >
               {tag}
             </Badge>

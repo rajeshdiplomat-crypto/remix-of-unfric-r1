@@ -113,6 +113,7 @@ export default function Manifest() {
 
       if (goalsError) throw goalsError;
 
+      // All goal data comes from DB columns directly
       const mergedGoals: ManifestGoal[] = (goalsData || []).map((g: any) => ({
         id: g.id,
         user_id: g.user_id,
@@ -139,6 +140,7 @@ export default function Manifest() {
 
       setGoals(mergedGoals);
 
+      // Load practices from DB first, then localStorage fallback
       const { data: dbPractices } = await supabase
         .from("manifest_practices")
         .select("*")
@@ -353,6 +355,8 @@ export default function Manifest() {
       const { error } = await supabase.from("manifest_goals").delete().eq("id", deletingGoal.id);
       if (error) throw error;
 
+      // Goal deleted, no selected state needed
+
       toast.success("Reality deleted");
       fetchData();
     } catch (error) {
@@ -371,6 +375,8 @@ export default function Manifest() {
     try {
       const { error } = await supabase.from("manifest_goals").update({ is_completed: true }).eq("id", goal.id);
       if (error) throw error;
+
+      // Goal completed
 
       toast.success("🎉 Reality manifested! Congratulations!");
       fetchData();
@@ -410,6 +416,7 @@ export default function Manifest() {
     setSelectedDate(date);
   };
 
+  // Get goals that have practice entries on a specific date
   const getGoalsWithPracticeOnDate = useCallback((date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
     const goalIdsWithPractice = new Set(
@@ -494,18 +501,18 @@ export default function Manifest() {
           subtitle={PAGE_HERO_TEXT.manifest.subtitle}
         />
 
-        {/* Content Area - full width with floating insights */}
-        <div className="flex-1 relative w-full max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-6 py-2 overflow-hidden min-h-0">
-          {/* ========== MAIN COLUMN: Goals List ========== */}
-          <div className="flex flex-col h-full min-h-0 gap-3 max-w-3xl">
+        {/* Content Area - 2-column layout: [Left: Goals+Calendar] [Right: Editorial or Practice] */}
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-[3fr_2fr] gap-3 w-full max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-6 py-2 overflow-hidden min-h-0">
+          {/* ========== LEFT COLUMN: Goals List + Toggle Panels ========== */}
+          <div className="flex flex-col h-full min-h-0 gap-3">
             {/* Goals — no outer container, cards float */}
             <div className="flex flex-col flex-1 min-h-0">
               {/* Header */}
               <div className="p-3 flex items-center justify-between flex-shrink-0">
-                <h2 className="text-base font-light text-foreground">Your Realities</h2>
+                <h2 className="text-base font-semibold text-foreground">Your Realities</h2>
                 <div className="flex items-center gap-1">
                   {/* View mode toggles */}
-                  <div className="flex items-center liquid-glass rounded-lg p-0.5 mr-1">
+                  <div className="flex items-center bg-foreground/[0.05] backdrop-blur-md rounded-xl p-0.5 mr-1 border border-foreground/[0.08]">
                     {([
                       { mode: "list" as const, icon: List, label: "List" },
                       { mode: "tiles" as const, icon: LayoutGrid, label: "Tiles" },
@@ -516,9 +523,9 @@ export default function Manifest() {
                         onClick={() => { setViewMode(mode); if (mode === "single") setSingleIndex(0); }}
                         title={label}
                         className={cn(
-                          "p-1.5 rounded-sm transition-all duration-150",
+                          "p-1.5 rounded-lg transition-all duration-150",
                           viewMode === mode
-                            ? "bg-accent-graphite/15 text-foreground shadow-sm"
+                            ? "bg-background/60 text-foreground shadow-sm backdrop-blur-md"
                             : "text-muted-foreground hover:text-foreground"
                         )}
                       >
@@ -530,14 +537,14 @@ export default function Manifest() {
                     onClick={() => setShowAnalytics(true)}
                     variant="ghost"
                     size="sm"
-                    className="rounded-sm h-8 px-2 text-muted-foreground"
+                    className="rounded-xl h-8 px-2 text-muted-foreground"
                   >
                     <BarChart3 className="h-3.5 w-3.5" />
                   </Button>
                   <Button
                     onClick={() => setShowCreateModal(true)}
                     size="sm"
-                    className="rounded-sm h-8 px-3 text-xs"
+                    className="rounded-xl h-8 px-3 bg-primary/80 backdrop-blur-md text-primary-foreground shadow-md hover:shadow-lg hover:bg-primary/90 transition-all text-xs border border-primary/20"
                   >
                     <Plus className="h-3.5 w-3.5 mr-1" /> New
                   </Button>
@@ -546,12 +553,12 @@ export default function Manifest() {
 
               {activeGoals.length === 0 ? (
                 <div className="p-3 flex-1 flex items-center justify-center">
-                  <div className="rounded-lg liquid-glass w-full border-dashed">
+                  <div className="rounded-2xl border border-dashed border-foreground/[0.1] bg-card/30 backdrop-blur-xl w-full">
                     <div className="py-8 px-4 text-center">
-                      <div className="mx-auto mb-3 h-10 w-10 rounded-lg bg-accent-graphite/10 flex items-center justify-center">
-                        <Sparkles className="h-5 w-5 text-accent-graphite" />
+                      <div className="mx-auto mb-3 h-10 w-10 rounded-2xl bg-primary/10 backdrop-blur-md flex items-center justify-center shadow-[0_0_20px_hsl(var(--primary)/0.2)]">
+                        <Sparkles className="h-5 w-5 text-primary" />
                       </div>
-                      <h3 className="text-base font-light text-foreground mb-1">
+                      <h3 className="text-base font-semibold text-foreground mb-1">
                         Start Your First Reality
                       </h3>
                       <p className="text-muted-foreground mb-3 text-xs max-w-xs mx-auto">
@@ -559,7 +566,7 @@ export default function Manifest() {
                       </p>
                       <Button
                         onClick={() => setShowCreateModal(true)}
-                        className="rounded-sm h-9 px-4 text-sm"
+                        className="rounded-xl h-9 px-4 bg-primary/80 backdrop-blur-md text-primary-foreground text-sm border border-primary/20"
                       >
                         <Plus className="h-4 w-4 mr-1.5" /> Create Reality
                       </Button>
@@ -589,12 +596,12 @@ export default function Manifest() {
                               onImageUpdate={fetchData}
                             />
                             {isNewlyCreated && (
-                              <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-lg">
-                                <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-accent-graphite/10 via-accent-graphite/5 to-accent-graphite/10" />
+                              <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
+                                <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-primary/15 via-primary/10 to-primary/15" />
                                 {[...Array(8)].map((_, i) => (
                                   <div
                                     key={i}
-                                    className="absolute w-2 h-2 rounded-full bg-accent-graphite/30 animate-float-particle"
+                                    className="absolute w-2 h-2 rounded-full bg-primary/40 animate-float-particle"
                                     style={{
                                       left: `${10 + i * 12}%`,
                                       animationDelay: `${i * 0.1}s`,
@@ -623,10 +630,10 @@ export default function Manifest() {
                           <button
                             key={goal.id}
                             onClick={() => handleSelectGoal(goal)}
-                            className="group text-left rounded-lg liquid-glass overflow-hidden spring-transition hover:border-foreground/[0.15] hover:bg-card/60 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                            className="group text-left rounded-2xl border border-foreground/[0.08] bg-card/40 backdrop-blur-xl overflow-hidden transition-all duration-300 hover:border-foreground/[0.15] hover:bg-card/60 hover:shadow-lg hover:shadow-primary/5 focus:outline-none focus:ring-2 focus:ring-ring"
                           >
                             {/* Cover image */}
-                            <div className="w-full aspect-[4/3] overflow-hidden bg-muted relative rounded-sm">
+                            <div className="w-full aspect-[4/3] overflow-hidden bg-muted relative">
                               {(goal.cover_image_url || goal.vision_image_url) ? (
                                 <img
                                   src={goal.cover_image_url || goal.vision_image_url || ""}
@@ -641,17 +648,17 @@ export default function Manifest() {
                               )}
                               {/* Overlay badges */}
                               <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
-                              <span className="absolute top-2 left-2 label-editorial px-2 py-0.5 rounded-sm bg-background/80 backdrop-blur-sm text-foreground/80">
+                              <span className="absolute top-2 left-2 text-[9px] font-semibold px-2 py-0.5 rounded-md bg-background/80 backdrop-blur-sm text-foreground/80">
                                 Day {dayNumber}
                               </span>
                               <div className="absolute bottom-2 left-2 right-2">
-                                <h3 className="font-light text-foreground text-sm leading-tight line-clamp-2 mb-1">{goal.title}</h3>
+                                <h3 className="font-semibold text-foreground text-sm leading-tight line-clamp-2 mb-1">{goal.title}</h3>
                                 <div className="flex items-center gap-1.5">
-                                  <span className="inline-flex items-center text-[9px] font-semibold px-1.5 py-0.5 rounded-sm bg-accent-graphite/20 text-accent-graphite backdrop-blur-sm">
+                                  <span className="inline-flex items-center text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/20 text-primary backdrop-blur-sm">
                                     {momentumPct}%
                                   </span>
                                   {streak > 0 && (
-                                    <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-sm bg-accent-graphite/20 text-accent-graphite backdrop-blur-sm">
+                                    <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-destructive/20 text-destructive backdrop-blur-sm">
                                       <Flame className="h-2 w-2" /> {streak}
                                     </span>
                                   )}
@@ -674,6 +681,7 @@ export default function Manifest() {
                       ? Math.floor((Date.now() - new Date(goal.start_date).getTime()) / 86400000) + 1
                       : Math.floor((Date.now() - new Date(goal.created_at).getTime()) / 86400000) + 1;
 
+                    // Weekly progress
                     const weekProgress: boolean[] = [];
                     const practiceMap = new Set(practices.filter((p) => p.goal_id === goal.id && p.locked).map((p) => p.entry_date));
                     for (let i = 6; i >= 0; i--) {
@@ -684,9 +692,9 @@ export default function Manifest() {
 
                     return (
                       <div className="flex flex-col items-center gap-3">
-                        <div className="w-full rounded-lg liquid-glass overflow-hidden relative">
+                        <div className="w-full rounded-2xl border border-foreground/[0.08] bg-card/40 backdrop-blur-xl overflow-hidden relative">
                           {/* Large cover */}
-                          <div className="w-full aspect-video overflow-hidden bg-muted relative rounded-sm">
+                          <div className="w-full aspect-video overflow-hidden bg-muted relative">
                             {(goal.cover_image_url || goal.vision_image_url) ? (
                               <img
                                 src={goal.cover_image_url || goal.vision_image_url || ""}
@@ -705,13 +713,13 @@ export default function Manifest() {
                               <>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setSingleIndex((idx - 1 + activeGoals.length) % activeGoals.length); }}
-                                  className="absolute left-2 top-1/2 -translate-y-1/2 h-11 w-11 rounded-sm bg-background/70 backdrop-blur-sm flex items-center justify-center hover:bg-background/90 transition-colors"
+                                  className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center hover:bg-background/90 transition-colors"
                                 >
                                   <ChevronLeft className="h-4 w-4 text-foreground" />
                                 </button>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setSingleIndex((idx + 1) % activeGoals.length); }}
-                                  className="absolute right-2 top-1/2 -translate-y-1/2 h-11 w-11 rounded-sm bg-background/70 backdrop-blur-sm flex items-center justify-center hover:bg-background/90 transition-colors"
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center hover:bg-background/90 transition-colors"
                                 >
                                   <ChevronRight className="h-4 w-4 text-foreground" />
                                 </button>
@@ -719,19 +727,19 @@ export default function Manifest() {
                             )}
 
                             {/* Day badge */}
-                            <span className="absolute top-2 left-2 label-editorial px-2 py-0.5 rounded-sm bg-background/80 backdrop-blur-sm text-foreground/80">
+                            <span className="absolute top-2 left-2 text-[9px] font-semibold px-2 py-0.5 rounded-md bg-background/80 backdrop-blur-sm text-foreground/80">
                               Day {dayNumber}
                             </span>
 
                             {/* Bottom overlay content */}
                             <div className="absolute bottom-3 left-3 right-3">
-                              <h3 className="font-light text-foreground text-lg leading-tight mb-1.5">{goal.title}</h3>
+                              <h3 className="font-semibold text-foreground text-lg leading-tight mb-1.5">{goal.title}</h3>
                               <div className="flex items-center gap-2 mb-2">
-                                <span className="inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-sm bg-accent-graphite/20 text-accent-graphite backdrop-blur-sm">
+                                <span className="inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/20 text-primary backdrop-blur-sm">
                                   {momentumPct}% Momentum
                                 </span>
                                 {streak > 0 && (
-                                  <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-sm bg-accent-graphite/20 text-accent-graphite backdrop-blur-sm">
+                                  <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-destructive/20 text-destructive backdrop-blur-sm">
                                     <Flame className="h-2.5 w-2.5" /> {streak} day streak
                                   </span>
                                 )}
@@ -745,15 +753,15 @@ export default function Manifest() {
                               {["M","T","W","T","F","S","S"].map((day, i) => (
                                 <div key={i} className="flex flex-col items-center gap-px">
                                   <span className="text-[7px] font-medium text-muted-foreground leading-none">{day}</span>
-                                  <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-colors ${weekProgress[i] ? "bg-accent-graphite border-accent-graphite" : "border-foreground/10 bg-transparent"}`}>
-                                    {weekProgress[i] && <Check className="h-2 w-2 text-background" />}
+                                  <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-colors ${weekProgress[i] ? "bg-primary border-primary" : "border-foreground/10 bg-transparent"}`}>
+                                    {weekProgress[i] && <Check className="h-2 w-2 text-primary-foreground" />}
                                   </div>
                                 </div>
                               ))}
                             </div>
                             <button
                               onClick={() => handleSelectGoal(goal)}
-                              className="h-9 w-9 rounded-sm flex items-center justify-center bg-accent-graphite/10 text-accent-graphite hover:bg-accent-graphite/20 spring-transition"
+                              className="h-9 w-9 rounded-full flex items-center justify-center bg-primary/10 text-primary hover:bg-primary/20 transition-all duration-300 hover:shadow-[0_0_16px_hsl(var(--primary)/0.4)]"
                               title="Practice"
                             >
                               <Play className="h-4 w-4 ml-0.5" />
@@ -770,7 +778,7 @@ export default function Manifest() {
                                 onClick={() => setSingleIndex(i)}
                                 className={cn(
                                   "rounded-full transition-all duration-200",
-                                  i === idx ? "w-4 h-1.5 bg-accent-graphite" : "w-1.5 h-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                                  i === idx ? "w-4 h-1.5 bg-primary" : "w-1.5 h-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"
                                 )}
                               />
                             ))}
@@ -787,9 +795,9 @@ export default function Manifest() {
                 <div className="mt-4 px-1">
                   <button
                     onClick={() => setShowCompleted(!showCompleted)}
-                    className="w-full p-3 flex items-center justify-between rounded-lg liquid-glass hover:bg-card/50 transition-all duration-200"
+                    className="w-full p-3 flex items-center justify-between rounded-2xl bg-card/30 backdrop-blur-xl border border-foreground/[0.08] hover:bg-card/50 transition-all duration-200"
                   >
-                    <span className="label-editorial text-muted-foreground">
+                    <span className="text-xs font-medium text-muted-foreground">
                       Manifested Realities ({completedGoals.length})
                     </span>
                     {showCompleted ? (
@@ -826,23 +834,45 @@ export default function Manifest() {
 
           </div>
 
-          {/* ========== FLOATING INSIGHTS PANEL ========== */}
-          <div className="hidden lg:block fixed top-24 right-6 w-80 z-30">
-            <div className="liquid-glass rounded-lg shadow-2xl p-5 space-y-4">
-              <span className="label-editorial text-accent-graphite">Insights</span>
+          {/* ========== RIGHT COLUMN: Editorial ========== */}
+          <div className="hidden md:flex flex-col h-full min-h-0 overflow-y-auto">
+            <div className="flex flex-col gap-6 py-6 px-5">
+              {/* Badge */}
+              <Badge variant="secondary" className="w-fit rounded-full px-3 py-1 gap-1.5">
+                <Sparkles className="h-3 w-3" />
+                Manifestation
+              </Badge>
 
-              {/* Motivational quote */}
-              <p className="text-sm text-muted-foreground italic leading-relaxed">
-                "{getMotivationalQuote()}"
+              {/* Title */}
+              <div>
+                <h1 className="text-3xl font-light text-foreground tracking-tight leading-tight">
+                  Manifest Your
+                </h1>
+                <h1 className="text-3xl font-semibold text-foreground tracking-tight leading-tight">
+                  Reality
+                </h1>
+              </div>
+
+              {/* Description */}
+              <p className="text-muted-foreground text-base leading-relaxed max-w-md">
+                What you imagine, you create. Visualize daily, act boldly, and trust the process. Small aligned actions compound into extraordinary transformations.
               </p>
 
+              {/* Divider */}
               <div className="h-px bg-border" />
 
-              {/* Stats */}
+              {/* Motivational quote */}
+              <div className="bg-muted/30 rounded-xl p-4 border border-border">
+                <p className="text-sm text-muted-foreground italic leading-relaxed">
+                  "{getMotivationalQuote()}"
+                </p>
+              </div>
+
+              {/* Stats summary */}
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-sm bg-accent-graphite/10 flex items-center justify-center">
-                    <Sparkles className="h-4 w-4 text-accent-graphite" />
+                  <div className="h-8 w-8 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
+                    <Sparkles className="h-4 w-4 text-teal-600" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground">{activeGoals.length} Active {activeGoals.length === 1 ? "Reality" : "Realities"}</p>
@@ -852,8 +882,8 @@ export default function Manifest() {
 
                 {aggregateStreak > 0 && (
                   <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-sm bg-accent-graphite/10 flex items-center justify-center">
-                      <span className="text-sm font-bold text-accent-graphite">{aggregateStreak}</span>
+                    <div className="h-8 w-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                      <span className="text-sm font-bold text-orange-600">{aggregateStreak}</span>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-foreground">Day Streak</p>
@@ -864,8 +894,8 @@ export default function Manifest() {
 
                 {avgMomentum > 0 && (
                   <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-sm bg-accent-graphite/10 flex items-center justify-center">
-                      <TrendingUp className="h-4 w-4 text-accent-graphite" />
+                    <div className="h-8 w-8 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
+                      <TrendingUp className="h-4 w-4 text-cyan-600" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-foreground">{avgMomentum}% Momentum</p>
@@ -890,7 +920,7 @@ export default function Manifest() {
 
         {/* Delete Dialog */}
         <AlertDialog open={!!deletingGoal} onOpenChange={(open) => !open && setDeletingGoal(null)}>
-          <AlertDialogContent className="rounded-lg">
+          <AlertDialogContent className="rounded-2xl">
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Reality</AlertDialogTitle>
               <AlertDialogDescription>
@@ -898,10 +928,10 @@ export default function Manifest() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel className="rounded-sm">Cancel</AlertDialogCancel>
+              <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDeleteGoal}
-                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-sm"
+                className="bg-red-500 hover:bg-red-600 text-white rounded-xl"
               >
                 Delete
               </AlertDialogAction>

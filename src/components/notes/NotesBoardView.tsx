@@ -261,7 +261,7 @@ export function NotesBoardView({
           const isExpanded = expandedMobileGroups.has(group.id);
 
           return (
-            <div key={group.id} className="rounded-[12px] border border-white/[0.1] bg-white/[0.03] backdrop-blur-xl overflow-hidden">
+            <div key={group.id} className="rounded-xl border border-border bg-card overflow-hidden">
               <button
                 onClick={() => toggleMobileGroup(group.id)}
                 className="w-full flex items-center gap-3 px-3 py-3 text-left hover:bg-muted/5 transition-colors"
@@ -271,7 +271,7 @@ export function NotesBoardView({
                   style={{ background: CATEGORY_GRADIENTS[group.id] || group.color }}
                 />
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-light tracking-widest text-foreground truncate">{group.name}</h3>
+                  <h3 className="text-sm font-medium text-foreground truncate">{group.name}</h3>
                 </div>
                 <span className="text-xs text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full">{groupNotes.length}</span>
                 <Plus
@@ -387,7 +387,7 @@ export function NotesBoardView({
   // Desktop: horizontal columns
   return (
     <ScrollArea className="w-full">
-      <div className="flex gap-5 pb-6 pl-1 pr-4 min-w-max relative film-grain">
+      <div className="flex gap-5 pb-6 pl-1 pr-4 min-w-max">
         {sortedGroups.map((group) => {
           const groupNotes = notes.filter((n) => n.groupId === group.id);
           const groupFolders = folders.filter((f) => f.groupId === group.id);
@@ -430,28 +430,28 @@ export function NotesBoardView({
                   className="h-0.5 rounded-sm mb-3"
                   style={{ background: CATEGORY_GRADIENTS[group.id] || group.color }}
                 />
-              <div className="flex items-center justify-between px-1">
-                  <h3 className="font-light text-foreground/80 text-sm tracking-widest">{group.name}</h3>
-                  <span className="text-[11px] font-light tracking-[0.3em] text-muted-foreground/50">{groupNotes.length}</span>
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="font-medium text-foreground/80 text-sm">{group.name}</h3>
+                  <span className="text-xs text-muted-foreground">{groupNotes.length}</span>
                 </div>
               </div>
 
               {/* Add note + Add section buttons - Modern glassmorphism style */}
               <div className="flex gap-2 mb-3">
-                  <button
-                    onClick={() => onAddNote(group.id, null)}
-                    className="group flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-[11px] font-light tracking-[0.3em] text-muted-foreground hover:text-foreground rounded-[6px] bg-white/[0.02] hover:bg-white/[0.05] backdrop-blur-sm border border-white/[0.05] hover:border-white/[0.1] transition-all duration-300"
-                  >
-                    <Plus className="h-3.5 w-3.5 transition-transform group-hover:rotate-90" />
-                    <span>Add note</span>
-                  </button>
-                  <button
-                    onClick={() => setNewFolderGroupId(group.id)}
-                    className="group flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-[11px] font-light tracking-[0.3em] text-muted-foreground hover:text-foreground rounded-[6px] bg-white/[0.02] hover:bg-white/[0.05] backdrop-blur-sm border border-white/[0.05] hover:border-white/[0.1] transition-all duration-300"
-                  >
-                    <FolderPlus className="h-3.5 w-3.5 transition-transform group-hover:scale-110" />
-                    <span>Add section</span>
-                  </button>
+                <button
+                  onClick={() => onAddNote(group.id, null)}
+                  className="group flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-medium text-muted-foreground hover:text-primary rounded-xl bg-gradient-to-br from-primary/5 via-background/80 to-background/60 hover:from-primary/15 hover:via-primary/5 hover:to-background/80 backdrop-blur-sm border border-primary/10 hover:border-primary/30 shadow-sm hover:shadow-md hover:shadow-primary/5 transition-all duration-300"
+                >
+                  <Plus className="h-3.5 w-3.5 transition-transform group-hover:rotate-90 group-hover:scale-110" />
+                  <span className="group-hover:tracking-wide transition-all">Add note</span>
+                </button>
+                <button
+                  onClick={() => setNewFolderGroupId(group.id)}
+                  className="group flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-medium text-muted-foreground hover:text-violet-600 dark:hover:text-violet-400 rounded-xl bg-gradient-to-br from-violet-500/5 via-background/80 to-background/60 hover:from-violet-500/15 hover:via-violet-500/5 hover:to-background/80 backdrop-blur-sm border border-violet-500/10 hover:border-violet-500/30 shadow-sm hover:shadow-md hover:shadow-violet-500/5 transition-all duration-300"
+                >
+                  <FolderPlus className="h-3.5 w-3.5 transition-transform group-hover:scale-110" />
+                  <span className="group-hover:tracking-wide transition-all">Add section</span>
+                </button>
               </div>
 
               {/* Notes list - Infinite scroll appearance */}
@@ -540,10 +540,10 @@ export function NotesBoardView({
                                     onDrop={(e) => handleNoteReorder(e, note.id, group.id, folder.id)}
                                     onDragLeave={() => setDragOverNoteId(null)}
                                     className={cn(
-                  "rounded-[6px] bg-white/[0.03] backdrop-blur-md border transition-all cursor-grab active:cursor-grabbing group active:scale-[0.98]",
+                                      "rounded-lg bg-background border transition-all cursor-grab active:cursor-grabbing group",
                                       selectedNoteId === note.id
-                                        ? "border-[hsl(215,15%,40%)]/30 shadow-sm"
-                                        : "border-white/[0.05] hover:border-white/[0.1]",
+                                        ? "border-primary/50 shadow-sm"
+                                        : "border-border/30 hover:border-border/60",
                                       draggedNoteId === note.id && "opacity-50 scale-95",
                                       dragOverNoteId === note.id && "border-t-2 border-t-primary",
                                     )}
@@ -590,10 +590,10 @@ export function NotesBoardView({
                         onDrop={(e) => handleNoteReorder(e, note.id, group.id, null)}
                         onDragLeave={() => setDragOverNoteId(null)}
                         className={cn(
-                          "rounded-[6px] bg-white/[0.03] backdrop-blur-md border transition-all cursor-grab active:cursor-grabbing group relative active:scale-[0.98]",
+                          "rounded-lg bg-card/95 backdrop-blur-sm border transition-all cursor-grab active:cursor-grabbing shadow-sm group relative",
                           selectedNoteId === note.id
-                            ? "border-[hsl(215,15%,40%)]/30 ring-1 ring-[hsl(215,15%,40%)]/10"
-                            : "border-white/[0.05] hover:bg-white/[0.05] hover:shadow-sm",
+                            ? "border-primary/50 ring-1 ring-primary/20"
+                            : "border-border/20 hover:bg-card hover:shadow-md",
                           draggedNoteId === note.id && "opacity-50 scale-95",
                           dragOverNoteId === note.id && "border-t-2 border-t-primary",
                           note.isPinned && "border-l-2 border-l-primary/50",
@@ -607,7 +607,7 @@ export function NotesBoardView({
 
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between">
-                                <h4 className="text-sm font-light text-foreground line-clamp-2 transition-all">
+                                <h4 className="text-sm text-foreground line-clamp-2 transition-all">
                                   {note.title || "Untitled"}
                                 </h4>
 

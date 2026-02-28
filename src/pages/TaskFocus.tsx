@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserPreferences } from "@/hooks/useUserSettings";
@@ -54,12 +54,32 @@ const GRADIENT_THEMES = [
 ];
 
 const WALLPAPER_THEMES = [
-  { id: "tokyo-night", name: "Tokyo Night", url: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=1920&q=80" },
-  { id: "swiss-alps", name: "Swiss Alps", url: "https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=1920&q=80" },
-  { id: "bali-rice", name: "Bali Rice Fields", url: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1920&q=80" },
-  { id: "misty-forest", name: "Misty Forest", url: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1920&q=80" },
+  {
+    id: "tokyo-night",
+    name: "Tokyo Night",
+    url: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=1920&q=80",
+  },
+  {
+    id: "swiss-alps",
+    name: "Swiss Alps",
+    url: "https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=1920&q=80",
+  },
+  {
+    id: "bali-rice",
+    name: "Bali Rice Fields",
+    url: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1920&q=80",
+  },
+  {
+    id: "misty-forest",
+    name: "Misty Forest",
+    url: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1920&q=80",
+  },
   { id: "maldives", name: "Maldives", url: "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=1920&q=80" },
-  { id: "santorini", name: "Santorini", url: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=1920&q=80" },
+  {
+    id: "santorini",
+    name: "Santorini",
+    url: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=1920&q=80",
+  },
 ];
 
 const AMBIENT_SOUNDS = [
@@ -143,28 +163,6 @@ export default function TaskFocus() {
   const [showSummary, setShowSummary] = useState(false);
   const [markComplete, setMarkComplete] = useState(false);
 
-  // Atmospheric recede: track mouse movement
-  const [controlsVisible, setControlsVisible] = useState(true);
-  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handleMouseMove = useCallback(() => {
-    setControlsVisible(true);
-    if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
-    if (isRunning) {
-      hideTimeoutRef.current = setTimeout(() => setControlsVisible(false), 3000);
-    }
-  }, [isRunning]);
-
-  useEffect(() => {
-    if (isRunning) {
-      hideTimeoutRef.current = setTimeout(() => setControlsVisible(false), 3000);
-    } else {
-      setControlsVisible(true);
-      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
-    }
-    return () => { if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current); };
-  }, [isRunning]);
-
   const [settings, setSettings] = useState<FocusSettings>(() => {
     if (prefs.focus_settings) {
       return prefs.focus_settings as unknown as FocusSettings;
@@ -183,6 +181,7 @@ export default function TaskFocus() {
     };
   });
 
+  // Sync from DB
   useEffect(() => {
     if (prefs.focus_settings) {
       setSettings(prefs.focus_settings as unknown as FocusSettings);
@@ -248,12 +247,10 @@ export default function TaskFocus() {
   useEffect(() => {
     updatePrefs({ focus_settings: settings as any });
   }, [settings]);
-
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
-
   useEffect(() => {
     if (!settings.showQuotes) return;
     const rotateQuote = () => {
@@ -266,11 +263,9 @@ export default function TaskFocus() {
     const interval = setInterval(rotateQuote, settings.quoteFrequency * 60 * 1000);
     return () => clearInterval(interval);
   }, [settings.showQuotes, settings.quoteFrequency]);
-
   useEffect(() => {
     if (timerMode !== "Stopwatch") setSecondsRemaining(timerMinutes * 60);
   }, [timerMinutes, timerMode]);
-
   useEffect(() => {
     if (isRunning) {
       intervalRef.current = setInterval(() => {
@@ -373,20 +368,20 @@ export default function TaskFocus() {
           style={{ background: getBackground(), backgroundSize: "cover", backgroundPosition: "center" }}
         />
         <div className="absolute inset-0 bg-black/70 backdrop-blur-md" />
-        <div className="relative z-10 w-full max-w-md bg-black/40 backdrop-blur-2xl rounded-sm border border-white/10 p-8 space-y-6">
+        <div className="relative z-10 w-full max-w-md bg-black/40 backdrop-blur-2xl rounded-3xl border border-white/10 p-8 space-y-6">
           <div className="text-center">
-            <div className="h-20 w-20 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-5">
-              <Sparkles className="h-10 w-10 text-white/60" />
+            <div className="h-20 w-20 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center mx-auto mb-5">
+              <Sparkles className="h-10 w-10 text-primary" />
             </div>
-            <h2 className="text-3xl font-light text-white tracking-[0.1em]">Session Complete</h2>
-            <p className="text-white/40 mt-2 text-sm">{task.title}</p>
+            <h2 className="text-3xl font-bold text-white">Session Complete!</h2>
+            <p className="text-white/50 mt-2">{task.title}</p>
           </div>
-          <div className="bg-white/5 rounded-sm p-6 text-center border border-white/10">
-            <p className="text-6xl font-light text-white tabular-nums">{sessionMinutes}</p>
-            <p className="text-[11px] tracking-[0.3em] uppercase text-white/40 mt-2">minutes focused</p>
+          <div className="bg-white/5 rounded-2xl p-6 text-center border border-white/10">
+            <p className="text-6xl font-light text-white">{sessionMinutes}</p>
+            <p className="text-sm text-white/50 mt-1">minutes focused</p>
           </div>
           <div
-            className="flex items-center gap-3 p-4 bg-white/5 rounded-sm border border-white/10 cursor-pointer"
+            className="flex items-center gap-3 p-4 bg-white/5 rounded-xl border border-white/10 cursor-pointer"
             onClick={() => setMarkComplete(!markComplete)}
           >
             <Checkbox
@@ -399,12 +394,12 @@ export default function TaskFocus() {
           <div className="flex gap-3">
             <Button
               variant="ghost"
-              className="flex-1 bg-white/5 border border-white/10 text-white hover:bg-white/10 rounded-sm"
+              className="flex-1 bg-white/5 border border-white/10 text-white hover:bg-white/10"
               onClick={() => navigate("/tasks")}
             >
               Skip
             </Button>
-            <Button className="flex-1 rounded-sm" onClick={handleSaveSession}>
+            <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={handleSaveSession}>
               Save Session
             </Button>
           </div>
@@ -413,56 +408,50 @@ export default function TaskFocus() {
     );
 
   return (
-    <div className="fixed inset-0 overflow-hidden" onMouseMove={handleMouseMove}>
+    <div className="fixed inset-0 overflow-hidden">
       <div
         className="absolute inset-0 transition-all duration-1000"
         style={{ background: getBackground(), backgroundSize: "cover", backgroundPosition: "center" }}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/40" />
 
-      {/* Top bar — atmospheric recede */}
-      <div
-        className={cn(
-          "absolute top-0 left-0 right-0 z-30 transition-opacity duration-700",
-          isRunning && !controlsVisible ? "opacity-[0.08]" : "opacity-100"
-        )}
-      >
+      <div className="absolute top-0 left-0 right-0 z-30">
         <div className="flex items-center justify-between px-6 py-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate("/tasks")}
-            className="text-white/70 hover:text-white hover:bg-white/10 rounded-sm"
+            className="text-white/70 hover:text-white hover:bg-white/10 rounded-xl"
           >
-            <ArrowLeft className="h-5 w-5" strokeWidth={1.5} />
+            <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleFullscreen}
-              className="text-white/70 hover:text-white hover:bg-white/10 rounded-sm"
+              className="text-white/70 hover:text-white hover:bg-white/10 rounded-xl"
             >
-              <Maximize className="h-5 w-5" strokeWidth={1.5} />
+              <Maximize className="h-5 w-5" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setSettings((s) => ({ ...s, zenMode: !s.zenMode }))}
-              className="text-white/70 hover:text-white hover:bg-white/10 rounded-sm"
+              className="text-white/70 hover:text-white hover:bg-white/10 rounded-xl"
             >
-              {settings.zenMode ? <EyeOff className="h-5 w-5" strokeWidth={1.5} /> : <Eye className="h-5 w-5" strokeWidth={1.5} />}
+              {settings.zenMode ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </Button>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setShowSettings(!showSettings)}
               className={cn(
-                "text-white/70 hover:text-white hover:bg-white/10 rounded-sm",
+                "text-white/70 hover:text-white hover:bg-white/10 rounded-xl",
                 showSettings && "bg-white/10",
               )}
             >
-              <Settings2 className="h-5 w-5" strokeWidth={1.5} />
+              <Settings2 className="h-5 w-5" />
             </Button>
           </div>
         </div>
@@ -473,10 +462,9 @@ export default function TaskFocus() {
           className={cn(
             "absolute top-6 right-40 max-w-xs text-right transition-all duration-700 z-20",
             quoteVisible ? "opacity-100" : "opacity-0",
-            isRunning && !controlsVisible ? "opacity-[0.08]" : "",
           )}
         >
-          <p className="text-white/80 text-sm italic font-['Playfair_Display']">"{currentQuote.text}"</p>
+          <p className="text-white/80 text-sm italic">"{currentQuote.text}"</p>
           {currentQuote.author && <p className="text-white/40 text-xs mt-1">— {currentQuote.author}</p>}
         </div>
       )}
@@ -484,36 +472,22 @@ export default function TaskFocus() {
       {!settings.zenMode && (
         <div className="absolute inset-0 flex flex-col items-center justify-center z-20 px-8">
           {settings.showGreeting && (
-            <p className={cn(
-              "text-white/90 text-xl mb-4 text-center font-light transition-opacity duration-700",
-              isRunning && !controlsVisible ? "opacity-[0.08]" : "opacity-100"
-            )}>{getGreeting(currentTime.getHours())}</p>
+            <p className="text-white/90 text-xl mb-4 text-center">{getGreeting(currentTime.getHours())}</p>
           )}
-          <div className={cn("text-white text-8xl md:text-9xl tracking-tight mb-8 tabular-nums", clockStyle.fontClass)}>
+          <div className={cn("text-white text-8xl md:text-9xl tracking-tight mb-8", clockStyle.fontClass)}>
             {formatClockTime()}
           </div>
           {(isRunning || secondsRemaining !== timerMinutes * 60 || timerMode === "Stopwatch") && (
             <div className="mb-8">
-              {/* Breathing glow container */}
-              <div className={cn(
-                "bg-black/30 backdrop-blur-xl rounded-sm px-8 py-4 border border-white/10 relative",
-                isRunning && "animate-[focus-breathe_4s_ease-in-out_infinite]"
-              )}
-                style={isRunning ? {
-                  boxShadow: "0 0 40px hsl(0 0% 100% / 0.05)",
-                } : undefined}
-              >
-                <p className="text-white/40 text-[11px] tracking-[0.3em] uppercase text-center mb-2">{task.title}</p>
-                <p className="text-white text-5xl font-light text-center tabular-nums">{formatTime(secondsRemaining)}</p>
-                {timerMode !== "Stopwatch" && <Progress value={progress} className="h-[1px] mt-4 bg-white/10" />}
+              <div className="bg-black/30 backdrop-blur-xl rounded-2xl px-8 py-4 border border-white/10">
+                <p className="text-white/50 text-sm text-center mb-2">{task.title}</p>
+                <p className="text-white text-5xl font-light text-center">{formatTime(secondsRemaining)}</p>
+                {timerMode !== "Stopwatch" && <Progress value={progress} className="h-1 mt-4 bg-white/10" />}
               </div>
             </div>
           )}
-          <div className={cn(
-            "flex flex-col items-center gap-4 transition-opacity duration-700",
-            isRunning && !controlsVisible ? "opacity-[0.08]" : "opacity-100"
-          )}>
-            <div className="flex gap-2 p-1 bg-black/30 backdrop-blur-xl rounded-sm border border-white/10">
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex gap-2 p-1 bg-black/30 backdrop-blur-xl rounded-full border border-white/10">
               {TIMER_MODES.map((mode) => (
                 <Button
                   key={mode}
@@ -528,7 +502,7 @@ export default function TaskFocus() {
                     }
                   }}
                   className={cn(
-                    "text-[11px] tracking-[0.15em] px-5 py-2 rounded-sm",
+                    "text-sm px-5 py-2 rounded-full",
                     timerMode === mode ? "bg-white/15 text-white" : "text-white/50 hover:text-white",
                   )}
                 >
@@ -541,9 +515,9 @@ export default function TaskFocus() {
                 <Button
                   size="lg"
                   onClick={() => setIsRunning(true)}
-                  className="bg-white text-black hover:bg-white/90 px-12 py-6 text-lg rounded-sm shadow-lg"
+                  className="bg-white text-black hover:bg-white/90 px-12 py-6 text-lg rounded-2xl shadow-lg"
                 >
-                  <Play className="h-6 w-6 mr-2" strokeWidth={1.5} />
+                  <Play className="h-6 w-6 mr-2" />
                   Start Focus
                 </Button>
               ) : (
@@ -551,15 +525,15 @@ export default function TaskFocus() {
                   <Button
                     size="lg"
                     onClick={() => setIsRunning(false)}
-                    className="bg-white/10 hover:bg-white/15 text-white px-8 py-6 rounded-sm border border-white/10"
+                    className="bg-white/10 hover:bg-white/15 text-white px-8 py-6 rounded-2xl border border-white/10"
                   >
-                    <Pause className="h-5 w-5 mr-2" strokeWidth={1.5} />
+                    <Pause className="h-5 w-5 mr-2" />
                     Pause
                   </Button>
                   <Button
                     size="lg"
                     onClick={handleEndSession}
-                    className="bg-white/10 hover:bg-white/15 text-white px-8 py-6 rounded-sm border border-white/10"
+                    className="bg-white/10 hover:bg-white/15 text-white px-8 py-6 rounded-2xl border border-white/10"
                   >
                     End
                   </Button>
@@ -570,37 +544,33 @@ export default function TaskFocus() {
         </div>
       )}
 
-      {/* Bottom bar — atmospheric recede */}
-      <div className={cn(
-        "absolute bottom-6 left-6 right-6 z-30 transition-opacity duration-700",
-        isRunning && !controlsVisible ? "opacity-[0.08]" : "opacity-100"
-      )}>
+      <div className="absolute bottom-6 left-6 right-6 z-30">
         <div className="flex items-center justify-between">
-          <div className="flex gap-2 p-2 bg-black/30 backdrop-blur-xl rounded-sm border border-white/10">
+          <div className="flex gap-2 p-2 bg-black/30 backdrop-blur-xl rounded-2xl border border-white/10">
             <Button
               variant="ghost"
               size="icon"
-              className="text-white/50 hover:text-white hover:bg-white/10 rounded-sm h-10 w-10"
+              className="text-white/50 hover:text-white hover:bg-white/10 rounded-xl h-10 w-10"
             >
-              <Music className="h-4 w-4" strokeWidth={1.5} />
+              <Music className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="text-white/50 hover:text-white hover:bg-white/10 rounded-sm h-10 w-10"
+              className="text-white/50 hover:text-white hover:bg-white/10 rounded-xl h-10 w-10"
             >
-              <Volume2 className="h-4 w-4" strokeWidth={1.5} />
+              <Volume2 className="h-4 w-4" />
             </Button>
           </div>
-          <div className="flex items-center gap-4 p-3 bg-black/30 backdrop-blur-xl rounded-sm border border-white/10">
+          <div className="flex items-center gap-4 p-3 bg-black/30 backdrop-blur-xl rounded-2xl border border-white/10">
             <div className="text-right">
-              <p className="text-[10px] tracking-[0.3em] uppercase text-white/40">Task</p>
-              <p className="text-white text-sm font-light truncate max-w-[200px]">{task.title}</p>
+              <p className="text-white/50 text-xs">Task</p>
+              <p className="text-white text-sm font-medium truncate max-w-[200px]">{task.title}</p>
             </div>
             <div className="h-8 w-px bg-white/10" />
             <div className="text-right">
-              <p className="text-[10px] tracking-[0.3em] uppercase text-white/40">Session</p>
-              <p className="text-white text-sm font-light tabular-nums">{sessionMinutes}m</p>
+              <p className="text-white/50 text-xs">Session</p>
+              <p className="text-white text-sm font-medium">{sessionMinutes}m</p>
             </div>
           </div>
         </div>
@@ -612,38 +582,53 @@ export default function TaskFocus() {
           <div className="fixed top-0 right-0 h-full w-96 bg-black/80 backdrop-blur-2xl border-l border-white/10 z-50 overflow-y-auto">
             <div className="p-6 space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-light text-white tracking-[0.1em]">Settings</h3>
+                <h3 className="text-lg font-medium text-white">Settings</h3>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowSettings(false)}
-                  className="text-white/60 hover:text-white hover:bg-white/10 rounded-sm"
+                  className="text-white/60 hover:text-white hover:bg-white/10 rounded-xl"
                 >
-                  <X className="h-5 w-5" strokeWidth={1.5} />
+                  <X className="h-5 w-5" />
                 </Button>
               </div>
               <Tabs value={settingsTab} onValueChange={setSettingsTab}>
-                <TabsList className="w-full grid grid-cols-4 bg-white/5 rounded-sm p-1">
-                  <TabsTrigger value="themes" className="rounded-sm text-xs text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10">
-                    <Palette className="h-4 w-4" strokeWidth={1.5} />
+                <TabsList className="w-full grid grid-cols-4 bg-white/5 rounded-xl p-1">
+                  <TabsTrigger
+                    value="themes"
+                    className="rounded-lg text-xs text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10"
+                  >
+                    <Palette className="h-4 w-4" />
                   </TabsTrigger>
-                  <TabsTrigger value="clock" className="rounded-sm text-xs text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10">
-                    <Clock className="h-4 w-4" strokeWidth={1.5} />
+                  <TabsTrigger
+                    value="clock"
+                    className="rounded-lg text-xs text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10"
+                  >
+                    <Clock className="h-4 w-4" />
                   </TabsTrigger>
-                  <TabsTrigger value="sounds" className="rounded-sm text-xs text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10">
-                    <Volume2 className="h-4 w-4" strokeWidth={1.5} />
+                  <TabsTrigger
+                    value="sounds"
+                    className="rounded-lg text-xs text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10"
+                  >
+                    <Volume2 className="h-4 w-4" />
                   </TabsTrigger>
-                  <TabsTrigger value="quotes" className="rounded-sm text-xs text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10">
-                    <Quote className="h-4 w-4" strokeWidth={1.5} />
+                  <TabsTrigger
+                    value="quotes"
+                    className="rounded-lg text-xs text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/10"
+                  >
+                    <Quote className="h-4 w-4" />
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="themes" className="space-y-4 mt-4">
-                  <div className="flex gap-2 p-1 bg-white/5 rounded-sm">
+                  <div className="flex gap-2 p-1 bg-white/5 rounded-xl">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setSettings((s) => ({ ...s, themeType: "gradient" }))}
-                      className={cn("flex-1 rounded-sm", settings.themeType === "gradient" ? "bg-white/10 text-white" : "text-white/50")}
+                      className={cn(
+                        "flex-1 rounded-lg",
+                        settings.themeType === "gradient" ? "bg-white/10 text-white" : "text-white/50",
+                      )}
                     >
                       Gradients
                     </Button>
@@ -651,7 +636,10 @@ export default function TaskFocus() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setSettings((s) => ({ ...s, themeType: "wallpaper" }))}
-                      className={cn("flex-1 rounded-sm", settings.themeType === "wallpaper" ? "bg-white/10 text-white" : "text-white/50")}
+                      className={cn(
+                        "flex-1 rounded-lg",
+                        settings.themeType === "wallpaper" ? "bg-white/10 text-white" : "text-white/50",
+                      )}
                     >
                       Wallpapers
                     </Button>
@@ -662,8 +650,10 @@ export default function TaskFocus() {
                         key={theme.id}
                         onClick={() => setSettings((s) => ({ ...s, themeId: theme.id }))}
                         className={cn(
-                          "aspect-square rounded-sm overflow-hidden border-2 transition-all",
-                          settings.themeId === theme.id ? "border-white ring-1 ring-white/30" : "border-transparent hover:border-white/30",
+                          "aspect-square rounded-xl overflow-hidden border-2 transition-all",
+                          settings.themeId === theme.id
+                            ? "border-primary ring-2 ring-primary/30"
+                            : "border-transparent hover:border-white/30",
                         )}
                         style={settings.themeType === "gradient" ? { background: (theme as any).value } : undefined}
                       >
@@ -681,30 +671,41 @@ export default function TaskFocus() {
                         key={style.id}
                         onClick={() => setSettings((s) => ({ ...s, clockStyle: style.id }))}
                         className={cn(
-                          "p-4 rounded-sm border text-center",
-                          settings.clockStyle === style.id ? "border-white bg-white/10" : "border-white/10 hover:border-white/30",
+                          "p-4 rounded-xl border text-center",
+                          settings.clockStyle === style.id
+                            ? "border-primary bg-primary/10"
+                            : "border-white/10 hover:border-white/30",
                         )}
                       >
                         <span className={cn("text-2xl text-white", style.fontClass)}>12:00</span>
-                        <p className="text-[10px] tracking-[0.2em] uppercase text-white/40 mt-1">{style.name}</p>
+                        <p className="text-xs text-white/50 mt-1">{style.name}</p>
                       </button>
                     ))}
                   </div>
                   <div className="flex items-center justify-between py-3 border-t border-white/10">
-                    <span className="text-sm text-white/80 font-light">24-Hour</span>
-                    <Switch checked={settings.is24Hour} onCheckedChange={(c) => setSettings((s) => ({ ...s, is24Hour: c }))} />
+                    <span className="text-sm text-white/80">24-Hour</span>
+                    <Switch
+                      checked={settings.is24Hour}
+                      onCheckedChange={(c) => setSettings((s) => ({ ...s, is24Hour: c }))}
+                    />
                   </div>
                   <div className="flex items-center justify-between py-3 border-t border-white/10">
-                    <span className="text-sm text-white/80 font-light">Show Seconds</span>
-                    <Switch checked={settings.showSeconds} onCheckedChange={(c) => setSettings((s) => ({ ...s, showSeconds: c }))} />
+                    <span className="text-sm text-white/80">Show Seconds</span>
+                    <Switch
+                      checked={settings.showSeconds}
+                      onCheckedChange={(c) => setSettings((s) => ({ ...s, showSeconds: c }))}
+                    />
                   </div>
                   <div className="flex items-center justify-between py-3 border-t border-white/10">
-                    <span className="text-sm text-white/80 font-light">Show Greeting</span>
-                    <Switch checked={settings.showGreeting} onCheckedChange={(c) => setSettings((s) => ({ ...s, showGreeting: c }))} />
+                    <span className="text-sm text-white/80">Show Greeting</span>
+                    <Switch
+                      checked={settings.showGreeting}
+                      onCheckedChange={(c) => setSettings((s) => ({ ...s, showGreeting: c }))}
+                    />
                   </div>
                 </TabsContent>
                 <TabsContent value="sounds" className="space-y-4 mt-4">
-                  <p className="text-[11px] tracking-[0.15em] text-white/40">Mix ambient sounds for your focus environment.</p>
+                  <p className="text-xs text-white/50">Mix ambient sounds for your focus environment.</p>
                   {AMBIENT_SOUNDS.map((sound) => {
                     const Icon = sound.icon;
                     const volume = settings.ambientVolumes[sound.id] || 0;
@@ -712,10 +713,10 @@ export default function TaskFocus() {
                       <div key={sound.id} className="space-y-2">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <Icon className="h-4 w-4 text-white/40" strokeWidth={1.5} />
-                            <span className="text-sm text-white/70 font-light">{sound.name}</span>
+                            <Icon className="h-4 w-4 text-white/50" />
+                            <span className="text-sm text-white/80">{sound.name}</span>
                           </div>
-                          <span className="text-[10px] tracking-[0.15em] text-white/30 tabular-nums">{volume}%</span>
+                          <span className="text-xs text-white/40">{volume}%</span>
                         </div>
                         <Slider
                           value={[volume]}
@@ -732,8 +733,11 @@ export default function TaskFocus() {
                 </TabsContent>
                 <TabsContent value="quotes" className="space-y-4 mt-4">
                   <div className="flex items-center justify-between py-3">
-                    <span className="text-sm text-white/80 font-light">Show Quotes</span>
-                    <Switch checked={settings.showQuotes} onCheckedChange={(c) => setSettings((s) => ({ ...s, showQuotes: c }))} />
+                    <span className="text-sm text-white/80">Show Quotes</span>
+                    <Switch
+                      checked={settings.showQuotes}
+                      onCheckedChange={(c) => setSettings((s) => ({ ...s, showQuotes: c }))}
+                    />
                   </div>
                   {settings.showQuotes && (
                     <div className="flex gap-2">
@@ -743,7 +747,10 @@ export default function TaskFocus() {
                           variant="ghost"
                           size="sm"
                           onClick={() => setSettings((s) => ({ ...s, quoteFrequency: min }))}
-                          className={cn("flex-1 rounded-sm", settings.quoteFrequency === min ? "bg-white/10 text-white" : "text-white/50")}
+                          className={cn(
+                            "flex-1 rounded-lg",
+                            settings.quoteFrequency === min ? "bg-white/10 text-white" : "text-white/50",
+                          )}
                         >
                           {min}m
                         </Button>

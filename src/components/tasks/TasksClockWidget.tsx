@@ -11,6 +11,7 @@ import {
   addMonths,
   subMonths,
 } from "date-fns";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useTimezone } from "@/hooks/useTimezone";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
@@ -43,6 +44,7 @@ export function TasksClockWidget() {
   });
   const [dbSynced, setDbSynced] = useState(false);
 
+  // Sync from DB once
   useEffect(() => {
     if (!dbSynced && prefs.clock_widget_mode) {
       setModeState(prefs.clock_widget_mode as WidgetMode);
@@ -51,41 +53,50 @@ export function TasksClockWidget() {
     }
   }, [prefs.clock_widget_mode, dbSynced]);
 
+  // User-driven mode change
   const setMode = (newMode: WidgetMode) => {
     setModeState(newMode);
     localStorage.setItem(STORAGE_KEY, newMode);
     updatePrefs({ clock_widget_mode: newMode });
   };
-
   const [now, setNow] = useState(new Date());
   const { timezone, getTimeInTimezone, formatInTimezone } = useTimezone();
   const { timeFormat: userTimeFormat } = useTimeFormat();
   const is12h = userTimeFormat === "12h";
 
+  // Stopwatch state
   const [stopwatchMs, setStopwatchMs] = useState(0);
   const [stopwatchRunning, setStopwatchRunning] = useState(false);
+
+  // Timer state
   const [timerSeconds, setTimerSeconds] = useState(25 * 60);
   const [timerRemaining, setTimerRemaining] = useState(25 * 60);
   const [timerRunning, setTimerRunning] = useState(false);
+
+  // Calendar state
   const [calendarMonth, setCalendarMonth] = useState(new Date());
 
+  // Clock tick
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
+  // Stopwatch tick
   useEffect(() => {
     if (!stopwatchRunning) return;
     const interval = setInterval(() => setStopwatchMs((prev) => prev + 10), 10);
     return () => clearInterval(interval);
   }, [stopwatchRunning]);
 
+  // Timer tick
   useEffect(() => {
     if (!timerRunning || timerRemaining <= 0) return;
     const interval = setInterval(() => {
       setTimerRemaining((prev) => {
         if (prev <= 1) {
           setTimerRunning(false);
+          // Play simple beep
           try {
             const ctx = new AudioContext();
             const osc = ctx.createOscillator();
@@ -115,6 +126,7 @@ export function TasksClockWidget() {
     return `${mins.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
+  // Analog clock calculations — timezone-aware
   const tzTime = getTimeInTimezone(now);
   const seconds = tzTime.seconds;
   const minutes = tzTime.minutes;
@@ -123,6 +135,7 @@ export function TasksClockWidget() {
   const minuteDeg = minutes * 6 + seconds * 0.1;
   const hourDeg = hours * 30 + minutes * 0.5;
 
+  // Calendar data
   const calendarDays = useMemo(() => {
     const monthStart = startOfMonth(calendarMonth);
     const monthEnd = endOfMonth(calendarMonth);
@@ -141,6 +154,9 @@ export function TasksClockWidget() {
 
   return (
     <div className="h-full w-full relative overflow-hidden">
+      {/* Subtle background effects */}
+      <div className="absolute top-0 right-0 -mr-12 -mt-12 w-40 h-40 bg-gradient-to-br from-primary/8 to-transparent rounded-full blur-2xl pointer-events-none" />
+
       <div className="p-3 h-full flex flex-col">
         {/* Mode Switcher */}
         <div className="flex items-center justify-center gap-1 mb-3">
@@ -151,13 +167,13 @@ export function TasksClockWidget() {
               size="sm"
               onClick={() => setMode(id)}
               className={cn(
-                "h-7 w-7 p-0 rounded-sm transition-all",
+                "h-7 w-7 p-0 rounded-lg transition-all",
                 mode === id
-                  ? "bg-foreground/10 text-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-foreground/5",
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
               )}
             >
-              <Icon className="h-3.5 w-3.5" strokeWidth={1.5} />
+              <Icon className="h-3.5 w-3.5" />
             </Button>
           ))}
         </div>
@@ -166,11 +182,11 @@ export function TasksClockWidget() {
         <div className="flex-1 flex items-center justify-center">
           {mode === "digital" && (
             <div className="text-center space-y-2">
-              <div className="text-[10px] tracking-[0.4em] uppercase opacity-40">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.4em] text-primary/70">
                 {formatInTimezone(now, { weekday: "long" })}
               </div>
               <div className="flex items-baseline justify-center gap-1">
-                <span className="text-5xl font-light tracking-tight text-foreground tabular-nums selection:bg-primary selection:text-primary-foreground">
+                <span className="text-5xl font-black tracking-tight bg-gradient-to-br from-foreground via-foreground to-muted-foreground bg-clip-text text-transparent drop-shadow-sm">
                   {formatInTimezone(now, { hour: "numeric", minute: "2-digit", hour12: is12h }).replace(
                     /\s?(AM|PM)$/i,
                     "",
@@ -178,31 +194,34 @@ export function TasksClockWidget() {
                 </span>
                 <div className="flex flex-col items-start ml-1">
                   {is12h && (
-                    <span className="text-[11px] tracking-[0.3em] uppercase opacity-40">
+                    <span className="text-sm font-bold text-primary/60">
                       {formatInTimezone(now, { hour: "numeric", hour12: true }).replace(/^[\d:]+\s?/, "")}
                     </span>
                   )}
-                  <span className="text-[11px] font-mono text-muted-foreground/40 tabular-nums">
+                  <span className="text-xs font-mono text-muted-foreground/50 tabular-nums">
                     {String(getTimeInTimezone(now).seconds).padStart(2, "0")}
                   </span>
                 </div>
               </div>
-              <div className="text-[11px] font-light text-muted-foreground/60 tracking-[0.15em]">
+              <div className="text-xs font-medium text-muted-foreground/80 tracking-wide">
                 {formatInTimezone(now, { month: "long", day: "numeric", year: "numeric" })}
               </div>
-              <div className="text-[10px] tracking-[0.3em] uppercase opacity-30">{timezone.replace(/_/g, " ")}</div>
+              <div className="text-[9px] text-muted-foreground/50 tracking-wider">{timezone.replace(/_/g, " ")}</div>
             </div>
           )}
 
           {mode === "analog" && (
             <div className="relative w-36 h-36">
-              {/* Minimal outer ring */}
-              <div className="absolute inset-0 rounded-full border border-foreground/10" />
+              {/* Outer luxury ring */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/20 via-muted/30 to-primary/10 shadow-lg" />
 
               {/* Inner clock face */}
-              <div className="absolute inset-1 rounded-full bg-background border border-border/20" />
+              <div className="absolute inset-1 rounded-full bg-gradient-to-br from-card via-card to-muted/20 border border-border/30 shadow-inner" />
 
-              {/* Hour markers — minimal dashes */}
+              {/* Subtle inner shadow ring */}
+              <div className="absolute inset-2 rounded-full border border-muted-foreground/10" />
+
+              {/* Hour markers */}
               {[...Array(12)].map((_, i) => {
                 const isCardinal = i % 3 === 0;
                 return (
@@ -211,8 +230,8 @@ export function TasksClockWidget() {
                     className={cn(
                       "absolute left-1/2 -translate-x-1/2",
                       isCardinal
-                        ? "w-[1px] h-2.5 bg-foreground/60"
-                        : "w-[1px] h-1.5 bg-foreground/20",
+                        ? "w-2 h-2 rounded-full bg-gradient-to-br from-primary to-primary/70 shadow-sm"
+                        : "w-0.5 h-2 bg-muted-foreground/50 rounded-full",
                     )}
                     style={{
                       top: isCardinal ? "8px" : "10px",
@@ -223,35 +242,38 @@ export function TasksClockWidget() {
                 );
               })}
 
-              {/* Hour hand — ultra-thin */}
+              {/* Hour hand - thick, elegant */}
               <div
-                className="absolute w-[1.5px] h-9 left-1/2 bottom-1/2 origin-bottom bg-foreground/80"
+                className="absolute w-1.5 h-9 left-1/2 bottom-1/2 origin-bottom rounded-full bg-gradient-to-t from-foreground to-foreground/80 shadow-md"
                 style={{ transform: `translateX(-50%) rotate(${hourDeg}deg)` }}
               />
 
-              {/* Minute hand — ultra-thin */}
+              {/* Minute hand - sleek */}
               <div
-                className="absolute w-[1px] h-12 left-1/2 bottom-1/2 origin-bottom bg-foreground/60"
+                className="absolute w-1 h-12 left-1/2 bottom-1/2 origin-bottom rounded-full bg-gradient-to-t from-foreground/90 to-foreground/60 shadow-sm"
                 style={{ transform: `translateX(-50%) rotate(${minuteDeg}deg)` }}
               />
 
-              {/* Second hand — hairline with accent */}
+              {/* Second hand - accent color with tail */}
               <div
-                className="absolute w-[0.5px] h-14 left-1/2 bottom-1/2 origin-[50%_85%] bg-foreground/30"
+                className="absolute w-[2px] h-14 left-1/2 bottom-1/2 origin-[50%_85%] rounded-full"
                 style={{ transform: `translateX(-50%) rotate(${secondDeg}deg)` }}
-              />
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-primary via-primary to-primary/50 rounded-full" />
+                <div className="absolute bottom-0 w-full h-3 bg-primary/60 rounded-full" />
+              </div>
 
-              {/* Center pivot — machined metal pin */}
-              <div className="absolute w-2 h-2 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                <div className="absolute inset-0 rounded-full bg-foreground/70" />
-                <div className="absolute inset-[1px] rounded-full bg-gradient-to-br from-foreground/50 to-foreground/80" />
+              {/* Center dot - luxury with glow */}
+              <div className="absolute w-4 h-4 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary via-primary to-primary/80 shadow-lg" />
+                <div className="absolute inset-1 rounded-full bg-gradient-to-br from-primary-foreground/30 to-transparent" />
               </div>
             </div>
           )}
 
           {mode === "stopwatch" && (
             <div className="text-center space-y-3">
-              <div className="text-3xl font-mono font-light tracking-wider text-foreground tabular-nums">
+              <div className="text-3xl font-mono font-bold tracking-wider text-foreground tabular-nums">
                 {formatStopwatch(stopwatchMs)}
               </div>
               <div className="flex items-center justify-center gap-2">
@@ -259,10 +281,10 @@ export function TasksClockWidget() {
                   size="sm"
                   variant={stopwatchRunning ? "outline" : "default"}
                   onClick={() => setStopwatchRunning(!stopwatchRunning)}
-                  className="h-8 px-3 rounded-sm"
+                  className="h-8 px-3"
                 >
-                  {stopwatchRunning ? <Pause className="h-3 w-3 mr-1" strokeWidth={1.5} /> : <Play className="h-3 w-3 mr-1" strokeWidth={1.5} />}
-                  <span className="text-[11px] tracking-[0.15em]">{stopwatchRunning ? "Pause" : "Start"}</span>
+                  {stopwatchRunning ? <Pause className="h-3 w-3 mr-1" /> : <Play className="h-3 w-3 mr-1" />}
+                  {stopwatchRunning ? "Pause" : "Start"}
                 </Button>
                 <Button
                   size="sm"
@@ -272,9 +294,9 @@ export function TasksClockWidget() {
                     setStopwatchRunning(false);
                   }}
                   disabled={stopwatchMs === 0}
-                  className="h-8 px-2 rounded-sm"
+                  className="h-8 px-2"
                 >
-                  <RotateCcw className="h-3 w-3" strokeWidth={1.5} />
+                  <RotateCcw className="h-3 w-3" />
                 </Button>
               </div>
             </div>
@@ -284,13 +306,14 @@ export function TasksClockWidget() {
             <div className="text-center space-y-2">
               <div
                 className={cn(
-                  "text-3xl font-mono font-light tracking-wider tabular-nums transition-colors",
+                  "text-3xl font-mono font-bold tracking-wider tabular-nums transition-colors",
                   timerRemaining === 0 ? "text-destructive" : "text-foreground",
                 )}
               >
                 {formatTimer(timerRemaining)}
               </div>
 
+              {/* Presets */}
               <div className="flex items-center justify-center gap-1">
                 {TIMER_PRESETS.map((preset) => (
                   <Button
@@ -302,7 +325,7 @@ export function TasksClockWidget() {
                       setTimerRemaining(preset.seconds);
                       setTimerRunning(false);
                     }}
-                    className="h-6 px-2 text-[10px] tracking-[0.15em] rounded-sm"
+                    className="h-6 px-2 text-[10px]"
                   >
                     {preset.label}
                   </Button>
@@ -315,10 +338,10 @@ export function TasksClockWidget() {
                   variant={timerRunning ? "outline" : "default"}
                   onClick={() => setTimerRunning(!timerRunning)}
                   disabled={timerRemaining === 0}
-                  className="h-7 px-3 rounded-sm"
+                  className="h-7 px-3"
                 >
-                  {timerRunning ? <Pause className="h-3 w-3 mr-1" strokeWidth={1.5} /> : <Play className="h-3 w-3 mr-1" strokeWidth={1.5} />}
-                  <span className="text-[11px] tracking-[0.15em]">{timerRunning ? "Pause" : "Start"}</span>
+                  {timerRunning ? <Pause className="h-3 w-3 mr-1" /> : <Play className="h-3 w-3 mr-1" />}
+                  {timerRunning ? "Pause" : "Start"}
                 </Button>
                 <Button
                   size="sm"
@@ -327,9 +350,9 @@ export function TasksClockWidget() {
                     setTimerRemaining(timerSeconds);
                     setTimerRunning(false);
                   }}
-                  className="h-7 px-2 rounded-sm"
+                  className="h-7 px-2"
                 >
-                  <RotateCcw className="h-3 w-3" strokeWidth={1.5} />
+                  <RotateCcw className="h-3 w-3" />
                 </Button>
               </div>
             </div>
@@ -337,36 +360,39 @@ export function TasksClockWidget() {
 
           {mode === "calendar" && (
             <div className="w-full space-y-1">
+              {/* Month nav */}
               <div className="flex items-center justify-between px-1">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-5 w-5 p-0 rounded-sm"
+                  className="h-5 w-5 p-0"
                   onClick={() => setCalendarMonth(subMonths(calendarMonth, 1))}
                 >
-                  <ChevronLeft className="h-3 w-3" strokeWidth={1.5} />
+                  <ChevronLeft className="h-3 w-3" />
                 </Button>
-                <span className="text-[10px] tracking-[0.3em] uppercase opacity-50">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   {format(calendarMonth, "MMM yyyy")}
                 </span>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-5 w-5 p-0 rounded-sm"
+                  className="h-5 w-5 p-0"
                   onClick={() => setCalendarMonth(addMonths(calendarMonth, 1))}
                 >
-                  <ChevronRight className="h-3 w-3" strokeWidth={1.5} />
+                  <ChevronRight className="h-3 w-3" />
                 </Button>
               </div>
 
+              {/* Days header */}
               <div className="grid grid-cols-7 gap-0.5 text-center">
                 {(weekStartsOn === 1 ? ["M", "T", "W", "T", "F", "S", "S"] : ["S", "M", "T", "W", "T", "F", "S"]).map((d, i) => (
-                  <span key={i} className="text-[8px] tracking-[0.2em] opacity-30">
+                  <span key={i} className="text-[8px] font-medium text-muted-foreground/50">
                     {d}
                   </span>
                 ))}
               </div>
 
+              {/* Days grid */}
               <div className="grid grid-cols-7 gap-0.5">
                 {calendarDays.map((day, i) => {
                   const isToday = isSameDay(day, now);
@@ -375,10 +401,10 @@ export function TasksClockWidget() {
                     <div
                       key={i}
                       className={cn(
-                        "aspect-square flex items-center justify-center text-[9px] rounded-sm",
-                        isToday && "bg-foreground text-background font-medium",
-                        !isToday && isCurrentMonth && "text-foreground/70",
-                        !isCurrentMonth && "text-muted-foreground/20",
+                        "aspect-square flex items-center justify-center text-[9px] rounded",
+                        isToday && "bg-primary text-primary-foreground font-bold",
+                        !isToday && isCurrentMonth && "text-foreground/80",
+                        !isCurrentMonth && "text-muted-foreground/30",
                       )}
                     >
                       {format(day, "d")}

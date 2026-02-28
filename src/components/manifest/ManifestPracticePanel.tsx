@@ -54,12 +54,11 @@ interface ManifestPracticePanelProps {
   onGoalUpdate?: () => void;
 }
 
-const ACCENT = "hsl(var(--accent-graphite))";
 const RING_CONFIG = [
-  { id: "viz", icon: Eye, label: "Visualize", color: ACCENT, bgClass: "bg-accent-graphite" },
-  { id: "act", icon: Zap, label: "Act", color: ACCENT, bgClass: "bg-accent-graphite" },
-  { id: "proof", icon: Camera, label: "Proof", color: ACCENT, bgClass: "bg-accent-graphite" },
-  { id: "gratitude", icon: Heart, label: "Gratitude", color: ACCENT, bgClass: "bg-accent-graphite" },
+  { id: "viz", icon: Eye, label: "Visualize", color: "hsl(175, 84%, 40%)", bgClass: "bg-[hsl(175,84%,40%)]" },
+  { id: "act", icon: Zap, label: "Act", color: "hsl(45, 93%, 47%)", bgClass: "bg-[hsl(45,93%,47%)]" },
+  { id: "proof", icon: Camera, label: "Proof", color: "hsl(200, 80%, 50%)", bgClass: "bg-[hsl(200,80%,50%)]" },
+  { id: "gratitude", icon: Heart, label: "Gratitude", color: "hsl(330, 70%, 55%)", bgClass: "bg-[hsl(330,70%,55%)]" },
 ];
 
 export function ManifestPracticePanel({
@@ -477,23 +476,24 @@ export function ManifestPracticePanel({
     if (!activeRing) return null;
 
     return (
-      <div className="mx-4 mt-3 p-4 rounded-lg liquid-glass animate-in slide-in-from-top-2 duration-300" style={{ minHeight: 220 }}>
+      <div className="mx-4 mt-3 p-4 rounded-2xl border border-foreground/10 bg-background/60 backdrop-blur-xl animate-in slide-in-from-top-2 duration-300" style={{ minHeight: 220 }}>
         {activeRing === "viz" && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">Close your eyes and feel your new reality</p>
             <Button
               onClick={() => setShowVisualization(true)}
-              className="w-full h-10 rounded-sm bg-accent-graphite hover:bg-accent-graphite/90 text-background spring-transition"
+              className="w-full h-10 rounded-xl"
               disabled={isViewingPast}
+              style={{ background: "linear-gradient(135deg, hsl(175, 84%, 40%), hsl(185, 85%, 50%))" }}
             >
-              <Play className="h-4 w-4 mr-2" />
-              {hasViz ? "Add Session" : `Start ${goal.visualization_minutes} min`}
+              <Play className="h-4 w-4 mr-2 text-white" />
+              <span className="text-white">{hasViz ? "Add Session" : `Start ${goal.visualization_minutes} min`}</span>
             </Button>
             {visualizations.length > 0 && (
               <div className="space-y-1">
                 {visualizations.map((v, i) => (
-                  <div key={v.id} className="text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-sm flex items-center gap-2">
-                    <Check className="h-3 w-3 text-accent-graphite" /> Session {i + 1} • {format(new Date(v.created_at), "h:mm a")}
+                  <div key={v.id} className="text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                    <Check className="h-3 w-3" style={{ color: "hsl(175, 84%, 40%)" }} /> Session {i + 1} • {format(new Date(v.created_at), "h:mm a")}
                   </div>
                 ))}
               </div>
@@ -505,17 +505,18 @@ export function ManifestPracticePanel({
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">Suggestion: {goal.act_as_if}</p>
             <div className="flex gap-2">
-              <Input ref={actInputRef} defaultValue="" placeholder="What did you do?" className="flex-1 rounded-sm h-9 text-sm" disabled={isViewingPast} />
-              <Button onClick={handleAddAct} className="h-9 px-3 rounded-sm text-xs bg-accent-graphite hover:bg-accent-graphite/90 text-background spring-transition" disabled={isViewingPast}>
+              <Input ref={actInputRef} defaultValue="" placeholder="What did you do?" className="flex-1 rounded-xl h-9 text-sm" disabled={isViewingPast} />
+              <Button onClick={handleAddAct} className="h-9 px-3 rounded-xl text-xs text-white" disabled={isViewingPast}
+                style={{ background: "hsl(45, 93%, 47%)" }}>
                 Save
               </Button>
             </div>
             {acts.length > 0 && (
               <div className="space-y-1">
                 {acts.map((a) => (
-                  <div key={a.id} className="flex items-center justify-between bg-muted/50 px-3 py-1.5 rounded-sm">
+                  <div key={a.id} className="flex items-center justify-between bg-muted/50 px-3 py-1.5 rounded-lg">
                     <span className="text-xs text-foreground flex items-center gap-2">
-                      <Check className="h-3 w-3 text-accent-graphite" /> {a.text}
+                      <Check className="h-3 w-3" style={{ color: "hsl(45, 93%, 47%)" }} /> {a.text}
                     </span>
                     {isViewingToday && (
                       <button onClick={() => handleRemoveAct(a.id)} className="text-muted-foreground hover:text-foreground">
@@ -532,17 +533,17 @@ export function ManifestPracticePanel({
         {activeRing === "proof" && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">What happened today that proves your reality?</p>
-            <Textarea ref={proofTextRef} defaultValue="" placeholder="I noticed..." rows={2} className="rounded-sm resize-none text-sm" disabled={isViewingPast} />
+            <Textarea ref={proofTextRef} defaultValue="" placeholder="I noticed..." rows={2} className="rounded-xl resize-none text-sm" disabled={isViewingPast} />
             <input ref={proofImageInputRef} type="file" accept="image/*" onChange={handleProofImageUpload} className="hidden" />
             {currentProofImageUrl ? (
               <div className="relative">
-                <img src={currentProofImageUrl} alt="Proof" className="w-full h-20 object-cover rounded-sm" />
+                <img src={currentProofImageUrl} alt="Proof" className="w-full h-20 object-cover rounded-xl" />
                 <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-5 w-5 rounded-full" onClick={() => setCurrentProofImageUrl(null)}>
                   <X className="h-3 w-3" />
                 </Button>
               </div>
             ) : (
-              <Button variant="outline" className="w-full rounded-sm border-dashed h-9 text-xs spring-transition" onClick={() => proofImageInputRef.current?.click()} disabled={isViewingPast}>
+              <Button variant="outline" className="w-full rounded-xl border-dashed h-9 text-xs" onClick={() => proofImageInputRef.current?.click()} disabled={isViewingPast}>
                 <ImagePlus className="h-3.5 w-3.5 mr-1.5" /> Add Photo
               </Button>
             )}
@@ -552,14 +553,16 @@ export function ManifestPracticePanel({
         {/* Sticky save for proof — pinned to bottom of viewport on mobile */}
         {activeRing === "proof" && (
           <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 p-3 bg-background/80 backdrop-blur-xl border-t border-border">
-            <Button onClick={handleAddProof} disabled={isViewingPast} className="w-full h-10 rounded-sm text-background text-sm font-semibold bg-accent-graphite hover:bg-accent-graphite/90 spring-transition">
+            <Button onClick={handleAddProof} disabled={isViewingPast} className="w-full h-10 rounded-xl text-white text-sm font-semibold"
+              style={{ background: "hsl(200, 80%, 50%)" }}>
               Save Proof
             </Button>
           </div>
         )}
         {activeRing === "proof" && (
           <div className="hidden lg:block">
-            <Button onClick={handleAddProof} disabled={isViewingPast} className="w-full h-9 rounded-sm text-background text-sm bg-accent-graphite hover:bg-accent-graphite/90 spring-transition">
+            <Button onClick={handleAddProof} disabled={isViewingPast} className="w-full h-9 rounded-xl text-white text-sm"
+              style={{ background: "hsl(200, 80%, 50%)" }}>
               Save Proof
             </Button>
           </div>
@@ -569,17 +572,18 @@ export function ManifestPracticePanel({
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">What are you grateful for today?</p>
             <div className="flex gap-2">
-              <Input ref={gratitudeInputRef} defaultValue="" placeholder="I'm grateful for..." className="flex-1 rounded-sm h-9 text-sm" disabled={isViewingPast} />
-              <Button onClick={handleAddGratitude} className="h-9 px-3 rounded-sm text-xs bg-accent-graphite hover:bg-accent-graphite/90 text-background spring-transition" disabled={isViewingPast}>
+              <Input ref={gratitudeInputRef} defaultValue="" placeholder="I'm grateful for..." className="flex-1 rounded-xl h-9 text-sm" disabled={isViewingPast} />
+              <Button onClick={handleAddGratitude} className="h-9 px-3 rounded-xl text-xs text-white" disabled={isViewingPast}
+                style={{ background: "hsl(330, 70%, 55%)" }}>
                 Save
               </Button>
             </div>
             {gratitudes.length > 0 && (
               <div className="space-y-1">
                 {gratitudes.map((g) => (
-                  <div key={g.id} className="flex items-center justify-between bg-muted/50 px-3 py-1.5 rounded-sm">
+                  <div key={g.id} className="flex items-center justify-between bg-muted/50 px-3 py-1.5 rounded-lg">
                     <span className="text-xs text-foreground flex items-center gap-2">
-                      <Heart className="h-3 w-3 fill-current text-accent-graphite" /> {g.text}
+                      <Heart className="h-3 w-3 fill-current" style={{ color: "hsl(330, 70%, 55%)" }} /> {g.text}
                     </span>
                     {isViewingToday && (
                       <button onClick={() => handleRemoveGratitude(g.id)} className="text-muted-foreground hover:text-foreground">
@@ -622,7 +626,7 @@ export function ManifestPracticePanel({
                   <CalendarDays className="h-2.5 w-2.5" /> {fmtDate(selectedDate, "full")}
                 </span>
               )}
-              <Badge variant="secondary" className="rounded-sm text-[9px] px-2 py-0.5 h-auto">
+              <Badge variant="secondary" className="rounded-full text-[9px] px-2 py-0.5 h-auto">
                 {categoryLabel}
               </Badge>
               {dayNumber > 0 && (
@@ -680,7 +684,7 @@ export function ManifestPracticePanel({
       <div className="flex-1 overflow-y-auto min-h-0">
         {/* ===== Daily Affirmation ===== */}
         {goal.daily_affirmation && (
-          <div className="mx-4 mt-3 p-3 rounded-sm bg-muted/30 border border-border">
+          <div className="mx-4 mt-3 p-3 rounded-xl bg-muted/30 border border-border">
             <div className="flex items-start gap-2">
               <Quote className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
               <p className="text-xs text-muted-foreground italic leading-relaxed">{goal.daily_affirmation}</p>
@@ -690,7 +694,7 @@ export function ManifestPracticePanel({
 
         {/* Past date warning */}
         {isViewingPast && !isLocked && (
-          <div className="mx-4 mt-2 p-2 rounded-sm bg-muted/50 border border-border">
+          <div className="mx-4 mt-2 p-2 rounded-lg bg-muted/50 border border-border">
             <p className="text-[10px] text-muted-foreground">
               You're viewing a past date. This practice was not completed.
             </p>
@@ -699,46 +703,46 @@ export function ManifestPracticePanel({
 
         {/* ===== Locked Day Summary ===== */}
         {isLocked && (
-          <div className="mx-4 mt-3 p-4 rounded-lg liquid-glass">
+          <div className="mx-4 mt-3 p-4 rounded-2xl border border-primary/20 bg-primary/5">
             <div className="flex items-center gap-2 mb-3">
-              <div className="h-6 w-6 rounded-sm bg-accent-graphite/15 flex items-center justify-center">
-                <Check className="h-3.5 w-3.5 text-accent-graphite" />
+              <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
+                <Check className="h-3.5 w-3.5 text-primary" />
               </div>
               <span className="text-sm font-medium text-foreground">Day Complete</span>
-              <Sparkles className="h-3.5 w-3.5 text-accent-graphite" />
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <div className="bg-background/60 rounded-sm p-2.5">
+              <div className="bg-background/60 rounded-lg p-2.5">
                 <div className="flex items-center gap-1.5 mb-1">
-                  <Eye className="h-3 w-3 text-accent-graphite" />
+                  <Eye className="h-3 w-3" style={{ color: "hsl(175, 84%, 40%)" }} />
                   <span className="text-[10px] font-medium text-muted-foreground">Visualized</span>
                 </div>
                 <p className="text-xs text-foreground">{visualizations.length} session{visualizations.length !== 1 ? "s" : ""}</p>
               </div>
-              <div className="bg-background/60 rounded-sm p-2.5">
+              <div className="bg-background/60 rounded-lg p-2.5">
                 <div className="flex items-center gap-1.5 mb-1">
-                  <Zap className="h-3 w-3 text-accent-graphite" />
+                  <Zap className="h-3 w-3" style={{ color: "hsl(45, 93%, 47%)" }} />
                   <span className="text-[10px] font-medium text-muted-foreground">Actions</span>
                 </div>
                 <p className="text-xs text-foreground">{acts.length} action{acts.length !== 1 ? "s" : ""}</p>
               </div>
-              <div className="bg-background/60 rounded-sm p-2.5">
+              <div className="bg-background/60 rounded-lg p-2.5">
                 <div className="flex items-center gap-1.5 mb-1">
-                  <Camera className="h-3 w-3 text-accent-graphite" />
+                  <Camera className="h-3 w-3" style={{ color: "hsl(200, 80%, 50%)" }} />
                   <span className="text-[10px] font-medium text-muted-foreground">Proofs</span>
                 </div>
                 <p className="text-xs text-foreground">{proofs.length} proof{proofs.length !== 1 ? "s" : ""}</p>
               </div>
-              <div className="bg-background/60 rounded-sm p-2.5">
+              <div className="bg-background/60 rounded-lg p-2.5">
                 <div className="flex items-center gap-1.5 mb-1">
-                  <Heart className="h-3 w-3 text-accent-graphite" />
+                  <Heart className="h-3 w-3" style={{ color: "hsl(330, 70%, 55%)" }} />
                   <span className="text-[10px] font-medium text-muted-foreground">Gratitude</span>
                 </div>
                 <p className="text-xs text-foreground">{gratitudes.length} entr{gratitudes.length !== 1 ? "ies" : "y"}</p>
               </div>
             </div>
             {growthNoteValue && (
-              <div className="mt-2.5 p-2.5 bg-background/60 rounded-sm">
+              <div className="mt-2.5 p-2.5 bg-background/60 rounded-lg">
                 <p className="text-[10px] text-muted-foreground mb-0.5 font-medium">Growth Note</p>
                 <p className="text-xs text-foreground leading-relaxed">{growthNoteValue}</p>
               </div>
@@ -796,7 +800,7 @@ export function ManifestPracticePanel({
 
         {/* ===== Complete Day Section ===== */}
         {allDone && !isLocked && (
-          <div className="mx-4 mt-3 p-4 rounded-lg liquid-glass">
+          <div className="mx-4 mt-3 p-4 rounded-2xl border border-foreground/10 bg-background/60 backdrop-blur-xl">
             <div className="space-y-3">
               <p className="text-sm font-medium text-foreground flex items-center gap-2">
                 <Lock className="h-4 w-4" /> Complete your day
@@ -821,11 +825,11 @@ export function ManifestPracticePanel({
                 />
               </div>
 
-                <Input
-                  ref={growthNoteRef}
-                  defaultValue={growthNoteValue}
-                  placeholder="Today I learned that..."
-                  className="rounded-sm h-9 text-sm"
+              <Input
+                ref={growthNoteRef}
+                defaultValue={growthNoteValue}
+                placeholder="Today I learned that..."
+                className="rounded-xl h-9 text-sm"
                 disabled={isViewingPast || isLocked}
                 onBlur={(e) => {
                   setGrowthNoteValue(e.target.value);
@@ -835,7 +839,8 @@ export function ManifestPracticePanel({
               <Button
                 onClick={handleLockToday}
                 disabled={!canLock || isViewingPast || isLocked}
-                className="w-full h-10 rounded-sm font-medium bg-accent-graphite hover:bg-accent-graphite/90 text-background spring-transition"
+                className="w-full h-10 rounded-xl text-white font-medium"
+                style={{ background: "linear-gradient(135deg, hsl(175, 84%, 40%), hsl(185, 85%, 50%))" }}
               >
                 <Lock className="h-4 w-4 mr-2" /> Complete Day ✨
               </Button>
@@ -853,11 +858,11 @@ export function ManifestPracticePanel({
               {allProofs.map((p) => (
                 <div key={p.id} className="flex-shrink-0 group relative">
                   {p.image_url ? (
-                    <div className="w-16 h-16 rounded-sm overflow-hidden border border-border">
+                    <div className="w-16 h-16 rounded-xl overflow-hidden border border-border">
                       <img src={p.image_url} alt={p.text} className="w-full h-full object-cover" />
                     </div>
                   ) : (
-                    <div className="w-16 h-16 rounded-sm border border-border bg-muted/50 flex items-center justify-center p-1.5">
+                    <div className="w-16 h-16 rounded-xl border border-border bg-muted/50 flex items-center justify-center p-1.5">
                       <p className="text-[8px] text-muted-foreground line-clamp-3 text-center leading-tight">{p.text}</p>
                     </div>
                   )}

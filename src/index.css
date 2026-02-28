@@ -1,16 +1,15 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;1,300;1,400&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* GRAPHITE EDITORIAL DESIGN SYSTEM
-   - Monochrome palette with graphite accent
-   - Golden radius (16px lg, 8px sm)
-   - Thin typography (300) with editorial letter-spacing
-   - Liquid glass surfaces
-   - Base-4 spacing grid
+/* ZARA-INSPIRED DESIGN SYSTEM
+   - Monochrome palette
+   - Sharp geometric edges (no rounded corners)
+   - Thin typography with generous letter-spacing
+   - Minimal shadows
+   - Editorial, high-fashion aesthetic
 */
 
 @layer base {
@@ -25,7 +24,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 8%;
 
-    /* Primary: Ink Black */
+    /* Primary is now black */
     --primary: 0 0% 8%;
     --primary-foreground: 0 0% 100%;
 
@@ -42,18 +41,15 @@
     --destructive: 0 0% 30%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Active accent — Graphite */
-    --accent-graphite: 215 15% 40%;
-
-    /* Subtle borders */
+    /* Very subtle borders */
     --border: 0 0% 90%;
     --input: 0 0% 90%;
     --ring: 0 0% 8%;
 
-    /* Golden radius */
+    /* Refined radius — 12px cards, 6px buttons */
     --radius: 0.75rem;
 
-    /* Sidebar */
+    /* Sidebar - minimal */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 0 0% 8%;
     --sidebar-primary: 0 0% 8%;
@@ -63,7 +59,7 @@
     --sidebar-border: 0 0% 92%;
     --sidebar-ring: 0 0% 8%;
 
-    /* Chart colors — grayscale */
+    /* Chart colors - grayscale */
     --chart-1: 0 0% 8%;
     --chart-2: 0 0% 25%;
     --chart-3: 0 0% 45%;
@@ -72,12 +68,12 @@
 
     --sidebar: 0 0% 100%;
 
-    /* Typography */
+    /* Zara-style typography */
     --font-sans: "Inter", "Helvetica Neue", Arial, sans-serif;
     --font-serif: "Times New Roman", Georgia, serif;
     --font-mono: "SF Mono", ui-monospace, monospace;
 
-    /* Soft UI shadows */
+    /* Soft UI shadows — premium depth */
     --shadow-2xs: 0 1px 2px 0 hsl(0 0% 0% / 0.02);
     --shadow-xs: 0 2px 4px 0 hsl(0 0% 0% / 0.02);
     --shadow-sm: 0 4px 6px -1px hsl(0 0% 0% / 0.03), 0 2px 4px -2px hsl(0 0% 0% / 0.02);
@@ -86,6 +82,11 @@
     --shadow-lg: 0 20px 25px -5px hsl(0 0% 0% / 0.05), 0 8px 10px -6px hsl(0 0% 0% / 0.03);
     --shadow-xl: 0 25px 50px -12px hsl(0 0% 0% / 0.08);
     --shadow-2xl: 0 25px 50px -12px hsl(0 0% 0% / 0.12);
+
+    /* Wide letter-spacing for Zara feel */
+    --tracking-wide: 0.1em;
+    --tracking-wider: 0.15em;
+    --tracking-widest: 0.2em;
 
     --spacing: 0.25rem;
   }
@@ -101,7 +102,7 @@
     --popover: 0 0% 8%;
     --popover-foreground: 0 0% 95%;
 
-    /* Primary: Paper White */
+    /* Primary is now white */
     --primary: 0 0% 95%;
     --primary-foreground: 0 0% 4%;
 
@@ -116,8 +117,6 @@
 
     --destructive: 0 0% 70%;
     --destructive-foreground: 0 0% 4%;
-
-    --accent-graphite: 215 15% 55%;
 
     --border: 0 0% 18%;
     --input: 0 0% 18%;
@@ -168,7 +167,7 @@
       color 300ms ease;
   }
 
-  /* Smooth theme transitions */
+  /* Smooth theme transitions for all elements */
   *,
   *::before,
   *::after {
@@ -178,47 +177,13 @@
       color 150ms ease;
   }
 
-  /* Editorial headings — wide tracking */
-  h1, h2, h3 {
-    letter-spacing: 0.2em;
-    font-weight: 600;
+  /* Uppercase labels with wide tracking */
+  .zara-label {
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wider);
+    font-weight: 400;
+    font-size: 0.75rem;
   }
-
-  h4, h5, h6 {
-    font-weight: 600;
-    letter-spacing: -0.02em;
-  }
-}
-
-/* Editorial label — small category tags */
-.label-editorial {
-  text-transform: uppercase;
-  letter-spacing: 0.25em;
-  font-size: 10px;
-}
-
-/* Liquid Glass surface */
-.liquid-glass {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* Spring physics transition */
-.spring-transition {
-  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-/* Image tint overlay */
-.image-tint {
-  position: relative;
-}
-
-.image-tint::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.05);
 }
 
 /* Page transition animations */
@@ -227,6 +192,7 @@
     opacity: 0;
     transform: translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -238,6 +204,7 @@
     opacity: 1;
     transform: translateY(0);
   }
+
   to {
     opacity: 0;
     transform: translateY(-8px);
@@ -252,7 +219,7 @@
   animation: page-exit 150ms ease-in forwards;
 }
 
-/* Respect reduced motion */
+/* Respect reduced motion preferences */
 @media (prefers-reduced-motion: reduce) {
   .animate-page-enter,
   .animate-page-exit {
@@ -260,29 +227,214 @@
   }
 }
 
-/* Tiptap Journal Editor */
+/* Premium button animations */
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 15px rgba(6, 182, 212, 0.3),
+      0 4px 12px rgba(6, 182, 212, 0.2);
+  }
+
+  50% {
+    box-shadow:
+      0 0 25px rgba(6, 182, 212, 0.5),
+      0 8px 20px rgba(6, 182, 212, 0.3);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* ========================================
+   MANIFEST UI DESIGN SYSTEM
+   Premium animations and glassmorphism
+   ======================================== */
+
+/* Accent color palette - Turquoise/Cyan */
+:root {
+  --accent-turquoise: 175 84% 40%;
+  --accent-turquoise-light: 175 84% 55%;
+  --accent-turquoise-dark: 175 84% 32%;
+  --accent-cyan: 185 85% 50%;
+  --accent-purple: 260 70% 55%;
+  --accent-gradient: linear-gradient(135deg, hsl(var(--accent-turquoise)) 0%, hsl(var(--accent-cyan)) 100%);
+  --accent-gradient-hover: linear-gradient(135deg, hsl(var(--accent-turquoise-light)) 0%, hsl(185 85% 60%) 100%);
+}
+
+.dark {
+  --accent-turquoise: 175 80% 50%;
+  --accent-turquoise-light: 175 80% 60%;
+  --accent-turquoise-dark: 175 80% 40%;
+  --accent-cyan: 185 80% 55%;
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+  background: linear-gradient(135deg, hsl(0 0% 100% / 0.9) 0%, hsl(0 0% 100% / 0.7) 100%);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--accent-turquoise) / 0.2);
+  box-shadow:
+    0 4px 24px hsl(var(--accent-turquoise) / 0.08),
+    0 1px 2px hsl(0 0% 0% / 0.04);
+}
+
+.dark .glass-card {
+  background: linear-gradient(135deg, hsl(0 0% 12% / 0.9) 0%, hsl(0 0% 8% / 0.8) 100%);
+  border-color: hsl(var(--accent-turquoise) / 0.25);
+}
+
+/* Timer Ring Glow */
+@keyframes timer-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px hsl(var(--accent-turquoise) / 0.5));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 20px hsl(var(--accent-turquoise) / 0.7));
+  }
+}
+
+.timer-ring {
+  animation: timer-glow 2s ease-in-out infinite;
+}
+
+/* Breathing Guide */
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+
+  50% {
+    transform: scale(1.15);
+    opacity: 0.15;
+  }
+}
+
+.breathing-ring {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+/* Floating Vision Card */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-8px) rotate(1deg);
+  }
+}
+
+.vision-card-float {
+  animation: float 4s ease-in-out infinite;
+  box-shadow:
+    0 20px 60px hsl(var(--accent-turquoise) / 0.15),
+    0 8px 24px hsl(0 0% 0% / 0.1);
+}
+
+/* Gradient Button */
+.btn-gradient {
+  background: var(--accent-gradient);
+  color: white;
+  border: none;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.btn-gradient:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px hsl(var(--accent-turquoise) / 0.35);
+}
+
+/* Progress Bar Gradient */
+.progress-gradient {
+  background: var(--accent-gradient);
+}
+
+/* Step Orb */
+.step-orb {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  background: hsl(var(--muted));
+}
+
+.step-orb.active {
+  background: var(--accent-gradient);
+  color: white;
+}
+
+.step-orb.completed {
+  background: hsl(var(--accent-turquoise));
+  color: white;
+}
+
+/* Chip/Pill Buttons */
+.chip-glow {
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px hsl(0 0% 0% / 0.06);
+}
+
+.chip-glow.selected {
+  background: var(--accent-gradient);
+  color: white;
+  border-color: transparent;
+}
+
+/* ========================================
+   TIPTAP JOURNAL EDITOR STYLES
+   ======================================== */
+
+/* Style journal prompts (h2 headings) - clean look */
+/* LINE_HEIGHT = 32px — all elements snap to this grid */
 .tiptap h1 {
   font-size: 2.25rem;
   font-weight: 700;
-  color: hsl(0 0% 8%);
+  color: #0f172a;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
   padding-top: 8px !important;
   line-height: 32px !important;
   min-height: 32px;
-  letter-spacing: 0.1em;
+  letter-spacing: -0.02em;
 }
 
 .tiptap h2 {
   padding: 0 !important;
   margin: 0 !important;
   padding-top: 32px !important;
-  color: hsl(0 0% 35%);
+  color: #4b5563;
   font-weight: 500;
   font-size: 1.25rem;
   line-height: 32px !important;
   min-height: 32px;
-  letter-spacing: 0.1em;
+  letter-spacing: -0.01em;
 }
 
 .tiptap p {
@@ -290,30 +442,31 @@
   margin-bottom: 0 !important;
   line-height: 32px !important;
   min-height: 32px;
-  color: hsl(0 0% 8%);
+  color: #0f172a;
 }
 
 .dark .tiptap h2 {
-  color: hsl(0 0% 60%);
+  color: #94a3b8;
 }
 
 .dark .tiptap h1,
 .dark .tiptap p {
-  color: hsl(0 0% 95%);
+  color: #f8fafc;
 }
 
 /* Placeholder styling */
 .tiptap h1.is-empty::before {
-  color: hsl(0 0% 60%);
+  color: #9ca3af;
   content: attr(data-placeholder);
   float: left;
   height: 0;
   pointer-events: none;
 }
 
+/* Placeholder styling - always visible grey text for empty paragraphs */
 .tiptap p.is-editor-empty:first-child::before,
 .tiptap p.is-empty::before {
-  color: hsl(0 0% 60%);
+  color: #9ca3af;
   font-style: normal;
   content: attr(data-placeholder);
   float: left;
@@ -321,67 +474,11 @@
   pointer-events: none;
 }
 
-/* Line clamp utility */
+/* Line clamp utility for preview text */
 .line-clamp-3 {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-/* === Auth Page Premium Elevation === */
-
-/* Ken Burns — slow cinematic zoom */
-@keyframes ken-burns {
-  0% { transform: scale(1); }
-  100% { transform: scale(1.08); }
-}
-.animate-ken-burns {
-  animation: ken-burns 20s ease-in-out infinite alternate;
-}
-
-/* Film grain overlay */
-.film-grain {
-  position: relative;
-}
-.film-grain::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  opacity: 0.03;
-  pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  background-size: 128px 128px;
-}
-
-/* Whisper loading bar */
-@keyframes whisper-load {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-/* Auth form fade-in on mode switch */
-@keyframes auth-fade-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.animate-auth-fade-in {
-  animation: auth-fade-in 400ms ease-out;
-}
-
-/* Focus breathing glow */
-@keyframes focus-breathe {
-  0%, 100% { box-shadow: 0 0 30px hsl(0 0% 100% / 0.03); }
-  50% { box-shadow: 0 0 50px hsl(0 0% 100% / 0.08); }
-}
-
-/* Reduced motion respect for auth animations */
-@media (prefers-reduced-motion: reduce) {
-  .animate-ken-burns {
-    animation: none;
-  }
-  .animate-auth-fade-in {
-    animation: none;
-  }
 }

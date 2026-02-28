@@ -39,7 +39,7 @@ export function NotesViewSwitcher({ currentView, onViewChange, hideMindMap = fal
   const views = hideMindMap ? allViews.filter(v => v.id !== "mindmap") : allViews;
 
   return (
-    <div className="inline-flex items-center bg-white/[0.03] rounded-[6px] p-0.5 border border-white/[0.1] backdrop-blur-xl" style={{ transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)" }}>
+    <div className="inline-flex items-center bg-background/80 rounded-lg p-1 border border-border/40 shadow-sm backdrop-blur-sm">
       {views.map((view) => {
         const active = currentView === view.id;
 
@@ -51,15 +51,14 @@ export function NotesViewSwitcher({ currentView, onViewChange, hideMindMap = fal
             aria-pressed={active}
             onClick={() => onViewChange(view.id)}
             className={cn(
-              "h-8 px-4 inline-flex items-center gap-2 text-sm font-light rounded-[6px]",
+              "h-8 px-4 inline-flex items-center gap-2 text-sm font-medium rounded-lg transition-all duration-200",
               active
-                ? "bg-[hsl(215,15%,40%)]/15 text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-white/[0.02]",
+                ? "bg-primary/10 text-primary shadow-sm"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
             )}
-            style={{ transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)" }}
           >
             {view.icon}
-            <span className="hidden sm:inline tracking-[0.3em] text-[11px]">{view.label}</span>
+            <span className="hidden sm:inline">{view.label}</span>
           </button>
         );
       })}

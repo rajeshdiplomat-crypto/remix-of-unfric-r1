@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useAuth, withRetry } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -96,9 +96,7 @@ export default function Auth() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="h-px w-16 overflow-hidden bg-border">
-          <div className="h-full w-full bg-foreground/40" style={{ animation: "whisper-load 1.2s ease-in-out infinite" }} />
-        </div>
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -122,23 +120,13 @@ export default function Auth() {
 
   return (
     <div
-      className="relative flex flex-col md:flex-row bg-background overflow-hidden"
+      className="flex flex-col md:flex-row bg-background overflow-hidden"
       style={{ height: "100dvh", minHeight: "100vh" }}
     >
-      {/* Mobile full-bleed background */}
-      <div className="fixed inset-0 md:hidden">
-        <img src={authImage} alt="" className="h-full w-full object-cover animate-ken-burns" />
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-3xl" />
-      </div>
-
-      {/* Desktop: Editorial image — 38% column */}
-      <div className="hidden md:block md:w-[38%] relative flex-shrink-0 overflow-hidden h-full film-grain">
-        <img
-          src={authImage}
-          alt=""
-          className="h-full w-auto max-w-none object-center animate-ken-burns"
-        />
-        {/* Gradient overlay */}
+      {/* Left: Editorial image — fixed to viewport height */}
+      <div className="hidden md:block md:w-[55%] lg:w-[40%] relative flex-shrink-0 overflow-hidden h-full">
+        <img src={authImage} alt="" className="h-full w-auto max-w-none object-center" />
+        {/* Gradient overlay for text legibility */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
         {/* Branding */}
         <div className="absolute top-8 left-8 z-10">
@@ -152,193 +140,172 @@ export default function Auth() {
         </div>
       </div>
 
-      {/* Form column — 62% on desktop, full on mobile */}
-      <div className="relative flex-1 flex flex-col md:w-[62%] overflow-y-auto z-10">
+      {/* Right: Form */}
+      <div className="flex-1 flex flex-col md:w-[45%] overflow-y-auto">
         {/* Mobile logo */}
         <div className="flex items-center justify-center h-14 md:hidden">
-          <UnfricLogo size="md" className="text-background [text-shadow:_0_1px_4px_rgba(0,0,0,0.4)]" />
+          <UnfricLogo size="md" />
         </div>
 
         {/* Centered form area */}
-        <div className="flex-1 flex items-center justify-center px-6 py-10 sm:px-12 md:px-8 lg:px-16">
-          {/* Floating glass card — overlaps image on desktop */}
-          <div className={cn(
-            "w-full max-w-sm relative",
-            // Desktop: glass card overlapping left
-            "md:max-w-md md:-ml-12 lg:-ml-20 md:backdrop-blur-xl md:bg-background/80 md:border md:border-foreground/[0.06] md:shadow-2xl md:rounded-sm md:px-10 md:py-12",
-            // Mobile: glass card on blurred background
-            "max-md:backdrop-blur-xl max-md:bg-background/70 max-md:border max-md:border-foreground/[0.06] max-md:shadow-2xl max-md:rounded-sm max-md:px-8 max-md:py-10"
-          )}>
-            {/* Whisper loading bar */}
-            {isSubmitting && (
-              <div className="absolute top-0 left-0 right-0 h-px overflow-hidden rounded-t-sm">
-                <div
-                  className="h-full w-full bg-foreground/30"
-                  style={{ animation: "whisper-load 1.2s ease-in-out infinite" }}
-                />
+        <div className="flex-1 flex items-center justify-center px-6 py-10 sm:px-12 lg:px-20">
+          <div className="w-full max-w-sm">
+            {/* Welcome heading */}
+            <h1 className="text-2xl font-medium text-foreground tracking-tight">{title}</h1>
+            <p className="text-sm text-muted-foreground mt-1.5 mb-10">{subtitle}</p>
+
+            {mode === "verify-email" ? (
+              <div className="space-y-8">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  We sent a verification link to <span className="text-foreground font-medium">{email}</span>
+                </p>
+                <button
+                  onClick={handleResend}
+                  disabled={isSubmitting}
+                  className="w-full py-4 text-[11px] uppercase tracking-[0.2em] bg-foreground text-background hover:opacity-85 transition-opacity duration-300 disabled:opacity-40 rounded-lg"
+                >
+                  {isSubmitting ? "Sending…" : "Resend Email"}
+                </button>
+                <button
+                  onClick={() => setMode("signin")}
+                  className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  ← Back
+                </button>
               </div>
-            )}
+            ) : (
+              <>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Email */}
+                  <div>
+                    <label className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground block mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={isSubmitting}
+                      className="w-full bg-muted/50 border border-border/60 rounded-lg px-4 py-3.5 text-sm text-foreground outline-none focus:border-foreground/40 transition-colors placeholder:text-muted-foreground/40"
+                      placeholder="you@example.com"
+                    />
+                  </div>
 
-            {/* Content with mode transition */}
-            <div key={mode} className="animate-auth-fade-in">
-              {/* Editorial heading */}
-              <h1 className="font-['Playfair_Display'] text-4xl font-light italic text-foreground tracking-tight">
-                {title}
-              </h1>
-              <p className="text-sm font-light text-muted-foreground mt-1.5 mb-10">{subtitle}</p>
-
-              {mode === "verify-email" ? (
-                <div className="space-y-8">
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    We sent a verification link to <span className="text-foreground font-medium">{email}</span>
-                  </p>
-                  <button
-                    onClick={handleResend}
-                    disabled={isSubmitting}
-                    className="w-full py-4 text-[11px] uppercase tracking-[0.25em] bg-foreground text-background hover:opacity-85 transition-opacity duration-300 disabled:opacity-40 rounded-sm"
-                  >
-                    {isSubmitting ? "Sending…" : "Resend Email"}
-                  </button>
-                  <button
-                    onClick={() => setMode("signin")}
-                    className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground transition-colors opacity-60"
-                  >
-                    ← Back
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Email */}
+                  {/* Password */}
+                  {mode !== "forgot-password" && (
                     <div>
-                      <label className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground opacity-50 block mb-2">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        disabled={isSubmitting}
-                        className="w-full bg-transparent border border-foreground/10 rounded-sm px-4 py-3.5 text-sm text-foreground outline-none focus:border-foreground/40 transition-colors placeholder:text-muted-foreground/40"
-                        placeholder="you@example.com"
-                      />
-                    </div>
-
-                    {/* Password */}
-                    {mode !== "forgot-password" && (
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground opacity-50">
-                            Password
-                          </label>
-                          {mode === "signin" && (
-                            <button
-                              type="button"
-                              onClick={() => setMode("forgot-password")}
-                              className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground/50 hover:text-foreground transition-colors"
-                            >
-                              Forgot?
-                            </button>
-                          )}
-                        </div>
-                        <div className="relative">
-                          <input
-                            type={showPassword ? "text" : "password"}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            disabled={isSubmitting}
-                            className="w-full bg-transparent border border-foreground/10 rounded-sm px-4 py-3.5 pr-11 text-sm text-foreground outline-none focus:border-foreground/40 transition-colors"
-                            placeholder="••••••••"
-                          />
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                          Password
+                        </label>
+                        {mode === "signin" && (
                           <button
                             type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors"
+                            onClick={() => setMode("forgot-password")}
+                            className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground/50 hover:text-foreground transition-colors"
                           >
-                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            Forgot?
                           </button>
-                        </div>
+                        )}
                       </div>
-                    )}
-
-                    {/* Age confirmation */}
-                    {mode === "signup" && (
-                      <label className="flex items-start gap-3 cursor-pointer">
+                      <div className="relative">
                         <input
-                          type="checkbox"
-                          checked={ageConfirmed}
-                          onChange={(e) => setAgeConfirmed(e.target.checked)}
-                          className="accent-foreground mt-0.5 h-3.5 w-3.5"
+                          type={showPassword ? "text" : "password"}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          disabled={isSubmitting}
+                          className="w-full bg-muted/50 border border-border/60 rounded-lg px-4 py-3.5 pr-11 text-sm text-foreground outline-none focus:border-foreground/40 transition-colors"
+                          placeholder="••••••••"
                         />
-                        <span className="text-[11px] text-muted-foreground leading-relaxed opacity-60">
-                          I confirm I am 18 years or older
-                        </span>
-                      </label>
-                    )}
-
-                    {/* Submit */}
-                    <button
-                      type="submit"
-                      disabled={isSubmitting || (mode === "signup" && !ageConfirmed)}
-                      className="w-full py-4 text-[11px] uppercase tracking-[0.25em] font-normal bg-foreground text-background hover:opacity-85 transition-opacity duration-300 disabled:opacity-40 rounded-sm"
-                    >
-                      {mode === "forgot-password" ? "Send Link" : mode === "signup" ? "Create Account" : "Sign In"}
-                    </button>
-
-                    {/* Terms */}
-                    {mode === "signup" && (
-                      <p className="text-[11px] text-muted-foreground/50 text-center leading-relaxed">
-                        By creating an account, you agree to our{" "}
-                        <Link
-                          to="/terms"
-                          className="underline underline-offset-2 hover:text-foreground transition-colors"
-                        >
-                          Terms
-                        </Link>{" "}
-                        and{" "}
-                        <Link
-                          to="/privacy"
-                          className="underline underline-offset-2 hover:text-foreground transition-colors"
-                        >
-                          Privacy Policy
-                        </Link>
-                      </p>
-                    )}
-                  </form>
-
-                  {/* Mode switch */}
-                  <div className="text-center mt-8">
-                    {mode === "forgot-password" ? (
-                      <button
-                        onClick={() => setMode("signin")}
-                        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        ← Back to Sign In
-                      </button>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        {mode === "signup" ? "Already have an account? " : "Don't have an account? "}
                         <button
-                          onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
-                          className="text-foreground underline underline-offset-2 hover:opacity-70 transition-opacity"
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors"
                         >
-                          {mode === "signup" ? "Sign in" : "Create one"}
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
-                      </p>
-                    )}
-                  </div>
+                      </div>
+                    </div>
+                  )}
 
-                  {/* Category tags */}
-                  <div className="mt-10 flex items-center justify-center gap-2 text-[11px] uppercase tracking-[0.25em] text-muted-foreground/40">
-                    <span>Mindfulness</span>
-                    <span>·</span>
-                    <span>Productivity</span>
-                    <span>·</span>
-                    <span>Growth</span>
-                  </div>
-                </>
-              )}
-            </div>
+                  {/* Age confirmation */}
+                  {mode === "signup" && (
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={ageConfirmed}
+                        onChange={(e) => setAgeConfirmed(e.target.checked)}
+                        className="accent-foreground mt-0.5 h-3.5 w-3.5"
+                      />
+                      <span className="text-[10px] text-muted-foreground leading-relaxed">
+                        I confirm I am 18 years or older
+                      </span>
+                    </label>
+                  )}
+
+                  {/* Submit */}
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || (mode === "signup" && !ageConfirmed)}
+                    className="w-full py-4 text-[11px] uppercase tracking-[0.25em] font-normal bg-foreground text-background hover:opacity-85 transition-opacity duration-300 disabled:opacity-40 rounded-lg"
+                  >
+                    {isSubmitting && <Loader2 className="h-3 w-3 animate-spin inline mr-2" />}
+                    {mode === "forgot-password" ? "Send Link" : mode === "signup" ? "Create Account" : "Sign In"}
+                  </button>
+
+                  {/* Terms */}
+                  {mode === "signup" && (
+                    <p className="text-[9px] text-muted-foreground/50 text-center leading-relaxed">
+                      By creating an account, you agree to our{" "}
+                      <Link
+                        to="/terms"
+                        className="underline underline-offset-2 hover:text-foreground transition-colors"
+                      >
+                        Terms
+                      </Link>{" "}
+                      and{" "}
+                      <Link
+                        to="/privacy"
+                        className="underline underline-offset-2 hover:text-foreground transition-colors"
+                      >
+                        Privacy Policy
+                      </Link>
+                    </p>
+                  )}
+                </form>
+
+                {/* Mode switch */}
+                <div className="text-center mt-8">
+                  {mode === "forgot-password" ? (
+                    <button
+                      onClick={() => setMode("signin")}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      ← Back to Sign In
+                    </button>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {mode === "signup" ? "Already have an account? " : "Don't have an account? "}
+                      <button
+                        onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
+                        className="text-foreground underline underline-offset-2 hover:opacity-70 transition-opacity"
+                      >
+                        {mode === "signup" ? "Sign in" : "Create one"}
+                      </button>
+                    </p>
+                  )}
+                </div>
+
+                {/* Category tags */}
+                <div className="mt-10 flex items-center justify-center gap-2 text-[9px] uppercase tracking-[0.2em] text-muted-foreground/40">
+                  <span>Mindfulness</span>
+                  <span>·</span>
+                  <span>Productivity</span>
+                  <span>·</span>
+                  <span>Growth</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
