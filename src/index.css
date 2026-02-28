@@ -50,7 +50,7 @@
     --ring: 0 0% 8%;
 
     /* Golden radius */
-    --radius: 1rem;
+    --radius: 0.75rem;
 
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
@@ -177,9 +177,8 @@
       color 150ms ease;
   }
 
-  /* Editorial headings — uppercase with wide tracking */
+  /* Editorial headings — wide tracking */
   h1, h2, h3 {
-    text-transform: uppercase;
     letter-spacing: 0.2em;
     font-weight: 600;
   }
@@ -188,6 +187,13 @@
     font-weight: 600;
     letter-spacing: -0.02em;
   }
+}
+
+/* Editorial label — small category tags */
+.label-editorial {
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  font-size: 10px;
 }
 
 /* Liquid Glass surface */

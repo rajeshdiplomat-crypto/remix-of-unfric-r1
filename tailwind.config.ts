@@ -60,12 +60,12 @@ export default {
         "accent-graphite": "hsl(var(--accent-graphite))",
       },
       borderRadius: {
-        lg: "1rem",
-        md: "calc(1rem - 2px)",
-        sm: "0.5rem",
-        xl: "calc(1rem + 4px)",
-        "2xl": "calc(1rem + 8px)",
-        DEFAULT: "1rem",
+        lg: "0.75rem",
+        md: "calc(0.75rem - 2px)",
+        sm: "0.375rem",
+        xl: "calc(0.75rem + 4px)",
+        "2xl": "calc(0.75rem + 8px)",
+        DEFAULT: "0.75rem",
       },
       spacing: {
         "0": "0",
