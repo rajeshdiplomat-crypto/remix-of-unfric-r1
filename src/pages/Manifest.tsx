@@ -43,7 +43,6 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 import {
@@ -508,14 +507,14 @@ export default function Manifest() {
         <div className="flex-1 grid grid-cols-1 md:grid-cols-[3fr_2fr] gap-3 w-full max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-6 py-2 overflow-hidden min-h-0">
           {/* ========== LEFT COLUMN: Goals List + Toggle Panels ========== */}
           <div className="flex flex-col h-full min-h-0 gap-3">
-            {/* Goals Container */}
-            <div className="bg-card rounded-2xl shadow-sm border border-border flex flex-col overflow-hidden flex-1 min-h-0">
-              {/* Header with Create Button */}
-              <div className="p-3 flex items-center justify-between border-b border-border flex-shrink-0">
+            {/* Goals — no outer container, cards float */}
+            <div className="flex flex-col flex-1 min-h-0">
+              {/* Header */}
+              <div className="p-3 flex items-center justify-between flex-shrink-0">
                 <h2 className="text-base font-semibold text-foreground">Your Realities</h2>
                 <div className="flex items-center gap-1">
                   {/* View mode toggles */}
-                  <div className="flex items-center bg-muted rounded-lg p-0.5 mr-1">
+                  <div className="flex items-center bg-foreground/[0.05] backdrop-blur-md rounded-xl p-0.5 mr-1 border border-foreground/[0.08]">
                     {([
                       { mode: "list" as const, icon: List, label: "List" },
                       { mode: "tiles" as const, icon: LayoutGrid, label: "Tiles" },
@@ -526,9 +525,9 @@ export default function Manifest() {
                         onClick={() => { setViewMode(mode); if (mode === "single") setSingleIndex(0); }}
                         title={label}
                         className={cn(
-                          "p-1.5 rounded-md transition-all duration-150",
+                          "p-1.5 rounded-lg transition-all duration-150",
                           viewMode === mode
-                            ? "bg-background text-foreground shadow-sm"
+                            ? "bg-background/60 text-foreground shadow-sm backdrop-blur-md"
                             : "text-muted-foreground hover:text-foreground"
                         )}
                       >
@@ -539,7 +538,7 @@ export default function Manifest() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="rounded-lg h-8 px-2 text-muted-foreground"
+                    className="rounded-xl h-8 px-2 text-muted-foreground"
                     onClick={() => setShowCalendarPopup(true)}
                   >
                     <Calendar className="h-3.5 w-3.5" />
@@ -547,7 +546,7 @@ export default function Manifest() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="rounded-lg h-8 px-2 text-muted-foreground"
+                    className="rounded-xl h-8 px-2 text-muted-foreground"
                     onClick={() => setShowProgressPopup(true)}
                   >
                     <TrendingUp className="h-3.5 w-3.5" />
@@ -556,14 +555,14 @@ export default function Manifest() {
                     onClick={() => setShowAnalytics(true)}
                     variant="ghost"
                     size="sm"
-                    className="rounded-lg h-8 px-2 text-muted-foreground"
+                    className="rounded-xl h-8 px-2 text-muted-foreground"
                   >
                     <BarChart3 className="h-3.5 w-3.5" />
                   </Button>
                   <Button
                     onClick={() => setShowCreateModal(true)}
                     size="sm"
-                    className="rounded-lg h-8 px-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all text-xs"
+                    className="rounded-xl h-8 px-3 bg-primary/80 backdrop-blur-md text-primary-foreground shadow-md hover:shadow-lg hover:bg-primary/90 transition-all text-xs border border-primary/20"
                   >
                     <Plus className="h-3.5 w-3.5 mr-1" /> New
                   </Button>
@@ -572,10 +571,10 @@ export default function Manifest() {
 
               {activeGoals.length === 0 ? (
                 <div className="p-3 flex-1 flex items-center justify-center">
-                  <Card className="rounded-xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-card w-full">
-                    <CardContent className="py-8 px-4 text-center">
-                      <div className="mx-auto mb-3 h-10 w-10 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg">
-                        <Sparkles className="h-5 w-5 text-white" />
+                  <div className="rounded-2xl border border-dashed border-foreground/[0.1] bg-card/30 backdrop-blur-xl w-full">
+                    <div className="py-8 px-4 text-center">
+                      <div className="mx-auto mb-3 h-10 w-10 rounded-2xl bg-primary/10 backdrop-blur-md flex items-center justify-center shadow-[0_0_20px_hsl(var(--primary)/0.2)]">
+                        <Sparkles className="h-5 w-5 text-primary" />
                       </div>
                       <h3 className="text-base font-semibold text-foreground mb-1">
                         Start Your First Reality
@@ -585,18 +584,18 @@ export default function Manifest() {
                       </p>
                       <Button
                         onClick={() => setShowCreateModal(true)}
-                        className="rounded-lg h-9 px-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm"
+                        className="rounded-xl h-9 px-4 bg-primary/80 backdrop-blur-md text-primary-foreground text-sm border border-primary/20"
                       >
                         <Plus className="h-4 w-4 mr-1.5" /> Create Reality
                       </Button>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 </div>
               ) : (
-                <div className="overflow-y-auto flex-1 min-h-0 p-2 relative scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+                <div className="overflow-y-auto flex-1 min-h-0 px-1 pb-2 relative scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
                   {/* ── List View ── */}
                   {viewMode === "list" && (
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                       {activeGoals.map((goal) => {
                         const { streak, momentum } = getGoalMetrics(goal);
                         const isNewlyCreated = newlyCreatedGoalId === goal.id;
@@ -616,11 +615,11 @@ export default function Manifest() {
                             />
                             {isNewlyCreated && (
                               <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
-                                <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-teal-500/20 via-cyan-500/20 to-teal-500/20" />
+                                <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-primary/15 via-primary/10 to-primary/15" />
                                 {[...Array(8)].map((_, i) => (
                                   <div
                                     key={i}
-                                    className="absolute w-2 h-2 rounded-full bg-gradient-to-r from-teal-400 to-cyan-400 animate-float-particle"
+                                    className="absolute w-2 h-2 rounded-full bg-primary/40 animate-float-particle"
                                     style={{
                                       left: `${10 + i * 12}%`,
                                       animationDelay: `${i * 0.1}s`,
@@ -638,7 +637,7 @@ export default function Manifest() {
 
                   {/* ── Tiles View ── */}
                   {viewMode === "tiles" && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       {activeGoals.map((goal) => {
                         const { streak, momentum } = getGoalMetrics(goal);
                         const momentumPct = Math.round(momentum);
@@ -649,7 +648,7 @@ export default function Manifest() {
                           <button
                             key={goal.id}
                             onClick={() => handleSelectGoal(goal)}
-                            className="group text-left rounded-xl border border-border bg-card overflow-hidden transition-all duration-200 hover:border-foreground/20 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                            className="group text-left rounded-2xl border border-foreground/[0.08] bg-card/40 backdrop-blur-xl overflow-hidden transition-all duration-300 hover:border-foreground/[0.15] hover:bg-card/60 hover:shadow-lg hover:shadow-primary/5 focus:outline-none focus:ring-2 focus:ring-ring"
                           >
                             {/* Cover image */}
                             <div className="w-full aspect-[4/3] overflow-hidden bg-muted relative">
@@ -711,7 +710,7 @@ export default function Manifest() {
 
                     return (
                       <div className="flex flex-col items-center gap-3">
-                        <div className="w-full rounded-xl border border-border bg-card overflow-hidden relative">
+                        <div className="w-full rounded-2xl border border-foreground/[0.08] bg-card/40 backdrop-blur-xl overflow-hidden relative">
                           {/* Large cover */}
                           <div className="w-full aspect-video overflow-hidden bg-muted relative">
                             {(goal.cover_image_url || goal.vision_image_url) ? (
@@ -772,19 +771,19 @@ export default function Manifest() {
                               {["M","T","W","T","F","S","S"].map((day, i) => (
                                 <div key={i} className="flex flex-col items-center gap-px">
                                   <span className="text-[7px] font-medium text-muted-foreground leading-none">{day}</span>
-                                  <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-colors ${weekProgress[i] ? "bg-primary border-primary" : "border-border bg-transparent"}`}>
+                                  <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-colors ${weekProgress[i] ? "bg-primary border-primary" : "border-foreground/10 bg-transparent"}`}>
                                     {weekProgress[i] && <Check className="h-2 w-2 text-primary-foreground" />}
                                   </div>
                                 </div>
                               ))}
                             </div>
-                            <Button
+                            <button
                               onClick={() => handleSelectGoal(goal)}
-                              size="sm"
-                              className="h-7 px-3 rounded-full text-xs font-semibold"
+                              className="h-9 w-9 rounded-full flex items-center justify-center bg-primary/10 text-primary hover:bg-primary/20 transition-all duration-300 hover:shadow-[0_0_16px_hsl(var(--primary)/0.4)]"
+                              title="Practice"
                             >
-                              <Play className="h-2.5 w-2.5 mr-1" /> Practice
-                            </Button>
+                              <Play className="h-4 w-4 ml-0.5" />
+                            </button>
                           </div>
                         </div>
 
@@ -811,10 +810,10 @@ export default function Manifest() {
 
               {/* Completed Realities Section */}
               {completedGoals.length > 0 && (
-                <div className="border-t border-border">
+                <div className="mt-4 px-1">
                   <button
                     onClick={() => setShowCompleted(!showCompleted)}
-                    className="w-full p-3 flex items-center justify-between hover:bg-muted/50 transition-colors"
+                    className="w-full p-3 flex items-center justify-between rounded-2xl bg-card/30 backdrop-blur-xl border border-foreground/[0.08] hover:bg-card/50 transition-all duration-200"
                   >
                     <span className="text-xs font-medium text-muted-foreground">
                       Manifested Realities ({completedGoals.length})
@@ -826,7 +825,7 @@ export default function Manifest() {
                     )}
                   </button>
                   {showCompleted && (
-                    <div className="p-2 space-y-2 max-h-[300px] overflow-y-auto">
+                    <div className="mt-3 space-y-4 px-0.5">
                       {completedGoals.map((goal) => {
                         const { streak, momentum } = getGoalMetrics(goal);
                         return (
