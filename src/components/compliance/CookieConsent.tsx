@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import { Settings2 } from "lucide-react";
 
 const CONSENT_KEY = "unfric_cookie_consent";
 
@@ -111,92 +109,63 @@ export function CookieConsent({ forceOpen, onClose }: { forceOpen?: boolean; onC
         visible ? "translate-y-0" : "translate-y-full"
       )}
     >
-      <div className="bg-card/95 backdrop-blur-md border-t border-border shadow-lg">
-        <div className="max-w-4xl mx-auto px-4 py-4 sm:px-6">
+      <div className="bg-background/80 backdrop-blur-xl border-t border-border/30">
+        <div className="max-w-5xl mx-auto px-4 py-2 sm:px-6">
           {!showCustomize ? (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <p className="text-xs text-muted-foreground flex-1 leading-relaxed">
-                We use cookies to improve your experience. No tracking cookies are loaded without your
-                consent.{" "}
+            <div className="flex items-center gap-4">
+              <p className="text-[10px] text-muted-foreground flex-1 tracking-wide">
+                We use cookies to improve your experience.{" "}
                 <button
                   onClick={() => {
                     setShowCustomize(true);
                     setAnalyticsChecked(consent?.analytics ?? false);
                     setMarketingChecked(consent?.marketing ?? false);
                   }}
-                  className="text-foreground underline underline-offset-2 hover:opacity-80 inline-flex items-center gap-1"
+                  className="text-foreground/70 underline underline-offset-2 hover:text-foreground"
                 >
-                  <Settings2 className="h-3 w-3" /> Customize
+                  Manage
                 </button>
               </p>
-              <div className="flex gap-2 flex-shrink-0 w-full sm:w-auto">
-                <Button
-                  variant="outline"
-                  size="sm"
+              <div className="flex gap-2 flex-shrink-0">
+                <button
                   onClick={handleRejectAll}
-                  className="flex-1 sm:flex-none text-xs uppercase tracking-wider"
+                  className="text-[10px] text-muted-foreground hover:text-foreground tracking-widest uppercase transition-colors"
                 >
-                  Reject All
-                </Button>
-                <Button
-                  size="sm"
+                  Reject
+                </button>
+                <button
                   onClick={handleAcceptAll}
-                  className="flex-1 sm:flex-none text-xs uppercase tracking-wider"
+                  className="text-[10px] text-foreground tracking-widest uppercase font-medium hover:opacity-70 transition-opacity"
                 >
-                  Accept All
-                </Button>
+                  Accept
+                </button>
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              <p className="text-xs text-muted-foreground">
-                Choose which cookies you'd like to allow:
-              </p>
-
-              <div className="space-y-3">
-                <label className="flex items-center gap-3 cursor-not-allowed opacity-60">
-                  <input type="checkbox" checked disabled className="accent-foreground" />
-                  <div>
-                    <p className="text-xs text-foreground font-medium">Essential</p>
-                    <p className="text-[10px] text-muted-foreground">Required for the app to function. Always enabled.</p>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-3 cursor-pointer">
+            <div className="space-y-2">
+              <div className="flex items-center gap-4 text-[10px]">
+                <span className="text-muted-foreground/60 tracking-wide">Essential — always on</span>
+                <label className="flex items-center gap-1.5 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={analyticsChecked}
                     onChange={(e) => setAnalyticsChecked(e.target.checked)}
-                    className="accent-foreground"
+                    className="accent-foreground h-3 w-3"
                   />
-                  <div>
-                    <p className="text-xs text-foreground font-medium">Analytics</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      Help us understand how you use unfric to improve the experience.
-                    </p>
-                  </div>
+                  <span className="text-foreground/80 tracking-wide">Analytics</span>
                 </label>
-
-                <label className="flex items-center gap-3 cursor-pointer">
+                <label className="flex items-center gap-1.5 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={marketingChecked}
                     onChange={(e) => setMarketingChecked(e.target.checked)}
-                    className="accent-foreground"
+                    className="accent-foreground h-3 w-3"
                   />
-                  <div>
-                    <p className="text-xs text-foreground font-medium">Marketing</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      Allow personalized content and communications.
-                    </p>
-                  </div>
+                  <span className="text-foreground/80 tracking-wide">Marketing</span>
                 </label>
               </div>
-
-              <div className="flex gap-2 justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
+              <div className="flex gap-3 justify-end">
+                <button
                   onClick={() => {
                     setShowCustomize(false);
                     if (forceOpen) {
@@ -204,13 +173,16 @@ export function CookieConsent({ forceOpen, onClose }: { forceOpen?: boolean; onC
                       onClose?.();
                     }
                   }}
-                  className="text-xs"
+                  className="text-[10px] text-muted-foreground hover:text-foreground tracking-widest uppercase transition-colors"
                 >
                   Cancel
-                </Button>
-                <Button size="sm" onClick={handleSaveCustom} className="text-xs uppercase tracking-wider">
-                  Save Preferences
-                </Button>
+                </button>
+                <button
+                  onClick={handleSaveCustom}
+                  className="text-[10px] text-foreground tracking-widest uppercase font-medium hover:opacity-70 transition-opacity"
+                >
+                  Save
+                </button>
               </div>
             </div>
           )}

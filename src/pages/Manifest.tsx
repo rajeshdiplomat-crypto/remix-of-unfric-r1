@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useDatePreferences } from "@/hooks/useDatePreferences";
 import { toast } from "sonner";
 import { isOfflineError } from "@/lib/offlineAwareOperation";
-import { Sparkles, Plus, ChevronDown, ChevronUp, Calendar, BarChart3, TrendingUp } from "lucide-react";
+import { Sparkles, Plus, ChevronDown, ChevronUp, BarChart3, TrendingUp, List, LayoutGrid, Square, ChevronLeft, ChevronRight, Flame, Play, Check } from "lucide-react";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { subDays, parseISO, isSameDay, format } from "date-fns";
@@ -43,7 +43,6 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 import {
@@ -100,8 +99,8 @@ export default function Manifest() {
   const [historyGoal, setHistoryGoal] = useState<ManifestGoal | null>(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
-  const [showCalendarPopup, setShowCalendarPopup] = useState(false);
-  const [showProgressPopup, setShowProgressPopup] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "tiles" | "single">("list");
+  const [singleIndex, setSingleIndex] = useState(0);
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -511,40 +510,46 @@ export default function Manifest() {
         <div className="flex-1 grid grid-cols-1 md:grid-cols-[3fr_2fr] gap-3 w-full max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-6 py-2 overflow-hidden min-h-0">
           {/* ========== LEFT COLUMN: Goals List + Toggle Panels ========== */}
           <div className="flex flex-col h-full min-h-0 gap-3">
-            {/* Goals Container */}
-            <div className="bg-card rounded-2xl shadow-sm border border-border flex flex-col overflow-hidden flex-1 min-h-0">
-              {/* Header with Create Button */}
-              <div className="p-3 flex items-center justify-between border-b border-border flex-shrink-0">
+            {/* Goals — no outer container, cards float */}
+            <div className="flex flex-col flex-1 min-h-0">
+              {/* Header */}
+              <div className="p-3 flex items-center justify-between flex-shrink-0">
                 <h2 className="text-base font-semibold text-foreground">Your Realities</h2>
                 <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="rounded-lg h-8 px-2 text-muted-foreground"
-                    onClick={() => setShowCalendarPopup(true)}
-                  >
-                    <Calendar className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="rounded-lg h-8 px-2 text-muted-foreground"
-                    onClick={() => setShowProgressPopup(true)}
-                  >
-                    <TrendingUp className="h-3.5 w-3.5" />
-                  </Button>
+                  {/* View mode toggles */}
+                  <div className="flex items-center bg-foreground/[0.05] backdrop-blur-md rounded-xl p-0.5 mr-1 border border-foreground/[0.08]">
+                    {([
+                      { mode: "list" as const, icon: List, label: "List" },
+                      { mode: "tiles" as const, icon: LayoutGrid, label: "Tiles" },
+                      { mode: "single" as const, icon: Square, label: "Single" },
+                    ]).map(({ mode, icon: Icon, label }) => (
+                      <button
+                        key={mode}
+                        onClick={() => { setViewMode(mode); if (mode === "single") setSingleIndex(0); }}
+                        title={label}
+                        className={cn(
+                          "p-1.5 rounded-lg transition-all duration-150",
+                          viewMode === mode
+                            ? "bg-background/60 text-foreground shadow-sm backdrop-blur-md"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        <Icon className="h-3.5 w-3.5" />
+                      </button>
+                    ))}
+                  </div>
                   <Button
                     onClick={() => setShowAnalytics(true)}
                     variant="ghost"
                     size="sm"
-                    className="rounded-lg h-8 px-2 text-muted-foreground"
+                    className="rounded-xl h-8 px-2 text-muted-foreground"
                   >
                     <BarChart3 className="h-3.5 w-3.5" />
                   </Button>
                   <Button
                     onClick={() => setShowCreateModal(true)}
                     size="sm"
-                    className="rounded-lg h-8 px-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition-all text-xs"
+                    className="rounded-xl h-8 px-3 bg-primary/80 backdrop-blur-md text-primary-foreground shadow-md hover:shadow-lg hover:bg-primary/90 transition-all text-xs border border-primary/20"
                   >
                     <Plus className="h-3.5 w-3.5 mr-1" /> New
                   </Button>
@@ -553,10 +558,10 @@ export default function Manifest() {
 
               {activeGoals.length === 0 ? (
                 <div className="p-3 flex-1 flex items-center justify-center">
-                  <Card className="rounded-xl border-2 border-dashed border-teal-200 dark:border-teal-800 bg-card w-full">
-                    <CardContent className="py-8 px-4 text-center">
-                      <div className="mx-auto mb-3 h-10 w-10 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg">
-                        <Sparkles className="h-5 w-5 text-white" />
+                  <div className="rounded-2xl border border-dashed border-foreground/[0.1] bg-card/30 backdrop-blur-xl w-full">
+                    <div className="py-8 px-4 text-center">
+                      <div className="mx-auto mb-3 h-10 w-10 rounded-2xl bg-primary/10 backdrop-blur-md flex items-center justify-center shadow-[0_0_20px_hsl(var(--primary)/0.2)]">
+                        <Sparkles className="h-5 w-5 text-primary" />
                       </div>
                       <h3 className="text-base font-semibold text-foreground mb-1">
                         Start Your First Reality
@@ -566,62 +571,236 @@ export default function Manifest() {
                       </p>
                       <Button
                         onClick={() => setShowCreateModal(true)}
-                        className="rounded-lg h-9 px-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm"
+                        className="rounded-xl h-9 px-4 bg-primary/80 backdrop-blur-md text-primary-foreground text-sm border border-primary/20"
                       >
                         <Plus className="h-4 w-4 mr-1.5" /> Create Reality
                       </Button>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 </div>
               ) : (
-                <div className="overflow-y-auto flex-1 min-h-0 p-2 relative scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-                  <div className="space-y-2">
-                    {activeGoals.map((goal) => {
-                      const { streak, momentum } = getGoalMetrics(goal);
-                      const isNewlyCreated = newlyCreatedGoalId === goal.id;
-                      return (
-                        <div key={goal.id} className={isNewlyCreated ? "animate-energy-entry relative" : "relative"}>
-                          <ManifestCard
-                            goal={goal}
-                            streak={streak}
-                            momentum={momentum}
-                            practices={practices}
-                            isSelected={false}
+                <div className="overflow-y-auto flex-1 min-h-0 px-1 pb-2 relative scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+                  {/* ── List View ── */}
+                  {viewMode === "list" && (
+                    <div className="space-y-4">
+                      {activeGoals.map((goal) => {
+                        const { streak, momentum } = getGoalMetrics(goal);
+                        const isNewlyCreated = newlyCreatedGoalId === goal.id;
+                        return (
+                          <div key={goal.id} className={isNewlyCreated ? "animate-energy-entry relative" : "relative"}>
+                            <ManifestCard
+                              goal={goal}
+                              streak={streak}
+                              momentum={momentum}
+                              practices={practices}
+                              isSelected={false}
+                              onClick={() => handleSelectGoal(goal)}
+                              onEdit={() => handleEditGoal(goal)}
+                              onDelete={() => setDeletingGoal(goal)}
+                              onComplete={() => handleCompleteGoal(goal)}
+                              onImageUpdate={fetchData}
+                            />
+                            {isNewlyCreated && (
+                              <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
+                                <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-primary/15 via-primary/10 to-primary/15" />
+                                {[...Array(8)].map((_, i) => (
+                                  <div
+                                    key={i}
+                                    className="absolute w-2 h-2 rounded-full bg-primary/40 animate-float-particle"
+                                    style={{
+                                      left: `${10 + i * 12}%`,
+                                      animationDelay: `${i * 0.1}s`,
+                                      top: "50%",
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* ── Tiles View ── */}
+                  {viewMode === "tiles" && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      {activeGoals.map((goal) => {
+                        const { streak, momentum } = getGoalMetrics(goal);
+                        const momentumPct = Math.round(momentum);
+                        const dayNumber = goal.start_date
+                          ? Math.floor((Date.now() - new Date(goal.start_date).getTime()) / 86400000) + 1
+                          : Math.floor((Date.now() - new Date(goal.created_at).getTime()) / 86400000) + 1;
+                        return (
+                          <button
+                            key={goal.id}
                             onClick={() => handleSelectGoal(goal)}
-                            onEdit={() => handleEditGoal(goal)}
-                            onDelete={() => setDeletingGoal(goal)}
-                            onComplete={() => handleCompleteGoal(goal)}
-                            onImageUpdate={fetchData}
-                          />
-                          {isNewlyCreated && (
-                            <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
-                              <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-teal-500/20 via-cyan-500/20 to-teal-500/20" />
-                              {[...Array(8)].map((_, i) => (
-                                <div
-                                  key={i}
-                                  className="absolute w-2 h-2 rounded-full bg-gradient-to-r from-teal-400 to-cyan-400 animate-float-particle"
-                                  style={{
-                                    left: `${10 + i * 12}%`,
-                                    animationDelay: `${i * 0.1}s`,
-                                    top: "50%",
-                                  }}
+                            className="group text-left rounded-2xl border border-foreground/[0.08] bg-card/40 backdrop-blur-xl overflow-hidden transition-all duration-300 hover:border-foreground/[0.15] hover:bg-card/60 hover:shadow-lg hover:shadow-primary/5 focus:outline-none focus:ring-2 focus:ring-ring"
+                          >
+                            {/* Cover image */}
+                            <div className="w-full aspect-[4/3] overflow-hidden bg-muted relative">
+                              {(goal.cover_image_url || goal.vision_image_url) ? (
+                                <img
+                                  src={goal.cover_image_url || goal.vision_image_url || ""}
+                                  alt={goal.title}
+                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                  loading="lazy"
                                 />
+                              ) : (
+                                <div className="w-full h-full bg-muted/50 flex items-center justify-center">
+                                  <Sparkles className="h-8 w-8 text-muted-foreground/30" />
+                                </div>
+                              )}
+                              {/* Overlay badges */}
+                              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+                              <span className="absolute top-2 left-2 text-[9px] font-semibold px-2 py-0.5 rounded-md bg-background/80 backdrop-blur-sm text-foreground/80">
+                                Day {dayNumber}
+                              </span>
+                              <div className="absolute bottom-2 left-2 right-2">
+                                <h3 className="font-semibold text-foreground text-sm leading-tight line-clamp-2 mb-1">{goal.title}</h3>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="inline-flex items-center text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/20 text-primary backdrop-blur-sm">
+                                    {momentumPct}%
+                                  </span>
+                                  {streak > 0 && (
+                                    <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-destructive/20 text-destructive backdrop-blur-sm">
+                                      <Flame className="h-2 w-2" /> {streak}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* ── Single View ── */}
+                  {viewMode === "single" && activeGoals.length > 0 && (() => {
+                    const idx = Math.min(singleIndex, activeGoals.length - 1);
+                    const goal = activeGoals[idx];
+                    const { streak, momentum } = getGoalMetrics(goal);
+                    const momentumPct = Math.round(momentum);
+                    const dayNumber = goal.start_date
+                      ? Math.floor((Date.now() - new Date(goal.start_date).getTime()) / 86400000) + 1
+                      : Math.floor((Date.now() - new Date(goal.created_at).getTime()) / 86400000) + 1;
+
+                    // Weekly progress
+                    const weekProgress: boolean[] = [];
+                    const practiceMap = new Set(practices.filter((p) => p.goal_id === goal.id && p.locked).map((p) => p.entry_date));
+                    for (let i = 6; i >= 0; i--) {
+                      const date = subDays(new Date(), i);
+                      const dateStr = format(date, "yyyy-MM-dd");
+                      weekProgress.push(practiceMap.has(dateStr));
+                    }
+
+                    return (
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-full rounded-2xl border border-foreground/[0.08] bg-card/40 backdrop-blur-xl overflow-hidden relative">
+                          {/* Large cover */}
+                          <div className="w-full aspect-video overflow-hidden bg-muted relative">
+                            {(goal.cover_image_url || goal.vision_image_url) ? (
+                              <img
+                                src={goal.cover_image_url || goal.vision_image_url || ""}
+                                alt={goal.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-muted/50 flex items-center justify-center">
+                                <Sparkles className="h-12 w-12 text-muted-foreground/30" />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
+
+                            {/* Prev/Next */}
+                            {activeGoals.length > 1 && (
+                              <>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setSingleIndex((idx - 1 + activeGoals.length) % activeGoals.length); }}
+                                  className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center hover:bg-background/90 transition-colors"
+                                >
+                                  <ChevronLeft className="h-4 w-4 text-foreground" />
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setSingleIndex((idx + 1) % activeGoals.length); }}
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center hover:bg-background/90 transition-colors"
+                                >
+                                  <ChevronRight className="h-4 w-4 text-foreground" />
+                                </button>
+                              </>
+                            )}
+
+                            {/* Day badge */}
+                            <span className="absolute top-2 left-2 text-[9px] font-semibold px-2 py-0.5 rounded-md bg-background/80 backdrop-blur-sm text-foreground/80">
+                              Day {dayNumber}
+                            </span>
+
+                            {/* Bottom overlay content */}
+                            <div className="absolute bottom-3 left-3 right-3">
+                              <h3 className="font-semibold text-foreground text-lg leading-tight mb-1.5">{goal.title}</h3>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/20 text-primary backdrop-blur-sm">
+                                  {momentumPct}% Momentum
+                                </span>
+                                {streak > 0 && (
+                                  <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-destructive/20 text-destructive backdrop-blur-sm">
+                                    <Flame className="h-2.5 w-2.5" /> {streak} day streak
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Bottom bar */}
+                          <div className="p-3 flex items-center justify-between">
+                            <div className="flex items-center gap-1">
+                              {["M","T","W","T","F","S","S"].map((day, i) => (
+                                <div key={i} className="flex flex-col items-center gap-px">
+                                  <span className="text-[7px] font-medium text-muted-foreground leading-none">{day}</span>
+                                  <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-colors ${weekProgress[i] ? "bg-primary border-primary" : "border-foreground/10 bg-transparent"}`}>
+                                    {weekProgress[i] && <Check className="h-2 w-2 text-primary-foreground" />}
+                                  </div>
+                                </div>
                               ))}
                             </div>
-                          )}
+                            <button
+                              onClick={() => handleSelectGoal(goal)}
+                              className="h-9 w-9 rounded-full flex items-center justify-center bg-primary/10 text-primary hover:bg-primary/20 transition-all duration-300 hover:shadow-[0_0_16px_hsl(var(--primary)/0.4)]"
+                              title="Practice"
+                            >
+                              <Play className="h-4 w-4 ml-0.5" />
+                            </button>
+                          </div>
                         </div>
-                      );
-                    })}
-                  </div>
+
+                        {/* Dot indicators */}
+                        {activeGoals.length > 1 && (
+                          <div className="flex items-center gap-1.5">
+                            {activeGoals.map((_, i) => (
+                              <button
+                                key={i}
+                                onClick={() => setSingleIndex(i)}
+                                className={cn(
+                                  "rounded-full transition-all duration-200",
+                                  i === idx ? "w-4 h-1.5 bg-primary" : "w-1.5 h-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                                )}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
               {/* Completed Realities Section */}
               {completedGoals.length > 0 && (
-                <div className="border-t border-border">
+                <div className="mt-4 px-1">
                   <button
                     onClick={() => setShowCompleted(!showCompleted)}
-                    className="w-full p-3 flex items-center justify-between hover:bg-muted/50 transition-colors"
+                    className="w-full p-3 flex items-center justify-between rounded-2xl bg-card/30 backdrop-blur-xl border border-foreground/[0.08] hover:bg-card/50 transition-all duration-200"
                   >
                     <span className="text-xs font-medium text-muted-foreground">
                       Manifested Realities ({completedGoals.length})
@@ -633,7 +812,7 @@ export default function Manifest() {
                     )}
                   </button>
                   {showCompleted && (
-                    <div className="p-2 space-y-2 max-h-[300px] overflow-y-auto">
+                    <div className="mt-3 space-y-4 px-0.5">
                       {completedGoals.map((goal) => {
                         const { streak, momentum } = getGoalMetrics(goal);
                         return (
@@ -765,90 +944,14 @@ export default function Manifest() {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Calendar Popup */}
-        <Dialog open={showCalendarPopup} onOpenChange={setShowCalendarPopup}>
-          <DialogContent className="rounded-2xl max-w-sm p-0 overflow-hidden">
-            <DialogHeader className="p-4 pb-0">
-              <DialogTitle>Calendar</DialogTitle>
-            </DialogHeader>
-            <div className="p-4 pt-2">
-              <ManifestSidebarPanel
-                selectedDate={selectedDate}
-                onDateSelect={handleDateSelect}
-                goals={goals}
-                practices={practices}
-                activeCount={activeGoals.length}
-                streak={aggregateStreak}
-                avgMomentum={avgMomentum}
-                onOpenAnalytics={() => {
-                  setShowCalendarPopup(false);
-                  setShowAnalytics(true);
-                }}
-                section="calendar"
-              />
-              {/* Goals practiced on selected date */}
-              {(() => {
-                const practicedGoals = getGoalsWithPracticeOnDate(selectedDate);
-                if (practicedGoals.length === 0) return null;
-                return (
-                  <div className="mt-3 pt-3 border-t border-border space-y-1.5">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      Practiced on {fmtDate(selectedDate, "short")}
-                    </p>
-                    {practicedGoals.map((goal) => (
-                      <button
-                        key={goal.id}
-                        onClick={() => {
-                          setShowCalendarPopup(false);
-                          navigate(`/manifest/practice/${goal.id}?date=${format(selectedDate, "yyyy-MM-dd")}`);
-                        }}
-                        className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors text-left"
-                      >
-                        <div className="h-6 w-6 rounded-md bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center flex-shrink-0">
-                          <Sparkles className="h-3 w-3 text-teal-600" />
-                        </div>
-                        <span className="text-sm text-foreground line-clamp-1">{goal.title}</span>
-                        <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto -rotate-90" />
-                      </button>
-                    ))}
-                  </div>
-                );
-              })()}
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Progress Popup */}
-        <Dialog open={showProgressPopup} onOpenChange={setShowProgressPopup}>
-          <DialogContent className="rounded-2xl max-w-sm p-0 overflow-hidden">
-            <DialogHeader className="p-4 pb-0">
-              <DialogTitle>Progress</DialogTitle>
-            </DialogHeader>
-            <div className="p-4 pt-2">
-              <ManifestSidebarPanel
-                selectedDate={selectedDate}
-                onDateSelect={handleDateSelect}
-                goals={goals}
-                practices={practices}
-                activeCount={activeGoals.length}
-                streak={aggregateStreak}
-                avgMomentum={avgMomentum}
-                onOpenAnalytics={() => {
-                  setShowProgressPopup(false);
-                  setShowAnalytics(true);
-                }}
-                section="progress"
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
-
         {/* Analytics Modal */}
         <ManifestAnalyticsModal
           open={showAnalytics}
           onOpenChange={setShowAnalytics}
           goals={goals}
           practices={practices}
+          selectedDate={selectedDate}
+          onDateSelect={handleDateSelect}
         />
 
         {/* History Drawer */}

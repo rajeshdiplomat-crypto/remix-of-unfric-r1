@@ -8,6 +8,8 @@ import {
   isToday,
   addMonths,
   subMonths,
+  subDays,
+  isPast,
   getMonth,
   getYear,
   setMonth as setMonthDate,
@@ -17,10 +19,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar as CalendarIcon,
-  ArrowLeftToLine,
   PanelLeft,
   BarChart3,
 } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { type ManifestGoal, type ManifestDailyPractice } from "./types";
@@ -37,6 +39,7 @@ interface ManifestSidebarPanelProps {
   avgMomentum?: number;
   onOpenAnalytics?: () => void;
   section?: "calendar" | "progress" | "all";
+  selectedGoalId?: string;
 }
 
 export const ManifestSidebarPanel = memo(
@@ -52,6 +55,7 @@ export const ManifestSidebarPanel = memo(
     avgMomentum = 0,
     onOpenAnalytics,
     section = "all",
+    selectedGoalId = "all",
   }: ManifestSidebarPanelProps) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [insightIndex, setInsightIndex] = useState(0);
@@ -65,16 +69,19 @@ export const ManifestSidebarPanel = memo(
       return eachDayOfInterval({ start, end });
     }, [currentMonth]);
 
-    // Get practice counts per date
+    // Get practice counts per date (filtered by selected goal)
     const practiceCountByDate = useMemo(() => {
       const counts: Record<string, number> = {};
       practices.forEach((p) => {
-        if (p.locked) {
+        if (p.locked && (selectedGoalId === "all" || p.goal_id === selectedGoalId)) {
           counts[p.entry_date] = (counts[p.entry_date] || 0) + 1;
         }
       });
       return counts;
-    }, [practices]);
+    }, [practices, selectedGoalId]);
+
+    // Effective total realities for ratio calculation
+    const effectiveTotalRealities = selectedGoalId === "all" ? totalRealities : 1;
 
     const hasPractice = useCallback(
       (date: Date) => !!practiceCountByDate[format(date, "yyyy-MM-dd")],
@@ -365,7 +372,7 @@ export const ManifestSidebarPanel = memo(
 
               <div className="grid grid-cols-7 gap-1">
                 {Array.from({ length: daysInMonth[0].getDay() }).map((_, i) => (
-                  <div key={`empty-${i}`} className="aspect-square" />
+                  <div key={`empty-${i}`} className="h-9" />
                 ))}
                 {daysInMonth.map((day) => {
                   const isSelected = isSameDay(day, selectedDate);
@@ -374,33 +381,53 @@ export const ManifestSidebarPanel = memo(
                   const practiceCount = getPracticeCount(day);
 
                   return (
-                    <button
-                      key={day.toISOString()}
-                      onClick={() => onDateSelect(day)}
-                      className={cn(
-                        "aspect-square rounded-lg text-[10px] font-medium transition-all relative flex flex-col items-center justify-center gap-0",
-                        isSelected
-                          ? "bg-gradient-to-br from-teal-500 to-cyan-500 text-white shadow-md"
-                          : hasPracticeOnDay
-                            ? "bg-teal-50 text-teal-700 ring-1 ring-teal-200 hover:bg-teal-100 dark:bg-teal-900/30 dark:text-teal-300 dark:ring-teal-800"
-                            : isTodayDate
-                              ? "bg-cyan-50 text-cyan-600 ring-1 ring-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300"
-                              : "hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
-                      )}
-                    >
-                      <span>{format(day, "d")}</span>
-                      {hasPracticeOnDay && totalRealities > 0 && (
-                        <span className={cn(
-                          "text-[7px] leading-none",
-                          isSelected ? "text-white/80" : "text-teal-500 dark:text-teal-400"
-                        )}>
-                          {practiceCount}/{totalRealities}
-                        </span>
-                      )}
-                    </button>
+                    (() => {
+                      const ratio = effectiveTotalRealities > 0 ? practiceCount / effectiveTotalRealities : 0;
+                      const isPastDay = isPast(day) && !isTodayDate;
+
+                      return (
+                        <button
+                          key={day.toISOString()}
+                          onClick={() => onDateSelect(day)}
+                          className={cn(
+                            "h-9 rounded-lg text-[10px] font-medium transition-all relative flex flex-col items-center justify-center gap-0",
+                            isSelected
+                              ? "bg-gradient-to-br from-teal-500 to-cyan-500 text-white shadow-md"
+                              : ratio === 1 && hasPracticeOnDay
+                                ? "bg-emerald-500/70 text-white dark:bg-emerald-600/60"
+                                : ratio > 0 && hasPracticeOnDay
+                                  ? "bg-amber-400/40 text-amber-700 dark:bg-amber-500/30 dark:text-amber-300"
+                                  : isPastDay && effectiveTotalRealities > 0
+                                    ? "bg-red-100/40 text-slate-500 dark:bg-red-900/20 dark:text-slate-400"
+                                    : isTodayDate
+                                      ? "bg-cyan-50 text-cyan-600 ring-1 ring-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300"
+                                      : "hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
+                          )}
+                        >
+                          <span>{format(day, "d")}</span>
+                          {hasPracticeOnDay && effectiveTotalRealities > 0 && (
+                            <span className={cn(
+                              "text-[7px] leading-none",
+                              isSelected || ratio === 1 ? "text-white/80" : ratio > 0 ? "text-amber-600 dark:text-amber-300" : "text-teal-500 dark:text-teal-400"
+                            )}>
+                              {practiceCount}/{effectiveTotalRealities}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })()
                   );
                 })}
               </div>
+
+              {/* Legend */}
+              {effectiveTotalRealities > 0 && (
+                <div className="flex items-center justify-center gap-3 mt-2 text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-emerald-500/70" /> All</div>
+                  <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-amber-400/40" /> Partial</div>
+                  <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-red-100/40 dark:bg-red-900/20" /> Missed</div>
+                </div>
+              )}
 
               <button
                 onClick={() => {
@@ -414,6 +441,7 @@ export const ManifestSidebarPanel = memo(
             </div>
           </div>
         )}
+
       </div>
     );
   }

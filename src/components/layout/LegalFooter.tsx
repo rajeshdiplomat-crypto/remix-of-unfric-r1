@@ -6,31 +6,13 @@ interface LegalFooterProps {
 
 export function LegalFooter({ onOpenCookieSettings }: LegalFooterProps) {
   return (
-    <footer className="w-full border-t border-border/40 bg-background/80 backdrop-blur-sm">
-      <div className="max-w-7xl mx-auto px-4 py-2 flex flex-col sm:flex-row items-center justify-between gap-1">
-        <p className="text-[10px] text-muted-foreground/60 tracking-wide">
-          © {new Date().getFullYear()} unfric — All rights reserved
-        </p>
-        <div className="flex items-center gap-4">
-          <Link
-            to="/privacy"
-            className="text-[10px] text-muted-foreground/60 hover:text-foreground transition-colors tracking-wide"
-          >
-            Privacy
-          </Link>
-          <Link
-            to="/terms"
-            className="text-[10px] text-muted-foreground/60 hover:text-foreground transition-colors tracking-wide"
-          >
-            Terms
-          </Link>
-          <button
-            onClick={onOpenCookieSettings}
-            className="text-[10px] text-muted-foreground/60 hover:text-foreground transition-colors tracking-wide"
-          >
-            Cookie Settings
-          </button>
-        </div>
+    <footer className="w-full border-t border-border/10 bg-background/40 backdrop-blur-xl">
+      <div className="max-w-7xl mx-auto px-4 py-1 flex items-center justify-center gap-4">
+        <span className="text-[8px] text-muted-foreground/40 tracking-widest uppercase">© {new Date().getFullYear()} unfric</span>
+        <span className="text-muted-foreground/20">·</span>
+        <Link to="/privacy" className="text-[8px] text-muted-foreground/40 hover:text-foreground/60 transition-colors tracking-widest uppercase">Privacy</Link>
+        <Link to="/terms" className="text-[8px] text-muted-foreground/40 hover:text-foreground/60 transition-colors tracking-widest uppercase">Terms</Link>
+        <button onClick={onOpenCookieSettings} className="text-[8px] text-muted-foreground/40 hover:text-foreground/60 transition-colors tracking-widest uppercase">Cookies</button>
       </div>
     </footer>
   );
