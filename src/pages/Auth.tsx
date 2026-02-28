@@ -26,25 +26,49 @@ export default function Auth() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!email) { toast.error("Please enter your email"); return; }
+    if (!email) {
+      toast.error("Please enter your email");
+      return;
+    }
     setIsSubmitting(true);
     try {
       if (mode === "forgot-password") {
         const { error } = await withRetry(() =>
           supabase.auth.resetPasswordForEmail(email, {
             redirectTo: `${window.location.origin}/auth?mode=reset`,
-          })
+          }),
         );
         if (error) toast.error(error.message);
-        else { toast.success("Password reset link sent!"); setMode("signin"); }
+        else {
+          toast.success("Password reset link sent!");
+          setMode("signin");
+        }
       } else if (mode === "signup") {
-        if (!ageConfirmed) { toast.error("Please confirm you are 18 or older"); setIsSubmitting(false); return; }
-        if (!password || password.length < 6) { toast.error("Password must be at least 6 characters"); setIsSubmitting(false); return; }
+        if (!ageConfirmed) {
+          toast.error("Please confirm you are 18 or older");
+          setIsSubmitting(false);
+          return;
+        }
+        if (!password || password.length < 6) {
+          toast.error("Password must be at least 6 characters");
+          setIsSubmitting(false);
+          return;
+        }
         const { error } = await signUp(email, password);
-        if (error) toast.error(error.message.includes("already registered") ? "Already registered. Please sign in." : error.message);
-        else { setMode("verify-email"); toast.success("Check your email to verify!"); }
+        if (error)
+          toast.error(
+            error.message.includes("already registered") ? "Already registered. Please sign in." : error.message,
+          );
+        else {
+          setMode("verify-email");
+          toast.success("Check your email to verify!");
+        }
       } else {
-        if (!password) { toast.error("Please enter your password"); setIsSubmitting(false); return; }
+        if (!password) {
+          toast.error("Please enter your password");
+          setIsSubmitting(false);
+          return;
+        }
         const { error } = await signIn(email, password);
         if (error) {
           const msg = error.message;
@@ -61,9 +85,7 @@ export default function Auth() {
   const handleResend = async () => {
     setIsSubmitting(true);
     try {
-      const { error } = await withRetry(() =>
-        supabase.auth.resend({ type: "signup", email })
-      );
+      const { error } = await withRetry(() => supabase.auth.resend({ type: "signup", email }));
       if (error) toast.error(error.message);
       else toast.success("Verification email sent!");
     } finally {
@@ -79,18 +101,31 @@ export default function Auth() {
     );
   }
 
-  const title = mode === "signup" ? "Get started" : mode === "forgot-password" ? "Reset password" : mode === "verify-email" ? "Check your inbox" : "Welcome back";
-  const subtitle = mode === "signup" ? "Create your account to begin" : mode === "forgot-password" ? "We'll send you a reset link" : mode === "verify-email" ? "Tap the link we sent you" : "Sign in to continue your journey";
+  const title =
+    mode === "signup"
+      ? "Get started"
+      : mode === "forgot-password"
+        ? "Reset password"
+        : mode === "verify-email"
+          ? "Check your inbox"
+          : "Welcome back";
+  const subtitle =
+    mode === "signup"
+      ? "Create your account to begin"
+      : mode === "forgot-password"
+        ? "We'll send you a reset link"
+        : mode === "verify-email"
+          ? "Tap the link we sent you"
+          : "Sign in to continue your journey";
 
   return (
-    <div className="flex flex-col md:flex-row bg-background overflow-hidden" style={{ height: '100dvh', minHeight: '100vh' }}>
+    <div
+      className="flex flex-col md:flex-row bg-background overflow-hidden"
+      style={{ height: "100dvh", minHeight: "100vh" }}
+    >
       {/* Left: Editorial image — fixed to viewport height */}
-      <div className="hidden md:block md:w-[45%] lg:w-[40%] relative flex-shrink-0 overflow-hidden h-full">
-        <img
-          src={authImage}
-          alt=""
-          className="h-full w-auto max-w-none object-center"
-        />
+      <div className="hidden md:block md:w-[55%] lg:w-[40%] relative flex-shrink-0 overflow-hidden h-full">
+        <img src={authImage} alt="" className="h-full w-auto max-w-none object-center" />
         {/* Gradient overlay for text legibility */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
         {/* Branding */}
@@ -222,9 +257,19 @@ export default function Auth() {
                   {mode === "signup" && (
                     <p className="text-[9px] text-muted-foreground/50 text-center leading-relaxed">
                       By creating an account, you agree to our{" "}
-                      <Link to="/terms" className="underline underline-offset-2 hover:text-foreground transition-colors">Terms</Link>{" "}
+                      <Link
+                        to="/terms"
+                        className="underline underline-offset-2 hover:text-foreground transition-colors"
+                      >
+                        Terms
+                      </Link>{" "}
                       and{" "}
-                      <Link to="/privacy" className="underline underline-offset-2 hover:text-foreground transition-colors">Privacy Policy</Link>
+                      <Link
+                        to="/privacy"
+                        className="underline underline-offset-2 hover:text-foreground transition-colors"
+                      >
+                        Privacy Policy
+                      </Link>
                     </p>
                   )}
                 </form>
