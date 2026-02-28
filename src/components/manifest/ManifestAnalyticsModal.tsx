@@ -246,13 +246,31 @@ export function ManifestAnalyticsModal({
 
           {/* ── Calendar Tab ── */}
           <TabsContent value="calendar" className="mt-0">
-            <div className="p-6 overflow-y-auto max-h-[60vh]">
+            <div className="px-6 pb-2">
+              <div className="mt-4">
+                <Select value={selectedGoalId} onValueChange={setSelectedGoalId}>
+                  <SelectTrigger className="w-[180px] h-7 rounded-xl text-[11px] border-foreground/[0.08]">
+                    <SelectValue placeholder="All Realities" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Realities</SelectItem>
+                    {activeGoals.map((goal) => (
+                      <SelectItem key={goal.id} value={goal.id}>
+                        {goal.title.length > 22 ? goal.title.slice(0, 22) + "..." : goal.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="p-6 pt-3 overflow-y-auto max-h-[55vh]">
               <ManifestSidebarPanel
                 selectedDate={selectedDate}
                 onDateSelect={onDateSelect}
                 goals={goals}
                 practices={practices}
                 section="calendar"
+                selectedGoalId={selectedGoalId}
               />
             </div>
           </TabsContent>
