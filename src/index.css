@@ -370,6 +370,12 @@
   animation: auth-fade-in 400ms ease-out;
 }
 
+/* Focus breathing glow */
+@keyframes focus-breathe {
+  0%, 100% { box-shadow: 0 0 30px hsl(0 0% 100% / 0.03); }
+  50% { box-shadow: 0 0 50px hsl(0 0% 100% / 0.08); }
+}
+
 /* Reduced motion respect for auth animations */
 @media (prefers-reduced-motion: reduce) {
   .animate-ken-burns {
