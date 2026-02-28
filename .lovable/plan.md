@@ -1,13 +1,13 @@
 
 
-## Replace Auth Image with a Square-Aspect Image
+## Adjust Image/Form Split Ratio
 
-The current image is portrait-oriented. The user wants a wider, nearly square image instead. I'll generate a new image with ~1:1 aspect ratio using the same editorial style.
+**Change in `src/pages/Auth.tsx`:**
 
-**Steps:**
+1. **Image container (line ~88):** Change `md:w-[45%] lg:w-[50%]` → `md:w-[45%] lg:w-[40%]`
+2. **Form container inherits remaining space via `flex-1`** — no change needed there.
 
-1. **Generate a new square image** (~1024x1024) with the same editorial aesthetic (woman writing in journal, warm golden light, minimal style)
-2. **Replace `src/assets/auth-editorial.jpg`** with the new square image
-
-No layout code changes needed — the current `h-full w-auto max-w-none object-center overflow-hidden` setup will handle the wider image correctly.
+Result:
+- **md screens:** 45% image / 55% form (unchanged)
+- **lg+ screens:** 40% image / 60% form (was 50/50)
 
