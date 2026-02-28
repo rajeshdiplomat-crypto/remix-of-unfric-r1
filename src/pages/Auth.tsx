@@ -89,7 +89,7 @@ export default function Auth() {
         <img
           src={authImage}
           alt=""
-          className="h-full w-auto max-w-none object-center"
+          className="h-full w-full object-cover object-center"
         />
         {/* Gradient overlay for text legibility */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
