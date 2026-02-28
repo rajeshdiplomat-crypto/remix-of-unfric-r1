@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useDatePreferences } from "@/hooks/useDatePreferences";
 import { toast } from "sonner";
 import { isOfflineError } from "@/lib/offlineAwareOperation";
-import { Sparkles, Plus, ChevronDown, ChevronUp, Calendar, BarChart3, TrendingUp, List, LayoutGrid, Square, ChevronLeft, ChevronRight, Flame, Play, Check } from "lucide-react";
+import { Sparkles, Plus, ChevronDown, ChevronUp, BarChart3, TrendingUp, List, LayoutGrid, Square, ChevronLeft, ChevronRight, Flame, Play, Check } from "lucide-react";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { PageHero, PAGE_HERO_TEXT } from "@/components/common/PageHero";
 import { subDays, parseISO, isSameDay, format } from "date-fns";
@@ -97,8 +97,6 @@ export default function Manifest() {
   const [historyGoal, setHistoryGoal] = useState<ManifestGoal | null>(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
-  const [showCalendarPopup, setShowCalendarPopup] = useState(false);
-  const [showProgressPopup, setShowProgressPopup] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "tiles" | "single">("list");
   const [singleIndex, setSingleIndex] = useState(0);
 
@@ -536,22 +534,6 @@ export default function Manifest() {
                     ))}
                   </div>
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="rounded-xl h-8 px-2 text-muted-foreground"
-                    onClick={() => setShowCalendarPopup(true)}
-                  >
-                    <Calendar className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="rounded-xl h-8 px-2 text-muted-foreground"
-                    onClick={() => setShowProgressPopup(true)}
-                  >
-                    <TrendingUp className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
                     onClick={() => setShowAnalytics(true)}
                     variant="ghost"
                     size="sm"
@@ -957,90 +939,14 @@ export default function Manifest() {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Calendar Popup */}
-        <Dialog open={showCalendarPopup} onOpenChange={setShowCalendarPopup}>
-          <DialogContent className="rounded-2xl max-w-sm p-0 overflow-hidden">
-            <DialogHeader className="p-4 pb-0">
-              <DialogTitle>Calendar</DialogTitle>
-            </DialogHeader>
-            <div className="p-4 pt-2">
-              <ManifestSidebarPanel
-                selectedDate={selectedDate}
-                onDateSelect={handleDateSelect}
-                goals={goals}
-                practices={practices}
-                activeCount={activeGoals.length}
-                streak={aggregateStreak}
-                avgMomentum={avgMomentum}
-                onOpenAnalytics={() => {
-                  setShowCalendarPopup(false);
-                  setShowAnalytics(true);
-                }}
-                section="calendar"
-              />
-              {/* Goals practiced on selected date */}
-              {(() => {
-                const practicedGoals = getGoalsWithPracticeOnDate(selectedDate);
-                if (practicedGoals.length === 0) return null;
-                return (
-                  <div className="mt-3 pt-3 border-t border-border space-y-1.5">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      Practiced on {fmtDate(selectedDate, "short")}
-                    </p>
-                    {practicedGoals.map((goal) => (
-                      <button
-                        key={goal.id}
-                        onClick={() => {
-                          setShowCalendarPopup(false);
-                          navigate(`/manifest/practice/${goal.id}?date=${format(selectedDate, "yyyy-MM-dd")}`);
-                        }}
-                        className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors text-left"
-                      >
-                        <div className="h-6 w-6 rounded-md bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center flex-shrink-0">
-                          <Sparkles className="h-3 w-3 text-teal-600" />
-                        </div>
-                        <span className="text-sm text-foreground line-clamp-1">{goal.title}</span>
-                        <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto -rotate-90" />
-                      </button>
-                    ))}
-                  </div>
-                );
-              })()}
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Progress Popup */}
-        <Dialog open={showProgressPopup} onOpenChange={setShowProgressPopup}>
-          <DialogContent className="rounded-2xl max-w-sm p-0 overflow-hidden">
-            <DialogHeader className="p-4 pb-0">
-              <DialogTitle>Progress</DialogTitle>
-            </DialogHeader>
-            <div className="p-4 pt-2">
-              <ManifestSidebarPanel
-                selectedDate={selectedDate}
-                onDateSelect={handleDateSelect}
-                goals={goals}
-                practices={practices}
-                activeCount={activeGoals.length}
-                streak={aggregateStreak}
-                avgMomentum={avgMomentum}
-                onOpenAnalytics={() => {
-                  setShowProgressPopup(false);
-                  setShowAnalytics(true);
-                }}
-                section="progress"
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
-
         {/* Analytics Modal */}
         <ManifestAnalyticsModal
           open={showAnalytics}
           onOpenChange={setShowAnalytics}
           goals={goals}
           practices={practices}
+          selectedDate={selectedDate}
+          onDateSelect={handleDateSelect}
         />
 
         {/* History Drawer */}
