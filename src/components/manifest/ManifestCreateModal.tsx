@@ -456,8 +456,8 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg p-0 rounded-lg overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="bg-card border-b border-border px-6 py-4 flex-shrink-0">
-          <DialogTitle className="text-lg font-light text-foreground">{editingGoal ? "Edit Reality" : "Create Reality"}</DialogTitle>
+        <div className="liquid-glass border-b border-border/30 px-6 py-4 flex-shrink-0">
+          <DialogTitle className="label-editorial text-accent-graphite font-light text-base">{editingGoal ? "Edit Reality" : "Create Reality"}</DialogTitle>
           <div className="flex gap-2 mt-3">
             {[1, 2, 3].map((s) => (
               <div key={s} className={`flex-1 h-1 rounded-full ${step >= s ? "bg-accent-graphite" : "bg-border"}`} />

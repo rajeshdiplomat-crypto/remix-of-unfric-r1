@@ -827,8 +827,8 @@ export default function Manifest() {
           </div>
 
           {/* ========== FLOATING INSIGHTS PANEL ========== */}
-          <div className="hidden md:block absolute top-4 right-6 w-72">
-            <div className="liquid-glass rounded-lg p-5 space-y-4">
+          <div className="hidden lg:block fixed top-24 right-6 w-80 z-30">
+            <div className="liquid-glass rounded-lg shadow-2xl p-5 space-y-4">
               <span className="label-editorial text-accent-graphite">Insights</span>
 
               {/* Motivational quote */}
