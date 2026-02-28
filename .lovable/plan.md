@@ -1,13 +1,10 @@
 
 
-## Adjust Image/Form Split Ratio
+## Replace Auth Image
 
-**Change in `src/pages/Auth.tsx`:**
+Generate a new editorial image and replace `src/assets/auth-editorial.jpg`.
 
-1. **Image container (line ~88):** Change `md:w-[45%] lg:w-[50%]` → `md:w-[45%] lg:w-[40%]`
-2. **Form container inherits remaining space via `flex-1`** — no change needed there.
+**Prompt:** "Editorial fashion photography of a man in a modern minimal office space, feeling free and content, subtle happy expression, warm golden light, clean background, muted earth tones, square 1:1 composition, ultra high resolution, minimal aesthetic"
 
-Result:
-- **md screens:** 45% image / 55% form (unchanged)
-- **lg+ screens:** 40% image / 60% form (was 50/50)
+**No code changes needed** — same file path, same layout.
 
