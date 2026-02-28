@@ -442,51 +442,7 @@ export const ManifestSidebarPanel = memo(
           </div>
         )}
 
-        {/* Heatmap - only inside analytics modal */}
-        {showCalendar && section === "calendar" && (
-          <HeatmapSection goals={goals} practices={practices} selectedGoalId={selectedGoalId} />
-        )}
       </div>
     );
   }
 );
-
-// 30-day heatmap sub-component
-const HeatmapSection = memo(({ goals, practices, selectedGoalId }: { goals: ManifestGoal[]; practices: ManifestDailyPractice[]; selectedGoalId: string }) => {
-  const heatmap = useMemo(() => {
-    const now = new Date();
-    const heatmapDays = eachDayOfInterval({ start: subDays(now, 29), end: now });
-    const lockedPractices = practices.filter((p) => p.locked && (selectedGoalId === "all" || p.goal_id === selectedGoalId));
-    const practicedDates = new Set(lockedPractices.map((p) => p.entry_date));
-
-    return heatmapDays.map((day) => ({
-      date: day,
-      dateStr: format(day, "yyyy-MM-dd"),
-      practiced: practicedDates.has(format(day, "yyyy-MM-dd")),
-    }));
-  }, [practices, selectedGoalId]);
-
-  return (
-    <div className="bg-card/40 backdrop-blur-xl rounded-2xl p-3.5 border border-foreground/[0.08]">
-      <p className="text-xs font-medium text-foreground mb-3">Last 30 Days</p>
-      <div className="grid grid-cols-10 gap-1.5">
-        {heatmap.map((day) => (
-          <div
-            key={day.dateStr}
-            title={`${format(day.date, "MMM d")} — ${day.practiced ? "Practiced" : "Missed"}`}
-            className={cn(
-              "aspect-square rounded-md transition-colors",
-              day.practiced
-                ? "bg-primary/60"
-                : "bg-muted/40 border border-foreground/[0.05]"
-            )}
-          />
-        ))}
-      </div>
-      <div className="flex items-center gap-3 mt-2.5 text-[10px] text-muted-foreground">
-        <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-primary/60" /> Practiced</div>
-        <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-muted/40 border border-foreground/[0.05]" /> Missed</div>
-      </div>
-    </div>
-  );
-});

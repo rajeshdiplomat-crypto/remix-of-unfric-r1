@@ -18,7 +18,7 @@ import {
   Award,
   Calendar as CalendarIcon,
 } from "lucide-react";
-import { subDays, parseISO, differenceInDays, format } from "date-fns";
+import { subDays, parseISO, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { type ManifestGoal, type ManifestDailyPractice } from "./types";
 import { ManifestSidebarPanel } from "./ManifestSidebarPanel";
@@ -89,12 +89,6 @@ export function ManifestAnalyticsModal({
     const totalActions = lockedPractices.reduce((sum, p) => sum + (p.act_count || 0), 0);
     const totalProofs = lockedPractices.reduce((sum, p) => sum + (p.proofs?.length || 0), 0);
 
-    const daysInPeriod =
-      timeFilter === "7days" ? 7
-        : timeFilter === "30days" ? 30
-          : timeFilter === "1year" ? 365
-            : Math.max(differenceInDays(new Date(), parseISO(lockedPractices[0]?.entry_date || new Date().toISOString())) + 1, 1);
-
     const avgVizTimePerDay = uniquePracticeDays > 0 ? (totalVizMinutes / uniquePracticeDays).toFixed(1) : "0";
     const avgVizPerDay = uniquePracticeDays > 0 ? (totalVisualizations / uniquePracticeDays).toFixed(1) : "0";
     const avgActionsPerDay = uniquePracticeDays > 0 ? (totalActions / uniquePracticeDays).toFixed(1) : "0";
@@ -116,10 +110,8 @@ export function ManifestAnalyticsModal({
       avgVizPerDay,
       avgActionsPerDay,
       mostVisualizedGoal,
-      daysInPeriod,
     };
-  }, [filteredPractices, goals, timeFilter]);
-
+  }, [filteredPractices, goals]);
 
   const StatCard = ({
     icon: Icon, label, value, subValue, color,
@@ -141,65 +133,66 @@ export function ManifestAnalyticsModal({
   const activeGoals = goals.filter((g) => !g.is_completed);
   const completedGoals = goals.filter((g) => g.is_completed);
 
-  const FiltersRow = () => (
-    <div className="flex gap-3 mt-4 flex-wrap">
-      <div className="flex gap-1.5">
-        {(["7days", "30days", "1year", "lifetime"] as TimeFilter[]).map((filter) => (
-          <Button
-            key={filter}
-            variant="ghost"
-            size="sm"
-            onClick={() => setTimeFilter(filter)}
-            className={cn(
-              "rounded-xl h-7 px-2.5 text-[11px]",
-              timeFilter === filter
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground"
-            )}
-          >
-            {filter === "7days" ? "7D" : filter === "30days" ? "30D" : filter === "1year" ? "1Y" : "All"}
-          </Button>
-        ))}
-      </div>
-      <Select value={selectedGoalId} onValueChange={setSelectedGoalId}>
-        <SelectTrigger className="w-[160px] h-7 rounded-xl text-[11px] border-foreground/[0.08]">
-          <SelectValue placeholder="All Realities" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Realities</SelectItem>
-          {activeGoals.map((goal) => (
-            <SelectItem key={goal.id} value={goal.id}>
-              {goal.title.length > 22 ? goal.title.slice(0, 22) + "..." : goal.title}
-            </SelectItem>
-          ))}
-          {completedGoals.length > 0 && (
-            <>
-              <div className="px-2 py-1.5 text-[10px] font-semibold text-emerald-600 uppercase tracking-wide">
-                Manifested
-              </div>
-              {completedGoals.map((goal) => (
-                <SelectItem key={goal.id} value={goal.id} className="text-emerald-600">
-                  {goal.title.length > 22 ? goal.title.slice(0, 22) + "..." : goal.title}
-                </SelectItem>
-              ))}
-            </>
-          )}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] p-0 rounded-2xl overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-2">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-xl">
-              <BarChart3 className="h-5 w-5 text-primary" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-xl">
+                <BarChart3 className="h-5 w-5 text-primary" />
+              </div>
+              <DialogTitle className="text-lg font-semibold">Analytics</DialogTitle>
             </div>
-            <DialogTitle className="text-lg font-semibold">Analytics</DialogTitle>
           </div>
         </DialogHeader>
+
+        {/* Shared filters row */}
+        <div className="px-6 flex items-center gap-3 flex-wrap">
+          <div className="flex gap-1.5">
+            {(["7days", "30days", "1year", "lifetime"] as TimeFilter[]).map((filter) => (
+              <Button
+                key={filter}
+                variant="ghost"
+                size="sm"
+                onClick={() => setTimeFilter(filter)}
+                className={cn(
+                  "rounded-xl h-7 px-2.5 text-[11px]",
+                  timeFilter === filter
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground"
+                )}
+              >
+                {filter === "7days" ? "7D" : filter === "30days" ? "30D" : filter === "1year" ? "1Y" : "All"}
+              </Button>
+            ))}
+          </div>
+          <Select value={selectedGoalId} onValueChange={setSelectedGoalId}>
+            <SelectTrigger className="w-[160px] h-7 rounded-xl text-[11px] border-foreground/[0.08]">
+              <SelectValue placeholder="All Realities" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Realities</SelectItem>
+              {activeGoals.map((goal) => (
+                <SelectItem key={goal.id} value={goal.id}>
+                  {goal.title.length > 22 ? goal.title.slice(0, 22) + "..." : goal.title}
+                </SelectItem>
+              ))}
+              {completedGoals.length > 0 && (
+                <>
+                  <div className="px-2 py-1.5 text-[10px] font-semibold text-emerald-600 uppercase tracking-wide">
+                    Manifested
+                  </div>
+                  {completedGoals.map((goal) => (
+                    <SelectItem key={goal.id} value={goal.id} className="text-emerald-600">
+                      {goal.title.length > 22 ? goal.title.slice(0, 22) + "..." : goal.title}
+                    </SelectItem>
+                  ))}
+                </>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
 
         <Tabs defaultValue="overview" className="w-full">
           <div className="px-6">
@@ -215,10 +208,7 @@ export function ManifestAnalyticsModal({
 
           {/* ── Overview Tab ── */}
           <TabsContent value="overview" className="mt-0">
-            <div className="px-6 pb-2">
-              <FiltersRow />
-            </div>
-            <div className="p-6 pt-3 overflow-y-auto max-h-[55vh]">
+            <div className="p-6 pt-3 overflow-y-auto max-h-[50vh]">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <StatCard icon={Clock} label="Time Visualizing" value={`${analytics.totalVizMinutes}m`} subValue={`${analytics.avgVizTimePerDay}m/day avg`} color="bg-primary/10 text-primary" />
                 <StatCard icon={Eye} label="Visualizations" value={analytics.totalVisualizations} subValue={`${analytics.avgVizPerDay}/day avg`} color="bg-accent text-accent-foreground" />
@@ -246,24 +236,7 @@ export function ManifestAnalyticsModal({
 
           {/* ── Calendar Tab ── */}
           <TabsContent value="calendar" className="mt-0">
-            <div className="px-6 pb-2">
-              <div className="mt-4">
-                <Select value={selectedGoalId} onValueChange={setSelectedGoalId}>
-                  <SelectTrigger className="w-[180px] h-7 rounded-xl text-[11px] border-foreground/[0.08]">
-                    <SelectValue placeholder="All Realities" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Realities</SelectItem>
-                    {activeGoals.map((goal) => (
-                      <SelectItem key={goal.id} value={goal.id}>
-                        {goal.title.length > 22 ? goal.title.slice(0, 22) + "..." : goal.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="p-6 pt-3 overflow-y-auto max-h-[55vh]">
+            <div className="p-6 pt-3 overflow-y-auto max-h-[50vh]">
               <ManifestSidebarPanel
                 selectedDate={selectedDate}
                 onDateSelect={onDateSelect}
