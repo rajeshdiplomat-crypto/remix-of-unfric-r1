@@ -372,7 +372,7 @@ export const ManifestSidebarPanel = memo(
 
               <div className="grid grid-cols-7 gap-1">
                 {Array.from({ length: daysInMonth[0].getDay() }).map((_, i) => (
-                  <div key={`empty-${i}`} className="aspect-square" />
+                  <div key={`empty-${i}`} className="h-9" />
                 ))}
                 {daysInMonth.map((day) => {
                   const isSelected = isSameDay(day, selectedDate);
@@ -390,7 +390,7 @@ export const ManifestSidebarPanel = memo(
                           key={day.toISOString()}
                           onClick={() => onDateSelect(day)}
                           className={cn(
-                            "aspect-square rounded-lg text-[10px] font-medium transition-all relative flex flex-col items-center justify-center gap-0",
+                            "h-9 rounded-lg text-[10px] font-medium transition-all relative flex flex-col items-center justify-center gap-0",
                             isSelected
                               ? "bg-gradient-to-br from-teal-500 to-cyan-500 text-white shadow-md"
                               : ratio === 1 && hasPracticeOnDay
