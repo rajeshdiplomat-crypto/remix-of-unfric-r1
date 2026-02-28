@@ -236,15 +236,17 @@ export function ManifestAnalyticsModal({
 
           {/* ── Calendar Tab ── */}
           <TabsContent value="calendar" className="mt-0">
-            <div className="p-6 pt-3 overflow-y-auto max-h-[50vh]">
-              <ManifestSidebarPanel
-                selectedDate={selectedDate}
-                onDateSelect={onDateSelect}
-                goals={goals}
-                practices={practices}
-                section="calendar"
-                selectedGoalId={selectedGoalId}
-              />
+            <div className="p-6 pt-3 overflow-y-auto max-h-[50vh] flex justify-center">
+              <div className="w-full max-w-sm">
+                <ManifestSidebarPanel
+                  selectedDate={selectedDate}
+                  onDateSelect={onDateSelect}
+                  goals={goals}
+                  practices={practices}
+                  section="calendar"
+                  selectedGoalId={selectedGoalId}
+                />
+              </div>
             </div>
           </TabsContent>
 
