@@ -265,7 +265,7 @@ function StatCard({
 
   return (
     <div
-      className="group relative overflow-hidden rounded-xl bg-card/60 backdrop-blur-sm border border-border/50 hover:border-border transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
+      className="group relative overflow-hidden rounded-[12px] bg-white/[0.03] backdrop-blur-xl border border-white/[0.1] hover:border-white/[0.15] transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
       style={{ animationDelay: `${index * 75}ms`, animationFillMode: "backwards" }}
     >
       <div className="relative px-3 py-2.5 flex items-center gap-3">
@@ -273,7 +273,7 @@ function StatCard({
           {icon}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[9px] font-medium uppercase tracking-widest text-muted-foreground/50">{label}</p>
+          <p className="text-[11px] font-light tracking-[0.3em] text-muted-foreground/50">{label}</p>
           <p className="text-lg font-light text-foreground tracking-tight leading-tight">{value}</p>
         </div>
       </div>
@@ -811,11 +811,13 @@ export default function Notes() {
           <div className="w-full space-y-4 px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 max-w-[1400px] mx-auto">
             {/* Page Header - Hidden on mobile, compact */}
             <div className="hidden md:block py-4">
-              <p className="text-[10px] font-medium tracking-[0.3em] text-muted-foreground/70 uppercase mb-2">
+              <p className="text-[11px] font-light tracking-[0.3em] text-muted-foreground/50 mb-2">
                 Life Atlas
               </p>
-              <h1 className="text-4xl md:text-5xl font-light tracking-wide text-foreground">NOTES</h1>
-              <p className="mt-2 text-sm text-muted-foreground max-w-md">
+              <h1 className="text-4xl md:text-5xl font-light tracking-widest text-foreground">
+                <span className="font-['Playfair_Display'] italic">Notes</span>
+              </h1>
+              <p className="mt-2 text-sm font-light text-muted-foreground max-w-md">
                 Your ideas, organized in one calm, premium view
               </p>
             </div>
@@ -823,10 +825,10 @@ export default function Notes() {
             {/* Mobile: Header matching desktop style */}
             <div className="md:hidden flex items-center justify-between py-2">
               <div>
-                <p className="text-[9px] font-medium tracking-[0.3em] text-muted-foreground/70 uppercase mb-0.5">
+                <p className="text-[11px] font-light tracking-[0.3em] text-muted-foreground/50 mb-0.5">
                   Life Atlas
                 </p>
-                <h1 className="text-2xl font-light tracking-wide text-foreground">NOTES</h1>
+                <h1 className="text-2xl font-light tracking-widest text-foreground font-['Playfair_Display'] italic">Notes</h1>
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -900,7 +902,7 @@ export default function Notes() {
             {/* Sticky Navigation & Toolbar */}
             <div className="sticky top-0 z-20 md:relative md:z-auto">
               {/* Glassmorphism toolbar container */}
-              <div className="rounded-2xl bg-card/95 backdrop-blur-md border border-border shadow-sm md:bg-card md:backdrop-blur-none">
+              <div className="rounded-[12px] bg-white/[0.03] backdrop-blur-xl border border-white/[0.1] shadow-sm">
                 {/* Mobile: View switcher hidden - only Atlas view on mobile */}
                 <div className="p-2 md:hidden hidden">
                 </div>
@@ -1055,15 +1057,13 @@ export default function Notes() {
                   <div className="flex items-center gap-2">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button
+                         <Button
                           size="sm"
-                          className="group relative h-9 px-4 rounded-lg overflow-hidden bg-gradient-to-r from-slate-600 via-gray-600 to-zinc-600 text-white shadow-lg hover:shadow-xl transition-all duration-500 gap-2 border-0"
+                          className="group relative h-9 px-4 rounded-[6px] overflow-hidden bg-[hsl(215,15%,40%)] hover:bg-[hsl(215,15%,35%)] text-white shadow-sm transition-all duration-300 gap-2 border-0"
                         >
-                          <span className="absolute inset-0 bg-gradient-to-r from-slate-500 via-pink-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse" />
-                          <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
                           <Plus className="h-4 w-4 relative z-10" />
-                          <span className="text-xs uppercase tracking-wider font-semibold relative z-10">
-                            New Note
+                          <span className="text-[11px] tracking-[0.3em] font-light relative z-10">
+                            New note
                           </span>
                           <ChevronDown className="h-3.5 w-3.5 opacity-80 relative z-10" />
                         </Button>
@@ -1259,10 +1259,10 @@ export default function Notes() {
             </div>
 
             {/* Insights Section - Desktop only (mobile has pill row above) */}
-            <div className="hidden md:block rounded-xl bg-card/60 backdrop-blur-sm border border-border/50 p-3">
+            <div className="hidden md:block rounded-[12px] bg-white/[0.03] backdrop-blur-xl border border-white/[0.1] p-3">
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
-                  Quick Stats
+                <span className="text-[11px] font-light tracking-[0.3em] text-muted-foreground/50">
+                  Quick stats
                 </span>
                 <div className="flex-1 h-px bg-gradient-to-r from-border/30 to-transparent" />
               </div>
@@ -1278,7 +1278,7 @@ export default function Notes() {
                       {stat.icon}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[9px] font-medium uppercase tracking-widest text-muted-foreground/50">{stat.label}</p>
+                      <p className="text-[11px] font-light tracking-[0.3em] text-muted-foreground/50">{stat.label}</p>
                       <p className="text-base font-light text-foreground leading-tight">{stat.value}</p>
                     </div>
                   </div>
@@ -1291,8 +1291,8 @@ export default function Notes() {
               <div className="space-y-4">
                 {/* Section header */}
                 <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
-                    Your Groups
+                  <span className="text-[11px] font-light tracking-[0.3em] text-muted-foreground/50">
+                    Your groups
                   </span>
                   <div className="flex-1 h-px bg-gradient-to-r from-border/30 to-transparent" />
                 </div>
