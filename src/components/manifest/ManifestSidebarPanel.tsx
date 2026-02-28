@@ -8,6 +8,8 @@ import {
   isToday,
   addMonths,
   subMonths,
+  subDays,
+  isPast,
   getMonth,
   getYear,
   setMonth as setMonthDate,
@@ -20,7 +22,10 @@ import {
   ArrowLeftToLine,
   PanelLeft,
   BarChart3,
+  Flame,
+  AlertCircle,
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { type ManifestGoal, type ManifestDailyPractice } from "./types";
@@ -374,33 +379,53 @@ export const ManifestSidebarPanel = memo(
                   const practiceCount = getPracticeCount(day);
 
                   return (
-                    <button
-                      key={day.toISOString()}
-                      onClick={() => onDateSelect(day)}
-                      className={cn(
-                        "aspect-square rounded-lg text-[10px] font-medium transition-all relative flex flex-col items-center justify-center gap-0",
-                        isSelected
-                          ? "bg-gradient-to-br from-teal-500 to-cyan-500 text-white shadow-md"
-                          : hasPracticeOnDay
-                            ? "bg-teal-50 text-teal-700 ring-1 ring-teal-200 hover:bg-teal-100 dark:bg-teal-900/30 dark:text-teal-300 dark:ring-teal-800"
-                            : isTodayDate
-                              ? "bg-cyan-50 text-cyan-600 ring-1 ring-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300"
-                              : "hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
-                      )}
-                    >
-                      <span>{format(day, "d")}</span>
-                      {hasPracticeOnDay && totalRealities > 0 && (
-                        <span className={cn(
-                          "text-[7px] leading-none",
-                          isSelected ? "text-white/80" : "text-teal-500 dark:text-teal-400"
-                        )}>
-                          {practiceCount}/{totalRealities}
-                        </span>
-                      )}
-                    </button>
+                    (() => {
+                      const ratio = totalRealities > 0 ? practiceCount / totalRealities : 0;
+                      const isPastDay = isPast(day) && !isTodayDate;
+
+                      return (
+                        <button
+                          key={day.toISOString()}
+                          onClick={() => onDateSelect(day)}
+                          className={cn(
+                            "aspect-square rounded-lg text-[10px] font-medium transition-all relative flex flex-col items-center justify-center gap-0",
+                            isSelected
+                              ? "bg-gradient-to-br from-teal-500 to-cyan-500 text-white shadow-md"
+                              : ratio === 1 && hasPracticeOnDay
+                                ? "bg-emerald-500/70 text-white dark:bg-emerald-600/60"
+                                : ratio > 0 && hasPracticeOnDay
+                                  ? "bg-amber-400/40 text-amber-700 dark:bg-amber-500/30 dark:text-amber-300"
+                                  : isPastDay && totalRealities > 0
+                                    ? "bg-red-100/40 text-slate-500 dark:bg-red-900/20 dark:text-slate-400"
+                                    : isTodayDate
+                                      ? "bg-cyan-50 text-cyan-600 ring-1 ring-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300"
+                                      : "hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
+                          )}
+                        >
+                          <span>{format(day, "d")}</span>
+                          {hasPracticeOnDay && totalRealities > 0 && (
+                            <span className={cn(
+                              "text-[7px] leading-none",
+                              isSelected || ratio === 1 ? "text-white/80" : ratio > 0 ? "text-amber-600 dark:text-amber-300" : "text-teal-500 dark:text-teal-400"
+                            )}>
+                              {practiceCount}/{totalRealities}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })()
                   );
                 })}
               </div>
+
+              {/* Legend */}
+              {totalRealities > 0 && (
+                <div className="flex items-center justify-center gap-3 mt-2 text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-emerald-500/70" /> All</div>
+                  <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-amber-400/40" /> Partial</div>
+                  <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-red-100/40 dark:bg-red-900/20" /> Missed</div>
+                </div>
+              )}
 
               <button
                 onClick={() => {
@@ -414,7 +439,93 @@ export const ManifestSidebarPanel = memo(
             </div>
           </div>
         )}
+
+        {/* Consistency Summary - only inside analytics modal */}
+        {showCalendar && section === "calendar" && totalRealities > 0 && (
+          <ConsistencySummary goals={goals} practices={practices} />
+        )}
       </div>
     );
   }
 );
+
+// Consistency summary sub-component
+const ConsistencySummary = memo(({ goals, practices }: { goals: ManifestGoal[]; practices: ManifestDailyPractice[] }) => {
+  const data = useMemo(() => {
+    const now = new Date();
+    const startDate = subDays(now, 29);
+    const dateRange = eachDayOfInterval({ start: startDate, end: now });
+    const activeGoals = goals.filter((g) => !g.is_completed && !g.is_locked);
+    const lockedPractices = practices.filter((p) => p.locked);
+    const allPracticedDates = new Set(lockedPractices.map((p) => p.entry_date));
+
+    const practicedDaysInRange = dateRange.filter((d) => allPracticedDates.has(format(d, "yyyy-MM-dd"))).length;
+    const overallConsistency = dateRange.length > 0 ? Math.round((practicedDaysInRange / dateRange.length) * 100) : 0;
+
+    const perGoal = activeGoals.map((goal) => {
+      const dates = new Set(lockedPractices.filter((p) => p.goal_id === goal.id).map((p) => p.entry_date));
+      const practicedInRange = dateRange.filter((d) => dates.has(format(d, "yyyy-MM-dd"))).length;
+      const consistency = dateRange.length > 0 ? Math.round((practicedInRange / dateRange.length) * 100) : 0;
+
+      let streak = 0;
+      for (let i = 0; i < 60; i++) {
+        if (dates.has(format(subDays(now, i), "yyyy-MM-dd"))) streak++;
+        else if (i > 0) break;
+      }
+
+      const last7 = eachDayOfInterval({ start: subDays(now, 6), end: now });
+      const missedDates = last7.filter((d) => !dates.has(format(d, "yyyy-MM-dd")));
+
+      return { goal, consistency, streak, missedDates };
+    });
+
+    return { overallConsistency, practicedDaysInRange, totalDays: dateRange.length, perGoal };
+  }, [goals, practices]);
+
+  return (
+    <div className="space-y-3">
+      {/* Overall consistency */}
+      <div className="bg-card/40 backdrop-blur-xl rounded-2xl p-3.5 border border-foreground/[0.08]">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium text-foreground">30-Day Consistency</span>
+          <span className="text-lg font-bold text-primary">{data.overallConsistency}%</span>
+        </div>
+        <Progress value={data.overallConsistency} className="h-1.5 rounded-full" />
+        <p className="text-[10px] text-muted-foreground mt-1.5">
+          {data.practicedDaysInRange} of {data.totalDays} days practiced
+        </p>
+      </div>
+
+      {/* Per-goal breakdown */}
+      {data.perGoal.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-foreground">Per Reality</p>
+          {data.perGoal.map(({ goal, consistency, streak, missedDates }) => (
+            <div key={goal.id} className="bg-card/40 backdrop-blur-xl rounded-xl p-3 border border-foreground/[0.08]">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-medium text-foreground line-clamp-1 flex-1 mr-2">{goal.title}</span>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {streak > 0 && (
+                    <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-destructive">
+                      <Flame className="h-2.5 w-2.5" /> {streak}
+                    </span>
+                  )}
+                  <span className="text-xs font-bold text-primary">{consistency}%</span>
+                </div>
+              </div>
+              <Progress value={consistency} className="h-1 rounded-full" />
+              {missedDates.length > 0 && (
+                <div className="mt-1.5 flex items-start gap-1">
+                  <AlertCircle className="h-2.5 w-2.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <p className="text-[9px] text-muted-foreground">
+                    Missed {missedDates.length} day{missedDates.length > 1 ? "s" : ""}: {missedDates.map((d) => format(d, "EEE")).join(", ")}
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+});

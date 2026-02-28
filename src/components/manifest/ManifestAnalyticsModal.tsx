@@ -17,15 +17,11 @@ import {
   Camera,
   Award,
   Calendar as CalendarIcon,
-  TrendingUp,
-  Flame,
-  AlertCircle,
 } from "lucide-react";
-import { subDays, parseISO, differenceInDays, format, eachDayOfInterval } from "date-fns";
+import { subDays, parseISO, differenceInDays, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { type ManifestGoal, type ManifestDailyPractice } from "./types";
 import { ManifestSidebarPanel } from "./ManifestSidebarPanel";
-import { Progress } from "@/components/ui/progress";
 
 interface ManifestAnalyticsModalProps {
   open: boolean;
@@ -124,62 +120,6 @@ export function ManifestAnalyticsModal({
     };
   }, [filteredPractices, goals, timeFilter]);
 
-  // Consistency data
-  const consistencyData = useMemo(() => {
-    const now = new Date();
-    const days = timeFilter === "7days" ? 7 : timeFilter === "30days" ? 30 : timeFilter === "1year" ? 365 : 30;
-    const startDate = subDays(now, days - 1);
-    const dateRange = eachDayOfInterval({ start: startDate, end: now });
-
-    const activeGoals = goals.filter((g) => !g.is_completed);
-    const lockedPractices = practices.filter((p) => p.locked);
-
-    // Practice dates set per goal
-    const goalPracticeDates: Record<string, Set<string>> = {};
-    activeGoals.forEach((g) => {
-      goalPracticeDates[g.id] = new Set(
-        lockedPractices.filter((p) => p.goal_id === g.id).map((p) => p.entry_date)
-      );
-    });
-
-    // All practiced dates (any goal)
-    const allPracticedDates = new Set(lockedPractices.map((p) => p.entry_date));
-
-    // Overall consistency
-    const practicedDaysInRange = dateRange.filter((d) => allPracticedDates.has(format(d, "yyyy-MM-dd"))).length;
-    const overallConsistency = dateRange.length > 0 ? Math.round((practicedDaysInRange / dateRange.length) * 100) : 0;
-
-    // Per-goal breakdown
-    const perGoal = activeGoals.map((goal) => {
-      const dates = goalPracticeDates[goal.id] || new Set();
-      const practicedInRange = dateRange.filter((d) => dates.has(format(d, "yyyy-MM-dd"))).length;
-      const consistency = dateRange.length > 0 ? Math.round((practicedInRange / dateRange.length) * 100) : 0;
-
-      // Current streak
-      let streak = 0;
-      for (let i = 0; i < 60; i++) {
-        const checkDate = format(subDays(now, i), "yyyy-MM-dd");
-        if (dates.has(checkDate)) streak++;
-        else if (i > 0) break;
-      }
-
-      // Missing dates (last 7 days only for display)
-      const last7 = eachDayOfInterval({ start: subDays(now, 6), end: now });
-      const missedDates = last7.filter((d) => !dates.has(format(d, "yyyy-MM-dd")));
-
-      return { goal, consistency, streak, missedDates, practicedInRange, totalDays: dateRange.length };
-    });
-
-    // 30-day heatmap grid (last 30 days regardless of filter)
-    const heatmapDays = eachDayOfInterval({ start: subDays(now, 29), end: now });
-    const heatmap = heatmapDays.map((day) => ({
-      date: day,
-      dateStr: format(day, "yyyy-MM-dd"),
-      practiced: allPracticedDates.has(format(day, "yyyy-MM-dd")),
-    }));
-
-    return { overallConsistency, perGoal, heatmap, practicedDaysInRange, totalDays: dateRange.length };
-  }, [goals, practices, timeFilter]);
 
   const StatCard = ({
     icon: Icon, label, value, subValue, color,
@@ -270,9 +210,6 @@ export function ManifestAnalyticsModal({
               <TabsTrigger value="calendar" className="flex items-center gap-1.5">
                 <CalendarIcon className="h-3 w-3" /> Calendar
               </TabsTrigger>
-              <TabsTrigger value="consistency" className="flex items-center gap-1.5">
-                <TrendingUp className="h-3 w-3" /> Consistency
-              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -320,83 +257,6 @@ export function ManifestAnalyticsModal({
             </div>
           </TabsContent>
 
-          {/* ── Consistency Tab ── */}
-          <TabsContent value="consistency" className="mt-0">
-            <div className="px-6 pb-2">
-              <FiltersRow />
-            </div>
-            <div className="p-6 pt-3 overflow-y-auto max-h-[55vh] space-y-5">
-              {/* Overall consistency rate */}
-              <div className="bg-card/40 backdrop-blur-xl rounded-2xl p-4 border border-foreground/[0.08]">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium text-foreground">Overall Consistency</span>
-                  </div>
-                  <span className="text-2xl font-bold text-primary">{consistencyData.overallConsistency}%</span>
-                </div>
-                <Progress value={consistencyData.overallConsistency} className="h-2 rounded-full" />
-                <p className="text-xs text-muted-foreground mt-2">
-                  {consistencyData.practicedDaysInRange} of {consistencyData.totalDays} days practiced
-                </p>
-              </div>
-
-              {/* 30-day heatmap */}
-              <div className="bg-card/40 backdrop-blur-xl rounded-2xl p-4 border border-foreground/[0.08]">
-                <p className="text-sm font-medium text-foreground mb-3">Last 30 Days</p>
-                <div className="grid grid-cols-10 gap-1.5">
-                  {consistencyData.heatmap.map((day) => (
-                    <div
-                      key={day.dateStr}
-                      title={`${format(day.date, "MMM d")} — ${day.practiced ? "Practiced" : "Missed"}`}
-                      className={cn(
-                        "aspect-square rounded-md transition-colors",
-                        day.practiced
-                          ? "bg-primary/60"
-                          : "bg-muted/40 border border-foreground/[0.05]"
-                      )}
-                    />
-                  ))}
-                </div>
-                <div className="flex items-center gap-3 mt-2.5 text-[10px] text-muted-foreground">
-                  <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-primary/60" /> Practiced</div>
-                  <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-muted/40 border border-foreground/[0.05]" /> Missed</div>
-                </div>
-              </div>
-
-              {/* Per-goal breakdown */}
-              {consistencyData.perGoal.length > 0 && (
-                <div className="space-y-2.5">
-                  <p className="text-sm font-medium text-foreground">Per Reality</p>
-                  {consistencyData.perGoal.map(({ goal, consistency, streak, missedDates }) => (
-                    <div key={goal.id} className="bg-card/40 backdrop-blur-xl rounded-2xl p-3.5 border border-foreground/[0.08]">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-foreground line-clamp-1 flex-1 mr-2">{goal.title}</span>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {streak > 0 && (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-destructive">
-                              <Flame className="h-2.5 w-2.5" /> {streak}
-                            </span>
-                          )}
-                          <span className="text-sm font-bold text-primary">{consistency}%</span>
-                        </div>
-                      </div>
-                      <Progress value={consistency} className="h-1.5 rounded-full" />
-                      {missedDates.length > 0 && (
-                        <div className="mt-2 flex items-start gap-1.5">
-                          <AlertCircle className="h-3 w-3 text-muted-foreground mt-0.5 flex-shrink-0" />
-                          <p className="text-[10px] text-muted-foreground leading-relaxed">
-                            Missed {missedDates.length} day{missedDates.length > 1 ? "s" : ""} this week:{" "}
-                            {missedDates.map((d) => format(d, "EEE")).join(", ")}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>
