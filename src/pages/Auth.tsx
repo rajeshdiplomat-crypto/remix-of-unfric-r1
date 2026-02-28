@@ -83,13 +83,13 @@ export default function Auth() {
   const subtitle = mode === "signup" ? "Create your account to begin" : mode === "forgot-password" ? "We'll send you a reset link" : mode === "verify-email" ? "Tap the link we sent you" : "Sign in to continue your journey";
 
   return (
-    <div className="flex flex-col md:flex-row bg-background h-screen overflow-hidden">
-      {/* Left: Editorial image */}
-      <div className="hidden md:block w-1/2 h-screen relative flex-shrink-0 overflow-hidden">
+    <div className="flex flex-col md:flex-row bg-background overflow-hidden" style={{ height: '100dvh', minHeight: '100vh' }}>
+      {/* Left: Editorial image — fixed to viewport height */}
+      <div className="hidden md:block md:w-[45%] lg:w-[50%] relative flex-shrink-0 overflow-hidden h-full">
         <img
           src={authImage}
           alt=""
-          className="w-full h-full object-cover object-center"
+          className="h-full w-auto max-w-none object-center"
         />
         {/* Gradient overlay for text legibility */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
