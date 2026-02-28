@@ -8,17 +8,19 @@ export function useTimeFormat() {
   const [loaded, setLoaded] = useState(false);
 
   const fetchFormat = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data } = await supabase
-      .from("user_settings")
-      .select("time_format")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if ((data as any)?.time_format) {
-      setTimeFormat((data as any).time_format as TimeFormatType);
+    try {
+      const { data: res, error } = await supabase.functions.invoke("manage-settings", {
+        body: { action: "fetch_settings" }
+      });
+      if (error) throw error;
+      if (res?.data?.time_format) {
+        setTimeFormat(res.data.time_format as TimeFormatType);
+      }
+    } catch (err) {
+      console.error("Failed to fetch time format:", err);
+    } finally {
+      setLoaded(true);
     }
-    setLoaded(true);
   }, []);
 
   useEffect(() => {

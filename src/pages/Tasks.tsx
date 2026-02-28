@@ -196,22 +196,20 @@ export default function Tasks() {
   const [activeTab, setActiveTab] = useState<TasksViewTab>("board");
   const [defaultBoardMode, setDefaultBoardMode] = useState<string | null>(null);
 
-  // Load default task tab and board mode from DB
+  // Load default task tab and board mode from edge function
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("user_settings")
-      .select("default_task_tab, default_task_view")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        const tab = (data as any)?.default_task_tab;
-        if (tab === "lists" || tab === "board" || tab === "timeline") {
-          setActiveTab(tab);
-        }
-        const mode = (data as any)?.default_task_view;
-        if (mode) setDefaultBoardMode(mode);
-      });
+    supabase.functions.invoke("manage-settings", {
+      body: { action: "fetch_settings" }
+    }).then(({ data: res }) => {
+      const data = res?.data;
+      const tab = data?.default_task_tab;
+      if (tab === "lists" || tab === "board" || tab === "timeline") {
+        setActiveTab(tab);
+      }
+      const mode = data?.default_task_view;
+      if (mode) setDefaultBoardMode(mode);
+    });
   }, [user]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");

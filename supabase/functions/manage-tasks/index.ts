@@ -1,4 +1,5 @@
 import { authenticateUser } from '../_shared/auth.ts'
+import { corsHeaders } from '../_shared/cors.ts'
 
 console.log("manage-tasks edge function loaded");
 export const config = {
@@ -136,6 +137,19 @@ Deno.serve(async (req) => {
           .select()
           .single();
           
+        if (error) throw error;
+        resultData = data;
+        break;
+      }
+      case 'fetch_focus_sessions': {
+        const { limit } = body;
+        const { data, error } = await supabaseAdmin
+          .from("focus_sessions")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(limit || 500);
+
         if (error) throw error;
         resultData = data;
         break;

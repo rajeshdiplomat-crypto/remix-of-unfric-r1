@@ -88,20 +88,24 @@ export function NotificationPopover({ iconClassName }: NotificationPopoverProps)
   useEffect(() => {
     if (!user) return;
     const fetchSettings = async () => {
-      const { data } = await supabase
-        .from("user_settings")
-        .select("notification_diary_prompt, notification_task_reminder, notification_emotion_checkin, reminder_time_diary, reminder_time_habits, reminder_time_emotions")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (data) {
-        setSettings({
-          notification_diary_prompt: data.notification_diary_prompt ?? true,
-          notification_task_reminder: data.notification_task_reminder ?? true,
-          notification_emotion_checkin: data.notification_emotion_checkin ?? true,
-          reminder_time_diary: data.reminder_time_diary ?? "08:00",
-          reminder_time_habits: data.reminder_time_habits ?? "08:00",
-          reminder_time_emotions: data.reminder_time_emotions ?? "08:00",
+      try {
+        const { data: res, error } = await supabase.functions.invoke("manage-settings", {
+          body: { action: "fetch_settings" }
         });
+        if (error) throw error;
+        const data = res?.data;
+        if (data) {
+          setSettings({
+            notification_diary_prompt: data.notification_diary_prompt ?? true,
+            notification_task_reminder: data.notification_task_reminder ?? true,
+            notification_emotion_checkin: data.notification_emotion_checkin ?? true,
+            reminder_time_diary: data.reminder_time_diary ?? "08:00",
+            reminder_time_habits: data.reminder_time_habits ?? "08:00",
+            reminder_time_emotions: data.reminder_time_emotions ?? "08:00",
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch notification settings:", err);
       }
     };
     fetchSettings();

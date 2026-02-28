@@ -312,21 +312,19 @@ export default function Notes() {
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [notesView, setNotesView] = useState<NotesViewType>("atlas");
 
-  // Load default notes view from DB
+  // Load default notes view from edge function
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("user_settings")
-      .select("default_notes_view")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        const v = (data as any)?.default_notes_view;
-        if (v === "board" || v === "mindmap" || v === "atlas") {
-          // On mobile, fall back from mindmap/board to atlas
-          setNotesView((isMobile && (v === "mindmap" || v === "board")) ? "atlas" : v as NotesViewType);
-        }
-      });
+    supabase.functions.invoke("manage-settings", {
+      body: { action: "fetch_settings" }
+    }).then(({ data: res }) => {
+      const data = res?.data;
+      const v = data?.default_notes_view;
+      if (v === "board" || v === "mindmap" || v === "atlas") {
+        // On mobile, fall back from mindmap/board to atlas
+        setNotesView((isMobile && (v === "mindmap" || v === "board")) ? "atlas" : v as NotesViewType);
+      }
+    });
   }, [user]);
 
   // Sync groups and folders from DB, seed defaults if missing

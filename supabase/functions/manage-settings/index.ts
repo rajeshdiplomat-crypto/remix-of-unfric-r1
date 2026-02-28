@@ -1,4 +1,5 @@
 import { authenticateUser } from '../_shared/auth.ts'
+import { corsHeaders } from '../_shared/cors.ts'
 
 console.log("manage-settings edge function loaded");
 
@@ -248,6 +249,22 @@ Deno.serve(async (req) => {
           if (error) throw error;
           resultData = { success: true };
         }
+        break;
+      }
+
+      case 'fetch_hero_media': {
+        const { pageKey } = body;
+        if (!pageKey) throw new Error("Missing pageKey");
+
+        const { data, error } = await supabaseAdmin
+          .from("hero_media")
+          .select("media_url, media_type")
+          .eq("user_id", userId)
+          .eq("page_key", pageKey)
+          .maybeSingle();
+
+        if (error) throw error;
+        resultData = data;
         break;
       }
 

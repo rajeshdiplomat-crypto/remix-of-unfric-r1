@@ -92,29 +92,35 @@ export function useUserPreferences() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || cancelled) { setLoaded(true); return; }
 
-      const { data } = await supabase
-        .from("user_settings")
-        .select("theme_id, font_pair_id, custom_theme_colors, motion_enabled, focus_settings, clock_widget_mode, journal_template, manifest_viz_settings")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      try {
+        const { data: res, error } = await supabase.functions.invoke("manage-settings", {
+          body: { action: "fetch_settings" }
+        });
 
-      if (data && !cancelled) {
-        const dbPrefs: UserPreferences = {
-          theme_id: (data as any).theme_id || prefs.theme_id,
-          font_pair_id: (data as any).font_pair_id || prefs.font_pair_id,
-          custom_theme_colors: (data as any).custom_theme_colors ?? prefs.custom_theme_colors,
-          motion_enabled: (data as any).motion_enabled ?? prefs.motion_enabled,
-          focus_settings: (data as any).focus_settings ?? prefs.focus_settings,
-          clock_widget_mode: (data as any).clock_widget_mode || prefs.clock_widget_mode,
-          journal_template: (data as any).journal_template ?? prefs.journal_template,
-          manifest_viz_settings: (data as any).manifest_viz_settings ?? prefs.manifest_viz_settings,
-        };
-        globalPrefs = dbPrefs;
-        saveCachedPrefs(dbPrefs);
-        setPrefs(dbPrefs);
-        notifyListeners();
+        if (error) throw error;
+        const data = res?.data;
+
+        if (data && !cancelled) {
+          const dbPrefs: UserPreferences = {
+            theme_id: (data as any).theme_id || globalPrefs?.theme_id || "calm-blue",
+            font_pair_id: (data as any).font_pair_id || globalPrefs?.font_pair_id || "elegant",
+            custom_theme_colors: (data as any).custom_theme_colors ?? globalPrefs?.custom_theme_colors,
+            motion_enabled: (data as any).motion_enabled ?? globalPrefs?.motion_enabled,
+            focus_settings: (data as any).focus_settings ?? globalPrefs?.focus_settings,
+            clock_widget_mode: (data as any).clock_widget_mode || globalPrefs?.clock_widget_mode,
+            journal_template: (data as any).journal_template ?? globalPrefs?.journal_template,
+            manifest_viz_settings: (data as any).manifest_viz_settings ?? globalPrefs?.manifest_viz_settings,
+          };
+          globalPrefs = dbPrefs;
+          saveCachedPrefs(dbPrefs);
+          setPrefs(dbPrefs);
+          notifyListeners();
+        }
+      } catch (err) {
+        console.error("Failed to load user settings:", err);
+      } finally {
+        setLoaded(true);
       }
-      setLoaded(true);
     };
     loadFromDb();
     return () => { cancelled = true; };
@@ -130,11 +136,17 @@ export function useUserPreferences() {
     // Debounced save to DB
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      await supabase
-        .from("user_settings")
-        .upsert({ user_id: user.id, ...updates }, { onConflict: "user_id" });
+      try {
+        const { error } = await supabase.functions.invoke("manage-settings", {
+          body: {
+            action: "update_settings",
+            updates,
+          }
+        });
+        if (error) throw error;
+      } catch (err) {
+        console.error("Failed to update user preferences in DB:", err);
+      }
     }, 500);
   }, []);
 

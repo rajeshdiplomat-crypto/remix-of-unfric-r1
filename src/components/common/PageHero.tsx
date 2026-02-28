@@ -70,17 +70,25 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
   useEffect(() => {
     if (!user) { setIsLoading(false); return; }
     (async () => {
-      const { data } = await supabase
-        .from("hero_media")
-        .select("media_url, media_type")
-        .eq("user_id", user.id)
-        .eq("page_key", pageKey)
-        .maybeSingle();
-      if (data) {
-        setMediaSrc(data.media_url);
-        setMediaType(data.media_type as MediaType);
+      try {
+        const { data: res, error } = await supabase.functions.invoke("manage-settings", {
+          body: {
+            action: "fetch_hero_media",
+            pageKey,
+          }
+        });
+
+        if (error) throw error;
+
+        if (res?.success && res.data) {
+          setMediaSrc(res.data.media_url);
+          setMediaType(res.data.media_type as MediaType);
+        }
+      } catch (err) {
+        console.error("Failed to fetch hero media:", err);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     })();
   }, [user, pageKey]);
 

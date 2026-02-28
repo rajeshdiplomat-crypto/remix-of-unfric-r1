@@ -1,4 +1,5 @@
 import { authenticateUser } from '../_shared/auth.ts'
+import { corsHeaders } from '../_shared/cors.ts'
 
 console.log("manage-manifest edge function loaded");
 

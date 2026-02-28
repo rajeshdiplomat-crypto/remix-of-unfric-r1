@@ -1,4 +1,5 @@
 import { authenticateUser } from '../_shared/auth.ts'
+import { corsHeaders } from '../_shared/cors.ts'
 
 console.log("toggle-task-completion edge function loaded");
 

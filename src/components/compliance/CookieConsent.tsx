@@ -28,14 +28,14 @@ async function logConsent(
   granted: boolean
 ) {
   try {
-    const payload: any = {
-      consent_type: consentType,
-      granted,
-      user_agent: navigator.userAgent,
-    };
-    if (userId) payload.user_id = userId;
-
-    await supabase.from("consent_logs" as any).insert(payload);
+    await supabase.functions.invoke("manage-settings", {
+      body: {
+        action: "submit_consent",
+        consentType,
+        granted,
+        userAgent: navigator.userAgent
+      }
+    });
   } catch {
     // Silently fail — consent logging is best-effort
   }

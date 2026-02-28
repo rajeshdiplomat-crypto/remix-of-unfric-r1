@@ -41,12 +41,10 @@ function useFocusStats() {
   useEffect(() => {
     if (!user?.id) return;
     const loadSessions = async () => {
-      const { data, error } = await supabase
-        .from("focus_sessions")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(500);
+      const { data: res, error } = await supabase.functions.invoke("manage-tasks", {
+        body: { action: "fetch_focus_sessions", limit: 500 }
+      });
+      const data = res?.data;
 
       if (data && data.length > 0) {
         setSessions(data.map((s: any) => ({
