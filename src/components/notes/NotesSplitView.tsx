@@ -189,11 +189,11 @@ export function NotesSplitView({
 
   return (
     <div className="w-full h-[calc(100vh-80px)] p-4">
-      <div className="flex h-full border border-border rounded-xl overflow-hidden bg-card shadow-sm">
+      <div className="flex h-full rounded-[12px] overflow-hidden bg-white/[0.03] backdrop-blur-xl border border-white/[0.1] shadow-sm">
         {/* Left Sidebar */}
-        <div className="w-56 shrink-0 border-r border-border flex flex-col bg-muted/30 overflow-hidden relative z-[200]">
-          <div className="p-3 border-b border-border flex items-center justify-between shrink-0">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        <div className="w-56 shrink-0 border-r border-white/[0.05] flex flex-col bg-white/[0.02] overflow-hidden relative z-[200]">
+          <div className="p-3 border-b border-white/[0.05] flex items-center justify-between shrink-0">
+            <span className="text-[11px] font-light tracking-[0.3em] text-muted-foreground/50">
               {isInFocusMode ? "Context" : "Notes"}
             </span>
             <Button
@@ -387,16 +387,16 @@ export function NotesSplitView({
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center bg-muted/20">
+            <div className="flex-1 flex items-center justify-center bg-white/[0.01]">
               <div className="text-center">
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                  <FileText className="h-7 w-7 text-primary/60" />
+                <div className="w-14 h-14 rounded-[12px] bg-white/[0.03] border border-white/[0.1] flex items-center justify-center mx-auto mb-3">
+                  <FileText className="h-7 w-7 text-muted-foreground/40" />
                 </div>
-                <p className="text-muted-foreground text-sm mb-3">Select a note to view</p>
+                <p className="text-muted-foreground/50 text-sm font-light mb-3">Select a note to view</p>
                 <Button
                   onClick={onCreateNote}
                   size="sm"
-                  className="gap-2 bg-gradient-to-r from-primary to-violet-500 text-white shadow-lg"
+                  className="gap-2 rounded-[6px] bg-[hsl(215,15%,40%)] hover:bg-[hsl(215,15%,35%)] text-white shadow-sm"
                 >
                   <Plus className="h-4 w-4" /> New Note
                 </Button>

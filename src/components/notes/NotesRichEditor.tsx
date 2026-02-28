@@ -711,8 +711,8 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "h-8 w-8 flex items-center justify-center rounded-md transition-colors text-slate-500 hover:text-slate-800 hover:bg-slate-100 disabled:opacity-30",
-        active && "bg-slate-100 text-primary",
+        "h-8 w-8 flex items-center justify-center rounded-[6px] transition-colors text-muted-foreground hover:text-foreground hover:bg-white/[0.05] disabled:opacity-30",
+        active && "bg-[hsl(215,15%,40%)]/15 text-foreground",
       )}
     >
       {children}
@@ -731,7 +731,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
       {/* MAIN TOOLBAR - sticky on mobile for keyboard accessibility */}
-      <div className="shrink-0 bg-white border-b border-slate-200 relative z-[100] sticky top-0 md:static">
+      <div className="shrink-0 bg-transparent border-b border-white/[0.05] relative z-[100] sticky top-0 md:static">
         {/* Row 1: Core formatting */}
         <div className="flex items-center h-10 px-1 md:px-2 gap-0.5 flex-nowrap overflow-hidden">
           <ToolBtn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
@@ -740,7 +740,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
           <ToolBtn onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo">
             <Redo2 className="h-4 w-4" />
           </ToolBtn>
-          <div className="w-px h-5 bg-slate-200 mx-0.5 shrink-0" />
+          <div className="w-px h-5 bg-white/[0.05] mx-0.5 shrink-0" />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -814,7 +814,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
           >
             <UnderlineIcon className="h-4 w-4" />
           </ToolBtn>
-          <div className="w-px h-5 bg-slate-200 mx-0.5 shrink-0" />
+          <div className="w-px h-5 bg-white/[0.05] mx-0.5 shrink-0" />
 
           {/* Lists - hidden on mobile, in More menu */}
           <div className="hidden md:contents">
@@ -1191,7 +1191,7 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
             value={title}
             onChange={(e) => handleTitleChange(e.target.value)}
             placeholder="Untitled Note"
-            className="text-2xl font-semibold border-none bg-transparent px-0 h-auto focus-visible:ring-0 mb-3"
+            className="text-2xl font-light tracking-widest border-none bg-transparent px-0 h-auto focus-visible:ring-0 mb-3"
             style={{ color: currentTheme.textColor, lineHeight: showLines ? `${LINE_HEIGHT}px` : undefined }}
           />
           <div className="flex items-center gap-2 mb-4 flex-wrap">

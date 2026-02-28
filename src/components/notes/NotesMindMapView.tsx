@@ -403,17 +403,17 @@ export function NotesMindMapView({
         style={{ left: arcCenterX, top: arcCenterY, transform: "translate(-50%, -50%)" }}
       >
         <div className="absolute inset-0 bg-primary/30 rounded-full blur-xl opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="relative px-6 py-4 rounded-full bg-card border-2 border-primary/40 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300">
-          <span className="text-lg font-bold text-foreground uppercase tracking-wider">Notes</span>
+        <div className="relative px-6 py-4 rounded-full bg-white/[0.03] backdrop-blur-xl border border-white/[0.1] shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <span className="text-lg font-light text-foreground tracking-[0.3em] font-['Playfair_Display'] italic">Notes</span>
         </div>
       </div>
 
       {/* Quick Add Note Panel - shows groups and sections when group selected */}
       <div
-        className="absolute z-50 flex flex-col gap-2 p-3 bg-card/95 backdrop-blur-sm rounded-xl border border-border shadow-lg max-w-[280px]"
+        className="absolute z-50 flex flex-col gap-2 p-3 bg-white/[0.03] backdrop-blur-xl rounded-[12px] border border-white/[0.1] shadow-lg max-w-[280px]"
         style={{ right: 20, top: 20 }}
       >
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Quick Add to Group</span>
+        <span className="text-[11px] font-light tracking-[0.3em] text-muted-foreground/50">Quick add to group</span>
         <div className="flex flex-wrap gap-1.5">
           {sortedGroups.slice(0, 6).map((group) => {
             const color = GROUP_COLORS[group.id] || "#64748b";
