@@ -124,7 +124,7 @@ export default function Auth() {
       style={{ height: "100dvh", minHeight: "100vh" }}
     >
       {/* Left: Editorial image — fixed to viewport height */}
-      <div className="hidden md:block md:w-[60%] lg:w-[45%] relative flex-shrink-0 overflow-hidden h-full">
+      <div className="hidden md:block md:w-[55%] lg:w-[40%] relative flex-shrink-0 overflow-hidden h-full">
         <img src={authImage} alt="" className="h-full w-auto max-w-none object-center" />
         {/* Gradient overlay for text legibility */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
