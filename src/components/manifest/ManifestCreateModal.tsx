@@ -23,11 +23,11 @@ interface ManifestCreateModalProps {
 }
 
 const CATEGORIES = [
-  { value: "health", label: "Health", color: "bg-emerald-100 text-emerald-600 border-emerald-200" },
-  { value: "wealth", label: "Wealth", color: "bg-amber-100 text-amber-600 border-amber-200" },
-  { value: "career", label: "Career", color: "bg-blue-100 text-blue-600 border-blue-200" },
-  { value: "relationships", label: "Relationships", color: "bg-pink-100 text-pink-600 border-pink-200" },
-  { value: "personal", label: "Personal", color: "bg-purple-100 text-purple-600 border-purple-200" },
+  { value: "health", label: "Health" },
+  { value: "wealth", label: "Wealth" },
+  { value: "career", label: "Career" },
+  { value: "relationships", label: "Relationships" },
+  { value: "personal", label: "Personal" },
 ];
 
 const CATEGORY_SUGGESTIONS: Record<string, {
@@ -193,7 +193,6 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
   const [checkInTime, setCheckInTime] = useState("08:00");
   const [committed, setCommitted] = useState(false);
   
-  // Reminder settings
   const [reminderCount, setReminderCount] = useState<1 | 2 | 3 | 4>(1);
   const [reminderTimes, setReminderTimes] = useState<string[]>(["08:00"]);
 
@@ -455,13 +454,13 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg p-0 rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-lg p-0 rounded-lg overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-teal-500 to-cyan-500 px-6 py-4 text-white flex-shrink-0">
-          <DialogTitle className="text-lg font-semibold">{editingGoal ? "Edit Reality" : "Create Reality"}</DialogTitle>
+        <div className="bg-card border-b border-border px-6 py-4 flex-shrink-0">
+          <DialogTitle className="text-lg font-light text-foreground">{editingGoal ? "Edit Reality" : "Create Reality"}</DialogTitle>
           <div className="flex gap-2 mt-3">
             {[1, 2, 3].map((s) => (
-              <div key={s} className={`flex-1 h-1.5 rounded-full ${step >= s ? "bg-white" : "bg-white/30"}`} />
+              <div key={s} className={`flex-1 h-1 rounded-full ${step >= s ? "bg-accent-graphite" : "bg-border"}`} />
             ))}
           </div>
         </div>
@@ -470,13 +469,17 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
           {step === 1 && (
             <div className="space-y-5">
               <div>
-                <Label className="text-sm font-medium text-slate-700 mb-2 block">Category</Label>
+                <Label className="text-sm font-medium text-foreground mb-2 block">Category</Label>
                 <div className="flex flex-wrap gap-2">
                   {CATEGORIES.map((c) => (
                     <button
                       key={c.value}
                       onClick={() => handleCategoryChange(c.value)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${category === c.value ? "ring-2 ring-teal-500 " + c.color : c.color}`}
+                      className={`px-3 py-1.5 rounded-sm text-xs font-medium border transition-all spring-transition ${
+                        category === c.value 
+                          ? "bg-accent-graphite text-background border-accent-graphite" 
+                          : "bg-secondary text-secondary-foreground border-border hover:border-accent-graphite/50"
+                      }`}
                     >
                       {c.label}
                     </button>
@@ -485,13 +488,13 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700 mb-2 block">Your Assumption</Label>
+                <Label className="text-sm font-medium text-foreground mb-2 block">Your Assumption</Label>
                 <Textarea
                   value={assumption}
                   onChange={(e) => setAssumption(e.target.value)}
                   placeholder="I am..."
                   rows={2}
-                  className="rounded-xl resize-none"
+                  className="rounded-sm resize-none"
                 />
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {currentSuggestions.assumptions.map((opt, i) => (
@@ -499,10 +502,10 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                       key={i}
                       type="button"
                       onClick={() => setAssumption(opt)}
-                      className={`text-[10px] px-2 py-1 rounded-full border transition-all ${
+                      className={`text-[10px] px-2 py-1 rounded-sm border transition-all ${
                         assumption === opt
-                          ? "bg-teal-500 text-white border-teal-500"
-                          : "bg-slate-50 text-slate-600 border-slate-200 hover:border-teal-300"
+                          ? "bg-accent-graphite text-background border-accent-graphite"
+                          : "bg-secondary text-muted-foreground border-border hover:border-accent-graphite/50"
                       }`}
                     >
                       {opt.length > 35 ? opt.slice(0, 35) + "..." : opt}
@@ -512,7 +515,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700 mb-2 block">Cover Image</Label>
+                <Label className="text-sm font-medium text-foreground mb-2 block">Cover Image</Label>
                 <input
                   ref={imageInputRef}
                   type="file"
@@ -525,20 +528,20 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                     <img 
                       src={imageUrl} 
                       alt="Vision" 
-                      className="w-full h-32 object-cover rounded-xl" 
+                      className="w-full h-32 object-cover rounded-sm" 
                       onError={() => setImageUrl(null)}
                     />
                     <Button
                       variant="destructive"
                       size="icon"
-                      className="absolute top-2 right-2 h-7 w-7 rounded-full"
+                      className="absolute top-2 right-2 h-7 w-7 rounded-sm"
                       onClick={() => setImageUrl(null)}
                     >
                       <X className="h-4 w-4" />
                     </Button>
                     {uploadingImage && (
-                      <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center">
-                        <span className="text-white text-sm">Uploading...</span>
+                      <div className="absolute inset-0 bg-background/50 rounded-sm flex items-center justify-center">
+                        <span className="text-foreground text-sm">Uploading...</span>
                       </div>
                     )}
                   </div>
@@ -546,7 +549,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                   <button
                     onClick={() => imageInputRef.current?.click()}
                     disabled={uploadingImage}
-                    className="w-full h-32 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-teal-300 hover:text-teal-500 transition disabled:opacity-50"
+                    className="w-full h-32 rounded-sm border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-accent-graphite/50 hover:text-accent-graphite transition disabled:opacity-50"
                   >
                     <ImagePlus className="h-6 w-6" />
                     <span className="text-sm">{uploadingImage ? "Uploading..." : "Upload Cover Image"}</span>
@@ -556,10 +559,10 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
 
               {/* Multiple Visualization Images */}
               <div>
-                <Label className="text-sm font-medium text-slate-700 mb-2 block">
+                <Label className="text-sm font-medium text-foreground mb-2 block">
                   Visualization Images (up to 5)
                 </Label>
-                <p className="text-xs text-slate-500 mb-2">
+                <p className="text-xs text-muted-foreground mb-2">
                   These images will cycle during your visualization sessions
                 </p>
                 <input
@@ -576,7 +579,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                       <img
                         src={img}
                         alt={`Vision ${i + 1}`}
-                        className="w-full h-full object-cover rounded-lg"
+                        className="w-full h-full object-cover rounded-sm"
                       />
                       <Button
                         variant="destructive"
@@ -592,7 +595,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                     <button
                       onClick={() => multiImageInputRef.current?.click()}
                       disabled={uploadingImage}
-                      className="aspect-square rounded-lg border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-400 hover:border-teal-300 hover:text-teal-500 transition disabled:opacity-50"
+                      className="aspect-square rounded-sm border-2 border-dashed border-border flex items-center justify-center text-muted-foreground hover:border-accent-graphite/50 hover:text-accent-graphite transition disabled:opacity-50"
                     >
                       <Plus className="h-5 w-5" />
                     </button>
@@ -601,13 +604,13 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700 mb-2 block">Start Date</Label>
+                <Label className="text-sm font-medium text-foreground mb-2 block">Start Date</Label>
                 <UnifiedDatePicker
                   value={startDate ? new Date(startDate) : undefined}
                   onChange={(date) => setStartDate(date ? format(date, "yyyy-MM-dd") : "")}
                   placeholder="Pick a start date"
                   displayFormat="PPP"
-                  triggerClassName="w-full rounded-xl h-10"
+                  triggerClassName="w-full rounded-sm h-10"
                 />
               </div>
             </div>
@@ -616,7 +619,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
           {step === 2 && (
             <div className="space-y-5">
               <div>
-                <Label className="text-sm font-medium text-slate-700 mb-2 block">
+                <Label className="text-sm font-medium text-foreground mb-2 block">
                   If this is true, what would you do today?
                 </Label>
                 <Textarea
@@ -624,7 +627,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                   onChange={(e) => setLiveFromEnd(e.target.value)}
                   placeholder="I would wake up feeling..."
                   rows={2}
-                  className="rounded-xl resize-none"
+                  className="rounded-sm resize-none"
                 />
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {currentSuggestions.liveFromEnds.map((opt, i) => (
@@ -632,10 +635,10 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                       key={i}
                       type="button"
                       onClick={() => setLiveFromEnd(opt)}
-                      className={`text-[10px] px-2 py-1 rounded-full border transition-all ${
+                      className={`text-[10px] px-2 py-1 rounded-sm border transition-all ${
                         liveFromEnd === opt
-                          ? "bg-teal-500 text-white border-teal-500"
-                          : "bg-slate-50 text-slate-600 border-slate-200 hover:border-teal-300"
+                          ? "bg-accent-graphite text-background border-accent-graphite"
+                          : "bg-secondary text-muted-foreground border-border hover:border-accent-graphite/50"
                       }`}
                     >
                       {opt.length > 35 ? opt.slice(0, 35) + "..." : opt}
@@ -645,12 +648,12 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700 mb-2 block">Daily Act-As-If Action</Label>
+                <Label className="text-sm font-medium text-foreground mb-2 block">Daily Act-As-If Action</Label>
                 <Input
                   value={actAsIf}
                   onChange={(e) => setActAsIf(e.target.value)}
                   placeholder="e.g., Speak confidently in meetings"
-                  className="rounded-xl h-10"
+                  className="rounded-sm h-10"
                 />
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {currentSuggestions.actAsIfs.map((opt, i) => (
@@ -658,10 +661,10 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                       key={i}
                       type="button"
                       onClick={() => setActAsIf(opt)}
-                      className={`text-[10px] px-2 py-1 rounded-full border transition-all ${
+                      className={`text-[10px] px-2 py-1 rounded-sm border transition-all ${
                         actAsIf === opt
-                          ? "bg-teal-500 text-white border-teal-500"
-                          : "bg-slate-50 text-slate-600 border-slate-200 hover:border-teal-300"
+                          ? "bg-accent-graphite text-background border-accent-graphite"
+                          : "bg-secondary text-muted-foreground border-border hover:border-accent-graphite/50"
                       }`}
                     >
                       {opt}
@@ -675,7 +678,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
           {step === 3 && (
             <div className="space-y-5">
               <div>
-                <Label className="text-sm font-medium text-slate-700 mb-2 block">Visualization Duration</Label>
+                <Label className="text-sm font-medium text-foreground mb-2 block">Visualization Duration</Label>
                 <RadioGroup
                   value={vizMinutes}
                   onValueChange={(v) => setVizMinutes(v as "3" | "5" | "10")}
@@ -684,7 +687,11 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                   {["3", "5", "10"].map((m) => (
                     <label
                       key={m}
-                      className={`flex-1 flex items-center justify-center py-3 rounded-xl border cursor-pointer transition ${vizMinutes === m ? "bg-teal-50 border-teal-500 text-teal-600" : "border-slate-200 text-slate-600 hover:border-teal-300"}`}
+                      className={`flex-1 flex items-center justify-center py-3 rounded-sm border cursor-pointer transition-all spring-transition ${
+                        vizMinutes === m 
+                          ? "bg-accent-graphite/10 border-accent-graphite text-foreground" 
+                          : "border-border text-muted-foreground hover:border-accent-graphite/50"
+                      }`}
                     >
                       <RadioGroupItem value={m} className="hidden" />
                       <span className="font-medium">{m} min</span>
@@ -694,12 +701,12 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700 mb-2 block">Daily Affirmation</Label>
+                <Label className="text-sm font-medium text-foreground mb-2 block">Daily Affirmation</Label>
                 <Input
                   value={affirmation}
                   onChange={(e) => setAffirmation(e.target.value)}
                   placeholder={assumption || "I am..."}
-                  className="rounded-xl h-10"
+                  className="rounded-sm h-10"
                 />
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {currentSuggestions.affirmations.map((opt, i) => (
@@ -707,10 +714,10 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                       key={i}
                       type="button"
                       onClick={() => setAffirmation(opt)}
-                      className={`text-[10px] px-2 py-1 rounded-full border transition-all ${
+                      className={`text-[10px] px-2 py-1 rounded-sm border transition-all ${
                         affirmation === opt
-                          ? "bg-teal-500 text-white border-teal-500"
-                          : "bg-slate-50 text-slate-600 border-slate-200 hover:border-teal-300"
+                          ? "bg-accent-graphite text-background border-accent-graphite"
+                          : "bg-secondary text-muted-foreground border-border hover:border-accent-graphite/50"
                       }`}
                     >
                       {opt.length > 35 ? opt.slice(0, 35) + "..." : opt}
@@ -720,13 +727,13 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
               </div>
 
               {/* Reminder Settings */}
-              <div className="p-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800">
+              <div className="p-4 rounded-sm liquid-glass">
                 <div className="flex items-center gap-2 mb-3">
-                  <Bell className="h-4 w-4 text-amber-600" />
-                  <Label className="text-sm font-medium text-slate-700">Daily Reminders</Label>
+                  <Bell className="h-4 w-4 text-accent-graphite" />
+                  <Label className="text-sm font-medium text-foreground">Daily Reminders</Label>
                 </div>
                 
-                <p className="text-xs text-slate-500 mb-3">How many times per day would you like to be reminded?</p>
+                <p className="text-xs text-muted-foreground mb-3">How many times per day would you like to be reminded?</p>
                 
                 <div className="flex gap-2 mb-4">
                   {[1, 2, 3, 4].map((count) => (
@@ -734,10 +741,10 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                       key={count}
                       type="button"
                       onClick={() => handleReminderCountChange(count as 1 | 2 | 3 | 4)}
-                      className={`flex-1 py-2 rounded-lg border text-sm font-medium transition ${
+                      className={`flex-1 py-2 rounded-sm border text-sm font-medium transition-all spring-transition ${
                         reminderCount === count
-                          ? "bg-amber-500 text-white border-amber-500"
-                          : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-amber-200 dark:border-amber-800 hover:border-amber-400"
+                          ? "bg-accent-graphite text-background border-accent-graphite"
+                          : "bg-card text-muted-foreground border-border hover:border-accent-graphite/50"
                       }`}
                     >
                       {count}x
@@ -748,33 +755,33 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                 <div className="space-y-2">
                   {reminderTimes.map((time, index) => (
                     <div key={index} className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-amber-600" />
-                      <span className="text-xs text-slate-600 w-20">{getReminderLabel(index, reminderCount)}</span>
+                      <Clock className="h-4 w-4 text-accent-graphite" />
+                      <span className="text-xs text-muted-foreground w-20">{getReminderLabel(index, reminderCount)}</span>
                       <UnifiedTimePicker
                         value={time}
                         onChange={(v) => handleReminderTimeChange(index, v)}
                         intervalMinutes={30}
-                        triggerClassName="flex-1 rounded-lg h-9 text-sm"
+                        triggerClassName="flex-1 rounded-sm h-9 text-sm"
                       />
                     </div>
                   ))}
                 </div>
               </div>
 
-              <label className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 cursor-pointer hover:border-teal-300 transition">
+              <label className="flex items-center gap-3 p-4 rounded-sm border border-border cursor-pointer hover:border-accent-graphite/50 transition">
                 <Checkbox checked={committed} onCheckedChange={(c) => setCommitted(!!c)} />
                 <div>
-                  <p className="font-medium text-slate-700">I commit to 7 days</p>
-                  <p className="text-xs text-slate-500">Build the habit that changes everything</p>
+                  <p className="font-medium text-foreground">I commit to 7 days</p>
+                  <p className="text-xs text-muted-foreground">Build the habit that changes everything</p>
                 </div>
               </label>
             </div>
           )}
 
           {/* Navigation */}
-          <div className="flex justify-between mt-6 pt-4 border-t border-slate-100">
+          <div className="flex justify-between mt-6 pt-4 border-t border-border">
             {step > 1 ? (
-              <Button variant="ghost" onClick={() => setStep(step - 1)} className="rounded-xl">
+              <Button variant="ghost" onClick={() => setStep(step - 1)} className="rounded-sm">
                 <ChevronLeft className="h-4 w-4 mr-1" /> Back
               </Button>
             ) : (
@@ -784,7 +791,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
               <Button
                 onClick={() => setStep(step + 1)}
                 disabled={!canNext}
-                className="rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
+                className="rounded-sm"
               >
                 Next <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
@@ -792,7 +799,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
               <Button
                 onClick={handleSubmit}
                 disabled={!canNext || saving || uploadingImage}
-                className="rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
+                className="rounded-sm"
               >
                 {saving ? (
                   "Saving..."
