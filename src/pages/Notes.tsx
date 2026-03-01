@@ -29,7 +29,7 @@ import {
   Palette,
   FolderPlus,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { NotesSplitView } from "@/components/notes/NotesSplitView";
@@ -43,6 +43,7 @@ import { NotesMindMapView } from "@/components/notes/NotesMindMapView";
 import { NotesViewSwitcher, type NotesViewType } from "@/components/notes/NotesViewSwitcher";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useSettings } from "@/contexts/SettingsContext";
 import { PageLoadingScreen } from "@/components/common/PageLoadingScreen";
 import { cn } from "@/lib/utils";
 
@@ -282,7 +283,7 @@ function StatCard({
 }
 
 export default function Notes() {
-  const { toast } = useToast();
+
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const isMobile = useIsMobile();
@@ -312,20 +313,17 @@ export default function Notes() {
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [notesView, setNotesView] = useState<NotesViewType>("atlas");
 
-  // Load default notes view from edge function
+  const { settings, loaded: settingsLoaded } = useSettings();
+
+  // Load default notes view from centralized settings
   useEffect(() => {
-    if (!user) return;
-    supabase.functions.invoke("manage-settings", {
-      body: { action: "fetch_settings" }
-    }).then(({ data: res }) => {
-      const data = res?.data;
-      const v = data?.default_notes_view;
-      if (v === "board" || v === "mindmap" || v === "atlas") {
-        // On mobile, fall back from mindmap/board to atlas
-        setNotesView((isMobile && (v === "mindmap" || v === "board")) ? "atlas" : v as NotesViewType);
-      }
-    });
-  }, [user]);
+    if (!settingsLoaded) return;
+    const v = settings.default_notes_view;
+    if (v === "board" || v === "mindmap" || v === "atlas") {
+      // On mobile, fall back from mindmap/board to atlas
+      setNotesView((isMobile && (v === "mindmap" || v === "board")) ? "atlas" : v as NotesViewType);
+    }
+  }, [settingsLoaded, settings.default_notes_view, isMobile]);
 
   // Sync groups and folders from DB, seed defaults if missing
   useEffect(() => {
@@ -576,18 +574,15 @@ export default function Notes() {
     // Extract first image from rich content for cover_image_url
     let coverImageUrl: string | null = null;
     if (note.contentRich) {
-      // Try extracting from HTML img tags
-      const imgMatch = note.contentRich.match(/<img[^>]+src=["']([^"']+)["']/i);
-      if (imgMatch?.[1] && imgMatch[1].startsWith('http')) {
-        coverImageUrl = imgMatch[1];
-      }
-      // Also try TipTap JSON image nodes
-      if (!coverImageUrl) {
-        try {
-          const { extractImagesFromTiptapJSON } = await import("@/lib/editorUtils");
-          const jsonImages = extractImagesFromTiptapJSON(note.contentRich);
-          if (jsonImages.length > 0) coverImageUrl = jsonImages[0];
-        } catch { }
+      try {
+        const { isJSONContent, extractImagesFromTiptapJSON, extractImagesFromHTML } = await import("@/lib/editorUtils");
+        const images = isJSONContent(note.contentRich)
+          ? extractImagesFromTiptapJSON(note.contentRich)
+          : extractImagesFromHTML(note.contentRich);
+
+        if (images.length > 0) coverImageUrl = images[0];
+      } catch (e) {
+        console.error("Failed to extract images for note cover:", e);
       }
     }
 
@@ -618,18 +613,14 @@ export default function Notes() {
 
       if (error) {
         console.error("Supabase sync error:", error);
-        toast({
-          title: "Couldn't sync note to Diary",
+        toast.error("Couldn't sync note to Diary", {
           description: error.message || "Unknown error occurred",
-          variant: "destructive",
         });
       }
     } catch (err: any) {
       console.error("Supabase sync exception:", err);
-      toast({
-        title: "Couldn't sync note to Diary",
+      toast.error("Couldn't sync note to Diary", {
         description: err.message || "Please try saving again.",
-        variant: "destructive",
       });
     }
   };
@@ -676,8 +667,7 @@ export default function Notes() {
       sortOrder: folders.filter((f) => f.groupId === groupId).length,
     };
     setFolders([...folders, newFolder]);
-    toast({
-      title: "Section created",
+    toast.success("Section created", {
       description: `"${folderName}" added to ${getGroupName(groupId)}`,
     });
   };
@@ -729,7 +719,7 @@ export default function Notes() {
       });
     }
 
-    toast({ title: "Note deleted" });
+    toast.success("Note deleted");
   };
 
   const handleNoteClick = (note: Note) => {

@@ -3,7 +3,7 @@ import { Upload, X, Image as ImageIcon, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface ActivityImageUploadProps {
   imageUrl: string | null;
@@ -54,11 +54,11 @@ export function ActivityImageUpload({ imageUrl, onImageChange, compact = false }
       if (publicUrl) {
         onImageChange(publicUrl);
       } else {
-        toast({ title: "Upload failed", description: "Could not upload image. Please try again.", variant: "destructive" });
+        toast.error("Upload failed", { description: "Could not upload image. Please try again." });
       }
     } catch (error) {
       console.error("Upload error:", error);
-      toast({ title: "Upload failed", description: "Something went wrong. Please try again.", variant: "destructive" });
+      toast.error("Upload failed", { description: "Something went wrong. Please try again." });
     } finally {
       setIsUploading(false);
     }
