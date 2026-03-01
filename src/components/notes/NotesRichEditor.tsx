@@ -95,8 +95,8 @@ const FontSize = Extension.create({
     return {
       setFontSize:
         (fontSize: string) =>
-        ({ chain }: any) =>
-          chain().setMark("textStyle", { fontSize }).run(),
+          ({ chain }: any) =>
+            chain().setMark("textStyle", { fontSize }).run(),
     };
   },
 });
@@ -671,16 +671,20 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
         return;
       }
 
-      const fileExt = file.name.split(".").pop() || "jpg";
-      const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-      const { error } = await supabase.storage.from("entry-covers").upload(fileName, file);
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("bucket", "entry-covers");
 
-      if (error) {
-        console.error("Upload error:", error);
+      const { data: uploadRes, error: uploadError } = await supabase.functions.invoke("upload-image", {
+        body: formData,
+      });
+
+      if (uploadError || !uploadRes?.url) {
+        console.error("Upload error:", uploadError);
         return;
       }
 
-      const { data: { publicUrl } } = supabase.storage.from("entry-covers").getPublicUrl(fileName);
+      const publicUrl = uploadRes.url;
 
       try {
         if ((editor.commands as any).setResizableImage) {
@@ -1017,8 +1021,8 @@ export function NotesRichEditor({ note, groups, onSave, onBack, onFullscreenChan
                   saveStatus === "saved"
                     ? "bg-emerald-600 hover:bg-emerald-700 text-white"
                     : saveStatus === "saving"
-                    ? "bg-muted text-muted-foreground pointer-events-none"
-                    : "bg-primary hover:bg-primary/90 text-primary-foreground animate-pulse"
+                      ? "bg-muted text-muted-foreground pointer-events-none"
+                      : "bg-primary hover:bg-primary/90 text-primary-foreground animate-pulse"
                 )}
               >
                 {saveStatus === "saving" ? (

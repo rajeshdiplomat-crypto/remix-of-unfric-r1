@@ -47,18 +47,21 @@ export function useDatePreferences(): DatePreferences {
   const [loaded, setLoaded] = useState(false);
 
   const fetchPrefs = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data } = await supabase
-      .from("user_settings")
-      .select("date_format, start_of_week")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (data) {
-      if ((data as any).date_format) setDateFormat((data as any).date_format as DateFormatType);
-      if ((data as any).start_of_week) setWeekStart((data as any).start_of_week as WeekStartType);
+    try {
+      const { data: res, error } = await supabase.functions.invoke("manage-settings", {
+        body: { action: "fetch_settings" }
+      });
+      if (error) throw error;
+      const data = res?.data;
+      if (data) {
+        if (data.date_format) setDateFormat(data.date_format as DateFormatType);
+        if (data.start_of_week) setWeekStart(data.start_of_week as WeekStartType);
+      }
+    } catch (err) {
+      console.error("Failed to fetch date preferences:", err);
+    } finally {
+      setLoaded(true);
     }
-    setLoaded(true);
   }, []);
 
   useEffect(() => {

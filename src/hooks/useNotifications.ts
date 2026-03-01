@@ -161,16 +161,21 @@ export function useNotificationScheduler(): void {
     if (user) {
       // Logged in: fetch from DB and cache
       const fetchSettings = async () => {
-        const { data } = await supabase
-          .from("user_settings")
-          .select("notification_diary_prompt, notification_task_reminder, notification_emotion_checkin, daily_reset_time, reminder_time_diary, reminder_time_habits, reminder_time_emotions")
-          .eq("user_id", user.id)
-          .maybeSingle();
+        try {
+          const { data: res, error } = await supabase.functions.invoke("manage-settings", {
+            body: { action: "fetch_settings" }
+          });
 
-        if (data) {
-          const settings = parseSettings(data);
-          settingsRef.current = settings;
-          cacheSettings(settings);
+          if (error) throw error;
+          const data = res?.data;
+
+          if (data) {
+            const settings = parseSettings(data);
+            settingsRef.current = settings;
+            cacheSettings(settings);
+          }
+        } catch (err) {
+          console.error("[Notifications] Failed to fetch settings:", err);
         }
       };
 

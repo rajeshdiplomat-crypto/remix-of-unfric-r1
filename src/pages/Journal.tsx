@@ -341,15 +341,10 @@ export default function Journal() {
       }
       // Sync journal mode from DB
       if (user) {
-        supabase
-          .from("user_settings")
-          .select("journal_mode")
-          .eq("user_id", user.id)
-          .maybeSingle()
-          .then(({ data }) => {
-            const mode = (data as any)?.journal_mode;
-            if (mode) setJournalMode(mode);
-          });
+        supabase.functions.invoke("manage-settings", { body: { action: "fetch_settings" } }).then(({ data: res }) => {
+          const mode = res?.data?.journal_mode;
+          if (mode) setJournalMode(mode);
+        });
       }
     };
     window.addEventListener("focus", syncFromSettings);
@@ -365,15 +360,10 @@ export default function Journal() {
   // Load journal mode from DB
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("user_settings")
-      .select("journal_mode")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        const mode = (data as any)?.journal_mode;
-        if (mode) setJournalMode(mode);
-      });
+    supabase.functions.invoke("manage-settings", { body: { action: "fetch_settings" } }).then(({ data: res }) => {
+      const mode = res?.data?.journal_mode;
+      if (mode) setJournalMode(mode);
+    });
   }, [user]);
 
   const { theme } = useTheme();
@@ -461,35 +451,31 @@ export default function Journal() {
   // Load all entries on mount
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("journal_entries")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("entry_date", { ascending: false })
-      .then(({ data }) => {
-        const mapped = (data || []).map((e) => {
-            const contentJSON =
-              typeof e.text_formatting === "string" ? e.text_formatting : JSON.stringify(e.text_formatting) || "";
-            const preview = extractPreview(contentJSON);
-            const customTitle = extractTitle(contentJSON);
-            return {
-              id: e.id,
-              entryDate: e.entry_date,
-              createdAt: e.created_at,
-              updatedAt: e.updated_at,
-              title: customTitle || e.daily_feeling || "Untitled",
-              preview,
-              contentJSON,
-              mood: e.daily_feeling,
-              tags: e.tags || [],
-            };
-          });
-        setEntries(mapped);
-
-        // Seed React Query cache so IDB persister writes journal entries
-        queryClient.setQueryData(['journal-entries', user.id], mapped);
-        console.log(`[Journal] 💾 Seeded query cache with ${mapped.length} entries`);
+    supabase.functions.invoke("manage-journal", { body: { action: "fetch_entries" } }).then(({ data: res }) => {
+      const data = res?.data || [];
+      const mapped = data.map((e: any) => {
+        const contentJSON =
+          typeof e.text_formatting === "string" ? e.text_formatting : JSON.stringify(e.text_formatting) || "";
+        const preview = extractPreview(contentJSON);
+        const customTitle = extractTitle(contentJSON);
+        return {
+          id: e.id,
+          entryDate: e.entry_date,
+          createdAt: e.created_at,
+          updatedAt: e.updated_at,
+          title: customTitle || e.daily_feeling || "Untitled",
+          preview,
+          contentJSON,
+          mood: e.daily_feeling,
+          tags: e.tags || [],
+        };
       });
+      setEntries(mapped);
+
+      // Seed React Query cache so IDB persister writes journal entries
+      queryClient.setQueryData(['journal-entries', user.id], mapped);
+      console.log(`[Journal] 💾 Seeded query cache with ${mapped.length} entries`);
+    });
   }, [user]);
 
   // Load entry for selected date
@@ -508,144 +494,137 @@ export default function Journal() {
 
     setIsLoading(true);
 
-    supabase
-      .from("journal_entries")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("entry_date", dateStr)
-      .maybeSingle()
-      .then(async ({ data: entryData, error }) => {
-        if (error) {
-          console.error("Error loading entry:", error);
-          setIsLoading(false);
-          return;
-        }
+    supabase.functions.invoke("manage-journal", { body: { action: "fetch_entry", dateStr } }).then(async ({ data: res, error }) => {
+      if (error) {
+        console.error("Error loading entry:", error);
+        setIsLoading(false);
+        return;
+      }
 
-        if (entryData) {
-          const { data: answersData } = await supabase
-            .from("journal_answers")
-            .select("*")
-            .eq("journal_entry_id", entryData.id);
+      const entryData = res?.data?.entry;
+      const answersData = res?.data?.answers || [];
 
-          const contentJSON =
-            typeof entryData.text_formatting === "string"
-              ? entryData.text_formatting
-              : JSON.stringify(entryData.text_formatting) || "";
+      if (entryData) {
 
-          setCurrentEntry({
-            id: entryData.id,
-            entryDate: entryData.entry_date,
-            createdAt: entryData.created_at,
-            updatedAt: entryData.updated_at,
-            title: entryData.daily_feeling || "Untitled",
-            contentJSON,
-            mood: entryData.daily_feeling,
-            tags: entryData.tags || [],
-          });
-          setCurrentAnswers(answersData || []);
-          setSelectedMood(entryData.daily_feeling || null);
-          setScribbleData(entryData.scribble_data || null);
+        const contentJSON =
+          typeof entryData.text_formatting === "string"
+            ? entryData.text_formatting
+            : JSON.stringify(entryData.text_formatting) || "";
 
-          // Load per-entry page settings
-          const ps = entryData.page_settings as any;
-          setEntryPageSettings(ps ? { skinId: ps.skinId, lineStyle: ps.lineStyle, mode: ps.mode } : null);
+        setCurrentEntry({
+          id: entryData.id,
+          entryDate: entryData.entry_date,
+          createdAt: entryData.created_at,
+          updatedAt: entryData.updated_at,
+          title: entryData.daily_feeling || "Untitled",
+          contentJSON,
+          mood: entryData.daily_feeling,
+          tags: entryData.tags || [],
+        });
+        setCurrentAnswers(answersData || []);
+        setSelectedMood(entryData.daily_feeling || null);
+        setScribbleData(entryData.scribble_data || null);
 
-          // Helper to ensure proper content structure with H1 Title
-          const existingTitle = extractTitle(contentJSON);
+        // Load per-entry page settings
+        const ps = entryData.page_settings as any;
+        setEntryPageSettings(ps ? { skinId: ps.skinId, lineStyle: ps.lineStyle, mode: ps.mode } : null);
 
-          // Always use the original contentJSON (text_formatting) as the source of truth.
-          // It preserves images, formatting, and all rich content.
-          // Only reconstruct from answers if there's NO existing content.
-          let finalContent = contentJSON;
+        // Helper to ensure proper content structure with H1 Title
+        const existingTitle = extractTitle(contentJSON);
 
-          try {
-            const parsed = JSON.parse(contentJSON);
-            const hasRealContent = parsed?.content?.some((node: any) => {
-              if (node.type === "heading" && node.attrs?.level === 1) return false;
-              if (node.type === "heading" && node.attrs?.level === 2) return false;
-              if (node.type === "paragraph") {
-                if (!node.content || node.content.length === 0) return false;
-                // Check if paragraph has only whitespace text
-                const textOnly = node.content.every((c: any) => c.type === "text");
-                if (textOnly && node.content.every((c: any) => !c.text?.trim())) return false;
-                return true; // Has non-empty content (text, images, etc.)
-              }
-              // Any other node type (image, taskList, etc.) counts as real content
-              return true;
-            });
+        // Always use the original contentJSON (text_formatting) as the source of truth.
+        // It preserves images, formatting, and all rich content.
+        // Only reconstruct from answers if there's NO existing content.
+        let finalContent = contentJSON;
 
-            if (!hasRealContent) {
-              // Entry has no user content — regenerate based on per-entry mode or current global mode
-              const ps = entryData.page_settings as any;
-              const effectiveMode = ps?.mode || journalMode;
-              const isUnstructured = effectiveMode === "unstructured";
-              if (isUnstructured) {
-                finalContent = JSON.stringify({
-                  type: "doc",
-                  content: [
-                    { type: "heading", attrs: { level: 1, textAlign: "left" }, content: existingTitle ? [{ type: "text", text: existingTitle }] : [] },
-                    { type: "paragraph", attrs: { textAlign: "left" }, content: [] },
-                  ],
-                });
-              } else if (answersData?.length) {
-                finalContent = JSON.stringify({
-                  type: "doc",
-                  content: [
-                    { type: "heading", attrs: { level: 1, textAlign: "left" }, content: existingTitle ? [{ type: "text", text: existingTitle }] : [] },
-                    ...template.questions.flatMap((q) => {
-                      const answer = answersData.find((a) => a.question_id === q.id);
-                      return [
-                        { type: "heading", attrs: { level: 2, textAlign: "left" }, content: [{ type: "text", text: q.text }] },
-                        { type: "paragraph", attrs: { textAlign: "left" }, content: answer?.answer_text ? [{ type: "text", text: answer.answer_text }] : [] },
-                      ];
-                    }),
-                  ],
-                });
-              } else {
-                // Structured mode but no answers — generate fresh template
-                finalContent = generateInitialContent(template.questions);
-              }
-            } else {
-              const firstNode = parsed.content?.[0];
-              if (!firstNode || !(firstNode.type === "heading" && firstNode.attrs?.level === 1)) {
-                parsed.content = [
-                  { type: "heading", attrs: { level: 1, textAlign: "left" }, content: [] },
-                  ...(parsed.content || []),
-                ];
-                finalContent = JSON.stringify(parsed);
-              }
+        try {
+          const parsed = JSON.parse(contentJSON);
+          const hasRealContent = parsed?.content?.some((node: any) => {
+            if (node.type === "heading" && node.attrs?.level === 1) return false;
+            if (node.type === "heading" && node.attrs?.level === 2) return false;
+            if (node.type === "paragraph") {
+              if (!node.content || node.content.length === 0) return false;
+              // Check if paragraph has only whitespace text
+              const textOnly = node.content.every((c: any) => c.type === "text");
+              if (textOnly && node.content.every((c: any) => !c.text?.trim())) return false;
+              return true; // Has non-empty content (text, images, etc.)
             }
-          } catch (e) {
-            console.error("Error processing contentJSON", e);
-          }
+            // Any other node type (image, taskList, etc.) counts as real content
+            return true;
+          });
 
-          setContent(finalContent);
-          lastSavedContentRef.current = finalContent;
-          setCurrentEntry((prev) => (prev ? { ...prev, contentJSON: finalContent } : prev));
-        } else {
-          setCurrentEntry(null);
-          setCurrentAnswers([]);
-          setSelectedMood(null);
-          setScribbleData(null);
-          setEntryPageSettings(null);
-          const isUnstructured = journalMode === "unstructured";
-          const shouldApplyTemplate = !isUnstructured;
-          const newContent = shouldApplyTemplate
-            ? generateInitialContent(template.questions)
-            : JSON.stringify({
+          if (!hasRealContent) {
+            // Entry has no user content — regenerate based on per-entry mode or current global mode
+            const ps = entryData.page_settings as any;
+            const effectiveMode = ps?.mode || journalMode;
+            const isUnstructured = effectiveMode === "unstructured";
+            if (isUnstructured) {
+              finalContent = JSON.stringify({
                 type: "doc",
                 content: [
-                  { type: "heading", attrs: { level: 1, textAlign: "left" }, content: [] },
+                  { type: "heading", attrs: { level: 1, textAlign: "left" }, content: existingTitle ? [{ type: "text", text: existingTitle }] : [] },
                   { type: "paragraph", attrs: { textAlign: "left" }, content: [] },
                 ],
               });
-          setContent(newContent);
-          lastSavedContentRef.current = newContent;
+            } else if (answersData?.length) {
+              finalContent = JSON.stringify({
+                type: "doc",
+                content: [
+                  { type: "heading", attrs: { level: 1, textAlign: "left" }, content: existingTitle ? [{ type: "text", text: existingTitle }] : [] },
+                  ...template.questions.flatMap((q) => {
+                    const answer = answersData.find((a) => a.question_id === q.id);
+                    return [
+                      { type: "heading", attrs: { level: 2, textAlign: "left" }, content: [{ type: "text", text: q.text }] },
+                      { type: "paragraph", attrs: { textAlign: "left" }, content: answer?.answer_text ? [{ type: "text", text: answer.answer_text }] : [] },
+                    ];
+                  }),
+                ],
+              });
+            } else {
+              // Structured mode but no answers — generate fresh template
+              finalContent = generateInitialContent(template.questions);
+            }
+          } else {
+            const firstNode = parsed.content?.[0];
+            if (!firstNode || !(firstNode.type === "heading" && firstNode.attrs?.level === 1)) {
+              parsed.content = [
+                { type: "heading", attrs: { level: 1, textAlign: "left" }, content: [] },
+                ...(parsed.content || []),
+              ];
+              finalContent = JSON.stringify(parsed);
+            }
+          }
+        } catch (e) {
+          console.error("Error processing contentJSON", e);
         }
 
-        setSaveStatus("saved");
-        setIsLoading(false);
-      });
+        setContent(finalContent);
+        lastSavedContentRef.current = finalContent;
+        setCurrentEntry((prev) => (prev ? { ...prev, contentJSON: finalContent } : prev));
+      } else {
+        setCurrentEntry(null);
+        setCurrentAnswers([]);
+        setSelectedMood(null);
+        setScribbleData(null);
+        setEntryPageSettings(null);
+        const isUnstructured = journalMode === "unstructured";
+        const shouldApplyTemplate = !isUnstructured;
+        const newContent = shouldApplyTemplate
+          ? generateInitialContent(template.questions)
+          : JSON.stringify({
+            type: "doc",
+            content: [
+              { type: "heading", attrs: { level: 1, textAlign: "left" }, content: [] },
+              { type: "paragraph", attrs: { textAlign: "left" }, content: [] },
+            ],
+          });
+        setContent(newContent);
+        lastSavedContentRef.current = newContent;
+      }
+
+      setSaveStatus("saved");
+      setIsLoading(false);
+    });
   }, [selectedDate, user]); // eslint-disable-line react-hooks/exhaustive-deps
   // Note: template and journalMode intentionally excluded — we read their current values
   // inside the callback. Including them would cause unwanted re-fetches mid-edit.
@@ -670,82 +649,44 @@ export default function Journal() {
       const contentImages = extractImagesFromTiptapJSON(content);
       const imagesDataPayload = contentImages.map(url => ({ url }));
 
-      if (currentEntry) {
-        const { error } = await supabase
-          .from("journal_entries")
-          .update({
-            text_formatting: content,
-            daily_feeling: selectedMood,
-            images_data: imagesDataPayload,
-            scribble_data: scribbleData,
-            page_settings: entryPageSettings ? { skinId: entryPageSettings.skinId, lineStyle: entryPageSettings.lineStyle || template.defaultLineStyle || "none", mode: entryPageSettings.mode } : null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", currentEntry.id);
-
-        if (error) throw error;
-
-        for (const answer of extractedAnswers) {
-          const existing = currentAnswers.find((a) => a.question_id === answer.question_id);
-          if (existing) {
-            await supabase
-              .from("journal_answers")
-              .update({ answer_text: answer.answer_text, updated_at: new Date().toISOString() })
-              .eq("id", existing.id);
-          } else {
-            await supabase.from("journal_answers").insert({
-              journal_entry_id: currentEntry.id,
-              question_id: answer.question_id,
-              answer_text: answer.answer_text,
-            });
-          }
-        }
-
-        const { data } = await supabase.from("journal_answers").select("*").eq("journal_entry_id", currentEntry.id);
-        setCurrentAnswers(data || []);
-
-        // Update local entries state for sidebar preview
-        setEntries((prev) =>
-          prev.map((e) =>
-            e.id === currentEntry.id
-              ? {
-                  ...e,
-                  updatedAt: new Date().toISOString(),
-                  contentJSON: content,
-                  preview: extractPreview(content),
-                  title: extractTitle(content) || selectedMood || "Untitled",
-                  mood: selectedMood,
-                }
-              : e,
-          ),
-        );
-      } else {
-        const { data: newEntry, error } = await supabase
-          .from("journal_entries")
-          .insert({
-            user_id: user.id,
+      const { data: res, error } = await supabase.functions.invoke("manage-journal", {
+        body: {
+          action: "upsert_entry",
+          entryId: currentEntry?.id || null,
+          entry: {
             entry_date: dateStr,
             text_formatting: content,
             daily_feeling: selectedMood,
             images_data: imagesDataPayload,
             scribble_data: scribbleData,
             page_settings: entryPageSettings ? { skinId: entryPageSettings.skinId, lineStyle: entryPageSettings.lineStyle || template.defaultLineStyle || "none", mode: entryPageSettings.mode } : null,
-          })
-          .select()
-          .single();
+          },
+          answers: extractedAnswers
+        }
+      });
 
-        if (error) throw error;
+      if (error) throw error;
 
+      if (currentEntry) {
+        setCurrentAnswers(res?.data?.answers || []);
+        // Update local entries state for sidebar preview
+        setEntries((prev) =>
+          prev.map((e) =>
+            e.id === currentEntry.id
+              ? {
+                ...e,
+                updatedAt: new Date().toISOString(),
+                contentJSON: content,
+                preview: extractPreview(content),
+                title: extractTitle(content) || selectedMood || "Untitled",
+                mood: selectedMood,
+              }
+              : e,
+          ),
+        );
+      } else {
+        const newEntry = res?.data?.entry;
         if (newEntry) {
-          const answersToInsert = extractedAnswers.map((a) => ({
-            journal_entry_id: newEntry.id,
-            question_id: a.question_id,
-            answer_text: a.answer_text,
-          }));
-          if (answersToInsert.length) {
-            await supabase.from("journal_answers").insert(answersToInsert);
-          }
-
           const entryObj = {
             id: newEntry.id,
             entryDate: newEntry.entry_date,
@@ -760,9 +701,7 @@ export default function Journal() {
 
           setCurrentEntry(entryObj);
           setEntries((prev) => [entryObj, ...prev]);
-
-          const { data } = await supabase.from("journal_answers").select("*").eq("journal_entry_id", newEntry.id);
-          setCurrentAnswers(data || []);
+          setCurrentAnswers(res?.data?.answers || []);
         }
       }
 
@@ -889,8 +828,7 @@ export default function Journal() {
   const handleClearEntry = useCallback(async () => {
     // Delete the entry from DB if it exists
     if (currentEntry && user) {
-      await supabase.from("journal_answers").delete().eq("journal_entry_id", currentEntry.id);
-      await supabase.from("journal_entries").delete().eq("id", currentEntry.id);
+      await supabase.functions.invoke("manage-journal", { body: { action: "delete_entry", entryId: currentEntry.id } });
       setEntries((prev) => prev.filter((e) => e.id !== currentEntry.id));
       setCurrentEntry(null);
       setCurrentAnswers([]);
@@ -907,13 +845,9 @@ export default function Journal() {
     // Re-read the latest journal mode from the database
     let latestMode = journalMode;
     if (user) {
-      const { data } = await supabase
-        .from("user_settings")
-        .select("journal_mode")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if ((data as any)?.journal_mode) {
-        latestMode = (data as any).journal_mode;
+      const { data: res } = await supabase.functions.invoke("manage-settings", { body: { action: "fetch_settings" } });
+      if (res?.data?.journal_mode) {
+        latestMode = res.data.journal_mode;
         setJournalMode(latestMode);
       }
     }
@@ -923,12 +857,12 @@ export default function Journal() {
     const newContent = !isUnstructured
       ? generateInitialContent(latestTemplate.questions)
       : JSON.stringify({
-          type: "doc",
-          content: [
-            { type: "heading", attrs: { level: 1, textAlign: "left" }, content: [] },
-            { type: "paragraph", attrs: { textAlign: "left" }, content: [] },
-          ],
-        });
+        type: "doc",
+        content: [
+          { type: "heading", attrs: { level: 1, textAlign: "left" }, content: [] },
+          { type: "paragraph", attrs: { textAlign: "left" }, content: [] },
+        ],
+      });
     setContent(newContent);
     lastSavedContentRef.current = newContent;
     setSaveStatus("saved");
@@ -1040,201 +974,241 @@ export default function Journal() {
   // Fullscreen portal — renders at document.body to escape all parent stacking contexts
   const fullscreenView = isFullscreen
     ? createPortal(
-        <div
-          className="fixed inset-0 z-[49] flex flex-col bg-background text-foreground"
-        >
-          {journalHeader}
-          <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4 max-w-4xl mx-auto w-full">
-            {editorContent}
-          </div>
-        </div>,
-        document.body,
-      )
+      <div
+        className="fixed inset-0 z-[49] flex flex-col bg-background text-foreground"
+      >
+        {journalHeader}
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4 max-w-4xl mx-auto w-full">
+          {editorContent}
+        </div>
+      </div>,
+      document.body,
+    )
     : null;
 
   return (
     <>
-    {!loadingFinished && (
-      <PageLoadingScreen
-        module="journal"
-        isDataReady={isJournalDataReady}
-        onFinished={() => setLoadingFinished(true)}
-      />
-    )}
-    <div className="flex flex-col w-full h-full overflow-hidden">
-      {fullscreenView}
-
-      {!isFullscreen && (
-        <>
-          <PageHero
-            storageKey="journal_hero_src"
-            typeKey="journal_hero_type"
-            badge={PAGE_HERO_TEXT.journal.badge}
-            title={PAGE_HERO_TEXT.journal.title}
-            subtitle={PAGE_HERO_TEXT.journal.subtitle}
-          />
-          {journalHeader}
-          <div className="flex-1 min-h-0 grid gap-6 lg:gap-12 w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-8 overflow-hidden grid-cols-1 lg:grid-cols-[1fr_2fr] max-w-[1400px] mx-auto">
-            {/* Left column: Editorial + toggle panels */}
-            <div className="hidden lg:flex flex-col justify-start gap-6 h-full pt-12">
-              <div className="space-y-6 max-w-md">
-                {/* Badge */}
-                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                  <Sparkles className="h-4 w-4" />
-                  Daily Journal
-                </span>
-
-                {/* Title */}
-                <h2 className="text-3xl md:text-4xl font-light leading-tight">
-                  Capture Your <span className="font-semibold">Inner World</span>
-                </h2>
-
-                {/* Description */}
-                <p className="text-muted-foreground text-lg leading-relaxed">
-                  Journaling helps you process emotions, track growth, and find clarity. A few minutes each day can transform how you understand yourself.
-                </p>
-
-                <div className="h-px bg-border" />
-
-                {/* Toggle buttons */}
-                <div className="flex gap-2">
-                  <Button
-                    variant={activeLeftPanel === "calendar" ? "outline" : "ghost"}
-                    size="sm"
-                    className="gap-1.5"
-                    onClick={() => setActiveLeftPanel(activeLeftPanel === "calendar" ? null : "calendar")}
-                  >
-                    <Calendar className="h-3.5 w-3.5" />
-                    Calendar
-                  </Button>
-                  <Button
-                    variant={activeLeftPanel === "emotions" ? "outline" : "ghost"}
-                    size="sm"
-                    className="gap-1.5"
-                    onClick={() => setActiveLeftPanel(activeLeftPanel === "emotions" ? null : "emotions")}
-                  >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Emotions
-                  </Button>
-                  <Button
-                    variant={activeLeftPanel === "progress" ? "outline" : "ghost"}
-                    size="sm"
-                    className="gap-1.5"
-                    onClick={() => setActiveLeftPanel(activeLeftPanel === "progress" ? null : "progress")}
-                  >
-                    <TrendingUp className="h-3.5 w-3.5" />
-                    Progress
-                  </Button>
-                </div>
-
-                {/* Expandable panel area */}
-                {activeLeftPanel === "calendar" && (
-                  <JournalSidebarPanel
-                    selectedDate={selectedDate}
-                    onDateSelect={setSelectedDate}
-                    entries={entries}
-                    onInsertPrompt={handleInsertPrompt}
-                    skin={currentSkin}
-                    showSection="calendar"
-                    searchQuery={searchQuery}
-                    compact
-                  />
-                )}
-                {activeLeftPanel === "emotions" && (
-                  <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="emotions" />
-                )}
-                {activeLeftPanel === "progress" && (
-                  <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="progress" />
-                )}
-              </div>
-            </div>
-
-            {/* Right column: Editor only (2/3 width) */}
-            {editorContent}
-          </div>
-        </>
-      )}
-
-
-
-      {showRecentEntries && (
-        <JournalRecentEntriesView
-          entries={entries}
-          onSelectEntry={(dateStr) => { switchDate(parseISO(dateStr)); setShowRecentEntries(false); }}
-          onClose={() => setShowRecentEntries(false)}
+      {!loadingFinished && (
+        <PageLoadingScreen
+          module="journal"
+          isDataReady={isJournalDataReady}
+          onFinished={() => setLoadingFinished(true)}
         />
       )}
-      <JournalInsightsModal open={showInsights} onOpenChange={setShowInsights} />
+      <div className="flex flex-col w-full h-full overflow-hidden">
+        {fullscreenView}
 
-      {/* Mobile Date Picker Bottom Sheet */}
-      <Drawer open={showMobileDatePicker} onOpenChange={setShowMobileDatePicker}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Select Date</DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 pb-6 flex flex-col items-center gap-3">
-            <CalendarWidget
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => {
-                if (date) {
-                  switchDate(date);
+        {!isFullscreen && (
+          <>
+            <PageHero
+              storageKey="journal_hero_src"
+              typeKey="journal_hero_type"
+              badge={PAGE_HERO_TEXT.journal.badge}
+              title={PAGE_HERO_TEXT.journal.title}
+              subtitle={PAGE_HERO_TEXT.journal.subtitle}
+            />
+            {journalHeader}
+            <div className="flex-1 min-h-0 grid gap-6 lg:gap-12 w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-8 overflow-hidden grid-cols-1 lg:grid-cols-[1fr_2fr] max-w-[1400px] mx-auto">
+              {/* Left column: Editorial + toggle panels */}
+              <div className="hidden lg:flex flex-col justify-start gap-6 h-full pt-12">
+                <div className="space-y-6 max-w-md">
+                  {/* Badge */}
+                  <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
+                    <Sparkles className="h-4 w-4" />
+                    Daily Journal
+                  </span>
+
+                  {/* Title */}
+                  <h2 className="text-3xl md:text-4xl font-light leading-tight">
+                    Capture Your <span className="font-semibold">Inner World</span>
+                  </h2>
+
+                  {/* Description */}
+                  <p className="text-muted-foreground text-lg leading-relaxed">
+                    Journaling helps you process emotions, track growth, and find clarity. A few minutes each day can transform how you understand yourself.
+                  </p>
+
+                  <div className="h-px bg-border" />
+
+                  {/* Toggle buttons */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant={activeLeftPanel === "calendar" ? "outline" : "ghost"}
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => setActiveLeftPanel(activeLeftPanel === "calendar" ? null : "calendar")}
+                    >
+                      <Calendar className="h-3.5 w-3.5" />
+                      Calendar
+                    </Button>
+                    <Button
+                      variant={activeLeftPanel === "emotions" ? "outline" : "ghost"}
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => setActiveLeftPanel(activeLeftPanel === "emotions" ? null : "emotions")}
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Emotions
+                    </Button>
+                    <Button
+                      variant={activeLeftPanel === "progress" ? "outline" : "ghost"}
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => setActiveLeftPanel(activeLeftPanel === "progress" ? null : "progress")}
+                    >
+                      <TrendingUp className="h-3.5 w-3.5" />
+                      Progress
+                    </Button>
+                  </div>
+
+                  {/* Expandable panel area */}
+                  {activeLeftPanel === "calendar" && (
+                    <JournalSidebarPanel
+                      selectedDate={selectedDate}
+                      onDateSelect={setSelectedDate}
+                      entries={entries}
+                      onInsertPrompt={handleInsertPrompt}
+                      skin={currentSkin}
+                      showSection="calendar"
+                      searchQuery={searchQuery}
+                      compact
+                    />
+                  )}
+                  {activeLeftPanel === "emotions" && (
+                    <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="emotions" />
+                  )}
+                  {activeLeftPanel === "progress" && (
+                    <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="progress" />
+                  )}
+                </div>
+              </div>
+
+              {/* Right column: Editor only (2/3 width) */}
+              {editorContent}
+            </div>
+          </>
+        )}
+
+
+
+        {showRecentEntries && (
+          <JournalRecentEntriesView
+            entries={entries}
+            onSelectEntry={(dateStr) => { switchDate(parseISO(dateStr)); setShowRecentEntries(false); }}
+            onClose={() => setShowRecentEntries(false)}
+          />
+        )}
+        <JournalInsightsModal open={showInsights} onOpenChange={setShowInsights} />
+
+        {/* Mobile Date Picker Bottom Sheet */}
+        <Drawer open={showMobileDatePicker} onOpenChange={setShowMobileDatePicker}>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Select Date</DrawerTitle>
+            </DrawerHeader>
+            <div className="px-4 pb-6 flex flex-col items-center gap-3">
+              <CalendarWidget
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => {
+                  if (date) {
+                    switchDate(date);
+                    setShowMobileDatePicker(false);
+                  }
+                }}
+                className="rounded-xl border"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  switchDate(new Date());
                   setShowMobileDatePicker(false);
+                }}
+                className="text-xs"
+              >
+                Go to Today
+              </Button>
+            </div>
+          </DrawerContent>
+        </Drawer>
+
+        {/* Mobile Insights Bottom Sheet */}
+        <Drawer open={showMobileInsightsSheet} onOpenChange={setShowMobileInsightsSheet}>
+          <DrawerContent className="max-h-[85vh]">
+            <DrawerHeader>
+              <DrawerTitle>Journal Insights</DrawerTitle>
+            </DrawerHeader>
+            <div className="px-4 pb-6 overflow-y-auto space-y-4">
+              <JournalSidebarPanel
+                selectedDate={selectedDate}
+                onDateSelect={(date) => { switchDate(date); }}
+                entries={entries}
+                onInsertPrompt={handleInsertPrompt}
+                skin={currentSkin}
+                showSection="calendar"
+                compact
+              />
+              <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="emotions" />
+              <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="progress" />
+            </div>
+          </DrawerContent>
+        </Drawer>
+        <JournalSettingsModal
+          open={entrySettingsOpen}
+          onOpenChange={setEntrySettingsOpen}
+          mode="entry"
+          currentSkinId={currentSkinId}
+          onSkinChange={setCurrentSkinId}
+          currentLineStyle={entryPageSettings?.lineStyle || template.defaultLineStyle || "none"}
+          entryMode={(entryPageSettings?.mode || journalMode) as "structured" | "unstructured"}
+          onEntryOverrideSave={(skinId, lineStyle, newMode) => {
+            const previousEffectiveMode = entryPageSettings?.mode || journalMode;
+            setEntryPageSettings({ skinId, lineStyle, mode: newMode });
+            setCurrentSkinId(skinId);
+
+            // Only regenerate content if mode actually changed AND entry has no real user content
+            if (newMode && newMode !== previousEffectiveMode) {
+              try {
+                const parsed = JSON.parse(content);
+                const hasRealContent = parsed?.content?.some((node: any) => {
+                  if (node.type === "heading") return false;
+                  if (node.type === "paragraph") {
+                    if (!node.content || node.content.length === 0) return false;
+                    const textOnly = node.content.every((c: any) => c.type === "text");
+                    if (textOnly && node.content.every((c: any) => !c.text?.trim())) return false;
+                    return true;
+                  }
+                  return true;
+                });
+
+                if (!hasRealContent) {
+                  const existingTitle = extractTitle(content);
+                  const isUnstructured = newMode === "unstructured";
+                  const newContent = !isUnstructured
+                    ? generateInitialContent(template.questions)
+                    : JSON.stringify({
+                      type: "doc",
+                      content: [
+                        { type: "heading", attrs: { level: 1, textAlign: "left" }, content: existingTitle ? [{ type: "text", text: existingTitle }] : [] },
+                        { type: "paragraph", attrs: { textAlign: "left" }, content: [] },
+                      ],
+                    });
+                  setContent(newContent);
+                  lastSavedContentRef.current = "";
                 }
-              }}
-              className="rounded-xl border"
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                switchDate(new Date());
-                setShowMobileDatePicker(false);
-              }}
-              className="text-xs"
-            >
-              Go to Today
-            </Button>
-          </div>
-        </DrawerContent>
-      </Drawer>
+              } catch { /* keep current content on parse error */ }
+            }
 
-      {/* Mobile Insights Bottom Sheet */}
-      <Drawer open={showMobileInsightsSheet} onOpenChange={setShowMobileInsightsSheet}>
-        <DrawerContent className="max-h-[85vh]">
-          <DrawerHeader>
-            <DrawerTitle>Journal Insights</DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 pb-6 overflow-y-auto space-y-4">
-            <JournalSidebarPanel
-              selectedDate={selectedDate}
-              onDateSelect={(date) => { switchDate(date); }}
-              entries={entries}
-              onInsertPrompt={handleInsertPrompt}
-              skin={currentSkin}
-              showSection="calendar"
-              compact
-            />
-            <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="emotions" />
-            <JournalDateDetailsPanel selectedDate={selectedDate} wordCount={wordCount} streak={streak} skin={currentSkin} section="progress" />
-          </div>
-        </DrawerContent>
-      </Drawer>
-      <JournalSettingsModal
-        open={entrySettingsOpen}
-        onOpenChange={setEntrySettingsOpen}
-        mode="entry"
-        currentSkinId={currentSkinId}
-        onSkinChange={setCurrentSkinId}
-        currentLineStyle={entryPageSettings?.lineStyle || template.defaultLineStyle || "none"}
-        entryMode={(entryPageSettings?.mode || journalMode) as "structured" | "unstructured"}
-        onEntryOverrideSave={(skinId, lineStyle, newMode) => {
-          const previousEffectiveMode = entryPageSettings?.mode || journalMode;
-          setEntryPageSettings({ skinId, lineStyle, mode: newMode });
-          setCurrentSkinId(skinId);
+            setSaveStatus("unsaved");
+            if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+            autosaveTimerRef.current = setTimeout(() => performSave(), 1000);
+          }}
+          onEntryOverrideReset={() => {
+            setEntryPageSettings(null);
+            setCurrentSkinId(theme.isDark ? "midnight-dark" : template.defaultSkinId || "minimal-light");
 
-          // Only regenerate content if mode actually changed AND entry has no real user content
-          if (newMode && newMode !== previousEffectiveMode) {
+            // Regenerate content based on global mode if entry has no real content
             try {
               const parsed = JSON.parse(content);
               const hasRealContent = parsed?.content?.some((node: any) => {
@@ -1250,67 +1224,27 @@ export default function Journal() {
 
               if (!hasRealContent) {
                 const existingTitle = extractTitle(content);
-                const isUnstructured = newMode === "unstructured";
+                const isUnstructured = journalMode === "unstructured";
                 const newContent = !isUnstructured
                   ? generateInitialContent(template.questions)
                   : JSON.stringify({
-                      type: "doc",
-                      content: [
-                        { type: "heading", attrs: { level: 1, textAlign: "left" }, content: existingTitle ? [{ type: "text", text: existingTitle }] : [] },
-                        { type: "paragraph", attrs: { textAlign: "left" }, content: [] },
-                      ],
-                    });
-                setContent(newContent);
-                lastSavedContentRef.current = "";
-              }
-            } catch { /* keep current content on parse error */ }
-          }
-
-          setSaveStatus("unsaved");
-          if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
-          autosaveTimerRef.current = setTimeout(() => performSave(), 1000);
-        }}
-        onEntryOverrideReset={() => {
-          setEntryPageSettings(null);
-          setCurrentSkinId(theme.isDark ? "midnight-dark" : template.defaultSkinId || "minimal-light");
-
-          // Regenerate content based on global mode if entry has no real content
-          try {
-            const parsed = JSON.parse(content);
-            const hasRealContent = parsed?.content?.some((node: any) => {
-              if (node.type === "heading") return false;
-              if (node.type === "paragraph") {
-                if (!node.content || node.content.length === 0) return false;
-                const textOnly = node.content.every((c: any) => c.type === "text");
-                if (textOnly && node.content.every((c: any) => !c.text?.trim())) return false;
-                return true;
-              }
-              return true;
-            });
-
-            if (!hasRealContent) {
-              const existingTitle = extractTitle(content);
-              const isUnstructured = journalMode === "unstructured";
-              const newContent = !isUnstructured
-                ? generateInitialContent(template.questions)
-                : JSON.stringify({
                     type: "doc",
                     content: [
                       { type: "heading", attrs: { level: 1, textAlign: "left" }, content: existingTitle ? [{ type: "text", text: existingTitle }] : [] },
                       { type: "paragraph", attrs: { textAlign: "left" }, content: [] },
                     ],
                   });
-              setContent(newContent);
-              lastSavedContentRef.current = "";
-            }
-          } catch { /* keep current content */ }
+                setContent(newContent);
+                lastSavedContentRef.current = "";
+              }
+            } catch { /* keep current content */ }
 
-          setSaveStatus("unsaved");
-          if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
-          autosaveTimerRef.current = setTimeout(() => performSave(), 1000);
-        }}
-      />
-    </div>
+            setSaveStatus("unsaved");
+            if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+            autosaveTimerRef.current = setTimeout(() => performSave(), 1000);
+          }}
+        />
+      </div>
     </>
   );
 }

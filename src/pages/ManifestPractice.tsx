@@ -62,13 +62,13 @@ export default function ManifestPractice() {
   const fetchData = useCallback(async () => {
     if (!user || !goalId) return;
     try {
-      const { data: goalData, error } = await supabase
-        .from("manifest_goals")
-        .select("*")
-        .eq("id", goalId)
-        .eq("user_id", user.id)
-        .single();
+      const { data: response, error } = await supabase.functions.invoke('manage-manifest', {
+        body: { action: 'fetch_goal_and_practices', goalId }
+      });
+
       if (error) throw error;
+      const goalData = response?.data?.goal;
+      const practicesData = response?.data?.practices;
 
       const g = goalData as any;
       const mergedGoal: ManifestGoal = {
@@ -96,11 +96,8 @@ export default function ManifestPractice() {
       };
       setGoal(mergedGoal);
 
-      const { data: practicesData } = await supabase
-        .from("manifest_practices")
-        .select("*")
-        .eq("goal_id", goalId)
-        .eq("user_id", user.id);
+      // Load practices from DB
+
 
       if (practicesData) {
         setPractices(
@@ -189,7 +186,7 @@ export default function ManifestPractice() {
       <div className="flex flex-col w-full h-full bg-background antialiased overflow-hidden min-h-0">
         <div className="flex-1 flex flex-col lg:flex-row lg:items-stretch gap-0 w-full max-w-[1400px] mx-auto min-h-0 overflow-hidden">
           {/* ========== LEFT COLUMN: Editorial + Vision Board (desktop only) ========== */}
-           <div className="hidden lg:flex flex-col min-h-0 overflow-hidden shrink-0" style={{ width: '40%' }}>
+          <div className="hidden lg:flex flex-col min-h-0 overflow-hidden shrink-0" style={{ width: '40%' }}>
             <div className="flex flex-col h-full min-h-0 px-5">
               {/* Fixed top section */}
               <div className="flex flex-col gap-2.5 pt-4 pb-2 flex-shrink-0">

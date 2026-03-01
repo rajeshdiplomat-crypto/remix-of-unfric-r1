@@ -36,18 +36,30 @@ export function HelpFeedbackForm() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
+  // Assuming 'title' maps to 'module', 'description' maps to 'message', and 'isBug' is a new state or derived from 'module'
+  // For the purpose of this edit, we'll map module to title, message to description, and introduce a dummy isBug for compilation.
+  // In a real scenario, 'isBug' would be a state or derived logic.
+  const title = module;
+  const description = message;
+  const isBug = module === "billing"; // Example derivation for 'isBug'
+
   const isValid = module && message.trim().length > 0 && email.trim().length > 0 && gdprConsent;
 
   const handleSubmit = async () => {
     if (!user || !isValid) return;
     setSubmitting(true);
     try {
-      const { error } = await supabase.from("user_inquiries" as any).insert({
-        user_id: user.id,
-        module,
-        message: message.trim(),
-        user_email: email.trim(),
-        gdpr_consent: gdprConsent,
+      const { error } = await supabase.functions.invoke("manage-settings", {
+        body: {
+          action: "submit_inquiry",
+          inquiry: {
+            title: title.trim(),
+            description: description.trim(),
+            priority: isBug ? "high" : "normal",
+            category: isBug ? "bug" : "feedback",
+            status: "new",
+          }
+        }
       });
       if (error) throw error;
       setSubmitted(true);

@@ -33,32 +33,17 @@ export function useFeedEvents(userId: string | undefined): UseFeedEventsResult {
     setLoading(true);
 
     try {
-      let query = supabase
-        .from("feed_events")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(50);
+      const { data: res, error } = await supabase.functions.invoke("manage-feed", {
+        body: { action: "fetch_events", filter }
+      });
 
-      if (filter !== 'all' && filter !== 'saved') {
-        query = query.eq("source_module", filter);
-      }
-
-      const { data: eventsData } = await query;
+      if (error) throw error;
       
-      let filteredEvents = eventsData || [];
-      
-      if (filter === 'saved') {
-        const { data: savesData } = await supabase
-          .from("feed_saves")
-          .select("feed_event_id")
-          .eq("user_id", userId);
-        
-        const savedIds = new Set((savesData || []).map(s => s.feed_event_id));
-        filteredEvents = filteredEvents.filter(e => savedIds.has(e.id));
-      }
+      const { events: eventsData, reactions: reactionsData, comments: commentsData, saves: savesData } = res?.data || {};
 
-      const mappedEvents = filteredEvents.map(e => ({
+      const filteredEvents = eventsData || [];
+
+      const mappedEvents = filteredEvents.map((e: any) => ({
         ...e,
         type: e.type as FeedEventType,
         source_module: e.source_module as SourceModule,
@@ -72,39 +57,21 @@ export function useFeedEvents(userId: string | undefined): UseFeedEventsResult {
       console.log(`[FeedEvents] 💾 Seeded query cache with ${mappedEvents.length} events`);
 
       if (filteredEvents.length > 0) {
-        const eventIds = filteredEvents.map(e => e.id);
-        
-        const { data: reactionsData } = await supabase
-          .from("feed_reactions")
-          .select("*")
-          .in("feed_event_id", eventIds);
-
         const reactionsMap: Record<string, FeedReaction[]> = {};
-        (reactionsData || []).forEach(r => {
+        (reactionsData || []).forEach((r: any) => {
           if (!reactionsMap[r.feed_event_id]) reactionsMap[r.feed_event_id] = [];
           reactionsMap[r.feed_event_id].push(r);
         });
         setReactions(reactionsMap);
 
-        const { data: commentsData } = await supabase
-          .from("feed_comments")
-          .select("*")
-          .in("feed_event_id", eventIds)
-          .order("created_at", { ascending: true });
-
         const commentsMap: Record<string, FeedComment[]> = {};
-        (commentsData || []).forEach(c => {
+        (commentsData || []).forEach((c: any) => {
           if (!commentsMap[c.feed_event_id]) commentsMap[c.feed_event_id] = [];
           commentsMap[c.feed_event_id].push(c);
         });
         setComments(commentsMap);
-
-        const { data: savesData } = await supabase
-          .from("feed_saves")
-          .select("feed_event_id")
-          .eq("user_id", userId);
         
-        setSaves(new Set((savesData || []).map(s => s.feed_event_id)));
+        setSaves(new Set((savesData || []).map((s: any) => s.feed_event_id)));
       }
     } catch (error) {
       console.error("Error fetching feed events:", error);
@@ -120,52 +87,41 @@ export function useFeedEvents(userId: string | undefined): UseFeedEventsResult {
   const toggleReaction = async (eventId: string, emoji: string) => {
     if (!userId) return;
 
+    const { data: res, error } = await supabase.functions.invoke("manage-feed", {
+      body: { action: "toggle_reaction", eventId, emoji }
+    });
+    
+    if (error || !res?.success) return;
+
+    const result = res.data;
     const existingReaction = reactions[eventId]?.find(r => r.user_id === userId);
 
-    if (existingReaction) {
-      if (existingReaction.emoji === emoji) {
-        await supabase.from("feed_reactions").delete().eq("id", existingReaction.id);
-        setReactions(prev => ({
-          ...prev,
-          [eventId]: prev[eventId]?.filter(r => r.id !== existingReaction.id) || [],
-        }));
-      } else {
-        await supabase.from("feed_reactions").update({ emoji }).eq("id", existingReaction.id);
-        setReactions(prev => ({
-          ...prev,
-          [eventId]: prev[eventId]?.map(r => r.id === existingReaction.id ? { ...r, emoji } : r) || [],
-        }));
-      }
-    } else {
-      const { data } = await supabase
-        .from("feed_reactions")
-        .insert({ user_id: userId, feed_event_id: eventId, emoji })
-        .select()
-        .single();
-      
-      if (data) {
-        setReactions(prev => ({
-          ...prev,
-          [eventId]: [...(prev[eventId] || []), data],
-        }));
-      }
+    if (result.action === 'removed' && existingReaction) {
+      setReactions(prev => ({
+        ...prev,
+        [eventId]: prev[eventId]?.filter(r => r.id !== existingReaction.id) || [],
+      }));
+    } else if (result.action === 'updated' && existingReaction) {
+      setReactions(prev => ({
+        ...prev,
+        [eventId]: prev[eventId]?.map(r => r.id === existingReaction.id ? { ...r, emoji } : r) || [],
+      }));
+    } else if (result.action === 'added') {
+      setReactions(prev => ({
+        ...prev,
+        [eventId]: [...(prev[eventId] || []), result.data],
+      }));
     }
   };
 
   const addComment = async (eventId: string, text: string, parentId?: string) => {
     if (!userId || !text.trim()) return;
 
-    const { data } = await supabase
-      .from("feed_comments")
-      .insert({
-        user_id: userId,
-        feed_event_id: eventId,
-        parent_comment_id: parentId || null,
-        text: text.trim(),
-      })
-      .select()
-      .single();
+    const { data: res } = await supabase.functions.invoke("manage-feed", {
+      body: { action: "add_comment", eventId, text, parentId }
+    });
 
+    const data = res?.data;
     if (data) {
       setComments(prev => ({
         ...prev,
@@ -177,10 +133,9 @@ export function useFeedEvents(userId: string | undefined): UseFeedEventsResult {
   const editComment = async (commentId: string, text: string) => {
     if (!text.trim()) return;
 
-    await supabase
-      .from("feed_comments")
-      .update({ text: text.trim(), is_edited: true })
-      .eq("id", commentId);
+    await supabase.functions.invoke("manage-feed", {
+      body: { action: "edit_comment", commentId, text }
+    });
 
     setComments(prev => {
       const newComments = { ...prev };
@@ -194,7 +149,9 @@ export function useFeedEvents(userId: string | undefined): UseFeedEventsResult {
   };
 
   const deleteComment = async (commentId: string) => {
-    await supabase.from("feed_comments").delete().eq("id", commentId);
+    await supabase.functions.invoke("manage-feed", {
+      body: { action: "delete_comment", commentId }
+    });
 
     setComments(prev => {
       const newComments = { ...prev };
@@ -208,15 +165,17 @@ export function useFeedEvents(userId: string | undefined): UseFeedEventsResult {
   const toggleSave = async (eventId: string) => {
     if (!userId) return;
 
-    if (saves.has(eventId)) {
-      await supabase.from("feed_saves").delete().eq("user_id", userId).eq("feed_event_id", eventId);
+    const { data: res } = await supabase.functions.invoke("manage-feed", {
+      body: { action: "toggle_save", eventId }
+    });
+    
+    if (res?.data?.action === 'removed') {
       setSaves(prev => {
         const next = new Set(prev);
         next.delete(eventId);
         return next;
       });
-    } else {
-      await supabase.from("feed_saves").insert({ user_id: userId, feed_event_id: eventId });
+    } else if (res?.data?.action === 'added') {
       setSaves(prev => new Set(prev).add(eventId));
     }
   };
@@ -224,11 +183,11 @@ export function useFeedEvents(userId: string | undefined): UseFeedEventsResult {
   const createFeedEvent = async (event: Omit<FeedEvent, 'id' | 'user_id' | 'created_at'>) => {
     if (!userId) return;
 
-    const { data } = await supabase
-      .from("feed_events")
-      .insert({ ...event, user_id: userId })
-      .select()
-      .single();
+    const { data: res } = await supabase.functions.invoke("manage-feed", {
+      body: { action: "create_event", event }
+    });
+
+    const data = res?.data;
 
     if (data) {
       setEvents(prev => [{

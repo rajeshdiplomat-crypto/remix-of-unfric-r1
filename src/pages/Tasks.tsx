@@ -196,22 +196,20 @@ export default function Tasks() {
   const [activeTab, setActiveTab] = useState<TasksViewTab>("board");
   const [defaultBoardMode, setDefaultBoardMode] = useState<string | null>(null);
 
-  // Load default task tab and board mode from DB
+  // Load default task tab and board mode from edge function
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("user_settings")
-      .select("default_task_tab, default_task_view")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        const tab = (data as any)?.default_task_tab;
-        if (tab === "lists" || tab === "board" || tab === "timeline") {
-          setActiveTab(tab);
-        }
-        const mode = (data as any)?.default_task_view;
-        if (mode) setDefaultBoardMode(mode);
-      });
+    supabase.functions.invoke("manage-settings", {
+      body: { action: "fetch_settings" }
+    }).then(({ data: res }) => {
+      const data = res?.data;
+      const tab = data?.default_task_tab;
+      if (tab === "lists" || tab === "board" || tab === "timeline") {
+        setActiveTab(tab);
+      }
+      const mode = data?.default_task_view;
+      if (mode) setDefaultBoardMode(mode);
+    });
   }, [user]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -256,11 +254,10 @@ export default function Tasks() {
     if (!user) return;
     setLoading(true);
 
-    const { data, error } = await supabase
-      .from("tasks")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+    const { data: response, error } = await supabase.functions.invoke('manage-tasks', {
+      body: { action: 'fetch' }
+    });
+    const data = response?.data;
 
     if (!error && data) {
       const quadrantTasks: QuadrantTask[] = data.map((t: any) => {
@@ -325,27 +322,31 @@ export default function Tasks() {
     }
 
     if (user) {
-      const { error } = await supabase.from("tasks").upsert({
-        id: task.id,
-        user_id: user.id,
-        title: task.title,
-        description: task.description || null,
-        due_date: task.due_date || null,
-        due_time: task.due_time || null,
-        end_time: task.end_time || null,
-        priority: task.priority,
-        urgency: task.urgency,
-        importance: task.importance,
-        time_of_day: task.time_of_day,
-        is_completed: task.is_completed,
-        completed_at: task.completed_at || null,
-        started_at: task.started_at || null,
-        reminder_at: task.reminder_at || null,
-        alarm_enabled: task.alarm_enabled,
-        subtasks: task.subtasks as any,
-        tags: task.tags,
-        total_focus_minutes: task.total_focus_minutes,
-      } as any);
+      const { error } = await supabase.functions.invoke('manage-tasks', {
+        body: {
+          action: 'upsert',
+          task: {
+            id: task.id,
+            title: task.title,
+            description: task.description || null,
+            due_date: task.due_date || null,
+            due_time: task.due_time || null,
+            end_time: task.end_time || null,
+            priority: task.priority,
+            urgency: task.urgency,
+            importance: task.importance,
+            time_of_day: task.time_of_day,
+            is_completed: task.is_completed,
+            completed_at: task.completed_at || null,
+            started_at: task.started_at || null,
+            reminder_at: task.reminder_at || null,
+            alarm_enabled: task.alarm_enabled,
+            subtasks: task.subtasks as any,
+            tags: task.tags,
+            total_focus_minutes: task.total_focus_minutes,
+          }
+        }
+      });
 
       if (error) {
         toast({ title: "Sync failed", description: error.message, variant: "destructive" });
@@ -365,7 +366,9 @@ export default function Tasks() {
     setDrawerOpen(false);
 
     if (user) {
-      await supabase.from("tasks").delete().eq("id", id).eq("user_id", user.id);
+      await supabase.functions.invoke('manage-tasks', {
+        body: { action: 'delete', taskId: id }
+      });
     }
 
     toast({ title: "Deleted", description: "Task has been removed" });
@@ -382,15 +385,17 @@ export default function Tasks() {
     setSelectedTask(updated);
 
     if (user) {
-      await supabase
-        .from("tasks")
-        .update({
-          is_completed: false,
-          completed_at: null,
-          started_at: updated.started_at,
-        } as any)
-        .eq("id", task.id)
-        .eq("user_id", user.id);
+      await supabase.functions.invoke('manage-tasks', {
+        body: {
+          action: 'update',
+          taskId: task.id,
+          updates: {
+            is_completed: false,
+            completed_at: null,
+            started_at: updated.started_at,
+          }
+        }
+      });
     }
 
     toast({ title: "Started!", description: "Task moved to Ongoing" });
@@ -414,11 +419,25 @@ export default function Tasks() {
       setDrawerOpen(false);
 
       if (user) {
-        await supabase
-          .from("tasks")
-          .update({ is_completed: false, completed_at: null })
-          .eq("id", task.id)
-          .eq("user_id", user.id);
+        // We still use DML for reopening a task for simplicity, or we could route it
+        // through the function as well. Since we already have the function handling completion,
+        // let's route it through the edge function to be consistent.
+        try {
+          const { error } = await supabase.functions.invoke('toggle-task-completion', {
+            body: {
+              taskId: task.id,
+              isCompleted: false,
+              taskTitle: task.title,
+              dueDate: task.due_date,
+              tags: task.tags
+            }
+          });
+
+          if (error) throw error;
+        } catch (error) {
+          console.error("Failed to reopen task:", error);
+          toast({ title: "Failed to sync", description: "Could not sync task status", variant: "destructive" });
+        }
       }
 
       toast({ title: "Reopened!", description: "Task marked as incomplete" });
@@ -435,37 +454,25 @@ export default function Tasks() {
       setDrawerOpen(false);
 
       if (user) {
-        await supabase
-          .from("tasks")
-          .update({ is_completed: true, completed_at: completedAt })
-          .eq("id", task.id)
-          .eq("user_id", user.id);
-
-        if (task.tags?.includes("Habit") && task.due_date) {
-          const { data: habits } = await supabase
-            .from("habits")
-            .select("id, name")
-            .eq("user_id", user.id)
-            .eq("name", task.title);
-
-          if (habits && habits.length > 0) {
-            const habitId = habits[0].id;
-            const completedDate = task.due_date.split("T")[0];
-
-            const { data: existing } = await supabase
-              .from("habit_completions")
-              .select("id")
-              .eq("habit_id", habitId)
-              .eq("completed_date", completedDate);
-
-            if (!existing || existing.length === 0) {
-              await supabase.from("habit_completions").insert({
-                habit_id: habitId,
-                user_id: user.id,
-                completed_date: completedDate,
-              });
+        try {
+          const { data, error } = await supabase.functions.invoke('toggle-task-completion', {
+            body: {
+              taskId: task.id,
+              isCompleted: true,
+              taskTitle: task.title,
+              dueDate: task.due_date,
+              tags: task.tags
             }
+          });
+
+          if (error) throw error;
+
+          if (data?.habitUpdated) {
+            console.log("Habit completion synced securely");
           }
+        } catch (error) {
+          console.error("Failed to complete task:", error);
+          toast({ title: "Failed to sync", description: "Could not sync task completion", variant: "destructive" });
         }
       }
 
@@ -501,23 +508,27 @@ export default function Tasks() {
     setTasks((prev) => [newTask, ...prev]);
 
     if (user) {
-      await supabase.from("tasks").insert({
-        id: newTask.id,
-        user_id: user.id,
-        title: newTask.title,
-        description: newTask.description || null,
-        due_date: newTask.due_date || null,
-        due_time: newTask.due_time || null,
-        priority: newTask.priority,
-        urgency: newTask.urgency,
-        importance: newTask.importance,
-        time_of_day: newTask.time_of_day,
-        is_completed: newTask.is_completed,
-        completed_at: newTask.completed_at || null,
-        started_at: newTask.started_at || null,
-        tags: newTask.tags,
-        subtasks: newTask.subtasks as any,
-      } as any);
+      await supabase.functions.invoke('manage-tasks', {
+        body: {
+          action: 'insert',
+          task: {
+            id: newTask.id,
+            title: newTask.title,
+            description: newTask.description || null,
+            due_date: newTask.due_date || null,
+            due_time: newTask.due_time || null,
+            priority: newTask.priority,
+            urgency: newTask.urgency,
+            importance: newTask.importance,
+            time_of_day: newTask.time_of_day,
+            is_completed: newTask.is_completed,
+            completed_at: newTask.completed_at || null,
+            started_at: newTask.started_at || null,
+            tags: newTask.tags,
+            subtasks: newTask.subtasks as any,
+          }
+        }
+      });
     }
 
     toast({ title: "Task added" });
@@ -543,15 +554,17 @@ export default function Tasks() {
     setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
 
     if (user) {
-      await supabase
-        .from("tasks")
-        .update({
-          is_completed: updated.is_completed,
-          completed_at: updated.completed_at,
-          started_at: updated.started_at,
-        } as any)
-        .eq("id", task.id)
-        .eq("user_id", user.id);
+      await supabase.functions.invoke('manage-tasks', {
+        body: {
+          action: 'update',
+          taskId: task.id,
+          updates: {
+            is_completed: updated.is_completed,
+            completed_at: updated.completed_at,
+            started_at: updated.started_at,
+          }
+        }
+      });
     }
 
     toast({ title: "Task updated" });
@@ -621,194 +634,194 @@ export default function Tasks() {
 
   return (
     <>
-    {!loadingFinished && (
-      <PageLoadingScreen
-        module="tasks"
-        isDataReady={isDataReady}
-        onFinished={() => setLoadingFinished(true)}
-      />
-    )}
-    <div className="h-full w-full flex flex-col bg-background overflow-x-hidden">
-      {/* Hero */}
-      <PageHero
-        storageKey="tasks_hero_src"
-        typeKey="tasks_hero_type"
-        badge={PAGE_HERO_TEXT.tasks.badge}
-        title={PAGE_HERO_TEXT.tasks.title}
-        subtitle={PAGE_HERO_TEXT.tasks.subtitle}
-      />
+      {!loadingFinished && (
+        <PageLoadingScreen
+          module="tasks"
+          isDataReady={isDataReady}
+          onFinished={() => setLoadingFinished(true)}
+        />
+      )}
+      <div className="h-full w-full flex flex-col bg-background overflow-x-hidden">
+        {/* Hero */}
+        <PageHero
+          storageKey="tasks_hero_src"
+          typeKey="tasks_hero_type"
+          badge={PAGE_HERO_TEXT.tasks.badge}
+          title={PAGE_HERO_TEXT.tasks.title}
+          subtitle={PAGE_HERO_TEXT.tasks.subtitle}
+        />
 
-      {/* Mobile Layout */}
-      {isMobile ? (
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <TasksMobileLayout
-            tasks={tasks}
-            filteredTasks={filteredTasks}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            statusFilter={statusFilter}
-            onStatusFilterChange={setStatusFilter}
-            priorityFilter={priorityFilter}
-            onPriorityFilterChange={setPriorityFilter}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-            onNewTask={openNewTaskDrawer}
-            onTaskClick={openTaskDetail}
-            onStartTask={handleStartTask}
-            onCompleteTask={handleCompleteTask}
-            onStartFocus={handleStartFocus}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            defaultBoardMode={defaultBoardMode}
-            onBoardDrop={handleBoardDrop}
-            onBoardQuickAdd={handleBoardQuickAdd}
-            onDeleteTask={(task) => handleDeleteTask(task.id)}
-          />
-        </div>
-      ) : (
-      <div className="w-full flex-1 min-h-0 px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 overflow-hidden flex flex-col max-w-[1400px] mx-auto">
-        <div className="w-full min-w-0 flex flex-col gap-4 flex-1 min-h-0 overflow-hidden">
-          {/* Toolbar */}
-          <TasksHeader
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            onNewTask={openNewTaskDrawer}
-            statusFilter={statusFilter}
-            onStatusFilterChange={setStatusFilter}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-            priorityFilter={priorityFilter}
-            onPriorityFilterChange={setPriorityFilter}
-            tagFilter={tagFilter}
-            onTagFilterChange={setTagFilter}
-          />
+        {/* Mobile Layout */}
+        {isMobile ? (
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <TasksMobileLayout
+              tasks={tasks}
+              filteredTasks={filteredTasks}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              statusFilter={statusFilter}
+              onStatusFilterChange={setStatusFilter}
+              priorityFilter={priorityFilter}
+              onPriorityFilterChange={setPriorityFilter}
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              onNewTask={openNewTaskDrawer}
+              onTaskClick={openTaskDetail}
+              onStartTask={handleStartTask}
+              onCompleteTask={handleCompleteTask}
+              onStartFocus={handleStartFocus}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              defaultBoardMode={defaultBoardMode}
+              onBoardDrop={handleBoardDrop}
+              onBoardQuickAdd={handleBoardQuickAdd}
+              onDeleteTask={(task) => handleDeleteTask(task.id)}
+            />
+          </div>
+        ) : (
+          <div className="w-full flex-1 min-h-0 px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 overflow-hidden flex flex-col max-w-[1400px] mx-auto">
+            <div className="w-full min-w-0 flex flex-col gap-4 flex-1 min-h-0 overflow-hidden">
+              {/* Toolbar */}
+              <TasksHeader
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                onNewTask={openNewTaskDrawer}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+                priorityFilter={priorityFilter}
+                onPriorityFilterChange={setPriorityFilter}
+                tagFilter={tagFilter}
+                onTagFilterChange={setTagFilter}
+              />
 
-          {/* View Tabs */}
-          <TasksViewTabs activeTab={activeTab} onTabChange={setActiveTab} />
+              {/* View Tabs */}
+              <TasksViewTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-          {/* Unified layout: single column */}
-          <div className="flex flex-col gap-4 flex-1 min-h-0">
-            {/* Combined Card: Focus + Clock + Insights */}
-            {!insightsCollapsed ? (
-              <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden shrink-0 flex items-stretch">
-                {/* Left column: Focus bar + Insights */}
-                <div className="flex-1 min-w-0 flex flex-col">
-                  <div className="p-2">
-                    <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
+              {/* Unified layout: single column */}
+              <div className="flex flex-col gap-4 flex-1 min-h-0">
+                {/* Combined Card: Focus + Clock + Insights */}
+                {!insightsCollapsed ? (
+                  <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden shrink-0 flex items-stretch">
+                    {/* Left column: Focus bar + Insights */}
+                    <div className="flex-1 min-w-0 flex flex-col">
+                      <div className="p-2">
+                        <TopFocusBar tasks={filteredTasks} onStartFocus={handleStartFocus} />
+                      </div>
+                      <InsightsPanel
+                        tasks={filteredTasks}
+                        compactMode={true}
+                        collapsed={false}
+                        onToggleCollapse={() => setInsightsCollapsed(true)}
+                      />
+                    </div>
+                    {/* Right column: Clock spans full height */}
+                    <div className="hidden lg:flex w-[220px] shrink-0 border-l border-border">
+                      <TasksClockWidget />
+                    </div>
                   </div>
-                  <InsightsPanel
-                    tasks={filteredTasks}
-                    compactMode={true}
-                    collapsed={false}
-                    onToggleCollapse={() => setInsightsCollapsed(true)}
-                  />
-                </div>
-                {/* Right column: Clock spans full height */}
-                <div className="hidden lg:flex w-[220px] shrink-0 border-l border-border">
-                  <TasksClockWidget />
+                ) : (
+                  <div className="px-3 py-1.5 border border-border rounded-lg bg-card shrink-0">
+                    <button
+                      onClick={() => setInsightsCollapsed(false)}
+                      className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors group"
+                    >
+                      <ChevronUp className="h-3.5 w-3.5 rotate-180 group-hover:translate-y-0.5 transition-transform" />
+                      Show Insights
+                    </button>
+                  </div>
+                )}
+
+                {/* Main tab content */}
+                <div className="flex-1 min-h-0 overflow-y-auto">
+                  {activeTab === "lists" && (
+                    <AllTasksList
+                      tasks={filteredTasks}
+                      onTaskClick={openTaskDetail}
+                      onStartTask={handleStartTask}
+                      onCompleteTask={handleCompleteTask}
+                      onDeleteTask={(task) => handleDeleteTask(task.id)}
+                      collapsed={false}
+                      onToggleCollapse={() => { }}
+                    />
+                  )}
+
+                  {activeTab === "board" && (
+                    <KanbanBoardView
+                      tasks={filteredTasks}
+                      onTaskClick={openTaskDetail}
+                      onDrop={handleBoardDrop}
+                      onStartTask={handleStartTask}
+                      onCompleteTask={handleCompleteTask}
+                      onDeleteTask={(task) => handleDeleteTask(task.id)}
+                      defaultMode={defaultBoardMode as any}
+                    />
+                  )}
+
+                  {activeTab === "timeline" && (
+                    <BoardView
+                      mode="status"
+                      tasks={filteredTasks}
+                      onTaskClick={openTaskDetail}
+                      onDragStart={() => { }}
+                      onDrop={handleBoardDrop}
+                      onQuickAdd={handleBoardQuickAdd}
+                      onStartTask={handleStartTask}
+                      onCompleteTask={handleCompleteTask}
+                    />
+                  )}
+
                 </div>
               </div>
-            ) : (
-              <div className="px-3 py-1.5 border border-border rounded-lg bg-card shrink-0">
-                <button
-                  onClick={() => setInsightsCollapsed(false)}
-                  className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors group"
-                >
-                  <ChevronUp className="h-3.5 w-3.5 rotate-180 group-hover:translate-y-0.5 transition-transform" />
-                  Show Insights
-                </button>
-              </div>
-            )}
 
-            {/* Main tab content */}
-            <div className="flex-1 min-h-0 overflow-y-auto">
-              {activeTab === "lists" && (
-                <AllTasksList
-                  tasks={filteredTasks}
-                  onTaskClick={openTaskDetail}
-                  onStartTask={handleStartTask}
-                  onCompleteTask={handleCompleteTask}
-                  onDeleteTask={(task) => handleDeleteTask(task.id)}
-                  collapsed={false}
-                  onToggleCollapse={() => {}}
-                />
-              )}
+              <UnifiedTaskDrawer
+                task={selectedTask}
+                isNew={isNewTask}
+                open={drawerOpen}
+                onClose={() => setDrawerOpen(false)}
+                onSave={handleSaveTask}
+                onDelete={handleDeleteTask}
+                onStartFocus={handleStartFocus}
+                onStartTask={handleStartTask}
+                onCompleteTask={handleCompleteTask}
+              />
 
-              {activeTab === "board" && (
-                <KanbanBoardView
-                  tasks={filteredTasks}
-                  onTaskClick={openTaskDetail}
-                  onDrop={handleBoardDrop}
-                  onStartTask={handleStartTask}
-                  onCompleteTask={handleCompleteTask}
-                  onDeleteTask={(task) => handleDeleteTask(task.id)}
-                  defaultMode={defaultBoardMode as any}
-                />
-              )}
-
-              {activeTab === "timeline" && (
-                <BoardView
-                  mode="status"
-                  tasks={filteredTasks}
-                  onTaskClick={openTaskDetail}
-                  onDragStart={() => {}}
-                  onDrop={handleBoardDrop}
-                  onQuickAdd={handleBoardQuickAdd}
-                  onStartTask={handleStartTask}
-                  onCompleteTask={handleCompleteTask}
-                />
-              )}
-
+              <DeepFocusPrompt
+                open={focusPromptOpen}
+                task={focusPromptTask}
+                onClose={() => setFocusPromptOpen(false)}
+                onStartFocus={() => focusPromptTask && handleStartFocus(focusPromptTask)}
+                onSkip={() => setFocusPromptOpen(false)}
+              />
             </div>
           </div>
+        )}
 
-          <UnifiedTaskDrawer
-            task={selectedTask}
-            isNew={isNewTask}
-            open={drawerOpen}
-            onClose={() => setDrawerOpen(false)}
-            onSave={handleSaveTask}
-            onDelete={handleDeleteTask}
-            onStartFocus={handleStartFocus}
-            onStartTask={handleStartTask}
-            onCompleteTask={handleCompleteTask}
-          />
-
-          <DeepFocusPrompt
-            open={focusPromptOpen}
-            task={focusPromptTask}
-            onClose={() => setFocusPromptOpen(false)}
-            onStartFocus={() => focusPromptTask && handleStartFocus(focusPromptTask)}
-            onSkip={() => setFocusPromptOpen(false)}
-          />
-        </div>
+        {/* Drawers/modals need to be outside the conditional */}
+        {isMobile && (
+          <>
+            <UnifiedTaskDrawer
+              task={selectedTask}
+              isNew={isNewTask}
+              open={drawerOpen}
+              onClose={() => setDrawerOpen(false)}
+              onSave={handleSaveTask}
+              onDelete={handleDeleteTask}
+              onStartFocus={handleStartFocus}
+              onStartTask={handleStartTask}
+              onCompleteTask={handleCompleteTask}
+            />
+            <DeepFocusPrompt
+              open={focusPromptOpen}
+              task={focusPromptTask}
+              onClose={() => setFocusPromptOpen(false)}
+              onStartFocus={() => focusPromptTask && handleStartFocus(focusPromptTask)}
+              onSkip={() => setFocusPromptOpen(false)}
+            />
+          </>
+        )}
       </div>
-      )}
-
-      {/* Drawers/modals need to be outside the conditional */}
-      {isMobile && (
-        <>
-          <UnifiedTaskDrawer
-            task={selectedTask}
-            isNew={isNewTask}
-            open={drawerOpen}
-            onClose={() => setDrawerOpen(false)}
-            onSave={handleSaveTask}
-            onDelete={handleDeleteTask}
-            onStartFocus={handleStartFocus}
-            onStartTask={handleStartTask}
-            onCompleteTask={handleCompleteTask}
-          />
-          <DeepFocusPrompt
-            open={focusPromptOpen}
-            task={focusPromptTask}
-            onClose={() => setFocusPromptOpen(false)}
-            onStartFocus={() => focusPromptTask && handleStartFocus(focusPromptTask)}
-            onSkip={() => setFocusPromptOpen(false)}
-          />
-        </>
-      )}
-    </div>
     </>
   );
 }

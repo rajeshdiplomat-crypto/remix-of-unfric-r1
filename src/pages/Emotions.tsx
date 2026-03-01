@@ -48,18 +48,13 @@ export default function Emotions() {
   // Load default emotions tab from DB
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("user_settings")
-      .select("default_emotions_tab")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        const v = (data as any)?.default_emotions_tab;
-        if (v === "regulate" || v === "insights") {
-          setActiveView(v as EmotionsView);
-          setInternalView(v);
-        }
-      });
+    supabase.functions.invoke("manage-settings", { body: { action: "fetch_settings" } }).then(({ data: res }) => {
+      const v = res?.data?.default_emotions_tab;
+      if (v === "regulate" || v === "insights") {
+        setActiveView(v as EmotionsView);
+        setInternalView(v);
+      }
+    });
   }, [user]);
 
   // Emotion selection state (persisted across pages)
@@ -116,14 +111,12 @@ export default function Emotions() {
   const fetchEntries = async (): Promise<EmotionEntry[] | undefined> => {
     if (!user) return;
     try {
-      const { data, error } = await supabase
-        .from("emotions")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(100);
+      const { data: res, error } = await supabase.functions.invoke("manage-emotions", {
+        body: { action: "fetch_entries" }
+      });
 
       if (error) throw error;
+      const data = res?.data || [];
 
       const parsed: EmotionEntry[] = (data || []).map((row) => {
         let quadrant: QuadrantType = "low-pleasant";
@@ -218,32 +211,24 @@ export default function Emotions() {
 
       const entryDate = format(checkinDate, "yyyy-MM-dd");
 
-      const { data: insertedEmotion, error } = await supabase
-        .from("emotions")
-        .insert({
-          user_id: user.id,
-          emotion: emotionData,
+      const contextParts: string[] = [];
+      if (context?.who) contextParts.push(`with ${context.who}`);
+      if (context?.what) contextParts.push(`while ${context.what}`);
+      const summary = contextParts.length > 0 ? contextParts.join(" ") : null;
+
+      const { data: res, error } = await supabase.functions.invoke("manage-emotions", {
+        body: {
+          action: "insert_emotion",
+          emotionData,
           notes: note || null,
           tags: null,
           entry_date: entryDate,
-        })
-        .select("id")
-        .single();
+          sendToJournal,
+          feedSummary: summary,
+        }
+      });
 
       if (error) throw error;
-
-      await createEmotionFeedEvent(
-        insertedEmotion.id,
-        quadrant,
-        selectedEmotion,
-        note || undefined,
-        context,
-        entryDate,
-      );
-
-      if (sendToJournal) {
-        await saveToJournal(entryDate, note || "", selectedEmotion);
-      }
 
       toast.success(`Logged: ${selectedEmotion}`);
       setSavedQuadrant(quadrant);
@@ -270,43 +255,25 @@ export default function Emotions() {
     const latestEntryId = entries[0].id;
 
     try {
-      // 1. Fetch the raw existing data from DB to ensure we have the full JSON object
-      // (The local state 'entries' has flattened/parsed data which might miss fields or be in wrong format for full update)
-      const { data: currentData, error: fetchError } = await supabase
-        .from("emotions")
-        .select("emotion")
-        .eq("id", latestEntryId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // 2. Parse the current JSON
-      let emotionJson: any = {};
-      if (typeof currentData.emotion === "string") {
-        try {
-          emotionJson = JSON.parse(currentData.emotion);
-        } catch (e) {
-          console.error("Error parsing current emotion JSON", e);
-          emotionJson = {};
-        }
-      } else {
-        emotionJson = currentData.emotion || {}; // Handle if it's already an object (Supabase client sometimes auto-parses)
-      }
-
-      // 3. Add/Update strategy data
+      const entry = entries[0];
       const updatedJson = {
-        ...emotionJson,
+        quadrant: entry.quadrant,
+        emotion: entry.emotion,
+        context: entry.context,
+        showInJournal: entry.showInJournal,
         strategy: strategyTitle,
         strategy_completed_at: new Date().toISOString(),
       };
 
-      // 4. Save back
-      const { error: updateError } = await supabase
-        .from("emotions")
-        .update({
-          emotion: JSON.stringify(updatedJson),
-        })
-        .eq("id", latestEntryId);
+      const { error: updateError } = await supabase.functions.invoke("manage-emotions", {
+        body: {
+          action: "update_emotion",
+          entryId: latestEntryId,
+          updates: {
+            emotion: JSON.stringify(updatedJson)
+          }
+        }
+      });
 
       if (updateError) throw updateError;
 
@@ -322,92 +289,6 @@ export default function Emotions() {
     }
   };
 
-  const createEmotionFeedEvent = async (
-    emotionId: string,
-    quadrant: QuadrantType,
-    emotion: string,
-    noteText?: string,
-    ctx?: typeof context,
-    entryDate?: string,
-  ) => {
-    if (!user) return;
-
-    const contextParts: string[] = [];
-    if (ctx?.who) contextParts.push(`with ${ctx.who}`);
-    if (ctx?.what) contextParts.push(`while ${ctx.what}`);
-
-    const summary = contextParts.length > 0 ? contextParts.join(" ") : null;
-
-    try {
-      await supabase.from("feed_events").insert({
-        user_id: user.id,
-        type: "checkin",
-        source_module: "emotions",
-        source_id: emotionId,
-        title: `Feeling ${emotion}`,
-        summary: summary,
-        content_preview: noteText || null,
-        media: [],
-        metadata: { quadrant, emotion, context: ctx, entry_date: entryDate },
-      });
-    } catch (err) {
-      console.error("Error creating feed event:", err);
-    }
-  };
-
-  const saveToJournal = async (entryDate: string, noteText: string, emotion: string) => {
-    if (!user) return;
-    try {
-      const { data: existingEntry } = await supabase
-        .from("journal_entries")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("entry_date", entryDate)
-        .maybeSingle();
-
-      let journalEntryId: string;
-
-      if (existingEntry) {
-        journalEntryId = existingEntry.id;
-      } else {
-        const { data: newEntry, error: createError } = await supabase
-          .from("journal_entries")
-          .insert({ user_id: user.id, entry_date: entryDate })
-          .select("id")
-          .single();
-
-        if (createError) throw createError;
-        journalEntryId = newEntry.id;
-      }
-
-      const { data: existingAnswer } = await supabase
-        .from("journal_answers")
-        .select("id, answer_text")
-        .eq("journal_entry_id", journalEntryId)
-        .eq("question_id", "feeling")
-        .maybeSingle();
-
-      const emotionNote = noteText ? `[${emotion}] ${noteText}` : `[${emotion}]`;
-
-      if (existingAnswer) {
-        const updatedText = existingAnswer.answer_text
-          ? `${existingAnswer.answer_text}\n\n${emotionNote}`
-          : emotionNote;
-
-        await supabase.from("journal_answers").update({ answer_text: updatedText }).eq("id", existingAnswer.id);
-      } else {
-        await supabase.from("journal_answers").insert({
-          journal_entry_id: journalEntryId,
-          question_id: "feeling",
-          answer_text: emotionNote,
-        });
-      }
-
-      toast.success("Note added to journal");
-    } catch (err) {
-      console.error("Error saving to journal:", err);
-    }
-  };
 
   // Reset flow for new check-in
   const resetFlow = () => {
@@ -460,11 +341,13 @@ export default function Emotions() {
       });
       const newEntryDate = format(editDate, "yyyy-MM-dd");
 
-      const { error } = await supabase
-        .from("emotions")
-        .update({ emotion: emotionData, notes: editNote || null, entry_date: newEntryDate })
-        .eq("id", editingEntry.id)
-        .eq("user_id", user.id);
+      const { error } = await supabase.functions.invoke("manage-emotions", {
+        body: {
+          action: "update_emotion",
+          entryId: editingEntry.id,
+          updates: { emotion: emotionData, notes: editNote || null, entry_date: newEntryDate }
+        }
+      });
 
       if (error) throw error;
 
@@ -498,7 +381,9 @@ export default function Emotions() {
     if (!user) return;
     setIsDeleting(true);
     try {
-      const { error } = await supabase.from("emotions").delete().eq("id", entryId).eq("user_id", user.id);
+      const { error } = await supabase.functions.invoke("manage-emotions", {
+        body: { action: "delete_emotion", entryId }
+      });
       if (error) throw error;
 
       toast.success("Check-in deleted");
@@ -717,9 +602,9 @@ export default function Emotions() {
                   context={editContext}
                   onContextChange={setEditContext}
                   sendToJournal={false}
-                  onSendToJournalChange={() => {}}
+                  onSendToJournalChange={() => { }}
                   checkInTime={new Date(editingEntry.created_at)}
-                  onCheckInTimeChange={() => {}}
+                  onCheckInTimeChange={() => { }}
                   hideJournalToggle
                   hideTimeField
                 />

@@ -11,7 +11,10 @@ export function useTimezone() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data } = await supabase.from("user_settings").select("timezone").eq("user_id", user.id).single();
+      const { data: res } = await supabase.functions.invoke("manage-settings", {
+        body: { action: "fetch_timezone" }
+      });
+      const data = res?.data;
 
       if (data?.timezone) {
         setTimezone(data.timezone);

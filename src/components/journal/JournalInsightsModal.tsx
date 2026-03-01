@@ -41,12 +41,18 @@ export function JournalInsightsModal({ open, onOpenChange }: JournalInsightsModa
 
   useEffect(() => {
     if (!open || !user) return;
-    supabase
-      .from("journal_entries")
-      .select("entry_date, text_formatting, created_at, updated_at")
-      .eq("user_id", user.id)
-      .order("entry_date", { ascending: false })
-      .then(({ data }) => setEntries(data || []));
+    const loadEntries = async () => {
+      try {
+        const { data: res, error } = await supabase.functions.invoke("manage-journal", {
+          body: { action: "fetch_entries" }
+        });
+        if (error) throw error;
+        setEntries(res?.data || []);
+      } catch (err) {
+        console.error("Failed to load journal entries for insights:", err);
+      }
+    };
+    loadEntries();
   }, [open, user]);
 
   const filteredEntries = useMemo(() => {

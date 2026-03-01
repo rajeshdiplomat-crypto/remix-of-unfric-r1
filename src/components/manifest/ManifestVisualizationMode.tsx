@@ -116,22 +116,23 @@ export function ManifestVisualizationMode({
   useEffect(() => {
     if (!user) return;
     const today = new Date().toISOString().split("T")[0];
-    supabase
-      .from("manifest_practices")
-      .select("*")
-      .eq("goal_id", goal.id)
-      .eq("entry_date", today)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) {
-          setTodaysPractice({
-            acts: (data as any).acts || [],
-            proofs: (data as any).proofs || [],
-            growth_note: (data as any).growth_note,
-            gratitudes: (data as any).gratitudes || [],
-          });
-        }
-      });
+    supabase.functions.invoke("manage-manifest", {
+      body: {
+        action: "fetch_practice",
+        goalId: goal.id,
+        dateStr: today,
+      }
+    }).then(({ data: res }) => {
+      const data = res?.data;
+      if (data) {
+        setTodaysPractice({
+          acts: (data as any).acts || [],
+          proofs: (data as any).proofs || [],
+          growth_note: (data as any).growth_note,
+          gratitudes: (data as any).gratitudes || [],
+        });
+      }
+    });
   }, [user, goal.id]);
 
   // Create all floating elements - includes today's answers AND previous practice
@@ -460,14 +461,14 @@ export function ManifestVisualizationMode({
     oscillatorsRef.current.forEach((osc) => {
       try {
         osc.stop();
-      } catch {}
+      } catch { }
     });
     oscillatorsRef.current = [];
     gainsRef.current = [];
     if (audioContextRef.current) {
       try {
         audioContextRef.current.close();
-      } catch {}
+      } catch { }
       audioContextRef.current = null;
     }
   }, []);
@@ -620,29 +621,27 @@ export function ManifestVisualizationMode({
             width: 4 + (i % 3) * 4,
             height: 4 + (i % 3) * 4,
             borderRadius: "50%",
-            background: `radial-gradient(circle, ${
-              i % 4 === 0
+            background: `radial-gradient(circle, ${i % 4 === 0
                 ? "rgba(20,184,166,0.9)"
                 : i % 4 === 1
                   ? "rgba(168,85,247,0.9)"
                   : i % 4 === 2
                     ? "rgba(59,130,246,0.9)"
                     : "rgba(236,72,153,0.9)"
-            }, transparent)`,
+              }, transparent)`,
             left: `${5 + i * 4.5}%`,
             bottom: "-20px",
             animation: `energyFloat ${6 + (i % 5)}s ease-in-out infinite`,
             animationDelay: `${i * -0.3}s`,
             animationPlayState: isPaused ? "paused" : "running",
-            boxShadow: `0 0 ${10 + (i % 3) * 5}px ${
-              i % 4 === 0
+            boxShadow: `0 0 ${10 + (i % 3) * 5}px ${i % 4 === 0
                 ? "rgba(20,184,166,0.5)"
                 : i % 4 === 1
                   ? "rgba(168,85,247,0.5)"
                   : i % 4 === 2
                     ? "rgba(59,130,246,0.5)"
                     : "rgba(236,72,153,0.5)"
-            }`,
+              }`,
           }}
         />
       ))}

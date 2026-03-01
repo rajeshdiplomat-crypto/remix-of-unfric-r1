@@ -41,12 +41,10 @@ function useFocusStats() {
   useEffect(() => {
     if (!user?.id) return;
     const loadSessions = async () => {
-      const { data, error } = await supabase
-        .from("focus_sessions")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(500);
+      const { data: res, error } = await supabase.functions.invoke("manage-tasks", {
+        body: { action: "fetch_focus_sessions", limit: 500 }
+      });
+      const data = res?.data;
 
       if (data && data.length > 0) {
         setSessions(data.map((s: any) => ({
@@ -62,19 +60,26 @@ function useFocusStats() {
             const parsed = JSON.parse(stored);
             if (parsed.sessions?.length > 0) {
               for (const s of parsed.sessions) {
-                await supabase.from("focus_sessions").insert({
-                  user_id: user.id,
-                  duration_minutes: s.duration || 0,
-                  task_completed: s.taskCompleted || false,
-                  created_at: s.date || new Date().toISOString(),
-                });
+                if (user) {
+                  await supabase.functions.invoke("manage-tasks", {
+                    body: {
+                      action: "insert_focus_session",
+                      session: {
+                        task_id: null, // Assuming task_id is not available during migration
+                        duration_minutes: s.duration || 0,
+                        mode: "focus", // Assuming default mode for migrated sessions
+                        completed_at: s.date || new Date().toISOString(),
+                      }
+                    }
+                  });
+                }
               }
               setSessions(parsed.sessions);
               setCurrentStreak(parsed.currentStreak || 0);
               localStorage.removeItem("focus-stats-data");
             }
           }
-        } catch {}
+        } catch { }
       }
 
       // Calculate streak

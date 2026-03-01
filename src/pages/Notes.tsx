@@ -312,76 +312,55 @@ export default function Notes() {
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [notesView, setNotesView] = useState<NotesViewType>("atlas");
 
-  // Load default notes view from DB
+  // Load default notes view from edge function
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("user_settings")
-      .select("default_notes_view")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        const v = (data as any)?.default_notes_view;
-        if (v === "board" || v === "mindmap" || v === "atlas") {
-          // On mobile, fall back from mindmap/board to atlas
-          setNotesView((isMobile && (v === "mindmap" || v === "board")) ? "atlas" : v as NotesViewType);
-        }
-      });
+    supabase.functions.invoke("manage-settings", {
+      body: { action: "fetch_settings" }
+    }).then(({ data: res }) => {
+      const data = res?.data;
+      const v = data?.default_notes_view;
+      if (v === "board" || v === "mindmap" || v === "atlas") {
+        // On mobile, fall back from mindmap/board to atlas
+        setNotesView((isMobile && (v === "mindmap" || v === "board")) ? "atlas" : v as NotesViewType);
+      }
+    });
   }, [user]);
 
   // Sync groups and folders from DB, seed defaults if missing
   useEffect(() => {
     if (!user) return;
     const loadFromDb = async () => {
-      const [groupsRes, foldersRes] = await Promise.all([
-        supabase.from("note_groups").select("*").eq("user_id", user.id).order("sort_order"),
-        supabase.from("note_folders").select("*").eq("user_id", user.id).order("sort_order"),
-      ]);
+      try {
+        const { data: response, error } = await supabase.functions.invoke('manage-notes', {
+          body: { action: 'fetch_all' }
+        });
 
-      let dbGroups: NoteGroup[] = [];
-      if (groupsRes.data && groupsRes.data.length > 0) {
-        dbGroups = groupsRes.data.map((g: any) => ({
-          id: g.id,
-          name: g.name,
-          color: g.color,
-          sortOrder: g.sort_order,
-        }));
-      }
+        if (error) throw error;
 
-      // Seed any missing default groups
-      const existingNames = new Set(dbGroups.map((g) => g.name.toLowerCase()));
-      const missingDefaults = DEFAULT_GROUPS.filter((dg) => !existingNames.has(dg.name.toLowerCase()));
-      if (missingDefaults.length > 0) {
-        const maxOrder = dbGroups.length > 0 ? Math.max(...dbGroups.map((g) => g.sortOrder)) + 1 : 0;
-        const newGroups: NoteGroup[] = [];
-        for (let i = 0; i < missingDefaults.length; i++) {
-          const dg = missingDefaults[i];
-          const newId = crypto.randomUUID();
-          const sortOrder = maxOrder + i;
-          await supabase.from("note_groups").insert({
-            id: newId,
-            user_id: user.id,
-            name: dg.name,
-            color: dg.color,
-            sort_order: sortOrder,
-          } as any);
-          newGroups.push({ id: newId, name: dg.name, color: dg.color, sortOrder });
+        const groupsRes = response?.data?.groups || [];
+        const foldersRes = response?.data?.folders || [];
+
+        if (groupsRes.length > 0) {
+          const dbGroups: NoteGroup[] = groupsRes.map((g: any) => ({
+            id: g.id,
+            name: g.name,
+            color: g.color,
+            sortOrder: g.sort_order,
+          }));
+          setGroups(dbGroups);
         }
-        dbGroups = [...dbGroups, ...newGroups];
-      }
-
-      if (dbGroups.length > 0) {
-        setGroups(dbGroups);
-      }
-
-      if (foldersRes.data && foldersRes.data.length > 0) {
-        const dbFolders: NoteFolder[] = foldersRes.data.map((f: any) => ({
-          id: f.id,
-          groupId: f.group_id,
-          name: f.name,
-          sortOrder: f.sort_order,
-        }));
-        setFolders(dbFolders);
+        if (foldersRes.length > 0) {
+          const dbFolders: NoteFolder[] = foldersRes.map((f: any) => ({
+            id: f.id,
+            groupId: f.group_id,
+            name: f.name,
+            sortOrder: f.sort_order,
+          }));
+          setFolders(dbFolders);
+        }
+      } catch (err) {
+        console.error("Failed to fetch groups/folders:", err);
       }
     };
     loadFromDb();
@@ -408,15 +387,17 @@ export default function Notes() {
     // Debounced DB sync
     const timeout = setTimeout(async () => {
       for (const g of groups) {
-        await supabase
-          .from("note_groups")
-          .upsert({
-            id: g.id,
-            user_id: user.id,
-            name: g.name,
-            color: g.color,
-            sort_order: g.sortOrder,
-          } as any, { onConflict: "id" } as any);
+        await supabase.functions.invoke('manage-notes', {
+          body: {
+            action: 'upsert_group',
+            group: {
+              id: g.id,
+              name: g.name,
+              color: g.color,
+              sort_order: g.sortOrder,
+            }
+          }
+        });
       }
     }, 1000);
     return () => clearTimeout(timeout);
@@ -432,15 +413,17 @@ export default function Notes() {
     if (!user) return;
     const timeout = setTimeout(async () => {
       for (const f of folders) {
-        await supabase
-          .from("note_folders")
-          .upsert({
-            id: f.id,
-            user_id: user.id,
-            group_id: f.groupId,
-            name: f.name,
-            sort_order: f.sortOrder,
-          } as any, { onConflict: "id" } as any);
+        await supabase.functions.invoke('manage-notes', {
+          body: {
+            action: 'upsert_folder',
+            folder: {
+              id: f.id,
+              group_id: f.groupId,
+              name: f.name,
+              sort_order: f.sortOrder,
+            }
+          }
+        });
       }
     }, 1000);
     return () => clearTimeout(timeout);
@@ -456,11 +439,10 @@ export default function Notes() {
       return;
     }
     const loadFromDb = async () => {
-      const { data: dbNotes, error } = await supabase
-        .from("notes")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("updated_at", { ascending: false });
+      const { data: response, error } = await supabase.functions.invoke('manage-notes', {
+        body: { action: 'fetch_all' }
+      });
+      const dbNotes = response?.data?.notes;
 
       if (error) {
         console.error("Failed to load notes from DB:", error);
@@ -480,23 +462,27 @@ export default function Notes() {
           for (const note of localNotes) {
             const category: "thoughts" | "creative" | "private" =
               note.groupId === "personal" ? "private" : note.groupId === "hobby" ? "creative" : "thoughts";
-            await supabase.from("notes").upsert({
-              id: note.id,
-              user_id: user.id,
-              title: note.title || "Untitled",
-              content: note.contentRich || note.plainText,
-              category,
-              tags: note.tags,
-              group_id: note.groupId || null,
-              folder_id: note.folderId || null,
-              is_pinned: note.isPinned || false,
-              is_archived: note.isArchived || false,
-              sort_order: note.sortOrder || 0,
-              plain_text: note.plainText || null,
-              skin: note.pageTheme && note.lineStyle ? JSON.stringify({ pageTheme: note.pageTheme, lineStyle: note.lineStyle }) : null,
-              scribble_data: note.scribbleStrokes || null,
-              created_at: note.createdAt,
-              updated_at: note.updatedAt,
+            await supabase.functions.invoke('manage-notes', {
+              body: {
+                action: 'upsert_note',
+                note: {
+                  id: note.id,
+                  title: note.title || "Untitled",
+                  content: note.contentRich || note.plainText,
+                  category,
+                  tags: note.tags,
+                  group_id: note.groupId || null,
+                  folder_id: note.folderId || null,
+                  is_pinned: note.isPinned || false,
+                  is_archived: note.isArchived || false,
+                  sort_order: note.sortOrder || 0,
+                  plain_text: note.plainText || null,
+                  skin: note.pageTheme && note.lineStyle ? JSON.stringify({ pageTheme: note.pageTheme, lineStyle: note.lineStyle }) : null,
+                  scribble_data: note.scribbleStrokes || null,
+                  created_at: note.createdAt,
+                  updated_at: note.updatedAt,
+                }
+              }
             });
           }
           setNotes(localNotes);
@@ -545,8 +531,8 @@ export default function Notes() {
         const q = searchQuery.trim().toLowerCase();
         const matchesSearch = q
           ? note.title.toLowerCase().includes(q) ||
-            note.plainText.toLowerCase().includes(q) ||
-            note.tags.some((tag) => tag.toLowerCase().includes(q))
+          note.plainText.toLowerCase().includes(q) ||
+          note.tags.some((tag) => tag.toLowerCase().includes(q))
           : true;
 
         const matchesFilter = filterGroupId === "all" || note.groupId === filterGroupId;
@@ -601,29 +587,33 @@ export default function Notes() {
           const { extractImagesFromTiptapJSON } = await import("@/lib/editorUtils");
           const jsonImages = extractImagesFromTiptapJSON(note.contentRich);
           if (jsonImages.length > 0) coverImageUrl = jsonImages[0];
-        } catch {}
+        } catch { }
       }
     }
 
     try {
-      const { error } = await supabase.from("notes").upsert({
-        id: note.id,
-        user_id: user.id,
-        title: note.title || "Untitled",
-        content: note.contentRich || note.plainText,
-        cover_image_url: coverImageUrl,
-        category,
-        tags: note.tags,
-        group_id: note.groupId || null,
-        folder_id: note.folderId || null,
-        is_pinned: note.isPinned || false,
-        is_archived: note.isArchived || false,
-        sort_order: note.sortOrder || 0,
-        plain_text: note.plainText || null,
-        skin: note.pageTheme && note.lineStyle ? JSON.stringify({ pageTheme: note.pageTheme, lineStyle: note.lineStyle }) : null,
-        scribble_data: note.scribbleStrokes || null,
-        created_at: note.createdAt,
-        updated_at: note.updatedAt,
+      const { error } = await supabase.functions.invoke('manage-notes', {
+        body: {
+          action: 'upsert_note',
+          note: {
+            id: note.id,
+            title: note.title || "Untitled",
+            content: note.contentRich || note.plainText,
+            cover_image_url: coverImageUrl,
+            category,
+            tags: note.tags,
+            group_id: note.groupId || null,
+            folder_id: note.folderId || null,
+            is_pinned: note.isPinned || false,
+            is_archived: note.isArchived || false,
+            sort_order: note.sortOrder || 0,
+            plain_text: note.plainText || null,
+            skin: note.pageTheme && note.lineStyle ? JSON.stringify({ pageTheme: note.pageTheme, lineStyle: note.lineStyle }) : null,
+            scribble_data: note.scribbleStrokes || null,
+            created_at: note.createdAt,
+            updated_at: note.updatedAt,
+          }
+        }
       });
 
       if (error) {
@@ -734,7 +724,9 @@ export default function Notes() {
     }
 
     if (user?.id) {
-      await supabase.from("notes").delete().eq("id", noteId).eq("user_id", user.id);
+      await supabase.functions.invoke('manage-notes', {
+        body: { action: 'delete_note', noteId }
+      });
     }
 
     toast({ title: "Note deleted" });
@@ -904,7 +896,7 @@ export default function Notes() {
                 {/* Mobile: View switcher hidden - only Atlas view on mobile */}
                 <div className="p-2 md:hidden hidden">
                 </div>
-            {/* Mobile: Integrated Search + Sort pill + More in one row */}
+                {/* Mobile: Integrated Search + Sort pill + More in one row */}
                 <div className="px-2 pb-1.5 pt-1 md:pb-0 md:px-0 flex items-center gap-1.5 md:hidden">
                   <div className="relative flex-1 min-w-0">
                     <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/40" />

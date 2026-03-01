@@ -192,7 +192,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
   const [affirmation, setAffirmation] = useState("");
   const [checkInTime, setCheckInTime] = useState("08:00");
   const [committed, setCommitted] = useState(false);
-  
+
   // Reminder settings
   const [reminderCount, setReminderCount] = useState<1 | 2 | 3 | 4>(1);
   const [reminderTimes, setReminderTimes] = useState<string[]>(["08:00"]);
@@ -279,21 +279,17 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
     setUploadingImage(true);
 
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `manifest-${Date.now()}.${fileExt}`;
-      const filePath = `vision-images/${fileName}`;
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("bucket", "entry-covers");
 
-      const { error: uploadError } = await supabase.storage
-        .from("entry-covers")
-        .upload(filePath, file, { upsert: true });
+      const { data: uploadRes, error: uploadError } = await supabase.functions.invoke("upload-image", {
+        body: formData,
+      });
 
-      if (uploadError) throw uploadError;
+      if (uploadError || !uploadRes?.url) throw uploadError || new Error("Failed to upload image");
 
-      const { data: { publicUrl } } = supabase.storage
-        .from("entry-covers")
-        .getPublicUrl(filePath);
-
-      setImageUrl(publicUrl);
+      setImageUrl(uploadRes.url);
       toast.success("Image uploaded!");
     } catch (error) {
       console.error("Upload error:", error);
@@ -329,24 +325,20 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
           continue;
         }
 
-        const fileExt = file.name.split(".").pop();
-        const fileName = `manifest-viz-${Date.now()}-${i}.${fileExt}`;
-        const filePath = `vision-images/${fileName}`;
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("bucket", "entry-covers");
 
-        const { error: uploadError } = await supabase.storage
-          .from("entry-covers")
-          .upload(filePath, file, { upsert: true });
+        const { data: uploadRes, error: uploadError } = await supabase.functions.invoke("upload-image", {
+          body: formData,
+        });
 
-        if (uploadError) {
+        if (uploadError || !uploadRes?.url) {
           console.error("Upload error:", uploadError);
           continue;
         }
 
-        const { data: { publicUrl } } = supabase.storage
-          .from("entry-covers")
-          .getPublicUrl(filePath);
-
-        newUrls.push(publicUrl);
+        newUrls.push(uploadRes.url);
       }
 
       if (newUrls.length > 0) {
@@ -374,18 +366,16 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
       try {
         const response = await fetch(imageUrl);
         const blob = await response.blob();
-        const fileName = `manifest-${Date.now()}.jpg`;
-        const filePath = `vision-images/${fileName}`;
+        const formData = new FormData();
+        formData.append("file", blob, `manifest-${Date.now()}.jpg`);
+        formData.append("bucket", "entry-covers");
 
-        const { error: uploadError } = await supabase.storage
-          .from("entry-covers")
-          .upload(filePath, blob, { upsert: true });
+        const { data: uploadRes, error: uploadError } = await supabase.functions.invoke("upload-image", {
+          body: formData,
+        });
 
-        if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage
-            .from("entry-covers")
-            .getPublicUrl(filePath);
-          finalImageUrl = publicUrl;
+        if (!uploadError && uploadRes?.url) {
+          finalImageUrl = uploadRes.url;
         }
       } catch (e) {
         console.warn("Failed to upload base64 image:", e);
@@ -409,7 +399,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
       reminder_count: reminderCount,
       reminder_times: reminderTimes,
     });
-    
+
     try {
       localStorage.removeItem(MANIFEST_DRAFT_KEY);
     } catch (e) {
@@ -499,11 +489,10 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                       key={i}
                       type="button"
                       onClick={() => setAssumption(opt)}
-                      className={`text-[10px] px-2 py-1 rounded-full border transition-all ${
-                        assumption === opt
+                      className={`text-[10px] px-2 py-1 rounded-full border transition-all ${assumption === opt
                           ? "bg-teal-500 text-white border-teal-500"
                           : "bg-slate-50 text-slate-600 border-slate-200 hover:border-teal-300"
-                      }`}
+                        }`}
                     >
                       {opt.length > 35 ? opt.slice(0, 35) + "..." : opt}
                     </button>
@@ -522,10 +511,10 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                 />
                 {imageUrl ? (
                   <div className="relative">
-                    <img 
-                      src={imageUrl} 
-                      alt="Vision" 
-                      className="w-full h-32 object-cover rounded-xl" 
+                    <img
+                      src={imageUrl}
+                      alt="Vision"
+                      className="w-full h-32 object-cover rounded-xl"
                       onError={() => setImageUrl(null)}
                     />
                     <Button
@@ -632,11 +621,10 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                       key={i}
                       type="button"
                       onClick={() => setLiveFromEnd(opt)}
-                      className={`text-[10px] px-2 py-1 rounded-full border transition-all ${
-                        liveFromEnd === opt
+                      className={`text-[10px] px-2 py-1 rounded-full border transition-all ${liveFromEnd === opt
                           ? "bg-teal-500 text-white border-teal-500"
                           : "bg-slate-50 text-slate-600 border-slate-200 hover:border-teal-300"
-                      }`}
+                        }`}
                     >
                       {opt.length > 35 ? opt.slice(0, 35) + "..." : opt}
                     </button>
@@ -658,11 +646,10 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                       key={i}
                       type="button"
                       onClick={() => setActAsIf(opt)}
-                      className={`text-[10px] px-2 py-1 rounded-full border transition-all ${
-                        actAsIf === opt
+                      className={`text-[10px] px-2 py-1 rounded-full border transition-all ${actAsIf === opt
                           ? "bg-teal-500 text-white border-teal-500"
                           : "bg-slate-50 text-slate-600 border-slate-200 hover:border-teal-300"
-                      }`}
+                        }`}
                     >
                       {opt}
                     </button>
@@ -707,11 +694,10 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                       key={i}
                       type="button"
                       onClick={() => setAffirmation(opt)}
-                      className={`text-[10px] px-2 py-1 rounded-full border transition-all ${
-                        affirmation === opt
+                      className={`text-[10px] px-2 py-1 rounded-full border transition-all ${affirmation === opt
                           ? "bg-teal-500 text-white border-teal-500"
                           : "bg-slate-50 text-slate-600 border-slate-200 hover:border-teal-300"
-                      }`}
+                        }`}
                     >
                       {opt.length > 35 ? opt.slice(0, 35) + "..." : opt}
                     </button>
@@ -725,20 +711,19 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
                   <Bell className="h-4 w-4 text-amber-600" />
                   <Label className="text-sm font-medium text-slate-700">Daily Reminders</Label>
                 </div>
-                
+
                 <p className="text-xs text-slate-500 mb-3">How many times per day would you like to be reminded?</p>
-                
+
                 <div className="flex gap-2 mb-4">
                   {[1, 2, 3, 4].map((count) => (
                     <button
                       key={count}
                       type="button"
                       onClick={() => handleReminderCountChange(count as 1 | 2 | 3 | 4)}
-                      className={`flex-1 py-2 rounded-lg border text-sm font-medium transition ${
-                        reminderCount === count
+                      className={`flex-1 py-2 rounded-lg border text-sm font-medium transition ${reminderCount === count
                           ? "bg-amber-500 text-white border-amber-500"
                           : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-amber-200 dark:border-amber-800 hover:border-amber-400"
-                      }`}
+                        }`}
                     >
                       {count}x
                     </button>

@@ -74,13 +74,14 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
     if (!isOpen || !user) return;
 
     const loadHistory = async () => {
-      // Try DB first
-      const { data: dbPractices } = await supabase
-        .from("manifest_practices")
-        .select("*")
-        .eq("goal_id", goal.id)
-        .eq("user_id", user.id)
-        .order("entry_date", { ascending: false });
+      // Fetch history via edge function
+      const { data: res, error } = await supabase.functions.invoke("manage-manifest", {
+        body: {
+          action: "fetch_goal_and_practices",
+          goalId: goal.id,
+        }
+      });
+      const dbPractices = res?.data?.practices;
 
       if (dbPractices && dbPractices.length > 0) {
         const goalPractices: HistoryDay[] = dbPractices.map((p: any) => ({
@@ -126,16 +127,16 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
   // Group by week
   const weekGroups = useMemo<WeekGroup[]>(() => {
     const groups: WeekGroup[] = [];
-    
+
     filteredData.forEach((day) => {
       const dayDate = parseISO(day.date);
       const weekStart = startOfWeek(dayDate, { weekStartsOn });
       const weekEnd = endOfWeek(dayDate, { weekStartsOn });
-      
-      let group = groups.find(g => 
+
+      let group = groups.find(g =>
         isWithinInterval(dayDate, { start: g.weekStart, end: g.weekEnd })
       );
-      
+
       if (!group) {
         group = {
           weekStart,
@@ -147,7 +148,7 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
         };
         groups.push(group);
       }
-      
+
       group.days.push(day);
     });
 
@@ -176,11 +177,11 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
     const avgAlignment = practicedDays.length > 0
       ? Math.round(practicedDays.reduce((sum, d) => sum + d.alignment, 0) / practicedDays.length * 10) / 10
       : 0;
-    
+
     // Calculate best streak
     let bestStreak = 0;
     let currentStreak = 0;
-    const sortedByDateAsc = [...historyData].sort((a, b) => 
+    const sortedByDateAsc = [...historyData].sort((a, b) =>
       new Date(a.date).getTime() - new Date(b.date).getTime()
     );
     sortedByDateAsc.forEach((day) => {
@@ -286,11 +287,10 @@ export function HistoryDrawer({ goal, isOpen, onClose, onUseAsMicroAction }: His
                 <button
                   key={key}
                   onClick={() => handleFilterChange(key)}
-                  className={`px-2.5 py-1 text-xs rounded-full transition-all ${
-                    filter === key
+                  className={`px-2.5 py-1 text-xs rounded-full transition-all ${filter === key
                       ? "bg-teal-500 text-white shadow-sm"
                       : "bg-white dark:bg-slate-800 text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-700 border border-border"
-                  }`}
+                    }`}
                 >
                   {label}
                 </button>

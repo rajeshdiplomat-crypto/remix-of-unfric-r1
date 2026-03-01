@@ -14,15 +14,20 @@ interface ActivityImageUploadProps {
 // Storage key kept for backward compat migration only
 
 async function uploadToStorage(file: File, userId: string): Promise<string | null> {
-  const fileExt = file.name.split(".").pop() || "jpg";
-  const fileName = `${userId}/${Date.now()}.${fileExt}`;
-  const { error } = await supabase.storage.from("entry-covers").upload(fileName, file);
-  if (error) {
-    console.error("Upload error:", error);
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("bucketName", "entry-covers");
+
+  const { data, error } = await supabase.functions.invoke("upload-image", {
+    body: formData,
+  });
+
+  if (error || !data?.success) {
+    console.error("Upload error:", error || data?.error);
     return null;
   }
-  const { data: { publicUrl } } = supabase.storage.from("entry-covers").getPublicUrl(fileName);
-  return publicUrl;
+
+  return data.url;
 }
 
 export function ActivityImageUpload({ imageUrl, onImageChange, compact = false }: ActivityImageUploadProps) {
@@ -197,7 +202,12 @@ export function ActivityImageUpload({ imageUrl, onImageChange, compact = false }
 
 // Save activity image URL to DB (source of truth)
 export async function saveActivityImageToDb(habitId: string, imageUrl: string | null) {
-  await supabase.from("habits").update({ cover_image_url: imageUrl }).eq("id", habitId);
+  await supabase.functions.invoke("manage-habits", {
+    body: {
+      action: "upsert_habit",
+      habit: { id: habitId, cover_image_url: imageUrl }
+    }
+  });
 }
 
 // Legacy helpers removed — habits.cover_image_url in DB is the source of truth

@@ -24,7 +24,7 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
   const { user } = useAuth();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [content, setContent] = useState("");
   const [attachedImages, setAttachedImages] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -51,20 +51,16 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
       }
 
       try {
-        const fileExt = file.name.split(".").pop();
-        const fileName = `${user?.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("bucket", "entry-covers");
 
-        const { error: uploadError } = await supabase.storage
-          .from("entry-covers")
-          .upload(fileName, file);
+        const { data: uploadRes, error: uploadError } = await supabase.functions.invoke("upload-image", {
+          body: formData,
+        });
 
-        if (uploadError) throw uploadError;
-
-        const { data: urlData } = supabase.storage
-          .from("entry-covers")
-          .getPublicUrl(fileName);
-
-        newImages.push(urlData.publicUrl);
+        if (uploadError || !uploadRes?.url) throw uploadError || new Error("Failed to upload image");
+        newImages.push(uploadRes.url);
       } catch (error) {
         console.error("Upload error:", error);
         toast({ title: "Upload failed", description: "Could not upload image.", variant: "destructive" });
@@ -73,7 +69,7 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
 
     setAttachedImages((prev) => [...prev, ...newImages]);
     setIsUploading(false);
-    
+
     // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -101,7 +97,7 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    
+
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
       await processFiles(files);
@@ -124,50 +120,57 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
     try {
       // Create journal entry with the content as HTML
       const contentHTML = `<p>${content}</p>`;
-      const { data: newEntry, error: entryError } = await supabase
-        .from("journal_entries")
-        .insert({
-          user_id: user.id,
-          entry_date: dateStr,
-          daily_feeling: content.substring(0, 100), // First 100 chars as title
-          text_formatting: contentHTML,
-          images_data: attachedImages.length > 0 ? attachedImages : null,
-        })
-        .select()
-        .single();
 
-      if (entryError) throw entryError;
+      const { data: actionRes, error: actionError } = await supabase.functions.invoke("manage-journal", {
+        body: {
+          action: "upsert_entry",
+          entry: {
+            entry_date: dateStr,
+            daily_feeling: content.substring(0, 100),
+            text_formatting: contentHTML,
+            images_data: attachedImages.length > 0 ? attachedImages : null,
+          },
+          answers: [
+            {
+              question_id: "quick_entry",
+              answer_text: content,
+            }
+          ]
+        }
+      });
+
+      if (actionError) throw actionError;
+
+      const newEntry = actionRes?.data?.entry;
 
       // Create a journal answer for the main content
       if (newEntry) {
-        await supabase.from("journal_answers").insert({
-          journal_entry_id: newEntry.id,
-          question_id: "quick_entry",
-          answer_text: content,
-        });
-
         // Create feed event for the new entry
-        await supabase.from("feed_events").insert({
-          user_id: user.id,
-          type: "journal_question",
-          source_module: "journal",
-          source_id: newEntry.id,
-          title: "Quick Journal Entry",
-          summary: content,
-          content_preview: content,
-          media: attachedImages.length > 0 ? attachedImages : null,
-          metadata: {
-            journal_date: dateStr,
-            entry_id: newEntry.id,
-            question_id: "quick_entry",
-            question_label: "Quick Journal Entry",
-            answer_content: content,
-          },
+        await supabase.functions.invoke("manage-feed", {
+          body: {
+            action: "create_event",
+            event: {
+              type: "journal_question",
+              source_module: "journal",
+              source_id: newEntry.id,
+              title: "Quick Journal Entry",
+              summary: content,
+              content_preview: content,
+              media: attachedImages.length > 0 ? attachedImages : null,
+              metadata: {
+                journal_date: dateStr,
+                entry_id: newEntry.id,
+                question_id: "quick_entry",
+                question_label: "Quick Journal Entry",
+                answer_content: content,
+              },
+            }
+          }
         });
       }
 
       toast({ title: "Entry saved!", description: "Your journal entry has been posted." });
-      
+
       // Reset form
       setContent("");
       setAttachedImages([]);
@@ -188,7 +191,7 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
           <DialogTitle className="text-lg font-semibold">New Journal Entry</DialogTitle>
         </DialogHeader>
 
-        <div 
+        <div
           className="space-y-4 relative"
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}

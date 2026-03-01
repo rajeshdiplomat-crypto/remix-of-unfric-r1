@@ -53,13 +53,16 @@ export const JournalDateDetailsPanel = memo(function JournalDateDetailsPanel({
       const emotionsList: EmotionEntry[] = [];
 
       try {
-        // Fetch emotions using entry_date field (matching Emotions.tsx)
-        const { data: emotionsData } = await supabase
-          .from("emotions")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("entry_date", dateStr)
-          .order("created_at", { ascending: false });
+        // Fetch emotions via edge function
+        const { data: res, error } = await supabase.functions.invoke("manage-emotions", {
+          body: {
+            action: "fetch_entries",
+            date: dateStr,
+          }
+        });
+
+        if (error) throw error;
+        const emotionsData = res?.data;
 
         if (emotionsData) {
           emotionsData.forEach((e: any) => {

@@ -81,12 +81,10 @@ export function ManifestPracticePanel({
   const loadPractice = async (date: string): Promise<Partial<ManifestDailyPractice>> => {
     if (!user) return {};
     try {
-      const { data } = await supabase
-        .from("manifest_practices")
-        .select("*")
-        .eq("goal_id", goal.id)
-        .eq("entry_date", date)
-        .maybeSingle();
+      const { data: response, error } = await supabase.functions.invoke('manage-manifest', {
+        body: { action: 'fetch_practice', goalId: goal.id, dateStr: date }
+      });
+      const data = response?.data;
       if (data) {
         const safeArr = (val: any): any[] => {
           if (Array.isArray(val)) return val;
@@ -124,9 +122,12 @@ export function ManifestPracticePanel({
         growth_note: practice.growth_note ?? growthNoteValue,
         locked: practice.locked ?? isLocked,
       };
-      await supabase
-        .from("manifest_practices")
-        .upsert(upsertData, { onConflict: "goal_id,entry_date" } as any);
+      await supabase.functions.invoke('manage-manifest', {
+        body: {
+          action: 'upsert_practice',
+          practice: upsertData
+        }
+      });
     } catch (e) {
       console.warn("Failed to save practice to DB:", e);
     }
@@ -340,7 +341,14 @@ export function ManifestPracticePanel({
   const handleImageChange = async (url: string | null) => {
     setCurrentImageUrl(url);
     try {
-      const { error } = await supabase.from("manifest_goals").update({ cover_image_url: url }).eq("id", goal.id);
+      const { error } = await supabase.functions.invoke('manage-manifest', {
+        body: {
+          action: 'update_goal',
+          goalId: goal.id,
+          updates: { cover_image_url: url }
+        }
+      });
+
       if (error) throw error;
       toast.success("Vision image updated");
       if (onGoalUpdate) onGoalUpdate();
