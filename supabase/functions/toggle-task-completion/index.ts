@@ -1,5 +1,6 @@
 import { authenticateUser } from '../_shared/auth.ts'
 import { corsHeaders } from '../_shared/cors.ts'
+import { getSafeError } from '../_shared/errors.ts'
 
 console.log("toggle-task-completion edge function loaded");
 
@@ -96,8 +97,7 @@ Deno.serve(async (req) => {
             }
         )
     } catch (error) {
-        console.error("Function error:", error);
-        return new Response(JSON.stringify({ error: error.message }), {
+        return new Response(JSON.stringify({ error: getSafeError(error) }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 500,
         })
