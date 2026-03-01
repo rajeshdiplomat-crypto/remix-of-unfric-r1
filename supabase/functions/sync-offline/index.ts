@@ -31,10 +31,12 @@ Deno.serve(async (req) => {
 
     // Allowed tables for offline sync (security check)
     const allowedTables = [
-      "journal_entries", "journal_answers", "emotions", "tasks", 
-      "habits", "habit_completions", "notes", "manifest_goals", 
-      "manifest_practices", "feed_events", "feed_reactions", 
-      "feed_comments", "feed_saves", "user_settings"
+      "journal_entries", "journal_answers", "journal_prompts", "journal_settings",
+      "emotions", "tasks", "habits", "habit_completions",
+      "notes", "note_folders", "note_groups",
+      "manifest_goals", "manifest_practices", "manifest_journal",
+      "feed_events", "feed_reactions", "feed_comments", "feed_saves",
+      "user_settings", "profiles", "hero_media", "focus_sessions", "consent_logs"
     ];
 
     for (const op of operations) {

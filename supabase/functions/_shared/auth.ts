@@ -2,6 +2,19 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient, SupabaseClient, User } from "https://esm.sh/@supabase/supabase-js@2.45.1";
 import { corsHeaders } from "./cors.ts";
 
+/**
+ * Creates a Supabase admin client using the service_role key.
+ * Use this ONLY for admin-level operations (e.g., deleting auth users).
+ * Never expose this client to the frontend.
+ */
+export function getAdminClient(): SupabaseClient {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? "";
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? "";
+    return createClient(supabaseUrl, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false }
+    });
+}
+
 export async function authenticateUser(req: Request): Promise<{ user?: User; supabaseAdmin?: SupabaseClient; errorResponse?: Response }> {
     try {
 

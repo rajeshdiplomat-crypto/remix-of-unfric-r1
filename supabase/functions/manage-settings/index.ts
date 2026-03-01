@@ -1,4 +1,4 @@
-import { authenticateUser } from '../_shared/auth.ts'
+import { authenticateUser, getAdminClient } from '../_shared/auth.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 import { getSafeError } from '../_shared/errors.ts'
 
@@ -159,18 +159,27 @@ Deno.serve(async (req) => {
       }
 
       case 'delete_account': {
-        // This represents the final step of completely removing user data.
-        // Due to auth cascades, deleting the auth user will normally wipe all their related public schema data if foreign keys are set to ON DELETE CASCADE
-        // However for manual cleanup to be safe
-        const tables = ["user_settings", "emotions", "journal_entries", "habits", "habit_completions", "notes", "tasks", "manifest_goals", "manifest_practices", "journal_answers", "manifest_journal"];
+        // Clean up ALL user data across every table before deleting the auth user.
+        // FK cascades will handle most of this, but explicit cleanup ensures nothing is missed.
+        const tables = [
+          // Child tables first (to respect FK constraints)
+          "journal_answers", "journal_prompts", "journal_settings",
+          "habit_completions", "manifest_practices", "manifest_journal",
+          "feed_comments", "feed_reactions", "feed_saves", "feed_events",
+          "note_folders", "note_groups", "focus_sessions", "consent_logs",
+          // Parent tables
+          "journal_entries", "emotions", "habits", "notes", "tasks",
+          "manifest_goals", "hero_media", "user_inquiries",
+          "profiles", "user_settings",
+        ];
 
         for (const table of tables) {
           await supabaseAdmin.from(table).delete().eq("user_id", userId);
         }
 
-        // Note: Full auth deletion on Supabase requires admin privileges that are available via adminClient, but usually best to just handle cascades.
-        // We will delete the auth.users record:
-        const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+        // Use admin client with service_role key to delete the auth user
+        const adminClient = getAdminClient();
+        const { error } = await adminClient.auth.admin.deleteUser(userId);
 
         if (error) throw error;
 

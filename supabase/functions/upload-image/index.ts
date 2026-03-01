@@ -4,6 +4,10 @@ import { getSafeError } from '../_shared/errors.ts'
 
 console.log("upload-image edge function loaded");
 
+const ALLOWED_BUCKETS = ['entry-covers', 'journal-images', 'avatars'];
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -25,6 +29,30 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Validate bucket name against whitelist
+    if (!ALLOWED_BUCKETS.includes(bucketName)) {
+      return new Response(JSON.stringify({ error: 'Invalid storage bucket' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Validate MIME type
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      return new Response(JSON.stringify({ error: `File type '${file.type}' is not allowed. Accepted: JPEG, PNG, WebP, GIF` }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      return new Response(JSON.stringify({ error: `File too large. Maximum size is ${MAX_FILE_SIZE / (1024 * 1024)}MB` }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     const fileExt = file.name.split(".").pop() || "jpg";
     const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
@@ -37,15 +65,15 @@ Deno.serve(async (req) => {
 
     if (uploadError) throw uploadError;
 
-    // Use signed URLs (1 hour expiry) since buckets are private
+    // Use signed URLs (24h expiry) since buckets are private
     const { data: signedData, error: signedError } = await supabaseAdmin.storage
       .from(bucketName)
-      .createSignedUrl(fileName, 3600);
+      .createSignedUrl(fileName, 86400); // 24 hours
 
     if (signedError) throw signedError;
 
     return new Response(
-      JSON.stringify({ success: true, url: signedData.signedUrl }),
+      JSON.stringify({ success: true, url: signedData.signedUrl, path: fileName }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     )
   } catch (error) {
