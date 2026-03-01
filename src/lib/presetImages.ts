@@ -1,52 +1,35 @@
-// Preset images by category for entries that don't have custom cover images
+import { IMAGE_IDS, buildUnsplashUrl } from "@/constants/images";
 
-export const PRESET_IMAGES = {
-  manifest: {
-    career: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&h=400&fit=crop",
-    wealth: "https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=800&h=400&fit=crop",
-    health: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop",
-    habits: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=800&h=400&fit=crop",
-    relationships: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800&h=400&fit=crop",
-    learning: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&h=400&fit=crop",
-    other: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&h=400&fit=crop",
-    default: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&h=400&fit=crop",
-  },
-  trackers: {
-    health: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop",
-    growth: "https://images.unsplash.com/photo-1493612276216-ee3925520721?w=800&h=400&fit=crop",
-    career: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&h=400&fit=crop",
-    education: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&h=400&fit=crop",
-    wellbeing: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&h=400&fit=crop",
-    default: "https://images.unsplash.com/photo-1493612276216-ee3925520721?w=800&h=400&fit=crop",
-  },
-  notes: {
-    inbox: "https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=800&h=400&fit=crop",
-    work: "https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?w=800&h=400&fit=crop",
-    personal: "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&h=400&fit=crop",
-    ideas: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&h=400&fit=crop",
-    wellness: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&h=400&fit=crop",
-    hobby: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&h=400&fit=crop",
-    archive: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&h=400&fit=crop",
-    default: "https://images.unsplash.com/photo-1517842645767-c639042777db?w=800&h=400&fit=crop",
-  },
-} as const;
+export type PresetImageType = Exclude<keyof typeof IMAGE_IDS, "modules">;
 
-export type PresetImageType = keyof typeof PRESET_IMAGES;
-
+/**
+ * Get a preset image for a specific type and category
+ * @param type 'manifest' | 'trackers' | 'notes'
+ * @param category The category ID
+ * @param width Custom width
+ * @param height Custom height
+ */
 export function getPresetImage(
   type: PresetImageType,
-  category: string
+  category: string,
+  width?: number,
+  height?: number
 ): string {
-  const categoryImages = PRESET_IMAGES[type];
-  return (
-    categoryImages[category as keyof typeof categoryImages] ||
-    categoryImages.default
-  );
+  const categoryIds = IMAGE_IDS[type];
+  const id = categoryIds[category as keyof typeof categoryIds] || (categoryIds as any).default;
+  return buildUnsplashUrl(id, width, height);
 }
 
+/**
+ * Get all available preset images for a specific type
+ * @param type 'manifest' | 'trackers' | 'notes'
+ */
 export function getAllPresetImages(type: PresetImageType): { category: string; url: string }[] {
-  const categoryImages = PRESET_IMAGES[type];
-  return Object.entries(categoryImages)
+  const categoryIds = IMAGE_IDS[type];
+  return Object.entries(categoryIds)
     .filter(([key]) => key !== "default")
-    .map(([category, url]) => ({ category, url }));
+    .map(([category, id]) => ({
+      category,
+      url: buildUnsplashUrl(id as string)
+    }));
 }
