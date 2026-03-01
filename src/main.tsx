@@ -3,20 +3,28 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import "./styles/responsive.css";
+import { registerSW } from "virtual:pwa-register";
 
-// Register Service Worker
+
+// Register Service Worker using vite-plugin-pwa
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("/sw.js")
-      .then((reg) => {
-        console.log("[SW] Registered:", reg.scope);
-      })
-      .catch((err) => {
-        console.warn("[SW] Registration failed:", err);
-      });
+  registerSW({
+    immediate: true,
+    onRegistered(r) {
+      console.log("[SW] Registered via vite-plugin-pwa:", r?.scope);
+    },
+    onRegisterError(error) {
+      console.error("[SW] Registration failed:", error);
+    },
+    onNeedRefresh() {
+      console.log("New version available.");
+    },
+    onOfflineReady() {
+      console.log("App ready to work offline.");
+    },
   });
 }
+
 
 // 1. Better DOM query with a safety fallback check
 const rootElement = document.getElementById("root");
