@@ -1,131 +1,116 @@
-import React, { useState, useEffect } from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-import { useIsRestoring } from "@tanstack/react-query";
+import React, { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { useIsRestoring, useQuery } from "@tanstack/react-query";
+
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+
 import { supabase } from "@/integrations/supabase/client";
+import { queryClient } from "@/lib/queryClient";
+import { idbPersister } from "@/lib/idbPersister";
+
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { FontProvider } from "@/contexts/FontContext";
 import { MotionProvider } from "@/contexts/MotionContext";
 import { CustomThemeProvider } from "@/contexts/CustomThemeContext";
+import { DatePreferencesProvider } from "@/contexts/DatePreferencesContext";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+
+import { SettingsProvider, useSettings } from "@/contexts/SettingsContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { CursorGradient } from "@/components/motion/CursorGradient";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
-import { queryClient } from "@/lib/queryClient";
-import { idbPersister } from "@/lib/idbPersister";
-import Auth from "./pages/Auth";
-import Diary from "./pages/Diary";
-import Emotions from "./pages/Emotions";
-import Journal from "./pages/Journal";
-import Manifest from "./pages/Manifest";
-import ManifestPractice from "./pages/ManifestPractice";
-import ManifestHistory from "./pages/ManifestHistory";
-import Habits from "./pages/Habits";
-import Notes from "./pages/Notes";
-import Tasks from "./pages/Tasks";
-import TaskFocus from "./pages/TaskFocus";
+import { useNotificationScheduler } from "@/hooks/useNotifications";
 
-import Settings from "./pages/Settings";
-import NotFound from "./pages/NotFound";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
-import RefundPolicy from "./pages/RefundPolicy";
-import Disclaimer from "./pages/Disclaimer";
-import { NotificationScheduler } from "@/components/NotificationScheduler";
+/* ===========================
+   Lazy Pages
+=========================== */
+
+const Auth = lazy(() => import("./pages/Auth"));
+const Diary = lazy(() => import("./pages/Diary"));
+const Emotions = lazy(() => import("./pages/Emotions"));
+const Journal = lazy(() => import("./pages/Journal"));
+const Manifest = lazy(() => import("./pages/Manifest"));
+const ManifestPractice = lazy(() => import("./pages/ManifestPractice"));
+const ManifestHistory = lazy(() => import("./pages/ManifestHistory"));
+const Habits = lazy(() => import("./pages/Habits"));
+const Notes = lazy(() => import("./pages/Notes"));
+const Tasks = lazy(() => import("./pages/Tasks"));
+const TaskFocus = lazy(() => import("./pages/TaskFocus"));
+const Settings = lazy(() => import("./pages/Settings"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
+const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
+const Disclaimer = lazy(() => import("./pages/Disclaimer"));
+
+/* ===========================
+   Reusable Loader
+=========================== */
+
+function FullScreenLoader({ text = "Loading..." }: { text?: string }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="animate-pulse text-muted-foreground text-sm">
+        {text}
+      </div>
+    </div>
+  );
+}
 
 /**
+ * Restoration Gate
  * Gate that waits for the IDB cache to be restored before rendering children.
  * Prevents blank/empty screens while IndexedDB is still loading.
  */
+
 function RestorationGate({ children }: { children: React.ReactNode }) {
   const isRestoring = useIsRestoring();
 
   if (isRestoring) {
-    console.log("[RestorationGate] ⏳ Restoring cache from IndexedDB…");
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground text-sm">Loading your data…</div>
-      </div>
-    );
+    return <FullScreenLoader text="Restoring your data…" />;
   }
-
-  console.log("[RestorationGate] ✅ Cache restored, rendering app");
   return <>{children}</>;
 }
 
+/* ===========================
+   Home Redirect
+=========================== */
+
 function HomeRedirect() {
   const { user, loading: authLoading } = useAuth();
-  const [target, setTarget] = useState<string | null>(null);
-  const hasQueried = React.useRef(false);
+  const { settings, loaded: settingsLoaded } = useSettings();
 
-  useEffect(() => {
-    if (!user || hasQueried.current) return;
-    hasQueried.current = true;
-
-    const timer = setTimeout(async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        console.warn("[HomeRedirect] No active session, defaulting to diary");
-        setTarget("/diary");
-        return;
-      }
-
-      const { data: res, error } = await supabase.functions.invoke("manage-settings", {
-        body: { action: "fetch_settings" }
-      });
-
-      if (error) {
-        console.error("[HomeRedirect] Failed to fetch settings:", error);
-      }
-
-      const data = res?.data;
-
-      const home = data?.default_home_screen || "diary";
-      console.log("[HomeRedirect] DB value:", data?.default_home_screen, "→ redirecting to:", `/${home}`);
-      setTarget(`/${home}`);
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [user]);
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    );
+  if (authLoading || (user && !settingsLoaded)) {
+    return <FullScreenLoader />;
   }
 
   if (!user) return <Navigate to="/auth" replace />;
-  if (!target) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    );
+
+  let home = settings.default_home_screen || "diary";
+  if (home.startsWith("/")) {
+    home = home.slice(1);
   }
-  return <Navigate to={target} replace />;
+  if (!home || home === "dashboard") {
+    home = "diary";
+  }
+
+  return <Navigate to={`/${home}`} replace />;
 }
+
+/* ===========================
+   Protected Routes
+=========================== */
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
+  if (loading) return <FullScreenLoader />;
+  if (!user) return <Navigate to="/auth" replace />;
 
   return (
     <AppLayout>
@@ -137,78 +122,80 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function ProtectedFullscreenRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
+  if (loading) return <FullScreenLoader />;
+  if (!user) return <Navigate to="/auth" replace />;
 
   return <>{children}</>;
 }
 
-function OfflineSyncProvider({ children }: { children: React.ReactNode }) {
+/**
+ * Background Services
+ * Consolidates background logic (Sync, Notifications, etc.) into one headless component.
+ */
+function BackgroundServices() {
   useOfflineSync();
-  return <>{children}</>;
+  useNotificationScheduler();
+  return null;
 }
+
+/* ===========================
+   App Component
+=========================== */
 
 const App = () => (
   <PersistQueryClientProvider
     client={queryClient}
     persistOptions={{ persister: idbPersister }}
-    onSuccess={() => {
-      console.log("[PersistQueryClient] ✅ Cache restoration complete");
-    }}
   >
-    <ThemeProvider>
-      <CustomThemeProvider>
-        <FontProvider>
-          <MotionProvider>
-            <TooltipProvider>
-              <CursorGradient />
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <AuthProvider>
-                  <OfflineSyncProvider>
-                    <RestorationGate>
-                      <NotificationScheduler />
-                      <InstallPrompt />
-                      <Routes>
-                        <Route path="/auth" element={<Auth />} />
-                        <Route path="/" element={<HomeRedirect />} />
-                        <Route path="/diary" element={<ProtectedRoute><Diary /></ProtectedRoute>} />
-                        <Route path="/emotions" element={<ProtectedRoute><Emotions /></ProtectedRoute>} />
-                        <Route path="/journal" element={<ProtectedRoute><Journal /></ProtectedRoute>} />
-                        <Route path="/manifest" element={<ProtectedRoute><Manifest /></ProtectedRoute>} />
-                        <Route path="/manifest/practice/:goalId" element={<ProtectedRoute><ManifestPractice /></ProtectedRoute>} />
-                        <Route path="/manifest/history/:goalId" element={<ProtectedRoute><ManifestHistory /></ProtectedRoute>} />
-                        <Route path="/habits" element={<ProtectedRoute><Habits /></ProtectedRoute>} />
-                        <Route path="/trackers" element={<Navigate to="/habits" replace />} />
-                        <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
-                        <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-                        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                        <Route path="/tasks/focus/:taskId" element={<ProtectedFullscreenRoute><TaskFocus /></ProtectedFullscreenRoute>} />
-                        <Route path="/privacy" element={<Privacy />} />
-                        <Route path="/terms" element={<Terms />} />
-                        <Route path="/refund" element={<RefundPolicy />} />
-                        <Route path="/disclaimer" element={<Disclaimer />} />
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </RestorationGate>
-                  </OfflineSyncProvider>
-                </AuthProvider>
-              </BrowserRouter>
-            </TooltipProvider>
-          </MotionProvider>
-        </FontProvider>
-      </CustomThemeProvider>
-    </ThemeProvider>
+    <RestorationGate>
+      <BrowserRouter>
+        <AuthProvider>
+          <SettingsProvider>
+            <ThemeProvider>
+              <CustomThemeProvider>
+                <FontProvider>
+                  <MotionProvider>
+                    <TooltipProvider>
+                      <DatePreferencesProvider>
+                        <CursorGradient />
+                        <Sonner />
+                        <BackgroundServices />
+                        <InstallPrompt />
+
+                        <ErrorBoundary>
+                          <Suspense fallback={<FullScreenLoader />}>
+                            <Routes>
+                              <Route path="/auth" element={<Auth />} />
+                              <Route path="/" element={<HomeRedirect />} />
+                              <Route path="/diary" element={<ProtectedRoute><Diary /></ProtectedRoute>} />
+                              <Route path="/emotions" element={<ProtectedRoute><Emotions /></ProtectedRoute>} />
+                              <Route path="/journal" element={<ProtectedRoute><Journal /></ProtectedRoute>} />
+                              <Route path="/manifest" element={<ProtectedRoute><Manifest /></ProtectedRoute>} />
+                              <Route path="/manifest/practice" element={<ProtectedRoute><ManifestPractice /></ProtectedRoute>} />
+                              <Route path="/manifest/history" element={<ProtectedRoute><ManifestHistory /></ProtectedRoute>} />
+                              <Route path="/habits" element={<ProtectedRoute><Habits /></ProtectedRoute>} />
+                              <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
+                              <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+                              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                              <Route path="/tasks/:taskId" element={<ProtectedFullscreenRoute><TaskFocus /></ProtectedFullscreenRoute>} />
+                              <Route path="/privacy" element={<Privacy />} />
+                              <Route path="/terms" element={<Terms />} />
+                              <Route path="/refund" element={<RefundPolicy />} />
+                              <Route path="/disclaimer" element={<Disclaimer />} />
+                              <Route path="*" element={<NotFound />} />
+                            </Routes>
+                          </Suspense>
+                        </ErrorBoundary>
+                      </DatePreferencesProvider>
+                    </TooltipProvider>
+                  </MotionProvider>
+                </FontProvider>
+              </CustomThemeProvider>
+            </ThemeProvider>
+          </SettingsProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </RestorationGate>
   </PersistQueryClientProvider>
 );
 
