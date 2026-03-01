@@ -13,7 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import type { Note, NoteGroup, NoteFolder } from "@/pages/Notes";
 
 interface NotesSplitViewProps {
@@ -39,7 +39,7 @@ export function NotesSplitView({
   onBack,
   onCreateNote,
 }: NotesSplitViewProps) {
-  const { toast } = useToast();
+
   const isMobile = useIsMobile();
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [preEditExpandedState, setPreEditExpandedState] = useState<{
@@ -76,7 +76,7 @@ export function NotesSplitView({
       const groupName = groups.find((g) => g.id === selectedNote.groupId)?.name || "Unknown";
       const folderName = selectedNote.folderId ? folders.find((f) => f.id === selectedNote.folderId)?.name : null;
       const location = folderName ? `${groupName} › ${folderName}` : groupName;
-      toast({ title: `Note created in ${location}`, duration: 3000 });
+      toast.success(`Note created in ${location}`);
       setIsNewNote(false);
     }
   }, [isNewNote, selectedNote]);
@@ -268,11 +268,10 @@ export function NotesSplitView({
                                   {folderNotes.map((note) => (
                                     <div
                                       key={note.id}
-                                      className={`p-1.5 rounded-lg cursor-pointer transition-all flex items-start gap-1.5 ${
-                                        selectedNote?.id === note.id
-                                          ? "bg-primary/10 ring-1 ring-primary/20"
-                                          : "hover:bg-muted/50"
-                                      }`}
+                                      className={`p-1.5 rounded-lg cursor-pointer transition-all flex items-start gap-1.5 ${selectedNote?.id === note.id
+                                        ? "bg-primary/10 ring-1 ring-primary/20"
+                                        : "hover:bg-muted/50"
+                                        }`}
                                       onClick={() => onSelectNote(note)}
                                     >
                                       <FileText className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
@@ -292,11 +291,10 @@ export function NotesSplitView({
                           .map((note) => (
                             <div
                               key={note.id}
-                              className={`p-1.5 rounded-lg cursor-pointer transition-all flex items-start gap-1.5 ${
-                                selectedNote?.id === note.id
-                                  ? "bg-primary/10 ring-1 ring-primary/20"
-                                  : "hover:bg-muted/50"
-                              }`}
+                              className={`p-1.5 rounded-lg cursor-pointer transition-all flex items-start gap-1.5 ${selectedNote?.id === note.id
+                                ? "bg-primary/10 ring-1 ring-primary/20"
+                                : "hover:bg-muted/50"
+                                }`}
                               onClick={() => onSelectNote(note)}
                             >
                               <FileText className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />

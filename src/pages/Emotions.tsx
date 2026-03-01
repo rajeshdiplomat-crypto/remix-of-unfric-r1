@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useSettings } from "@/contexts/SettingsContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { isOfflineError } from "@/lib/offlineAwareOperation";
+import { isOfflineError } from "@/lib/offlineOutbox";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -45,17 +46,17 @@ export default function Emotions() {
   // Internal flow state (includes context which is not in nav)
   const [internalView, setInternalView] = useState<"feel" | "context" | "regulate" | "insights">("feel");
 
+  const { settings, loaded: settingsLoaded } = useSettings();
+
   // Load default emotions tab from DB
   useEffect(() => {
-    if (!user) return;
-    supabase.functions.invoke("manage-settings", { body: { action: "fetch_settings" } }).then(({ data: res }) => {
-      const v = res?.data?.default_emotions_tab;
-      if (v === "regulate" || v === "insights") {
-        setActiveView(v as EmotionsView);
-        setInternalView(v);
-      }
-    });
-  }, [user]);
+    if (!settingsLoaded) return;
+    const v = settings.default_emotions_tab;
+    if (v === "regulate" || v === "insights") {
+      setActiveView(v as EmotionsView);
+      setInternalView(v);
+    }
+  }, [settingsLoaded, settings.default_emotions_tab]);
 
   // Emotion selection state (persisted across pages)
   const [energy, setEnergy] = useState(50);
@@ -238,7 +239,7 @@ export default function Emotions() {
       await fetchEntries();
     } catch (err) {
       console.error("Error saving emotion:", err);
-      if (!isOfflineError()) {
+      if (!isOfflineError(err)) {
         toast.error("Failed to save check-in");
       } else {
         toast.info("You're offline — check-in will sync when connected");
@@ -281,7 +282,7 @@ export default function Emotions() {
       await fetchEntries(); // Refresh to show in history
     } catch (err) {
       console.error("Error updating strategy conversation:", err);
-      if (!isOfflineError()) {
+      if (!isOfflineError(err)) {
         toast.error("Failed to record strategy");
       } else {
         toast.info("You're offline — changes will sync when connected");
@@ -362,7 +363,7 @@ export default function Emotions() {
       }
     } catch (err) {
       console.error("Error updating emotion:", err);
-      if (!isOfflineError()) {
+      if (!isOfflineError(err)) {
         toast.error("Failed to update check-in");
       } else {
         toast.info("You're offline — changes will sync when connected");
@@ -397,7 +398,7 @@ export default function Emotions() {
       }
     } catch (err) {
       console.error("Error deleting emotion:", err);
-      if (!isOfflineError()) {
+      if (!isOfflineError(err)) {
         toast.error("Failed to delete check-in");
       } else {
         toast.info("You're offline — deletions require a connection");

@@ -1,7 +1,13 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { format, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay, parseISO } from "date-fns";
-import { extractImagesFromTiptapJSON } from "@/lib/editorUtils";
+import {
+  extractImagesFromTiptapJSON,
+  extractAnswersFromTiptap,
+  getWordCountFromTiptap,
+  extractPreviewFromTiptap,
+  extractTitleFromTiptap
+} from "@/lib/editorUtils";
 import { queryClient } from "@/lib/queryClient";
 import {
   Save,
@@ -49,9 +55,10 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useSettings } from "@/contexts/SettingsContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
   JournalTiptapEditor,
@@ -127,49 +134,8 @@ const generateInitialContent = (questions: { text: string }[]) =>
     ],
   });
 
-const extractAnswersFromContent = (
-  contentJSON: string,
-  questions: { id: string; text: string }[],
-): { question_id: string; answer_text: string }[] => {
-  try {
-    const parsed = typeof contentJSON === "string" ? JSON.parse(contentJSON) : contentJSON;
-    if (!parsed?.content) return [];
-    const answers: { question_id: string; answer_text: string }[] = [];
-    let currentQuestionId: string | null = null;
-    let currentAnswerParts: string[] = [];
-    const extractText = (node: any): string => node?.text || node?.content?.map(extractText).join("") || "";
-    for (const node of parsed.content) {
-      if (node.type === "heading" && node.attrs?.level === 2) {
-        if (currentQuestionId)
-          answers.push({ question_id: currentQuestionId, answer_text: currentAnswerParts.join("\n").trim() });
-        const headingText = extractText(node).trim();
-        currentQuestionId = questions.find((q) => q.text === headingText)?.id || null;
-        currentAnswerParts = [];
-      } else if (currentQuestionId) {
-        const text = extractText(node);
-        if (text) currentAnswerParts.push(text);
-      }
-    }
-    if (currentQuestionId)
-      answers.push({ question_id: currentQuestionId, answer_text: currentAnswerParts.join("\n").trim() });
-    return answers;
-  } catch {
-    return [];
-  }
-};
+// Local utility functions removed - now using @/lib/editorUtils
 
-// Get word count from content
-const getWordCount = (contentJSON: string): number => {
-  try {
-    const parsed = typeof contentJSON === "string" ? JSON.parse(contentJSON) : contentJSON;
-    if (!parsed?.content) return 0;
-    const extractText = (node: any): string => node?.text || node?.content?.map(extractText).join(" ") || "";
-    const text = parsed.content.map(extractText).join(" ");
-    return text.split(/\s+/).filter(Boolean).length;
-  } catch {
-    return 0;
-  }
-};
 
 // Standalone mobile formatting toolbar — collapsible, rendered at page level
 function MobileJournalToolbar({ editorRef, open, onClear }: { editorRef: React.RefObject<TiptapEditorRef | null>; open: boolean; onClear?: () => void }) {
@@ -298,7 +264,7 @@ function MobileJournalToolbar({ editorRef, open, onClear }: { editorRef: React.R
 
 export default function Journal() {
   const { user } = useAuth();
-  const { toast } = useToast();
+
   const editorRef = useRef<TiptapEditorRef>(null);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedContentRef = useRef<string>("");
@@ -329,7 +295,10 @@ export default function Journal() {
     return saved ? JSON.parse(saved) : DEFAULT_TEMPLATE;
   });
 
-  // Re-sync template and journal mode when window regains focus (e.g. after Settings changes)
+  const { settings, loaded: settingsLoaded } = useSettings();
+  const [journalMode, setJournalMode] = useState<string>("structured");
+
+  // Re-sync template when window regains focus (e.g. after Settings changes)
   useEffect(() => {
     const syncFromSettings = () => {
       // Sync template from localStorage
@@ -339,32 +308,22 @@ export default function Journal() {
           setTemplate(JSON.parse(saved));
         } catch { /* ignore parse errors */ }
       }
-      // Sync journal mode from DB
-      if (user) {
-        supabase.functions.invoke("manage-settings", { body: { action: "fetch_settings" } }).then(({ data: res }) => {
-          const mode = res?.data?.journal_mode;
-          if (mode) setJournalMode(mode);
-        });
-      }
     };
     window.addEventListener("focus", syncFromSettings);
     return () => window.removeEventListener("focus", syncFromSettings);
-  }, [user]);
+  }, []);
 
-  const [journalMode, setJournalMode] = useState<string>("structured");
 
   // Per-entry page settings state
   const [entryPageSettings, setEntryPageSettings] = useState<{ skinId?: string; lineStyle?: string; mode?: string } | null>(null);
   const [entrySettingsOpen, setEntrySettingsOpen] = useState(false);
 
-  // Load journal mode from DB
+  // Sync journal mode from settings context
   useEffect(() => {
-    if (!user) return;
-    supabase.functions.invoke("manage-settings", { body: { action: "fetch_settings" } }).then(({ data: res }) => {
-      const mode = res?.data?.journal_mode;
-      if (mode) setJournalMode(mode);
-    });
-  }, [user]);
+    if (settingsLoaded && settings.journal_mode) {
+      setJournalMode(settings.journal_mode);
+    }
+  }, [settingsLoaded, settings.journal_mode]);
 
   const { theme } = useTheme();
   const [currentSkinId, setCurrentSkinId] = useState(() => localStorage.getItem("journal_skin_id") || "minimal-light");
@@ -386,7 +345,7 @@ export default function Journal() {
   );
 
   // Word count
-  const wordCount = useMemo(() => getWordCount(content), [content]);
+  const wordCount = useMemo(() => getWordCountFromTiptap(content), [content]);
 
   // Streak calculation
   const streak = useMemo(() => {
@@ -409,44 +368,7 @@ export default function Journal() {
     return count;
   }, [entries]);
 
-  // Helper: Extract preview from content JSON
-  const extractPreview = (contentJSON: string) => {
-    try {
-      const parsed = JSON.parse(contentJSON);
-      if (parsed?.content) {
-        const textParts: string[] = [];
-        parsed.content.forEach((node: any) => {
-          // Only extract text from paragraphs (answers), skip headings (questions)
-          if (node.type === "paragraph" && node.content) {
-            node.content.forEach((child: any) => {
-              if (child.type === "text" && child.text) {
-                textParts.push(child.text);
-              }
-            });
-          }
-        });
-        return textParts.join(" ").trim().slice(0, 150);
-      }
-    } catch {
-      return "";
-    }
-    return "";
-  };
-  // Helper: Extract title from H1 in content JSON
-  const extractTitle = (contentJSON: string) => {
-    try {
-      const parsed = JSON.parse(contentJSON);
-      if (parsed?.content) {
-        const h1 = parsed.content.find((node: any) => node.type === "heading" && node.attrs?.level === 1);
-        if (h1?.content?.[0]?.text) {
-          return h1.content[0].text;
-        }
-      }
-    } catch {
-      return null;
-    }
-    return null;
-  };
+  // Entry date loading logic...
 
   // Load all entries on mount
   useEffect(() => {
@@ -456,8 +378,8 @@ export default function Journal() {
       const mapped = data.map((e: any) => {
         const contentJSON =
           typeof e.text_formatting === "string" ? e.text_formatting : JSON.stringify(e.text_formatting) || "";
-        const preview = extractPreview(contentJSON);
-        const customTitle = extractTitle(contentJSON);
+        const preview = extractPreviewFromTiptap(contentJSON);
+        const customTitle = extractTitleFromTiptap(contentJSON);
         return {
           id: e.id,
           entryDate: e.entry_date,
@@ -530,7 +452,7 @@ export default function Journal() {
         setEntryPageSettings(ps ? { skinId: ps.skinId, lineStyle: ps.lineStyle, mode: ps.mode } : null);
 
         // Helper to ensure proper content structure with H1 Title
-        const existingTitle = extractTitle(contentJSON);
+        const existingTitle = extractTitleFromTiptap(contentJSON);
 
         // Always use the original contentJSON (text_formatting) as the source of truth.
         // It preserves images, formatting, and all rich content.
@@ -643,7 +565,7 @@ export default function Journal() {
     const dateStr = format(selectedDate, "yyyy-MM-dd");
 
     try {
-      const extractedAnswers = extractAnswersFromContent(content, template.questions);
+      const extractedAnswers = extractAnswersFromTiptap(content, template.questions);
 
       // Extract image URLs from TipTap JSON content and save to images_data
       const contentImages = extractImagesFromTiptapJSON(content);
@@ -677,8 +599,8 @@ export default function Journal() {
                 ...e,
                 updatedAt: new Date().toISOString(),
                 contentJSON: content,
-                preview: extractPreview(content),
-                title: extractTitle(content) || selectedMood || "Untitled",
+                preview: extractPreviewFromTiptap(content),
+                title: extractTitleFromTiptap(content) || selectedMood || "Untitled",
                 mood: selectedMood,
               }
               : e,
@@ -692,9 +614,9 @@ export default function Journal() {
             entryDate: newEntry.entry_date,
             createdAt: newEntry.created_at,
             updatedAt: newEntry.updated_at,
-            title: extractTitle(content) || selectedMood || "Untitled",
+            title: extractTitleFromTiptap(content) || selectedMood || "Untitled",
             contentJSON: content,
-            preview: extractPreview(content),
+            preview: extractPreviewFromTiptap(content),
             mood: selectedMood,
             tags: [],
           };
@@ -711,7 +633,7 @@ export default function Journal() {
     } catch (err) {
       console.error("Save error:", err);
       setSaveStatus("unsaved");
-      toast({ title: "Error saving", description: "Please try again", variant: "destructive" });
+      toast.error("Error saving", { description: "Please try again" });
       return false;
     } finally {
       isSavingRef.current = false;
@@ -746,19 +668,13 @@ export default function Journal() {
     }
 
     if (content === lastSavedContentRef.current && saveStatus === "saved") {
-      toast({
-        title: "All changes saved",
-        duration: 2000,
-      });
+      toast.success("All changes saved");
       return;
     }
 
     const success = await performSave();
     if (success) {
-      toast({
-        title: "Saved successfully",
-        duration: 2000,
-      });
+      toast.success("Saved successfully");
     }
   }, [content, saveStatus, performSave, toast]);
 
@@ -843,14 +759,8 @@ export default function Journal() {
     setTemplate(latestTemplate);
 
     // Re-read the latest journal mode from the database
-    let latestMode = journalMode;
-    if (user) {
-      const { data: res } = await supabase.functions.invoke("manage-settings", { body: { action: "fetch_settings" } });
-      if (res?.data?.journal_mode) {
-        latestMode = res.data.journal_mode;
-        setJournalMode(latestMode);
-      }
-    }
+    let latestMode = settings.journal_mode || "structured";
+    setJournalMode(latestMode);
 
     // Re-initialize content based on current settings
     const isUnstructured = latestMode === "unstructured";
@@ -1183,7 +1093,7 @@ export default function Journal() {
                 });
 
                 if (!hasRealContent) {
-                  const existingTitle = extractTitle(content);
+                  const existingTitle = extractTitleFromTiptap(content);
                   const isUnstructured = newMode === "unstructured";
                   const newContent = !isUnstructured
                     ? generateInitialContent(template.questions)
@@ -1223,7 +1133,7 @@ export default function Journal() {
               });
 
               if (!hasRealContent) {
-                const existingTitle = extractTitle(content);
+                const existingTitle = extractTitleFromTiptap(content);
                 const isUnstructured = journalMode === "unstructured";
                 const newContent = !isUnstructured
                   ? generateInitialContent(template.questions)

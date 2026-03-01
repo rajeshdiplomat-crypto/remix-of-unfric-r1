@@ -38,7 +38,7 @@ import { ManifestVisualizationMode } from "./ManifestVisualizationMode";
 import { format, isToday, isBefore, startOfDay, differenceInDays } from "date-fns";
 import confetti from "canvas-confetti";
 import { toast } from "sonner";
-import { isOfflineError } from "@/lib/offlineAwareOperation";
+import { isOfflineError } from "@/lib/offlineOutbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -354,7 +354,7 @@ export function ManifestPracticePanel({
       if (onGoalUpdate) onGoalUpdate();
     } catch (error) {
       console.error("Failed to update image in database:", error);
-      if (!isOfflineError()) {
+      if (!isOfflineError(error)) {
         toast.error("Failed to save image change");
       } else {
         toast.info("You're offline — changes will sync when connected");

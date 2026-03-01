@@ -14,7 +14,7 @@ import {
   startOfWeek,
   getDay,
 } from "date-fns";
-import { computeEndDateForHabitDays } from "@/lib/dateUtils";
+import { computeEndDateForHabitDays } from "@/lib/date-management";
 import { UnifiedTimePicker } from "@/components/common/UnifiedTimePicker";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -56,7 +56,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ActivityImageUpload, loadActivityImage, loadAllActivityImages, saveActivityImage, saveActivityImageToDb } from "@/components/habits/ActivityImageUpload";
 import habitsDefaultImage from "@/assets/habits-default.jpg";
@@ -319,7 +319,7 @@ function ProgressRing({
 }
 
 export default function Habits() {
-  const { toast } = useToast();
+
   const { user } = useAuth();
   const { weekStartsOn } = useDatePreferences();
 
@@ -671,8 +671,7 @@ export default function Habits() {
         if (data?.data?.autoArchived) {
           setActivities((prev) => prev.map((a) => (a.id === activityId ? { ...a, isArchived: true } : a)));
 
-          toast({
-            title: "🎉 Habit Completed!",
+          toast.success("🎉 Habit Completed!", {
             description: `Congratulations! "${activity.name}" has been moved to completed habits.`,
           });
 
@@ -681,10 +680,8 @@ export default function Habits() {
           }
         }
       } catch (err: any) {
-        toast({
-          title: "Error",
+        toast.error("Error", {
           description: err.message || "Failed to update habit completion",
-          variant: "destructive",
         });
         fetchHabits(); // revert UI locally
       }
@@ -725,10 +722,8 @@ export default function Habits() {
 
   const handleSave = async () => {
     if (!formName.trim()) {
-      toast({
-        title: "Name required",
+      toast.error("Name required", {
         description: "Please enter a name for your habit",
-        variant: "destructive",
       });
       return;
     }
@@ -826,25 +821,22 @@ export default function Habits() {
         }
 
         if (tasksToCreate.length > 0) {
-          toast({
-            title: "Activity created",
+          toast.success("Activity created", {
             description: `${tasksToCreate.length} tasks added to your schedule`,
           });
         } else {
-          toast({ title: editingActivity ? "Activity updated" : "Activity saved to cloud" });
+          toast.success(editingActivity ? "Activity updated" : "Activity saved to cloud");
         }
         await fetchHabits();
       } else {
-        toast({ title: editingActivity ? "Activity updated" : "Activity created" });
+        toast.success(editingActivity ? "Activity updated" : "Activity created");
       }
 
       setDialogOpen(false);
     } catch (error: any) {
       console.error("Error saving activity:", error);
-      toast({
-        title: "Failed to save",
+      toast.error("Failed to save", {
         description: error.message || "An unexpected error occurred",
-        variant: "destructive",
       });
     }
   };
@@ -858,7 +850,7 @@ export default function Habits() {
       });
     }
 
-    toast({ title: "Activity deleted" });
+    toast.success("Activity deleted");
   };
 
   const handleCompleteHabit = async (activityId: string) => {
@@ -871,8 +863,7 @@ export default function Habits() {
       });
     }
 
-    toast({
-      title: "🎉 Habit Completed!",
+    toast.success("🎉 Habit Completed!", {
       description: "Congratulations! This habit has been archived.",
     });
 
@@ -892,8 +883,7 @@ export default function Habits() {
       });
     }
 
-    toast({
-      title: "Habit Restored",
+    toast.success("Habit Restored", {
       description: "This habit has been moved back to active tracking.",
     });
   };

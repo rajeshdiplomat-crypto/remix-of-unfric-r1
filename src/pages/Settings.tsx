@@ -1,12 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import { useUserPreferences } from "@/hooks/useUserSettings";
 import { useNavigate, Link } from "react-router-dom";
-import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
@@ -18,12 +15,10 @@ import {
   Download,
   Trash2,
   UserX,
-  ChevronRight,
   Loader2,
   Plus,
   RotateCcw,
   GripVertical,
-  Edit3,
   Save,
   MessageSquareHeart,
   ChevronDown,
@@ -36,7 +31,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { isOfflineError } from "@/lib/offlineAwareOperation";
+import { isOfflineError } from "@/lib/offlineOutbox";
 import { UnifiedTimePicker } from "@/components/common/UnifiedTimePicker";
 import { cn } from "@/lib/utils";
 import { HelpFeedbackForm } from "@/components/settings/HelpFeedbackForm";
@@ -48,31 +43,8 @@ import {
   DEFAULT_TEMPLATE,
   JOURNAL_SKINS,
 } from "@/components/journal/types";
-
-// ── Types ──────────────────────────────────────────────────────────
-
-interface UserSettings {
-  timezone: string | null;
-  date_format: string | null;
-  start_of_week: string | null;
-  default_home_screen: string | null;
-  daily_reset_time: string | null;
-  notification_diary_prompt: boolean | null;
-  notification_emotion_checkin: boolean | null;
-  notification_task_reminder: boolean | null;
-  privacy_blur_sensitive: boolean | null;
-  privacy_passcode_enabled: boolean | null;
-  note_skin_preference: string | null;
-  default_task_tab: string | null;
-  default_task_view: string | null;
-  default_notes_view: string | null;
-  default_emotions_tab: string | null;
-  journal_mode: string | null;
-  time_format: string | null;
-  reminder_time_diary: string | null;
-  reminder_time_habits: string | null;
-  reminder_time_emotions: string | null;
-}
+import { useSettings, UserSettings } from "@/contexts/SettingsContext";
+import { clearSentToday } from "@/lib/notifications";
 
 const TIMEZONES = (Intl as any).supportedValuesOf("timeZone") as string[];
 
@@ -89,6 +61,7 @@ const MODULES_FOR_CLEAR = [
 
 export default function Settings() {
   const { permission, supported, requestPermission } = useNotificationPermission();
+  const { settings: contextSettings, loaded: contextLoaded, updateSettings } = useSettings();
 
   const handleRequestPermission = async () => {
     const result = await requestPermission();
@@ -101,9 +74,7 @@ export default function Settings() {
 
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const { prefs, updatePrefs } = useUserPreferences();
-  const [settings, setSettings] = useState<UserSettings | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [localSettings, setLocalSettings] = useState<UserSettings | null>(null);
   const [saving, setSaving] = useState(false);
   const [clearDialog, setClearDialog] = useState<string | null>(null);
   const [deleteDialog, setDeleteDialog] = useState(false);
@@ -112,134 +83,68 @@ export default function Settings() {
   const [exportLoading, setExportLoading] = useState(false);
   const [doNotSell, setDoNotSell] = useState(false);
 
-  // Journal template state - load from DB prefs
-  const [template, setTemplate] = useState<JournalTemplate>(() => {
-    if (prefs.journal_template) {
-      return prefs.journal_template as unknown as JournalTemplate;
+  // Sync context to local state initially
+  useEffect(() => {
+    if (contextLoaded && !localSettings) {
+      setLocalSettings(contextSettings);
     }
-    return DEFAULT_TEMPLATE;
-  });
+  }, [contextLoaded, contextSettings, localSettings]);
+
+  // Dirty tracking
+  const [isDirty, setIsDirty] = useState(false);
+
+  // Journal template state
+  const [template, setTemplate] = useState<JournalTemplate>(DEFAULT_TEMPLATE);
+
+  useEffect(() => {
+    if (contextSettings.journal_template) {
+      setTemplate(contextSettings.journal_template as unknown as JournalTemplate);
+    }
+  }, [contextSettings.journal_template]);
+
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
-  // Sync template from DB when prefs load
-  useEffect(() => {
-    if (prefs.journal_template) {
-      setTemplate(prefs.journal_template as unknown as JournalTemplate);
-    }
-  }, [prefs.journal_template]);
-
-  // ── Load Settings ────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      try {
-        const { data: response, error } = await supabase.functions.invoke('manage-settings', {
-          body: { action: 'fetch_settings' }
-        });
-
-        if (error) throw error;
-
-        const data = response?.data;
-        if (data) {
-          setSettings({
-            timezone: data.timezone,
-            date_format: data.date_format,
-            start_of_week: data.start_of_week,
-            default_home_screen: data.default_home_screen,
-            daily_reset_time: data.daily_reset_time,
-            notification_diary_prompt: data.notification_diary_prompt,
-            notification_emotion_checkin: data.notification_emotion_checkin,
-            notification_task_reminder: data.notification_task_reminder,
-            privacy_blur_sensitive: data.privacy_blur_sensitive,
-            privacy_passcode_enabled: data.privacy_passcode_enabled,
-            note_skin_preference: data.note_skin_preference,
-            default_task_tab: data.default_task_tab ?? "board",
-            default_task_view: data.default_task_view ?? "status",
-            default_notes_view: data.default_notes_view ?? "list",
-            default_emotions_tab: data.default_emotions_tab ?? "feel",
-            journal_mode: data.journal_mode ?? "structured",
-            time_format: data.time_format ?? "24h",
-            reminder_time_diary: data.reminder_time_diary ?? "08:00",
-            reminder_time_habits: data.reminder_time_habits ?? "08:00",
-            reminder_time_emotions: data.reminder_time_emotions ?? "08:00",
-          });
-        }
-      } catch (err) {
-        console.error("Failed to load settings:", err);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [user]);
-
-  // ── Dirty tracking for Save button ──────────────────────────────
-  const [isDirty, setIsDirty] = useState(false);
-  const [pendingSettings, setPendingSettings] = useState<Partial<UserSettings>>({});
-
-  // ── Local change helper (no DB write) ──────────────────────────
+  // ── Local change helper ──────────────────────────
   const updateField = (field: keyof UserSettings, value: any) => {
-    setSettings((prev) => (prev ? { ...prev, [field]: value } : prev));
-    setPendingSettings((prev) => ({ ...prev, [field]: value }));
+    setLocalSettings((prev) => (prev ? { ...prev, [field]: value } : prev));
     setIsDirty(true);
   };
 
-  // ── Save all pending changes ───────────────────────────────────
+  // ── Immediate Save (for toggles/pickers) ────────
+  const saveField = async (field: keyof UserSettings, value: any) => {
+    updateField(field, value);
+
+    // Notification cleanup logic
+    const reminderTypeMap: Record<string, string> = {
+      reminder_time_diary: "diary",
+      reminder_time_habits: "habits",
+      reminder_time_emotions: "emotions",
+    };
+    if (reminderTypeMap[field]) clearSentToday(reminderTypeMap[field]);
+
+    await updateSettings({ [field]: value });
+  };
+
+  // ── Save all (for structured edits like template) ──
   const handleSaveAll = async () => {
-    if (!user || !isDirty) return;
+    if (!user || !localSettings || !isDirty) return;
     setSaving(true);
     try {
-      // Save DB settings
-      if (Object.keys(pendingSettings).length > 0) {
-        await supabase.functions.invoke('manage-settings', {
-          body: {
-            action: 'update_settings',
-            updates: pendingSettings
-          }
-        });
-      }
-      // Save journal template to DB
-      await updatePrefs({ journal_template: template as any });
-      setPendingSettings({});
+      await updateSettings({
+        ...localSettings,
+        journal_template: template as any
+      });
       setIsDirty(false);
       toast.success("Settings saved");
-    } catch {
-      if (!isOfflineError()) {
+    } catch (e) {
+      if (!isOfflineError(e)) {
         toast.error("Failed to save settings");
       } else {
         toast.info("You're offline — settings will sync when connected");
       }
     } finally {
       setSaving(false);
-    }
-  };
-
-  // Legacy helper kept for non-settings-page callers
-  // Now also writes to DB immediately so changes like default_home_screen
-  // and notification settings take effect right away
-  const saveField = async (field: keyof UserSettings, value: any) => {
-    updateField(field, value);
-
-    // When a reminder time changes, clear the "already sent" flag so it can fire again today
-    const reminderTypeMap: Record<string, string> = {
-      reminder_time_diary: "diary",
-      reminder_time_habits: "habits",
-      reminder_time_emotions: "emotions",
-    };
-    const notifType = reminderTypeMap[field];
-    if (notifType) {
-      const today = new Date().toISOString().split("T")[0];
-      localStorage.removeItem(`unfric_notif_sent_${notifType}_${today}`);
-    }
-
-    if (user) {
-      await supabase.functions.invoke('manage-settings', {
-        body: {
-          action: 'update_settings',
-          updates: { [field]: value }
-        }
-      });
     }
   };
 
@@ -323,6 +228,7 @@ export default function Settings() {
     try {
       const data = await fetchExportData();
 
+      const { default: jsPDF } = await import("jspdf");
       const doc = new jsPDF();
       let y = 20;
       const pageH = 280;
@@ -470,7 +376,7 @@ export default function Settings() {
 
   // ── Render ───────────────────────────────────────────────────────
 
-  if (loading || !settings) {
+  if (!contextLoaded || !localSettings) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -496,7 +402,7 @@ export default function Settings() {
       {/* ─── Section 1: Journal Preferences ─── */}
       <SettingsSection icon={PenLine} title="Journal Preferences">
         <SettingsRow label="Journal Mode" description="Structured uses prompts, unstructured is freeform">
-          <Select value={settings.journal_mode || "structured"} onValueChange={(v) => saveField("journal_mode", v)}>
+          <Select value={localSettings.journal_mode || "structured"} onValueChange={(v) => saveField("journal_mode", v)}>
             <SelectTrigger className="w-36 text-xs">
               <SelectValue />
             </SelectTrigger>
@@ -558,12 +464,12 @@ export default function Settings() {
         <div
           className={cn(
             "px-4 py-3 border-b border-border last:border-b-0",
-            (settings.journal_mode || "structured") === "unstructured" && "opacity-50 pointer-events-none",
+            (localSettings.journal_mode || "structured") === "unstructured" && "opacity-50 pointer-events-none",
           )}
         >
           <p className="text-sm font-light text-foreground mb-1">Template Questions</p>
           <p className="text-[11px] text-muted-foreground mb-3">
-            {(settings.journal_mode || "structured") === "unstructured"
+            {(localSettings.journal_mode || "structured") === "unstructured"
               ? "Switch to Structured mode to edit questions"
               : "Drag to reorder, click to edit"}
           </p>
@@ -750,14 +656,14 @@ export default function Settings() {
               <p className="text-[11px] text-muted-foreground">Get reminded to write in your journal</p>
             </div>
             <Switch
-              checked={settings.notification_diary_prompt ?? true}
+              checked={localSettings.notification_diary_prompt ?? true}
               onCheckedChange={(v) => saveField("notification_diary_prompt", v)}
             />
           </div>
-          <div className={cn("mt-2 flex items-center gap-2", !(settings.notification_diary_prompt ?? true) && "opacity-40 pointer-events-none")}>
+          <div className={cn("mt-2 flex items-center gap-2", !(localSettings.notification_diary_prompt ?? true) && "opacity-40 pointer-events-none")}>
             <span className="text-[11px] text-muted-foreground">Remind at</span>
             <UnifiedTimePicker
-              value={settings.reminder_time_diary || "08:00"}
+              value={localSettings.reminder_time_diary || "08:00"}
               onChange={(v) => saveField("reminder_time_diary", v)}
               triggerClassName="w-24 text-xs h-7"
             />
@@ -770,14 +676,14 @@ export default function Settings() {
               <p className="text-[11px] text-muted-foreground">Get nudged to complete your habits</p>
             </div>
             <Switch
-              checked={settings.notification_task_reminder ?? true}
+              checked={localSettings.notification_task_reminder ?? true}
               onCheckedChange={(v) => saveField("notification_task_reminder", v)}
             />
           </div>
-          <div className={cn("mt-2 flex items-center gap-2", !(settings.notification_task_reminder ?? true) && "opacity-40 pointer-events-none")}>
+          <div className={cn("mt-2 flex items-center gap-2", !(localSettings.notification_task_reminder ?? true) && "opacity-40 pointer-events-none")}>
             <span className="text-[11px] text-muted-foreground">Remind at</span>
             <UnifiedTimePicker
-              value={settings.reminder_time_habits || "08:00"}
+              value={localSettings.reminder_time_habits || "08:00"}
               onChange={(v) => saveField("reminder_time_habits", v)}
               triggerClassName="w-24 text-xs h-7"
             />
@@ -790,14 +696,14 @@ export default function Settings() {
               <p className="text-[11px] text-muted-foreground">Periodic reminders to log your emotions</p>
             </div>
             <Switch
-              checked={settings.notification_emotion_checkin ?? true}
+              checked={localSettings.notification_emotion_checkin ?? true}
               onCheckedChange={(v) => saveField("notification_emotion_checkin", v)}
             />
           </div>
-          <div className={cn("mt-2 flex items-center gap-2", !(settings.notification_emotion_checkin ?? true) && "opacity-40 pointer-events-none")}>
+          <div className={cn("mt-2 flex items-center gap-2", !(localSettings.notification_emotion_checkin ?? true) && "opacity-40 pointer-events-none")}>
             <span className="text-[11px] text-muted-foreground">Remind at</span>
             <UnifiedTimePicker
-              value={settings.reminder_time_emotions || "08:00"}
+              value={localSettings.reminder_time_emotions || "08:00"}
               onChange={(v) => saveField("reminder_time_emotions", v)}
               triggerClassName="w-24 text-xs h-7"
             />
@@ -876,7 +782,7 @@ export default function Settings() {
       <SettingsSection icon={Clock} title="Time & Locale">
         <SettingsRow label="Time Format" description="12-hour (AM/PM) or 24-hour clock">
           <Select
-            value={settings.time_format || "24h"}
+            value={localSettings.time_format || "24h"}
             onValueChange={(v) => saveField("time_format", v)}
           >
             <SelectTrigger className="w-28 text-xs">
@@ -890,7 +796,7 @@ export default function Settings() {
         </SettingsRow>
         <SettingsRow label="Timezone" description="Controls all clocks and time displays">
           <Select
-            value={settings.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone}
+            value={localSettings.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone}
             onValueChange={(v) => saveField("timezone", v)}
           >
             <SelectTrigger className="w-48 text-xs">
@@ -906,7 +812,7 @@ export default function Settings() {
           </Select>
         </SettingsRow>
         <SettingsRow label="Date Format" description="Controls all calendar and date displays">
-          <Select value={settings.date_format || "MM/DD"} onValueChange={(v) => saveField("date_format", v)}>
+          <Select value={localSettings.date_format || "MM/DD"} onValueChange={(v) => saveField("date_format", v)}>
             <SelectTrigger className="w-28 text-xs">
               <SelectValue />
             </SelectTrigger>
@@ -917,7 +823,7 @@ export default function Settings() {
           </Select>
         </SettingsRow>
         <SettingsRow label="Week Start Day" description="Controls all calendar views">
-          <Select value={settings.start_of_week || "monday"} onValueChange={(v) => saveField("start_of_week", v)}>
+          <Select value={localSettings.start_of_week || "monday"} onValueChange={(v) => saveField("start_of_week", v)}>
             <SelectTrigger className="w-28 text-xs">
               <SelectValue />
             </SelectTrigger>
@@ -933,7 +839,7 @@ export default function Settings() {
       <SettingsSection icon={LayoutDashboard} title="Default Views">
         <SettingsRow label="Default Home Page" description="Which page opens when you log in">
           <Select
-            value={settings.default_home_screen || "diary"}
+            value={localSettings.default_home_screen || "diary"}
             onValueChange={(v) => saveField("default_home_screen", v)}
           >
             <SelectTrigger className="w-28 text-xs">
@@ -951,7 +857,7 @@ export default function Settings() {
           </Select>
         </SettingsRow>
         <SettingsRow label="Default Task Tab" description="Which task tab to show first">
-          <Select value={settings.default_task_tab || "board"} onValueChange={(v) => saveField("default_task_tab", v)}>
+          <Select value={localSettings.default_task_tab || "board"} onValueChange={(v) => saveField("default_task_tab", v)}>
             <SelectTrigger className="w-28 text-xs">
               <SelectValue />
             </SelectTrigger>
@@ -962,17 +868,17 @@ export default function Settings() {
             </SelectContent>
           </Select>
         </SettingsRow>
-        <div className={cn((settings.default_task_tab || "board") !== "board" && "opacity-50 pointer-events-none")}>
+        <div className={cn((localSettings.default_task_tab || "board") !== "board" && "opacity-50 pointer-events-none")}>
           <SettingsRow
             label="Default Board Mode"
             description={
-              (settings.default_task_tab || "board") !== "board"
+              (localSettings.default_task_tab || "board") !== "board"
                 ? "Switch to Board tab to edit this"
                 : "Which board categorization to use"
             }
           >
             <Select
-              value={settings.default_task_view || "status"}
+              value={localSettings.default_task_view || "status"}
               onValueChange={(v) => saveField("default_task_view", v)}
             >
               <SelectTrigger className="w-36 text-xs">
@@ -989,7 +895,7 @@ export default function Settings() {
         </div>
         <SettingsRow label="Default Notes View" description="Which notes layout to show first">
           <Select
-            value={settings.default_notes_view || "atlas"}
+            value={localSettings.default_notes_view || "atlas"}
             onValueChange={(v) => saveField("default_notes_view", v)}
           >
             <SelectTrigger className="w-28 text-xs">
@@ -1004,7 +910,7 @@ export default function Settings() {
         </SettingsRow>
         <SettingsRow label="Default Emotions Tab" description="Which emotions tab to show first">
           <Select
-            value={settings.default_emotions_tab || "feel"}
+            value={localSettings.default_emotions_tab || "feel"}
             onValueChange={(v) => saveField("default_emotions_tab", v)}
           >
             <SelectTrigger className="w-28 text-xs">

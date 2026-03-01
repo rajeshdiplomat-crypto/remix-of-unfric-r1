@@ -6,7 +6,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
+import { useSettings } from "@/contexts/SettingsContext";
+import { toast } from "sonner";
 
 import { TasksHeader } from "@/components/tasks/TasksHeader";
 import { TasksViewTabs, type TasksViewTab } from "@/components/tasks/TasksViewTabs";
@@ -189,28 +190,24 @@ const SAMPLE_TASKS: QuadrantTask[] = [
 
 export default function Tasks() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
   const [activeTab, setActiveTab] = useState<TasksViewTab>("board");
   const [defaultBoardMode, setDefaultBoardMode] = useState<string | null>(null);
 
-  // Load default task tab and board mode from edge function
+  const { settings, loaded: settingsLoaded } = useSettings();
+
+  // Apply default task tab and board mode from settings context
   useEffect(() => {
-    if (!user) return;
-    supabase.functions.invoke("manage-settings", {
-      body: { action: "fetch_settings" }
-    }).then(({ data: res }) => {
-      const data = res?.data;
-      const tab = data?.default_task_tab;
-      if (tab === "lists" || tab === "board" || tab === "timeline") {
-        setActiveTab(tab);
-      }
-      const mode = data?.default_task_view;
-      if (mode) setDefaultBoardMode(mode);
-    });
-  }, [user]);
+    if (!settingsLoaded) return;
+    const tab = settings.default_task_tab;
+    if (tab === "lists" || tab === "board" || tab === "timeline") {
+      setActiveTab(tab as TasksViewTab);
+    }
+    const mode = settings.default_task_view;
+    if (mode) setDefaultBoardMode(mode);
+  }, [settingsLoaded, settings.default_task_tab, settings.default_task_view]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
@@ -349,13 +346,12 @@ export default function Tasks() {
       });
 
       if (error) {
-        toast({ title: "Sync failed", description: error.message, variant: "destructive" });
+        toast.error("Sync failed", { description: error.message });
         return;
       }
     }
 
-    toast({
-      title: isNewTask ? "Created!" : "Updated!",
+    toast.success(isNewTask ? "Created!" : "Updated!", {
       description: isNewTask ? "Your task has been created" : "Task has been updated",
     });
     setDrawerOpen(false);
@@ -371,7 +367,7 @@ export default function Tasks() {
       });
     }
 
-    toast({ title: "Deleted", description: "Task has been removed" });
+    toast.info("Deleted", { description: "Task has been removed" });
   };
 
   const handleStartTask = async (task: QuadrantTask) => {
@@ -398,7 +394,7 @@ export default function Tasks() {
       });
     }
 
-    toast({ title: "Started!", description: "Task moved to Ongoing" });
+    toast.success("Started!", { description: "Task moved to Ongoing" });
 
     setFocusPromptTask(updated);
     setFocusPromptOpen(true);
@@ -436,11 +432,11 @@ export default function Tasks() {
           if (error) throw error;
         } catch (error) {
           console.error("Failed to reopen task:", error);
-          toast({ title: "Failed to sync", description: "Could not sync task status", variant: "destructive" });
+          toast.error("Failed to sync", { description: "Could not sync task status" });
         }
       }
 
-      toast({ title: "Reopened!", description: "Task marked as incomplete" });
+      toast.info("Reopened!", { description: "Task marked as incomplete" });
     } else {
       const completedAt = new Date().toISOString();
       const updated: QuadrantTask = {
@@ -472,11 +468,11 @@ export default function Tasks() {
           }
         } catch (error) {
           console.error("Failed to complete task:", error);
-          toast({ title: "Failed to sync", description: "Could not sync task completion", variant: "destructive" });
+          toast.error("Failed to sync", { description: "Could not sync task completion" });
         }
       }
 
-      toast({ title: "Completed!", description: "Task marked as done" });
+      toast.success("Completed!", { description: "Task marked as done" });
     }
   };
 
@@ -531,7 +527,7 @@ export default function Tasks() {
       });
     }
 
-    toast({ title: "Task added" });
+    toast.success("Task added");
   };
 
   const handleBoardDrop = async (columnId: string, task: QuadrantTask) => {
@@ -567,7 +563,7 @@ export default function Tasks() {
       });
     }
 
-    toast({ title: "Task updated" });
+    toast.info("Task updated");
   };
 
   const filteredTasks = useMemo(() => {

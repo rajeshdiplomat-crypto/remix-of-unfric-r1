@@ -10,7 +10,7 @@ import {
 } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { useTimezone } from "@/hooks/useTimezone";
-import { getTodayInTimezone, getStartOfTodayInTimezone } from "@/lib/formatDate";
+import { getTodayInTimezone, getStartOfTodayInTimezone } from "@/lib/date-management";
 
 interface EmotionCalendarSidebarProps {
   entries: EmotionEntry[];
@@ -109,9 +109,8 @@ export function EmotionCalendarSidebar({ entries, onDateClick }: EmotionCalendar
               <div
                 key={dateStr}
                 onClick={() => dayEntries.length > 0 && onDateClick?.(dateStr, dayEntries)}
-                className={`h-8 rounded-md flex flex-col items-center justify-center text-[11px] font-medium transition-all ${
-                  dayEntries.length > 0 ? "cursor-pointer hover:scale-110" : ""
-                } ${isToday ? "ring-2 ring-rose-500 ring-offset-1" : ""} ${isFuture ? "opacity-30" : ""}`}
+                className={`h-8 rounded-md flex flex-col items-center justify-center text-[11px] font-medium transition-all ${dayEntries.length > 0 ? "cursor-pointer hover:scale-110" : ""
+                  } ${isToday ? "ring-2 ring-rose-500 ring-offset-1" : ""} ${isFuture ? "opacity-30" : ""}`}
                 style={
                   dominant && !isFuture
                     ? { backgroundColor: QUADRANTS[dominant].color, color: "white" }

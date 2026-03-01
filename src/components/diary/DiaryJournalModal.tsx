@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ImagePlus, X, Loader2, Send, Upload } from "lucide-react";
@@ -22,7 +22,7 @@ interface DiaryJournalModalProps {
 
 export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJournalModalProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [content, setContent] = useState("");
@@ -40,13 +40,13 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
     for (const file of Array.from(files)) {
       // Validate file type
       if (!file.type.startsWith("image/")) {
-        toast({ title: "Invalid file type", description: "Please upload an image file.", variant: "destructive" });
+        toast.error("Invalid file type", { description: "Please upload an image file." });
         continue;
       }
 
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        toast({ title: "File too large", description: "Image must be under 5MB.", variant: "destructive" });
+        toast.error("File too large", { description: "Image must be under 5MB." });
         continue;
       }
 
@@ -63,7 +63,7 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
         newImages.push(uploadRes.url);
       } catch (error) {
         console.error("Upload error:", error);
-        toast({ title: "Upload failed", description: "Could not upload image.", variant: "destructive" });
+        toast.error("Upload failed", { description: "Could not upload image." });
       }
     }
 
@@ -110,7 +110,7 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
 
   const handleSubmit = async () => {
     if (!user || !content.trim()) {
-      toast({ title: "Please write something", variant: "destructive" });
+      toast.error("Please write something");
       return;
     }
 
@@ -169,7 +169,7 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
         });
       }
 
-      toast({ title: "Entry saved!", description: "Your journal entry has been posted." });
+      toast.success("Entry saved!", { description: "Your journal entry has been posted." });
 
       // Reset form
       setContent("");
@@ -178,7 +178,7 @@ export function DiaryJournalModal({ open, onOpenChange, onSuccess }: DiaryJourna
       onSuccess?.();
     } catch (error) {
       console.error("Save error:", error);
-      toast({ title: "Error", description: "Failed to save entry.", variant: "destructive" });
+      toast.error("Error", { description: "Failed to save entry." });
     } finally {
       setIsSaving(false);
     }

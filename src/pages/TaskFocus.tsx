@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserPreferences } from "@/hooks/useUserSettings";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
@@ -145,7 +145,7 @@ export default function TaskFocus() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { toast } = useToast();
+
   const { prefs, updatePrefs } = useUserPreferences();
 
   const [task, setTask] = useState<QuadrantTask | null>(null);
@@ -294,7 +294,7 @@ export default function TaskFocus() {
     setIsRunning(false);
     if (intervalRef.current) clearInterval(intervalRef.current);
     setShowSummary(true);
-    toast({ title: "Focus session complete!", description: "Great work!" });
+    toast.success("Focus session complete!", { description: "Great work!" });
   };
   const handleEndSession = () => {
     setIsRunning(false);
@@ -325,7 +325,7 @@ export default function TaskFocus() {
         }
       });
     }
-    toast({ title: "Session saved!", description: `Added ${sessionMinutes} min.` });
+    toast.success("Session saved!", { description: `Added ${sessionMinutes} min.` });
     navigate("/tasks");
   };
   const formatTime = (seconds: number) => {

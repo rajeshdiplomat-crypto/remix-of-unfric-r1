@@ -1,157 +1,229 @@
-import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+// --- Error classification ---
+export type AuthErrorType = 'network_unreachable' | 'auth_invalid_credentials' | 'auth_other' | null;
 
+export interface AuthErrorState {
+  type: AuthErrorType;
+  message: string;
+}
+
+function classifyAuthError(error: any): AuthErrorState {
+  const msg = error?.message ?? String(error);
+  if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('fetch') && (error?.status === 0 || error?.code === 'FETCH_ERROR')) {
+    return { type: 'network_unreachable', message: 'Connection issue reaching authentication service. Check your network and try again.' };
+  }
+  if (msg.includes('Invalid login')) {
+    return { type: 'auth_invalid_credentials', message: 'Invalid email or password.' };
+  }
+  return { type: 'auth_other', message: msg };
+}
+
+// --- Auth token storage helpers ---
+const AUTH_STORAGE_PREFIX = 'sb-rgxsciffurjbglfffmqx-auth-token';
+
+function clearStaleAuthTokens() {
+  const keysToRemove: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(AUTH_STORAGE_PREFIX)) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach(k => {
+    localStorage.removeItem(k);
+    console.log('[Auth] Cleared stale token:', k);
+  });
+}
+
+// --- Context ---
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  authError: AuthErrorState | null;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  recoverAuthSession: () => Promise<void>;
+  pauseAutoRefresh: () => void;
+  resumeAutoRefresh: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-/**
- * Wrap a promise with a hard timeout so requests never hang indefinitely.
- */
-function fetchWithTimeout<T>(fn: () => Promise<T>, ms = 10_000): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('Request timed out')), ms);
-    fn().then(resolve, reject).finally(() => clearTimeout(timer));
-  });
-}
-
-/**
- * Pre-flight reachability check — pings the auth health endpoint.
- * A 401 still means the server is reachable (just needs an API key).
- * Only return false on actual network failures.
- */
-async function guardReachability(): Promise<boolean> {
-  try {
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/health`, {
-      signal: AbortSignal.timeout(5_000),
-      headers: {
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-      },
-    });
-    // Any HTTP response (even 4xx) means the server is reachable
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-const UNREACHABLE_MSG =
-  'Unable to reach the server. Please check your internet connection and try again.';
-
-function isNetworkError(err: any): boolean {
-  return (
-    err instanceof TypeError ||
-    err?.name === 'AbortError' ||
-    err?.message?.includes('Failed to fetch') ||
-    err?.message?.includes('NetworkError') ||
-    err?.message?.includes('network') ||
-    err?.message?.includes('Request timed out')
-  );
-}
-
-/**
- * Retry a function up to `retries` times with exponential backoff.
- * Only retries on network-level / timeout errors.
- */
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  retries = 5,
-  delayMs = 2000,
-): Promise<T> {
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      return await fn();
-    } catch (err: any) {
-      if (!isNetworkError(err) || attempt === retries) {
-        throw err;
-      }
-      console.warn(
-        `[Auth] Network error on attempt ${attempt + 1}/${retries + 1}, retrying in ${delayMs * (attempt + 1)}ms…`,
-        err?.message,
-      );
-      await new Promise((r) => setTimeout(r, delayMs * (attempt + 1)));
-    }
-  }
-  throw new Error('Retry exhausted');
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<AuthErrorState | null>(null);
+  const refreshPausedRef = useRef(false);
+  const originalAutoRefresh = useRef(true);
 
   useEffect(() => {
+    let isMounted = true;
+
+    // Safety timeout: if Supabase hangs while restoring session (e.g. stale lock or invalid token loop)
+    const fallbackTimer = setTimeout(() => {
+      if (isMounted) {
+        console.warn('[Auth] Session restore timed out. Forcing exit from loading state.');
+        clearStaleAuthTokens();
+        // Force local signout so that it drops the stale lock/session gracefully
+        supabase.auth.signOut({ scope: 'local' }).catch(() => { });
+        setLoading(false);
+      }
+    }, 4500);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        if (!isMounted) return;
+
+        // Force logout if token refresh fails due to being offline/expired
+        if ((event as string) === "TOKEN_REFRESH_FAILED") {
+          console.error("[Auth] Token refresh failed! Forcing local logout.");
+          clearStaleAuthTokens();
+          setSession(null);
+          setUser(null);
+          setAuthError({
+            type: 'auth_other',
+            message: 'Your session expired. Please log in again.'
+          });
+          setLoading(false);
+          return;
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        if (session) setAuthError(null);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (!isMounted) return;
+      clearTimeout(fallbackTimer);
+
+      if (error) {
+        console.warn('[Auth] getSession failed:', error.message);
+        const classified = classifyAuthError(error);
+
+        if (classified.type !== 'network_unreachable') {
+          setAuthError(classified);
+          console.log('[Auth] Clearing stale tokens due to auth error');
+          clearStaleAuthTokens();
+          supabase.auth.signOut({ scope: 'local' }).catch(() => { });
+        }
+        // Don't leave in loading state on network failure
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     }).catch((err) => {
-      console.warn('[Auth] getSession failed (may be offline):', err?.message);
+      if (!isMounted) return;
+      clearTimeout(fallbackTimer);
+      console.warn('[Auth] getSession unexpected error:', err);
+      clearStaleAuthTokens();
+      supabase.auth.signOut({ scope: 'local' }).catch(() => { });
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      clearTimeout(fallbackTimer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
+    setAuthError(null);
     try {
-      const { error } = await withRetry(() =>
-        supabase.auth.signInWithPassword({ email, password })
-      );
-      if (error) return { error: new Error(error.message) };
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        const classified = classifyAuthError(error);
+        setAuthError(classified);
+        return { error };
+      }
       return { error: null };
     } catch (err: any) {
-      return {
-        error: new Error(isNetworkError(err) ? UNREACHABLE_MSG : err?.message || 'An unexpected error occurred'),
-      };
+      const classified = classifyAuthError(err);
+      setAuthError(classified);
+      return { error: err };
     }
   }, []);
 
   const signUp = useCallback(async (email: string, password: string) => {
-    const redirectUrl = `${window.location.origin}/`;
+    setAuthError(null);
     try {
-      const { error } = await withRetry(() =>
-        supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectUrl } })
-      );
-      if (error) return { error: new Error(error.message) };
+      const redirectUrl = `${window.location.origin}/`;
+      const { error } = await supabase.auth.signUp({
+        email, password,
+        options: { emailRedirectTo: redirectUrl }
+      });
+      if (error) {
+        const classified = classifyAuthError(error);
+        setAuthError(classified);
+        return { error };
+      }
       return { error: null };
     } catch (err: any) {
-      return {
-        error: new Error(isNetworkError(err) ? UNREACHABLE_MSG : err?.message || 'An unexpected error occurred'),
-      };
+      const classified = classifyAuthError(err);
+      setAuthError(classified);
+      return { error: err };
     }
   }, []);
 
   const signOut = useCallback(async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (err) {
-      console.warn('[Auth] signOut network error, clearing local state');
-      setSession(null);
-      setUser(null);
+    await supabase.auth.signOut();
+  }, []);
+
+  const pauseAutoRefresh = useCallback(() => {
+    if (!refreshPausedRef.current) {
+      refreshPausedRef.current = true;
+      // Stop auto-refresh by calling stopAutoRefresh if available
+      try {
+        (supabase.auth as any).stopAutoRefresh?.();
+      } catch { /* ignore */ }
+      console.log('[Auth] Auto-refresh paused');
     }
   }, []);
 
+  const resumeAutoRefresh = useCallback(() => {
+    if (refreshPausedRef.current) {
+      refreshPausedRef.current = false;
+      try {
+        (supabase.auth as any).startAutoRefresh?.();
+      } catch { /* ignore */ }
+      console.log('[Auth] Auto-refresh resumed');
+    }
+  }, []);
+
+  const recoverAuthSession = useCallback(async () => {
+    console.log('[Auth] Recovering auth session...');
+    setAuthError(null);
+    setLoading(true);
+    // 1. Pause refresh to stop any storm
+    pauseAutoRefresh();
+    // 2. Clear stale tokens
+    clearStaleAuthTokens();
+    // 3. Sign out cleanly (local only)
+    try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* ignore */ }
+    setUser(null);
+    setSession(null);
+    // 4. Resume refresh
+    resumeAutoRefresh();
+    setLoading(false);
+    console.log('[Auth] Session recovered — ready for fresh login');
+  }, [pauseAutoRefresh, resumeAutoRefresh]);
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{
+      user, session, loading, authError,
+      signIn, signUp, signOut,
+      recoverAuthSession, pauseAutoRefresh, resumeAutoRefresh
+    }}>
       {children}
     </AuthContext.Provider>
   );
@@ -164,6 +236,3 @@ export function useAuth() {
   }
   return context;
 }
-
-/** Exported for use in Auth.tsx direct calls */
-export { withRetry, guardReachability, UNREACHABLE_MSG, isNetworkError };

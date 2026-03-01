@@ -1,56 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useCallback } from "react";
+import { useSettings } from "@/contexts/SettingsContext";
 
 export type TimeFormatType = "12h" | "24h";
 
 export function useTimeFormat() {
-  const [timeFormat, setTimeFormat] = useState<TimeFormatType>("24h");
-  const [loaded, setLoaded] = useState(false);
-
-  const fetchFormat = useCallback(async () => {
-    try {
-      const { data: res, error } = await supabase.functions.invoke("manage-settings", {
-        body: { action: "fetch_settings" }
-      });
-      if (error) throw error;
-      if (res?.data?.time_format) {
-        setTimeFormat(res.data.time_format as TimeFormatType);
-      }
-    } catch (err) {
-      console.error("Failed to fetch time format:", err);
-    } finally {
-      setLoaded(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchFormat();
-
-    // Re-fetch when navigating back or switching tabs
-    const onVisibilityChange = () => {
-      if (document.visibilityState === "visible") fetchFormat();
-    };
-    document.addEventListener("visibilitychange", onVisibilityChange);
-
-    // Also subscribe to realtime changes on user_settings
-    const channel = supabase
-      .channel("time-format-changes")
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "user_settings" },
-        (payload) => {
-          if ((payload.new as any)?.time_format) {
-            setTimeFormat((payload.new as any).time_format as TimeFormatType);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-      supabase.removeChannel(channel);
-    };
-  }, [fetchFormat]);
+  const { settings, loaded } = useSettings();
+  const timeFormat = (settings.time_format as TimeFormatType) || "24h";
 
   const formatTime = useCallback(
     (time: string | null): string => {

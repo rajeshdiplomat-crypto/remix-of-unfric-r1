@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import type { TimeRange } from "./types";
 
 interface DiaryProfileCardProps {
@@ -42,7 +42,7 @@ export function DiaryProfileCard({
   onTimeRangeChange,
 }: DiaryProfileCardProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState(avatarUrl);
@@ -55,11 +55,11 @@ export function DiaryProfileCard({
     if (!file || !user) return;
 
     if (!file.type.startsWith("image/")) {
-      toast({ title: "Please select an image file", variant: "destructive" });
+      toast.error("Please select an image file");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "Image must be under 5MB", variant: "destructive" });
+      toast.error("Image must be under 5MB");
       return;
     }
 
@@ -82,10 +82,10 @@ export function DiaryProfileCard({
       });
 
       setCurrentAvatarUrl(urlWithCacheBust);
-      toast({ title: "Profile photo updated!" });
+      toast.success("Profile photo updated!");
     } catch (err) {
       console.error("Avatar upload error:", err);
-      toast({ title: "Failed to upload photo", variant: "destructive" });
+      toast.error("Failed to upload photo");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
