@@ -26,5 +26,9 @@ dist-ssr
 # Supabase
 .branches
 .temp
+
+# dotenvx
+.env
+
 .npmrc
 .deno.json
