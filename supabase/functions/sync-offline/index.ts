@@ -1,5 +1,6 @@
 import { authenticateUser } from '../_shared/auth.ts'
 import { corsHeaders } from '../_shared/cors.ts'
+import { getSafeError } from '../_shared/errors.ts'
 
 console.log("sync-offline edge function loaded");
 
@@ -86,7 +87,6 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     )
   } catch (error) {
-    console.error(`sync-offline error:`, error);
-    return new Response(JSON.stringify({ error: error.message }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 })
+    return new Response(JSON.stringify({ error: getSafeError(error) }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 })
   }
 })
