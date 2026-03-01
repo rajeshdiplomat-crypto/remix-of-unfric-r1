@@ -1,28 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useCallback } from "react";
+import { useSettings } from "@/contexts/SettingsContext";
 
 export function useTimezone() {
-  const [timezone, setTimezone] = useState<string>(Intl.DateTimeFormat().resolvedOptions().timeZone);
-
-  useEffect(() => {
-    const fetchTimezone = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: res } = await supabase.functions.invoke("manage-settings", {
-        body: { action: "fetch_timezone" }
-      });
-      const data = res?.data;
-
-      if (data?.timezone) {
-        setTimezone(data.timezone);
-      }
-    };
-
-    fetchTimezone();
-  }, []);
+  const { settings } = useSettings();
+  const timezone = settings.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const getTimeInTimezone = useCallback(
     (date: Date) => {
