@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }: { mode: string }) => ({
@@ -10,6 +11,46 @@ export default defineConfig(({ mode }: { mode: string }) => ({
   },
   plugins: [
     react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.png', 'icons/icon-192x192.png', 'icons/icon-512x512.png', 'icons/apple-touch-icon.png'],
+      manifest: {
+        name: "unfric",
+        short_name: "unfric",
+        description: "Your personal mind and life manager",
+        start_url: "/diary",
+        display: "standalone",
+        orientation: "portrait-primary",
+        theme_color: "#ffffff",
+        background_color: "#ffffff",
+        icons: [
+          {
+            src: "/icons/icon-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any maskable"
+          },
+          {
+            src: "/icons/icon-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable"
+          },
+          {
+            src: "/icons/apple-touch-icon.png",
+            sizes: "180x180",
+            type: "image/png"
+          }
+        ]
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        navigateFallback: '/index.html',
+        // By default, Workbox will only cache what is specifically matched here.
+        // It will NOT cache any requests to external hosts (like Supabase API) 
+        // unless explicitly defined in runtimeCaching.
+      }
+    })
   ],
   resolve: {
     alias: {
