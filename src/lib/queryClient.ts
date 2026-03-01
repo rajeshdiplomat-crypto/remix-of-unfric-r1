@@ -1,4 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
+import { isOfflineError } from "./offlineOutbox";
+import { toast } from "sonner";
 
 /**
  * Shared QueryClient with offline-first defaults.
@@ -15,8 +17,8 @@ export const queryClient = new QueryClient({
       staleTime: 1000 * 60 * 5, // 5 minutes — stale-while-revalidate
       networkMode: "offlineFirst",
       retry: (failureCount, error) => {
-        // Don't retry if offline
-        if (!navigator.onLine) return false;
+        // Use our enhanced offline detection
+        if (isOfflineError(error)) return false;
         return failureCount < 2;
       },
       refetchOnReconnect: "always",
@@ -24,10 +26,17 @@ export const queryClient = new QueryClient({
     },
     mutations: {
       networkMode: "offlineFirst",
-      retry: (failureCount) => {
-        if (!navigator.onLine) return false;
+      retry: (failureCount, error) => {
+        if (isOfflineError(error)) return false;
         return failureCount < 1;
       },
+      onError: (error: any) => {
+        // Global error feedback for mutations
+        if (!isOfflineError(error)) {
+          console.error("[QueryClient] Global Mutation Error:", error);
+          toast.error(error.message || "Action failed. Please try again.");
+        }
+      }
     },
   },
 });
