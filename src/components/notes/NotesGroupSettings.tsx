@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, GripVertical, Trash2, Edit2, Check, X, ChevronDown, ChevronRight, Folder } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import type { NoteGroup, NoteFolder } from "@/pages/Notes";
 
 interface NotesGroupSettingsProps {
@@ -46,7 +46,7 @@ export function NotesGroupSettings({
   folders,
   onFoldersChange,
 }: NotesGroupSettingsProps) {
-  const { toast } = useToast();
+
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editColor, setEditColor] = useState("");
@@ -76,7 +76,7 @@ export function NotesGroupSettings({
     if (!editingGroup || !editName.trim()) return;
     onGroupsChange(groups.map((g) => (g.id === editingGroup ? { ...g, name: editName, color: editColor } : g)));
     setEditingGroup(null);
-    toast({ title: "Group updated" });
+    toast.success("Group updated");
   };
 
   const handleCancelEdit = () => {
@@ -96,18 +96,18 @@ export function NotesGroupSettings({
     };
     onGroupsChange([...groups, newGroup]);
     setNewGroupName("");
-    toast({ title: "Group added" });
+    toast.success("Group added");
   };
 
   const handleDeleteGroup = (groupId: string) => {
     onGroupsChange(groups.filter((g) => g.id !== groupId));
     onFoldersChange(folders.filter((f) => f.groupId !== groupId));
-    toast({ title: "Group deleted" });
+    toast.success("Group deleted");
   };
 
   const handleDeleteFolder = (folderId: string) => {
     onFoldersChange(folders.filter((f) => f.id !== folderId));
-    toast({ title: "Folder deleted" });
+    toast.success("Folder deleted");
   };
 
   // Drag and drop handlers
@@ -145,7 +145,7 @@ export function NotesGroupSettings({
 
     setDraggedItem(null);
     dragOverItem.current = null;
-    toast({ title: "Groups reordered" });
+    toast.success("Groups reordered");
   };
 
   return (
@@ -181,11 +181,10 @@ export function NotesGroupSettings({
                     {PRESET_COLORS.map((color) => (
                       <button
                         key={color}
-                        className={`h-8 rounded-lg transition-all hover:scale-105 relative overflow-hidden ${
-                          newGroupColor === color
-                            ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
-                            : "hover:ring-1 hover:ring-border"
-                        }`}
+                        className={`h-8 rounded-lg transition-all hover:scale-105 relative overflow-hidden ${newGroupColor === color
+                          ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                          : "hover:ring-1 hover:ring-border"
+                          }`}
                         onClick={() => setNewGroupColor(color)}
                         title={color}
                       >
@@ -227,9 +226,8 @@ export function NotesGroupSettings({
                       onDragStart={(e) => handleDragStart(e, group.id, index)}
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDragEnd={handleDragEnd}
-                      className={`flex items-center gap-2 p-2 rounded-xl bg-muted/25 border border-border/30 transition-colors ${
-                        draggedItem?.id === group.id ? "opacity-50" : ""
-                      }`}
+                      className={`flex items-center gap-2 p-2 rounded-xl bg-muted/25 border border-border/30 transition-colors ${draggedItem?.id === group.id ? "opacity-50" : ""
+                        }`}
                     >
                       <div
                         className="w-1 h-6 rounded-full shrink-0"
@@ -267,11 +265,10 @@ export function NotesGroupSettings({
                             {PRESET_COLORS.map((color) => (
                               <button
                                 key={color}
-                                className={`h-6 rounded-md transition-all hover:scale-105 relative overflow-hidden ${
-                                  editColor === color
-                                    ? "ring-2 ring-primary ring-offset-1 ring-offset-background"
-                                    : "hover:ring-1 hover:ring-border"
-                                }`}
+                                className={`h-6 rounded-md transition-all hover:scale-105 relative overflow-hidden ${editColor === color
+                                  ? "ring-2 ring-primary ring-offset-1 ring-offset-background"
+                                  : "hover:ring-1 hover:ring-border"
+                                  }`}
                                 onClick={() => setEditColor(color)}
                               >
                                 {/* Top accent line like board view */}

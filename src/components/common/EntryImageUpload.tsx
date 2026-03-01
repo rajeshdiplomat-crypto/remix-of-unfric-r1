@@ -3,7 +3,7 @@ import { Camera, Upload, Loader2, Check } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { getPresetImage, getAllPresetImages, type PresetImageType } from "@/lib/presetImages";
@@ -25,7 +25,7 @@ export function EntryImageUpload({
   className,
 }: EntryImageUploadProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isOpen, setIsOpen] = useState(false);
@@ -44,7 +44,7 @@ export function EntryImageUpload({
       onImageChange(selectedPreset);
       setIsOpen(false);
       setSelectedPreset(null);
-      toast({ title: "Image updated" });
+      toast.success("Image updated");
     }
   };
 
@@ -53,36 +53,36 @@ export function EntryImageUpload({
     if (!file || !user) return;
 
     if (!file.type.startsWith("image/")) {
-      toast({ title: "Please upload an image file", variant: "destructive" });
+      toast.error("Please upload an image file");
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "Image must be less than 5MB", variant: "destructive" });
+      toast.error("Image must be less than 5MB");
       return;
     }
 
     setIsUploading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("bucket", "entry-covers");
-
-      const { data: uploadRes, error: uploadError } = await supabase.functions.invoke("upload-image", {
-        body: formData,
+      const { uploadImage } = await import("@/lib/mediaUtils");
+      const result = await uploadImage(file, user.id, {
+        bucket: "entry-covers",
+        maxSizeMB: 5
       });
 
-      if (uploadError || !uploadRes?.url) throw uploadError || new Error("Failed to upload image");
+      if (!result.success || !result.url) {
+        throw new Error(result.error || "Failed to upload image");
+      }
 
-      const publicUrl = uploadRes.url;
-
-      onImageChange(publicUrl);
+      onImageChange(result.url);
       setIsOpen(false);
-      toast({ title: "Image uploaded successfully" });
-    } catch (error) {
+      toast.success("Image uploaded successfully");
+    } catch (error: any) {
       console.error("Upload error:", error);
-      toast({ title: "Failed to upload image", variant: "destructive" });
+      toast.error("Failed to upload image", {
+        description: error.message,
+      });
     } finally {
       setIsUploading(false);
     }
