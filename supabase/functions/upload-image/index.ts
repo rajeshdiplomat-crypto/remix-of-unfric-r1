@@ -37,12 +37,15 @@ Deno.serve(async (req) => {
 
     if (uploadError) throw uploadError;
 
-    const { data: { publicUrl } } = supabaseAdmin.storage
+    // Use signed URLs (1 hour expiry) since buckets are private
+    const { data: signedData, error: signedError } = await supabaseAdmin.storage
       .from(bucketName)
-      .getPublicUrl(fileName);
+      .createSignedUrl(fileName, 3600);
+
+    if (signedError) throw signedError;
 
     return new Response(
-      JSON.stringify({ success: true, url: publicUrl }),
+      JSON.stringify({ success: true, url: signedData.signedUrl }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     )
   } catch (error) {

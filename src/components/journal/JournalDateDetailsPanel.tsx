@@ -248,11 +248,11 @@ export const JournalDateDetailsPanel = memo(function JournalDateDetailsPanel({
                         const hasWho = entry.context?.who;
                         const hasWhat = entry.context?.what;
                         if (hasWho && hasWhat) {
-                          sentence += ` while you were with ${entry.context.who.toLowerCase()}, ${entry.context.what.toLowerCase()}`;
+                          sentence += ` while you were with ${entry.context?.who?.toLowerCase()}, ${entry.context?.what?.toLowerCase()}`;
                         } else if (hasWho) {
-                          sentence += ` while you were with ${entry.context.who.toLowerCase()}`;
+                          sentence += ` while you were with ${entry.context?.who?.toLowerCase()}`;
                         } else if (hasWhat) {
-                          sentence += ` while ${entry.context.what.toLowerCase()}`;
+                          sentence += ` while ${entry.context?.what?.toLowerCase()}`;
                         }
                         sentence += ".";
                         return sentence;

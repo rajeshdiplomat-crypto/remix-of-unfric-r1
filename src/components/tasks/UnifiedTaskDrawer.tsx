@@ -660,7 +660,7 @@ export function UnifiedTaskDrawer({
                   {isCompleted && <Badge className="bg-chart-1/10 text-chart-1 border-chart-1/30">Completed</Badge>}
                   {isOngoing && <Badge className="bg-primary/10 text-primary border-primary/30">Ongoing</Badge>}
                   {!isCompleted && !isOngoing && <Badge className="bg-muted/50 text-muted-foreground">Upcoming</Badge>}
-                  {formData.total_focus_minutes > 0 && (
+                  {(formData.total_focus_minutes ?? 0) > 0 && (
                     <Badge variant="outline">{formData.total_focus_minutes}m focused</Badge>
                   )}
                 </div>

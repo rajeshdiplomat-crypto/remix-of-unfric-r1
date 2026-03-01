@@ -379,7 +379,7 @@ export function ManifestCreateModal({ open, onOpenChange, onSave, saving, editin
         }
       } catch (e) {
         console.warn("Failed to upload base64 image:", e);
-        finalImageUrl = undefined;
+        finalImageUrl = null;
       }
     }
 
