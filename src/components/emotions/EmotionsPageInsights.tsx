@@ -21,7 +21,7 @@ import { EmotionEntry, QuadrantType } from "./types";
 import { format, subDays, differenceInCalendarDays, parseISO } from "date-fns";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { useTimezone } from "@/hooks/useTimezone";
-import { getTimePeriodInTimezone, getStartOfTodayInTimezone } from "@/lib/formatDate";
+import { getTimePeriodInTimezone, getStartOfTodayInTimezone } from "@/lib/date-management";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface EmotionsPageInsightsProps {
@@ -153,9 +153,8 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
               <button
                 key={d}
                 onClick={() => setDateRange(d)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                  dateRange === d ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${dateRange === d ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 {d}D
               </button>
@@ -209,31 +208,28 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
             <div className="flex gap-1 p-1 bg-muted/50 rounded-xl mb-4">
               <button
                 onClick={() => setRightTab("moods")}
-                className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
-                  rightTab === "moods"
-                    ? "bg-card shadow-sm text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all ${rightTab === "moods"
+                  ? "bg-card shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 Moods
               </button>
               <button
                 onClick={() => setRightTab("context")}
-                className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
-                  rightTab === "context"
-                    ? "bg-card shadow-sm text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all ${rightTab === "context"
+                  ? "bg-card shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 Context
               </button>
               <button
                 onClick={() => setRightTab("strategies")}
-                className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
-                  rightTab === "strategies"
-                    ? "bg-card shadow-sm text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all ${rightTab === "strategies"
+                  ? "bg-card shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 Strategies
               </button>
@@ -340,25 +336,22 @@ export function EmotionsPageInsights({ entries, onBack, onDateClick }: EmotionsP
             <div className="flex gap-1 p-1 bg-muted/50 rounded-xl mb-5">
               <button
                 onClick={() => setRightTab("moods")}
-                className={`flex-1 px-4 py-2 text-xs font-medium rounded-lg transition-all ${
-                  rightTab === "moods" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`flex-1 px-4 py-2 text-xs font-medium rounded-lg transition-all ${rightTab === "moods" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 Moods
               </button>
               <button
                 onClick={() => setRightTab("context")}
-                className={`flex-1 px-4 py-2 text-xs font-medium rounded-lg transition-all ${
-                  rightTab === "context" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`flex-1 px-4 py-2 text-xs font-medium rounded-lg transition-all ${rightTab === "context" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 Context
               </button>
               <button
                 onClick={() => setRightTab("strategies")}
-                className={`flex-1 px-4 py-2 text-xs font-medium rounded-lg transition-all ${
-                  rightTab === "strategies" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`flex-1 px-4 py-2 text-xs font-medium rounded-lg transition-all ${rightTab === "strategies" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 Strategies
               </button>
@@ -516,11 +509,11 @@ function MoodByTimeOfDay({ entries, timezone }: { entries: EmotionEntry[]; timez
       const percentages =
         count > 0
           ? {
-              "high-pleasant": (quadrantCounts["high-pleasant"] / count) * 100,
-              "high-unpleasant": (quadrantCounts["high-unpleasant"] / count) * 100,
-              "low-unpleasant": (quadrantCounts["low-unpleasant"] / count) * 100,
-              "low-pleasant": (quadrantCounts["low-pleasant"] / count) * 100,
-            }
+            "high-pleasant": (quadrantCounts["high-pleasant"] / count) * 100,
+            "high-unpleasant": (quadrantCounts["high-unpleasant"] / count) * 100,
+            "low-unpleasant": (quadrantCounts["low-unpleasant"] / count) * 100,
+            "low-pleasant": (quadrantCounts["low-pleasant"] / count) * 100,
+          }
           : null;
       return { period, count, percentages, info: TIME_INFO[period] };
     });

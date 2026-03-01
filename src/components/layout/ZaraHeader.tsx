@@ -2,7 +2,7 @@ import { Menu, Maximize2, Minimize, Settings, ChevronLeft, ChevronRight, Maximiz
 import { Button } from "@/components/ui/button";
 import { NavLink } from "@/components/NavLink";
 import { useEffect, useState, useCallback } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { UnfricLogo } from "@/components/common/UnfricLogo";
@@ -15,19 +15,18 @@ interface ZaraHeaderProps {
 }
 
 const modules = [
-{ name: "DIARY", path: "/diary" },
-{ name: "EMOTIONS", path: "/emotions" },
-{ name: "JOURNAL", path: "/journal" },
-{ name: "MANIFEST", path: "/manifest" },
-{ name: "HABITS", path: "/habits" },
-{ name: "NOTES", path: "/notes" },
-{ name: "TASKS", path: "/tasks" }];
+  { name: "DIARY", path: "/diary" },
+  { name: "EMOTIONS", path: "/emotions" },
+  { name: "JOURNAL", path: "/journal" },
+  { name: "MANIFEST", path: "/manifest" },
+  { name: "HABITS", path: "/habits" },
+  { name: "NOTES", path: "/notes" },
+  { name: "TASKS", path: "/tasks" }];
 
 
 export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
 
@@ -52,13 +51,11 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const isActive = (path: string) => location.pathname === path;
-
   const iconClass = (scrolled: boolean) =>
-  cn(
-    "h-8 w-8 rounded-full hover:bg-foreground/10 transition-all duration-300",
-    scrolled ? "text-foreground/60 hover:text-foreground" : "text-foreground/70 hover:text-foreground"
-  );
+    cn(
+      "h-8 w-8 rounded-full hover:bg-foreground/10 transition-all duration-300",
+      scrolled ? "text-foreground/60 hover:text-foreground" : "text-foreground/70 hover:text-foreground"
+    );
 
   return (
     <header
@@ -97,28 +94,26 @@ export function ZaraHeader({ onMenuClick }: ZaraHeaderProps) {
 
         {/* Center: Module Nav — desktop only */}
         <nav className="hidden lg:flex items-center gap-6">
-          {modules.map((module) =>
-          <NavLink
-            key={module.path}
-            to={module.path}
-            className={cn(
-              "text-xs lg:text-[11px] font-light uppercase tracking-zara-wide transition-all duration-300",
-              isActive(module.path) ?
-              cn(
-                "border-b pb-0.5",
-                isScrolled ?
-                "text-foreground border-foreground" :
-                "text-foreground border-foreground [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
-              ) :
-              cn(
-                "hover:text-foreground",
-                isScrolled ? "text-foreground/60" : "text-foreground/70 [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
-              )
-            )}>
-
+          {modules.map((module) => (
+            <NavLink
+              key={module.path}
+              to={module.path}
+              className={({ isActive }) => cn(
+                "text-xs lg:text-[11px] font-light uppercase tracking-zara-wide transition-all duration-300",
+                isActive ?
+                  cn(
+                    "border-b pb-0.5 text-foreground border-foreground",
+                    !isScrolled && "[text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
+                  ) :
+                  cn(
+                    "hover:text-foreground",
+                    isScrolled ? "text-foreground/60" : "text-foreground/70 [text-shadow:_0_1px_3px_rgba(0,0,0,0.3)]"
+                  )
+              )}
+            >
               {module.name}
             </NavLink>
-          )}
+          ))}
         </nav>
 
         {/* Right: Action buttons */}

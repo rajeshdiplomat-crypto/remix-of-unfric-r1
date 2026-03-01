@@ -8,23 +8,12 @@ import { useNotificationPermission } from "@/hooks/useNotifications";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
-interface ReminderState {
-  notification_diary_prompt: boolean;
-  notification_task_reminder: boolean;
-  notification_emotion_checkin: boolean;
-  reminder_time_diary: string;
-  reminder_time_habits: string;
-  reminder_time_emotions: string;
-}
-
-const DEFAULT_STATE: ReminderState = {
-  notification_diary_prompt: true,
-  notification_task_reminder: true,
-  notification_emotion_checkin: true,
-  reminder_time_diary: "08:00",
-  reminder_time_habits: "08:00",
-  reminder_time_emotions: "08:00",
-};
+import { useSettings } from "@/contexts/SettingsContext";
+import {
+  hasTimePassed,
+  wasSeenToday,
+  markSeenToday
+} from "@/lib/notifications";
 
 const REMINDERS = [
   {
@@ -50,66 +39,20 @@ const REMINDERS = [
   },
 ];
 
-/** Returns true if the reminder time has passed today */
-function hasTimePassed(timeStr: string): boolean {
-  const now = new Date();
-  const [h, m] = timeStr.split(":").map(Number);
-  return now.getHours() * 60 + now.getMinutes() >= h * 60 + m;
-}
-
-/** Check if the user has already dismissed/acted on this reminder today */
-function wasDismissedToday(type: string): boolean {
-  const today = new Date().toISOString().split("T")[0];
-  return localStorage.getItem(`unfric_notif_seen_${type}_${today}`) === "1";
-}
-
-function markDismissed(type: string): void {
-  const today = new Date().toISOString().split("T")[0];
-  localStorage.setItem(`unfric_notif_seen_${type}_${today}`, "1");
-}
-
 interface NotificationPopoverProps {
   iconClassName?: string;
 }
 
 export function NotificationPopover({ iconClassName }: NotificationPopoverProps) {
   const { permission, supported, requestPermission } = useNotificationPermission();
-  const { user } = useAuth();
-  const [settings, setSettings] = useState<ReminderState>(DEFAULT_STATE);
+  const { settings } = useSettings();
   const [now, setNow] = useState(Date.now());
 
-  // Refresh every 60s to update pending state
+  // Refresh every 30s-60s to update pending state
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 60_000);
+    const id = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(id);
   }, []);
-
-  // Fetch settings
-  useEffect(() => {
-    if (!user) return;
-    const fetchSettings = async () => {
-      try {
-        const { data: res, error } = await supabase.functions.invoke("manage-settings", {
-          body: { action: "fetch_settings" }
-        });
-        if (error) throw error;
-        const data = res?.data;
-        if (data) {
-          setSettings({
-            notification_diary_prompt: data.notification_diary_prompt ?? true,
-            notification_task_reminder: data.notification_task_reminder ?? true,
-            notification_emotion_checkin: data.notification_emotion_checkin ?? true,
-            reminder_time_diary: data.reminder_time_diary ?? "08:00",
-            reminder_time_habits: data.reminder_time_habits ?? "08:00",
-            reminder_time_emotions: data.reminder_time_emotions ?? "08:00",
-          });
-        }
-      } catch (err) {
-        console.error("Failed to fetch notification settings:", err);
-      }
-    };
-    fetchSettings();
-  }, [user]);
 
   // Compute pending reminders (enabled + time passed + not dismissed)
   const pendingReminders = useMemo(() => {
@@ -117,7 +60,7 @@ export function NotificationPopover({ iconClassName }: NotificationPopoverProps)
       const enabled = settings[r.enableKey];
       if (!enabled) return false;
       const time = settings[r.timeKey];
-      return hasTimePassed(time) && !wasDismissedToday(r.enableKey);
+      return hasTimePassed(time) && !wasSeenToday(r.enableKey);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings, now]);
@@ -135,9 +78,9 @@ export function NotificationPopover({ iconClassName }: NotificationPopoverProps)
   const hasPending = pendingReminders.length > 0;
 
   const handleOpenChange = (open: boolean) => {
-    // When closing, mark all pending as dismissed
+    // When closing, mark all pending as dismissed/seen
     if (!open && hasPending) {
-      pendingReminders.forEach((r) => markDismissed(r.enableKey));
+      pendingReminders.forEach((r) => markSeenToday(r.enableKey));
       setNow(Date.now()); // force re-compute
     }
   };

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { EmotionEntry, QUADRANTS } from "./types";
 import { ChevronDown, ChevronUp, Pencil, Trash2, Clock } from "lucide-react";
 import { useTimezone } from "@/hooks/useTimezone";
-import { formatTimeAgo, formatDateInTimezone, formatTimeInTimezone } from "@/lib/formatDate";
+import { formatTimeAgo, formatDateInTimezone, formatTimeInTimezone } from "@/lib/date-management";
 
 interface RecentEntriesListProps {
   entries: EmotionEntry[];

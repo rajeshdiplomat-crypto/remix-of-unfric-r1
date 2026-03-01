@@ -141,7 +141,7 @@ export function EmotionsPageFeel({
                 : "opacity-60 cursor-not-allowed"
             )}
             style={{
-              background: selectedEmotion
+              backgroundImage: selectedEmotion
                 ? `linear-gradient(90deg, ${quadrantInfo.color}, white, ${quadrantInfo.color})`
                 : undefined,
               backgroundSize: "200% 100%",
@@ -166,7 +166,7 @@ export function EmotionsPageFeel({
                   <div className="flex-1" />
                   <div
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-white font-semibold text-sm"
-                    style={{ background: quadrantInfo.color }}
+                    style={{ backgroundColor: quadrantInfo.color }}
                   >
                     Continue
                     <ArrowRight className="h-4 w-4" />
@@ -245,14 +245,13 @@ export function EmotionsPageFeel({
               disabled={!selectedEmotion}
               className={`
                 relative w-full overflow-hidden rounded-2xl p-[2px] transition-all duration-500
-                ${
-                  selectedEmotion
-                    ? "bg-gradient-to-r from-primary via-white/50 to-primary animate-pulse hover:animate-none hover:scale-[1.02] active:scale-[0.98]"
-                    : "bg-muted/50 cursor-not-allowed"
+                ${selectedEmotion
+                  ? "bg-gradient-to-r from-primary via-white/50 to-primary animate-pulse hover:animate-none hover:scale-[1.02] active:scale-[0.98]"
+                  : "bg-muted/50 cursor-not-allowed"
                 }
               `}
               style={{
-                background: selectedEmotion
+                backgroundImage: selectedEmotion
                   ? `linear-gradient(90deg, ${quadrantInfo.color}, white, ${quadrantInfo.color})`
                   : undefined,
                 backgroundSize: "200% 100%",
@@ -278,7 +277,7 @@ export function EmotionsPageFeel({
                     <div className="flex-1" />
                     <div
                       className="flex items-center gap-2 px-4 py-2 rounded-xl text-white font-semibold transition-all"
-                      style={{ background: quadrantInfo.color }}
+                      style={{ backgroundColor: quadrantInfo.color }}
                     >
                       Continue
                       <ArrowRight className="h-4 w-4" />
