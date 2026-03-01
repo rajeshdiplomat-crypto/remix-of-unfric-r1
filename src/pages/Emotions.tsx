@@ -86,7 +86,7 @@ export default function Emotions() {
   // For editing entries
   const [editingEntry, setEditingEntry] = useState<EmotionEntry | null>(null);
   const [editNote, setEditNote] = useState("");
-  const [editContext, setEditContext] = useState<EmotionEntry["context"]>({});
+  const [editContext, setEditContext] = useState<import("@/components/emotions/EmotionContextFieldsEnhanced").EnhancedContextData>({});
   const [editQuadrant, setEditQuadrant] = useState<QuadrantType | null>(null);
   const [editEmotion, setEditEmotion] = useState<string | null>(null);
   const [editDate, setEditDate] = useState<Date>(new Date());
@@ -119,7 +119,7 @@ export default function Emotions() {
       if (error) throw error;
       const data = res?.data || [];
 
-      const parsed: EmotionEntry[] = (data || []).map((row) => {
+      const parsed: EmotionEntry[] = (data || []).map((row: any) => {
         let quadrant: QuadrantType = "low-pleasant";
         let emotion = row.emotion;
         let parsedContext: EmotionEntry["context"] = undefined;

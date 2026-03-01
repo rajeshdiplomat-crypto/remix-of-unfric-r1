@@ -82,7 +82,7 @@ export function GuidedVisualization({ strategy, onComplete, onSkip }: GuidedVisu
   const audioContextRef = useRef<AudioContext | null>(null);
   const oscillatorRef = useRef<OscillatorNode | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const prompts = VISUALIZATION_PROMPTS[strategy.id] || VISUALIZATION_PROMPTS["default"];
   const progress = ((duration - timeRemaining) / duration) * 100;

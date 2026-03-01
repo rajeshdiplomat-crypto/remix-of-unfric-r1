@@ -446,11 +446,11 @@ export default function Habits() {
     const habitsData = response.data.habits;
     const completionsData = response.data.completions;
 
-    const transformedActivities: ActivityItem[] = (habitsData || []).map((habit) => {
+    const transformedActivities: ActivityItem[] = (habitsData || []).map((habit: any) => {
       const habitCompletions = (completionsData || [])
-        .filter((c) => c.habit_id === habit.id)
+        .filter((c: any) => c.habit_id === habit.id)
         .reduce(
-          (acc, c) => {
+          (acc: Record<string, boolean>, c: any) => {
             acc[c.completed_date] = true;
             return acc;
           },

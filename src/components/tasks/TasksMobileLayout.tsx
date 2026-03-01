@@ -1121,7 +1121,7 @@ export function TasksMobileLayout({
             onTaskClick={onTaskClick}
             onStartTask={onStartTask}
             onCompleteTask={onCompleteTask}
-            onDeleteTask={onDeleteTask ? (task) => onDeleteTask(task) : undefined}
+            onDeleteTask={onDeleteTask ?? (() => {})}
             collapsed={false}
             onToggleCollapse={() => {}}
           />

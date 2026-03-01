@@ -494,7 +494,7 @@ export default function Journal() {
                 content: [
                   { type: "heading", attrs: { level: 1, textAlign: "left" }, content: existingTitle ? [{ type: "text", text: existingTitle }] : [] },
                   ...template.questions.flatMap((q) => {
-                    const answer = answersData.find((a) => a.question_id === q.id);
+                    const answer = answersData.find((a: any) => a.question_id === q.id);
                     return [
                       { type: "heading", attrs: { level: 2, textAlign: "left" }, content: [{ type: "text", text: q.text }] },
                       { type: "paragraph", attrs: { textAlign: "left" }, content: answer?.answer_text ? [{ type: "text", text: answer.answer_text }] : [] },
@@ -601,15 +601,15 @@ export default function Journal() {
                 contentJSON: content,
                 preview: extractPreviewFromTiptap(content),
                 title: extractTitleFromTiptap(content) || selectedMood || "Untitled",
-                mood: selectedMood,
+                mood: selectedMood ?? undefined,
               }
-              : e,
+            : e,
           ),
         );
       } else {
         const newEntry = res?.data?.entry;
         if (newEntry) {
-          const entryObj = {
+          const entryObj: import("@/components/journal/types").JournalEntry = {
             id: newEntry.id,
             entryDate: newEntry.entry_date,
             createdAt: newEntry.created_at,
@@ -617,7 +617,7 @@ export default function Journal() {
             title: extractTitleFromTiptap(content) || selectedMood || "Untitled",
             contentJSON: content,
             preview: extractPreviewFromTiptap(content),
-            mood: selectedMood,
+            mood: selectedMood ?? undefined,
             tags: [],
           };
 
