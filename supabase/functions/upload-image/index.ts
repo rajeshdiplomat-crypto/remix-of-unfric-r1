@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
     // Since we are uploading, we expect multipart/form-data
     const formData = await req.formData();
     const file = formData.get('file');
-    const bucketName = formData.get('bucketName')?.toString() || "entry-covers";
+    const bucketName = (formData.get('bucketName') || formData.get('bucket'))?.toString() || "entry-covers";
 
     if (!file || !(file instanceof File)) {
       return new Response(JSON.stringify({ error: 'Missing or invalid file' }), {
