@@ -1,4 +1,4 @@
-import { authenticateUser } from '../_shared/auth.ts'
+import { authenticateUser, getAdminClient } from '../_shared/auth.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 import { getSafeError } from '../_shared/errors.ts'
 
@@ -159,18 +159,27 @@ Deno.serve(async (req) => {
       }
 
       case 'delete_account': {
-        // This represents the final step of completely removing user data.
-        // Due to auth cascades, deleting the auth user will normally wipe all their related public schema data if foreign keys are set to ON DELETE CASCADE
-        // However for manual cleanup to be safe
-        const tables = ["user_settings", "emotions", "journal_entries", "habits", "habit_completions", "notes", "tasks", "manifest_goals", "manifest_practices", "journal_answers", "manifest_journal"];
+        // Clean up ALL user data across every table before deleting the auth user.
+        // FK cascades will handle most of this, but explicit cleanup ensures nothing is missed.
+        const tables = [
+          // Child tables first (to respect FK constraints)
+          "journal_answers", "journal_prompts", "journal_settings",
+          "habit_completions", "manifest_practices", "manifest_journal",
+          "feed_comments", "feed_reactions", "feed_saves", "feed_events",
+          "note_folders", "note_groups", "focus_sessions", "consent_logs",
+          // Parent tables
+          "journal_entries", "emotions", "habits", "notes", "tasks",
+          "manifest_goals", "hero_media", "user_inquiries",
+          "profiles", "user_settings",
+        ];
 
         for (const table of tables) {
           await supabaseAdmin.from(table).delete().eq("user_id", userId);
         }
 
-        // Note: Full auth deletion on Supabase requires admin privileges that are available via adminClient, but usually best to just handle cascades.
-        // We will delete the auth.users record:
-        const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+        // Use admin client with service_role key to delete the auth user
+        const adminClient = getAdminClient();
+        const { error } = await adminClient.auth.admin.deleteUser(userId);
 
         if (error) throw error;
 
@@ -230,18 +239,53 @@ Deno.serve(async (req) => {
       }
 
       case 'update_hero_media': {
-        const { pageKey, mediaUrl } = body;
+        const { pageKey, mediaUrl, mediaType } = body;
         if (!pageKey) throw new Error("Missing pageKey");
         
+        // Find existing media
+        const { data: existingMedia } = await supabaseAdmin
+          .from("hero_media")
+          .select("media_url")
+          .eq("user_id", userId)
+          .eq("page_key", pageKey)
+          .maybeSingle();
+
+        // Helper to delete old file from storage
+        const deleteOldMedia = async (oldUrl: string) => {
+          if (!oldUrl) return;
+          const match = oldUrl.match(/\/storage\/v1\/object\/(?:sign|public)\/([^\/]+)\/([^?]+)/);
+          if (match) {
+             const bucket = match[1];
+             const path = match[2];
+             await supabaseAdmin.storage.from(bucket).remove([path]);
+          }
+        };
+
         if (mediaUrl) {
+          if (existingMedia?.media_url && existingMedia.media_url !== mediaUrl) {
+            await deleteOldMedia(existingMedia.media_url);
+          }
+
           const { data, error } = await supabaseAdmin
             .from("hero_media")
-            .upsert({ user_id: userId, page_key: pageKey, media_url: mediaUrl })
+            .upsert(
+              { 
+                user_id: userId, 
+                page_key: pageKey, 
+                media_url: mediaUrl,
+                media_type: mediaType || 'image'
+              },
+              { onConflict: 'user_id,page_key' }
+            )
             .select()
             .single();
           if (error) throw error;
           resultData = data;
         } else {
+          if (existingMedia?.media_url) {
+            await deleteOldMedia(existingMedia.media_url);
+          }
+
           const { error } = await supabaseAdmin
             .from("hero_media")
             .delete()

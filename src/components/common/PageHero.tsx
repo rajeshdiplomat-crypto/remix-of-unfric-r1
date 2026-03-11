@@ -101,6 +101,7 @@ export function PageHero({ storageKey, typeKey, badge, title, subtitle }: PageHe
         action: "update_hero_media",
         pageKey,
         mediaUrl: url || null,
+        mediaType: type || null,
       }
     });
   }, [user, pageKey]);

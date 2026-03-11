@@ -28,7 +28,7 @@ dist-ssr
 .temp
 
 # dotenvx
-.env
+.env.*
 
 .npmrc
 .deno.json

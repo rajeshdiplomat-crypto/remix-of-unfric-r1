@@ -7,7 +7,11 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('journal-images', 'journal-images', false)
 ON CONFLICT (id) DO NOTHING;
 
-UPDATE storage.buckets SET public = false WHERE id IN ('entry-covers', 'journal-images');
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('avatars', 'avatars', false)
+ON CONFLICT (id) DO NOTHING;
+
+UPDATE storage.buckets SET public = false WHERE id IN ('entry-covers', 'journal-images', 'avatars');
 
 -- Create consent_logs table
 CREATE TABLE IF NOT EXISTS public.consent_logs (
