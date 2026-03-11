@@ -1,39 +1,21 @@
 
+## Deploy Edge Functions & Run Database Migrations
 
-## Merge Consistency into Calendar with Multi-Reality Highlighting
+### What needs to happen
 
-### What changes
+**1. Deploy all edge functions** — 12 functions need to be deployed to production:
+- `manage-tasks`, `manage-notes`, `manage-habits`, `manage-diary`, `manage-feed`, `manage-journal`, `manage-manifest`, `manage-settings`, `manage-emotions`, `sync-offline`, `toggle-task-completion`, `upload-image`
 
-**`src/components/manifest/ManifestSidebarPanel.tsx`** — Enhanced calendar day cells:
-- Compute a "completion ratio" per day: `practiceCount / totalActiveRealities`
-- Color-code each calendar day cell based on ratio:
-  - **All realities practiced** (100%): solid green/teal background
-  - **Partial** (1+ but not all): amber/yellow tint
-  - **None practiced** (0): subtle red/muted dot or empty
-- Keep the `X/total` label but style it to match the color tier
-- Below the calendar grid, add a small legend: ● All ● Partial ● Missed
+**2. Run pending database migrations** — 3 migration files need to be applied to the live database:
+- `20260218123249` — Initial schema (tables, RLS policies)
+- `20260301164021_storage_consent` — Creates storage buckets + `consent_logs` table
+- `20260301195142` — Hardens storage security (removes public access, adds private RLS policies for `entry-covers` and `journal-images`)
 
-**`src/components/manifest/ManifestSidebarPanel.tsx`** — Add consistency summary below calendar:
-- When `section === "calendar"` (inside analytics modal), render below the calendar:
-  - Overall consistency % with a slim progress bar
-  - Per-goal mini rows: goal title, streak flame icon, consistency %, and missed days this week
-- Reuse the same `consistencyData` computation logic currently in the analytics modal (move/share it)
+### No code changes needed
+This is purely a deployment and migration operation. All edge function code and migration SQL files are already written and ready. Implementation will:
+1. Deploy all 12 edge functions via the deploy tool
+2. Apply the 3 migrations to the database via the migration tool
 
-**`src/components/manifest/ManifestAnalyticsModal.tsx`**:
-- Remove the separate "Consistency" tab entirely (tab trigger + TabsContent)
-- Pass consistency-relevant data as props to `ManifestSidebarPanel`, or compute it inside the sidebar since it already receives `goals` and `practices`
-- Calendar tab now shows the enhanced calendar + consistency summary in one scrollable view
-- Keep only 2 tabs: **Overview** and **Calendar**
-
-### Calendar day cell logic (pseudo)
-```text
-ratio = practiceCount / totalActiveRealities
-if ratio === 1   → bg-emerald-500/70 text-white (fully practiced)
-if ratio > 0     → bg-amber-400/40 text-amber-700 (partial)
-if ratio === 0   → default or subtle bg-red-100/30 (missed, only for past dates)
-```
-
-### Files changed
-- `src/components/manifest/ManifestSidebarPanel.tsx` — enhanced day styling + consistency section below calendar
-- `src/components/manifest/ManifestAnalyticsModal.tsx` — remove Consistency tab, keep 2 tabs
-
+### Files involved
+- `supabase/functions/` — all 12 functions
+- `supabase/migrations/` — 3 SQL files
