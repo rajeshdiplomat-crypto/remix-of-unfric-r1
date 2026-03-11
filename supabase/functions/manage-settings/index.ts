@@ -239,18 +239,53 @@ Deno.serve(async (req) => {
       }
 
       case 'update_hero_media': {
-        const { pageKey, mediaUrl } = body;
+        const { pageKey, mediaUrl, mediaType } = body;
         if (!pageKey) throw new Error("Missing pageKey");
         
+        // Find existing media
+        const { data: existingMedia } = await supabaseAdmin
+          .from("hero_media")
+          .select("media_url")
+          .eq("user_id", userId)
+          .eq("page_key", pageKey)
+          .maybeSingle();
+
+        // Helper to delete old file from storage
+        const deleteOldMedia = async (oldUrl: string) => {
+          if (!oldUrl) return;
+          const match = oldUrl.match(/\/storage\/v1\/object\/(?:sign|public)\/([^\/]+)\/([^?]+)/);
+          if (match) {
+             const bucket = match[1];
+             const path = match[2];
+             await supabaseAdmin.storage.from(bucket).remove([path]);
+          }
+        };
+
         if (mediaUrl) {
+          if (existingMedia?.media_url && existingMedia.media_url !== mediaUrl) {
+            await deleteOldMedia(existingMedia.media_url);
+          }
+
           const { data, error } = await supabaseAdmin
             .from("hero_media")
-            .upsert({ user_id: userId, page_key: pageKey, media_url: mediaUrl })
+            .upsert(
+              { 
+                user_id: userId, 
+                page_key: pageKey, 
+                media_url: mediaUrl,
+                media_type: mediaType || 'image'
+              },
+              { onConflict: 'user_id,page_key' }
+            )
             .select()
             .single();
           if (error) throw error;
           resultData = data;
         } else {
+          if (existingMedia?.media_url) {
+            await deleteOldMedia(existingMedia.media_url);
+          }
+
           const { error } = await supabaseAdmin
             .from("hero_media")
             .delete()

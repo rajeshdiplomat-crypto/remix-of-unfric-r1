@@ -5,8 +5,8 @@ import { getSafeError } from '../_shared/errors.ts'
 console.log("upload-image edge function loaded");
 
 const ALLOWED_BUCKETS = ['entry-covers', 'journal-images', 'avatars'];
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm', 'video/quicktime'];
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
 
     // Validate MIME type
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-      return new Response(JSON.stringify({ error: `File type '${file.type}' is not allowed. Accepted: JPEG, PNG, WebP, GIF` }), {
+      return new Response(JSON.stringify({ error: `File type '${file.type}' is not allowed. Accepted: JPEG, PNG, WebP, GIF, MP4, WebM, QuickTime` }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
