@@ -4,7 +4,6 @@ import { Loader2, WifiOff, RefreshCw, Trash2, ArrowLeft, Eye, EyeOff } from "luc
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { UnfricLogo } from "@/components/common/UnfricLogo";
 import { cn } from "@/lib/utils";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import authImage from "@/assets/auth-editorial.jpg";
@@ -125,7 +124,7 @@ export default function Auth() {
         <div className="absolute inset-0 bg-foreground/5" />
         {/* Overlay branding */}
         <div className="absolute inset-0 flex flex-col justify-between p-10">
-          <UnfricLogo size="lg" className="text-background [text-shadow:_0_1px_6px_rgba(0,0,0,0.3)]" />
+          <img src="/favicon.png" alt="unfric" className="h-10 w-auto object-contain drop-shadow-[0_1px_6px_rgba(0,0,0,0.3)] brightness-200" />
           <div className="max-w-md">
             <p className="text-background/80 text-sm font-light leading-relaxed tracking-wide [text-shadow:_0_1px_4px_rgba(0,0,0,0.3)]">
               Your personal space for mindfulness, productivity, and self-discovery.
@@ -138,7 +137,7 @@ export default function Auth() {
       <div className="flex-1 flex flex-col min-h-screen lg:w-[45%] relative z-10">
         {/* Mobile header */}
         <div className="flex items-center justify-center h-16 lg:hidden">
-          <UnfricLogo size="md" />
+          <img src="/favicon.png" alt="unfric" className="h-8 w-auto object-contain" />
         </div>
 
         {/* Centered form */}
