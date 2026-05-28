@@ -5,9 +5,27 @@ import "./index.css";
 import "./styles/responsive.css";
 import { registerSW } from "virtual:pwa-register";
 
+const isInIframe = (() => {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+})();
+
+const isLovablePreview =
+  window.location.hostname.includes("id-preview--") ||
+  window.location.hostname.includes("lovableproject.com") ||
+  window.location.hostname.includes("localhost");
+
+if ((isLovablePreview || isInIframe) && "serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    registrations.forEach((registration) => registration.unregister());
+  });
+}
 
 // Register Service Worker using vite-plugin-pwa
-if ("serviceWorker" in navigator) {
+if ("serviceWorker" in navigator && !isLovablePreview && !isInIframe) {
   registerSW({
     immediate: true,
     onRegistered(r) {

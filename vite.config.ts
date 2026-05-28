@@ -13,6 +13,9 @@ export default defineConfig(({ mode }: { mode: string }) => ({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      devOptions: {
+        enabled: false,
+      },
       includeAssets: ['favicon.png', 'icons/icon-192x192.png', 'icons/icon-512x512.png', 'icons/apple-touch-icon.png'],
       manifest: {
         name: "unfric",
@@ -46,6 +49,7 @@ export default defineConfig(({ mode }: { mode: string }) => ({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/~oauth/],
         // By default, Workbox will only cache what is specifically matched here.
         // It will NOT cache any requests to external hosts (like Supabase API) 
         // unless explicitly defined in runtimeCaching.
